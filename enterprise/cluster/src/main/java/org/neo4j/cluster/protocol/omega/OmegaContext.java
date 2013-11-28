@@ -44,7 +44,7 @@ public class OmegaContext
 
     public Iterable<? extends URI> getServers()
     {
-        return clusterContext.configuration.getMemberURIs();
+        return clusterContext.getMemberURIs();
     }
 
     public State getMyState()

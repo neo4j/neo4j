@@ -36,6 +36,7 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.Mockito;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
@@ -53,7 +54,7 @@ public class ElectionStateTest
 
         when( context.electionOk() ).thenReturn( false );
         when( clusterContextMock.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-        when( context.getClusterContext() ).thenReturn( clusterContextMock );
+//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
 
         MessageHolder holder = mock( MessageHolder.class );
 
@@ -72,7 +73,7 @@ public class ElectionStateTest
 
         when( context.electionOk() ).thenReturn( false );
         when( clusterContextMock.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-        when( context.getClusterContext() ).thenReturn( clusterContextMock );
+//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
 
         MessageHolder holder = mock( MessageHolder.class );
 
@@ -95,7 +96,7 @@ public class ElectionStateTest
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
         when( clusterContextMock.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-        when( context.getClusterContext() ).thenReturn( clusterContextMock );
+//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
         MessageHolder holder = mock( MessageHolder.class );
 
           // These mean the election can proceed normally, by us
@@ -116,7 +117,7 @@ public class ElectionStateTest
         when( context.getElected( role ) ).thenReturn( myInstanceId );
 
           // Required for logging
-        when( context.getLogger() ).thenReturn( mock( StringLogger.class ) );
+        when( context.getLogger( Mockito.<Class>any()) ).thenReturn( mock( StringLogger.class ) );
 
         // When
         election.handle( context,

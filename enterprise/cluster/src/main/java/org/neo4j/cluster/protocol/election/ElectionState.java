@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import static org.neo4j.helpers.collection.Iterables.first;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +77,7 @@ public enum ElectionState
                 )
                         throws Throwable
                 {
-                    StringLogger logger = context.getClusterContext().getLogger( ElectionState.class );
+                    StringLogger logger = context.getLogger( ElectionState.class );
                     switch ( message.getMessageType() )
                     {
                         case demote:
@@ -84,27 +86,25 @@ public enum ElectionState
                             {
                                 logger.warn( "Context says election is not OK to proceed. " +
                                         "Failed instances are: " +
-                                        context.getHeartbeatContext().getFailed() +
+                                        context.getFailed() +
                                         ", cluster members are: " +
-                                        context.getClusterContext().getConfiguration().getMembers()  );
+                                        context.getMembers()  );
                                 break;
                             }
 
                             InstanceId demoteNode = message.getPayload();
                             // TODO  Could perhaps be done better?
                             context.nodeFailed( demoteNode );
-                            if ( context.getClusterContext().isInCluster() )
+                            if ( context.isInCluster() )
                             {
                                 // Only the first alive server should try elections. Everyone else waits
-                                List<InstanceId> aliveInstances = Iterables.toList(
-                                        context.getHeartbeatContext().getAlive() );
+                                List<InstanceId> aliveInstances = Iterables.toList(context.getAlive());
                                 Collections.sort( aliveInstances );
-                                logger.debug( "Found and ordered alive instances as " + aliveInstances );
-                                boolean isElector = aliveInstances.indexOf( context.getClusterContext().getMyId() ) == 0;
+                                boolean isElector = aliveInstances.indexOf( context.getMyId() ) == 0;
 
                                 if ( isElector )
                                 {
-                                    logger.debug( "I (" + context.getClusterContext().getMyId() + ") am the elector, " +
+                                    logger.debug( "I (" + context.getMyId() + ") am the elector, " +
                                             "executing the election" );
                                     // Start election process for all roles that are currently unassigned
                                     Iterable<String> rolesRequiringElection = context.getRolesRequiringElection();
@@ -118,19 +118,17 @@ public enum ElectionState
                                             context.startDemotionProcess( role, demoteNode );
 
                                             // Allow other live nodes to vote which one should take over
-                                            for ( Map.Entry<InstanceId, URI> server : context.getClusterContext().getConfiguration().getMembers().entrySet() )
+                                            for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
                                             {
-                                                if ( !context.getHeartbeatContext().getFailed().contains( server.getKey() ) )
+                                                if ( !context.getFailed().contains( server.getKey() ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
                                                     outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
                                                 }
                                             }
-                                            context.getClusterContext()
-                                                    .timeouts
-                                                    .setTimeout( "election-" + role,
-                                                            Message.timeout( ElectionMessage.electionTimeout, message,
-                                                                    new ElectionTimeoutData( role, message ) ) );
+                                            context.setTimeout( "election-" + role,
+                                                    Message.timeout( ElectionMessage.electionTimeout, message,
+                                                            new ElectionTimeoutData( role, message ) ) );
                                         }
                                         else
                                         {
@@ -162,7 +160,7 @@ public enum ElectionState
                                         String roleName = role.getName();
                                         if ( !context.isElectionProcessInProgress( roleName ) )
                                         {
-                                            context.getLogger().debug(
+                                            context.getLogger(ElectionState.class).debug(
                                                     "Starting election process for role " + roleName );
 
                                             context.startElectionProcess( roleName );
@@ -215,8 +213,7 @@ public enum ElectionState
                                     List<InstanceId> aliveInstances = Iterables.toList( context.getAlive() );
                                     Collections.sort( aliveInstances );
                                     outgoing.offer( message.setHeader( Message.TO,
-                                            context.getClusterContext().getConfiguration().getUriForId(
-                                                    Iterables.first( aliveInstances ) ).toString() ) );
+                                            context.getUriForId( first( aliveInstances ) ).toString() ) );
                                 }
                             }
                             break;
@@ -228,7 +225,7 @@ public enum ElectionState
                             InstanceId promoteNode = (InstanceId) args[0];
                             String role = (String) args[1];
 
-                            if ( context.getClusterContext().isInCluster() )
+                            if ( context.isInCluster() )
                             {
                                 // Start election process for coordinator role
                                 if ( !context.isElectionProcessInProgress( role ) )
@@ -236,17 +233,15 @@ public enum ElectionState
                                     context.startPromotionProcess( role, promoteNode );
 
                                     // Allow other live nodes to vote which one should take over
-                                    for ( Map.Entry<InstanceId, URI> server : context.getClusterContext().getConfiguration().getMembers().entrySet() )
+                                    for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
                                     {
-                                        if ( !context.getHeartbeatContext().getFailed().contains( server.getKey() ) )
+                                        if ( !context.getFailed().contains( server.getKey() ) )
                                         {
                                             // This is a candidate - allow it to vote itself for promotion
                                             outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
                                         }
                                     }
-                                    context.getClusterContext()
-                                            .timeouts
-                                            .setTimeout( "election-" + role, Message.timeout( ElectionMessage
+                                    context.setTimeout( "election-" + role, Message.timeout( ElectionMessage
                                                     .electionTimeout, message, new ElectionTimeoutData( role, message ) ) );
                                 }
                             }
@@ -257,7 +252,7 @@ public enum ElectionState
                         {
                             String role = message.getPayload();
                             outgoing.offer( Message.respond( ElectionMessage.voted, message,
-                                    new ElectionMessage.VotedData( role, context.getClusterContext().getMyId(),
+                                    new ElectionMessage.VotedData( role, context.getMyId(),
                                             context.getCredentialsForRole( role ) ) ) );
                             break;
                         }
@@ -273,7 +268,7 @@ public enum ElectionState
                              * request less than needed (i.e. ask the master last) since, well, it doesn't exist. So
                              * the immediate effect is that the else (which checks for null) will never be called.
                              */
-                            InstanceId currentElected = context.getClusterContext().getConfiguration().getElected( data.getRole() );
+                            InstanceId currentElected = context.getElected( data.getRole() );
 
                             if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() )
                             {
@@ -306,14 +301,14 @@ public enum ElectionState
                                                 configurationChangeState ) );
                                     }
                                 }
-                                context.getClusterContext().timeouts.cancelTimeout( "election-" + data.getRole() );
+                                context.cancelTimeout( "election-" + data.getRole() );
                             }
                             else if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() - 1 &&
                                     currentElected != null && !context.hasCurrentlyElectedVoted(data.getRole(), currentElected))
                             {
                                 // Missing one vote, the one from the current role holder
                                 outgoing.offer( Message.to( ElectionMessage.vote,
-                                        context.getClusterContext().getConfiguration().getUriForId( currentElected ),
+                                        context.getUriForId( currentElected ),
                                         data.getRole() ) );
                             }
                             break;

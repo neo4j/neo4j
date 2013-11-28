@@ -19,92 +19,1328 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.limit;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.ConfigurationContext;
+import org.neo4j.cluster.protocol.LoggingContext;
+import org.neo4j.cluster.protocol.TimeoutsContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
+import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.election.ElectionContext;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
+import org.neo4j.cluster.protocol.election.ElectionRole;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
- * Context shared by all Paxos state machines.
+ * Context that implements all the context interfaces used by the Paxos state machines.
+ * <p/>
+ * The design here is that all shared external services and stae is in the class itself,
+ * whereas any state specific for any particular context is in the individual context implementations.
  */
 public class MultiPaxosContext
 {
-    ClusterContext clusterContext;
-    ProposerContext proposerContext;
-    LearnerContext learnerContext;
-    HeartbeatContext heartbeatContext;
-    Timeouts timeouts;
+    // Shared state - all context specific state is in the inner classes
+    final private AcceptorInstanceStore instanceStore;
+    final private Timeouts timeouts;
+    final private Executor executor;
+    final private Logging logging;
 
-    PaxosInstanceStore paxosInstances = new PaxosInstanceStore();
+    private PaxosInstanceStore paxosInstances = new PaxosInstanceStore();
+    final private org.neo4j.cluster.InstanceId me;
+    private ClusterConfiguration configuration;
+    private URI boundAt;
+    private long lastKnownLearnedInstanceInCluster = -1;
+    private ObjectInputStreamFactory objectInputStreamFactory;
+    private ObjectOutputStreamFactory objectOutputStreamFactory;
+    private long nextInstanceId = 0;
 
-    public MultiPaxosContext( ClusterContext clusterContext,
-                              ProposerContext proposerContext,
-                              LearnerContext learnerContext,
-                              HeartbeatContext heartbeatContext,
+    private final ClusterContext clusterContext;
+    private final ProposerContext proposerContext;
+    private final AcceptorContext acceptorContext;
+    private final LearnerContext learnerContext;
+    private final HeartbeatContext heartbeatContext;
+    private final ElectionContextImpl electionContext;
+    private final AtomicBroadcastContextImpl atomicBroadcastContext;
+
+    public MultiPaxosContext( org.neo4j.cluster.InstanceId me,
+                              Iterable<ElectionRole> roles,
+                              ClusterConfiguration configuration,
+                              Executor executor,
+                              Logging logging,
+                              ObjectInputStreamFactory objectInputStreamFactory,
+                              ObjectOutputStreamFactory objectOutputStreamFactory,
+                              AcceptorInstanceStore instanceStore,
                               Timeouts timeouts
     )
     {
-        this.clusterContext = clusterContext;
-        this.proposerContext = proposerContext;
-        this.learnerContext = learnerContext;
-        this.heartbeatContext = heartbeatContext;
+        this.me = me;
+        this.configuration = configuration;
+        this.executor = executor;
+        this.logging = logging;
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
+        this.instanceStore = instanceStore;
         this.timeouts = timeouts;
+
+        clusterContext = new ClusterContextImpl();
+        proposerContext = new ProposerContextImpl();
+        acceptorContext = new AcceptorContextImpl();
+        learnerContext = new LearnerContextImpl();
+        heartbeatContext = new HeartbeatContextImpl();
+        electionContext = new ElectionContextImpl( roles );
+        atomicBroadcastContext = new AtomicBroadcastContextImpl();
     }
 
-    public int getServerId()
+    public ClusterContext getClusterContext()
     {
-       return clusterContext.getMyId().toIntegerIndex();
+        return clusterContext;
     }
 
-    public List<URI> getAcceptors()
+    public ProposerContext getProposerContext()
     {
-        // Only use 2f+1 acceptors
-        return toList( limit( clusterContext.getConfiguration()
-                .getAllowedFailures() * 2 + 1, clusterContext.getConfiguration().getMemberURIs() ) );
+        return proposerContext;
     }
 
-    public Iterable<URI> getLearners()
+    public AcceptorContext getAcceptorContext()
     {
-        return clusterContext.getConfiguration().getMemberURIs();
+        return acceptorContext;
     }
 
-    public Map<org.neo4j.cluster.InstanceId, URI> getMembers()
+    public LearnerContext getLearnerContext()
     {
-        return clusterContext.getConfiguration().getMembers();
+        return learnerContext;
     }
 
-    public PaxosInstanceStore getPaxosInstances()
+    public HeartbeatContext getHeartbeatContext()
     {
-        return paxosInstances;
+        return heartbeatContext;
     }
 
-    public ObjectInputStreamFactory getLenientObjectInputStreamFactory() {
-        return clusterContext.getObjectInputStreamFactory();
-    }
-
-    public ObjectOutputStreamFactory getLenientObjectOutputStreamFactory() {
-        return clusterContext.getObjectOutputStreamFactory();
-    }
-
-
-    public int getMinimumQuorumSize( List<URI> acceptors )
+    public ElectionContext getElectionContext()
     {
-        // n >= 2f+1
-        if ( acceptors.size() >= 2 * clusterContext.getConfiguration().getAllowedFailures() + 1 )
+        return electionContext;
+    }
+
+    public AtomicBroadcastContextImpl getAtomicBroadcastContext()
+    {
+        return atomicBroadcastContext;
+    }
+
+    private class AbstractContextImpl
+            implements TimeoutsContext, LoggingContext, ConfigurationContext
+    {
+        @Override
+        public StringLogger getLogger( Class loggingClass )
         {
-            return acceptors.size() - clusterContext.getConfiguration().getAllowedFailures();
+            return logging.getMessagesLog( loggingClass );
         }
-        else
+
+        // TimeoutsContext
+        @Override
+        public void setTimeout( Object key, Message<? extends MessageType> timeoutMessage )
         {
-            return acceptors.size();
+            timeouts.setTimeout( key, timeoutMessage );
         }
+
+        @Override
+        public void cancelTimeout( Object key )
+        {
+            timeouts.cancelTimeout( key );
+        }
+
+        // ConfigurationContext
+        @Override
+        public List<URI> getMemberURIs()
+        {
+            return Iterables.toList( configuration.getMemberURIs() );
+        }
+
+        public org.neo4j.cluster.InstanceId getMyId()
+        {
+            return me;
+        }
+
+        public URI boundAt()
+        {
+            return boundAt;
+        }
+
+        public List<URI> getAcceptors()
+        {
+            // Only use 2f+1 acceptors
+            return toList( limit( configuration
+                    .getAllowedFailures() * 2 + 1, configuration.getMemberURIs() ) );
+        }
+
+        public Map<org.neo4j.cluster.InstanceId, URI> getMembers()
+        {
+            return configuration.getMembers();
+        }
+
+        public org.neo4j.cluster.InstanceId getCoordinator()
+        {
+            return configuration.getElected( ClusterConfiguration.COORDINATOR );
+        }
+
+        @Override
+        public URI getUriForId(org.neo4j.cluster.InstanceId node )
+        {
+            return configuration.getUriForId( node );
+        }
+
+        @Override
+        public org.neo4j.cluster.InstanceId getIdForUri( URI uri )
+        {
+            return configuration.getIdForUri( uri );
+        }
+
+        public synchronized boolean isMe( org.neo4j.cluster.InstanceId server )
+        {
+            return me.equals( server );
+        }
+    }
+
+    private class AtomicBroadcastContextImpl
+        extends AbstractContextImpl
+        implements AtomicBroadcastContext
+    {
+        private Iterable<AtomicBroadcastListener> listeners = Listeners.newListeners();
+
+        public void addAtomicBroadcastListener( AtomicBroadcastListener listener )
+        {
+            listeners = Listeners.addListener( listener, listeners );
+        }
+
+        public void removeAtomicBroadcastListener( AtomicBroadcastListener listener )
+        {
+            listeners = Listeners.removeListener( listener, listeners );
+        }
+
+        public void receive( final Payload value )
+        {
+            Listeners.notifyListeners( listeners, executor, new Listeners.Notification<AtomicBroadcastListener>()
+            {
+                @Override
+                public void notify( final AtomicBroadcastListener listener )
+                {
+                    listener.receive( value );
+                }
+            } );
+        }
+    }
+
+
+    private class ProposerContextImpl
+            extends AbstractContextImpl
+            implements ProposerContext
+    {
+        public final int MAX_CONCURRENT_INSTANCES = 10;
+
+        // ProposerContext
+        final Deque<Message> pendingValues = new LinkedList<Message>();
+        final Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
+
+        public InstanceId newInstanceId()
+        {
+            // Never propose something lower than last received instance id
+            if ( lastKnownLearnedInstanceInCluster >= nextInstanceId )
+            {
+                nextInstanceId = lastKnownLearnedInstanceInCluster + 1;
+            }
+
+            return new InstanceId( nextInstanceId++ );
+        }
+
+        public void leave()
+        {
+            pendingValues.clear();
+            bookedInstances.clear();
+            nextInstanceId = 0;
+
+            paxosInstances.leave();
+        }
+
+        @Override
+        public void bookInstance( InstanceId instanceId, Message message )
+        {
+            bookedInstances.put( instanceId, message );
+        }
+
+        @Override
+        public PaxosInstance getPaxosInstance( InstanceId instanceId )
+        {
+            return paxosInstances.getPaxosInstance( instanceId );
+        }
+
+        @Override
+        public void pendingValue( Message message )
+        {
+            pendingValues.offerFirst( message );
+        }
+
+        @Override
+        public boolean hasPendingValues()
+        {
+            return !pendingValues.isEmpty();
+        }
+
+        @Override
+        public Message popPendingValue()
+        {
+            return pendingValues.remove();
+        }
+
+        @Override
+        public boolean canBookInstance()
+        {
+            return bookedInstances.size() < MAX_CONCURRENT_INSTANCES;
+        }
+
+        @Override
+        public Message getBookedInstance( InstanceId id )
+        {
+            return bookedInstances.get( id );
+        }
+
+        @Override
+        public Message<ProposerMessage> unbookInstance( InstanceId id )
+        {
+            return bookedInstances.remove( id );
+        }
+
+        @Override
+        public int nrOfBookedInstances()
+        {
+            return bookedInstances.size();
+        }
+
+        public int getMinimumQuorumSize( List<URI> acceptors )
+        {
+            // n >= 2f+1
+            if ( acceptors.size() >= 2 * configuration.getAllowedFailures() + 1 )
+            {
+                return acceptors.size() - configuration.getAllowedFailures();
+            }
+            else
+            {
+                return acceptors.size();
+            }
+        }
+
+        /**
+         * This patches the booked instances that are pending in case the configuration of the cluster changes. This
+         * should be called only when we learn a ConfigurationChangeState i.e. when we receive an accepted for
+         * such a message. This won't "learn" the message, as in applying it on the cluster configuration, but will
+         * just update properly the set of acceptors for pending instances.
+         */
+        public void patchBookedInstances( ClusterMessage.ConfigurationChangeState value )
+        {
+            if ( value.getJoin() != null )
+            {
+                for ( InstanceId instanceId : bookedInstances.keySet() )
+                {
+                    PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
+                    if ( instance.getAcceptors() != null )
+                    {
+                        instance.getAcceptors().remove( configuration.getMembers().get( value.getJoin() ) );
+
+                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance + " removed gone " +
+                                "member "
+                                + configuration.getMembers().get( value.getJoin() ) + " added joining member " +
+                                value.getJoinUri() );
+
+                        if ( !instance.getAcceptors().contains( value.getJoinUri() ) )
+                        {
+                            instance.getAcceptors().add( value.getJoinUri() );
+                        }
+                    }
+                }
+            }
+            else if ( value.getLeave() != null )
+            {
+                for ( InstanceId instanceId : bookedInstances.keySet() )
+                {
+                    PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
+                    if ( instance.getAcceptors() != null )
+                    {
+                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance + " removed " +
+                                "leaving member "
+                                + value.getLeave() + " (at URI " + configuration.getMembers().get( value.getLeave() )
+                                + ")" );
+                        instance.getAcceptors().remove( configuration.getMembers().get( value.getLeave() ) );
+                    }
+                }
+            }
+        }
+    }
+
+    private class ClusterContextImpl
+            extends AbstractContextImpl
+            implements ClusterContext
+    {
+        // ClusterContext
+        Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
+        private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
+                .ConfigurationRequestState>();
+        private String joiningClusterName;
+        private Iterable<URI> joiningInstances;
+        private boolean joinDenied;
+        private Set<org.neo4j.cluster.InstanceId> currentlyJoiningInstances = new HashSet<org.neo4j.cluster
+                .InstanceId>();
+
+
+        // Cluster API
+        public void addClusterListener( ClusterListener listener )
+        {
+            clusterListeners = Listeners.addListener( listener, clusterListeners );
+        }
+
+        public void removeClusterListener( ClusterListener listener )
+        {
+            clusterListeners = Listeners.removeListener( listener, clusterListeners );
+        }
+
+        // Implementation
+        public void created( String name )
+        {
+            configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
+                    Collections.singleton( boundAt ) );
+            joined();
+        }
+
+        public void joining( String name, Iterable<URI> instanceList )
+        {
+            joiningClusterName = name;
+            joiningInstances = instanceList;
+            discoveredInstances.clear();
+            joinDenied = false;
+        }
+
+        public void acquiredConfiguration( final Map<org.neo4j.cluster.InstanceId, URI> memberList, final Map<String,
+                org.neo4j.cluster.InstanceId> roles )
+        {
+            configuration.setMembers( memberList );
+            configuration.setRoles( roles );
+        }
+
+        public void joined()
+        {
+            configuration.joined( me, boundAt );
+            Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
+            {
+                @Override
+                public void notify( ClusterListener listener )
+                {
+                    listener.enteredCluster( configuration );
+                }
+            } );
+        }
+
+        public void left()
+        {
+            timeouts.cancelAllTimeouts();
+            configuration.left();
+            Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
+            {
+                @Override
+                public void notify( ClusterListener listener )
+                {
+                    listener.leftCluster();
+                }
+            } );
+        }
+
+        public void joined( final org.neo4j.cluster.InstanceId instanceId, final URI atURI )
+        {
+            configuration.joined( instanceId, atURI );
+
+            if ( configuration.getMembers().containsKey( me ) )
+            {
+                // Make sure this node is in cluster before notifying of others joining and leaving
+                Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
+                {
+                    @Override
+                    public void notify( ClusterListener listener )
+                    {
+                        listener.joinedCluster( instanceId, atURI );
+                    }
+                } );
+            }
+            else
+            {
+                // This typically happens in situations when several nodes join at once, and the ordering
+                // of join messages is a little out of whack.
+            }
+
+            currentlyJoiningInstances.remove( instanceId );
+        }
+
+        public void left( final org.neo4j.cluster.InstanceId node )
+        {
+            configuration.left( node );
+            Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
+            {
+                @Override
+                public void notify( ClusterListener listener )
+                {
+                    listener.leftCluster( node );
+                }
+            } );
+        }
+
+        public void elected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
+        {
+            configuration.elected( roleName, instanceId );
+            Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
+            {
+                @Override
+                public void notify( ClusterListener listener )
+                {
+                    listener.elected( roleName, instanceId, configuration.getUriForId( instanceId ) );
+                }
+            } );
+        }
+
+        public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
+        {
+            configuration.unelected( roleName );
+            Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
+            {
+                @Override
+                public void notify( ClusterListener listener )
+                {
+                    listener.unelected( roleName, instanceId, configuration.getUriForId( instanceId ) );
+                }
+            } );
+        }
+
+        public ClusterConfiguration getConfiguration()
+        {
+            return configuration;
+        }
+
+        public boolean isElectedAs( String roleName )
+        {
+            return me.equals( configuration.getElected( roleName ) );
+        }
+
+        public boolean isInCluster()
+        {
+            return Iterables.count( configuration.getMemberURIs() ) != 0;
+        }
+
+        public Iterable<URI> getJoiningInstances()
+        {
+            return joiningInstances;
+        }
+
+        public ObjectOutputStreamFactory getObjectOutputStreamFactory()
+        {
+            return objectOutputStreamFactory;
+        }
+
+        public ObjectInputStreamFactory getObjectInputStreamFactory()
+        {
+            return objectInputStreamFactory;
+        }
+
+        public List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances()
+        {
+            return discoveredInstances;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Me: " + me + " Bound at: " + boundAt + " Config:" + configuration;
+        }
+
+        public void setBoundAt( URI boundAt )
+        {
+            MultiPaxosContext.this.boundAt = boundAt;
+        }
+
+        public void joinDenied()
+        {
+            this.joinDenied = true;
+        }
+
+        public boolean hasJoinBeenDenied()
+        {
+            return joinDenied;
+        }
+
+        public Iterable<org.neo4j.cluster.InstanceId> getOtherInstances()
+        {
+            return filter( not( in( me ) ), configuration.getMemberIds() );
+        }
+
+        public boolean isInstanceWithIdCurrentlyJoining( org.neo4j.cluster.InstanceId joiningId )
+        {
+            return currentlyJoiningInstances.contains( joiningId );
+        }
+
+        public void instanceIsJoining( org.neo4j.cluster.InstanceId joiningId )
+        {
+            currentlyJoiningInstances.add( joiningId );
+        }
+
+        public String myName()
+        {
+            String name = parameter( "name" ).apply( boundAt );
+            if ( name != null )
+            {
+                return name;
+            }
+            else
+            {
+                return me.toString();
+            }
+        }
+
+        @Override
+        public void discoveredLastReceivedInstanceId( long id )
+        {
+            learnerContext.setLastDeliveredInstanceId( id );
+            learnerContext.learnedInstanceId( id );
+            learnerContext.setNextInstanceId( id + 1);
+        }
+
+        @Override
+        public boolean isCurrentlyAlive( org.neo4j.cluster.InstanceId joiningId )
+        {
+            return !heartbeatContext.getFailed().contains( joiningId );
+        }
+
+        @Override
+        public long getLastDeliveredInstanceId()
+        {
+            return learnerContext.getLastDeliveredInstanceId();
+        }
+    }
+
+    private class AcceptorContextImpl
+            extends AbstractContextImpl
+            implements AcceptorContext
+    {
+        public AcceptorInstance getAcceptorInstance( InstanceId instanceId )
+        {
+            return instanceStore.getAcceptorInstance( instanceId );
+        }
+
+        public void promise( AcceptorInstance instance, long ballot )
+        {
+            instanceStore.promise( instance, ballot );
+        }
+
+        public void accept( AcceptorInstance instance, Object value )
+        {
+            instanceStore.accept( instance, value );
+        }
+
+        public void leave()
+        {
+            instanceStore.clear();
+        }
+    }
+
+    private class LearnerContextImpl
+            extends AbstractContextImpl
+            implements LearnerContext
+    {
+        // LearnerContext
+        private long lastDeliveredInstanceId = -1;
+        private long lastLearnedInstanceId = -1;
+
+        public long getLastDeliveredInstanceId()
+        {
+            return lastDeliveredInstanceId;
+        }
+
+        public void setLastDeliveredInstanceId( long lastDeliveredInstanceId )
+        {
+            this.lastDeliveredInstanceId = lastDeliveredInstanceId;
+            instanceStore.lastDelivered( new InstanceId( lastDeliveredInstanceId ) );
+        }
+
+        public long getLastLearnedInstanceId()
+        {
+            return lastLearnedInstanceId;
+        }
+
+        public long getLastKnownLearnedInstanceInCluster()
+        {
+            return lastKnownLearnedInstanceInCluster;
+        }
+
+        public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster )
+        {
+            MultiPaxosContext.this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
+        }
+
+        public void learnedInstanceId( long instanceId )
+        {
+            this.lastLearnedInstanceId = Math.max( lastLearnedInstanceId, instanceId );
+            if ( lastLearnedInstanceId > lastKnownLearnedInstanceInCluster )
+            {
+                lastKnownLearnedInstanceInCluster = lastLearnedInstanceId;
+            }
+        }
+
+        public boolean hasDeliveredAllKnownInstances()
+        {
+            return lastDeliveredInstanceId == lastKnownLearnedInstanceInCluster;
+        }
+
+        public void leave()
+        {
+            lastDeliveredInstanceId = -1;
+            lastLearnedInstanceId = -1;
+            lastKnownLearnedInstanceInCluster = -1;
+        }
+
+        @Override
+        public PaxosInstance getPaxosInstance( InstanceId instanceId )
+        {
+            return paxosInstances.getPaxosInstance( instanceId );
+        }
+
+        @Override
+        public AtomicBroadcastSerializer newSerializer()
+        {
+            return new AtomicBroadcastSerializer( objectInputStreamFactory, objectOutputStreamFactory );
+        }
+
+        @Override
+        public Iterable<org.neo4j.cluster.InstanceId> getAlive()
+        {
+            return heartbeatContext.getAlive();
+        }
+
+        @Override
+        public void setNextInstanceId( long id )
+        {
+            nextInstanceId = id;
+        }
+    }
+
+    private class HeartbeatContextImpl
+        extends AbstractContextImpl
+        implements HeartbeatContext
+    {
+        // HeartbeatContext
+        Set<org.neo4j.cluster.InstanceId> failed = new HashSet<org.neo4j.cluster.InstanceId>();
+
+        Map<org.neo4j.cluster.InstanceId, Set<org.neo4j.cluster.InstanceId>> nodeSuspicions = new HashMap<org.neo4j
+                .cluster.InstanceId, Set<org.neo4j.cluster.InstanceId>>();
+
+        Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
+
+        public void started()
+        {
+            failed.clear();
+        }
+
+        /**
+         * @return True iff the node was suspected
+         */
+        public boolean alive( final org.neo4j.cluster.InstanceId node )
+        {
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+            boolean suspected = serverSuspicions.remove( node );
+
+            if ( !isFailed( node ) && failed.remove( node ) )
+            {
+                getLogger( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is alive" );
+                Listeners.notifyListeners( heartBeatListeners, new Listeners.Notification<HeartbeatListener>()
+                {
+                    @Override
+                    public void notify( HeartbeatListener listener )
+                    {
+                        listener.alive( node );
+                    }
+                } );
+            }
+
+            return suspected;
+        }
+
+        public void suspect( final org.neo4j.cluster.InstanceId node )
+        {
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+
+            if ( !serverSuspicions.contains( node ) )
+            {
+                serverSuspicions.add( node );
+
+                getLogger( HeartbeatContext.class ).info( getMyId() + "(me) is now suspecting " + node );
+            }
+
+            if ( isFailed( node ) && !failed.contains( node ) )
+            {
+                getLogger( HeartbeatContext.class ).info( "Notifying listeners that instance " + node + " is failed" );
+                failed.add( node );
+                Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
+                {
+                    @Override
+                    public void notify( HeartbeatListener listener )
+                    {
+                        listener.failed( node );
+                    }
+                } );
+            }
+        }
+
+        public void suspicions( org.neo4j.cluster.InstanceId from, Set<org.neo4j.cluster.InstanceId> suspicions )
+        {
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( from );
+
+            // Check removals
+            Iterator<org.neo4j.cluster.InstanceId> suspicionsIterator = serverSuspicions.iterator();
+            while ( suspicionsIterator.hasNext() )
+            {
+                org.neo4j.cluster.InstanceId currentSuspicion = suspicionsIterator.next();
+                if ( !suspicions.contains( currentSuspicion ) )
+                {
+                    getLogger( HeartbeatContext.class ).info( from + " is no longer suspecting " + currentSuspicion );
+                    suspicionsIterator.remove();
+                }
+            }
+
+            // Check additions
+            for ( org.neo4j.cluster.InstanceId suspicion : suspicions )
+            {
+                if ( !serverSuspicions.contains( suspicion ) )
+                {
+                    getLogger( HeartbeatContext.class ).info( from + " is now suspecting " + suspicion );
+                    serverSuspicions.add( suspicion );
+                }
+            }
+
+            // Check if anyone is considered failed
+            for ( final org.neo4j.cluster.InstanceId node : suspicions )
+            {
+                if ( isFailed( node ) && !failed.contains( node ) )
+                {
+                    failed.add( node );
+                    Listeners.notifyListeners( heartBeatListeners, executor, new Listeners.Notification<HeartbeatListener>()
+                    {
+                        @Override
+                        public void notify( HeartbeatListener listener )
+                        {
+                            listener.failed( node );
+                        }
+                    } );
+                }
+            }
+        }
+
+        public Set<org.neo4j.cluster.InstanceId> getFailed()
+        {
+            return failed;
+        }
+
+        public Iterable<org.neo4j.cluster.InstanceId> getAlive()
+        {
+            return Iterables.filter( new Predicate<org.neo4j.cluster.InstanceId>()
+            {
+                @Override
+                public boolean accept( org.neo4j.cluster.InstanceId item )
+                {
+                    return !isFailed( item );
+                }
+            }, configuration.getMemberIds() );
+        }
+
+        public void addHeartbeatListener( HeartbeatListener listener )
+        {
+            heartBeatListeners = Listeners.addListener( listener, heartBeatListeners );
+        }
+
+        public void removeHeartbeatListener( HeartbeatListener listener )
+        {
+            heartBeatListeners = Listeners.removeListener( listener, heartBeatListeners );
+        }
+
+        public void serverLeftCluster( org.neo4j.cluster.InstanceId node )
+        {
+            failed.remove( node );
+            for ( Set<org.neo4j.cluster.InstanceId> uris : nodeSuspicions.values() )
+            {
+                uris.remove( node );
+            }
+        }
+
+        public boolean isFailed( org.neo4j.cluster.InstanceId node )
+        {
+            List<org.neo4j.cluster.InstanceId> suspicions = getSuspicionsOf( node );
+
+            /*
+             * This looks weird but trust me, there is a reason for it.
+             * See below in the test, where we subtract the failed size() from the total cluster size? If the instance
+             * under question is already in the failed set then that's it, as expected. But if it is not in the failed set
+             * then we must not take it's opinion under consideration (which we implicitly don't for every member of the
+             * failed set). That's what the adjust represents - the node's opinion on whether it is alive or not. Run a
+             * 3 cluster simulation in your head with 2 instances failed and one coming back online and you'll see why.
+             */
+            int adjust = failed.contains( node ) ? 0 : 1;
+
+            // If more than half suspect this node, fail it
+            return suspicions.size() >
+                    (configuration.getMembers().size() - failed.size() - adjust) / 2;
+        }
+
+        public List<org.neo4j.cluster.InstanceId> getSuspicionsOf( org.neo4j.cluster.InstanceId server )
+        {
+            List<org.neo4j.cluster.InstanceId> suspicions = new ArrayList<org.neo4j.cluster.InstanceId>();
+            for ( org.neo4j.cluster.InstanceId member : configuration.getMemberIds() )
+            {
+                Set<org.neo4j.cluster.InstanceId> memberSuspicions = nodeSuspicions.get( member );
+                if ( memberSuspicions != null && !failed.contains( member )
+                        && memberSuspicions.contains( server ) )
+                {
+                    suspicions.add( member );
+                }
+            }
+
+            return suspicions;
+        }
+
+        public Set<org.neo4j.cluster.InstanceId> getSuspicionsFor( org.neo4j.cluster.InstanceId uri )
+        {
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = nodeSuspicions.get( uri );
+            if ( serverSuspicions == null )
+            {
+                serverSuspicions = new HashSet<org.neo4j.cluster.InstanceId>();
+                nodeSuspicions.put( uri, serverSuspicions );
+            }
+            return serverSuspicions;
+        }
+
+        @Override
+        public Iterable<org.neo4j.cluster.InstanceId> getOtherInstances()
+        {
+            return clusterContext.getOtherInstances();
+        }
+
+        @Override
+        public long getLastKnownLearnedInstanceInCluster()
+        {
+            return learnerContext.getLastKnownLearnedInstanceInCluster();
+        }
+
+        @Override
+        public long getLastLearnedInstanceId()
+        {
+            return learnerContext.getLastLearnedInstanceId();
+        }
+    }
+
+    private class ElectionContextImpl
+        extends AbstractContextImpl
+        implements ElectionContext
+    {
+        private final List<ElectionRole> roles = new ArrayList<ElectionRole>();
+
+        private final Map<String, Election> elections = new HashMap<String, Election>();
+        private ElectionCredentialsProvider electionCredentialsProvider;
+
+        public ElectionContextImpl( Iterable<ElectionRole> roles )
+        {
+            Iterables.addAll( this.roles, roles );
+        }
+
+        public void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider )
+        {
+            this.electionCredentialsProvider = electionCredentialsProvider;
+        }
+
+        public void created()
+        {
+            for ( ElectionRole role : roles )
+            {
+                // Elect myself for all roles
+                clusterContext.elected( role.getName(), clusterContext.getMyId() );
+            }
+        }
+
+        public List<ElectionRole> getPossibleRoles()
+        {
+            return roles;
+        }
+
+        /*
+         * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
+         * message for a node, since it is the way to ensure that election will happen for each role that node had
+         */
+        public void nodeFailed( org.neo4j.cluster.InstanceId node )
+        {
+            Iterable<String> rolesToDemote = getRoles( node );
+            for ( String role : rolesToDemote )
+            {
+                clusterContext.getConfiguration().removeElected( role );
+            }
+        }
+
+        public Iterable<String> getRoles( org.neo4j.cluster.InstanceId server )
+        {
+            return clusterContext.getConfiguration().getRolesOf( server );
+        }
+
+        public ClusterContext getClusterContext()
+        {
+            return clusterContext;
+        }
+
+        public HeartbeatContext getHeartbeatContext()
+        {
+            return heartbeatContext;
+        }
+
+        public void unelect( String roleName )
+        {
+            clusterContext.getConfiguration().removeElected( roleName );
+        }
+
+        public boolean isElectionProcessInProgress( String role )
+        {
+            return elections.containsKey( role );
+        }
+
+        public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
+        {
+            elections.put( role, new Election( new WinnerStrategy()
+            {
+                @Override
+                public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
+                {
+
+                    // Remove blank votes
+                    List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                    {
+                        @Override
+                        public boolean accept( Vote item )
+                        {
+                            return !( item.getCredentials() instanceof NotElectableElectionCredentials);
+                        }
+                    }, voteList ) );
+
+                    // Sort based on credentials
+                    // The most suited candidate should come out on top
+                    Collections.sort( filteredVoteList );
+                    Collections.reverse( filteredVoteList );
+
+                    for ( Vote vote : filteredVoteList )
+                    {
+                        // Don't elect as winner the node we are trying to demote
+                        if ( !vote.getSuggestedNode().equals( demoteNode ) )
+                        {
+                            return vote.getSuggestedNode();
+                        }
+                    }
+
+                    // No possible winner
+                    return null;
+                }
+            } ) );
+        }
+
+        public void startElectionProcess( String role )
+        {
+            clusterContext.getLogger( getClass() ).info( "Doing elections for role " + role );
+            elections.put( role, new Election( new WinnerStrategy()
+            {
+                @Override
+                public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
+                {
+                    // Remove blank votes
+                    List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                    {
+                        @Override
+                        public boolean accept( Vote item )
+                        {
+                            return !( item.getCredentials() instanceof NotElectableElectionCredentials );
+                        }
+                    }, voteList ) );
+
+                    // Sort based on credentials
+                    // The most suited candidate should come out on top
+                    Collections.sort( filteredVoteList );
+                    Collections.reverse( filteredVoteList );
+
+                    clusterContext.getLogger( getClass() ).debug( "Elections ended up with list " + filteredVoteList );
+
+                    for ( Vote vote : filteredVoteList )
+                    {
+                        return vote.getSuggestedNode();
+                    }
+
+                    // No possible winner
+                    return null;
+                }
+            } ) );
+        }
+
+        public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
+        {
+            elections.put( role, new Election( new WinnerStrategy()
+            {
+                @Override
+                public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
+                {
+
+                    // Remove blank votes
+                    List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                    {
+                        @Override
+                        public boolean accept( Vote item )
+                        {
+                            return !( item.getCredentials() instanceof NotElectableElectionCredentials);
+                        }
+                    }, voteList ) );
+
+                    // Sort based on credentials
+                    // The most suited candidate should come out on top
+                    Collections.sort( filteredVoteList );
+                    Collections.reverse( filteredVoteList );
+
+                    for ( Vote vote : filteredVoteList )
+                    {
+                        // Don't elect as winner the node we are trying to demote
+                        if ( !vote.getSuggestedNode().equals( promoteNode ) )
+                        {
+                            return vote.getSuggestedNode();
+                        }
+                    }
+
+                    // No possible winner
+                    return null;
+                }
+            } ) );
+        }
+
+        public void voted( String role, org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> suggestionCredentials )
+        {
+            if ( isElectionProcessInProgress( role ) )
+            {
+                Map<org.neo4j.cluster.InstanceId, Vote> votes = elections.get( role ).getVotes();
+                votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
+            }
+        }
+
+        public org.neo4j.cluster.InstanceId getElectionWinner( String role )
+        {
+            Election election = elections.get( role );
+            if ( election == null || election.getVotes().size() != getNeededVoteCount() )
+            {
+                return null;
+            }
+
+            elections.remove( role );
+
+            return election.pickWinner();
+        }
+
+        public Comparable<Object> getCredentialsForRole( String role )
+        {
+            return electionCredentialsProvider.getCredentials( role );
+        }
+
+        public int getVoteCount( String role )
+        {
+            Election election = elections.get( role );
+            if ( election != null )
+            {
+                Map<org.neo4j.cluster.InstanceId, Vote> voteList = election.getVotes();
+                if ( voteList == null )
+                {
+                    return 0;
+                }
+
+                return voteList.size();
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public int getNeededVoteCount()
+        {
+            return clusterContext.getConfiguration().getMembers().size() - heartbeatContext.getFailed().size();
+        }
+
+        public void cancelElection( String role )
+        {
+            elections.remove( role );
+        }
+
+        public Iterable<String> getRolesRequiringElection()
+        {
+            return filter( new Predicate<String>() // Only include roles that are not elected
+            {
+                @Override
+                public boolean accept( String role )
+                {
+                    return clusterContext.getConfiguration().getElected( role ) == null;
+                }
+            }, map( new Function<ElectionRole, String>() // Convert ElectionRole to String
+            {
+                @Override
+                public String apply( ElectionRole role )
+                {
+                    return role.getName();
+                }
+            }, roles ) );
+        }
+
+        public boolean electionOk()
+        {
+            return heartbeatContext.getFailed().size() <= clusterContext.getConfiguration().getMembers().size() /2;
+        }
+
+        public boolean isInCluster()
+        {
+            return getClusterContext().isInCluster();
+        }
+
+        public Iterable<org.neo4j.cluster.InstanceId> getAlive()
+        {
+            return getHeartbeatContext().getAlive();
+        }
+
+        public org.neo4j.cluster.InstanceId getMyId()
+        {
+            return getClusterContext().getMyId();
+        }
+
+        public boolean isElector()
+        {
+            // Only the first alive server should try elections. Everyone else waits
+            List<org.neo4j.cluster.InstanceId> aliveInstances = Iterables.toList( getAlive() );
+            Collections.sort( aliveInstances );
+            return aliveInstances.indexOf( getMyId() ) == 0;
+        }
+
+        public boolean isFailed( org.neo4j.cluster.InstanceId key )
+        {
+            return getHeartbeatContext().getFailed().contains( key );
+        }
+
+        public org.neo4j.cluster.InstanceId getElected( String roleName )
+        {
+            return getClusterContext().getConfiguration().getElected( roleName );
+        }
+
+        public boolean hasCurrentlyElectedVoted( String role, org.neo4j.cluster.InstanceId currentElected )
+        {
+            return elections.containsKey( role ) && elections.get(role).getVotes().containsKey( currentElected );
+        }
+
+        @Override
+        public Set<org.neo4j.cluster.InstanceId> getFailed()
+        {
+            return heartbeatContext.getFailed();
+        }
+    }
+
+    private static class Vote
+            implements Comparable<Vote>
+    {
+        private final org.neo4j.cluster.InstanceId suggestedNode;
+        private final Comparable<Object> voteCredentials;
+
+        private Vote( org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> voteCredentials )
+        {
+            this.suggestedNode = suggestedNode;
+            this.voteCredentials = voteCredentials;
+        }
+
+        public org.neo4j.cluster.InstanceId getSuggestedNode()
+        {
+            return suggestedNode;
+        }
+
+        @Override
+        public int compareTo( Vote o )
+        {
+            return this.voteCredentials.compareTo( o.voteCredentials );
+        }
+
+        @Override
+        public String toString()
+        {
+            return suggestedNode + ":" + voteCredentials;
+        }
+
+        public Comparable<Object> getCredentials()
+        {
+            return voteCredentials;
+        }
+    }
+
+    private static class Election
+    {
+        private final WinnerStrategy winnerStrategy;
+//        List<Vote> votes = new ArrayList<Vote>();
+        private final Map<org.neo4j.cluster.InstanceId, Vote> votes = new HashMap<org.neo4j.cluster.InstanceId, Vote>();
+
+        private Election( WinnerStrategy winnerStrategy )
+        {
+            this.winnerStrategy = winnerStrategy;
+        }
+
+        public Map<org.neo4j.cluster.InstanceId, Vote> getVotes()
+        {
+            return votes;
+        }
+
+        public org.neo4j.cluster.InstanceId pickWinner()
+        {
+            return winnerStrategy.pickWinner( votes.values() );
+        }
+    }
+
+    interface WinnerStrategy
+    {
+        org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes );
     }
 }

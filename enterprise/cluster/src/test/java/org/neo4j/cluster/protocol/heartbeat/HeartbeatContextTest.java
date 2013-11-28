@@ -25,18 +25,28 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.mockito.Mockito;
+
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.protocol.election.ElectionRole;
+import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -77,11 +87,18 @@ public class HeartbeatContextTest
 
         when( context.getConfiguration() ).thenReturn( config );
         when( context.getMyId() ).thenReturn( instanceIds[0] );
-        when( context.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class) );
 
-        toTest = new HeartbeatContext(
-                context, mock( LearnerContext.class ),
-                Executors.newSingleThreadExecutor() );
+        Logging logging = Mockito.mock( Logging.class );
+        when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class) );
+
+        MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], Iterables.<ElectionRole, ElectionRole>iterable(
+                        new ElectionRole( "coordinator" ) ), config,
+                        Mockito.mock( Executor.class ), logging,
+                        Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+
+
+        toTest = context.getHeartbeatContext();
     }
 
     @Test

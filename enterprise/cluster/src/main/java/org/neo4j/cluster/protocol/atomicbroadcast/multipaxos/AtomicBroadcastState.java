@@ -33,7 +33,6 @@ import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
-import org.neo4j.cluster.timeout.Timeouts;
 
 /**
  * State Machine for implementation of Atomic Broadcast client interface
@@ -136,12 +135,10 @@ public enum AtomicBroadcastState
                             org.neo4j.cluster.InstanceId coordinator = context.getCoordinator();
                             if ( coordinator != null )
                             {
-                                URI coordinatorUri = context.getClusterContext().getConfiguration().getUriForId(
-                                        coordinator );
+                                URI coordinatorUri = context.getUriForId( coordinator );
                                 outgoing.offer( message.copyHeadersTo(
                                         to( ProposerMessage.propose, coordinatorUri, message.getPayload() ) ) );
-                                Timeouts timeouts = context.getClusterContext().timeouts;
-                                timeouts.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
+                                context.setTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ),
                                         timeout( AtomicBroadcastMessage.broadcastTimeout, message,
                                                 message.getPayload() ) );
                             }
@@ -155,8 +152,7 @@ public enum AtomicBroadcastState
 
                         case broadcastResponse:
                         {
-                            context.getClusterContext().timeouts.cancelTimeout( "broadcast-" + message.getHeader(
-                                    Message.CONVERSATION_ID ) );
+                            context.cancelTimeout( "broadcast-" + message.getHeader( Message.CONVERSATION_ID ) );
 
                             // TODO FILTER MESSAGES
 

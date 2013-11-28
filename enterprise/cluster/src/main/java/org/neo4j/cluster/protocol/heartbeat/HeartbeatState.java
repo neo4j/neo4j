@@ -62,10 +62,10 @@ public enum HeartbeatState
 
                         case join:
                         {
-                            for ( InstanceId instanceId : context.getClusterContext().getOtherInstances() )
+                            for ( InstanceId instanceId : context.getOtherInstances() )
                             {
                                 // Setup heartbeat timeouts for the other instance
-                                context.getClusterContext().timeouts.setTimeout(
+                                context.setTimeout(
                                         HeartbeatMessage.i_am_alive + "-" + instanceId,
                                         timeout( HeartbeatMessage.timed_out, message, instanceId ) );
 
@@ -96,12 +96,12 @@ public enum HeartbeatState
                         {
                             HeartbeatMessage.IAmAliveState state = message.getPayload();
 
-                            if (context.getClusterContext().isMe( state.getServer() ) )
+                            if (context.isMe( state.getServer() ) )
                             {
                                 break;
                             }
 
-                            context.getClusterContext().getLogger( HeartbeatState.class ).debug( "Received " + state );
+                            context.getLogger( HeartbeatState.class ).debug( "Received " + state );
 
                             if ( state.getServer() == null )
                             {
@@ -113,20 +113,19 @@ public enum HeartbeatState
                                 // Send suspicions messages to all non-failed servers
                                 for ( InstanceId aliveServer : context.getAlive() )
                                 {
-                                    if ( !aliveServer.equals( context.getClusterContext().getMyId() ) )
+                                    if ( !aliveServer.equals( context.getMyId() ) )
                                     {
                                         URI aliveServerUri =
-                                                context.getClusterContext().configuration.getUriForId( aliveServer );
+                                                context.getUriForId( aliveServer );
                                         outgoing.offer( Message.to( HeartbeatMessage.suspicions, aliveServerUri,
-                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context
-                                                        .getClusterContext().getMyId() ) ) ) );
+                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context.getMyId() ) ) ) );
                                     }
                                 }
                             }
 
-                            context.getClusterContext().timeouts.cancelTimeout( HeartbeatMessage.i_am_alive + "-" +
+                            context.cancelTimeout( HeartbeatMessage.i_am_alive + "-" +
                                     state.getServer() );
-                            context.getClusterContext().timeouts.setTimeout( HeartbeatMessage.i_am_alive + "-" +
+                            context.setTimeout( HeartbeatMessage.i_am_alive + "-" +
                                     state.getServer(), timeout( HeartbeatMessage.timed_out, message, state
                                     .getServer() ) );
 
@@ -134,7 +133,7 @@ public enum HeartbeatState
                             if ( message.hasHeader( "last-learned" ) )
                             {
                                 long lastLearned = Long.parseLong( message.getHeader( "last-learned" ) );
-                                if ( lastLearned > context.getLearnerContext().getLastKnownLearnedInstanceInCluster() )
+                                if ( lastLearned > context.getLastKnownLearnedInstanceInCluster() )
                                 {
                                     outgoing.offer( internal( LearnerMessage.catchUp, lastLearned ) );
                                 }
@@ -147,27 +146,25 @@ public enum HeartbeatState
                         {
 
                             InstanceId server = message.getPayload();
-                            context.getClusterContext().getLogger( HeartbeatState.class )
+                            context.getLogger( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
-                            if ( context.getClusterContext().getConfiguration().getMembers().containsKey( server ) )
+                            if ( context.getMembers().containsKey( server ) )
                             {
                                 context.suspect( server );
 
-                                context.getClusterContext().timeouts.setTimeout( HeartbeatMessage.i_am_alive + "-" +
+                                context.setTimeout( HeartbeatMessage.i_am_alive + "-" +
                                         server, timeout( HeartbeatMessage.timed_out, message, server ) );
 
                                 // Send suspicions messages to all non-failed servers
                                 for ( InstanceId aliveServer : context.getAlive() )
                                 {
-                                    if ( !aliveServer.equals( context.getClusterContext().getMyId() ) )
+                                    if ( !aliveServer.equals( context.getMyId() ) )
                                     {
-                                        URI sendTo = context.getClusterContext().getConfiguration().getUriForId(
+                                        URI sendTo = context.getUriForId(
                                                 aliveServer );
                                         outgoing.offer( Message.to( HeartbeatMessage.suspicions, sendTo,
-                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context
-                                                        .getClusterContext()
-                                                        .getMyId() ) ) ) );
+                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context.getMyId() ) ) ) );
                                     }
                                 }
                             }
@@ -183,20 +180,24 @@ public enum HeartbeatState
                         {
                             InstanceId to = message.getPayload();
 
-                            // Check if this node is no longer a part of the cluster
-                            if (!context.getClusterContext().isMe( to )
-                                    && context.getClusterContext().getConfiguration().getMembers().containsKey( to ) )
+                            if (!context.isMe( to ) )
                             {
-                                URI toSendTo = context.getClusterContext().getConfiguration().getUriForId( to );
-                                // Send heartbeat message to given server
-                                outgoing.offer( to( HeartbeatMessage.i_am_alive, toSendTo,
-                                        new HeartbeatMessage.IAmAliveState( context.getClusterContext().getMyId() ) )
-                                        .setHeader( "last-learned",
-                                                context.getLearnerContext().getLastLearnedInstanceId() + "" ) );
+                                // Check if this node is no longer a part of the cluster
+                                if ( context.getMembers().containsKey( to ) )
+                                {
+                                    URI toSendTo = context.getUriForId( to );
+                                    // Send heartbeat message to given server
+                                    outgoing.offer( to( HeartbeatMessage.i_am_alive, toSendTo,
+                                            new HeartbeatMessage.IAmAliveState(
+                                                    context.getMyId() ) )
+                                            .setHeader( "last-learned",
+                                                    context.getLastLearnedInstanceId() + "" ) );
 
-                                // Set new timeout to send heartbeat to this host
-                                context.getClusterContext().timeouts.setTimeout( HeartbeatMessage.sendHeartbeat + "-"
-                                        + to, timeout( HeartbeatMessage.sendHeartbeat, message, to ) );
+                                    // Set new timeout to send heartbeat to this host
+                                    context.setTimeout(
+                                            HeartbeatMessage.sendHeartbeat + "-" + to,
+                                            timeout( HeartbeatMessage.sendHeartbeat, message, to ) );
+                                }
                             }
                             break;
                         }
@@ -205,11 +206,11 @@ public enum HeartbeatState
                         {
                             InstanceId to = message.getPayload();
 
-                            if ( !context.getClusterContext().isMe( to ) )
+                            if ( !context.isMe( to ) )
                             {
                                 String timeoutName = HeartbeatMessage.sendHeartbeat + "-" + to;
-                                context.getClusterContext().timeouts.cancelTimeout( timeoutName );
-                                context.getClusterContext().timeouts.setTimeout( timeoutName, timeout(
+                                context.cancelTimeout( timeoutName );
+                                context.setTimeout( timeoutName, Message.timeout(
                                         HeartbeatMessage.sendHeartbeat, message, to ) );
                             }
                             break;
@@ -218,17 +219,17 @@ public enum HeartbeatState
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getClusterContext().getLogger( HeartbeatState.class )
+                            context.getLogger( HeartbeatState.class )
                                     .debug( "Received suspicions as " + suspicions );
 
                             URI from = new URI( message.getHeader( Message.FROM ) );
-                            InstanceId fromId = context.getClusterContext().getConfiguration().getServerId( from );
+                            InstanceId fromId = context.getIdForUri( from );
                             /*
                              * Remove ourselves from the suspicions received - we just received a message,
                              * it's not normal to be considered failed. Whatever it was, it was transient and now it has
                              * passed.
                              */
-                            suspicions.getSuspicions().remove( context.getClusterContext().getMyId() );
+                            suspicions.getSuspicions().remove( context.getMyId() );
                             context.suspicions( fromId, suspicions.getSuspicions() );
 
                             break;
@@ -236,7 +237,7 @@ public enum HeartbeatState
 
                         case leave:
                         {
-                            context.getClusterContext().getLogger( HeartbeatState.class ).debug( "Received leave" );
+                            context.getLogger( HeartbeatState.class ).debug( "Received leave" );
                             return start;
                         }
 

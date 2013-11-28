@@ -54,7 +54,7 @@ public class HeartbeatRefreshProcessor implements MessageProcessor
             {
                 String to = message.getHeader( Message.TO );
 
-                InstanceId serverId = clusterContext.getConfiguration().getServerId( new URI( to ) );
+                InstanceId serverId = clusterContext.getConfiguration().getIdForUri( new URI( to ) );
 
                 if ( !clusterContext.isMe( serverId ) )
                 {

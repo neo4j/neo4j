@@ -17,24 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
+package org.neo4j.cluster.protocol;
 
-import sun.util.logging.resources.logging;
-
-import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-/**
- * Context used by AcceptorState
- */
-public interface AcceptorContext
-    extends LoggingContext
+public interface LoggingContext
 {
-    AcceptorInstance getAcceptorInstance( InstanceId instanceId );
-
-    void promise( AcceptorInstance instance, long ballot );
-
-    void accept( AcceptorInstance instance, Object value );
-
-    void leave();
+    StringLogger getLogger( Class loggingClass );
 }

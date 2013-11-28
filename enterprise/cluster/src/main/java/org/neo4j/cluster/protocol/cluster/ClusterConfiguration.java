@@ -222,7 +222,7 @@ public class ClusterConfiguration
         return members.get( node );
     }
 
-    public InstanceId getServerId( URI fromUri )
+    public InstanceId getIdForUri( URI fromUri )
     {
         for ( Map.Entry<InstanceId, URI> serverIdURIEntry : members.entrySet() )
         {
