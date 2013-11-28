@@ -39,8 +39,7 @@ TIP: Follow the links in the table for details on dependency configuration with 
 |=======================
 |Edition     |Dependency      |Description  |License
 |Community   |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j%22[org.neo4j:neo4j] |a high performance, fully ACID transactional graph database |GPLv3
-|Advanced    |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-advanced%22[org.neo4j:neo4j-advanced] |adding advanced monitoring |AGPLv3
-|Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding online backup and High Availability clustering |AGPLv3
+|Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding advanced monitoring, online backup and High Availability clustering |AGPLv3
 |=======================
 
 NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.

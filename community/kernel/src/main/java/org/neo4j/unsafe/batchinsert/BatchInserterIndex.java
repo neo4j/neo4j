@@ -43,7 +43,7 @@ public interface BatchInserterIndex
     /**
      * Adds key/value pairs for {@code entity} to the index. If there's a
      * previous index for {@code entity} it will co-exist with this new one.
-     * This behaviour is because of performance reasons, to not being forced to
+     * This behavior is because of performance reasons, to not being forced to
      * check if indexing for {@code entity} already exists or not. If you need
      * to update indexing for {@code entity} and it's ok with a slower indexing
      * process use {@link #updateOrAdd(long, Map)} instead.

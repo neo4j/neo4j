@@ -167,3 +167,5 @@ RETURN type(r) as friendship, friend.name;
 11 rows
 ////
 
+//table
+

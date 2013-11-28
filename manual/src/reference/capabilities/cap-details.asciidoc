@@ -2,10 +2,6 @@
 Capabilities
 ============
 
-/////////
-Details, originally contained in the capabilities document.
-/////////
-
 [[capabilities-data-security]]
 == Data Security ==
 

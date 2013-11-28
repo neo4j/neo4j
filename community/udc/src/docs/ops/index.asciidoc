@@ -27,7 +27,7 @@ To gather good statistics about Neo4j usage, UDC collects this information:
 * MAC address to uniquely identify instances behind firewalls.
 * Registration id: For registered server instances.
 * Tags about the execution context (e.g. test, language, web-container, app-container, spring, ejb).
-* Neo4j Edition (community, advanced, enterprise).
+* Neo4j Edition (community, enterprise).
 * A hash of the current cluster name (if any).
 * Distribution information for Linux (rpm, dpkg, unknown).
 * User-Agent header for tracking usage of REST client drivers

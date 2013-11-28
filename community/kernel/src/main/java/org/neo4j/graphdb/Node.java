@@ -351,7 +351,7 @@ public interface Node extends PropertyContainer
      * framework. The new way of doing traversals is by creating a
      * new {@link TraversalDescription} from
      * {@link Traversal#traversal()}, add rules and
-     * behaviours to it and then calling
+     * behaviors to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
     @Deprecated
@@ -406,7 +406,7 @@ public interface Node extends PropertyContainer
      * framework. The new way of doing traversals is by creating a
      * new {@link TraversalDescription} from
      * {@link Traversal#traversal()}, add rules and
-     * behaviours to it and then calling
+     * behaviors to it and then calling
      * {@link TraversalDescription#traverse(Node...)}
      */
     @Deprecated

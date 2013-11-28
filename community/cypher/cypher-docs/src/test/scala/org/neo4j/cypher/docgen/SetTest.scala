@@ -66,7 +66,7 @@ it using the +SET+ command. One example is if the property comes from a paramete
       text =
         """You can also use +SET+ to copy all properties from one graph element to another. Remember that doing this
 will remove all other properties on the receiving graph element.""".stripMargin,
-      queryText = "match at, pn where at.name='Andres' and pn.name='Peter' set at = pn return at, pn",
+      queryText = "match (at {name: 'Andres'}), (pn {name: 'Peter'}) set at = pn return at, pn",
       returns = "The Andres node has had all it's properties replaced by the properties in the Peter node.",
       assertions = (p) => {
         assert(node("Andres").getProperty("name") === "Peter")
@@ -102,7 +102,7 @@ This will replace all existing properties on the node with the new set provided 
     testQuery(
       title = "Set a label on a node",
       text = "To set a label on a node, use +SET+.",
-      queryText = "match (n) where n.name='Stefan' set n :German return n",
+      queryText = "match (n {name: 'Stefan'}) set n :German return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("German")))
   }
@@ -111,7 +111,7 @@ This will replace all existing properties on the node with the new set provided 
     testQuery(
       title = "Set multiple labels on a node",
       text = "To set multiple labels on a node, use +SET+ and separate the different labels using +:+.",
-      queryText = "match (n) where n.name='Emil' set n :Swedish:Bossman return n",
+      queryText = "match (n {name: 'Emil'}) set n :Swedish:Bossman return n",
       returns = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Bossman")))
   }

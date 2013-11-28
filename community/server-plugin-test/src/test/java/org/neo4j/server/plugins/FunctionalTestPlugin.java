@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -277,8 +278,19 @@ public class FunctionalTestPlugin extends ServerPlugin
         Transaction tx = me.getGraphDatabase().beginTx();
         try
         {
-            @SuppressWarnings("deprecation")
-            Path path = finder.findSinglePath( me.getGraphDatabase().getNodeById( 0l ), me );
+            Node other;
+            if ( me.hasRelationship( DynamicRelationshipType.withName( "friend" ) ) )
+            {
+                other = me.getRelationships( DynamicRelationshipType.withName( "friend" ) )
+                        .iterator()
+                        .next()
+                        .getOtherNode( me );
+            }
+            else
+            {
+                other = me.getGraphDatabase().createNode();
+            }
+            Path path = finder.findSinglePath( other, me );
 
             tx.success();
             return path;

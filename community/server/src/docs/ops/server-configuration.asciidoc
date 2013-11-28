@@ -38,7 +38,7 @@ Specify the client accept pattern for the webserver (default is +127.0.0.1+, loc
 org.neo4j.server.webserver.address=0.0.0.0
 ----
 
-For securing the Neo4j Server, see also <<security-server>>
+For securing the Neo4j Server, see also <<operations-security>>
 
 
 Set the location of the round-robin database directory which gathers metrics on the running server instance:

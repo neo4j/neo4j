@@ -43,7 +43,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.helpers.HostnamePort;
 
 /**
  * Unit tests for the UDC statistics pinger.

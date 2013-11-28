@@ -1,4 +1,8 @@
 Neo4j Plugins
 =======================================
 
-This is where you should place your server extensions and plugins. Please consult the Neo4j Manual to learn more about server extensions and plugins.
+Plugins are like server-side scripts that can add functions for
+retrieving nodes, relationships, paths or properties.
+
+When packaged as a jar, just drop the plugin into this directory
+before starting up the server. 

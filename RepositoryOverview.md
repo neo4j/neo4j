@@ -31,11 +31,10 @@ The main components are:
   If you are looking to fix a bug or add a feature to the community edition,
   this is the place to be.
 - *advanced-build*  
-  This component adds extra functionality to the community-build and corresponds to the advanced version
-  described [here](http://www.neotechnology.com/price-list/).
+  This component adds extra functionality which is then included in the enterprise edition.
   The code for the extra functionality can be found in the `advanced` directory of the repository.
 - *enterprise-build*  
-  This enterprise build adds extra features to the advanced build and corresponds to the enterprise version
+  This enterprise build adds extra features to the advanced build and corresponds to the enterprise edition
   described [here](http://www.neotechnology.com/price-list/).
   The source code for these extra features can be found in the `enterprise` directory of the repository.
 - *packaging-build*  

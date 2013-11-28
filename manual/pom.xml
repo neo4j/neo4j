@@ -341,6 +341,7 @@
                 <argument>${docs.sources}/cypherdoc</argument>
                 <argument>${project.build.directory}/../src/tutorials/cypher</argument>
                 <argument>${project.build.directory}/../src/tutorials/modeling</argument>
+                <argument>${project.build.directory}/../src/cypher</argument>
               </arguments>
             </configuration>
           </execution>

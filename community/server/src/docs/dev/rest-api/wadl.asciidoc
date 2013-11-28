@@ -6,7 +6,7 @@ actions to users. Hypermedia is a dynamic interface style where declarative cons
 to inform clients of their next legal choices just in time.
 
 [CAUTION]
-RESTful APIs cannot be modelled by static interface description languages like WSDL or WADL.
+RESTful APIs cannot be modeled by static interface description languages like WSDL or WADL.
 
 However for some use cases, developers may wish to expose WADL descriptions of the Neo4j REST API, particularly when
 using tooling that expects such.

@@ -22,7 +22,7 @@ package org.neo4j.helpers.collection;
 import java.util.Iterator;
 
 /**
- * allows to catch, analyse and react on exceptions that are thrown by the delegate iterable
+ * allows to catch, analyze and react on exceptions that are thrown by the delegate iterable
  * useful for exception conversion on iterator methods
  * Uses sun.misc.Unsafe internally to rethrow original exceptions !
  * @param <T>

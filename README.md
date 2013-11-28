@@ -19,7 +19,7 @@ For a quick overview of the components in this repository,
 you can read the [RepositoryOverview.md](RepositoryOverview.md).
 
 
-*Please note* that this GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the [community/](community/) directory) is GPL. Our Advanced and Enterprise editions ([advanced/](advanced/) and [enterprise/](enterprise/)) are differently licensed under the AGPL.
+*Please note* that this GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the [community/](community/) directory) is GPL. Our Enterprise edition ([enterprise/](enterprise/)) is differently licensed under the AGPL.
 
 Building Neo4j
 --------------
@@ -40,5 +40,6 @@ The Neo4j Browser module is built using [Node.js](http://nodejs.org/). For skipp
 
 Licensing
 ---------
-             
-Neo4j is an open source product. We support a Community edition under the GPLv3 license. Advanced and Enterprise editions are available under the AGPLv3 license for open source projects otherwise under a commercial license from [Neo Technology](http://info.neotechnology.com/contactus.html).
+
+Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from [Neo Technology](http://info.neotechnology.com/contactus.html).
+

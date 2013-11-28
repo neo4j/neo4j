@@ -3,7 +3,7 @@
 
 This chapter will guide you through your first steps with <<cypher-query-lang,Cypher>>.
 
-If you are reading the online edition of this manual, all queries in this section can be executed interactively without installing Neo4j on your computer.
+In the online edition of this manual, all queries in this section can be executed interactively without installing Neo4j on your computer.
 
 Otherwise, first get the Neo4j server running to try things out locally.
 Instructions are found in <<server-installation>>.
