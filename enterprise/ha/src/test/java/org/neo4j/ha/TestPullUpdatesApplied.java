@@ -161,8 +161,6 @@ public class TestPullUpdatesApplied
                     }
                 } );
 
-        dbToKill.shutdown();
-
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
         if ( !latch2.await( 60, TimeUnit.SECONDS ) )
@@ -205,10 +203,10 @@ public class TestPullUpdatesApplied
         launchStreamConsumers( threads, p );
         /*
          * Yes, timeouts suck but HAGD does not terminate politely, since it still has
-         * threads running after main() completes, so we need to kill it. When? 5 seconds
+         * threads running after main() completes, so we need to kill it. When? 10 seconds
          * is good enough.
          */
-        Thread.sleep( 5000 );
+        Thread.sleep( 10000 );
         p.destroy();
         for ( Thread t : threads )
         {

@@ -46,19 +46,22 @@ public final class Uris
                 }
 
                 String query = uri.getQuery();
-                for ( String param : query.split( "&" ) )
+                if (query != null)
                 {
-                    String[] keyValue = param.split( "=" );
-
-                    if ( keyValue[0].equalsIgnoreCase( name ) )
+                    for ( String param : query.split( "&" ) )
                     {
-                        if ( keyValue.length == 2 )
+                        String[] keyValue = param.split( "=" );
+
+                        if ( keyValue[0].equalsIgnoreCase( name ) )
                         {
-                            return keyValue[1];
-                        }
-                        else
-                        {
-                            return "true";
+                            if ( keyValue.length == 2 )
+                            {
+                                return keyValue[1];
+                            }
+                            else
+                            {
+                                return "true";
+                            }
                         }
                     }
                 }

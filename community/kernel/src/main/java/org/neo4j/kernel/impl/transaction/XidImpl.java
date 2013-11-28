@@ -20,44 +20,69 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Random;
 
 import javax.transaction.xa.Xid;
 
+import static java.nio.ByteBuffer.wrap;
+
 public class XidImpl implements Xid
 {
-    // Neo4j ('N' 'E'  'O') format identifier
-    private static final int FORMAT_ID = 0x4E454E31; 
+    interface Seed
+    {
+        long nextRandomLong();
+        
+        long nextSequenceId();
+    }
+    
+    public static final Seed DEFAULT_SEED = new Seed()
+    {
+        private long nextSequenceId = 0;
+        private final Random r = new Random();
+
+        @Override
+        public synchronized long nextSequenceId()
+        {
+            return nextSequenceId++;
+        }
+        
+        @Override
+        public long nextRandomLong()
+        {
+            return r.nextLong();
+        }
+    };
+    
+    // Neo4j ('N' 'E' 'O') format identifier
+    private static final int FORMAT_ID = 0x4E454E31;
 
     private static final byte INSTANCE_ID[] = new byte[] { 'N', 'E', 'O', 'K',
         'E', 'R', 'N', 'L', '\0' };
-
-    private static long nextSequenceId = 0;
-
-    // next sequence number for global tx id
-    private synchronized static long getNextSequenceId()
-    {
-        return nextSequenceId++;
-    }
 
     // INSTANCE_ID + millitime(long) + seqnumber(long)
     private final byte globalId[];
     // branchId assumes Xid.MAXBQUALSIZE >= 4
     private final byte branchId[];
 
-    private static final Random r = new Random( System.currentTimeMillis() );
-
-    // resourceId.length = 4, unique for each XAResource
-    public static byte[] getNewGlobalId()
+    /**
+     * Generates a new global id byte[] for use as one part that makes up a Xid. A global id is made up of:
+     * - INSTANCE_ID: fixed number of bytes and content
+     * - 8b: current time millis
+     * - 8b: sequence id, incremented for each new generated global id
+     * - 4b: local id, an id fixed for and local to the instance generating this global id
+     * 
+     * resourceId.length = 4, unique for each XAResource
+     * @param localId
+     * @return
+     */
+    public static byte[] getNewGlobalId( Seed seed, int localId )
     {
-        // create new global id ( [INSTANCE_ID][time][sequence] )
-        byte globalId[] = new byte[INSTANCE_ID.length + 16];
-        System.arraycopy( INSTANCE_ID, 0, globalId, 0, INSTANCE_ID.length );
-        ByteBuffer byteBuf = ByteBuffer.wrap( globalId );
-        byteBuf.position( INSTANCE_ID.length );
-        long time = r.nextLong(); // System.currentTimeMillis();
-        long sequence = getNextSequenceId();
-        byteBuf.putLong( time ).putLong( sequence );
+        byte globalId[] = Arrays.copyOf( INSTANCE_ID, INSTANCE_ID.length + 20 );
+        wrap( globalId, INSTANCE_ID.length, 20 )
+              .putLong( seed.nextRandomLong() )
+              .putLong( seed.nextSequenceId() )
+              .putInt( localId );
         return globalId;
     }
 
@@ -93,55 +118,39 @@ public class XidImpl implements Xid
         this.branchId = resourceId;
     }
 
+    @Override
     public byte[] getGlobalTransactionId()
     {
         return globalId.clone();
     }
 
+    @Override
     public byte[] getBranchQualifier()
     {
         return branchId.clone();
     }
 
+    @Override
     public int getFormatId()
     {
         return FORMAT_ID;
     }
 
+    @Override
     public boolean equals( Object o )
     {
         if ( !(o instanceof Xid) )
         {
             return false;
         }
-        byte otherGlobalId[] = ((Xid) o).getGlobalTransactionId();
-        byte otherBranchId[] = ((Xid) o).getBranchQualifier();
-
-        if ( globalId.length != otherGlobalId.length || 
-            branchId.length != otherBranchId.length )
-        {
-            return false;
-        }
-
-        for ( int i = 0; i < globalId.length; i++ )
-        {
-            if ( globalId[i] != otherGlobalId[i] )
-            {
-                return false;
-            }
-        }
-        for ( int i = 0; i < branchId.length; i++ )
-        {
-            if ( branchId[i] != otherBranchId[i] )
-            {
-                return false;
-            }
-        }
-        return true;
+        
+        return Arrays.equals( globalId, ((Xid) o).getGlobalTransactionId() ) &&
+               Arrays.equals( branchId, ((Xid) o).getBranchQualifier() );
     }
 
     private volatile int hashCode = 0;
 
+    @Override
     public int hashCode()
     {
         if ( hashCode == 0 )
@@ -160,10 +169,12 @@ public class XidImpl implements Xid
         return hashCode;
     }
 
+    @Override
     public String toString()
     {
         StringBuffer buf = new StringBuffer( "GlobalId[" );
-        if ( globalId.length == (INSTANCE_ID.length + 8 + 8) )
+        int baseLength = INSTANCE_ID.length + 8 + 8;
+        if ( globalId.length == baseLength || globalId.length == baseLength+4 )
         {
             for ( int i = 0; i < INSTANCE_ID.length - 1; i++ )
             {
@@ -177,6 +188,13 @@ public class XidImpl implements Xid
             buf.append( time );
             buf.append( '|' );
             buf.append( sequence );
+            
+            /* MP 2013-11-27: 4b added to the globalId, consisting of the serverId value. This if-statement
+             * keeps things backwards compatible and nice. */
+            if ( byteBuf.hasRemaining() )
+            {
+                buf.append( '|' ).append( byteBuf.getInt() );
+            }
         }
         else
         {

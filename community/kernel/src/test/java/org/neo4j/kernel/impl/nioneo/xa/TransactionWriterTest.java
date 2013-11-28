@@ -60,7 +60,7 @@ public class TransactionWriterTest
     {
         // given
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        TransactionWriter writer = new TransactionWriter( buffer, 1 );
+        TransactionWriter writer = new TransactionWriter( buffer, 1, -1 );
 
         NodeRecord node = new NodeRecord( 0, -1, -1 );
         node.setLabelField( 0, Collections.<DynamicRecord>emptyList() );

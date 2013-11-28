@@ -937,4 +937,10 @@ public class TestApps extends AbstractShellTest
     {
         executeCommand( "OPTIONAL MATCH (n) RETURN n;" );
     }
+
+    @Test
+    public void canListAllConfiguration() throws Exception
+    {
+        executeCommand( "dbinfo -g Configuration", "\"ephemeral\": \"true\"" );
+    }
 }

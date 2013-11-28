@@ -23,6 +23,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 @Service.Implementation(CacheProvider.class)
@@ -36,7 +37,7 @@ public class HighPerformanceCacheProvider extends CacheProvider
     }
 
     @Override
-    public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config )
+    public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config, Monitors monitors )
     {
         Long node = config.get( HighPerformanceCacheSettings.node_cache_size );
         if ( node == null )
@@ -53,11 +54,11 @@ public class HighPerformanceCacheProvider extends CacheProvider
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
         return new HighPerformanceCache<>( node, config.get( HighPerformanceCacheSettings.node_cache_array_fraction ),
                 config.get( HighPerformanceCacheSettings.log_interval ),
-                NODE_CACHE_NAME, logger );
+                NODE_CACHE_NAME, logger, monitors.newMonitor( HighPerformanceCache.Monitor.class ) );
     }
 
     @Override
-    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config )
+    public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config, Monitors monitors )
     {
         Long node = config.get( HighPerformanceCacheSettings.node_cache_size );
         if ( node == null )
@@ -74,7 +75,7 @@ public class HighPerformanceCacheProvider extends CacheProvider
         checkMemToUse( logger, node, rel, Runtime.getRuntime().maxMemory() );
         return new HighPerformanceCache<>( rel, config.get( HighPerformanceCacheSettings
                 .relationship_cache_array_fraction ), config.get( HighPerformanceCacheSettings.log_interval ),
-                RELATIONSHIP_CACHE_NAME, logger );
+                RELATIONSHIP_CACHE_NAME, logger, monitors.newMonitor( HighPerformanceCache.Monitor.class ) );
     }
 
     // TODO: Move into validation method of config setting?
