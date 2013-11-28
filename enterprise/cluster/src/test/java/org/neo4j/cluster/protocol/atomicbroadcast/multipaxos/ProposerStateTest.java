@@ -19,18 +19,49 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.mockito.Mockito;
+import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 
 public class ProposerStateTest
 {
     @Test
-    public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Exception
+    public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
     {
-        ProposerState state = ProposerState.proposer;
-
         ProposerContext context = Mockito.mock(ProposerContext.class);
 
-//        state.handle( context )
+        InstanceId instanceId = new InstanceId( 42 );
+        PaxosInstanceStore paxosInstanceStore = new PaxosInstanceStore();
+
+        // The instance is closed
+        PaxosInstance paxosInstance = new PaxosInstance( paxosInstanceStore, instanceId ); // the instance
+        paxosInstance.closed( null, "1/15#" ); // is closed for that conversation, not really important
+        when( context.unbookInstance( instanceId ) ).thenReturn( Message.internal( ProposerMessage.accepted, "the closed payload" ) );
+
+        when( context.getPaxosInstance( instanceId ) ).thenReturn( paxosInstance ); // required for
+
+        // But in the meantime it was reused and has now (of course) timed out
+        String theTimedoutPayload = "the timed out payload";
+        Message message = Message.internal( ProposerMessage.phase1Timeout, theTimedoutPayload );
+        message.setHeader( InstanceId.INSTANCE, instanceId.toString() );
+
+        // Handle it
+        MessageHolder mockHolder = mock( MessageHolder.class );
+        ProposerState.proposer.handle( context, message, mockHolder );
+
+        // Verify it was resent as a propose with the same value
+        verify( mockHolder, times(1) ).offer(
+                Matchers.<Message<? extends MessageType>>argThat(
+                        new MessageArgumentMatcher().onMessageType( ProposerMessage.propose ).withPayload( theTimedoutPayload )
+                ) );
     }
 }
