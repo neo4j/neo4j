@@ -192,11 +192,11 @@ public abstract class BatchOperations
         body = replaceLocationPlaceholders(body, locations);
         URI targetUri = calculateTargetUri(uriInfo, path);
 
-        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body);
+        InternalJettyServletResponse res = new InternalJettyServletResponse();
+        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res);
         req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
 
-        InternalJettyServletResponse res = new InternalJettyServletResponse();
 
         invoke( method, path, body, id, targetUri, req, res );
     }
