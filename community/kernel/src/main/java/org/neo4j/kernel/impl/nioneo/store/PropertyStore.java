@@ -450,6 +450,36 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return propertyBlock.getType().getValue( propertyBlock, this );
     }
 
+    public void makeHeavyIfLight( PropertyBlock record )
+    {
+        if ( record.isLight() )
+        {
+            /*
+             * This will add the value records without checking if they are already
+             * in the block - so we only call this after checking isLight() or
+             * else we will end up with duplicates.
+             */
+            if ( record.getType() == PropertyType.STRING )
+            {
+                Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSingleValueLong() );
+                for ( DynamicRecord stringRecord : stringRecords )
+                {
+                    stringRecord.setType( PropertyType.STRING.intValue() );
+                    record.addValueRecord( stringRecord );
+                }
+            }
+            else if ( record.getType() == PropertyType.ARRAY )
+            {
+                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSingleValueLong() );
+                for ( DynamicRecord arrayRecord : arrayRecords )
+                {
+                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
+                    record.addValueRecord( arrayRecord );
+                }
+            }
+        }
+    }
+
     @Override
     public void makeStoreOk()
     {

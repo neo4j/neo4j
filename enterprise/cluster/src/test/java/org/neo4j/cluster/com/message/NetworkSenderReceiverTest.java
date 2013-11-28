@@ -120,7 +120,7 @@ public class NetworkSenderReceiverTest
                     sem.release();
                     return null;
                 }
-            } ).when( loggerMock ).warn( anyString(), any( Exception.class ) );
+            } ).when( loggerMock ).warn( anyString() );
 
             receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
             {
@@ -128,6 +128,18 @@ public class NetworkSenderReceiverTest
                 public HostnamePort clusterServer()
                 {
                     return new HostnamePort( "127.0.0.1:1235" );
+                }
+
+                @Override
+                public int defaultPort()
+                {
+                    return 5001;
+                }
+
+                @Override
+                public String name()
+                {
+                    return null;
                 }
             }, new DevNullLoggingService() )
             {
@@ -252,6 +264,18 @@ public class NetworkSenderReceiverTest
                 public HostnamePort clusterServer()
                 {
                     return conf.get( ClusterSettings.cluster_server );
+                }
+
+                @Override
+                public int defaultPort()
+                {
+                    return 5001;
+                }
+
+                @Override
+                public String name()
+                {
+                    return null;
                 }
             }, new DevNullLoggingService()));
 

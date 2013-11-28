@@ -34,12 +34,13 @@ import static java.lang.reflect.Proxy.newProxyInstance;
  * component asks for an implementation of the interface from this service, and uses that implementation to call
  * the various hook methods.
  *
- * An external stakeholder can then register listeners through this monitor service, which will receive calls from the
+ * An external stake holder can then register listeners through this monitor service, which will receive calls from the
  * original component as long as it is registered.
  */
 public class Monitors
 {
-    private final ConcurrentMap<Class<?>, MonitorProxy> proxies = new ConcurrentHashMap<>();
+    @SuppressWarnings( "rawtypes" )
+    private final ConcurrentMap<Class<?>, MonitorProxy> proxies = new ConcurrentHashMap<Class<?>, MonitorProxy>();
     private final StringLogger logger;
 
     public Monitors(StringLogger logger)
@@ -57,7 +58,7 @@ public class Monitors
     }
 
     /**
-     * Add a listener. The listener will recieve calls for all valid monitor interfaces it implements.
+     * Add a listener. The listener will receive calls for all valid monitor interfaces it implements.
      */
     public void addListener( Object listener )
     {
@@ -65,13 +66,13 @@ public class Monitors
         {
             if( validMonitorInterface( monitorInterface ))
             {
-                proxyFor(monitorInterface).addListener( listener );
+                proxyFor( monitorInterface ).addListener( listener );
             }
         }
     }
 
     /**
-     * Add a listener. The listener will recieve calls for all valid monitor interfaces it implements.
+     * Add a listener. The listener will receive calls for all valid monitor interfaces it implements.
      */
     public void removeListener( Object listener )
     {
@@ -79,7 +80,7 @@ public class Monitors
         {
             if( validMonitorInterface( monitorInterface ))
             {
-                proxyFor(monitorInterface).removeListener( listener );
+                proxyFor( monitorInterface ).removeListener( listener );
             }
         }
     }
@@ -87,10 +88,11 @@ public class Monitors
     private static final class MonitorProxy<T> implements InvocationHandler
     {
         private final Class<T> monitorInterface;
-        private final Set<T> listeners = new HashSet<>();
+        private final Set<T> listeners = new HashSet<T>();
         private final T proxyInstance;
         private final StringLogger logger;
 
+        @SuppressWarnings( "unchecked" )
         private MonitorProxy(Class<T> monitorInterface, StringLogger logger)
         {
             this.monitorInterface = monitorInterface;
@@ -107,15 +109,18 @@ public class Monitors
         @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
-            for ( T listener : listeners )
+            if ( !listeners.isEmpty() ) // at least saves instantiating an empty Iterator
             {
-                try
+                for ( T listener : listeners )
                 {
-                    method.invoke( listener, args );
-                }
-                catch(Exception e)
-                {
-                    logger.error( "Monitor listener failure.", e );
+                    try
+                    {
+                        method.invoke( listener, args );
+                    }
+                    catch(Exception e)
+                    {
+                        logger.error( "Monitor listener failure.", e );
+                    }
                 }
             }
 
@@ -124,28 +129,28 @@ public class Monitors
 
         public void addListener( Object rawListener )
         {
-            listeners.add(monitorInterface.cast( rawListener ));
+            listeners.add( monitorInterface.cast( rawListener ) );
         }
 
         public void removeListener( Object rawListener )
         {
-            listeners.remove(monitorInterface.cast( rawListener ));
+            listeners.remove( monitorInterface.cast( rawListener ) );
         }
     }
 
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
     private <T> MonitorProxy<T> proxyFor( Class<T> monitorInterface )
     {
-        if(!proxies.containsKey( monitorInterface ))
+        if ( !proxies.containsKey( monitorInterface ) )
         {
-            proxies.putIfAbsent( monitorInterface, new MonitorProxy(monitorInterface, logger) );
+            proxies.putIfAbsent( monitorInterface, new MonitorProxy( monitorInterface, logger ) );
         }
-
         return proxies.get( monitorInterface );
     }
 
     private static void assertValidMonitorInterface( Class<?> monitorInterface )
     {
-        if(!validMonitorInterface( monitorInterface ))
+        if ( !validMonitorInterface( monitorInterface ) )
         {
             throw new IllegalArgumentException( "Only void methods are allowed in monitor interfaces: "
                     + monitorInterface );
@@ -156,7 +161,7 @@ public class Monitors
     {
         for ( Method method : monitorInterface.getDeclaredMethods() )
         {
-            if(method.getReturnType() != void.class)
+            if ( method.getReturnType() != void.class )
             {
                 return false;
             }

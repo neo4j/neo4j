@@ -6,4 +6,3 @@ This section outlines deprecations in Neo4j 2.0 or earlier in order to help you 
 Graph Matching::
 The graph-matching component will be removed in future releases.
 
-

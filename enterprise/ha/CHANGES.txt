@@ -1,4 +1,3 @@
-
 2.0.0-RC1
 ---------
 o The GCResistantCache is now called the HighPerformanceCache. The configuration for enabling it has changed from
@@ -7,6 +6,11 @@ o The GCResistantCache is now called the HighPerformanceCache. The configuration
 2.0.0.M06
 ---------
 o Constraints can now be created in a running HA cluster
+
+1.9.6
+-----
+o HA Backup now properly resolves the master URI, solving a bug where ha:// backups not running
+  from the current master would in some cases fail
 
 1.9.5 (2013-11-11)
 ------------------

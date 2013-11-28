@@ -19,15 +19,13 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.collection.Iterables.filter;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
@@ -41,6 +39,11 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.filter;
 
 /**
  * Context for cluster API state machine
@@ -56,16 +59,19 @@ public class ClusterContext
     HeartbeatContext heartbeatContext;
     public ClusterConfiguration configuration;
     public final Timeouts timeouts;
-    private Executor executor;
-    private Logging logging;
-    private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
+
+    private final Executor executor;
+    private final Logging logging;
+    private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage.ConfigurationRequestState>();
     private String joiningClusterName; // for debugging
+
     private Iterable<URI> joiningInstances;
     URI boundAt;
     private boolean joinDenied;
+    private Set<InstanceId> currentlyJoiningInstances = new HashSet<InstanceId>(  );
 
-    private ObjectInputStreamFactory objectInputStreamFactory;
-    private ObjectOutputStreamFactory objectOutputStreamFactory;
+    private final ObjectInputStreamFactory objectInputStreamFactory;
+    private final ObjectOutputStreamFactory objectOutputStreamFactory;
 
     public ClusterContext( InstanceId me, ProposerContext proposerContext,
                            LearnerContext learnerContext,
@@ -166,6 +172,8 @@ public class ClusterContext
             // This typically happens in situations when several nodes join at once, and the ordering
             // of join messages is a little out of whack.
         }
+
+        currentlyJoiningInstances.remove( instanceId );
     }
 
     public void left( final InstanceId node )
@@ -284,5 +292,24 @@ public class ClusterContext
     public Iterable<InstanceId> getOtherInstances()
     {
         return filter( not( in( me ) ), configuration.getMemberIds() );
+    }
+
+    public boolean isInstanceWithIdCurrentlyJoining( InstanceId joiningId )
+    {
+        return currentlyJoiningInstances.contains( joiningId );
+    }
+
+    public void instanceIsJoining( InstanceId joiningId )
+    {
+        currentlyJoiningInstances.add(joiningId);
+    }
+
+    public String myName()
+    {
+        String name = parameter( "name" ).apply( boundAt );
+        if ( name != null)
+            return name;
+        else
+            return me.toString();
     }
 }

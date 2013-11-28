@@ -31,6 +31,10 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 
 public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cache<E>, DiagnosticsProvider
 {
+    public interface Monitor {
+        void purged( long sizeBefore, long sizeAfter, int numberOfEntitiesPurged );
+    }
+
     public static final long MIN_SIZE = 1;
     private final AtomicReferenceArray<E> cache;
     private final long maxSize;
@@ -55,6 +59,7 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
     private final AtomicInteger avertedPurgeWaits = new AtomicInteger();
     private final AtomicInteger forcedPurgeWaits = new AtomicInteger();
     private long purgeTime;
+    private Monitor monitor;
 
     HighPerformanceCache( AtomicReferenceArray<E> cache )
     {
@@ -67,7 +72,7 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
     }
 
     public HighPerformanceCache( long maxSizeInBytes, float arrayHeapFraction, long minLogInterval, String name,
-                                 StringLogger logger )
+                                 StringLogger logger, Monitor monitor )
     {
         if ( logger == null )
         {
@@ -96,6 +101,7 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
         this.maxSize = maxSizeInBytes;
         this.name = name == null ? super.toString() : name;
         this.logger = logger;
+        this.monitor = monitor;
         calculateSizes();
     }
 
@@ -269,36 +275,42 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
 
     private synchronized void doPurge( int pos )
     {
-        long myCurrentSize = currentSize.get();
-        if ( myCurrentSize <= closeToMaxSize )
+        long sizeBefore = currentSize.get();
+        if ( sizeBefore <= closeToMaxSize )
         {
             return;
         }
 
         long startTime = System.currentTimeMillis();
         purgeCount++;
-        long sizeBefore = currentSize.get();
+        int numberOfEntitiesPurged = 0;
         try
         {
             int index = 1;
             do
             {
-                if ( ( pos - index ) >= 0 )
+                int minusPos = pos - index;
+                if ( minusPos >= 0 )
                 {
-                    int minusPos = pos - index;
-                    remove( minusPos );
-                    if ( currentSize.get() <= purgeStopSize )
+                    if ( remove( minusPos ) != null )
                     {
-                        return;
+                        numberOfEntitiesPurged++;
+                        if ( currentSize.get() <= purgeStopSize )
+                        {
+                            return;
+                        }
                     }
                 }
-                if ( ( pos + index ) < cache.length() )
+                int plusPos = pos + index;
+                if ( plusPos < cache.length() )
                 {
-                    int plusPos = pos + index;
-                    remove( plusPos );
-                    if ( currentSize.get() <= purgeStopSize )
+                    if ( remove( plusPos ) != null )
                     {
-                        return;
+                        numberOfEntitiesPurged++;
+                        if ( currentSize.get() <= purgeStopSize )
+                        {
+                            return;
+                        }
                     }
                 }
                 index++;
@@ -316,9 +328,9 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
                 lastPurgeLogTimestamp = timestamp;
                 long sizeAfter = currentSize.get();
 
-                String sizeBeforeStr = getSize( sizeBefore );
+                String sizeBeforeStr = getSize( numberOfEntitiesPurged );
                 String sizeAfterStr = getSize( sizeAfter );
-                String diffStr = getSize( sizeBefore - sizeAfter );
+                String diffStr = getSize( numberOfEntitiesPurged - sizeAfter );
 
                 String missPercentage =  ((float) missCount / (float) (hitCount+missCount) * 100.0f) + "%";
                 String colPercentage = ((float) collisions / (float) totalPuts * 100.0f) + "%";
@@ -327,6 +339,7 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
                         ") " + missPercentage + " misses, " + colPercentage + " collisions (" + collisions + ").", true );
                 printAccurateStatistics();
             }
+            monitor.purged( sizeBefore, currentSize.get(), numberOfEntitiesPurged );
         }
     }
 

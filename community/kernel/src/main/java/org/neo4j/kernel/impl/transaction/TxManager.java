@@ -43,6 +43,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -121,6 +122,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
+    private final Factory<byte[]> xidGlobalIdFactory;
 
     private final Monitor monitor;
 
@@ -129,10 +131,13 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                       KernelPanicEventGenerator kpe,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
-                      TransactionStateFactory stateFactory
+                      TransactionStateFactory stateFactory,
+                      Factory<byte[]> xidGlobalIdFactory
     )
     {
-        this(txLogDir, xaDataSourceManager, kpe, log, fileSystem, stateFactory, new Monitor.Adapter());
+        this( txLogDir, xaDataSourceManager, kpe, log, fileSystem, stateFactory, new Monitor.Adapter(),
+              xidGlobalIdFactory
+        );
     }
 
     public TxManager( File txLogDir,
@@ -141,7 +146,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory,
-                      Monitor monitor
+                      Monitor monitor,
+                      Factory<byte[]> xidGlobalIdFactory
     )
     {
         this.txLogDir = txLogDir;
@@ -151,6 +157,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.kpe = kpe;
         this.stateFactory = stateFactory;
         this.monitor = monitor;
+        this.xidGlobalIdFactory = xidGlobalIdFactory;
     }
 
     int getNextEventIdentifier()
@@ -317,7 +324,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
                     "Nested transactions not supported" ) );
         }
-        tx = new TransactionImpl( this, forceMode, stateFactory, log );
+        tx = new TransactionImpl( xidGlobalIdFactory.newInstance(), this, forceMode, stateFactory, log );
         txThreadMap.set( tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )

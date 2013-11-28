@@ -55,13 +55,13 @@ class ReadOnlyTransactionImpl implements Transaction
     private final int eventIdentifier;
 
     private final ReadOnlyTxManager txManager;
-    private StringLogger logger;
+    private final StringLogger logger;
 
-    ReadOnlyTransactionImpl( ReadOnlyTxManager txManager, StringLogger logger )
+    ReadOnlyTransactionImpl( byte[] xidGlobalId, ReadOnlyTxManager txManager, StringLogger logger )
     {
         this.txManager = txManager;
         this.logger = logger;
-        globalId = XidImpl.getNewGlobalId();
+        globalId = xidGlobalId;
         eventIdentifier = txManager.getNextEventIdentifier();
     }
 
@@ -82,6 +82,7 @@ class ReadOnlyTransactionImpl implements Transaction
         return txString.toString();
     }
 
+    @Override
     public synchronized void commit() throws RollbackException,
         HeuristicMixedException, IllegalStateException
     {
@@ -89,6 +90,7 @@ class ReadOnlyTransactionImpl implements Transaction
         txManager.commit();
     }
 
+    @Override
     public synchronized void rollback() throws IllegalStateException,
         SystemException
     {
@@ -96,6 +98,7 @@ class ReadOnlyTransactionImpl implements Transaction
         txManager.rollback();
     }
 
+    @Override
     public synchronized boolean enlistResource( XAResource xaRes )
         throws RollbackException, IllegalStateException
     {
@@ -174,6 +177,7 @@ class ReadOnlyTransactionImpl implements Transaction
             + txManager.getTxStatusAsString( status ) );
     }
 
+    @Override
     public synchronized boolean delistResource( XAResource xaRes, int flag )
         throws IllegalStateException
     {
@@ -226,7 +230,7 @@ class ReadOnlyTransactionImpl implements Transaction
             + txManager.getTxStatusAsString( status ) );
     }
 
-    // TODO: figure out if this needs syncrhonization or make status volatile
+    // TODO: figure out if this needs synchronization or make status volatile
     public int getStatus()
     {
         return status;
@@ -240,6 +244,7 @@ class ReadOnlyTransactionImpl implements Transaction
     private boolean beforeCompletionRunning = false;
     private List<Synchronization> syncHooksAdded = new ArrayList<>();
 
+    @Override
     public synchronized void registerSynchronization( Synchronization s )
         throws RollbackException, IllegalStateException
     {
@@ -326,6 +331,7 @@ class ReadOnlyTransactionImpl implements Transaction
         syncHooks = null; // help gc
     }
 
+    @Override
     public void setRollbackOnly() throws IllegalStateException
     {
         if ( status == Status.STATUS_ACTIVE ||
