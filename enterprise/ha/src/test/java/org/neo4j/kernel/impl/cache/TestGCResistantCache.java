@@ -19,12 +19,20 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.cache.GCResistantCache.Monitor;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class TestGCResistantCache
 {
@@ -120,6 +128,26 @@ public class TestGCResistantCache
     public void assertRemoveCanHandleWrongId()
     {
         cache.remove( -1l );
+    }
+    
+    @Test
+    public void shouldListenToPurges() throws Exception
+    {
+        // GIVEN
+        Monitor monitor = mock( Monitor.class );
+        cache = new GCResistantCache<Entity>( 100, 1.0f, SECONDS.toMillis( 10 ), "purge test", StringLogger.DEV_NULL,
+                monitor );
+        cache.put( new Entity( 0, 10 ) );
+        cache.put( new Entity( 1, 50 ) );
+        cache.put( new Entity( 2, 10 ) );
+        cache.put( new Entity( 3, 10 ) );
+        verifyZeroInteractions( monitor );
+        
+        // WHEN
+        cache.put( new Entity( 4, 50 ) );
+        
+        // THEN
+        verify( monitor ).purged( 130L, 60L, 3 );
     }
     
     private static class Entity implements EntityWithSizeObject

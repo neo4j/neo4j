@@ -17,29 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.statemachine;
-
-import java.util.concurrent.atomic.AtomicLong;
+package org.neo4j.cluster.protocol.cluster;
 
 import org.neo4j.cluster.InstanceId;
 
-/**
- * Generate id's for state machine conversations. This should be shared between all state machines in a server.
- * <p/>
- * These conversation id's can be used to uniquely identify conversations between distributed state machines.
- */
-public class StateMachineConversations
+public class ClusterEntryDeniedException extends IllegalStateException
 {
-    private final AtomicLong nextConversationId = new AtomicLong();
-    private final String serverId;
-
-    public StateMachineConversations( InstanceId me )
+    public ClusterEntryDeniedException( InstanceId me, ClusterConfiguration configuration )
     {
-        serverId = me.toString();
-    }
-
-    public String getNextConversationId()
-    {
-        return serverId + "/" + nextConversationId.incrementAndGet() + "#";
+        super( "I was denied entry. I am " + me + ", configuration:" + configuration );
     }
 }

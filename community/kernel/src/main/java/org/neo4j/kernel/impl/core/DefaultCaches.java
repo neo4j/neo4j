@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class DefaultCaches implements Caches
@@ -29,10 +30,12 @@ public class DefaultCaches implements Caches
     private CacheProvider provider;
     private Config config;
     private final StringLogger logger;
+    private final Monitors monitors;
     
-    public DefaultCaches( StringLogger logger )
+    public DefaultCaches( StringLogger logger, Monitors monitors )
     {
         this.logger = logger;
+        this.monitors = monitors;
     }
     
     @Override
@@ -45,13 +48,13 @@ public class DefaultCaches implements Caches
     @Override
     public Cache<NodeImpl> node()
     {
-        return provider.newNodeCache( logger, config );
+        return provider.newNodeCache( logger, config, monitors );
     }
 
     @Override
     public Cache<RelationshipImpl> relationship()
     {
-        return provider.newRelationshipCache( logger, config );
+        return provider.newRelationshipCache( logger, config, monitors );
     }
 
     @Override

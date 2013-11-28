@@ -32,6 +32,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -41,6 +42,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
+@Ignore("Temporarily, pending backport of fixes from master")
 public class BackupHaIT
 {
     private DbRepresentation representation;
@@ -98,7 +100,7 @@ public class BackupHaIT
         ManagedCluster cluster = clusterManager.getCluster( askForCluster == null ? "neo4j.ha" : askForCluster );
         DbRepresentation newRepresentation = createSomeData( cluster.getAnySlave() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                backupArguments( "ha://localhost:5002", BACKUP_PATH.getPath(), askForCluster ) ) );
+                backupArguments( "ha://localhost:5001", BACKUP_PATH.getPath(), askForCluster ) ) );
         assertEquals( newRepresentation, DbRepresentation.of( BACKUP_PATH ) );
     }
 
