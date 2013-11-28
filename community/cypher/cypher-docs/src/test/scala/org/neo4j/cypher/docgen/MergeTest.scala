@@ -188,7 +188,9 @@ For more information on parameters, see <<cypher-parameters>>.""",
         """match (charlie:Person {name:'Charlie Sheen'}), (wallStreet:Movie {title:'Wall Street'})
 merge (charlie)-[r:ACTED_IN]->(wallStreet)
 return r""",
-      returns = "Charlie Sheen had already been marked as acting on Wall Street, so the existing relationship is found and returned",
+      returns = "Charlie Sheen had already been marked as acting on Wall Street, so the existing relationship is found " +
+        "and returned. Note that in order to match or create a relationship when using +MERGE+, at least one bound node " +
+        "must be specified, which is done via the +MATCH+ clause in the above example.",
       assertions = (p) => assertStats(p, relationshipsCreated = 0)
     )
   }
