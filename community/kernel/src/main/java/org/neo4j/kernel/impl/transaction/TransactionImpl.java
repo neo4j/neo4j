@@ -65,18 +65,19 @@ class TransactionImpl implements Transaction
     private final int eventIdentifier;
 
     private final TxManager txManager;
-    private StringLogger logger;
+    private final StringLogger logger;
     private final ForceMode forceMode;
     private Thread owner;
 
     private final TransactionState state;
 
-    TransactionImpl( TxManager txManager, ForceMode forceMode, TransactionStateFactory stateFactory, StringLogger logger )
+    TransactionImpl( byte[] xidGlobalId, TxManager txManager, ForceMode forceMode,
+            TransactionStateFactory stateFactory, StringLogger logger )
     {
         this.txManager = txManager;
         this.logger = logger;
         this.state = stateFactory.create( this );
-        globalId = XidImpl.getNewGlobalId();
+        globalId = xidGlobalId;
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
         owner = Thread.currentThread();
@@ -186,7 +187,9 @@ class TransactionImpl implements Transaction
                     }
                     // TODO ties HA to our TxManager
                     if ( !hasAnyLocks() )
+                    {
                         getState().getTxHook().initializeTransaction( eventIdentifier );
+                    }
                     return true;
                 }
                 Xid sameRmXid = null;

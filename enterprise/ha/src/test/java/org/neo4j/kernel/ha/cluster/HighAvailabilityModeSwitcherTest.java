@@ -20,8 +20,6 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.Test;
 

@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestLogPruning
 {
@@ -39,7 +41,9 @@ public class TestLogPruning
     public void after() throws Exception
     {
         if ( db != null )
+        {
             db.shutdown();
+        }
     }
     
     @Test
@@ -58,7 +62,7 @@ public class TestLogPruning
     @Test
     public void pruneByFileSize() throws Exception
     {
-        int size = 1000;
+        int size = 1050;
         newDb( size + " size" );
         
         doTransaction();
@@ -98,7 +102,9 @@ public class TestLogPruning
         for ( int i = 0; i < transactionsToKeep/txsPerLog*3; i++ )
         {
             for ( int j = 0; j < txsPerLog; j++ )
+            {
                 doTransaction();
+            }
             rotate();
             assertEquals( Math.min( i+1, transactionsToKeep/txsPerLog ), logCount() );
         }
@@ -144,9 +150,13 @@ public class TestLogPruning
         for ( long i = log.getHighestLogVersion()-1; i >= 0; i-- )
         {
             if ( fs.fileExists( log.getFileName( i ) ) )
+            {
                 count++;
+            }
             else
+            {
                 break;
+            }
         }
         return count;
     }

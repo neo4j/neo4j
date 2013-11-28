@@ -49,6 +49,7 @@ import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.DaemonThreadFactory;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
@@ -123,6 +124,9 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**
@@ -408,10 +412,13 @@ public abstract class InternalAbstractGraphDatabase
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         stateFactory = createTransactionStateFactory();
+        
+        Factory<byte[]> xidGlobalIdFactory = createXidGlobalIdFactory();
 
         if ( readOnly )
         {
-            txManager = new ReadOnlyTxManager( xaDataSourceManager, logging.getMessagesLog( ReadOnlyTxManager.class ) );
+            txManager = new ReadOnlyTxManager( xaDataSourceManager, xidGlobalIdFactory,
+                    logging.getMessagesLog( ReadOnlyTxManager.class ) );
         }
         else
         {
@@ -419,7 +426,8 @@ public abstract class InternalAbstractGraphDatabase
             if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
             {
                 txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
-                        logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory );
+                        logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory,
+                        xidGlobalIdFactory );
             }
             else
             {
@@ -522,6 +530,18 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected Factory<byte[]> createXidGlobalIdFactory()
+    {
+        return new Factory<byte[]>()
+        {
+            @Override
+            public byte[] newInstance()
+            {
+                return getNewGlobalId( DEFAULT_SEED, MASTER_ID_REPRESENTING_NO_MASTER );
+            }
+        };
     }
 
     protected AvailabilityGuard createAvailabilityGuard()

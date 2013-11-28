@@ -28,6 +28,7 @@ import java.util.Map;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -38,8 +39,10 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 
 public abstract class GraphStoreFixture implements TestRule
 {
@@ -68,15 +71,15 @@ public abstract class GraphStoreFixture implements TestRule
     public static abstract class Transaction
     {
         public final long startTimestamp = System.currentTimeMillis();
-        public final byte[] globalId = XidImpl.getNewGlobalId();
+        public final byte[] globalId = getNewGlobalId( DEFAULT_SEED, 0 );
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
-        private ReadableByteChannel write( IdGenerator idGenerator, int localId, int masterId, int myId, Long txId )
+        private ReadableByteChannel write( IdGenerator idGenerator, int identifier, int masterId, int myId, Long txId )
                 throws IOException
         {
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-            TransactionWriter writer = new TransactionWriter( buffer, localId );
+            TransactionWriter writer = new TransactionWriter( buffer, identifier, 0 );
             writer.start( globalId, masterId, myId, startTimestamp );
 
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
