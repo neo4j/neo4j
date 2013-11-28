@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
+import java.util.zip.ZipOutputStream;
 
 import org.neo4j.helpers.Function;
 
@@ -74,5 +75,7 @@ public interface FileSystemAbstraction
     interface ThirdPartyFileSystem
     {
         void close();
+
+        void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException;
     }
 }

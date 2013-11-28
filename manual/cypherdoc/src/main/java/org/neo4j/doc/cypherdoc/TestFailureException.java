@@ -19,11 +19,16 @@
  */
 package org.neo4j.doc.cypherdoc;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 class TestFailureException extends RuntimeException
 {
     final Result result;
+    private List<Snapshot> snapshots = new ArrayList<>();
 
     TestFailureException( Result result, List<String> failedTests )
     {
@@ -55,6 +60,87 @@ class TestFailureException extends RuntimeException
         message.append( CypherDoc.EOL )
                .append( "Profile:" ).append( CypherDoc.EOL ).append( '\t' )
                .append( CypherDoc.indent( result.profile ) );
+        if ( !snapshots.isEmpty() )
+        {
+            message.append( CypherDoc.EOL ).append( "Snapshots:" );
+            for ( Snapshot snapshot : snapshots )
+            {
+                message.append( CypherDoc.EOL ).append( '\t' ).append( snapshot );
+            }
+        }
         return message.toString();
+    }
+
+    synchronized void addSnapshot( String key, byte[] bytes )
+    {
+        snapshots.add( new InMemorySnapshot( key, bytes ) );
+    }
+
+    synchronized void dumpSnapshots( File targetDir )
+    {
+        List<Snapshot> prior = snapshots;
+        snapshots = new ArrayList<>( prior.size() );
+        for ( Snapshot snapshot : prior )
+        {
+            snapshots.add( snapshot.dump( targetDir ) );
+        }
+    }
+
+    private static abstract class Snapshot
+    {
+        final String filename;
+
+        Snapshot( String filename )
+        {
+            this.filename = filename;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" + filename + "]";
+        }
+
+        abstract Snapshot dump( File targetDir );
+    }
+
+    private static class InMemorySnapshot extends Snapshot
+    {
+        private final byte[] bytes;
+
+        InMemorySnapshot( String filename, byte[] bytes )
+        {
+            super( filename );
+            this.bytes = bytes;
+        }
+
+        @Override
+        public Snapshot dump( File targetDir )
+        {
+            File target = new File( targetDir, filename );
+            try ( FileOutputStream output = new FileOutputStream( target ) )
+            {
+                output.write( bytes );
+                return new DumpedSnapshot( target.getAbsolutePath() );
+            }
+            catch ( IOException e )
+            {
+                return this;
+            }
+        }
+    }
+
+    private static class DumpedSnapshot extends Snapshot
+    {
+        public DumpedSnapshot( String path )
+        {
+            super( path );
+        }
+
+        @Override
+        public Snapshot dump( File targetDir )
+        {
+            return this;
+        }
     }
 }

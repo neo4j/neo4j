@@ -20,7 +20,6 @@
 package org.neo4j.doc.cypherdoc;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 
@@ -39,7 +38,7 @@ public class Main
      * 
      * @param args base destination directory, followed by files/directories to parse.
      */
-    public static void main( String[] args )
+    public static void main( String[] args ) throws Exception
     {
         if ( args.length < 2 )
         {
@@ -84,7 +83,7 @@ public class Main
     /**
      * Parse a single file.
      */
-    private static void executeFile( File file, String name, File destinationDir )
+    private static void executeFile( File file, String name, File destinationDir ) throws Exception
     {
         try
         {
@@ -95,9 +94,10 @@ public class Main
             File targetFile = FileUtils.getFile( destinationDir, name );
             FileUtils.writeStringToFile( targetFile, output );
         }
-        catch ( IOException ioe )
+        catch ( TestFailureException failure )
         {
-            ioe.printStackTrace();
+            failure.dumpSnapshots( destinationDir );
+            throw failure;
         }
     }
 }
