@@ -24,6 +24,8 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
 
 public class NodeRecordTest
 {
@@ -50,6 +52,27 @@ public class NodeRecordTest
         assertEquals(node.getNextRel(), clone.getNextRel());
 
         assertThat( clone.getDynamicLabelRecords(), equalTo(node.getDynamicLabelRecords()) );
+    }
+
+    @Test
+    public void shouldListLabelRecordsInUse() throws Exception
+    {
+        // Given
+        NodeRecord node = new NodeRecord( 1, -1, -1 );
+        long inlinedLabels = 12l;
+        DynamicRecord dynamic1 = dynamicRecord( 1l, true );
+        DynamicRecord dynamic2 = dynamicRecord( 2l, true );
+        DynamicRecord dynamic3 = dynamicRecord( 3l, true );
+
+        node.setLabelField( inlinedLabels, asList( dynamic1, dynamic2, dynamic3 ) );
+
+        dynamic3.setInUse( false );
+
+        // When
+        Iterable<DynamicRecord> usedRecords = node.getUsedDynamicLabelRecords();
+
+        // Then
+        assertThat(toList(usedRecords), equalTo(asList( dynamic1, dynamic2 )));
     }
 
 }

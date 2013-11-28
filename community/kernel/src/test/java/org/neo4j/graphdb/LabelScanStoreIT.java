@@ -23,13 +23,15 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.assertEquals;
-
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
@@ -126,6 +128,48 @@ public class LabelScanStoreIT
         assertEquals(
                 emptySetOf( Node.class ),
                 getAllNodesWithLabel( Labels.Third ) );
+    }
+
+    @Test
+    public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
+    {
+        // Given
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        int labelsToAdd = 80;
+        int labelsToRemove = 40;
+
+        // When
+        Node node;
+        try( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+
+            // I create a lot of labels, enough to push the store to use two dynamic records
+            for(int l=0;l<labelsToAdd;l++)
+            {
+                node.addLabel( label("Label-" + l) );
+            }
+
+            // and I delete some of them, enough to bring the number of dynamic records needed down to 1
+            for(int l=0;l<labelsToRemove;l++)
+            {
+                node.removeLabel( label("Label-" + l) );
+            }
+
+            tx.success();
+        }
+
+        // Then
+        try( Transaction ignore = db.beginTx() )
+        {
+            // All the labels remaining should be in the label scan store
+            for(int l=labelsToAdd-1;l>=labelsToRemove;l--)
+            {
+                Label label = label( "Label-" + l );
+                assertThat( "Should have founnd node when looking for label " + label,
+                        single( GlobalGraphOperations.at( db ).getAllNodesWithLabel( label ) ), equalTo( node ) );
+            }
+        }
     }
     
     private void removeLabels( Node node, Label... labels )

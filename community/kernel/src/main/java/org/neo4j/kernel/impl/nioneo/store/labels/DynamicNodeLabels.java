@@ -52,7 +52,7 @@ public class DynamicNodeLabels implements NodeLabels
     public long[] get( NodeStore nodeStore )
     {
         nodeStore.ensureHeavy( node, getFirstDynamicRecordId() );
-        return nodeStore.getDynamicLabelsArray( node.getDynamicLabelRecords() );
+        return nodeStore.getDynamicLabelsArray( node.getUsedDynamicLabelRecords() );
     }
 
     @Override
@@ -62,7 +62,7 @@ public class DynamicNodeLabels implements NodeLabels
         {
             return null;
         }
-        for ( DynamicRecord dynamic : node.getDynamicLabelRecords() )
+        for ( DynamicRecord dynamic : node.getUsedDynamicLabelRecords() )
         {
             if ( dynamic.isLight() )
             {
@@ -70,7 +70,7 @@ public class DynamicNodeLabels implements NodeLabels
             }
         }
         return stripNodeId( (long[]) getRightArray( readFullByteArrayFromHeavyRecords(
-                node.getDynamicLabelRecords(), ARRAY ) ) );
+                node.getUsedDynamicLabelRecords(), ARRAY ) ) );
     }
 
     @Override
