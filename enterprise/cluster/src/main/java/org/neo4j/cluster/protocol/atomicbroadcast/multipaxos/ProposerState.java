@@ -146,6 +146,13 @@ public enum ProposerState
                                                     .phase1Timeout, message ), InstanceId.INSTANCE ) );
                                 }
                             }
+                            else if ( instance.isState( PaxosInstance.State.closed ) || instance.isState(
+                                    PaxosInstance.State.delivered ) )
+                            {
+                                // Retry
+//                                message = context.unbookInstance( instance.id );
+                                outgoing.offer( Message.internal( ProposerMessage.propose, message.getPayload() ) );
+                            }
                             break;
                         }
 
