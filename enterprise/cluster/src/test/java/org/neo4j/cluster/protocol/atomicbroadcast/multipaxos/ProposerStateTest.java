@@ -63,5 +63,6 @@ public class ProposerStateTest
                 Matchers.<Message<? extends MessageType>>argThat(
                         new MessageArgumentMatcher().onMessageType( ProposerMessage.propose ).withPayload( theTimedoutPayload )
                 ) );
+        verify( context, times(1) ).unbookInstance( instanceId );
     }
 }

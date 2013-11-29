@@ -150,7 +150,7 @@ public enum ProposerState
                                     PaxosInstance.State.delivered ) )
                             {
                                 // Retry
-//                                message = context.unbookInstance( instance.id );
+                                context.unbookInstance( instance.id );
                                 outgoing.offer( Message.internal( ProposerMessage.propose, message.getPayload() ) );
                             }
                             break;
