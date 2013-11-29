@@ -215,9 +215,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public synchronized void shutdown() throws Throwable
     {
-        scheduledExecutorService.shutdown();
-        scheduledExecutorService.awaitTermination( 60, TimeUnit.SECONDS );
-
         stateHandler.removeHighAvailabilityMemberListener( this );
         life.shutdown();
     }
