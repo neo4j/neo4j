@@ -28,6 +28,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 {
@@ -159,19 +160,14 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                 {
                     return new PrefetchingIterator<R>()
                     {
-                        final long highId = store.getHighId();
-                        int id = 0;
+                        final PrimitiveLongIterator ids = new StoreIdIterator( store );
 
                         @Override
                         protected R fetchNextOrNull()
                         {
-                            scan: while ( id <= highId && id >= 0 )
+                            scan: while ( ids.hasNext() && continueScanning )
                             {
-                                if (!continueScanning)
-                                {
-                                    return null;
-                                }
-                                R record = getRecord( store, id++ );
+                                R record = getRecord( store, ids.next() );
                                 for ( Predicate<? super R> filter : filters )
                                 {
                                     if ( !filter.accept( record ) ) continue scan;

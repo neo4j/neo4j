@@ -114,7 +114,8 @@ public class NodePropertyUpdate
     @Override
     public String toString()
     {
-        StringBuilder result = new StringBuilder( getClass().getSimpleName() + "[" + nodeId + ", prop:" + propertyKeyId + " " );
+        StringBuilder result = new StringBuilder( getClass().getSimpleName() )
+                .append( "[" ).append( nodeId ).append( ", prop:" ).append( propertyKeyId ).append( " " );
         switch ( updateMode )
         {
         case ADDED: result.append( "add:" ).append( valueAfter ); break;

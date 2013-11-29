@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -42,9 +43,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -165,7 +165,7 @@ public class WriteTransactionCommandOrderingTest
         WriteTransaction tx = new WriteTransaction( 0, 0l, mock( XaLogicalLog.class ), TransactionState.NO_STATE,
                 store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class ),
                 WriteTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
-                mock( KernelTransactionImplementation.class ) );
+                mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ) );
         tx.setCommitTxId( store.getLastCommittedTx() + 1 );
         return tx;
     }

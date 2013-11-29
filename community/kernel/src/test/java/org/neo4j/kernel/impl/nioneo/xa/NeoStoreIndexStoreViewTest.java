@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -34,17 +39,22 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -65,6 +75,7 @@ public class NeoStoreIndexStoreViewTest
 
     Node alistair;
     Node stefan;
+    private LockService locks;
 
     @Test
     public void shouldScanExistingNodesForALabel() throws Exception
@@ -106,6 +117,34 @@ public class NeoStoreIndexStoreViewTest
         assertEquals( emptySetOf( NodePropertyUpdate.class ), visitor.getUpdates() );
     }
 
+    @Test
+    public void shouldLockNodesWhileReadingThem() throws Exception
+    {
+        // given
+        @SuppressWarnings("unchecked")
+        Visitor<NodePropertyUpdate, Exception> visitor = mock( Visitor.class );
+        StoreScan<Exception> storeScan = storeView
+                .visitNodesWithPropertyAndLabel( new IndexDescriptor( labelId, propertyKeyId ), visitor );
+
+        // when
+        storeScan.run();
+
+        // then
+        assertEquals( "allocated locks: " + lockMocks.keySet(), 2, lockMocks.size() );
+        Lock lock0 = lockMocks.get( 0L );
+        Lock lock1 = lockMocks.get( 1L );
+        assertNotNull( "Lock[node=0] never acquired", lock0 );
+        assertNotNull( "Lock[node=1] never acquired", lock1 );
+        InOrder order = inOrder( locks, lock0, lock1 );
+        order.verify( locks ).acquireNodeLock( 0, LockService.LockType.READ_LOCK );
+        order.verify( lock0 ).release();
+        order.verify( locks ).acquireNodeLock( 1, LockService.LockType.READ_LOCK );
+        order.verify( lock1 ).release();
+        order.verifyNoMoreInteractions();
+    }
+
+    Map<Long, Lock> lockMocks = new HashMap<>();
+
     @Before
     public void before() throws KernelException
     {
@@ -116,7 +155,21 @@ public class NeoStoreIndexStoreViewTest
         getOrCreateIds();
 
         NeoStore neoStore = new StoreAccess( graphDb ).getRawNeoStore();
-        storeView = new NeoStoreIndexStoreView( neoStore );
+        locks = mock( LockService.class, new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Long nodeId = (Long) invocation.getArguments()[0];
+                Lock lock = lockMocks.get( nodeId );
+                if ( lock == null )
+                {
+                    lockMocks.put( nodeId, lock = mock( Lock.class ) );
+                }
+                return lock;
+            }
+        } );
+        storeView = new NeoStoreIndexStoreView( locks, neoStore );
     }
 
     @After

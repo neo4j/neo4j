@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
@@ -49,15 +49,19 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -74,17 +78,9 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
@@ -719,6 +715,66 @@ public class WriteTransactionTest
         indexUpdates.assertContent( expectedUpdate );
     }
 
+    @Test
+    public void shouldLockUpdatedNodes() throws Exception
+    {
+        // given
+        NodeStore nodeStore = neoStore.getNodeStore();
+        long[] nodes = { // allocate ids
+                nodeStore.nextId(),
+                nodeStore.nextId(),
+                nodeStore.nextId(),
+                nodeStore.nextId(),
+                nodeStore.nextId(),
+                nodeStore.nextId(),
+                nodeStore.nextId(),
+        };
+        // create the node records that we will modify in our main tx.
+        {
+            WriteTransaction tx = newWriteTransaction( mockIndexing );
+            for ( int i = 1; i < nodes.length - 1; i++ )
+            {
+                tx.nodeCreate( nodes[i] );
+            }
+            tx.nodeAddProperty( nodes[3], 0, "old" );
+            tx.nodeAddProperty( nodes[4], 0, "old" );
+            prepareAndCommit( tx );
+            reset( locks ); // reset the lock counts
+        }
+
+        // These are the changes we want to assert locking on
+        WriteTransaction tx = newWriteTransaction( mockIndexing );
+        tx.nodeCreate( nodes[0] );
+        tx.addLabelToNode( 0, nodes[1] );
+        tx.nodeAddProperty( nodes[2], 0, "value" );
+        tx.nodeChangeProperty( nodes[3], 0, "value" );
+        tx.nodeRemoveProperty( nodes[4], 0 );
+        tx.nodeDelete( nodes[5] );
+
+        tx.nodeCreate( nodes[6] );
+        tx.addLabelToNode( 0, nodes[6] );
+        tx.nodeAddProperty( nodes[6], 0, "value" );
+
+        // when
+        prepareAndCommit( tx );
+
+        // then
+        // create node, NodeCommand == 1 update
+        verify( locks, times( 1 ) ).acquireNodeLock( nodes[0], LockService.LockType.WRITE_LOCK );
+        // add label, NodeCommand == 1 update
+        verify( locks, times( 1 ) ).acquireNodeLock( nodes[1], LockService.LockType.WRITE_LOCK );
+        // add property, NodeCommand and PropertyCommand == 2 updates
+        verify( locks, times( 2 ) ).acquireNodeLock( nodes[2], LockService.LockType.WRITE_LOCK );
+        // update property, in place, PropertyCommand == 1 update
+        verify( locks, times( 1 ) ).acquireNodeLock( nodes[3], LockService.LockType.WRITE_LOCK );
+        // remove property, updates the Node and the Property == 2 updates
+        verify( locks, times( 2 ) ).acquireNodeLock( nodes[4], LockService.LockType.WRITE_LOCK );
+        // delete node, single NodeCommand == 1 update
+        verify( locks, times( 1 ) ).acquireNodeLock( nodes[5], LockService.LockType.WRITE_LOCK );
+        // create and add-label goes into the NodeCommand, add property is a PropertyCommand == 2 updates
+        verify( locks, times( 2 ) ).acquireNodeLock( nodes[6], LockService.LockType.WRITE_LOCK );
+    }
+
     private String string( int length )
     {
         StringBuilder result = new StringBuilder();
@@ -737,7 +793,9 @@ public class WriteTransactionTest
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
     private NeoStore neoStore;
+    private LockService locks;
     private CacheAccessBackDoor cacheAccessBackDoor;
+    private final List<Lock> lockMocks = new ArrayList<>();
 
     @Before
     public void before() throws Exception
@@ -747,7 +805,26 @@ public class WriteTransactionTest
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), DEV_NULL, new DefaultTxHook() );
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
+        locks = mock( LockService.class, new Answer()
+        {
+            @Override
+            public synchronized Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Lock mock = mock( Lock.class );
+                lockMocks.add( mock );
+                return mock;
+            }
+        } );
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
+    }
+
+    @After
+    public void shouldReleaseAllLocks()
+    {
+        for ( Lock lock : lockMocks )
+        {
+            verify( lock ).release();
+        }
     }
 
     private static class VerifyingXaLogicalLog extends XaLogicalLog
@@ -812,7 +889,7 @@ public class WriteTransactionTest
         VerifyingXaLogicalLog log = new VerifyingXaLogicalLog( fs.get(), verifier );
         WriteTransaction result = new WriteTransaction( 0, 0l, log, transactionState, neoStore,
                 cacheAccessBackDoor, indexing, NO_LABEL_SCAN_STORE, new IntegrityValidator(neoStore, indexing ),
-                kernelTransaction );
+                kernelTransaction, locks );
         result.setCommitTxId( neoStore.getLastCommittedTx()+1 );
         return result;
     }
@@ -825,7 +902,7 @@ public class WriteTransactionTest
         {
             super(  null,
                     new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
-                    new NeoStoreIndexStoreView( neoStore ),
+                    new NeoStoreIndexStoreView( locks, neoStore ),
                     null,
                     new KernelSchemaStateStore(),
                     new SingleLoggingService( DEV_NULL )

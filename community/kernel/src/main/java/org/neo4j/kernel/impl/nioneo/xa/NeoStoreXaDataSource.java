@@ -43,18 +43,18 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.Kernel;
-import org.neo4j.kernel.impl.api.store.PersistenceCache;
-import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -67,6 +67,8 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -146,6 +148,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private final JobScheduler scheduler;
     private final UpdateableSchemaState updateableSchemaState;
     private final Config config;
+    private final LockService locks;
 
     private LifeSupport life;
 
@@ -287,6 +290,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.storeFactory = sf;
         this.xaFactory = xaFactory;
         this.updateableSchemaState = updateableSchemaState;
+        this.locks = new ReentrantLockService();
     }
 
     @Override
@@ -346,7 +350,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                     new IndexingService(
                             scheduler,
                             providerMap,
-                            new NeoStoreIndexStoreView( neoStore ),
+                            new NeoStoreIndexStoreView( locks, neoStore ),
                             tokenNameLookup, updateableSchemaState,
                             logging ) );
 
@@ -510,7 +514,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
             return new InterceptingWriteTransaction( identifier, lastCommittedTxWhenTransactionStarted, getLogicalLog(),
                     neoStore, state, cacheAccess, indexingService, labelScanStore, first, integrityValidator,
-                    (KernelTransactionImplementation)kernel.newTransaction() );
+                    (KernelTransactionImplementation)kernel.newTransaction(), locks );
         }
     }
 
@@ -521,7 +525,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         {
             return new WriteTransaction( identifier, lastCommittedTxWhenTransactionStarted, getLogicalLog(), state,
                 neoStore, cacheAccess, indexingService, labelScanStore, integrityValidator,
-                (KernelTransactionImplementation)kernel.newTransaction() );
+                (KernelTransactionImplementation)kernel.newTransaction(), locks );
         }
 
         @Override
