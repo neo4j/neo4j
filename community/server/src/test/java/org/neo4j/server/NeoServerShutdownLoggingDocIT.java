@@ -57,8 +57,10 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
         InMemoryAppender appender = new InMemoryAppender( AbstractNeoServer.log );
         server.stop();
         String actual = appender.toString();
-        // Handle local log4j configuration that changes how log levels are formatted
-        assertTrue( actual.contains( "INFO: Successfully shutdown database." )
-                    || actual.contains( "Information: Successfully shutdown database." ) );
+        // Handle local log4j configuration that changes how log levels are
+        // formatted
+        String content = ": Successfully shutdown database.";
+        assertTrue( actual.contains( "INFO" + content ) || actual.contains( "Information" + content )
+                    || actual.contains( "Info" + content ) );
     }
 }

@@ -100,7 +100,7 @@ public abstract class AbstractApp implements App
 	@Override
     public void shutdown()
 	{
-	    // Default behaviour is to do nothing
+	    // Default behavior is to do nothing
 	}
 	
 	@Override

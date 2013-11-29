@@ -43,7 +43,7 @@ class PrettyGraphsWheelTest extends DocumentingTestBase with StatisticsChecker {
         
 - Create a center node.
 - Once per element in the range, create a leaf and connect it to the center.
-- Connect neighbouring leafs.
+- Connect neighboring leafs.
 - Find the minimum and maximum leaf and connect these.
 - Return the id of the center node.""",
       queryText = """CREATE (center)

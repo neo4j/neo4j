@@ -68,7 +68,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * and the usage of it. The new way of doing traversals is by creating a
  * new {@link TraversalDescription} from
  * {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription()}, add rules and
- * behaviours to it and then calling
+ * behaviors to it and then calling
  * {@link TraversalDescription#traverse(Node...)}.
  */
 public interface Traverser extends Iterable<Node>

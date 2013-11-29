@@ -25,7 +25,7 @@ Depending on which Neo4j edition you are using different sets of management bean
 * For all editions, see the
 http://components.neo4j.org/neo4j-jmx/{neo4j-version}/apidocs/org/neo4j/jmx/package-summary.html[org.neo4j.jmx]
   package.
-* For the Advanced and Enterprise editions, see the
+* For the Enterprise edition, see the
 http://components.neo4j.org/neo4j-management/{neo4j-version}/apidocs/org/neo4j/management/package-summary.html[org.neo4j.management]
   package as well.
 

@@ -14,7 +14,7 @@ The main parts of the manual are:
 * <<operations>> -- how to install and maintain Neo4j.
 * <<tools>> -- guides on tools.
 * <<community>> -- getting help from, contributing to.
-* <<advanced-usage>> -- using Neo4j in more advanced ways,
+* <<advanced-usage>> -- using Neo4j in more advanced ways.
 * <<manpages>> -- command line documentation.
 
 The material is practical, technical, and focused on answering specific questions. 
@@ -29,6 +29,15 @@ The included code examples are executed when Neo4j is built and tested.
 Also, the REST API request and response examples are captured from real interaction with a Neo4j server.
 Thus, the examples are always in sync with how Neo4j actually works.
 
+There's other documentation resources besides the manual as well:
+
+* Neo4j Cypher Refcard, see http://docs.neo4j.org/ for available versions.
+* Neo4j GraphGist, an online tool for creating interactive web pages with executable Cypher statements: http://gist.neo4j.org/.
+* The main Neo4j site at http://www.neo4j.org/ is a good starting point to learn about Neo4j.
+
+ifndef::nonhtmloutput[]
+For a PDF version of the manual, see http://docs.neo4j.org/.
+endif::nonhtmloutput[]
 
 _Who should read this?_
 

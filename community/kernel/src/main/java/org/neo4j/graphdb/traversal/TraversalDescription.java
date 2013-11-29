@@ -78,7 +78,7 @@ public interface TraversalDescription
 
     /**
      * Adds {@code evaluator} to the list of evaluators which will control the
-     * behaviour of the traversal. Each {@link Evaluator} can decide whether or
+     * behavior of the traversal. Each {@link Evaluator} can decide whether or
      * not to include a position in the traverser result, i.e. return it from
      * the {@link Traverser} iterator and also whether to continue down that
      * path or to prune, so that the traverser won't continue further down that
@@ -99,7 +99,7 @@ public interface TraversalDescription
 
     /**
      * Adds {@code evaluator} to the list of evaluators which will control the
-     * behaviour of the traversal. Each {@link PathEvaluator} can decide whether or
+     * behavior of the traversal. Each {@link PathEvaluator} can decide whether or
      * not to include a position in the traverser result, i.e. return it from
      * the {@link Traverser} iterator and also whether to continue down that
      * path or to prune, so that the traverser won't continue further down that

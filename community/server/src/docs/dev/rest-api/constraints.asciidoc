@@ -1,9 +1,6 @@
 [[rest-api-schema-constraints]]
 == Constraints ==
 
-[WARNING]
-This feature is currently in active development, and is not guaranteed to work properly until this message is removed.
-
 include::create-uniqueness-constraint.asciidoc[]
 
 include::get-a-specific-uniqueness-constraint.asciidoc[]

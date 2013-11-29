@@ -102,7 +102,7 @@ public interface GraphDatabaseService
      * nodes.
      * <p>
      * If no indexes exist for the label/property combination, the database will
-     * scan all labelled nodes looking for the property value.
+     * scan all labeled nodes looking for the property value.
      *
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
      * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
@@ -204,7 +204,7 @@ public interface GraphDatabaseService
     /**
      * Registers {@code handler} as a handler for kernel events which
      * are generated from different places in the lifecycle of the kernel.
-     * To guarantee proper behaviour the handler should be registered right
+     * To guarantee proper behavior the handler should be registered right
      * after the graph database has been started. If the specified handler
      * instance has already been registered this method will do nothing.
      *
