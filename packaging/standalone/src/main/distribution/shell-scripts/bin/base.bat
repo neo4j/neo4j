@@ -44,7 +44,7 @@ goto:eof
   )
 
   rem Check classpath
-  echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
+  echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-purpose use. May be unstable."
 
   rem Unescape javaPath
   for /f "tokens=* delims=" %%P in (%javaPath%) do (
@@ -91,7 +91,7 @@ goto:eof
 
   if "%JAVAVER%"=="1.7" goto:eof
   if "%JAVAVER%"=="1.8" (
-    echo WARNING! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+    echo ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
     goto:eof
   )
   set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.

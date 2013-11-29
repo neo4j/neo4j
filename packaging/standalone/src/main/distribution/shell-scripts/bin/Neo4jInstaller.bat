@@ -90,7 +90,7 @@ goto :main %1
   goto :eof
 
 :usage
-  echo "Usage: $0 <install|remove>"
+  echo Usage: %~0Neo4jInstaller.bat ^<install^|remove^>
   goto:eof
 
 :main
