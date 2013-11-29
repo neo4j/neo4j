@@ -28,19 +28,22 @@ goto:eof
   call:checkSettings
   if not %settingError% == "" (
     echo %settingError% variable is not set.
-    goto:instructions
+    call:instructions
+    goto:eof
   )
 
   call "%~dps0functions.bat" :findJavaHome
   if not "%javaHomeError%" == "" (
     echo %javaHomeError%
-    goto:instructions
+    call:instructions
+    goto:eof
   )
 
   call:verifySupportedJavaVersion
   if not "%javaVersionError%" == "" (
     echo %javaVersionError%
-    goto:instructions
+    call:instructions
+    goto:eof
   )
 
   rem Check classpath

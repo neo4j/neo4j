@@ -112,16 +112,10 @@ findjava() {
         JAVACMD="$JAVA_HOME/bin/java"
       fi
     else
-      case "`uname`" in
-        Darwin*)
-          if [ -n "$JAVA_HOME" ]; then
-             JAVACMD=`which java`
-          fi
-          ;;
-        *)
-          JAVACMD=`which java`
-          ;;
-       esac
+      if [ "`uname`" != "Darwin" ] ; then
+        # Don't use default java on Darwin because it displays a misleading dialog box
+        JAVACMD=`which java`
+      fi
     fi
   fi
 }
