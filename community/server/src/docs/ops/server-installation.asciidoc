@@ -32,6 +32,10 @@ We recommend that you install the Java JDK 7 from the http://www.oracle.com/tech
 2. Double-click the downloaded installer file.
 3. Follow the prompts.
 
+[NOTE]
+The installer will prompt to be granted Administrator privileges.
+Newer versions of Windows come with a SmartScreen feature that may prevent the installer from running -- you can make it run anyway by clicking "More info" on the "Windows protected your PC" screen.
+
 [[windows-console]]
 === Windows Console Application ===
 1. Download the latest release from http://neo4j.org/download.
