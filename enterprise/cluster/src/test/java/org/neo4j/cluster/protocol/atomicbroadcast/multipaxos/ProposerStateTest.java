@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
@@ -31,6 +26,10 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 public class ProposerStateTest
 {
@@ -38,6 +37,7 @@ public class ProposerStateTest
     public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
     {
         ProposerContext context = Mockito.mock(ProposerContext.class);
+        when(context.getLogger( any(Class.class) )).thenReturn( StringLogger.DEV_NULL );
 
         InstanceId instanceId = new InstanceId( 42 );
         PaxosInstanceStore paxosInstanceStore = new PaxosInstanceStore();

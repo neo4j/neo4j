@@ -420,8 +420,8 @@ public class MultiPaxosContext
                 .ConfigurationRequestState>();
         private Iterable<URI> joiningInstances;
         private boolean joinDenied;
-        private Set<org.neo4j.cluster.InstanceId> currentlyJoiningInstances = new HashSet<org.neo4j.cluster
-                .InstanceId>();
+        private Map<org.neo4j.cluster.InstanceId, URI> currentlyJoiningInstances =
+                new HashMap<org.neo4j.cluster.InstanceId, URI>();
 
 
         // Cluster API
@@ -607,14 +607,16 @@ public class MultiPaxosContext
             return Iterables.filter( not( in( me ) ), configuration.getMemberIds() );
         }
 
-        public boolean isInstanceWithIdCurrentlyJoining( org.neo4j.cluster.InstanceId joiningId )
+        /** Used to ensure that no other instance is trying to join with the same id from a different machine */
+        public boolean isInstanceJoiningFromDifferentUri( org.neo4j.cluster.InstanceId joiningId, URI uri )
         {
-            return currentlyJoiningInstances.contains( joiningId );
+            return currentlyJoiningInstances.containsKey( joiningId )
+                    && !currentlyJoiningInstances.get( joiningId ).equals(uri);
         }
 
-        public void instanceIsJoining( org.neo4j.cluster.InstanceId joiningId )
+        public void instanceIsJoining( org.neo4j.cluster.InstanceId joiningId, URI uri )
         {
-            currentlyJoiningInstances.add( joiningId );
+            currentlyJoiningInstances.put( joiningId, uri );
         }
 
         public String myName()
