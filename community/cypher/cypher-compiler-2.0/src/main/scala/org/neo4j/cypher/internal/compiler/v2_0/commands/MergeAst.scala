@@ -34,30 +34,36 @@ case class MergeAst(patterns: Seq[AbstractPattern],
   def nextStep(): Seq[UpdateAction] = singleNodeActions ++ getPatternMerges
 
   def singleNodeActions: Seq[MergeNodeAction] = patterns.collect {
-    case ParsedEntity(name, _, props, labelTokens) =>
+    case entity: ParsedEntity                          => getSingleNodeAction(entity)
+    case ParsedNamedPath(_, Seq(entity: ParsedEntity)) => getSingleNodeAction(entity)
+  }
 
-      val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
+  private def getSingleNodeAction(entity:ParsedEntity) = {
+    val ParsedEntity(name, _, props, labelTokens) = entity
 
-      val propertyPredicates = props.map {
-        case (propertyKey, expression) => Equals(Property(Identifier(name), PropertyKey(propertyKey)), expression)
+    val labelPredicates = labelTokens.map(labelName => HasLabel(Identifier(name), labelName))
+
+    val propertyPredicates = props.map {
+      case (propertyKey, expression) => Equals(Property(Identifier(name), PropertyKey(propertyKey)), expression)
+    }
+
+    val propertyMap: Map[KeyToken, Expression] = props.collect {
+      case (propertyKey, expression) => PropertyKey(propertyKey) -> expression
+    }.toMap
+
+    val labelActions = labelTokens.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
+    val propertyActions = props.map {
+      case (propertyKey, expression) => {
+        if (propertyKey == "*") throw new PatternException("MERGE does not support map parameters")
+        PropertySetAction(Property(Identifier(name), PropertyKey(propertyKey)), expression)
       }
+    }
 
-      val propertyMap: Map[KeyToken, Expression] = props.collect {
-        case (propertyKey, expression) => PropertyKey(propertyKey) -> expression
-      }.toMap
+    val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ getActionsFor(On.Create)
+    val predicates = labelPredicates ++ propertyPredicates
 
-      val labelActions = labelTokens.map(labelName => LabelAction(Identifier(name), LabelSetOp, Seq(labelName)))
-      val propertyActions = props.map {
-        case (propertyKey, expression) => {
-          if (propertyKey == "*") throw new PatternException("MERGE does not support map parameters")
-          PropertySetAction(Property(Identifier(name), PropertyKey(propertyKey)), expression)
-        }
-      }
+    MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, getActionsFor(On.Match), None)
 
-      val onCreate: Seq[UpdateAction] = labelActions ++ propertyActions ++ getActionsFor(On.Create)
-      val predicates = labelPredicates ++ propertyPredicates
-
-      MergeNodeAction(name, propertyMap, labelTokens, predicates, onCreate, getActionsFor(On.Match), None)
   }
 
   private def getPatternMerges =

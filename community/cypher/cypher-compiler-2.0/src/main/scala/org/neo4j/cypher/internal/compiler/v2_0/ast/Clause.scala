@@ -146,7 +146,10 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], token: InputToken)
 
   def addToLegacyQuery(builder: commands.QueryBuilder) = {
     val updates = builder.updates ++ legacyUpdateActions
-    builder.updates(updates: _*)
+    val namedPaths = builder.namedPaths ++ pattern.toLegacyNamedPaths
+    builder.
+      updates(updates: _*).
+      namedPaths(namedPaths: _*)
   }
 }
 

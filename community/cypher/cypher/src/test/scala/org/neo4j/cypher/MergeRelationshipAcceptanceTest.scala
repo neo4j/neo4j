@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Path, Relationship}
 
 class MergeRelationshipAcceptanceTest
   extends ExecutionEngineHelper with Assertions with StatisticsChecker {
@@ -331,5 +331,29 @@ class MergeRelationshipAcceptanceTest
       assert(rel.getStartNode === a)
       assert(rel.getEndNode === b)
     }
+  }
+
+  @Test def should_introduce_named_paths1() {
+    val result = execute("merge (a) merge p = (a)-[:R]->() return p")
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 2)
+    val resultList = result.toList
+    assert(resultList.size === 1)
+    assert(resultList.head.head._2.isInstanceOf[Path], "Expected to get a path back")
+  }
+
+  @Test def should_introduce_named_paths2() {
+    val result = execute("merge (a { x:1 }) merge (b { x:2 }) merge p = (a)-[:R]->(b) return p")
+    assertStats(result, relationshipsCreated = 1, nodesCreated = 2, propertiesSet = 2)
+    val resultList = result.toList
+    assert(resultList.size === 1)
+    assert(resultList.head.head._2.isInstanceOf[Path], "Expected to get a path back")
+  }
+
+  @Test def should_introduce_named_paths3() {
+    val result = execute("merge p = (a { x:1 }) return p")
+    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+    val resultList = result.toList
+    assert(resultList.size === 1)
+    assert(resultList.head.head._2.isInstanceOf[Path], "Expected to get a path back")
   }
 }
