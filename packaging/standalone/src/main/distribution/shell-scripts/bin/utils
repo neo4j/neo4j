@@ -25,8 +25,7 @@ function show_java_requirements() {
 }
 
 function show_installation_instructions() {
-  echo "* Installation instructions for Neo4j Server are located at:"
-  echo "  http://docs.neo4j.org/chunked/milestone/server-installation.html"
+  echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
 }
 
 # getconfig <filename>
@@ -113,7 +112,16 @@ findjava() {
         JAVACMD="$JAVA_HOME/bin/java"
       fi
     else
-      JAVACMD=`which java`
+      case "`uname`" in
+        Darwin*)
+          if [ -n "$JAVA_HOME" ]; then
+             JAVACMD=`which java`
+          fi
+          ;;
+        *)
+          JAVACMD=`which java`
+          ;;
+       esac
     fi
   fi
 }

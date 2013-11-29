@@ -155,6 +155,5 @@ goto:eof
 :instructions
   echo * Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download "Java Platform (JDK) 7" from:
   echo   http://www.oracle.com/technetwork/java/javase/downloads/index.html
-  echo * Installation instructions for Neo4j Server are located at:
-  echo   http://docs.neo4j.org/chunked/milestone/server-installation.html
+  echo * Please see http://docs.neo4j.org/ for Neo4j Server installation instructions.
   goto:eof
