@@ -31,7 +31,7 @@ goto:eof
     goto:eof
   )
 
-  call functions.bat :findJavaHome
+  call "%~dps0functions.bat" :findJavaHome
   if not "%javaHomeError%" == "" (
     echo %javaHomeError%
     goto:eof
@@ -53,7 +53,7 @@ goto:eof
 
   set wrapperJarFilename=${windows-wrapper.filename}
   set command=""
-  call:parseConfig "%~dp0..\%configFile%"
+  call:parseConfig "%~dps0..\%configFile%"
 
   for /F %%v in ('echo %1^|findstr "^help$ ^console$"') do set command=%%v
 
