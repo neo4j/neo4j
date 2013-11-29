@@ -89,8 +89,7 @@ public class TestIndexCreation
                     @Override
                     public void run()
                     {
-                        Transaction tx = db.beginTx();
-                        try
+                        try(Transaction tx = db.beginTx())
                         {
                             latch.await();
                             Index<Node> index = db.index().forNodes( "index" + r );
@@ -98,13 +97,8 @@ public class TestIndexCreation
                             index.add( node, "name", "Name" );
                             tx.success();
                         }
-                        catch ( InterruptedException e )
+                        catch ( InterruptedException ignored )
                         {
-                            Thread.interrupted();
-                        }
-                        finally
-                        {
-                            tx.finish();
                         }
                     }
                 } );

@@ -333,9 +333,8 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                 {
                     wait( 2000 /*wait timeout just for safety*/ );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignored )
                 {
-                    Thread.interrupted();
                     // Hmm, ok we got interrupted. No biggy I'd guess
                 }
             }

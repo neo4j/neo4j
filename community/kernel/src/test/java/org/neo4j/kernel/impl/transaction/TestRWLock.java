@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
-
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -38,6 +30,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockWorker.ResourceObject;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.LockWorker.newResourceObject;
 
 public class TestRWLock
 {
@@ -377,7 +377,6 @@ public class TestRWLock
         }
         catch ( InterruptedException e )
         {
-            Thread.interrupted();
         }
     }
 

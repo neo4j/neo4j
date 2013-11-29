@@ -266,9 +266,8 @@ public class FileUtils
         {
             Thread.sleep( 500 );
         }
-        catch ( InterruptedException ee )
+        catch ( InterruptedException ignored )
         {
-            Thread.interrupted();
         } // ok
         System.gc();
     }

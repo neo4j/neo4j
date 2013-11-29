@@ -713,9 +713,8 @@ public abstract class SubProcess<T, P> implements Serializable
                 {
                     Thread.sleep( 10 );
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException ignored )
                 {
-                    Thread.interrupted();
                 }
             }
         }
