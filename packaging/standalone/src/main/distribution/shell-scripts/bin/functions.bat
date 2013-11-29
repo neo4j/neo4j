@@ -29,7 +29,7 @@ rem
   )
 
   if "%javaVersion%" == "" (
-    set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry. Please make sure you either have %JAVA_HOME% environment variable defined and pointing to a JRE installation, or the registry key defined.
+    set javaHomeError=ERROR! Unable to locate Java. Could not find %keyName%/%valueName% entry in windows registry. Please make sure you either have JAVA_HOME environment variable defined and pointing to a JRE installation, or the registry key defined.
     goto:eof
   )
 

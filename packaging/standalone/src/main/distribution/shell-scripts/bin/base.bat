@@ -28,23 +28,23 @@ goto:eof
   call:checkSettings
   if not %settingError% == "" (
     echo %settingError% variable is not set.
-    goto:eof
+    goto:instructions
   )
 
   call "%~dps0functions.bat" :findJavaHome
   if not "%javaHomeError%" == "" (
     echo %javaHomeError%
-    goto:eof
+    goto:instructions
   )
 
   call:verifySupportedJavaVersion
   if not "%javaVersionError%" == "" (
     echo %javaVersionError%
-    goto:eof
+    goto:instructions
   )
 
   rem Check classpath
-  echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-pupose use. May be unstable."
+  echo "%classpath%" | findstr "SNAPSHOT" > NUL && echo "WARNING! Latest Development Build. Not intended for general-purpose use. May be unstable."
 
   rem Unescape javaPath
   for /f "tokens=* delims=" %%P in (%javaPath%) do (
@@ -91,7 +91,7 @@ goto:eof
 
   if "%JAVAVER%"=="1.7" goto:eof
   if "%JAVAVER%"=="1.8" (
-    echo WARNING! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+    echo ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
     goto:eof
   )
   set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
@@ -151,3 +151,10 @@ goto:eof
 	set serviceStartType=%2
 	)
   goto :eof
+
+:instructions
+  echo * Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download "Java Platform (JDK) 7" from:
+  echo   http://www.oracle.com/technetwork/java/javase/downloads/index.html
+  echo * Installation instructions for Neo4j Server are located at:
+  echo   http://docs.neo4j.org/chunked/milestone/server-installation.html
+  goto:eof
