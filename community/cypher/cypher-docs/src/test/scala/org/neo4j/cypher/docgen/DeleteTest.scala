@@ -22,8 +22,9 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.StatisticsChecker
 
-class DeleteTest extends DocumentingTestBase {
+class DeleteTest extends DocumentingTestBase with StatisticsChecker {
   override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
@@ -53,5 +54,14 @@ class DeleteTest extends DocumentingTestBase {
       queryText = "match (n {name: 'Andres'})-[r]-() delete n, r",
       returns = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(node("Andres")))
+  }
+
+  @Test def delete_all_nodes_and_all_relationships() {
+    testQuery(
+      title = "Delete all nodes and relationships",
+      text = "This query isn't for deleting large amounts of data, but is nice when playing around with small example data sets.",
+      queryText = "MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r",
+      returns = "Nothing is returned from this query, except the count of affected nodes.",
+      assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 3))
   }
 }
