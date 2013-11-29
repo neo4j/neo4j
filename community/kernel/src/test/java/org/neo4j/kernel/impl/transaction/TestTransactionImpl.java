@@ -34,7 +34,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.noStateFactory;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 

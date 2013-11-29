@@ -33,6 +33,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -46,8 +47,6 @@ import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;

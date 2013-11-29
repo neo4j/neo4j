@@ -32,11 +32,8 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.MultiPaxosContext;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
@@ -44,8 +41,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class HeartbeatStateTest
 {

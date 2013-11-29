@@ -29,10 +29,9 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestLogPruning

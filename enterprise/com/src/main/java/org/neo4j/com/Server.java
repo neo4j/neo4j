@@ -71,12 +71,6 @@ import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
  * of a specified communication interface, injected in the constructor.

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.cache.HighPerformanceCache.Monitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -34,8 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import static org.neo4j.kernel.impl.cache.HighPerformanceCache.*;
 
 public class TestHighPerformanceCache
 {
