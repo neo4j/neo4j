@@ -124,6 +124,8 @@ public class ClusterClient extends LifecycleAdapter
         long electionTimeout(); // inherits paxosTimeout
 
         long clusterJoinTimeout(); // Whether to timeout the whole process or not
+
+        String name(); // Cluster client name, if any
     }
 
     public static Configuration adapt( final Config config )
@@ -238,6 +240,12 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.get(clusterJoinTimeout);
             }
+
+            @Override
+            public String name()
+            {
+                return config.get( ClusterSettings.instance_name );
+            }
         };
     }
 
@@ -282,6 +290,18 @@ public class ClusterClient extends LifecycleAdapter
             public HostnamePort clusterServer()
             {
                 return config.getAddress();
+            }
+
+            @Override
+            public int defaultPort()
+            {
+                return 5001;
+            }
+
+            @Override
+            public String name()
+            {
+                return config.name();
             }
         }, logging );
 

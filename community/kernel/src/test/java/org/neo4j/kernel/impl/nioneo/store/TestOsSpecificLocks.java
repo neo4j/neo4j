@@ -19,14 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
-
 import java.io.File;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 import org.junit.Before;
@@ -40,6 +34,9 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class TestOsSpecificLocks
 {
@@ -65,8 +62,16 @@ public class TestOsSpecificLocks
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
         assertTrue( new File( path, "lock" ).exists() );
-        // If we try to lock with the lock held, a null should be served
-        assertNull( fs.tryLock( fileName, channel ) );
+        // If we try to lock with the lock held, it should throw an IOException
+        try
+        {
+            fs.tryLock( fileName, channel );
+            fail("Should have thrown IO exception.");
+        }
+        catch(IOException e)
+        {
+
+        }
 
         // But the rest of the files should return non null (placebos,
         // actually)

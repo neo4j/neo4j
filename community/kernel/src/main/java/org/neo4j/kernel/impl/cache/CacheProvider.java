@@ -24,6 +24,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HasSettings;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class CacheProvider extends Service implements HasSettings
@@ -41,9 +42,10 @@ public abstract class CacheProvider extends Service implements HasSettings
         this.description = description;
     }
     
-    public abstract Cache<NodeImpl> newNodeCache( StringLogger logger, Config config );
+    public abstract Cache<NodeImpl> newNodeCache( StringLogger logger, Config config, Monitors monitors );
 
-    public abstract Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config );
+    public abstract Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config,
+            Monitors monitors );
     
     public String getName()
     {

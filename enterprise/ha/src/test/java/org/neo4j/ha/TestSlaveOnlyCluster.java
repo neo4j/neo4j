@@ -58,6 +58,8 @@ public class TestSlaveOnlyCluster
         {
             clusterManager.start();
 
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+
             final CountDownLatch failedLatch = new CountDownLatch( 2 );
             final CountDownLatch electedLatch = new CountDownLatch( 2 );
             HeartbeatListener masterDownListener = new HeartbeatListener()
@@ -132,6 +134,8 @@ public class TestSlaveOnlyCluster
         try
         {
             clusterManager.start();
+
+            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
 
             HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
             assertThat( clusterManager.getDefaultCluster().getServerId( master ), CoreMatchers.equalTo( 3 ) );

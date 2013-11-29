@@ -268,7 +268,6 @@ class LuceneTransaction extends XaTransaction
                     if ( commandList.isDeletion() )
                     {
                         dataSource.removeExpectedFutureDeletion( identifier );
-                        continue;
                     }
                     else if ( commandList.containsWrites() )
                     {

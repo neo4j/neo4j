@@ -55,6 +55,7 @@ public class ProtocolServer implements BindingNotifier
         stateMachines.addMessageProcessor( proxyFactory );
     }
 
+    @Override
     public void addBindingListener( BindingListener listener )
     {
         bindingListeners = Listeners.addListener( listener, bindingListeners );
@@ -71,6 +72,7 @@ public class ProtocolServer implements BindingNotifier
         }
     }
 
+    @Override
     public void removeBindingListener( BindingListener listener )
     {
         bindingListeners = Listeners.removeListener( listener, bindingListeners );

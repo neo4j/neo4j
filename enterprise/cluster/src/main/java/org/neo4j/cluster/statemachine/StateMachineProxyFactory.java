@@ -45,11 +45,11 @@ import org.neo4j.cluster.com.message.MessageType;
 public class StateMachineProxyFactory
         implements MessageProcessor
 {
-    private StateMachines stateMachines;
-    private StateMachineConversations conversations;
+    private final StateMachines stateMachines;
+    private final StateMachineConversations conversations;
     private volatile InstanceId me;
 
-    private Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
+    private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
 
 
     public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
@@ -188,8 +188,8 @@ public class StateMachineProxyFactory
     class ResponseFuture
             implements Future<Object>
     {
-        private String conversationId;
-        private MessageType initiatedByMessageType;
+        private final String conversationId;
+        private final MessageType initiatedByMessageType;
 
         private Message response;
 
@@ -247,7 +247,9 @@ public class StateMachineProxyFactory
             }
 
             while (response == null)
+            {
                 this.wait( 50 );
+            }
 
             return getResult();
         }
