@@ -19,6 +19,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+function show_java_requirements() {
+  echo "* Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download \"Java Platform (JDK) 7\" from:"
+  echo "  http://www.oracle.com/technetwork/java/javase/downloads/index.html"
+}
+
+function show_installation_instructions() {
+  echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
+}
+
 # getconfig <filename>
 #   - plain key-value pairs become environment variables
 #   - keys have '.' chars changed to '_'
@@ -103,7 +112,10 @@ findjava() {
         JAVACMD="$JAVA_HOME/bin/java"
       fi
     else
-      JAVACMD=`which java`
+      if [ "`uname`" != "Darwin" ] ; then
+        # Don't use default java on Darwin because it displays a misleading dialog box
+        JAVACMD=`which java`
+      fi
     fi
   fi
 }
@@ -150,9 +162,11 @@ reportstatus() {
 # Use findjava to set JAVACMD. If that fails ($JAVACMD is not set) then exit with failure
 exitonnojava() {
   findjava
+
   if [ ! -x "$JAVACMD" ] ; then
-    echo "Error: JAVA_HOME is not defined correctly."
-    echo "  We cannot execute $JAVACMD"
+    echo "ERROR: Unable to find java. (Cannot execute $JAVACMD)"
+    show_java_requirements
+    show_installation_instructions
     exit 1
   fi
 }
@@ -344,8 +358,9 @@ selectinittool() {
 }
 
 complain_about_java_version() {
-  echo "ERROR! Neo4j cannot be started using java version $JAVAVERSION. Please use Oracle(R) Java(TM) 7."
-  echo "Download \"Java Platform (JDK) 7\" from http://www.oracle.com/technetwork/java/javase/downloads/index.html"
+  echo "ERROR! Neo4j cannot be started using java version $JAVAVERSION. "
+  show_java_requirements
+  show_installation_instructions
 }
 
 # check if running Oracle JDK 7, warn if not

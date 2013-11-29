@@ -24,4 +24,4 @@ set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./c
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
 set configFile="conf\neo4j-wrapper.conf"
 
-call "%~dp0\base.bat" %1 %2 %3 %4 %5
+call "%~dps0base.bat" %1 %2 %3 %4 %5
