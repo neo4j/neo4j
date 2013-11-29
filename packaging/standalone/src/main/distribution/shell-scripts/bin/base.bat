@@ -28,18 +28,21 @@ goto:eof
   call:checkSettings
   if not %settingError% == "" (
     echo %settingError% variable is not set.
+    call:instructions
     goto:eof
   )
 
   call "%~dps0functions.bat" :findJavaHome
   if not "%javaHomeError%" == "" (
     echo %javaHomeError%
+    call:instructions
     goto:eof
   )
 
   call:verifySupportedJavaVersion
   if not "%javaVersionError%" == "" (
     echo %javaVersionError%
+    call:instructions
     goto:eof
   )
 
@@ -151,3 +154,9 @@ goto:eof
 	set serviceStartType=%2
 	)
   goto :eof
+
+:instructions
+  echo * Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download "Java Platform (JDK) 7" from:
+  echo   http://www.oracle.com/technetwork/java/javase/downloads/index.html
+  echo * Please see http://docs.neo4j.org/ for Neo4j Server installation instructions.
+  goto:eof
