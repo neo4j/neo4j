@@ -24,4 +24,4 @@ set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar"
 set mainclass="-DserverMainClass=org.neo4j.server.enterprise.StandaloneClusterClient"
 set configFile="conf\arbiter-wrapper.conf"
 
-call "%~dp0\base.bat" %1 %2 %3 %4 %5
+call "%~dps0base.bat" %1 %2 %3 %4 %5"
