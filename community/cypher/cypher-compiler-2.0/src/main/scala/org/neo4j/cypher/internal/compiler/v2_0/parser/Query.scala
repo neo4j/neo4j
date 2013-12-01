@@ -27,7 +27,7 @@ trait Query extends Parser
   with Base {
 
   def Query : Rule1[ast.Query] = rule {
-    SingleQuery ~~ zeroOrMore(Union)
+    SingleQuery ~~ zeroOrMore(Union ~ WS)
   }
 
   def SingleQuery : Rule1[ast.SingleQuery] = rule {
@@ -47,7 +47,7 @@ trait Query extends Parser
     | Return
   )
 
-  def Union : ReductionRule1[ast.Query, ast.Query] = rule("UNION") (
+  def Union : ReductionRule1[ast.Query, ast.Union] = rule("UNION") (
       keyword("UNION", "ALL") ~>> token ~~ SingleQuery ~~> ast.UnionAll
     | keyword("UNION") ~>> token ~~ SingleQuery ~~> ast.UnionDistinct
   )
