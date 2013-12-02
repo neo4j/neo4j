@@ -12,6 +12,10 @@ Remember that adding constraints is an atomic operation that can take a while --
 
 You can have multiple unique constraints for a given label.
 
+Note that adding a uniqueness constraint on a property will also add an index on that property, so you cannot add such and index separately.
+Cypher will use that index for lookups just like other indexes.
+If you drop a constraint and still want an index on the property, you will have to create the index.
+
 include::create-uniqueness-constraint.asciidoc[]
 
 include::drop-uniqueness-constraint.asciidoc[]
