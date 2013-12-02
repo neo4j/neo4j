@@ -197,19 +197,55 @@ public class Exceptions
     }
     
     @SuppressWarnings( "rawtypes" )
+    public static boolean contains( final Throwable cause, final String containsMessage, final Class... anyOfTheseClasses )
+    {
+        final Predicate<Throwable> anyOfClasses = isAnyOfClasses( anyOfTheseClasses );
+        return contains( cause, new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                return item.getMessage() != null && item.getMessage().contains( containsMessage ) &&
+                        anyOfClasses.accept( item );
+            }
+        } );
+    }
+
+    @SuppressWarnings( "rawtypes" )
     public static boolean contains( Throwable cause, Class... anyOfTheseClasses )
+    {
+        return contains( cause, isAnyOfClasses( anyOfTheseClasses ) );
+    }
+
+    public static boolean contains( Throwable cause, Predicate<Throwable> toLookFor )
     {
         while ( cause != null )
         {
-            for ( Class cls : anyOfTheseClasses )
+            if ( toLookFor.accept( cause ) )
             {
-                if ( cls.isInstance( cause ) )
-                {
-                    return true;
-                }
+                return true;
             }
             cause = cause.getCause();
         }
         return false;
+    }
+
+    public static Predicate<Throwable> isAnyOfClasses( final Class... anyOfTheseClasses )
+    {
+        return new Predicate<Throwable>()
+        {
+            @Override
+            public boolean accept( Throwable item )
+            {
+                for ( Class cls : anyOfTheseClasses )
+                {
+                    if ( cls.isInstance( item ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
     }
 }
