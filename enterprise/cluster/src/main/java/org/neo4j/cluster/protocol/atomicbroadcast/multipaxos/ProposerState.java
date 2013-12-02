@@ -451,7 +451,7 @@ public enum ProposerState
             if ( state.getLeave() != null )
             {
                 acceptors = new ArrayList<URI>( acceptors );
-                acceptors.remove( state.getLeave() );
+                acceptors.remove( currentMembers.get(state.getLeave()) );
             }
 
             if ( state.getJoin() != null && currentMembers.containsKey( state.getJoin() ) )
