@@ -20,9 +20,10 @@
 package org.neo4j.server.rest.transactional.error;
 
 import java.io.File;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
-
-import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
  * Generates Asciidoc for {@link Status}.
@@ -52,65 +53,66 @@ public class ErrorDocumentationGenerator
 
         File classificationFile = new File( baseDir, "status-code-classifications.asccidoc" );
         System.out.println("Saving status code classification docs in '" + classificationFile.getAbsolutePath() + "'.");
-        FileUtils.writeToFile( classificationFile, generator.generateClassificationDocs(), false );
+        try ( PrintStream out = new PrintStream( classificationFile, "UTF-8" ) )
+        {
+            Table classifications = generator.generateClassificationDocs();
+            classifications.print( out );
+        }
 
         File statusCodeFile = new File( baseDir, "status-code-codes.asccidoc" );
         System.out.println("Saving status code statuses docs in '" + statusCodeFile.getAbsolutePath() + "'.");
-        FileUtils.writeToFile( statusCodeFile, generator.generateStatusCodeDocs(), false );
+        try ( PrintStream out = new PrintStream( statusCodeFile, "UTF-8" ) )
+        {
+            Table statusCodes = generator.generateStatusCodeDocs();
+            statusCodes.print( out );
+        }
     }
 
-    public String generateClassificationDocs()
+    public Table generateClassificationDocs()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append( "[options=\"header\", cols=\"<1m,<3,<1\"]\n" );
-        sb.append( "|===\n" );
-        sb.append( "|Classification |Description |Effect on transaction\n" );
+        Table table = new Table();
+        table.setCols( "<1m,<3,<1" );
+        table.setHeader( "Classification", "Description", "Effect on transaction" );
 
         for ( Status.Classification classification : Status.Classification.class.getEnumConstants() )
         {
-            sb.append( classificationAsRow( classification ) );
+            table.addRow( classificationAsRow( classification ) );
         }
-        sb.append( "|===\n" );
 
-        return sb.toString();
+        return table;
     }
 
-    private String classificationAsRow( Status.Classification classification )
+    private Object[] classificationAsRow( Status.Classification classification )
     {
         // TODO fail on missing description
         String description = classification.description().length() > 0
                 ? classification.description()
                 : "No description available.";
         String txEffect = classification.rollbackTransaction() ? "Rollback" : "None";
-        return "|" + classification.name() + " |" + description + " |" + txEffect + "\n";
+        return new Object[] { classification.name(), description, txEffect };
     }
 
-    public String generateStatusCodeDocs()
+    public Table generateStatusCodeDocs()
     {
+        Table table = new Table();
+        table.setCols( "<1m,<1" );
+        table.setHeader( "Status Code", "Description" );
+
         TreeMap<String, Status.Code> sortedStatuses = sortedStatusCodes();
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append( "[options=\"header\", cols=\"<1m,<1\"]\n" );
-        sb.append( "|===\n" );
-        sb.append( "|Status Code |Description\n" );
-
         for ( String code : sortedStatuses.keySet() )
         {
-            sb.append(codeAsTableRow(sortedStatuses.get(code)));
+            Status.Code statusCode = sortedStatuses.get( code );
+            table.addRow( codeAsTableRow( statusCode ) );
         }
 
-        sb.append( "|===\n" );
-
-        return sb.toString();
+        return table;
     }
 
-    private String codeAsTableRow( Status.Code code )
+    private Object[] codeAsTableRow( Status.Code code )
     {
         // TODO fail on missing description
         String description = code.description().length() > 0 ? code.description() : "No description available.";
-        return "|" + code.serialize() + " |" + description + "\n";
+        return new Object[] { code.serialize(), description };
     }
 
     private TreeMap<String, Status.Code> sortedStatusCodes()
@@ -121,5 +123,51 @@ public class ErrorDocumentationGenerator
             sortedStatuses.put( status.code().serialize(), status.code() );
         }
         return sortedStatuses;
+    }
+
+
+    public static class Table
+    {
+        private String cols;
+        private String[] header;
+        private List<Object[]> rows = new ArrayList<>();
+
+        public void setCols( String cols )
+        {
+            this.cols = cols;
+        }
+
+        public void setHeader( String... header )
+        {
+            this.header = header;
+        }
+
+        public void addRow( Object... xs )
+        {
+            rows.add(xs);
+        }
+
+        public void print( PrintStream out )
+        {
+            out.printf( "[options=\"header\", cols=\"%s\"]%n", cols );
+            out.printf( "|===%n" );
+
+            for( String columnHeader : header )
+            {
+                out.printf( "|%s ", columnHeader );
+            }
+            out.printf( "%n" );
+
+            for( Object[] row : rows )
+            {
+                for( Object cell : row )
+                {
+                    out.printf( "|%s ", cell );
+                }
+                out.printf( "%n" );
+            }
+
+            out.printf( "|===%n" );
+        }
     }
 }
