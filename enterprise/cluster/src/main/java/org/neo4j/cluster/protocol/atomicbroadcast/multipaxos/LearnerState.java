@@ -198,7 +198,6 @@ public enum LearnerState
                         case learnRequest:
                         {
                             // Someone wants to learn a value that we might have
-                            LearnerMessage.LearnRequestState state = message.getPayload();
                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId =
                                     new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
@@ -224,7 +223,6 @@ public enum LearnerState
 
                         case learnFailed:
                         {
-                            LearnerMessage.LearnFailedState state = message.getPayload();
                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
                             if ( !(instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance

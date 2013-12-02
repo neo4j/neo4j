@@ -33,57 +33,57 @@ import org.neo4j.cluster.protocol.TimeoutsContext;
 public interface ElectionContext
     extends TimeoutsContext, LoggingContext, ConfigurationContext
 {
-    public void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider );
+    void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider );
 
-    public void created();
+    void created();
 
-    public List<ElectionRole> getPossibleRoles();
+    List<ElectionRole> getPossibleRoles();
 
     /*
      * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
      * message for a node, since it is the way to ensure that election will happen for each role that node had
      */
-    public void nodeFailed( InstanceId node );
+    void nodeFailed( InstanceId node );
 
-    public Iterable<String> getRoles( InstanceId server );
+    Iterable<String> getRoles( InstanceId server );
 
-    public void unelect( String roleName );
+    void unelect( String roleName );
 
-    public boolean isElectionProcessInProgress( String role );
+    boolean isElectionProcessInProgress( String role );
 
-    public void startDemotionProcess( String role, final InstanceId demoteNode );
+    void startDemotionProcess( String role, final InstanceId demoteNode );
 
-    public void startElectionProcess( String role );
+    void startElectionProcess( String role );
 
-    public void startPromotionProcess( String role, final InstanceId promoteNode );
+    void startPromotionProcess( String role, final InstanceId promoteNode );
 
-    public void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials );
+    void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials );
 
-    public InstanceId getElectionWinner( String role );
+    InstanceId getElectionWinner( String role );
 
-    public Comparable<Object> getCredentialsForRole( String role );
+    Comparable<Object> getCredentialsForRole( String role );
 
-    public int getVoteCount( String role );
+    int getVoteCount( String role );
 
-    public int getNeededVoteCount();
+    int getNeededVoteCount();
 
-    public void cancelElection( String role );
+    void cancelElection( String role );
 
-    public Iterable<String> getRolesRequiringElection();
+    Iterable<String> getRolesRequiringElection();
 
-    public boolean electionOk();
+    boolean electionOk();
 
-    public boolean isInCluster();
+    boolean isInCluster();
 
-    public Iterable<InstanceId> getAlive();
+    Iterable<InstanceId> getAlive();
 
-    public boolean isElector();
+    boolean isElector();
 
-    public boolean isFailed( InstanceId key );
+    boolean isFailed( InstanceId key );
 
-    public InstanceId getElected( String roleName );
+    InstanceId getElected( String roleName );
 
-    public boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected );
+    boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected );
 
     Set<InstanceId> getFailed();
 }

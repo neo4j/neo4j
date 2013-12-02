@@ -19,14 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.limit;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,6 +60,12 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.limit;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -206,7 +204,7 @@ public class MultiPaxosContext
         public List<URI> getAcceptors()
         {
             // Only use 2f+1 acceptors
-            return toList( limit( configuration
+            return Iterables.toList( limit( configuration
                     .getAllowedFailures() * 2 + 1, configuration.getMemberURIs() ) );
         }
 
@@ -272,7 +270,7 @@ public class MultiPaxosContext
             extends AbstractContextImpl
             implements ProposerContext
     {
-        public final int MAX_CONCURRENT_INSTANCES = 10;
+        public static final int MAX_CONCURRENT_INSTANCES = 10;
 
         // ProposerContext
         final Deque<Message> pendingValues = new LinkedList<Message>();
@@ -420,7 +418,6 @@ public class MultiPaxosContext
         Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
         private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
                 .ConfigurationRequestState>();
-        private String joiningClusterName;
         private Iterable<URI> joiningInstances;
         private boolean joinDenied;
         private Set<org.neo4j.cluster.InstanceId> currentlyJoiningInstances = new HashSet<org.neo4j.cluster
@@ -448,7 +445,6 @@ public class MultiPaxosContext
 
         public void joining( String name, Iterable<URI> instanceList )
         {
-            joiningClusterName = name;
             joiningInstances = instanceList;
             discoveredInstances.clear();
             joinDenied = false;
@@ -504,11 +500,9 @@ public class MultiPaxosContext
                     }
                 } );
             }
-            else
-            {
-                // This typically happens in situations when several nodes join at once, and the ordering
-                // of join messages is a little out of whack.
-            }
+            // else:
+            //   This typically happens in situations when several nodes join at once, and the ordering
+            //   of join messages is a little out of whack.
 
             currentlyJoiningInstances.remove( instanceId );
         }
@@ -610,7 +604,7 @@ public class MultiPaxosContext
 
         public Iterable<org.neo4j.cluster.InstanceId> getOtherInstances()
         {
-            return filter( not( in( me ) ), configuration.getMemberIds() );
+            return Iterables.filter( not( in( me ) ), configuration.getMemberIds() );
         }
 
         public boolean isInstanceWithIdCurrentlyJoining( org.neo4j.cluster.InstanceId joiningId )
@@ -1215,7 +1209,7 @@ public class MultiPaxosContext
 
         public Iterable<String> getRolesRequiringElection()
         {
-            return filter( new Predicate<String>() // Only include roles that are not elected
+            return Iterables.filter( new Predicate<String>() // Only include roles that are not elected
             {
                 @Override
                 public boolean accept( String role )
@@ -1299,10 +1293,9 @@ public class MultiPaxosContext
             return suggestedNode;
         }
 
-        @Override
-        public int compareTo( Vote o )
+        public Comparable<Object> getCredentials()
         {
-            return this.voteCredentials.compareTo( o.voteCredentials );
+            return voteCredentials;
         }
 
         @Override
@@ -1311,9 +1304,44 @@ public class MultiPaxosContext
             return suggestedNode + ":" + voteCredentials;
         }
 
-        public Comparable<Object> getCredentials()
+        @Override
+        public int compareTo( Vote o )
         {
-            return voteCredentials;
+            return this.voteCredentials.compareTo( o.voteCredentials );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Vote vote = (Vote) o;
+
+            if ( !suggestedNode.equals( vote.suggestedNode ) )
+            {
+                return false;
+            }
+            if ( !voteCredentials.equals( vote.voteCredentials ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = suggestedNode.hashCode();
+            result = 31 * result + voteCredentials.hashCode();
+            return result;
         }
     }
 

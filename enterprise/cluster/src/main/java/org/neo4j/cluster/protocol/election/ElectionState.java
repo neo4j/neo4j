@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import static org.neo4j.helpers.collection.Iterables.first;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +32,8 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.Iterables.first;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -225,25 +225,22 @@ public enum ElectionState
                             InstanceId promoteNode = (InstanceId) args[0];
                             String role = (String) args[1];
 
-                            if ( context.isInCluster() )
+                            // Start election process for coordinator role
+                            if ( context.isInCluster() && !context.isElectionProcessInProgress( role ) )
                             {
-                                // Start election process for coordinator role
-                                if ( !context.isElectionProcessInProgress( role ) )
-                                {
-                                    context.startPromotionProcess( role, promoteNode );
+                                context.startPromotionProcess( role, promoteNode );
 
-                                    // Allow other live nodes to vote which one should take over
-                                    for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
+                                // Allow other live nodes to vote which one should take over
+                                for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
+                                {
+                                    if ( !context.getFailed().contains( server.getKey() ) )
                                     {
-                                        if ( !context.getFailed().contains( server.getKey() ) )
-                                        {
-                                            // This is a candidate - allow it to vote itself for promotion
-                                            outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
-                                        }
+                                        // This is a candidate - allow it to vote itself for promotion
+                                        outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
                                     }
-                                    context.setTimeout( "election-" + role, Message.timeout( ElectionMessage
-                                                    .electionTimeout, message, new ElectionTimeoutData( role, message ) ) );
                                 }
+                                context.setTimeout( "election-" + role, Message.timeout( ElectionMessage
+                                                .electionTimeout, message, new ElectionTimeoutData( role, message ) ) );
                             }
                             break;
                         }

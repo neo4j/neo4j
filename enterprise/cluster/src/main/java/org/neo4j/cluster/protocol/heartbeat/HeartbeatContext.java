@@ -33,32 +33,32 @@ import org.neo4j.cluster.protocol.TimeoutsContext;
 public interface HeartbeatContext
     extends TimeoutsContext, ConfigurationContext, LoggingContext
 {
-    public void started();
+    void started();
 
     /**
      * @return True iff the node was suspected
      */
-    public boolean alive( final InstanceId node );
+    boolean alive( final InstanceId node );
 
-    public void suspect( final InstanceId node );
+    void suspect( final InstanceId node );
 
-    public void suspicions( InstanceId from, Set<InstanceId> suspicions );
+    void suspicions( InstanceId from, Set<InstanceId> suspicions );
 
-    public Set<InstanceId> getFailed();
+    Set<InstanceId> getFailed();
 
-    public Iterable<InstanceId> getAlive();
+    Iterable<InstanceId> getAlive();
 
-    public void addHeartbeatListener( HeartbeatListener listener );
+    void addHeartbeatListener( HeartbeatListener listener );
 
-    public void removeHeartbeatListener( HeartbeatListener listener );
+    void removeHeartbeatListener( HeartbeatListener listener );
 
-    public void serverLeftCluster( InstanceId node );
+    void serverLeftCluster( InstanceId node );
 
-    public boolean isFailed( InstanceId node );
+    boolean isFailed( InstanceId node );
 
-    public List<InstanceId> getSuspicionsOf( InstanceId server );
+    List<InstanceId> getSuspicionsOf( InstanceId server );
 
-    public Set<InstanceId> getSuspicionsFor( InstanceId uri );
+    Set<InstanceId> getSuspicionsFor( InstanceId uri );
 
     Iterable<InstanceId> getOtherInstances();
 

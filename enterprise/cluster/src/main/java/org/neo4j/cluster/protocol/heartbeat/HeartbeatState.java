@@ -19,10 +19,6 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-import static org.neo4j.cluster.com.message.Message.timeout;
-import static org.neo4j.cluster.com.message.Message.to;
-
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
@@ -30,6 +26,10 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.statemachine.State;
+
+import static org.neo4j.cluster.com.message.Message.internal;
+import static org.neo4j.cluster.com.message.Message.timeout;
+import static org.neo4j.cluster.com.message.Message.to;
 
 /**
  * State machine that implements the {@link Heartbeat} API
@@ -163,7 +163,7 @@ public enum HeartbeatState
                                     {
                                         URI sendTo = context.getUriForId(
                                                 aliveServer );
-                                        outgoing.offer( Message.to( HeartbeatMessage.suspicions, sendTo,
+                                        outgoing.offer( to( HeartbeatMessage.suspicions, sendTo,
                                                 new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context.getMyId() ) ) ) );
                                     }
                                 }
