@@ -20,6 +20,7 @@
 package org.neo4j.test.impl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +50,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -111,6 +114,66 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             }
         }
         MultipleExceptionsStrategy.assertEmptyExceptions( open );
+    }
+
+    public void dumpZip( OutputStream output ) throws IOException
+    {
+        try ( ZipOutputStream zip = new ZipOutputStream( output ) )
+        {
+            String prefix = null;
+            for ( Map.Entry<File, EphemeralFileData> entry : files.entrySet() )
+            {
+                File file = entry.getKey();
+                String parent = file.getParentFile().getAbsolutePath();
+                if ( prefix == null || prefix.startsWith( parent ) )
+                {
+                    prefix = parent;
+                }
+                zip.putNextEntry( new ZipEntry( file.getAbsolutePath() ) );
+                entry.getValue().dumpTo( zip );
+                zip.closeEntry();
+            }
+            for ( ThirdPartyFileSystem fs : thirdPartyFileSystems.values() )
+            {
+                fs.dumpToZip( zip, EphemeralFileData.SCRATCH_PAD.get() );
+            }
+            if ( prefix != null )
+            {
+                File directory = new File( prefix );
+                if ( directory.exists() ) // things ended up on the file system...
+                {
+                    addRecursively( zip, directory );
+                }
+            }
+        }
+    }
+
+    private void addRecursively( ZipOutputStream output, File input ) throws IOException
+    {
+        if ( input.isFile() )
+        {
+            output.putNextEntry( new ZipEntry( input.getAbsolutePath() ) );
+            byte[] scratchPad = EphemeralFileData.SCRATCH_PAD.get();
+            try ( FileInputStream source = new FileInputStream( input ) )
+            {
+                for ( int read; 0 <= (read = source.read( scratchPad )); )
+                {
+                    output.write( scratchPad, 0, read );
+                }
+            }
+            output.closeEntry();
+        }
+        else
+        {
+            File[] children = input.listFiles();
+            if ( children != null )
+            {
+                for ( File child : children )
+                {
+                    addRecursively( output, child );
+                }
+            }
+        }
     }
 
     @SuppressWarnings( "serial" )
@@ -678,6 +741,15 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         {
             return locked == 0;
         }
+
+        void dumpTo( OutputStream target ) throws IOException
+        {
+            byte[] scratchPad = SCRATCH_PAD.get();
+            synchronized ( fileAsBuffer )
+            {
+                fileAsBuffer.dump( target, scratchPad, size );
+            }
+        }
     }
 
     private static class EphemeralFileLock extends java.nio.channels.FileLock
@@ -925,6 +997,18 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         public void clear()
         {
             this.buf.clear();
+        }
+
+        void dump( OutputStream target, byte[] scratchPad, int size ) throws IOException
+        {
+            buf.position( 0 );
+            while ( size > 0 )
+            {
+                int read = min( size, scratchPad.length );
+                buf.get( scratchPad, 0, read );
+                size -= read;
+                target.write( scratchPad, 0, read );
+            }
         }
     }
 

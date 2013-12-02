@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.lucene.store.Directory;
 import org.junit.After;
@@ -46,7 +47,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -203,6 +204,12 @@ public class LuceneIndexRecoveryIT
         @Override
         public void close()
         {
+        }
+
+        @Override
+        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
+        {
+            directoryFactory.dumpToZip( zip, scratchPad );
         }
     };
 

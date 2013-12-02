@@ -19,6 +19,9 @@
  */
 package org.neo4j.doc.cypherdoc;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +29,7 @@ import java.util.List;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 /**
  * Parse AsciiDoc-like content for use in Cypher documentation.
@@ -60,30 +64,27 @@ public final class CypherDoc
     {
         List<Block> blocks = parseBlocks( input );
 
-        StringBuilder output = new StringBuilder( 4096 );
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        ExecutionEngine engine = new ExecutionEngine( database );
-        State state = new State( engine, database );
-
-        boolean hasConsole = false;
-        for ( Block block : blocks )
+        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        GraphDatabaseService database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        TestFailureException failure = null;
+        try
         {
-            if ( block.type == BlockType.CONSOLE )
+            ExecutionEngine engine = new ExecutionEngine( database );
+            return executeBlocks( blocks, new State( engine, database ) );
+        }
+        catch ( TestFailureException exception )
+        {
+            dumpStoreFiles( fs, failure = exception, "before-shutdown" );
+            throw exception;
+        }
+        finally
+        {
+            database.shutdown();
+            if ( failure != null )
             {
-                hasConsole = true;
+                dumpStoreFiles( fs, failure, "after-shutdown" );
             }
-            output.append( block.process( state ) )
-                    .append( EOL )
-                    .append( EOL );
         }
-        if ( !hasConsole )
-        {
-            output.append( BlockType.CONSOLE.process( null, state ) );
-        }
-
-        database.shutdown();
-
-        return output.toString();
     }
 
     static List<Block> parseBlocks( String input )
@@ -122,8 +123,46 @@ public final class CypherDoc
         return blocks;
     }
 
+    private static String executeBlocks( List<Block> blocks, State state )
+    {
+        StringBuilder output = new StringBuilder( 4096 );
+        boolean hasConsole = false;
+        for ( Block block : blocks )
+        {
+            if ( block.type == BlockType.CONSOLE )
+            {
+                hasConsole = true;
+            }
+            output.append( block.process( state ) )
+                  .append( EOL )
+                  .append( EOL );
+        }
+        if ( !hasConsole )
+        {
+            output.append( BlockType.CONSOLE.process( null, state ) );
+        }
+
+        return output.toString();
+    }
+
     static String indent( String string )
     {
         return string.replace( "\r\n", "\n" ).replace( "\n", EOL + "\t" );
+    }
+
+    private static void dumpStoreFiles( EphemeralFileSystemAbstraction fs, TestFailureException exception, String when )
+    {
+        ByteArrayOutputStream snapshot = new ByteArrayOutputStream();
+        try
+        {
+            fs.dumpZip( snapshot );
+            exception.addSnapshot( when + ".zip", snapshot.toByteArray() );
+        }
+        catch ( IOException e )
+        {
+            snapshot.reset();
+            e.printStackTrace( new PrintStream( snapshot ) );
+            exception.addSnapshot( "dump-exception-" + when + ".txt", snapshot.toByteArray() );
+        }
     }
 }

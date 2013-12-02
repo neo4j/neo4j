@@ -20,17 +20,20 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
-import org.neo4j.helpers.PrimitiveIntPredicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -38,69 +41,104 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
+import org.neo4j.kernel.impl.nioneo.store.StoreIdIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NeoStoreIndexStoreView implements IndexStoreView
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
+    private final LockService locks;
 
-    public NeoStoreIndexStoreView( NeoStore neoStore )
+    public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
     {
+        this.locks = locks;
         this.propertyStore = neoStore.getPropertyStore();
         this.nodeStore = neoStore.getNodeStore();
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodesWithPropertyAndLabel(
-            IndexDescriptor descriptor, Visitor<NodePropertyUpdate, FAILURE> visitor )
+            IndexDescriptor descriptor, final Visitor<NodePropertyUpdate, FAILURE> visitor )
     {
-        // Create a processor that for each accepted node (containing the desired label) looks through its properties,
-        // getting the desired one (if any) and feeds to the index manipulator.
-        LabelsReference labelsReference = new LabelsReference();
-        RecordStore.Processor<FAILURE> processor = new NodePropertyUpdateProcessor<>( propertyStore,
-                singleIntPredicate( descriptor.getPropertyKeyId() ),
-                labelsReference, visitor );
+        final int soughtLabelId = descriptor.getLabelId();
+        final int soughtPropertyKeyId = descriptor.getPropertyKeyId();
+        return new NodeStoreScan<NodePropertyUpdate, FAILURE>()
+        {
+            @Override
+            protected NodePropertyUpdate read( NodeRecord node )
+            {
+                long[] labels = parseLabelsField( node ).get( nodeStore );
+                if ( !containsLabel( soughtLabelId, labels ) )
+                {
+                    return null;
+                }
+                for ( PropertyBlock property : properties( node ) )
+                {
+                    int propertyKeyId = property.getKeyIndexId();
+                    if ( soughtPropertyKeyId == propertyKeyId )
+                    {
+                        return NodePropertyUpdate.add( node.getId(), propertyKeyId, valueOf( property ), labels );
+                    }
+                }
+                return null;
+            }
 
-        // Run the processor for the nodes containing the given label.
-        // TODO When we've got a decent way of getting nodes with a label, use that instead.
-        Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore,
-                singleIntPredicate( descriptor.getLabelId() ), labelsReference );
-
-        // Run the processor, be sure that the predicate filters out removed nodes by checking in-use
-        return new ProcessStoreScan<>( processor, predicate );
+            @Override
+            protected void process( NodePropertyUpdate update ) throws FAILURE
+            {
+                visitor.visit( update );
+            }
+        };
     }
 
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
-            int[] labelIds, int[] propertyKeyIds,
-            Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
-            Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
+            final int[] labelIds, final int[] propertyKeyIds,
+            final Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
+            final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
     {
-        // Create a processor that for each accepted node (containing the desired label) looks through its properties,
-        // getting the desired one (if any) and feeds to the index manipulator.
-        LabelsReference labelsReference = new LabelsReference();
-        NodePropertyUpdateProcessor<FAILURE> propertyUpdateProcessor = new NodePropertyUpdateProcessor<>( propertyStore,
-                multipleIntPredicate( propertyKeyIds ),
-                labelsReference, propertyUpdateVisitor );
-        Predicate<NodeRecord> predicate = new NodeLabelFilterPredicate( nodeStore,
-                multipleIntPredicate( labelIds ), labelsReference );
+        return new NodeStoreScan<Update, FAILURE>()
+        {
+            @Override
+            protected Update read( NodeRecord node )
+            {
+                long[] labels = parseLabelsField( node ).get( nodeStore );
+                Update update = new Update( node.getId(), labels );
+                if ( !containsAnyLabel( labelIds, labels ) )
+                {
+                    return update;
+                }
+                properties: for ( PropertyBlock property : properties( node ) )
+                {
+                    int propertyKeyId = property.getKeyIndexId();
+                    for ( int sought : propertyKeyIds )
+                    {
+                        if ( propertyKeyId == sought )
+                        {
+                            update.add( NodePropertyUpdate
+                                                .add( node.getId(), propertyKeyId, valueOf( property ), labels ) );
+                            continue properties;
+                        }
+                    }
+                }
+                return update;
+            }
 
-        // Wrap the property processor inside another processor that processes everything, produces
-        // label updates and delegates to the property processor.
-        RecordStore.Processor<FAILURE> processor =
-                new NodeProcessor<>( propertyUpdateProcessor, predicate, labelsReference, labelUpdateVisitor );
-
-        // Processor (no filtering)
-        //     --> NodeProcessor (processes label updates for all nodes)
-        //           --> NodePropertyUpdateProcessor (processes property updates for relevant nodes)
-        return new ProcessStoreScan<>( processor, Predicates.<NodeRecord>TRUE() );
+            @Override
+            protected void process( Update update ) throws FAILURE
+            {
+                labelUpdateVisitor.visit( update.labels );
+                for ( NodePropertyUpdate propertyUpdate : update )
+                {
+                    propertyUpdateVisitor.visit( propertyUpdate );
+                }
+            }
+        };
     }
 
     @Override
@@ -133,202 +171,143 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         return updates;
     }
 
-    /**
-     * Used for sharing the extracted labels from the last processed node between the label and property key filter.
-     * First the label predicate will be run (which will set the labels).
-     * Then the property key filtering in the processor will be run (which will get the labels).
-     * <p/>
-     * All this to prevent extracting the label set two times per processed node.
-     */
-    private static class LabelsReference
+    private Object valueOf( PropertyBlock property )
     {
-        private long[] labels;
-
-        long[] get()
-        {
-            return this.labels;
-        }
-
-        void set( long[] labels )
-        {
-            this.labels = labels;
-        }
+        // Make sure the value is loaded, even if it's of a "heavy" kind.
+        propertyStore.ensureHeavy( property );
+        return property.getType().getValue( property, propertyStore );
     }
 
-    private static PrimitiveIntPredicate singleIntPredicate( final int acceptedValue )
+    private Iterable<PropertyBlock> properties( final NodeRecord node )
     {
-        return new PrimitiveIntPredicate()
+        return new Iterable<PropertyBlock>()
         {
             @Override
-            public boolean accept( int value )
+            public Iterator<PropertyBlock> iterator()
             {
-                return value == acceptedValue;
+                return new PropertyBlockIterator( node );
             }
         };
     }
 
-    private static PrimitiveIntPredicate multipleIntPredicate( final int... acceptedValues )
+    private static boolean containsLabel( int sought, long[] labels )
     {
-        return new PrimitiveIntPredicate()
+        for ( long label : labels )
         {
-            @Override
-            public boolean accept( int value )
+            if ( label == sought )
             {
-                for ( int acceptedValue : acceptedValues )
-                {
-                    if ( value == acceptedValue )
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                return true;
             }
-        };
+        }
+        return false;
     }
 
-    private class NodeProcessor<FAILURE extends Exception> extends RecordStore.Processor<FAILURE>
+    private static boolean containsAnyLabel( int[] soughtIds, long[] labels )
     {
-        private final NodePropertyUpdateProcessor<FAILURE> propertyUpdateProcessor;
-        private final Predicate<NodeRecord> propertyUpdateFilter;
-        private final LabelsReference labelsReference;
-        private final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor;
-
-        NodeProcessor( NodePropertyUpdateProcessor<FAILURE> propertyUpdateProcessor,
-                Predicate<NodeRecord> propertyUpdateFilter, LabelsReference labelsReference,
-                Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
+        for ( int soughtId : soughtIds )
         {
-            this.propertyUpdateProcessor = propertyUpdateProcessor;
-            this.propertyUpdateFilter = propertyUpdateFilter;
-            this.labelsReference = labelsReference;
-            this.labelUpdateVisitor = labelUpdateVisitor;
+            if ( containsLabel( soughtId, labels ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static class Update implements Iterable<NodePropertyUpdate>
+    {
+        private final NodeLabelUpdate labels;
+        private final List<NodePropertyUpdate> propertyUpdates = new ArrayList<>();
+
+        Update( long nodeId, long[] labels )
+        {
+            this.labels = labelChanges( nodeId, EMPTY_LONG_ARRAY, labels );
+        }
+
+        void add( NodePropertyUpdate update )
+        {
+            propertyUpdates.add( update );
         }
 
         @Override
-        public void processNode( RecordStore<NodeRecord> nodeStore, NodeRecord node ) throws FAILURE
+        public Iterator<NodePropertyUpdate> iterator()
         {
-            if ( !node.inUse() )
-            {
-                return;
-            }
-
-            // We do this first since we know that calling the predicate will update the labels reference
-            // with labels for the current node.
-            boolean processPropertyUpdates = propertyUpdateFilter.accept( node );
-
-            // label updates
-            labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labelsReference.get() ) );
-
-            // delegate to property updates
-            if ( processPropertyUpdates )
-            {
-                propertyUpdateProcessor.processNode( nodeStore, node );
-            }
+            return propertyUpdates.iterator();
         }
     }
 
-    private class NodePropertyUpdateProcessor<FAILURE extends Exception> extends RecordStore.Processor<FAILURE>
+    private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
     {
-        private final PropertyStore propertyStore;
-        private final Visitor<NodePropertyUpdate, FAILURE> visitor;
-        private final PrimitiveIntPredicate propertyKeyPredicate;
-        private final LabelsReference labelsReference;
+        private final Iterator<PropertyRecord> records;
+        private Iterator<PropertyBlock> blocks = IteratorUtil.emptyIterator();
 
-        public NodePropertyUpdateProcessor( PropertyStore propertyStore,
-                                      PrimitiveIntPredicate propertyKeyPredicate, LabelsReference labelsReference,
-                                      Visitor<NodePropertyUpdate, FAILURE> visitor )
+        PropertyBlockIterator( NodeRecord node )
         {
-            this.propertyStore = propertyStore;
-            this.propertyKeyPredicate = propertyKeyPredicate;
-            this.labelsReference = labelsReference;
-            this.visitor = visitor;
-        }
-
-        @Override
-        public void processNode( RecordStore<NodeRecord> nodeStore, NodeRecord node ) throws FAILURE
-        {
-            // TODO check cache if that property is in cache and use it, instead of loading it from the store.
             long firstPropertyId = node.getCommittedNextProp();
             if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
             {
-                return;
+                records = IteratorUtil.emptyIterator();
             }
-
-            // TODO optimize so that we don't have to load all property records, but instead stop
-            // when we first find the property we're looking for.
-            for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
+            else
             {
-                for ( PropertyBlock property : propertyRecord.getPropertyBlocks() )
-                {
-                    int propertyKeyId = property.getKeyIndexId();
-                    if ( propertyKeyPredicate.accept( propertyKeyId ) )
-                    {
-                        // Make sure the value is loaded, even if it's of a "heavy" kind.
-                        propertyStore.ensureHeavy( property );
-                        Object propertyValue = property.getType().getValue( property, propertyStore );
-
-                        visitor.visit( NodePropertyUpdate.add( node.getId(), propertyKeyId, propertyValue,
-                                labelsReference.get() ) );
-                    }
-                }
+                records = propertyStore.getPropertyRecordChain( firstPropertyId ).iterator();
             }
-        }
-    }
-
-    private class NodeLabelFilterPredicate implements Predicate<NodeRecord>
-    {
-        private final NodeStore nodeStore;
-        private final PrimitiveIntPredicate labelPredicate;
-        private final LabelsReference labelsReference;
-
-        public NodeLabelFilterPredicate( NodeStore nodeStore, PrimitiveIntPredicate labelPredicate,
-                                         LabelsReference labelsReference )
-        {
-            this.nodeStore = nodeStore;
-            this.labelPredicate = labelPredicate;
-            this.labelsReference = labelsReference;
         }
 
         @Override
-        public boolean accept( NodeRecord node )
+        protected PropertyBlock fetchNextOrNull()
         {
-            if ( node.inUse() )
+            for (; ; )
             {
-                long[] labelsForNode = parseLabelsField( node ).get( nodeStore );
-                labelsReference.set( labelsForNode ); // Make these available for the processor for this node
-                for ( long nodeLabelId : labelsForNode )
+                if ( blocks.hasNext() )
                 {
-                    if ( labelPredicate.accept( safeCastLongToInt( nodeLabelId ) ) )
-                    {
-                        return true;
-                    }
+                    return blocks.next();
                 }
+                if ( !records.hasNext() )
+                {
+                    return null;
+                }
+                blocks = records.next().getPropertyBlocks().iterator();
             }
-            return false;
         }
     }
 
-    private class ProcessStoreScan<FAILURE extends Exception> implements StoreScan<FAILURE>
+    private abstract class NodeStoreScan<RESULT, FAILURE extends Exception> implements StoreScan<FAILURE>
     {
-        private final Processor<FAILURE> processor;
-        private final Predicate<NodeRecord> predicate;
+        private volatile boolean continueScanning;
 
-        public ProcessStoreScan( Processor<FAILURE> processor, Predicate<NodeRecord> predicate )
-        {
-            this.processor = processor;
-            this.predicate = predicate;
-        }
+        protected abstract RESULT read( NodeRecord node );
 
-        @SuppressWarnings("unchecked")
+        protected abstract void process( RESULT result ) throws FAILURE;
+
         @Override
         public void run() throws FAILURE
         {
-            processor.applyFiltered( nodeStore, predicate );
+            PrimitiveLongIterator nodeIds = new StoreIdIterator( nodeStore );
+            continueScanning = true;
+            while ( continueScanning && nodeIds.hasNext() )
+            {
+                long id = nodeIds.next();
+                RESULT result = null;
+                try ( Lock ignored = locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
+                {
+                    NodeRecord record = nodeStore.forceGetRecord( id );
+                    if ( record.inUse() )
+                    {
+                        result = read( record );
+                    }
+                }
+                if ( result != null )
+                {
+                    process( result );
+                }
+            }
         }
 
         @Override
         public void stop()
         {
-            processor.stopScanning();
+            continueScanning = false;
         }
     }
 }

@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
+import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -944,10 +945,11 @@ public class FullCheckIntegrationTest
     {
         // given
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        RelationshipTypeTokenRecord record = access.getRelationshipTypeTokenStore().forceGetRecord( 1 );
+        RecordStore<RelationshipTypeTokenRecord> relTypeStore = access.getRelationshipTypeTokenStore();
+        RelationshipTypeTokenRecord record = relTypeStore.forceGetRecord( relTypeStore.nextId() );
         record.setNameId( 20 );
         record.setInUse( true );
-        access.getRelationshipTypeTokenStore().updateRecord( record );
+        relTypeStore.updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );

@@ -43,16 +43,17 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -87,6 +88,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.util.Arrays.binarySearch;
@@ -278,6 +280,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private final LabelScanStore labelScanStore;
     private final IntegrityValidator integrityValidator;
     private final KernelTransactionImplementation kernelTransaction;
+    private final LockService locks;
 
     /**
      * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
@@ -293,7 +296,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     WriteTransaction( int identifier, long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
                       TransactionState state, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
                       IndexingService indexingService, LabelScanStore labelScanStore,
-                      IntegrityValidator integrityValidator, KernelTransactionImplementation kernelTransaction )
+                      IntegrityValidator integrityValidator, KernelTransactionImplementation kernelTransaction,
+                      LockService locks )
     {
         super( identifier, log, state );
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
@@ -304,6 +308,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         this.labelScanStore = labelScanStore;
         this.integrityValidator = integrityValidator;
         this.kernelTransaction = kernelTransaction;
+        this.locks = locks;
     }
 
     @Override
@@ -748,7 +753,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     private void applyCommit( boolean isRecovered )
     {
-        try
+        try ( LockGroup lockGroup = new LockGroup() )
         {
             committed = true;
             CommandSorter sorter = new CommandSorter();
@@ -795,9 +800,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             // primitives
             java.util.Collections.sort( relCommands, sorter );
             java.util.Collections.sort( propCommands, sorter );
-            executeCreated( isRecovered, propCommands, relCommands, nodeCommands.values() );
-            executeModified( isRecovered, propCommands, relCommands, nodeCommands.values() );
-            executeDeleted( propCommands, relCommands, nodeCommands.values() );
+            executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
+            executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
+            executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
 
             // property change set for index updates
             Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdates();
@@ -977,7 +982,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @SafeVarargs
-    private final void executeCreated( boolean removeFromCache, Collection<? extends Command>... commands )
+    private final void executeCreated( LockGroup lockGroup, boolean removeFromCache,
+                                       Collection<? extends Command>... commands )
     {
         for ( Collection<? extends Command> c : commands )
         {
@@ -985,6 +991,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 if ( command.getMode() == CREATE )
                 {
+                    lockEntity( lockGroup, command );
                     command.execute();
                     if ( removeFromCache )
                     {
@@ -996,7 +1003,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @SafeVarargs
-    private final void executeModified( boolean removeFromCache, Collection<? extends Command>... commands )
+    private final void executeModified( LockGroup lockGroup, boolean removeFromCache,
+                                        Collection<? extends Command>... commands )
     {
         for ( Collection<? extends Command> c : commands )
         {
@@ -1004,6 +1012,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 if ( command.getMode() == UPDATE )
                 {
+                    lockEntity( lockGroup, command );
                     command.execute();
                     if ( removeFromCache )
                     {
@@ -1015,7 +1024,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @SafeVarargs
-    private final void executeDeleted( Collection<? extends Command>... commands )
+    private final void executeDeleted( LockGroup lockGroup, Collection<? extends Command>... commands )
     {
         for ( Collection<? extends Command> c : commands )
         {
@@ -1028,9 +1037,26 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                  * this is expected to also patch the relChainPosition in the start and end NodeImpls (if they actually
                  * are in cache).
                  */
+                    lockEntity( lockGroup, command );
                     command.execute();
                     command.removeFromCache( cacheAccess );
                 }
+            }
+        }
+    }
+
+    private void lockEntity( LockGroup lockGroup, Command command )
+    {
+        if ( command instanceof NodeCommand )
+        {
+            lockGroup.add( locks.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
+        }
+        if ( command instanceof Command.PropertyCommand )
+        {
+            long nodeId = ((Command.PropertyCommand) command).getNodeId();
+            if ( nodeId != -1 )
+            {
+                lockGroup.add( locks.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) );
             }
         }
     }

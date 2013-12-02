@@ -21,9 +21,12 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -34,6 +37,8 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static java.lang.Math.min;
 
 public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSystem
 {
@@ -60,6 +65,12 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         {
             // No resources to release. This method only exists as a hook for test implementations.
         }
+
+        @Override
+        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
+        {
+            // do nothing
+        }
     };
     
     final class InMemoryDirectoryFactory implements DirectoryFactory
@@ -85,6 +96,31 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
             }
             directories.clear();
         }
+
+        @Override
+        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
+        {
+            for ( Map.Entry<File, RAMDirectory> entry : directories.entrySet() )
+            {
+                RAMDirectory ramDir = entry.getValue();
+                for ( String fileName : ramDir.listAll() )
+                {
+                    zip.putNextEntry( new ZipEntry( new File( entry.getKey(), fileName ).getAbsolutePath() ) );
+                    copy( ramDir.openInput( fileName ), zip, scratchPad );
+                    zip.closeEntry();
+                }
+            }
+        }
+
+        private static void copy( IndexInput source, OutputStream target, byte[] buffer ) throws IOException
+        {
+            for ( long remaining = source.length(),read; remaining > 0;remaining -= read)
+            {
+                read = min( remaining, buffer.length );
+                source.readBytes( buffer, 0, (int) read );
+                target.write( buffer, 0, (int) read );
+            }
+        }
     }
     
     final class Single implements DirectoryFactory
@@ -105,6 +141,12 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         @Override
         public void close()
         {
+        }
+
+        @Override
+        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
+        {
+            throw new UnsupportedOperationException();
         }
     }
 
