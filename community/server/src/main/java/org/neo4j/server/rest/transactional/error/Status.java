@@ -290,11 +290,14 @@ public interface Status
     public enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( StackTraceStrategy.SWALLOW, TransactionEffect.NONE, "" ),
+        ClientError( StackTraceStrategy.SWALLOW, TransactionEffect.NONE,
+            "The Client sent a bad request - changing the request might yield a successful outcome." ),
         /** The database failed to service the request. */
-        DatabaseError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.ROLLBACK, "" ),
+        DatabaseError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.ROLLBACK,
+            "The database failed to service the request. " ),
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.NONE, "" ),;
+        TransientError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.NONE,
+            "The database cannot service the request right now, retrying later might yield a successful outcome. " ),;
 
         private enum StackTraceStrategy
         {
