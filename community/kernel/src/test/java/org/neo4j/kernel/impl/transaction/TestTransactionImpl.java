@@ -19,19 +19,24 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import javax.transaction.RollbackException;
+import javax.transaction.Synchronization;
+
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.util.MultipleCauseException;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.SystemOutLogging;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.util.MultipleCauseException;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.noStateFactory;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 
 public class TestTransactionImpl
 {
@@ -40,7 +45,9 @@ public class TestTransactionImpl
             throws IllegalStateException, RollbackException
     {
         TxManager mockedTxManager = mock( TxManager.class );
-        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), new SystemOutLogging().getMessagesLog( TxManager.class ) );
+        TransactionImpl tx = new TransactionImpl( getNewGlobalId( DEFAULT_SEED, 0 ), mockedTxManager, ForceMode.forced,
+                noStateFactory( new DevNullLoggingService() ),
+                new SystemOutLogging().getMessagesLog( TxManager.class ) );
 
         // Evil synchronizations
         final RuntimeException firstException = new RuntimeException( "Ex1" );
@@ -94,7 +101,9 @@ public class TestTransactionImpl
             RollbackException
     {
         TxManager mockedTxManager = mock( TxManager.class );
-        TransactionImpl tx = new TransactionImpl( mockedTxManager, ForceMode.forced, TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), new SystemOutLogging().getMessagesLog( TxManager.class ) );
+        TransactionImpl tx = new TransactionImpl( getNewGlobalId( DEFAULT_SEED, 0 ), mockedTxManager, ForceMode.forced,
+                noStateFactory( new DevNullLoggingService() ),
+                new SystemOutLogging().getMessagesLog( TxManager.class ) );
 
         // Evil synchronizations
         final RuntimeException firstException = new RuntimeException( "Ex1" );

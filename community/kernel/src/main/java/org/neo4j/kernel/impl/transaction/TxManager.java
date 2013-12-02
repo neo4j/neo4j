@@ -42,6 +42,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -88,13 +89,15 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
+    private final Factory<byte[]> xidGlobalIdFactory;
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
                       KernelPanicEventGenerator kpe,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
-                      TransactionStateFactory stateFactory
+                      TransactionStateFactory stateFactory,
+                      Factory<byte[]> xidGlobalIdFactory
     )
     {
         this.txLogDir = txLogDir;
@@ -103,6 +106,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.log = log;
         this.kpe = kpe;
         this.stateFactory = stateFactory;
+        this.xidGlobalIdFactory = xidGlobalIdFactory;
     }
 
     int getNextEventIdentifier()
@@ -244,7 +248,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     synchronized void setTmNotOk( Throwable cause )
     {
         if ( !tmOk )
+        {
             return;
+        }
         
         tmOk = false;
         tmNotOkCause = cause;
@@ -268,7 +274,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
                     "Nested transactions not supported" ) );
         }
-        tx = new TransactionImpl( this, forceMode, stateFactory, log );
+        tx = new TransactionImpl( xidGlobalIdFactory.newInstance(), this, forceMode, stateFactory, log );
         txThreadMap.set( tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )

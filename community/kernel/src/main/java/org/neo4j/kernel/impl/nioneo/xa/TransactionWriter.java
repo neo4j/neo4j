@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.impl.nioneo.store.AbstractNameStore.NAME_STORE_BLOCK_SIZE;
-
 import java.io.IOException;
 
 import javax.transaction.xa.Xid;
@@ -38,6 +36,12 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.kernel.impl.nioneo.store.AbstractNameStore.NAME_STORE_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+
 /**
  * This class lives here instead of somewhere else in order to be able to access the {@link Command} implementations.
  *
@@ -46,11 +50,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 public class TransactionWriter
 {
     private final LogBuffer buffer;
+    private final int identifier;
     private final int localId;
 
-    public TransactionWriter( LogBuffer buffer, int localId )
+    public TransactionWriter( LogBuffer buffer, int identifier, int localId )
     {
         this.buffer = buffer;
+        this.identifier = identifier;
         this.localId = localId;
     }
 
@@ -58,13 +64,13 @@ public class TransactionWriter
 
     public void start( int masterId, int myId ) throws IOException
     {
-        start( XidImpl.getNewGlobalId(), masterId, myId, System.currentTimeMillis() );
+        start( getNewGlobalId( DEFAULT_SEED, localId ), masterId, myId, currentTimeMillis() );
     }
 
     public void start( byte[] globalId, int masterId, int myId, long startTimestamp ) throws IOException
     {
         Xid xid = new XidImpl( globalId, NeoStoreXaDataSource.BRANCH_ID );
-        LogIoUtils.writeStart( buffer, this.localId, xid, masterId, myId, startTimestamp );
+        LogIoUtils.writeStart( buffer, this.identifier, xid, masterId, myId, startTimestamp );
     }
 
     public void prepare() throws IOException
@@ -74,7 +80,7 @@ public class TransactionWriter
 
     public void prepare( long prepareTimestamp ) throws IOException
     {
-        LogIoUtils.writePrepare( buffer, localId, prepareTimestamp );
+        LogIoUtils.writePrepare( buffer, identifier, prepareTimestamp );
     }
 
     public void commit( boolean twoPhase, long txId ) throws IOException
@@ -84,12 +90,12 @@ public class TransactionWriter
 
     public void commit( boolean twoPhase, long txId, long commitTimestamp ) throws IOException
     {
-        LogIoUtils.writeCommit( twoPhase, buffer, localId, txId, commitTimestamp );
+        LogIoUtils.writeCommit( twoPhase, buffer, identifier, txId, commitTimestamp );
     }
 
     public void done() throws IOException
     {
-        LogIoUtils.writeDone( buffer, localId );
+        LogIoUtils.writeDone( buffer, identifier );
     }
 
     // Transaction data
@@ -198,7 +204,7 @@ public class TransactionWriter
 
     private void write( Command command ) throws IOException
     {
-        LogIoUtils.writeCommand( buffer, localId, command );
+        LogIoUtils.writeCommand( buffer, identifier, command );
     }
 
     private static <T extends AbstractNameRecord> T withName( T record, int[] dynamicIds, String name )

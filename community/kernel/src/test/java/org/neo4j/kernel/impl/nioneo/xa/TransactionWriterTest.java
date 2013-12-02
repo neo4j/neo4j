@@ -33,6 +33,7 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 import org.mockito.InOrder;
+
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -55,7 +56,7 @@ public class TransactionWriterTest
     {
         // given
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        TransactionWriter writer = new TransactionWriter( buffer, 1 );
+        TransactionWriter writer = new TransactionWriter( buffer, 1, -1 );
 
         NodeRecord node = new NodeRecord( 0, -1, -1 );
         RelationshipRecord relationship = new RelationshipRecord( 0, 1, 1, 6 );
