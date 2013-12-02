@@ -38,6 +38,33 @@ public class ErrorDocumentationGenerator
 {
     public static void main( String[] args ) throws Exception
     {
+        File baseDir = getBaseDirectory( args );
+
+        ErrorDocumentationGenerator generator = new ErrorDocumentationGenerator();
+
+        try
+        {
+            generateDocumentation(
+                    generator.generateClassificationDocs(),
+                    new File( baseDir, "status-code-classifications.asccidoc" ),
+                    "status code classification" );
+
+            generateDocumentation(
+                    generator.generateStatusCodeDocs(),
+                    new File( baseDir, "status-code-codes.asccidoc" ),
+                    "status code statuses");
+        }
+        catch ( Exception e )
+        {
+            // Send it to standard out, so we can see it through the Maven build.
+            e.printStackTrace( System.out );
+            System.out.flush();
+            System.exit( 1 );
+        }
+    }
+
+    private static File getBaseDirectory( String[] args )
+    {
         File baseDir = null;
         if(args.length == 1)
         {
@@ -48,23 +75,16 @@ public class ErrorDocumentationGenerator
             System.out.println("Usage: ErrorDocumentationGenerator [output folder]");
             System.exit(0);
         }
+        return baseDir;
+    }
 
-        ErrorDocumentationGenerator generator = new ErrorDocumentationGenerator();
-
-        File classificationFile = new File( baseDir, "status-code-classifications.asccidoc" );
-        System.out.println("Saving status code classification docs in '" + classificationFile.getAbsolutePath() + "'.");
-        try ( PrintStream out = new PrintStream( classificationFile, "UTF-8" ) )
+    private static void generateDocumentation( Table table, File file, String description ) throws Exception
+    {
+        System.out.printf( "Saving %s docs in '%s'.%n", description, file.getAbsolutePath() );
+        file.getParentFile().mkdirs();
+        try ( PrintStream out = new PrintStream( file, "UTF-8" ) )
         {
-            Table classifications = generator.generateClassificationDocs();
-            classifications.print( out );
-        }
-
-        File statusCodeFile = new File( baseDir, "status-code-codes.asccidoc" );
-        System.out.println("Saving status code statuses docs in '" + statusCodeFile.getAbsolutePath() + "'.");
-        try ( PrintStream out = new PrintStream( statusCodeFile, "UTF-8" ) )
-        {
-            Table statusCodes = generator.generateStatusCodeDocs();
-            statusCodes.print( out );
+            table.print( out );
         }
     }
 
