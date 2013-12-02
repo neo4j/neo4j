@@ -70,7 +70,7 @@ public abstract class FileLock
         {
             FileLock regular = wrapOrNull( channel.tryLock() );
             if ( regular == null )
-                throw new IOException( "Unable to lock " + channel );
+                throw new IOException( "Unable to lock " + channel +" because another process already holds the lock.");
 
             FileLock extra = getLockFileBasedFileLock( fileName.getParentFile() );
             if ( extra == null )
@@ -82,7 +82,10 @@ public abstract class FileLock
         }
         else
         {
-            return wrapOrNull( channel.tryLock() );
+            FileLock regular = wrapOrNull( channel.tryLock() );
+            if ( regular == null )
+                throw new IOException( "Unable to lock " + channel + " because another process already holds the lock." );
+            return regular;
         }
     }
 
@@ -109,7 +112,8 @@ public abstract class FileLock
         if ( fileChannelLock == null )
         {
             fileChannel.close();
-            throw new IOException( "Couldn't create lock file " + lockFile.getAbsolutePath() );
+            throw new IOException( "Couldn't lock lock file " + lockFile.getAbsolutePath()  +
+                    " because another process already holds the lock." );
         }
         return new WindowsFileLock( lockFile, fileChannel, fileChannelLock );
     }

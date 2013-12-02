@@ -85,9 +85,9 @@ public interface ClusterContext
 
     Iterable<InstanceId> getOtherInstances();
 
-    boolean isInstanceWithIdCurrentlyJoining( InstanceId joiningId );
+    boolean isInstanceJoiningFromDifferentUri( InstanceId joiningId, URI joiningUri );
 
-    void instanceIsJoining( InstanceId joiningId );
+    void instanceIsJoining( InstanceId joiningId, URI uri );
 
     String myName();
 
