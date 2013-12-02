@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;

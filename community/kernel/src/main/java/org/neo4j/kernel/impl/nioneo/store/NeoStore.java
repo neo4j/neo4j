@@ -32,7 +32,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -61,7 +61,7 @@ public class NeoStore extends AbstractStore
 
     public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
     {
-        File neoStore = config.get( Configuration.neo_store );
+        File neoStore = config.get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store );
         return fs.fileExists( neoStore );
     }
 
@@ -69,7 +69,7 @@ public class NeoStore extends AbstractStore
     private PropertyStore propStore;
     private RelationshipStore relStore;
     private RelationshipTypeStore relTypeStore;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
     private boolean isStarted;
     private long lastCommittedTx = -1;
 
@@ -80,7 +80,7 @@ public class NeoStore extends AbstractStore
     public NeoStore(File fileName, Config conf,
                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                     FileSystemAbstraction fileSystemAbstraction,
-                    StringLogger stringLogger, TxHook txHook,
+                    StringLogger stringLogger, RemoteTxHook txHook,
                     RelationshipTypeStore relTypeStore, PropertyStore propStore, RelationshipStore relStore, NodeStore nodeStore)
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
@@ -145,7 +145,7 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( Configuration.neo_store) ));
+                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store) ));
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException(
@@ -304,7 +304,10 @@ public class NeoStore extends AbstractStore
         {
             try
             {
-                if ( channel != null ) channel.close();
+                if ( channel != null )
+                {
+                    channel.close();
+                }
             }
             catch ( IOException e )
             {
@@ -354,7 +357,9 @@ public class NeoStore extends AbstractStore
             try
             {
                 if ( channel != null )
+                {
                     channel.close();
+                }
             }
             catch ( IOException e )
             {
@@ -654,10 +659,12 @@ public class NeoStore extends AbstractStore
         {
             char c = storeVersion.charAt( i );
             if ( c < 0 || c >= 256 )
+            {
                 throw new IllegalArgumentException(
                         String.format(
                                 "Store version strings should be encode-able as Latin1 - %s is not",
                                 storeVersion ) );
+            }
             bits.put( c, 8 ); // Just the lower byte
         }
         return bits.getLong();

@@ -34,7 +34,7 @@ public class TransactionStateFactory
     protected PropertyIndexManager propertyIndexManager;
     protected NodeManager nodeManager;
     protected final Logging logging;
-    protected TxHook txHook;
+    protected RemoteTxHook txHook;
     protected TxIdGenerator txIdGenerator;
     
     public TransactionStateFactory( Logging logging )
@@ -43,7 +43,7 @@ public class TransactionStateFactory
     }
     
     public void setDependencies( LockManager lockManager, PropertyIndexManager propertyIndexManager,
-            NodeManager nodeManager, TxHook txHook, TxIdGenerator txIdGenerator )
+            NodeManager nodeManager, RemoteTxHook txHook, TxIdGenerator txIdGenerator )
     {
         this.lockManager = lockManager;
         this.propertyIndexManager = propertyIndexManager;

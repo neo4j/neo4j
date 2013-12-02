@@ -186,10 +186,7 @@ class TransactionImpl implements Transaction
                                                                          + " error writing transaction log" ), e );
                     }
                     // TODO ties HA to our TxManager
-                    if ( !hasAnyLocks() )
-                    {
-                        getState().getTxHook().initializeTransaction( eventIdentifier );
-                    }
+                    lazyRemoteInitialize();
                     return true;
                 }
                 Xid sameRmXid = null;
@@ -260,6 +257,15 @@ class TransactionImpl implements Transaction
         }
         throw new IllegalStateException( "Tx status is: "
             + txManager.getTxStatusAsString( status ) );
+    }
+
+    private void lazyRemoteInitialize()
+    {
+        if ( !state.isRemotelyInitialized() )
+        {
+            getState().getTxHook().remotelyInitializeTransaction( eventIdentifier );
+            state.markAsRemotelyInitialized();
+        }
     }
 
     private void addResourceToList( Xid xid, XAResource xaRes )
@@ -714,13 +720,11 @@ class TransactionImpl implements Transaction
         }
     }
 
-    public boolean hasAnyLocks()
-    {
-        return getState().getTxHook().hasAnyLocks( this );
-    }
-
     public void finish( boolean successful )
     {
-        getState().getTxHook().finishTransaction( getEventIdentifier(), successful );
+        if ( state.isRemotelyInitialized() )
+        {
+            getState().getTxHook().remotelyFinishTransaction( eventIdentifier, successful );
+        }
     }
 }

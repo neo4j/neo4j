@@ -327,13 +327,11 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
-        boolean hasAnyLocks = false;
         boolean successful = false;
         try
         {
             assertTmOk( "tx commit" );
             Thread thread = Thread.currentThread();
-            hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() != Status.STATUS_ACTIVE
                     && tx.getStatus() != Status.STATUS_MARKED_ROLLBACK )
             {
@@ -364,10 +362,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         finally
         {
             txThreadMap.remove();
-            if ( hasAnyLocks )
-            {
-                tx.finish( successful );
-            }
+            tx.finish( successful );
         }
     }
 
@@ -583,11 +578,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
         }
 
-        boolean hasAnyLocks = false;
         try
         {
             assertTmOk( "tx rollback" );
-            hasAnyLocks = tx.hasAnyLocks();
             if ( tx.getStatus() == Status.STATUS_ACTIVE ||
                     tx.getStatus() == Status.STATUS_MARKED_ROLLBACK ||
                     tx.getStatus() == Status.STATUS_PREPARING )
@@ -638,10 +631,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         finally
         {
             txThreadMap.remove();
-            if ( hasAnyLocks )
-            {
-                tx.finish( false );
-            }
+            tx.finish( false );
         }
     }
 

@@ -19,22 +19,18 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
-public class DefaultTxHook implements TxHook
+public class DefaultTxHook implements RemoteTxHook
 {
     @Override
-    public void initializeTransaction( int eventIdentifier )
+    public void remotelyInitializeTransaction( int eventIdentifier )
     {
         // Do nothing from the ordinary here
     }
 
-    public boolean hasAnyLocks( javax.transaction.Transaction tx )
-    {
-        return false;
-    }
-
-    public void finishTransaction( int eventIdentifier, boolean success )
+    @Override
+    public void remotelyFinishTransaction( int eventIdentifier, boolean success )
     {
         // Do nothing from the ordinary here
     }

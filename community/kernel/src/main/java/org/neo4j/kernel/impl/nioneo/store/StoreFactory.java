@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -56,10 +56,10 @@ public class StoreFactory
     private final WindowPoolFactory windowPoolFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, TxHook txHook )
+                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;

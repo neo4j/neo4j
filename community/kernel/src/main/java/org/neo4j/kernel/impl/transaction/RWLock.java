@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Set;
 
 import javax.transaction.Synchronization;
@@ -39,6 +40,12 @@ import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
 import org.neo4j.kernel.info.WaitingThread;
+
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.interrupted;
+
+import static org.neo4j.kernel.impl.transaction.LockType.READ;
+import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
 /**
  * A read/write lock is a lock that will allow many transactions to acquire read
@@ -68,19 +75,16 @@ import org.neo4j.kernel.info.WaitingThread;
  */
 class RWLock implements Visitor<LineLogger>
 {
-    private int writeCount = 0; // total writeCount
-    private int readCount = 0; // total readCount
-    private int marked = 0; // synch helper in LockManager
-
-    private final Object resource; // the resource for this RWLock
-
-    private final LinkedList<WaitElement> waitingThreadList =
-        new LinkedList<WaitElement>();
-
+    private final Object resource; // the resource this RWLock locks
+    private final LinkedList<WaitElement> waitingThreadList = new LinkedList<WaitElement>();
     private final ArrayMap<Transaction,TxLockElement> txLockElementMap =
-        new ArrayMap<Transaction,TxLockElement>( (byte)5, false, true );
-
+            new ArrayMap<Transaction, TxLockElement>( (byte)5, false, true );
     private final RagManager ragManager;
+    
+    // access to these is guarded by synchronized blocks
+    private int totalReadCount;
+    private int totalWriteCount;
+    private int marked; // synch helper in LockManager
 
     RWLock( Object resource, RagManager ragManager )
     {
@@ -91,25 +95,31 @@ class RWLock implements Visitor<LineLogger>
     // keeps track of a transactions read and write lock count on this RWLock
     private static class TxLockElement
     {
-        final Transaction tx;
-        int readCount = 0;
-        int writeCount = 0;
-
-        private boolean movedOn = false;
+        private final Transaction tx;
+        
+        // access to these is guarded by synchronized blocks
+        private int readCount;
+        private int writeCount;
+        private boolean movedOn;
 
         TxLockElement( Transaction tx )
         {
             this.tx = tx;
+        }
+        
+        boolean isFree()
+        {
+            return readCount == 0 && writeCount == 0;
         }
     }
 
     // keeps track of what type of lock a thread is waiting for
     private static class WaitElement
     {
-        final TxLockElement element;
-        final LockType lockType;
-        final Thread waitingThread;
-        final long since = System.currentTimeMillis();
+        private final TxLockElement element;
+        private final LockType lockType;
+        private final Thread waitingThread;
+        private final long since = System.currentTimeMillis();
 
         WaitElement( TxLockElement element, LockType lockType, Thread thread )
         {
@@ -135,8 +145,9 @@ class RWLock implements Visitor<LineLogger>
      *
      * @throws DeadlockDetectedException
      */
-    void acquireReadLock() throws DeadlockDetectedException {
-        acquireReadLock(ragManager.getCurrentTransaction());
+    void acquireReadLock() throws DeadlockDetectedException
+    {
+        acquireReadLock( ragManager.getCurrentTransaction() );
     }
 
     /**
@@ -151,55 +162,54 @@ class RWLock implements Visitor<LineLogger>
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireReadLock(Transaction tx) throws DeadlockDetectedException
+    synchronized void acquireReadLock( Transaction tx ) throws DeadlockDetectedException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
-        TxLockElement tle = txLockElementMap.get( tx );
-        if ( tle == null )
-        {
-            tle = new TxLockElement( tx );
-        }
+        tx = getCurrentTransaction( tx );
+        TxLockElement tle = getOrCreateLockElement( tx );
 
         try
         {
             tle.movedOn = false;
-            while ( writeCount > tle.writeCount )
+            while ( totalWriteCount > tle.writeCount )
             {
-                ragManager.checkWaitOn( this, tx );
-                waitingThreadList.addFirst( new WaitElement( tle,
-                    LockType.READ, Thread.currentThread() ) );
-                try
-                {
-                    wait();
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.interrupted();
-                }
-                ragManager.stopWaitOn( this, tx );
+                deadlockGuardedWait( tx, tle, READ );
             }
 
-            if ( tle.readCount == 0 && tle.writeCount == 0 )
-            {
-                ragManager.lockAcquired( this, tx );
-            }
-            readCount++;
-            tle.readCount++;
-            tle.movedOn = true;
-            // TODO: this put could be optimized?
-            txLockElementMap.put( tx, tle );
+            registerReadLockAcquired( tx, tle );
         }
         finally
         {
             // if deadlocked, remove marking so lock is removed when empty
+            tle.movedOn = true;
             marked--;
         }
     }
 
-	/**
+    synchronized boolean tryAcquireReadLock( Transaction tx )
+    {
+        tx = getCurrentTransaction( tx );
+        TxLockElement tle = getOrCreateLockElement( tx );
+
+        try
+        {
+            tle.movedOn = false;
+            if ( totalWriteCount > tle.writeCount )
+            {
+                return false;
+            }
+
+            registerReadLockAcquired( tx, tle );
+            return true;
+        }
+        finally
+        {
+            // if deadlocked, remove marking so lock is removed when empty
+            tle.movedOn = true;
+            marked--;
+        }
+    }
+
+    /**
 	 * Releases the read lock held by the provided transaction. If it is null then
 	 * an attempt to acquire the current transaction will be made. This is to
 	 * make safe calling the method from the context of an
@@ -208,27 +218,19 @@ class RWLock implements Visitor<LineLogger>
 	 * transactions in the queue they will be interrupted if they can acquire
 	 * the lock.
 	 */
-    synchronized void releaseReadLock(Transaction tx) throws LockNotFoundException
+    synchronized void releaseReadLock( Transaction tx ) throws LockNotFoundException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
-        TxLockElement tle = txLockElementMap.get( tx );
-        if ( tle == null )
-        {
-            throw new LockNotFoundException(
-                "No transaction lock element found for " + tx );
-        }
+        tx = getCurrentTransaction( tx );
+        TxLockElement tle = getLockElement( tx );
 
         if ( tle.readCount == 0 )
         {
             throw new LockNotFoundException( "" + tx + " don't have readLock" );
         }
 
-        readCount--;
+        totalReadCount--;
         tle.readCount--;
-        if ( tle.readCount == 0 && tle.writeCount == 0 )
+        if ( tle.isFree() )
         {
             if ( !this.isMarked() )
             {
@@ -248,7 +250,7 @@ class RWLock implements Visitor<LineLogger>
                 // locks, if none of these are found it means that there
                 // is a (are) thread(s) that will release read lock(s) in the
                 // near future...
-                if ( readCount == we.element.readCount )
+                if ( totalReadCount == we.element.readCount )
                 {
                     // found a write lock with all read locks
                     waitingThreadList.removeLast();
@@ -259,16 +261,14 @@ class RWLock implements Visitor<LineLogger>
                 }
                 else
                 {
-                    java.util.ListIterator<WaitElement> listItr =
-                        waitingThreadList.listIterator(
+                    ListIterator<WaitElement> listItr = waitingThreadList.listIterator(
                             waitingThreadList.lastIndexOf( we ) );
                     // hm am I doing the first all over again?
                     // think I am if cursor is at lastIndex + 0.5 oh well...
                     while ( listItr.hasPrevious() )
                     {
                         we = listItr.previous();
-                        if ( we.lockType == LockType.WRITE
-                            && readCount == we.element.readCount )
+                        if ( we.lockType == LockType.WRITE && totalReadCount == we.element.readCount )
                         {
                             // found a write lock with all read locks
                             listItr.remove();
@@ -295,8 +295,8 @@ class RWLock implements Visitor<LineLogger>
             {
                 // some thread may have the write lock and released a read lock
                 // if writeCount is down to zero we can interrupt the waiting
-                // readlock
-                if ( writeCount == 0 )
+                // read lock
+                if ( totalWriteCount == 0 )
                 {
                     waitingThreadList.removeLast();
                     if ( !we.element.movedOn )
@@ -331,55 +331,54 @@ class RWLock implements Visitor<LineLogger>
      * @throws DeadlockDetectedException
      *             if a deadlock is detected
      */
-    synchronized void acquireWriteLock(Transaction tx) throws DeadlockDetectedException
+    synchronized void acquireWriteLock( Transaction tx ) throws DeadlockDetectedException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
-        TxLockElement tle = txLockElementMap.get( tx );
-        if ( tle == null )
-        {
-            tle = new TxLockElement( tx );
-        }
+        tx = getCurrentTransaction( tx );
+        TxLockElement tle = getOrCreateLockElement( tx );
 
         try
         {
             tle.movedOn = false;
-            while ( writeCount > tle.writeCount || readCount > tle.readCount )
+            while ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
             {
-                ragManager.checkWaitOn( this, tx );
-                waitingThreadList.addFirst( new WaitElement( tle,
-                    LockType.WRITE, Thread.currentThread() ) );
-                try
-                {
-                    wait();
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.interrupted();
-                }
-                ragManager.stopWaitOn( this, tx );
+                deadlockGuardedWait( tx, tle, WRITE );
             }
 
-            if ( tle.readCount == 0 && tle.writeCount == 0 )
-            {
-                ragManager.lockAcquired( this, tx );
-            }
-            writeCount++;
-            tle.writeCount++;
-            tle.movedOn = true;
-            // TODO optimize this put?
-            txLockElementMap.put( tx, tle );
+            registerWriteLockAcquired( tx, tle );
         }
         finally
         {
             // if deadlocked, remove marking so lock is removed when empty
+            tle.movedOn = true;
             marked--;
         }
     }
 
-	/**
+    synchronized boolean tryAcquireWriteLock( Transaction tx )
+    {
+        tx = getCurrentTransaction( tx );
+        TxLockElement tle = getOrCreateLockElement( tx );
+
+        try
+        {
+            tle.movedOn = false;
+            if ( totalWriteCount > tle.writeCount || totalReadCount > tle.readCount )
+            {
+                return false;
+            }
+
+            registerWriteLockAcquired( tx, tle );
+            return true;
+        }
+        finally
+        {
+            // if deadlocked, remove marking so lock is removed when empty
+            tle.movedOn = true;
+            marked--;
+        }
+    }
+    
+    /**
 	 * Releases the write lock held by the provided tx. If it is null then an
 	 * attempt to acquire the current transaction from the transaction manager
 	 * will be made. This is to make safe calling this method as an
@@ -388,27 +387,19 @@ class RWLock implements Visitor<LineLogger>
 	 * transactions in the queue they will be interrupted if they can acquire
 	 * the lock.
 	 */
-    synchronized void releaseWriteLock(Transaction tx) throws LockNotFoundException
+    synchronized void releaseWriteLock( Transaction tx ) throws LockNotFoundException
     {
-        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
-        {
-            tx = new PlaceboTransaction();
-        }
-        TxLockElement tle = txLockElementMap.get( tx );
-        if ( tle == null )
-        {
-            throw new LockNotFoundException(
-                "No transaction lock element found for " + tx );
-        }
+        tx = getCurrentTransaction( tx );
+        TxLockElement tle = getLockElement( tx );
 
         if ( tle.writeCount == 0 )
         {
             throw new LockNotFoundException( "" + tx + " don't have writeLock" );
         }
 
-        writeCount--;
+        totalWriteCount--;
         tle.writeCount--;
-        if ( tle.readCount == 0 && tle.writeCount == 0 )
+        if ( tle.isFree() )
         {
             if ( !this.isMarked() )
             {
@@ -422,7 +413,7 @@ class RWLock implements Visitor<LineLogger>
         // (that is: If writeCount > 0 a waiting thread in the queue cannot be
         // the thread that holds the write locks because then it would never
         // have been put into wait mode)
-        if ( writeCount == 0 && waitingThreadList.size() > 0 )
+        if ( totalWriteCount == 0 && waitingThreadList.size() > 0 )
         {
             // wake elements in queue until a write lock is found or queue is
             // empty
@@ -444,12 +435,12 @@ class RWLock implements Visitor<LineLogger>
 
     int getWriteCount()
     {
-        return writeCount;
+        return totalWriteCount;
     }
 
     int getReadCount()
     {
-        return readCount;
+        return totalReadCount;
     }
 
     synchronized int getWaitingThreadsCount()
@@ -460,8 +451,8 @@ class RWLock implements Visitor<LineLogger>
     @Override
     public synchronized boolean visit( LineLogger logger )
     {
-        logger.logLine( "Total lock count: readCount=" + readCount
-            + " writeCount=" + writeCount + " for " + resource );
+        logger.logLine( "Total lock count: readCount=" + totalReadCount
+            + " writeCount=" + totalWriteCount + " for " + resource );
 
         logger.logLine( "Waiting list:" );
         Iterator<WaitElement> wElements = waitingThreadList.iterator();
@@ -523,14 +514,18 @@ class RWLock implements Visitor<LineLogger>
             type = ResourceType.OTHER;
             id = resource.toString();
         }
-        return new LockInfo( type, id, readCount, writeCount, new ArrayList<LockingTransaction>( lockingTxs ), new ArrayList<WaitingThread>( waitingTxs ) );
+        return new LockInfo( type, id, totalReadCount, totalWriteCount,
+                new ArrayList<LockingTransaction>( lockingTxs ), new ArrayList<WaitingThread>( waitingTxs ) );
     }
 
     synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo> visitor, long waitStart )
     {
         for ( WaitElement thread : waitingThreadList )
         {
-            if ( thread.since < waitStart ) return visitor.visit( info() );
+            if ( thread.since < waitStart )
+            {
+                return visitor.visit( info() );
+            }
         }
         return false;
     }
@@ -613,5 +608,72 @@ class RWLock implements Visitor<LineLogger>
         {
             return "Placebo tx for thread " + currentThread;
         }
+    }
+    
+    private void registerReadLockAcquired( Transaction tx, TxLockElement tle )
+    {
+        registerLockAcquired( tx, tle );
+        totalReadCount++;
+        tle.readCount++;
+    }
+
+    private void registerWriteLockAcquired( Transaction tx, TxLockElement tle )
+    {
+        registerLockAcquired( tx, tle );
+        totalWriteCount++;
+        tle.writeCount++;
+    }
+
+    private void registerLockAcquired( Transaction tx, TxLockElement tle )
+    {
+        if ( tle.isFree() )
+        {
+            ragManager.lockAcquired( this, tx );
+        }
+    }
+
+    private TxLockElement getLockElement( Transaction tx )
+    {
+        TxLockElement tle = txLockElementMap.get( tx );
+        if ( tle == null )
+        {
+            throw new LockNotFoundException(
+                "No transaction lock element found for " + tx );
+        }
+        return tle;
+    }
+
+    private void deadlockGuardedWait( Transaction tx, TxLockElement tle, LockType lockType )
+    {   // given: we must be in a synchronized block here
+        ragManager.checkWaitOn( this, tx );
+        waitingThreadList.addFirst( new WaitElement( tle, lockType, currentThread() ) );
+        try
+        {
+            wait();
+        }
+        catch ( InterruptedException e )
+        {
+            interrupted();
+        }
+        ragManager.stopWaitOn( this, tx );
+    }
+
+    private TxLockElement getOrCreateLockElement( Transaction tx )
+    {
+        TxLockElement tle = txLockElementMap.get( tx );
+        if ( tle == null )
+        {
+            txLockElementMap.put( tx, tle = new TxLockElement( tx ) );
+        }        
+        return tle;
+    }
+
+    private Transaction getCurrentTransaction( Transaction tx )
+    {
+        if ( tx == null && (tx = ragManager.getCurrentTransaction()) == null )
+        {
+            tx = new PlaceboTransaction();
+        }
+        return tx;
     }
 }

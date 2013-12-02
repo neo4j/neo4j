@@ -34,12 +34,12 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.RagManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
 {
     private final AbstractTransactionManager txManager;
-    private final TxHook txHook;
+    private final RemoteTxHook txHook;
     private final HaXaDataSourceManager xaDsm;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
@@ -49,7 +49,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<LockManager> delegate,
                                     AbstractTransactionManager txManager,
-                                    TxHook txHook, HaXaDataSourceManager xaDsm, Master master,
+                                    RemoteTxHook txHook, HaXaDataSourceManager xaDsm, Master master,
                                     RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
                                     Config config )
     {
@@ -80,7 +80,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
                 return config.get( HaSettings.state_switch_timeout );
             }
         };
-
         return new SlaveLockManager( txManager, txHook, availabilityGuard, slaveConfig, new RagManager( txManager ),
                 requestContextFactory, master, xaDsm );
     }

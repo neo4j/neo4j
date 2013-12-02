@@ -19,15 +19,8 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import java.util.concurrent.Executor;
-
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.cluster.protocol.cluster.ClusterContext;
-import org.neo4j.cluster.timeout.Timeouts;
 
 public class ProposerStateTest
 {
