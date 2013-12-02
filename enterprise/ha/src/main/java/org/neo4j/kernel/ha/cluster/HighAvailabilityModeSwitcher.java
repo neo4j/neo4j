@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -29,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
@@ -86,11 +92,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -274,29 +275,41 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
         try
         {
-            final TransactionManager txManager = graphDb.getDependencyResolver().resolveDependency( TransactionManager.class );
+            DependencyResolver resolver = graphDb.getDependencyResolver();
+            HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
+            /*
+             * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
+             * particular, it is possible to get a masterIsElected while recovering the database. That is generally
+             * going to break things. Synchronizing on the xaDSM as HaKPH does solves this.
+             */
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized ( xaDataSourceManager )
+            {
+                final TransactionManager txManager = graphDb.getDependencyResolver()
+                        .resolveDependency( TransactionManager.class );
 
-            idGeneratorFactory.switchToMaster();
+                idGeneratorFactory.switchToMaster();
 
-            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
+                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
 
-            MasterImpl masterImpl = new MasterImpl( spi, logging, config );
-            
-            MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                    new BranchDetectingTxVerifier( graphDb ) );
-            life.add( masterImpl );
-            life.add( masterServer );
-            delegateHandler.setDelegate( masterImpl );
+                MasterImpl masterImpl = new MasterImpl( spi, logging, config );
 
-            life.start();
+                MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
+                        new BranchDetectingTxVerifier( graphDb ) );
+                life.add( masterImpl );
+                life.add( masterServer );
+                delegateHandler.setDelegate( masterImpl );
 
-            masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
-                    ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
-                    masterServer.getSocketAddress().getPort() + "?serverId=" +
-                    config.get( ClusterSettings.server_id ) );
-            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
-            msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
-                    ", successfully moved to master" );
+                life.start();
+
+                masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
+                        ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
+                        masterServer.getSocketAddress().getPort() + "?serverId=" +
+                        config.get( ClusterSettings.server_id ) );
+                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
+                        ", successfully moved to master" );
+            }
         }
         catch ( Throwable e )
         {
