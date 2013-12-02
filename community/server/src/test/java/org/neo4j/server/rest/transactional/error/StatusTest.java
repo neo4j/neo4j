@@ -38,7 +38,7 @@ public class StatusTest
         // when
         for ( Status status : Status.Code.all() )
         {
-            codes.add( status.code().getCode() );
+            codes.add( status.code().serialize() );
         }
 
         // then

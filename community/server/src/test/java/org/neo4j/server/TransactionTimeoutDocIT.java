@@ -64,7 +64,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         // Then
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( UnknownId.code().getCode() ) );
+        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( UnknownId.code().serialize() ) );
     }
 
     private String txURI()

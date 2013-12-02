@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
-
 import static org.neo4j.server.rest.transactional.error.Status.Classification.ClientError;
 import static org.neo4j.server.rest.transactional.error.Status.Classification.DatabaseError;
 import static org.neo4j.server.rest.transactional.error.Status.Classification.TransientError;
@@ -43,7 +42,7 @@ public interface Status
     enum Network implements Status
     {
         // transient
-        UnknownFailure( TransientError );
+        UnknownFailure( TransientError, "An unknown network failure occurred, a retry may resolve the issue." );
         private final Code code;
 
         @Override
@@ -52,17 +51,18 @@ public interface Status
             return code;
         }
 
-        private Network( Classification classification )
+        private Network( Classification classification, String description )
         {
-            this.code = new Code( classification, this );
+            this.code = new Code( classification, this, description );
         }
     }
 
     enum Request implements Status
     {
         // client
-        Invalid( ClientError ),
-        InvalidFormat( ClientError );
+        Invalid( ClientError, "The client provided an invalid request." ),
+        InvalidFormat( ClientError, "The client provided a request that was missing required fields, or had values " +
+                                    "that are not allowed." );
         private final Code code;
 
         @Override
@@ -71,21 +71,22 @@ public interface Status
             return code;
         }
 
-        private Request( Classification classification )
+        private Request( Classification classification, String description )
         {
-            this.code = new Code( classification, this );
+            this.code = new Code( classification, this, description );
         }
     }
 
     enum Transaction implements Status
     {
         // database
-        UnknownId( ClientError ),
-        ConcurrentRequest( ClientError ),
+        UnknownId( ClientError, "The request referred to a transaction that does not exist."),
+        ConcurrentRequest( ClientError, "There were concurrent requests accessing the same transaction, which is not " +
+                                        "allowed." ),
         // client
-        CouldNotBegin( DatabaseError ),
-        CouldNotRollback( DatabaseError ),
-        CouldNotCommit( DatabaseError );
+        CouldNotBegin( DatabaseError,    "The database was unable to start the transaction." ),
+        CouldNotRollback( DatabaseError, "The database was unable to roll back the transaction." ),
+        CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." );
         private final Code code;
 
         @Override
@@ -94,26 +95,28 @@ public interface Status
             return code;
         }
 
-        private Transaction( Classification classification )
+        private Transaction( Classification classification, String description )
         {
-            this.code = new Code( classification, this );
+            this.code = new Code( classification, this, description );
         }
     }
 
     enum Statement implements Status
     {
         // client
-        InvalidSyntax( ClientError ),
-        /** The syntax is valid, but the query is not semantically valid. */
-        InvalidSemantics( ClientError ),
-        ParameterMissing( ClientError ),
-        /** A constraint that should hold in the query was violated by the data. */
-        ConstraintViolation( ClientError ),
-        EntityNotFound( ClientError ),
-        InvalidType( ClientError ),
-        ArithmeticError( ClientError ),
+        InvalidSyntax( ClientError, "The statement contained invalid or unsupported syntax." ),
+        InvalidSemantics( ClientError, "The statement is syntactically valid, but expresses something that the " +
+                                       "database cannot do." ),
+        ParameterMissing( ClientError, "The statement is referring to a parameter that was not provided in the " +
+                                       "request." ),
+        ConstraintViolation( ClientError, "A constraint imposed by the statement is violated by the data in the " +
+                                          "database." ),
+        EntityNotFound( ClientError,      "The statement is directly referring to an entity that does not exist." ),
+        InvalidType( ClientError,         "The statement attempting to perform operations on values with types that " +
+                                          "are not supported by the operation." ),
+        ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
         // database
-        ExecutionFailure( DatabaseError ),
+        ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
         ;
         private final Code code;
 
@@ -123,18 +126,19 @@ public interface Status
             return code;
         }
 
-        private Statement( Classification classification )
+        private Statement( Classification classification, String description )
         {
-            this.code = new Code( classification, this );
+            this.code = new Code( classification, this, description );
         }
     }
 
     enum Schema implements Status
     {
         /** A constraint in the database was violated by the query. */
-        ConstraintViolation( ClientError ),
-        NoSuchIndex( ClientError ),
-        NoSuchConstraint( ClientError ),
+        ConstraintViolation( ClientError, "A constraint imposed by the database was violated." ),
+        NoSuchIndex( ClientError, "The request (directly or indirectly) referred to an index that does not exist." ),
+        NoSuchConstraint( ClientError, "The request (directly or indirectly) referred to a constraint that does " +
+                                       "not exist." ),
         ;
         private final Code code;
 
@@ -144,17 +148,19 @@ public interface Status
             return code;
         }
 
-        private Schema( Classification classification )
+        private Schema( Classification classification, String description )
         {
-            this.code = new Code( classification, this );
+            this.code = new Code( classification, this, description );
         }
     }
 
     enum General implements Status
     {
         // database
-        FailedIndex( DatabaseError ),
-        UnknownFailure( DatabaseError );
+        FailedIndex( DatabaseError, "The request (directly or indirectly) referred to an index that is in a failed " +
+                                    "state. The index needs to be dropped and recreated manually." ),
+        UnknownFailure( DatabaseError, "An unknown failure occurred." );
+
         private final Code code;
 
         @Override
@@ -163,9 +169,9 @@ public interface Status
             return code;
         }
 
-        private General( Classification classification )
+        private General( Classification classification, String description )
         {
-            this.code = new Code( classification, this );
+            this.code = new Code( classification, this, description );
         }
     }
 
@@ -189,21 +195,35 @@ public interface Status
         }
 
         private final Classification classification;
+        private final String description;
         private final String category;
         private final String title;
-        private final String code;
 
-        <C extends Enum<C> & Status> Code( Classification classification, C code )
+        <C extends Enum<C> & Status> Code( Classification classification, C categoryAndTitle, String description )
         {
             this.classification = classification;
-            this.category = code.getDeclaringClass().getSimpleName();
-            this.title = code.name();
-            this.code = format( "Neo.%s.%s.%s", classification, category, title );
+            this.category = categoryAndTitle.getDeclaringClass().getSimpleName();
+            this.title = categoryAndTitle.name();
+
+            this.description = description;
         }
 
-        public final String getCode()
+        /**
+         * The portable, serialized status code. This will always be in the format:
+         *
+         * <pre>
+         * Neo.[Classification].[Category].[Title]
+         * </pre>
+         * @return
+         */
+        public final String serialize()
         {
-            return code;
+            return format( "Neo.%s.%s.%s", classification, category, title );
+        }
+
+        public final String description()
+        {
+            return description;
         }
 
         public final boolean includeStackTrace()
@@ -226,16 +246,55 @@ public interface Status
             }
             return false;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Code code = (Code) o;
+
+            if ( !category.equals( code.category ) )
+            {
+                return false;
+            }
+            if ( classification != code.classification )
+            {
+                return false;
+            }
+            if ( !title.equals( code.title ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = classification.hashCode();
+            result = 31 * result + category.hashCode();
+            result = 31 * result + title.hashCode();
+            return result;
+        }
     }
 
     public enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( StackTraceStrategy.SWALLOW, TransactionEffect.NONE ),
+        ClientError( StackTraceStrategy.SWALLOW, TransactionEffect.NONE, "" ),
         /** The database failed to service the request. */
-        DatabaseError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.ROLLBACK ),
+        DatabaseError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.ROLLBACK, "" ),
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.NONE ),;
+        TransientError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.NONE, "" ),;
 
         private enum StackTraceStrategy
         {
@@ -250,10 +309,24 @@ public interface Status
         final boolean includeStackTrace;
         final boolean rollbackTransaction; // TODO: make use of this!!!
 
-        private Classification( StackTraceStrategy stackTraceStrategy, TransactionEffect transactionEffect )
+        private final String description;
+
+        private Classification( StackTraceStrategy stackTraceStrategy, TransactionEffect transactionEffect,
+                                String description )
         {
+            this.description = description;
             this.includeStackTrace = stackTraceStrategy == StackTraceStrategy.SEND_TO_CLIENT;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
+        }
+
+        public String description()
+        {
+            return description;
+        }
+
+        public boolean rollbackTransaction()
+        {
+            return rollbackTransaction;
         }
     }
 }
