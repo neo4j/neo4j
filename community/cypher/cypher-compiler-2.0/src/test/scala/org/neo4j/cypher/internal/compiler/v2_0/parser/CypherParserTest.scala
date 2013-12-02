@@ -2539,6 +2539,18 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def multiple_unions() {
+    val q = Query.
+      matches(SingleNode("n")).
+      limit(1).
+      returns(ReturnItem(Identifier("n"), "n"))
+
+    test(
+      "MATCH (n) RETURN (n) LIMIT 1 UNION MATCH (n) RETURN (n) LIMIT 1 UNION MATCH (n) RETURN (n) LIMIT 1",
+      Union(Seq(q, q, q), QueryString.empty, distinct = true)
+    )
+  }
+
   @Test def keywords_in_reltype_and_label() {
     test(
       "START n=node(0) MATCH (n:On)-[:WHERE]->() RETURN n",
