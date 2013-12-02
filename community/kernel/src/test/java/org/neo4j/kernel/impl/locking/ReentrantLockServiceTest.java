@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ReentrantLockServiceTest
 {
@@ -35,28 +36,28 @@ public class ReentrantLockServiceTest
     public void shouldFormLinkedListOfWaitingLockOwners() throws Exception
     {
         // given
-        ReentrantLockService.LockOwner<Integer> head = new ReentrantLockService.LockOwner<>( 0 );
-        ReentrantLockService.LockOwner<Integer> owner1 = new ReentrantLockService.LockOwner<>( 1 );
-        ReentrantLockService.LockOwner<Integer> owner2 = new ReentrantLockService.LockOwner<>( 2 );
-        ReentrantLockService.LockOwner<Integer> owner3 = new ReentrantLockService.LockOwner<>( 3 );
-        ReentrantLockService.LockOwner<Integer> owner4 = new ReentrantLockService.LockOwner<>( 4 );
+        ReentrantLockService.OwnerQueueElement<Integer> queue = new ReentrantLockService.OwnerQueueElement<>( 0 );
+        ReentrantLockService.OwnerQueueElement<Integer> element1 = new ReentrantLockService.OwnerQueueElement<>( 1 );
+        ReentrantLockService.OwnerQueueElement<Integer> element2 = new ReentrantLockService.OwnerQueueElement<>( 2 );
+        ReentrantLockService.OwnerQueueElement<Integer> element3 = new ReentrantLockService.OwnerQueueElement<>( 3 );
+        ReentrantLockService.OwnerQueueElement<Integer> element4 = new ReentrantLockService.OwnerQueueElement<>( 4 );
 
         // when
-        head.push( owner1 );
+        queue.enqueue( element1 );
         // then
-        assertEquals( 1, head.pop().intValue() );
+        assertEquals( 1, queue.dequeue().intValue() );
 
         // when
-        head.push( owner2 );
-        head.push( owner3 );
-        head.push( owner4 );
+        queue.enqueue( element2 );
+        queue.enqueue( element3 );
+        queue.enqueue( element4 );
         // then
-        assertEquals( 2, head.pop().intValue() );
-        assertEquals( 3, head.pop().intValue() );
-        assertEquals( 4, head.pop().intValue() );
-        assertEquals( "should get the current element when popping 'head' itself", 4, head.pop().intValue() );
-        assertEquals( "should get null when popping from a dead list", null, head.pop() );
-        assertEquals( "should get null continuously when popping from a dead list", null, head.pop() );
+        assertEquals( 2, queue.dequeue().intValue() );
+        assertEquals( 3, queue.dequeue().intValue() );
+        assertEquals( 4, queue.dequeue().intValue() );
+        assertEquals( "should get the current element when dequeuing the current head", 4, queue.dequeue().intValue() );
+        assertEquals( "should get null when dequeuing from a dead list", null, queue.dequeue() );
+        assertEquals( "should get null continuously when dequeuing from a dead list", null, queue.dequeue() );
     }
 
     @Test

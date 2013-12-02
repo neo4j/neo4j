@@ -19,7 +19,32 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-abstract class AbstractLockService<OWNER> implements LockService
+/**
+ * Abstract implementation to keep all the boiler-plate code separate from actual locking logic.
+ *
+ * Diagram of how classes inter-relate:
+ * <pre>
+ * ({@link LockService}) --------[returns]--------> ({@link Lock})
+ *  ^                                            ^
+ *  |                                            |
+ *  [implements]                                 [extends]
+ *  |                                            |
+ * ({@link AbstractLockService}) -[contains]-> ({@link LockReference}) -[holds]-> ({@link LockedEntity})
+ *  ^      |                                     |                                     ^
+ *  |      |                                     [references]                          |
+ *  |      |                                     |                                     [extends]
+ *  |      |                                     V                                     |
+ *  |      +-----------[type param]-----------> (HANDLE)                              ({@link LockedNode})
+ *  |                                            ^
+ *  [extends]                                    |
+ *  |                                            [satisfies]
+ *  |                                            |
+ * ({@link ReentrantLockService})-[type param]->({@link ReentrantLockService.OwnerQueueElement})
+ * </pre>
+ *
+ * @param <HANDLE> A handle that the concrete implementation used for releasing the lock.
+ */
+abstract class AbstractLockService<HANDLE> implements LockService
 {
     @Override
     public Lock acquireNodeLock( long nodeId, LockType type )
@@ -32,9 +57,9 @@ abstract class AbstractLockService<OWNER> implements LockService
         return new LockReference( key, acquire( key ) );
     }
 
-    protected abstract OWNER acquire( LockedEntity key );
+    protected abstract HANDLE acquire( LockedEntity key );
 
-    protected abstract void release( LockedEntity key, OWNER owner );
+    protected abstract void release( LockedEntity key, HANDLE handle );
 
     protected static abstract class LockedEntity
     {
@@ -63,12 +88,12 @@ abstract class AbstractLockService<OWNER> implements LockService
     private class LockReference extends Lock
     {
         private final LockedEntity key;
-        private OWNER owner;
+        private HANDLE handle;
 
-        LockReference( LockedEntity key, OWNER owner )
+        LockReference( LockedEntity key, HANDLE handle )
         {
             this.key = key;
-            this.owner = owner;
+            this.handle = handle;
         }
 
         @Override
@@ -76,9 +101,9 @@ abstract class AbstractLockService<OWNER> implements LockService
         {
             StringBuilder repr = new StringBuilder( key.getClass().getSimpleName() ).append( '[' );
             key.toString( repr );
-            if ( owner != null )
+            if ( handle != null )
             {
-                repr.append( "; HELD_BY=" ).append( owner );
+                repr.append( "; HELD_BY=" ).append( handle );
             }
             else
             {
@@ -90,17 +115,17 @@ abstract class AbstractLockService<OWNER> implements LockService
         @Override
         public void release()
         {
-            if ( owner == null )
+            if ( handle == null )
             {
                 return;
             }
             try
             {
-                AbstractLockService.this.release( key, owner );
+                AbstractLockService.this.release( key, handle );
             }
             finally
             {
-                owner = null;
+                handle = null;
             }
         }
     }

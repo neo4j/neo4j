@@ -30,6 +30,8 @@ package org.neo4j.kernel.impl.locking;
  * lock types may be issued while a write lock is held.
  *
  * The simples possible solution issues the same type of mutually exclusive locks for each lock type.
+ *
+ * @see AbstractLockService for implementation details.
  */
 public interface LockService
 {

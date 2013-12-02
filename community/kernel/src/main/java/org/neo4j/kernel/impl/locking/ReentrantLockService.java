@@ -27,9 +27,14 @@ import static java.lang.Thread.currentThread;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static java.util.concurrent.locks.LockSupport.unpark;
 
-public final class ReentrantLockService extends AbstractLockService<ReentrantLockService.LockOwner<Thread>>
+/**
+ * Fairness in this implementation is achieved through a {@link OwnerQueueElement queue} of waiting threads for
+ * {@link #locks each lock}. It guarantees that readers are not allowed before a waiting writer by not differentiating
+ * between readers and writers, the locks are mutex locks, but reentrant from the same thread.
+ */
+public final class ReentrantLockService extends AbstractLockService<ReentrantLockService.OwnerQueueElement<Thread>>
 {
-    private final ConcurrentMap<LockedEntity, LockOwner<Thread>> locks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<LockedEntity, OwnerQueueElement<Thread>> locks = new ConcurrentHashMap<>();
     private final long maxParkNanos;
 
     int lockCount()
@@ -48,12 +53,12 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
     }
 
     @Override
-    protected LockOwner<Thread> acquire( LockedEntity key )
+    protected OwnerQueueElement<Thread> acquire( LockedEntity key )
     {
-        LockOwner<Thread> suggestion = new LockOwner<>( currentThread() );
+        OwnerQueueElement<Thread> suggestion = new OwnerQueueElement<>( currentThread() );
         for(;;)
         {
-            LockOwner<Thread> owner = locks.putIfAbsent( key, suggestion );
+            OwnerQueueElement<Thread> owner = locks.putIfAbsent( key, suggestion );
             if ( owner == null )
             { // Our suggestion was accepted, we got the lock
                 return suggestion;
@@ -66,11 +71,13 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
                 return owner;
             }
 
-            if ( suggestion.head == suggestion ) // true if push() has not been invoked (i.e. first time around)
-            { // otherwise it has already been pushed, and we are in a spurious (or timed) wake up
-                if ( !owner.push( suggestion ) )
+            // Make sure that we only add to the queue once, and if that addition fails (because the queue is dead
+            // - i.e. has been removed from the map), retry form the top of the loop immediately.
+            if ( suggestion.head == suggestion ) // true if enqueue() has not been invoked (i.e. first time around)
+            { // otherwise it has already been enqueued, and we are in a spurious (or timed) wake up
+                if ( !owner.enqueue( suggestion ) )
                 {
-                    continue; // the lock has already been released, retry!
+                    continue; // the lock has already been released, the queue is dead, retry!
                 }
             }
             parkNanos( key, maxParkNanos );
@@ -79,17 +86,17 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
 
     @Override
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void release( LockedEntity key, LockOwner<Thread> lockOwner )
+    protected void release( LockedEntity key, OwnerQueueElement<Thread> ownerQueueElement )
     {
-        if ( 0 == --lockOwner.count )
+        if ( 0 == --ownerQueueElement.count )
         {
             Thread nextThread;
-            synchronized ( lockOwner )
+            synchronized ( ownerQueueElement )
             {
-                nextThread = lockOwner.pop();
+                nextThread = ownerQueueElement.dequeue();
                 if ( nextThread == currentThread() )
                 { // no more threads in the queue, remove this list
-                    locks.remove( key, lockOwner ); // done under synchronization to honor the definition of 'dead'
+                    locks.remove( key, ownerQueueElement ); // done under synchronization to honour definition of 'dead'
                     nextThread = null; // to make unpark() a no-op.
                 }
             }
@@ -97,25 +104,46 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
         }
     }
 
-    static final class LockOwner<OWNER>
+    /**
+     * Element in a queue of owners. Contains two fields {@link #head} and {@link #tail} which form the queue.
+     *
+     * Example queue with 3 members:
+     *
+     * <pre>
+     * locks -> [H]--+ <+
+     *          [T]  |  |
+     *          ^|   V  |
+     *          ||  [H]-+
+     *          ||  [T] ^
+     *          ||   |  |
+     *          ||   V  |
+     *          |+->[H]-+
+     *          +---[T]
+     * </pre>
+     * @param <OWNER> Type of the object that owns (or wishes to own) the lock.
+     *               In practice this is always {@link Thread}, only a parameter for testing purposes.
+     */
+    static final class OwnerQueueElement<OWNER>
     {
         volatile OWNER owner;
         int count = 1; // does not need to be volatile, only updated by the owning thread.
 
-        LockOwner( OWNER owner )
+        OwnerQueueElement( OWNER owner )
         {
             this.owner = owner;
         }
 
-        // In the first element, head will point to the next waiting element, and tail is where we enqueue new elements.
-        // In the waiting elements, head will point to the first element, and tail to the next element.
-        private LockOwner<OWNER> head = this, tail = this;
+        /**
+         * In the first element, head will point to the next waiting element, and tail is where we enqueue new elements.
+         * In the waiting elements, head will point to the first element, and tail to the next element.
+         */
+        private OwnerQueueElement<OWNER> head = this, tail = this;
 
         /**
-         * Return true if the item was push onto the end of the queue, or false if this LockOwner is dead.
+         * Return true if the item was enqueued, or false if this LockOwner is dead.
          * A dead LockOwner is no longer reachable from the map, and so no longer participates in the lock.
          */
-        synchronized boolean push( LockOwner<OWNER> last )
+        synchronized boolean enqueue( OwnerQueueElement<OWNER> last )
         {
             if ( owner == null )
             {
@@ -132,9 +160,9 @@ public final class ReentrantLockService extends AbstractLockService<ReentrantLoc
             return true;
         }
 
-        synchronized OWNER pop()
+        synchronized OWNER dequeue()
         {
-            LockOwner<OWNER> first = this.head;
+            OwnerQueueElement<OWNER> first = this.head;
             (this.head = first.tail).head = this;
             first.tail = this;
             if ( this.head == this )
