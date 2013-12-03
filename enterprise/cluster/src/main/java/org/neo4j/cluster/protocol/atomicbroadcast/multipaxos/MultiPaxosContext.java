@@ -69,6 +69,8 @@ import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
  * <p/>
@@ -1235,7 +1237,7 @@ public class MultiPaxosContext
         {
             int total = clusterContext.getConfiguration().getMembers().size();
             int available = total - heartbeatContext.getFailed().size();
-            return available >= Math.floor((total/2) + 1);
+            return isQuorum(available, total);
         }
 
         public boolean isInCluster()
