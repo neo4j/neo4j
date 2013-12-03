@@ -103,12 +103,7 @@ public class ReentrantLockServiceTest
             ready.awaitNow();
 
             // then
-            StackTraceElement current = thread.getStackTrace()[0];
-            assertTrue( current.toString(),
-                        ("park".equals( current.getMethodName() )
-                         && "sun.misc.Unsafe".equals( current.getClassName() )) ||
-                        ("acquire".equals( current.getMethodName() )
-                         && ReentrantLockService.class.getName().equals( current.getClassName() )) );
+            assertTrue( awaitParked( thread, 5, TimeUnit.SECONDS ) );
             assertTrue( events.snapshot().isEmpty() );
         }
         events.assertInOrder( "locked" );
@@ -183,5 +178,23 @@ public class ReentrantLockServiceTest
         {
             this.lock = locks.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK );
         }
+    }
+
+    private static boolean awaitParked( ThreadRepository.ThreadInfo thread, long timeout, TimeUnit unit )
+    {
+        boolean parked = false;
+        for ( long end = System.currentTimeMillis() + unit.toMillis( timeout ); System.currentTimeMillis() < end; )
+        {
+            StackTraceElement frame = thread.getStackTrace()[0];
+            if ( "park".equals( frame.getMethodName() ) && "sun.misc.Unsafe".equals( frame.getClassName() ) )
+            {
+                if ( thread.getState().name().endsWith( "WAITING" ) )
+                {
+                    parked = true;
+                    break;
+                }
+            }
+        }
+        return parked;
     }
 }
