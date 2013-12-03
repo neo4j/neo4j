@@ -22,10 +22,8 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -1233,7 +1231,9 @@ public class MultiPaxosContext
 
         public boolean electionOk()
         {
-            return heartbeatContext.getFailed().size() <= clusterContext.getConfiguration().getMembers().size() /2;
+            int total = clusterContext.getConfiguration().getMembers().size();
+            int available = total - heartbeatContext.getFailed().size();
+            return available >= Math.floor((total/2) + 1);
         }
 
         public boolean isInCluster()
