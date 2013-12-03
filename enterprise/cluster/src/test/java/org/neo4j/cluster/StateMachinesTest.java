@@ -58,7 +58,7 @@ public class StateMachinesTest
             }
         } );
 
-        ArrayList<TestMessage> handleOrder = new ArrayList<>(  );
+        ArrayList<TestMessage> handleOrder = new ArrayList<TestMessage>(  );
         StateMachine stateMachine = new StateMachine( handleOrder, TestMessage.class, TestState.test, Mockito.mock(Logging.class) );
 
         stateMachines.addStateMachine( stateMachine );

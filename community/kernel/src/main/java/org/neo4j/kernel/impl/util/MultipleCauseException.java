@@ -31,12 +31,21 @@ public class MultipleCauseException extends Exception
     private static final String ALSO_CAUSED_BY = "Also caused by: ";
     private final List<Throwable> causes = new ArrayList<Throwable>();
 
+    public MultipleCauseException( String message, List<Throwable> causes )
+    {
+        super( message, causes.get( 0 ) );
+        for ( Throwable cause : causes )
+        {
+            addCause( cause );
+        }
+    }
+
     public MultipleCauseException( String message, Throwable firstCause )
     {
         super( message, firstCause );
         causes.add( firstCause );
     }
-    
+
     public List<Throwable> getCauses()
     {
         return causes;
@@ -67,7 +76,7 @@ public class MultipleCauseException extends Exception
         if ( causeIterator.hasNext() )
         {
             causeIterator.next(); // Skip first (already printed by default
-                                  // PrintStackTrace)
+            // PrintStackTrace)
             while ( causeIterator.hasNext() )
             {
                 out.print( ALSO_CAUSED_BY );
@@ -82,7 +91,7 @@ public class MultipleCauseException extends Exception
         if ( causeIterator.hasNext() )
         {
             causeIterator.next(); // Skip first (already printed by default
-                                  // PrintStackTrace)
+            // PrintStackTrace)
             while ( causeIterator.hasNext() )
             {
                 out.print( ALSO_CAUSED_BY );

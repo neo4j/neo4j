@@ -35,7 +35,7 @@ import static java.util.Arrays.asList;
 public class KernelEventHandlers
     implements Lifecycle
 {
-    private final List<KernelEventHandler> kernelEventHandlers = new CopyOnWriteArrayList<>();
+    private final List<KernelEventHandler> kernelEventHandlers = new CopyOnWriteArrayList<KernelEventHandler>();
     private final StringLogger log;
 
     public KernelEventHandlers(StringLogger log)

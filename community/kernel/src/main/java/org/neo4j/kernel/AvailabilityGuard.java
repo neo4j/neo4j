@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.Clock;
+import org.neo4j.tooling.Clock;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
@@ -61,7 +61,7 @@ public class AvailabilityGuard
     private Iterable<AvailabilityListener> listeners = Listeners.newListeners();
 
     private final AtomicInteger available;
-    private final List<AvailabilityRequirement> blockingComponents = new CopyOnWriteArrayList<>();
+    private final List<AvailabilityRequirement> blockingComponents = new CopyOnWriteArrayList<AvailabilityRequirement>();
     private final Clock clock;
 
     public AvailabilityGuard( Clock clock, int conditionCount )

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
@@ -38,6 +37,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
+
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletResponse;
 import org.neo4j.server.web.WebServer;
@@ -61,74 +61,75 @@ public abstract class BatchOperations
     protected void addHeaders( final InternalJettyServletRequest res,
                                final HttpHeaders httpHeaders )
     {
-        for (Map.Entry<String, List<String>> header : httpHeaders
-                .getRequestHeaders().entrySet())
+        for ( Map.Entry<String, List<String>> header : httpHeaders
+                .getRequestHeaders().entrySet() )
         {
             final String key = header.getKey();
             final List<String> value = header.getValue();
-            if (value == null)
+            if ( value == null )
             {
                 continue;
             }
-            if (value.size() != 1)
+            if ( value.size() != 1 )
             {
                 throw new IllegalArgumentException(
-                        "expecting one value per header");
+                        "expecting one value per header" );
             }
             if ( !key.equals( "Accept" ) && !key.equals( "Content-Type" ) )
             {
-                res.addHeader(key, value.get(0));
+                res.addHeader( key, value.get( 0 ) );
             }
         }
         // Make sure they are there and always json
         // Taking advantage of Map semantics here
-        res.addHeader("Accept", "application/json");
-        res.addHeader("Content-Type", "application/json");
+        res.addHeader( "Accept", "application/json" );
+        res.addHeader( "Content-Type", "application/json" );
     }
 
     protected URI calculateTargetUri( UriInfo serverUriInfo, String requestedPath )
     {
         URI baseUri = serverUriInfo.getBaseUri();
 
-        if (requestedPath.startsWith(baseUri.toString()))
+        if ( requestedPath.startsWith( baseUri.toString() ) )
         {
             requestedPath = requestedPath
                     .substring( baseUri.toString().length() );
         }
 
-        if (!requestedPath.startsWith("/"))
+        if ( !requestedPath.startsWith( "/" ) )
         {
             requestedPath = "/" + requestedPath;
         }
 
-        return baseUri.resolve("." + requestedPath);
+        return baseUri.resolve( "." + requestedPath );
     }
 
 
-    private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d+)\\}");
+    private final static Pattern PLACHOLDER_PATTERN = Pattern.compile( "\\{(\\d+)\\}" );
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )
     {
-        if (!str.contains( "{" ))
+        if ( !str.contains( "{" ) )
         {
             return str;
         }
-        Matcher matcher = PLACHOLDER_PATTERN.matcher(str);
-        StringBuffer sb=new StringBuffer();
-        while (matcher.find()) {
-            String id = matcher.group(1);
-            String replacement = locations.get(Integer.valueOf(id));
-            if (replacement!=null)
+        Matcher matcher = PLACHOLDER_PATTERN.matcher( str );
+        StringBuffer sb = new StringBuffer();
+        while ( matcher.find() )
+        {
+            String id = matcher.group( 1 );
+            String replacement = locations.get( Integer.valueOf( id ) );
+            if ( replacement != null )
             {
-                matcher.appendReplacement(sb,replacement);
+                matcher.appendReplacement( sb, replacement );
             }
             else
             {
-                matcher.appendReplacement(sb,matcher.group());
+                matcher.appendReplacement( sb, matcher.group() );
             }
         }
-        matcher.appendTail(sb);
+        matcher.appendTail( sb );
         return sb.toString();
     }
 
@@ -137,34 +138,37 @@ public abstract class BatchOperations
         return statusCode >= 200 && statusCode < 300;
     }
 
-    protected void parseAndPerform( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body, Map<Integer, String> locations ) throws IOException, ServletException
+    protected void parseAndPerform( UriInfo uriInfo, HttpHeaders httpHeaders, InputStream body, Map<Integer,
+            String> locations ) throws IOException, ServletException
     {
-        JsonParser jp = jsonFactory.createJsonParser(body);
+        JsonParser jp = jsonFactory.createJsonParser( body );
         JsonToken token;
-        while ((token = jp.nextToken()) != null)
+        while ( (token = jp.nextToken()) != null )
         {
-            if (token == JsonToken.START_OBJECT)
+            if ( token == JsonToken.START_OBJECT )
             {
-                String jobMethod="", jobPath="", jobBody="";
+                String jobMethod = "", jobPath = "", jobBody = "";
                 Integer jobId = null;
-                while ((token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
+                while ( (token = jp.nextToken()) != JsonToken.END_OBJECT && token != null )
                 {
                     String field = jp.getText();
                     jp.nextToken();
-                    switch ( field )
+                    if ( field.equals( METHOD_KEY ) )
                     {
-                    case METHOD_KEY:
                         jobMethod = jp.getText().toUpperCase();
-                        break;
-                    case TO_KEY:
+                    }
+                    else if ( field.equals( TO_KEY ) )
+                    {
                         jobPath = jp.getText();
-                        break;
-                    case ID_KEY:
+                    }
+                    else if ( field.equals( ID_KEY ) )
+                    {
                         jobId = jp.getIntValue();
-                        break;
-                    case BODY_KEY:
+                    }
+                    else if ( field.equals( BODY_KEY ) )
+                    {
                         jobBody = readBody( jp );
-                        break;
+
                     }
                 }
                 // Read one job description. Execute it.
@@ -179,25 +183,25 @@ public abstract class BatchOperations
         JsonNode node = mapper.readTree( jp );
         StringWriter out = new StringWriter();
         JsonGenerator gen = jsonFactory
-                .createJsonGenerator(out);
+                .createJsonGenerator( out );
         mapper.writeTree( gen, node );
         gen.flush();
         gen.close();
         return out.toString();
     }
 
-    protected void performRequest( UriInfo uriInfo, String method, String path, String body, Integer id, HttpHeaders httpHeaders, Map<Integer, String> locations ) throws IOException, ServletException
+    protected void performRequest( UriInfo uriInfo, String method, String path, String body, Integer id,
+                                   HttpHeaders httpHeaders, Map<Integer, String> locations ) throws IOException,
+            ServletException
     {
-        path = replaceLocationPlaceholders(path, locations);
-        body = replaceLocationPlaceholders(body, locations);
-        URI targetUri = calculateTargetUri(uriInfo, path);
+        path = replaceLocationPlaceholders( path, locations );
+        body = replaceLocationPlaceholders( body, locations );
+        URI targetUri = calculateTargetUri( uriInfo, path );
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
-        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res);
+        InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body );
         req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
-
-        InternalJettyServletResponse res = new InternalJettyServletResponse();
 
         invoke( method, path, body, id, targetUri, req, res );
     }

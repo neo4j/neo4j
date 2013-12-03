@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.io.File;
-
 import javax.transaction.SystemException;
 
 import org.junit.Rule;
 import org.junit.Test;
+import sun.util.logging.resources.logging;
 
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -53,7 +53,7 @@ public class TxManagerTest
         XaDataSourceManager mockXaManager = mock( XaDataSourceManager.class );
         File txLogDir = TargetDirectory.forTest( fs.get(), getClass() ).directory( "log", true );
         TxManager txm = new TxManager( txLogDir, mockXaManager, new KernelPanicEventGenerator(
-                new KernelEventHandlers() ), StringLogger.DEV_NULL, fs.get(), null, null );
+                new KernelEventHandlers( StringLogger.DEV_NULL) ), StringLogger.DEV_NULL, fs.get(), null, null );
         txm.doRecovery(); // Make the txm move to an ok state
 
         String msg = "These kinds of throwables, breaking our transaction managers, are why we can't have nice things.";
@@ -74,7 +74,4 @@ public class TxManagerTest
         }
 
     }
-
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

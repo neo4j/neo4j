@@ -398,7 +398,7 @@ public abstract class InternalAbstractGraphDatabase
                     "been caused by either such a missing registration, or by the lack of the provider class itself." );
         }
 
-        kernelEventHandlers = new KernelEventHandlers();
+        kernelEventHandlers = new KernelEventHandlers(logging.getMessagesLog( KernelEventHandlers.class ));
 
         caches = createCaches();
         diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );

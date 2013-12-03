@@ -19,20 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -51,6 +46,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Factory;
@@ -96,6 +92,7 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -104,8 +101,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
-
-import ch.qos.logback.classic.LoggerContext;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
