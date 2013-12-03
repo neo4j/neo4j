@@ -100,18 +100,10 @@ public class ReentrantLockServiceTest
         {
             ThreadRepository.ThreadInfo thread =
                     threads.execute( ready, lockSameNode, events.trigger( "locked" ), lockSameNode.release );
-            ready.await();
+            ready.awaitNow();
 
             // then
-            StackTraceElement current;
-            try
-            {
-                current = thread.getStackTrace()[0];
-            }
-            catch ( Exception e )
-            {
-                throw new AssertionError( "Failed to access stack trace of thread in state: " + thread.getState(), e );
-            }
+            StackTraceElement current = thread.getStackTrace()[0];
             assertTrue( current.toString(),
                         ("park".equals( current.getMethodName() )
                          && "sun.misc.Unsafe".equals( current.getClassName() )) ||
