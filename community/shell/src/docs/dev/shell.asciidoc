@@ -35,10 +35,14 @@ Here's some sample configurations:
 
 [source,plain]
 ----
-# Using default values
-enable_remote_shell = true
-# ...or specify custom port, use default values for the others
-enable_remote_shell = port=1234
+# Enable the remote shell feature
+remote_shell_enabled = true
+
+# The default port is 1337, but you can specify something else if you like
+remote_shell_port = 1337
+
+# If you want to be a little protective of your data, you can also tell the shell to only support read operations
+remote_shell_read_only = true
 ----
 
 When using the Neo4j server, see <<server-configuration>> for how to add configuration settings in that case.
