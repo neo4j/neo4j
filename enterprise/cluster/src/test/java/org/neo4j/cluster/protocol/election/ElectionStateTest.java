@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
@@ -65,7 +64,6 @@ public class ElectionStateTest
     }
 
     @Test
-    @Ignore
     public void testElectionFromDemoteIsRejectedIfNoQuorum() throws Throwable
     {
         ElectionContext context = mock( ElectionContext.class );
@@ -73,7 +71,7 @@ public class ElectionStateTest
 
         when( context.electionOk() ).thenReturn( false );
         when( clusterContextMock.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-//        when( context.getClusterContext() ).thenReturn( clusterContextMock );
+        when( context.getLogger( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
         MessageHolder holder = mock( MessageHolder.class );
 
