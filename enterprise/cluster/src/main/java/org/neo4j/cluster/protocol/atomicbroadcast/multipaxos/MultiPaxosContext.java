@@ -441,8 +441,7 @@ public class MultiPaxosContext
         // Implementation
         public void created( String name )
         {
-            configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
-                    Collections.singleton( boundAt ) );
+            configuration = new ClusterConfiguration( name, Collections.singleton( boundAt ) );
             joined();
         }
 

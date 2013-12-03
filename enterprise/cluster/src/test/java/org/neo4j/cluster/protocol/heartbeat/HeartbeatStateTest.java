@@ -55,8 +55,7 @@ public class HeartbeatStateTest
         // Given
         InstanceId instanceId = new InstanceId( 1 );
         HeartbeatState heartbeat= HeartbeatState.heartbeat;
-        ClusterConfiguration configuration = new ClusterConfiguration("whatever", StringLogger.DEV_NULL,
-                                                                       "cluster://1", "cluster://2" );
+        ClusterConfiguration configuration = new ClusterConfiguration("whatever", "cluster://1", "cluster://2" );
         configuration.joined( instanceId, URI.create("cluster://1" ) );
         configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
 
@@ -88,8 +87,7 @@ public class HeartbeatStateTest
         InstanceId myId = new InstanceId( 1 );
         InstanceId foreignId = new InstanceId( 3 );
         HeartbeatState heartbeat= HeartbeatState.heartbeat;
-        ClusterConfiguration configuration = new ClusterConfiguration("whatever", StringLogger.DEV_NULL,
-                                                                      "cluster://1", "cluster://2" );
+        ClusterConfiguration configuration = new ClusterConfiguration("whatever", "cluster://1", "cluster://2" );
         configuration.joined( myId, URI.create("cluster://1" ) );
         configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
 
