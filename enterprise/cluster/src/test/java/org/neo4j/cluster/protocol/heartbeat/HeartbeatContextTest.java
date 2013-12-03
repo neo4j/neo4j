@@ -80,7 +80,7 @@ public class HeartbeatContextTest
         {
             members.put( instanceIds[i], URI.create( initialHosts[i] ) );
         }
-        ClusterConfiguration config = new ClusterConfiguration( "clusterName", initialHosts );
+        ClusterConfiguration config = new ClusterConfiguration( "clusterName", StringLogger.DEV_NULL, initialHosts );
         config.setMembers( members );
 
         context = mock( ClusterContext.class );

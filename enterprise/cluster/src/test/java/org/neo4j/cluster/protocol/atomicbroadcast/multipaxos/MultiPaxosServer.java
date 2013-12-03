@@ -54,6 +54,7 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
 import org.slf4j.impl.StaticLoggerBinder;
@@ -87,7 +88,7 @@ public class MultiPaxosServer
                     .timeout( HeartbeatMessage.sendHeartbeat, 200 );
 
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default" ),
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.DEV_NULL ),
                             new LogbackService( null, null ) ),
                     timeoutStrategy, new LogbackService( null, null ), new ObjectStreamFactory(), new ObjectStreamFactory() );
 

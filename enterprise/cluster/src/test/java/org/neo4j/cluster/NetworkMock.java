@@ -106,7 +106,7 @@ public class NetworkMock
         Logging logging = new LogbackService( null, loggerContext );
 
         ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory(
-                new ClusterConfiguration( "default" ), logging );
+                new ClusterConfiguration( "default", StringLogger.DEV_NULL ), logging );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
