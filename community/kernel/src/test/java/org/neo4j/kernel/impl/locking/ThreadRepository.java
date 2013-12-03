@@ -32,7 +32,7 @@ import org.junit.runners.model.Statement;
 
 import static java.util.concurrent.locks.LockSupport.getBlocker;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 public class ThreadRepository implements TestRule
 {
@@ -46,6 +46,8 @@ public class ThreadRepository implements TestRule
         StackTraceElement[] getStackTrace();
 
         Object blocker();
+
+        Thread.State getState();
     }
 
     private Repository repository;
