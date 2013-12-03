@@ -32,6 +32,8 @@ import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+
 /**
  * State machine that listens for global cluster events, and coordinates
  * the internal transitions between ClusterMemberStates. Internal services
@@ -88,7 +90,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             }
         } );
 
-        if ( oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState.SLAVE )
+        // If we are in a state that allows access, we must deny now that we shut down.
+        if ( oldState.isAccessAllowed() )
         {
             availabilityGuard.deny(this);
         }
@@ -148,8 +151,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                             } );
                     context.setAvailableHaMasterId( null );
 
-                    if ( (oldState == HighAvailabilityMemberState.MASTER || oldState == HighAvailabilityMemberState
-                            .SLAVE) && oldState != state )
+                    if ( oldState.isAccessAllowed() && oldState != state )
                     {
                         availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
                     }
@@ -231,10 +233,15 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         @Override
         public void memberIsFailed( InstanceId instanceId )
         {
-            if ( getAliveCount() <= getTotalCount() / 2 )
+            if ( !isQuorum(getAliveCount(), getTotalCount()) )
             {
                 try
                 {
+                    if(state.isAccessAllowed())
+                    {
+                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
+                    }
+
                     final HighAvailabilityMemberChangeEvent event =
                             new HighAvailabilityMemberChangeEvent(
                                     state, HighAvailabilityMemberState.PENDING, null, null );
@@ -251,8 +258,6 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
 
                     context.setAvailableHaMasterId( null );
                     context.setElectedMasterId( null );
-
-                    availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
                 }
                 catch ( Throwable throwable )
                 {
@@ -264,8 +269,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         @Override
         public void memberIsAlive( InstanceId instanceId )
         {
-            if ( getAliveCount() > getTotalCount() / 2
-                    && state.equals( HighAvailabilityMemberState.PENDING ) )
+            if ( isQuorum(getAliveCount(), getTotalCount()) && state.equals( HighAvailabilityMemberState.PENDING ) )
             {
                 election.performRoleElections();
             }

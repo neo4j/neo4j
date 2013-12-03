@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -44,6 +37,11 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class HighAvailabilityMemberStateMachineTest
 {
@@ -237,6 +235,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test
@@ -295,6 +294,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        verify(guard, times(1)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test
@@ -352,6 +352,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        verify(guard, times(0)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     @Test
@@ -409,6 +410,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
         assertThat( probe.instanceStops, is( true ) );
+        verify(guard, times(0)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
     private static final class HAStateChangeListener implements HighAvailabilityMemberListener

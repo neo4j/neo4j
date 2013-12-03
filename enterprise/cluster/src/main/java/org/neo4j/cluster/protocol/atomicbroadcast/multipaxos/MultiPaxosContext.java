@@ -19,12 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.limit;
-import static org.neo4j.helpers.collection.Iterables.map;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +60,13 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.limit;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -1232,7 +1233,7 @@ public class MultiPaxosContext
         {
             int total = clusterContext.getConfiguration().getMembers().size();
             int available = total - heartbeatContext.getFailed().size();
-            return available >= Math.floor((total/2) + 1);
+            return isQuorum(available, total);
         }
 
         public boolean isInCluster()
