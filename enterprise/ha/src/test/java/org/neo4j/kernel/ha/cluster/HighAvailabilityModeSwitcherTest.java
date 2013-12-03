@@ -26,14 +26,10 @@ import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.util.Monitors;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.mockito.Mockito.mock;

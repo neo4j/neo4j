@@ -68,11 +68,6 @@ public class StoreLocker
         {
             storeLockFileChannel = fileSystemAbstraction.open( storeLockFile, "rw" );
             storeLockFileLock = fileSystemAbstraction.tryLock( storeLockFile, storeLockFileChannel );
-
-            if ( storeLockFileLock == null )
-            {
-                throw new StoreLockException( "Could not create lock file" );
-            }
         }
         catch ( OverlappingFileLockException e )
         {

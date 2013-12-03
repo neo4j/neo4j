@@ -86,7 +86,12 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
     {
-        return lockSuccess ? SYMBOLIC_FILE_LOCK : null;
+        if ( !lockSuccess )
+        {
+            throw new IOException( "Unable to create lock file " + fileName );
+        }
+        
+        return SYMBOLIC_FILE_LOCK;
     }
 
     @Override

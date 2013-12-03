@@ -99,7 +99,7 @@ public class BatchInserterImplTest
         // When
         try
         {
-            BatchInserterImpl inserter = new BatchInserterImpl( parent.getAbsolutePath() );
+            new BatchInserterImpl( parent.getAbsolutePath() );
 
             // Then
             fail();
@@ -107,8 +107,8 @@ public class BatchInserterImplTest
         catch ( StoreLockException e )
         {
             // Ok
-            e.printStackTrace();
-        } finally
+        }
+        finally
         {
             lock.release();
         }

@@ -24,7 +24,6 @@ import javax.transaction.SystemException;
 
 import org.junit.Rule;
 import org.junit.Test;
-import sun.util.logging.resources.logging;
 
 import org.neo4j.kernel.KernelEventHandlers;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;

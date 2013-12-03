@@ -21,18 +21,19 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -65,8 +66,15 @@ public class TestOsSpecificLocks
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
         assertTrue( new File( path, "lock" ).exists() );
-        // If we try to lock with the lock held, a null should be served
-        assertNull( fs.tryLock( fileName, channel ) );
+        
+        try
+        {
+            fs.tryLock( fileName, channel );
+            fail( "Should have thrown IOException" );
+        }
+        catch ( IOException e )
+        {   // Good, expected
+        }
 
         // But the rest of the files should return non null (placebos,
         // actually)
