@@ -35,8 +35,7 @@ class PatternTest extends ArticleTest {
     "C" -> Map("name" -> "Cesar"),
     "D" -> Map("name" -> "Dilshad"),
     "E" -> Map("name" -> "Emil"),
-    "F" -> Map("name" -> "Filipa")
-  )
+    "F" -> Map("name" -> "Filipa"))
 
   val title = "Pattern"
   val section = "Introduction"
@@ -45,21 +44,24 @@ class PatternTest extends ArticleTest {
 Patterns
 ========
 
-Patterns and pattern-matching are at the very heart of Cypher, and so being effective with Cypher requires a good understanding of patterns.
+Patterns and pattern-matching are at the very heart of Cypher, so being effective with Cypher requires a good understanding of patterns.
 
-Using patterns, you describe the shape of the data you're looking for. For example, in the `MATCH` clause you describe
-the shape with a pattern, and Cypher will figure out how to get that data for you.
+Using patterns, you describe the shape of the data you're looking for. For example, in the `MATCH` clause you describe the shape with a pattern, and Cypher will figure out how to get that data for you.
 
-The pattern describes the data using a form that is very similar to how one typically draws the shape of property graph data on a
-whiteboard: usually as circles (representing nodes) and arrows between them to represent relationships.
+The pattern describes the data using a form that is very similar to how one typically draws the shape of property graph data on a whiteboard: usually as circles (representing nodes) and arrows between them to represent relationships.
 
-Patterns appear in multiple places in Cypher: in `MATCH`, `CREATE` and `MERGE` clauses, and in logical expressions. Each of these
-is described <<TODO>>.
+Patterns appear in multiple places in Cypher: in `MATCH`, `CREATE` and `MERGE` clauses, and in pattern expressions. Each of these
+is described in more details in:
+* <<query-match>>
+* <<query-optional-match>>
+* <<query-create>>
+* <<query-merge>>
+* <<query-where-patterns>>
 
 == Patterns for nodes ==
 
-The very simplest ``shape'' that can be described in a pattern is a node. A node is described using a pair of parentheses, and is typically
-given a name. For example:
+The very simplest ``shape'' that can be described in a pattern is a node. A node is described using a pair of parentheses, and is typically given a name.
+For example:
 
 +`(a)`+
 
@@ -69,30 +71,31 @@ Note that the parentheses may be omitted, but only when there are no labels or p
 
 == Patterns for related nodes ==
 
-More interesting is patterns that describe multiple nodes and relationships between them. Cypher patterns describe relationships by
-employing an arrow between two nodes. For example:
+More interesting is patterns that describe multiple nodes and relationships between them.
+Cypher patterns describe relationships by employing an arrow between two nodes.
+For example:
 
 +`(a)-->(b)`+
 
-This pattern describes a very simple data shape: two nodes, and a single relationship from one to the other. In this example, the
-two nodes are both named as `a` and `b` respectively, and the relationship is ``directed'': it goes from `a` to `b`.
+This pattern describes a very simple data shape: two nodes, and a single relationship from one to the other.
+In this example, the two nodes are both named as `a` and `b` respectively, and the relationship is ``directed'': it goes from `a` to `b`.
 
-This way of describing nodes and relationships can be extended to cover an arbitrary number of nodes and the relationships between
-them, for example:
+This way of describing nodes and relationships can be extended to cover an arbitrary number of nodes and the relationships between them, for example:
 
 +`(a)-->(b)<--(c)`+
 
 Such a series of connected nodes and relationships is called a "path".
 
-Note that the naming of the nodes in these patterns is only necessary should one need to refer to the same node again, either later
-in the pattern or elsewhere in the Cypher query. If this is not necessary then the name may be omitted, like so:
+Note that the naming of the nodes in these patterns is only necessary should one need to refer to the same node again, either later in the pattern or elsewhere in the Cypher query.
+If this is not necessary then the name may be omitted, like so:
 
 +`(a)-->()<--(c)`+
 
 == Labels ==
 
-In addition to simply describing the shape of a node in the pattern, one can also describe attributes that the node should have.
-The most simple attribute that can be described in the pattern is a label that the node must have. For example:
+In addition to simply describing the shape of a node in the pattern, one can also describe attributes.
+The most simple attribute that can be described in the pattern is a label that the node must have.
+For example:
 
 +`(a:User)-->(b)`+
 
@@ -100,25 +103,46 @@ One can also describe a node that has multiple labels:
 
 +`(a:User:Admin)-->(b)`+
 
+== Specifying properties ==
+
+Nodes and relationships are the fundamental structures in a graph. Neo4j uses properties on both of these to allow for far richer models.
+
+Properties can be expressed in patterns using a map-construct: curly brackets surrounding a number of key-expression pairs, separated by commas.
+E.g. a node with two properties on it would look like:
++`(a { name: "Andres", sport: "Brazilian Ju-Jitsu" })`.+
+
+A relationship with expectations on it would could look like:
++`(a)-[{blocked: false}]->(b)`.+
+
+When properties appear in patterns, they add an additional constraint to the shape of the data.
+In the case of a `CREATE` clause, the properties will be set in the newly created nodes and relationships.
+In the case of a `MERGE` clause, the properties will be used as additional constraints on the shape any existing data must have (the specified properties must exactly match any existing data in the graph).
+If no matching data is found, then `MERGE` behaves like `CREATE` and the properties will be set in the newly created nodes and relationships.
+
+Note that patterns supplied to `CREATE` may use a single parameter to specify properties, e.g: `CREATE (node {paramName})`.
+This is not possible with patterns used in other clauses, as Cypher needs to know the property names at the time the query is compiled, so that matching can be done effectively.
+
 == Describing relationships ==
 
-The simplest way to describe a relationship is by using the arrow between two nodes, as in the previous examples. Using this
-technique, you can describe that the relationship should exist and the directionality of it. If you don't care about the
-direction of the relationship, the arrow head can be omitted, like so:
+The simplest way to describe a relationship is by using the arrow between two nodes, as in the previous examples.
+Using this technique, you can describe that the relationship should exist and the directionality of it.
+If you don't care about the direction of the relationship, the arrow head can be omitted, like so:
 
 +`(a)--(b)`+
 
-As with nodes, relationships may also be given names. In this case, a pair of square brackets is used to break up the arrow
-and the identifier is placed between. For example:
+As with nodes, relationships may also be given names.
+In this case, a pair of square brackets is used to break up the arrow and the identifier is placed between.
+For example:
 
 +`(a)-[r]->(b)`+
 
-Much like labels on nodes, Relationships can have types. To describe a relationship with a specific type, you can specify this like so:
+Much like labels on nodes, relationships can have types.
+To describe a relationship with a specific type, you can specify this like so:
 
 +`(a)-[r:REL_TYPE]->(b)`+
 
-Unlike labels, relationships can only have one type. But if we'd like to describe some data such that the relationship could have
-any one of a set of types, then they can all be listed in the pattern, separating them with the pipe symbol `|` like this:
+Unlike labels, relationships can only have one type.
+But if we'd like to describe some data such that the relationship could have any one of a set of types, then they can all be listed in the pattern, separating them with the pipe symbol `|` like this:
 
 +`(a)-[r:TYPE1|TYPE2]->(b)`+
 
@@ -131,23 +155,23 @@ As with nodes, the name of the relationship can always be omitted, in this case 
 
 === Variable length ===
 
-Rather than describing a long path using a sequence of many node and relationship descriptions in a pattern,
-many relationships (and the intermediate nodes) can be described by specifying a length in the relationship
-description of a pattern. For example:
+Rather than describing a long path using a sequence of many node and relationship descriptions in a pattern, many relationships (and the intermediate nodes) can be described by specifying a length in the relationship description of a pattern.
+For example:
 
 +`(a)-[*2]->(b)`+
 
-This describes a graph of 3 nodes and two relationship, all in one path (a path of length 2). This is equivalent to:
+This describes a graph of three nodes and two relationship, all in one path (a path of length 2).
+This is equivalent to:
 
 +`(a)-->()-->(b)`+
 
-A range of lengths can also be specified: such relationship patterns are called "variable length relationships". For
-example:
+A range of lengths can also be specified: such relationship patterns are called ``variable length relationships''.
+For example:
 
 +`(a)-[*3..5]->(b)`+
 
-This is a minimum length of 3, and a maximum of 5. It describes a graph of either 4 nodes and 3 relationships, 5 nodes
-and 4 relationships or 6 nodes and 5 relationships, all connected together in a single path.
+This is a minimum length of 3, and a maximum of 5.
+It describes a graph of either 4 nodes and 3 relationships, 5 nodes and 4 relationships or 6 nodes and 5 relationships, all connected together in a single path.
 
 Either bound can be omitted. For example, to describe paths of length 3 or more, use:
 
@@ -168,12 +192,10 @@ MATCH (me)-[:KNOWS*1..2]-(remote_friend)
 WHERE me.name = "Filipa"
 RETURN remote_friend.name###
 
-This query finds data in the graph which a shape that fits the pattern: specifically a node (with the name property "Emil Eifrem"),
-either one `KNOWS` relationships or two `KNOWS` relationships with any node in the middle, and then finally another
-node. There are no constraints on the final node in the matching data. Then, for every matching shape found in the graph,
-the query returns the name property of that final node. This is typical example of finding first and second degree friends.
+This query finds data in the graph which a shape that fits the pattern: specifically a node (with the name property +Filipa+) and then the +KNOWS+ related nodes, one or two steps out.
+This is a typical example of finding first and second degree friends.
 
-Note that variable length relationships can not be used with `CREATE` and `CREATE UNIQUE`.
+Note that variable length relationships can not be used with `CREATE` and `MERGE`.
 
 == Assigning to path identifiers ==
 
@@ -182,30 +204,7 @@ using an identifer, like so:
 
 +`p = (a)-[*3..5]->(b)`+
 
-You can do this in `MATCH`, `CREATE` and `CREATE UNIQUE`, but not when using patterns as expressions. Example of the
-three in a single query:
-
-###no-results
-MATCH p1 = (me)-[*2]-(friendOfFriend)
-WHERE me.name = "Filipa"
-CREATE p2 = me-[:MARRIED_TO]->(wife {name:"Gunhild"})
-CREATE UNIQUE p3 = (wife)-[:KNOWS]-(friendOfFriend)
-RETURN p1,p2,p3###
-
-== Specifying properties ==
-
-Nodes and relationships are the fundamental structures in a graph, and Neo4j also uses properties on both of these to allow for far richer models.
-
-Properties can be expressed in patterns using a map-construct: curly brackets surrounding a number of key-expression pairs, separated by commas,
-e.g. `{ name: "Andres", sport: "Brazilian Ju-Jitsu" }`.
-
-When properties appear in patterns, they add an additional constraint to the shape of the data. In the case of `CREATE` clause, the properties will
-be set in the newly created nodes and relationships. In the case of `CREATE UNIQUE`, the properties will be used as additional constraints
-on the shape any existing data must have (the specified properties must exactly match any existing data in the graph). If no matching data
-is found, then `CREATE UNIQUE` behaves like `CREATE` and the properties will be set in the newly created nodes and relationships.
-
-Note that parameters can be used in place of property specifications in patterns, using the normal parameter expression, e.g.: `{ paramName }`.
-    """
+You can do this in `MATCH`, `CREATE` and `MERGE`, but not when using patterns as expressions."""
 }
 
 
