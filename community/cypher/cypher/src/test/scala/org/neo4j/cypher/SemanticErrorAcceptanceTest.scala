@@ -378,6 +378,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldMakeItClearThatWeCurrentlyDontSupportRelationshipsInPatterns() {
+    test(
+      "MATCH n WHERE (n)-[{prop:42}]->() RETURN n",
+      "Cypher can not currently handle relationships with properties in expressions (line 1, column 20)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
