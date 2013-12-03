@@ -575,6 +575,7 @@ a.muted:focus {
 }
 .text-warning {
   color: #c09853;
+  background: #fff6b8;
 }
 a.text-warning:hover,
 a.text-warning:focus {
