@@ -171,7 +171,7 @@ public class OutputFormat
                     {
                         throw new WebApplicationException( badRequest( e ) );
                     }
-                    throw new WebApplicationException( serverError( e ) );
+                    throw new WebApplicationException( e, serverError( e ) );
                 }
                 finally
                 {
