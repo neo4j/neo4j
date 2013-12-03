@@ -34,7 +34,7 @@ public abstract class FileLock
     {
         if ( lock == null )
         {
-            return null;
+            throw new IllegalArgumentException( "Null lock" );
         }
 
         return new FileLock()
@@ -154,7 +154,6 @@ public abstract class FileLock
         private final java.nio.channels.FileLock fileChannelLock;
 
         public WindowsFileLock( File lockFile, FileChannel fileChannel, java.nio.channels.FileLock lock )
-                throws IOException
         {
             this.lockFile = lockFile;
             this.fileChannel = fileChannel;
