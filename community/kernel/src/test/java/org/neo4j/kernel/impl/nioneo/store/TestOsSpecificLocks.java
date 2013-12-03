@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -35,7 +36,10 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 public class TestOsSpecificLocks
@@ -62,15 +66,14 @@ public class TestOsSpecificLocks
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
         assertTrue( new File( path, "lock" ).exists() );
-        // If we try to lock with the lock held, it should throw an IOException
+        
         try
         {
             fs.tryLock( fileName, channel );
-            fail("Should have thrown IO exception.");
+            fail( "Should have thrown IOException" );
         }
-        catch(IOException e)
-        {
-
+        catch ( IOException e )
+        {   // Good, expected
         }
 
         // But the rest of the files should return non null (placebos,
