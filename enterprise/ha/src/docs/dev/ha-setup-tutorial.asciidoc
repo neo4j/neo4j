@@ -259,6 +259,9 @@ ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 `conf/neo4j-server.properties`
 [source,properties]
 ----
+# database location
+org.neo4j.server.database.location=data/graph.db
+
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
 
@@ -295,6 +298,9 @@ ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 `conf/neo4j-server.properties`
 [source,properties]
 ----
+# database location
+org.neo4j.server.database.location=data/graph.db
+
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7475
 
@@ -331,6 +337,9 @@ ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 `conf/neo4j-server.properties`
 [source,properties]
 ----
+# database location
+org.neo4j.server.database.location=data/graph.db
+
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7476
 
