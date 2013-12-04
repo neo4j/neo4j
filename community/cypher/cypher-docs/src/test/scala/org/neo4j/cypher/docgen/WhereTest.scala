@@ -146,7 +146,7 @@ class WhereTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(Map("person" -> node("Peter"))), p.toList))
   }
 
-  @Test def has_relationship_to() {
+  @Test def filter_on_patterns() {
     testQuery(
       title = "Filter on patterns",
       text = """Patterns are expressions in Cypher, expressions that return a collection of paths. Collection
@@ -164,6 +164,15 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       queryText = """match (tobias {name: 'Tobias'}), (others) where others.name IN ['Andres', 'Peter'] and (tobias)<--(others) return others""",
       returns = "Nodes that have an outgoing relationship to the \"+Tobias+\" node are returned.",
       assertions = (p) => assertEquals(List(Map("others" -> node("Andres"))), p.toList))
+  }
+
+  @Test def predicate_with_properties() {
+    testQuery(
+      title = "Filter on patterns with properties",
+      text = """You can also add properties to your patterns:""",
+      queryText = """match (n) where (n)-[:KNOWS]-({name:'Tobias'}) return n""",
+      returns = "Finds all nodes that have a +KNOWS+ relationship to a node with the name +Tobias+.",
+      assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
   @Test def has_not_relationship_to() {

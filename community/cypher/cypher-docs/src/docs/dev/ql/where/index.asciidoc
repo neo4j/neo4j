@@ -42,6 +42,7 @@ include::case-insensitive-regular-expressions.asciidoc[]
 
 :leveloffset: 2
 
+[[query-where-patterns]]
 == Patterns ==
 
 :leveloffset: 3
@@ -49,6 +50,8 @@ include::case-insensitive-regular-expressions.asciidoc[]
 include::filter-on-patterns.asciidoc[]
 
 include::filter-on-patterns-using-not.asciidoc[]
+
+include::filter-on-patterns-with-properties.asciidoc[]
 
 include::filtering-on-relationship-type.asciidoc[]
 

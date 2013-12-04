@@ -38,7 +38,7 @@ class MergeErrorReporter extends PlanBuilder with UpdateCommandExpander {
       }.map(_._1)
     }.flatten.mkString(", ")
 
-    throw new PatternException("MERGE needs at least one bound identifier in patterns - bind one of " + unboundNodes)
+    throw new PatternException("MERGE needs at least some part of the pattern to already be known. Please provide values for one of: " + unboundNodes)
   }
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
