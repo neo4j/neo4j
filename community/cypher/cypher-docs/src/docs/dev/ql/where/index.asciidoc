@@ -43,7 +43,7 @@ include::case-insensitive-regular-expressions.asciidoc[]
 :leveloffset: 2
 
 [[query-where-patterns]]
-== Patterns ==
+== Using patterns in WHERE ==
 
 :leveloffset: 3
 
