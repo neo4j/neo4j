@@ -42,7 +42,7 @@ public class RecordSizesDocTest
     @Test
     public void record_sizes_table() throws Exception
     {
-        writer.println( "[options=\"header\",grid=\"none\",frame=\"none\",cols=\"<,>m,<\", width=\"50%\"]" );
+        writer.println( "[options=\"header\",cols=\"<45,>20m,<35\", width=\"80%\"]" );
         writer.println( "|======================================" );
         writer.println( "| Store file  | Record size  | Contents" );
         for ( Store store : asList(

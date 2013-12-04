@@ -145,6 +145,8 @@ public class AsciidocHelper
 
             String safeTitle = title.replaceAll( ILLEGAL_STRINGS, "" );
 
+            tx.success();
+
             try
             {
                 return "." + title + "\n[\"dot\", \""

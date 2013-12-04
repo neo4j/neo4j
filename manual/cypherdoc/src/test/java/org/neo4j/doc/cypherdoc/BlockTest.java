@@ -124,15 +124,11 @@ public class BlockTest
         engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "// graph:xyz" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
-        Transaction transaction = database.beginTx();
         String output;
-        try
+        try (Transaction transaction = database.beginTx())
         {
             output = block.process( state );
-        }
-        finally
-        {
-            transaction.finish();
+            transaction.success();
         }
         assertThat(
                 output,
@@ -147,15 +143,11 @@ public class BlockTest
         engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "//graph" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
-        Transaction transaction = database.beginTx();
         String output;
-        try
+        try (Transaction transaction = database.beginTx())
         {
             output = block.process( state );
-        }
-        finally
-        {
-            transaction.finish();
+            transaction.success();
         }
         assertThat(
                 output,

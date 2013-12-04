@@ -82,9 +82,9 @@ $ neo4j-shell -readonly -path path/to/neo4j-db
 === Run a command and then exit ===
 
 It is possible to tell the shell to just start, execute a command and then exit.
-This opens up for uses of background jobs and also handling of huge output of f.ex. an '''ls''' command where you then could pipe the output to '''less''' or another reader of your choice, or even to a file.
+This opens up for uses of background jobs and also handling of huge output of f.ex. an +ls+ command where you then could pipe the output to +less+ or another reader of your choice, or even to a file.
 
-And even to another neo4j-shell, e.g. for importing a '''dump''' of another database or cypher result. When used with command mode the shell will not output a welcome message.
+And even to another neo4j-shell, e.g. for importing a +dump+ of another database or cypher result. When used with command mode the shell will not output a welcome message.
 So some examples of usage:
 [source,plain]
 ----
@@ -165,7 +165,7 @@ The title is displayed together with each node and its best suited property valu
 If you're standing on a node which has two +KNOWS+ relationships to other nodes it'd be difficult to know which friend is which.
 The title feature addresses this by reading a list of property keys and grabbing the first existing property value of those keys and displays it as a title for the node.
 So you may specify a list (with or without regular expressions), f.ex: +name,title.\*,caption+ and the title for each node will be the property value of the first existing key in that list.
-The list is defined by the client (you) using the +TITLE_KEYS+ <<shell-env-vars,environment variable>> and the default being +.\*name.\*,.\*title.*+
+The list is defined by the client (you) using the +TITLE_KEYS+ environment variable (see <<shell-env-vars>>) and the default being +.\*name.\*,.\*title.*+
 
 [[shell-commands]]
 == How to use (individual commands) ==
@@ -382,25 +382,6 @@ include::shell/sample-session.asciidoc[]
 This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
 
 include::shell/shell-matrix-example-graph.asciidoc[]
-
-////
-["dot", "shell-matrix.svg"]
-----
-root[label="root"]
-neo[label="Mr Andersson"]
-morpheus[label="Morpheus"]
-trinity[label="Trinity"]
-cypher[label="Cypher"]
-agent [label="Agent Smith"]
-architect[label="The Architect"]
-root->neo[label="ROOT"]
-neo -> morpheus[label="KNOWS\nage=3"]
-morpheus->trinity[label="KNOWS\nage=90"]
-morpheus->cypher[label="KNOWS"]
-agent -> cypher [dir="back" label="KNOWS"]
-agent -> architect[label="CODED_BY"]
-----
-////
 
 Neo4j is configured for autoindexing, in this case with the following in the Neo4j configuration file:
 

@@ -25,7 +25,7 @@ If you need to enable access from external hosts, configure the Web server in th
 
 By default, the Neo4j Server comes with some places where arbitrary code code execution can happen. These are the <<rest-api-traverse>> REST endpoints.
 To secure these, either disable them completely by removing offending plugins from the server classpath, or secure access to these URLs through proxies or Authorization Rules.
-Also, the http://docs.oracle.com/javase/1.4.2/docs/api/java/lang/SecurityManager.html[Java Security Manager] can be used to secure parts of the codebase.
+Also, the Java Security Manager, see http://docs.oracle.com/javase/7/docs/technotes/guides/security/index.html can be used to secure parts of the codebase.
 
 == HTTPS support ==
 

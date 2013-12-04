@@ -469,36 +469,30 @@ include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-cha
 An interactive console can be added and will show up in the online HTML version.
 An optional title can be added, which will be used for the text of the button.
 
-This is how to do it, using Geoff to define the data, with an empty line to separate it from the query:
+This is how to do it, using Cypher to define the data, with an empty line to separate it from the query:
 
 [source]
 ----
- .Interactive Matrix Example
+ .Interactive Example
  [console]
  ----
- (A) {"name" : "Neo"}; 
- (B) {"name" : "Trinity"};
- (A)-[:LOVES]->(B)
-
- start n = node(*)
+ CREATE (n {name: 'Neo4j'})
+ 
+ MATCH (n)
  return n
  ----
 ----
 
 And this is the result:
 
-.Interactive Matrix Example
+.Interactive Example
 [console]
 ----
-(A) {"name" : "Neo"};
-(B) {"name" : "Trinity"};
-(A)-[:LOVES]->(B)
+CREATE (n {name: 'Neo4j'})
 
-start n = node(*)
+MATCH (n)
 return n
 ----
-
-
 
 == Toolchain ==
 

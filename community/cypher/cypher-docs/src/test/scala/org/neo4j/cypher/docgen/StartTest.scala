@@ -72,7 +72,7 @@ class StartTest extends DocumentingTestBase {
 To get all the nodes, use an asterisk.
 This can be done with relationships as well.
 
-TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-all-nodes>> for how to do that.
+TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-all-nodes>> in <<query-match>> for how to do that.
 """,
       queryText = "start n=node(*) return n",
       returns = "This query returns all the nodes in the graph.",

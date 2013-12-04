@@ -385,8 +385,8 @@ public class JmxDocTest
                 }
                 else
                 {
-                    newType += " as http://docs.oracle.com/javase/6/docs/api/javax/management/openmbean/CompositeData" +
-                            ".html[CompositeData][]";
+                    newType += " as http://docs.oracle.com/javase/7/docs/api/javax/management/openmbean/CompositeData.html"
+                               + "[CompositeData][]";
                 }
             }
         }

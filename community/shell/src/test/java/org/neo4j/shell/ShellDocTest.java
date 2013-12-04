@@ -22,25 +22,27 @@ package org.neo4j.shell;
 import java.io.PrintWriter;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 
 public class ShellDocTest
 {
@@ -256,17 +258,36 @@ public class ShellDocTest
 //                "return zionist.name;",
 //                "ColumnFilter",
 //                "profile the query by displaying more query execution information" );
-        try ( Transaction tx = db.beginTx() )
-        {
-            doc.run();
-        }
+        doc.run(); // wrapping this in a tx will cause problems, so we don't
         server.shutdown();
+
+        try (Transaction tx = db.beginTx())
+        {
+            assertEquals( 7, Iterables.count( GlobalGraphOperations.at( db ).getAllRelationships() ) );
+            assertEquals( 7, Iterables.count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+            boolean foundRootAndNeoRelationship = false;
+            for ( Relationship relationship : GlobalGraphOperations.at( db )
+                    .getAllRelationships() )
+            {
+                if ( relationship.getType().name().equals( "ROOT" ) )
+                {
+                    foundRootAndNeoRelationship = true;
+                    assertFalse( "The root node should not have a name property.", relationship.getStartNode()
+                            .hasProperty( "name" ) );
+                    assertEquals( "Thomas Andersson", relationship.getEndNode()
+                            .getProperty( "name", null ) );
+                }
+            }
+            assertTrue( "Could not find the node connecting the root and Neo nodes.", foundRootAndNeoRelationship );
+            tx.success();
+        }
         
         try ( PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
                 Transaction tx = db.beginTx() )
         {
-            writer.println( createGraphVizWithNodeId( "Shell Matrix Example", db, "graph" ) );
+            writer.println( createGraphViz( "Shell Matrix Example", db, "graph" ) );
             writer.flush();
+            tx.success();
         }
         db.shutdown();
     }

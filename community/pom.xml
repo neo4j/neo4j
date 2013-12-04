@@ -173,6 +173,11 @@ the relevant Commercial Agreement.
           <version>${project.version}</version>
           <type>pom</type>
         </dependency>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-cypher-docs</artifactId>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>

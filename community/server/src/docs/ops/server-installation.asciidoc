@@ -144,7 +144,7 @@ You can alternatively build your own init.d script. See for instance the Linux S
 
 === OSX via Homebrew ===
 
-Using http://mxcl.github.com/homebrew/[Homebrew], to install the latest stable version of Neo4j Server, issue the following command:
+Using Homebrew (see http://brew.sh/), to install the latest stable version of Neo4j Server, issue the following command:
 
 [source,shell]
 ----

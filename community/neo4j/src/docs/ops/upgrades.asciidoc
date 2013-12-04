@@ -17,8 +17,7 @@ In these cases, Neo4j will refuse to start without explicit configuration to all
 The table below lists recent Neo4j versions, and the type of upgrade required.
 
 .Upgrade process for Neo4j version
-[format="csv",width="50%",cols="3"]
-[frame="topbot",grid="none",options="header"]
+[format="csv",width="50%",cols="3",options="header"]
 |====
 From Version,To Version,Upgrade Type
 1.3,1.4,Automatic

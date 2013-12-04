@@ -11,7 +11,7 @@ within the timeout period, the server will roll it back. You can configure the t
 setting 'org.neo4j.server.transaction.timeout' to the number of seconds before timeout. The default timeout is 60
 seconds.
 
-The key difference between the transactional HTTP endpoint and the <<rest-api-cypher,cypher endpoint>> is the ability to
+The key difference between the transactional HTTP endpoint and the Cypher endpoint (see <<rest-api-cypher>>) is the ability to
 use the same transaction across multiple HTTP requests. The cypher endpoint always attempts to commit a transaction at
 the end of each HTTP request.
 

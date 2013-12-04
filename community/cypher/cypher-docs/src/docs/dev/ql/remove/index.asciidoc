@@ -3,7 +3,7 @@ Remove
 ======
 Removing properties and labels from graph elements is done using +REMOVE+.
 
-For nodes and relationships, see <<query-delete>>.
+For deleting nodes and relationships, see <<query-delete>>.
 
 [NOTE]
 Removing labels from a node is an idempotent operation:
