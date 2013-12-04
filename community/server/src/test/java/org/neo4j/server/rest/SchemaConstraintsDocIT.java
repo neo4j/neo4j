@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -186,17 +188,21 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
 
         assertEquals( 2, serializedList.size() );
 
+        Set<String> labelNames = new HashSet<>();
+        Set<List<String>> propertyKeys = new HashSet<>();
+
         Map<String, Object> serialized1 = serializedList.get( 0 );
-        assertEquals( labelName1, serialized1.get( "label" ) );
+        labelNames.add( (String) serialized1.get( "label" ) );
+        propertyKeys.add( (List<String>) serialized1.get( "property_keys" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized1.get( "type" ) );
-        List<String> keyList1 = (List<String>) serialized1.get( "property_keys" );
 
         Map<String, Object> serialized2 = serializedList.get( 1 );
-        assertEquals( labelName2, serialized2.get( "label" ) );
+        labelNames.add( (String) serialized2.get( "label" ) );
+        propertyKeys.add( (List<String>) serialized2.get( "property_keys" ) );
         assertEquals( ConstraintType.UNIQUENESS.name(), serialized2.get( "type" ) );
-        List<String> keyList2 = (List<String>) serialized2.get( "property_keys" );
 
-        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), asSet( keyList1, keyList2 ) );
+        assertEquals( asSet( labelName1, labelName2 ), labelNames );
+        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), propertyKeys );
     }
 
     /**

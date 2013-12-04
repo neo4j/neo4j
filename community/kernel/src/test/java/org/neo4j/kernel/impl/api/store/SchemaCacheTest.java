@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -142,6 +143,24 @@ public class SchemaCacheTest
         assertEquals(
                 asSet(  ),
                 asSet( cache.constraintsForLabelAndProperty( 1, 2 ) ) );
+    }
+
+    @Test
+    public void adding_constraints_should_be_idempotent() throws Exception
+    {
+        // given
+        Collection<SchemaRule> rules = asList();
+        SchemaCache cache = new SchemaCache( rules );
+
+        cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
+
+        // when
+        cache.addSchemaRule( uniquenessConstraintRule( 0l, 1, 2, 133l ) );
+
+        // then
+        assertEquals(
+                asList( new UniquenessConstraint( 1, 2 ) ),
+                IteratorUtil.asList( cache.constraints() ) );
     }
 
     @Test

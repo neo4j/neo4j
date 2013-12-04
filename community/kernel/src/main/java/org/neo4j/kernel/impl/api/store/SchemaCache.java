@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -53,7 +53,7 @@ public class SchemaCache
     private final Map<Integer, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<>();
     private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<>();
 
-    private final Collection<UniquenessConstraint> constraints = new ArrayList<>();
+    private final Collection<UniquenessConstraint> constraints = new HashSet<>();
     private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
 
     public SchemaCache( Iterable<SchemaRule> initialRules )
