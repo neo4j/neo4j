@@ -4,8 +4,9 @@ High Availability setup tutorial
 
 This guide will help you understand how to configure and deploy a Neo4j High Availability cluster.
 Two scenarios will be considered:
-o Configuring 3 instances to be deployed on 3 separate machines, in a setting similar to what might be encountered in a production environment.
-- Modifying the former to make it possible to run a cluster of 3 instances on the same physical machine, which is particularly useful during development.
+
+* Configuring 3 instances to be deployed on 3 separate machines, in a setting similar to what might be encountered in a production environment.
+* Modifying the former to make it possible to run a cluster of 3 instances on the same physical machine, which is particularly useful during development.
 
 == Background ==
 
