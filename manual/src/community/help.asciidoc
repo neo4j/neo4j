@@ -21,7 +21,7 @@ Report a _bug_ or add a _feature request_:
 
 Questions regarding the _documentation:_
 The Neo4j Manual is published online with a comment function, please use that to post any questions or comments regarding the documentation.
-See http://docs.neo4j.org/.
+See http://docs.neo4j.org/{neo4j-version}.
 
 
 

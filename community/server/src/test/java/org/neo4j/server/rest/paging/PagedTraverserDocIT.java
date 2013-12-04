@@ -175,12 +175,12 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
      * issues a HTTP GET request on the paged traversal URI which causes the
      * traversal to fill the next page (or partially fill it if insufficient
      * results are available).
-     * <p/>
+     * 
      * Note that if a traverser expires through inactivity it will cause a 404
      * response on the next +GET+ request. Traversers' leases are renewed on
      * every successful access for the same amount of time as originally
      * specified.
-     * <p/>
+     * 
      * When the paged traverser reaches the end of its results, the client can
      * expect a 404 response as the traverser is disposed by the server.
      */

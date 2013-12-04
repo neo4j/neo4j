@@ -267,8 +267,9 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "COALESCE",
       syntax = "COALESCE( expression [, expression]* )",
-      arguments = List("expression" -> "The expression that might return null."),
-      text = """Returns the first non-+null+ value in the list of expressions passed to it.""",
+      arguments = List("expression" -> "The expression that might return NULL."),
+      text = """Returns the first non-++NULL++ value in the list of expressions passed to it.
+In case all arguments are +NULL+, +NULL+ will be returned.""",
       queryText = """match (a) where a.name='Alice' return coalesce(a.hairColor, a.eyes)""",
       returns = """""",
       assertions = (p) => assert(Seq("brown") === p.columnAs[String]("coalesce(a.hairColor, a.eyes)").toSeq)
@@ -402,7 +403,7 @@ class FunctionsTest extends DocumentingTestBase {
       arguments = List("expression" -> "A numeric expression."),
       text = "`EXP` returns the value e raised to the power of the expression.",
       queryText = """return exp(2)""",
-      returns = "The exp of 2 is returned: e^2.",
+      returns = "The exp of 2 is returned: e^2^.",
       assertions = (p) => assertEquals(7.38905609893065, p.toList.head("exp(2)").asInstanceOf[Double], 0.000001)
     )
   }

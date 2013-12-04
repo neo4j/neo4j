@@ -41,8 +41,9 @@ enum BlockType
         boolean isA( List<String> block )
         {
             int size = block.size();
-            return size > 0 && ( block.get( 0 )
-                    .startsWith( "=" ) || size > 1 && block.get( 1 )
+            return size > 0 && ( ( block.get( 0 )
+                    .startsWith( "=" ) && !block.get( 0 )
+                    .startsWith( "==" ) ) || size > 1 && block.get( 1 )
                     .startsWith( "=" ) );
         }
 
@@ -231,9 +232,10 @@ enum BlockType
             GraphvizWriter writer = new GraphvizWriter(
                     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            try (Transaction ignored = state.database.beginTx())
+            try (Transaction tx = state.database.beginTx())
             {
                 writer.emit( out, Walker.fullGraph( state.database ) );
+                tx.success();
             }
             catch ( IOException e )
             {

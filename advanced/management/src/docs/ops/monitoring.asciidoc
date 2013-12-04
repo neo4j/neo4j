@@ -60,7 +60,7 @@ For opening JMX to remote monitoring access, please see <<jmx-remote>> and http:
 When using Neo4j in embedded mode, make sure to pass the +com.sun.management.jmxremote.port=portNum+ or other configuration as JVM parameters to your running Java process.
 
 .Neo4j MBeans View
-image::jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
+image::jconsole_beans.png[scaledwidth="100%",alt="Neo4j MBeans view"]
 
 
 [[jmx-connect-programmatic]]

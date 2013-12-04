@@ -42,8 +42,7 @@ It is well suited for low latency requirements were GC interuptions are not acce
 When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so they need to be taken into account when determining heap size.
 
 .Guidelines for heap size
-[format="csv",width="75%",cols="4"]
-[frame="topbot",grid="none",options="header"]
+[format="csv",width="75%",cols="4",options="header"]
 |======================================================================================================
 Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
 10M,2GB,512MB,the rest

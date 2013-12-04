@@ -34,7 +34,7 @@ keep_logical_logs=500k txs
 
 Full list:
 
-[options="header",cols="<15,<60,<25", width="50%"]
+[options="header",cols="<15,<60,<25", width="75%"]
 |============================================
 | Type      | Description | Example
 | files     | Number of most recent logical log files to keep | "10 files"

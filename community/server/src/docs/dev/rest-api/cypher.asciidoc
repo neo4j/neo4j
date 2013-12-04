@@ -1,5 +1,5 @@
 [[rest-api-cypher]]
-== Cypher queries ==
+== Cypher queries via REST ==
 
 The Neo4j REST API allows querying with Cypher, see <<cypher-query-lang>>.
 The results are returned as a list of string headers (+columns+), and a +data+ part,

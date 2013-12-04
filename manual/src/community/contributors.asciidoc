@@ -4,7 +4,7 @@ Contributors
 
 As an Open Source Project, the Neo4j User community extends its warmest thanks to all the contributors who have signed the <<cla>> to date and are contributing to this collective effort.
 
-[options="header"]
+[options="header",cols="<1,<2",width="80%"]
 |=======
 |name | GIThub ID
 |Johan Svensson | https://github.com/johan-neo[johan-neo]
@@ -66,7 +66,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Tony Liu |https://github.com/kooyeed[kooyeed]
 |Michael Klishin |https://github.com/michaelklishin[michaelklishin]
 |Wes Freeman |https://github.com/wfreeman[wfreeman]
-|Chris Leishman |https://github.com/chrisleishman[chrisleishman] 
+|Chris Leishman |https://github.com/cleishm[cleishm] 
 |Brian Levine |https://github.com/blevine[blevine]
 |Ben Day |https://github.com/benday280412[benday280412]
 |Davide Savazzi |https://github.com/svzdvd[svzdvd]
@@ -92,5 +92,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Mark Needham|https://github.com/mneedham[mneedham]
 |Chris Vest|https://github.com/chrisvest[chrisvest]
 |Ben Butler-Cole|https://github.com/benbc[benbc]
+|Tatham Oddie|https://github.com/tathamoddie[tathamoddie]
 |=======
 

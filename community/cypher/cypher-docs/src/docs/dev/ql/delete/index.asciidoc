@@ -1,9 +1,10 @@
 [[query-delete]]
 Delete
 ======
+
 Deleting graph elements -- nodes and relationships, is done with +DELETE+.
 
-For deleting properties and labels, see <<query-remove>>.
+For removing properties and labels, see <<query-remove>>.
 
 The examples start out with the following database:
 

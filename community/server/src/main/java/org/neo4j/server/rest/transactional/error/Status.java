@@ -104,7 +104,7 @@ public interface Status
     enum Statement implements Status
     {
         // client
-        InvalidSyntax( ClientError, "The statement contained invalid or unsupported syntax." ),
+        InvalidSyntax( ClientError, "The statement contains invalid or unsupported syntax." ),
         InvalidSemantics( ClientError, "The statement is syntactically valid, but expresses something that the " +
                                        "database cannot do." ),
         ParameterMissing( ClientError, "The statement is referring to a parameter that was not provided in the " +
@@ -112,7 +112,7 @@ public interface Status
         ConstraintViolation( ClientError, "A constraint imposed by the statement is violated by the data in the " +
                                           "database." ),
         EntityNotFound( ClientError,      "The statement is directly referring to an entity that does not exist." ),
-        InvalidType( ClientError,         "The statement attempting to perform operations on values with types that " +
+        InvalidType( ClientError,         "The statement is attempting to perform operations on values with types that " +
                                           "are not supported by the operation." ),
         ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
         // database

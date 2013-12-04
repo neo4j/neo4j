@@ -274,7 +274,7 @@ div.table td,div.informaltable td {
   max-width: 35em;
 }
 
-div.table table,div.informaltable {
+div.table table,div.informaltable>table {
   border-collapse: collapse;
 }
 

@@ -31,6 +31,15 @@ class Result
     {
         this.query = query;
         text = result.dumpToString();
-        profile = result.executionPlanDescription().toString();
+        String profileText;
+        try
+        {
+            profileText = result.executionPlanDescription().toString();
+        }
+        catch ( Exception ex )
+        {
+            profileText = ex.getMessage();
+        }
+        profile = profileText;
     }
 }

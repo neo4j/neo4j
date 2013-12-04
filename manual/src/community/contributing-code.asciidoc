@@ -20,7 +20,7 @@ In a nutshell, you need to be aware of the following fundamentals if you wish to
 
 * All software published by the Neo4j project must have been contributed under the Neo4j Code <<cla,Contributor License Agreement>>.
 * Neo4j is a free software and open source community.
-  As a contributor, you are free to place your work under any license that has been approved by either the http://fsf.org[Free Software Foundation] or the http://opensource.org[Open Source Initiative].
+  As a contributor, you are free to place your work under any license that has been approved by either the http://www.fsf.org/[Free Software Foundation] or the http://opensource.org[Open Source Initiative].
   You still retain copyright, so in addition to that license you can of course release your work under any other license (for example a fully proprietary license), just not on the Neo4j infrastructure.
 * The Neo4j software is split into components.
   A Git repository holds either a single or multiple components.

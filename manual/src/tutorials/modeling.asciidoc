@@ -13,6 +13,14 @@ include::{importdir}/cypherdoc/linked-list.asciidoc[]
 
 :leveloffset: 2
 
+include::{importdir}/cypherdoc/tvshows.asciidoc[]
+
+:leveloffset: 2
+
+//include::{importdir}/cypherdoc/social-network.asciidoc[]
+
+:leveloffset: 2
+
 include::{importdir}/neo4j-examples-docs-jar/dev/examples/acl-structures-in-graphs.asciidoc[]
 
 :leveloffset: 1

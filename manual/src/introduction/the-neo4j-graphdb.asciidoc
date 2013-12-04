@@ -237,7 +237,7 @@ until you are at a stage where you want to reap the benefits of having one.
 [[graphdb-neo4j-schema-indexes]]
 === Indexes ===
 
-NOTE: This feature was introduced in Neo4j 2.0, and is not the same as the <<indexing, legacy indexes>>.
+NOTE: This feature was introduced in Neo4j 2.0, and is not the same as the legacy indexes (see <<indexing>>).
 
 Performance is gained by creating indexes, which improve the speed of looking up nodes in the database.
 Once you’ve specified which properties to index, Neo4j will make sure your indexes are kept up to date as your graph evolves.
@@ -256,10 +256,10 @@ Note, however, that this is not yet possible through Cypher.
 
 How to use indexes in the different APIs:
 
-* <<query-schema-index, Cypher>>
-* <<rest-api-schema-indexes, REST API>>
-* <<shell-listing-indexes-and-constraints, Listing Indexes via Shell>>
-* <<tutorials-java-embedded-new-index, Java Core API>>
+* Cypher: <<query-schema-index>>
+* REST API: <<rest-api-schema-indexes>>
+* Listing Indexes via Shell: <<shell-listing-indexes-and-constraints>>
+* Java Core API: <<tutorials-java-embedded-new-index>>
 
 [[graphdb-neo4j-schema-constraints]]
 === Constraints ===
@@ -273,7 +273,7 @@ In this version, unique constraints is the only available constraint type.
 
 How to use constraints in the different APIs:
 
-* <<query-constraints, Cypher>>
-* <<rest-api-schema-constraints, REST API>>
-* <<shell-listing-indexes-and-constraints, Listing Constraints via Shell>>
+* Cypher: <<query-constraints>>
+* REST API: <<rest-api-schema-constraints>>
+* Listing Constraints via Shell: <<shell-listing-indexes-and-constraints>>
 
