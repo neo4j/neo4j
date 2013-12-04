@@ -23,7 +23,7 @@ import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
 class MergeTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
+  val graphDescription = List("A:Person KNOWS B:Person")
   val title = "MERGE"
   val css = "write c4-4 c5-5 c6-3"
 
@@ -32,27 +32,34 @@ class MergeTest extends RefcardTest with StatisticsChecker {
       case "merge" =>
         assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
         assert(result.toList.size === 1)
+      case "merge-rel" =>
+        assertStats(result, relationshipsCreated = 1)
+        assert(result.toList.size === 1)
+      case "merge-sub" =>
+        assertStats(result, relationshipsCreated = 1,nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+        assert(result.toList.size === 1)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=aname" =>
-        Map("value" -> "Bob")
+        Map("value" -> "Charlie")
+      case "parameters=names" =>
+        Map("value1" -> "Alice","value2"->"Bob","value3"->"Charlie")
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
+    "A" -> Map("name" -> "Alice"),
+    "B" -> Map("name" -> "Bob"))
 
   def text = """
 ###assertion=merge parameters=aname
 //
 
-MERGE (n:Person {property: {value}})
+MERGE (n:Person {name: {value}})
 ON CREATE SET n.created = timestamp()
 ON MATCH  SET n.access  = n.access+1
 
@@ -60,6 +67,29 @@ RETURN n###
 
 Match pattern or create it if it does not exist.
 Use +ON CREATE+ and +ON MATCH+ for conditional updates.
++MERGE+ will use indexes if available and then adhere to uniqueness guarantees.
 
+###assertion=merge-rel parameters=names
+//
+
+MATCH (a:Person {name: {value1}})
+MATCH (b:Person {name: {value2}})
+MERGE (a)-[r:LOVES]->(b)
+
+RETURN r###
+
+With two bound nodes, +MERGE+ finds or creates
+a relationship between them.
+
+###assertion=merge-sub parameters=names
+//
+
+MATCH (a:Person {name: {value1}})
+MERGE (a)-[r:KNOWS]->(b:Person {name: {value3}})
+
+RETURN r,b###
+
+With one bound node, +MERGE+ finds or creates
+subgraphs attached to the node.
 """
 }

@@ -18,69 +18,59 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
+
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class MatchTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A:Person", "A KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
-  val title = "MATCH"
-  val css = "read c2-2 c3-2 c4-2 c5-2"
+class ConstraintTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("A:Person KNOWS B:Person")
+  val title = "CONSTRAINT"
+  val css = "write c4-4 c5-5 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "related" =>
+      case "create-constraint" =>
+//        assertStats(result, constraintAdded = 1)
+        assert(result.toList.size === 0)
+      case "drop-constraint" =>
+        // assertStats(result, constraintDeleted = 1)
+        assert(result.toList.size === 0)
+      case "match" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
     }
   }
 
+  override val properties: Map[String, Map[String, Any]] = Map(
+    "A" -> Map("name" -> "Alice"),
+    "B" -> Map("name" -> "Bobo"))
+
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "" =>
+      case "parameters=aname" =>
+        Map("value" -> "Alice")
+      case _ =>
         Map()
     }
 
-  override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice"),
-    "B" -> Map("name" -> "Bob"),
-    "C" -> Map("name" -> "Chuck"))
-
   def text = """
-###assertion=related
+###assertion=create-constraint
 //
 
-MATCH (n:Person)-[:KNOWS]->(m:Person)
-WHERE n.name="Alice"
+CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE
+###
 
-RETURN n,m###
+Create an unique constraint on the label `Person` and property `name`.
+If any other node with that label is updated or created with a `name` that
+already exists, the write operation will fail.
+This constraint will create an accompanying index.
 
-Node patterns can contain labels and properties.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-
-MATCH (n)-->(m)
-
-RETURN n,m###
-
-Any pattern can be used in `MATCH`.
-
-###assertion=related
+###assertion=drop-constraint
 //
 
-MATCH (n {name:'Alice'})-->(m)
+DROP CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE
+###
 
-RETURN n,m###
-
-Patterns with node properties.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
-
-MATCH p = (n)-->(m)
-
-RETURN p###
-
-Assign a path to `p`.
+Drop the unique constraint and index on the label `Person` and property `name`.
 """
 }

@@ -73,6 +73,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asci
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.asciidoc[]
+
 ++++
 <div class="col cardgeneral c3-2 c6-2"><div class="blk">
 ++++
@@ -145,7 +147,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation
 |===
 |Deprecation
 |
-* With Neo4j 2.0 several Cypher features have been deprecated or removed.
+With Neo4j 2.0 several Cypher features have been deprecated or removed.
+
 * +START+ is optional
 * Optional relationships are handled by +OPTIONAL MATCH+ not question marks
 * Non-existing properties return null, +n.prop?+ and +n.prop!+ have been removed

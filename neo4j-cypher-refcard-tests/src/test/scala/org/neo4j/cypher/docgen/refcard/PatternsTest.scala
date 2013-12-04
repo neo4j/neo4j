@@ -179,7 +179,7 @@ CREATE UNIQUE
 
 RETURN m###
 
-Match or set properties in `CREATE`, `CREATE UNIQUE` or `MERGE` clauses.
+Match or set properties in `MATCH`, `CREATE`, `CREATE UNIQUE` or `MERGE` clauses.
 
 ###assertion=related parameters=aname
 MATCH p =
