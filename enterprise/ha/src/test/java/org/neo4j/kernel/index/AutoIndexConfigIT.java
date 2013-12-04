@@ -70,7 +70,7 @@ public class AutoIndexConfigIT
         String propertyToIndex = "programmatic-property";
 
         // Given
-        startCluster( 2 );
+        startCluster( 3 );
         HighlyAvailableGraphDatabase originalMaster = cluster.getMaster();
 
         AutoIndexer<Node> originalAutoIndex = originalMaster.index().getNodeAutoIndexer();
