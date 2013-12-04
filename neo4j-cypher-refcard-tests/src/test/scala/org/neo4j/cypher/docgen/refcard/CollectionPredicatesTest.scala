@@ -21,10 +21,10 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
+class CollectionPredicatesTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val title = "Scalar Functions"
-  val css = "general c2-2 c3-2 c4-2 c5-4 c6-5"
+  val title = "Collection Predicates"
+  val css = "general c3-3 c4-2 c5-2 c6-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -37,42 +37,58 @@ class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
     }
   }
 
-  override def parameters(name: String): Map[String, Any] =
-    name match {
-      case "parameters=default" =>
-        Map("defaultValue" -> "Bob")
-      case "" =>
-        Map()
-    }
-
   override val properties: Map[String, Map[String, Any]] = Map(
     "A" -> Map("property" -> "Andrés"),
     "B" -> Map("property" -> "Tobias"),
     "C" -> Map("property" -> "Chris"))
 
   def text = """
-###assertion=returns-one parameters=default
-START n=node(%A%)
-RETURN
-
-coalesce(n.property, {defaultValue})###
-
-The first non-++NULL++ expression.
-
 ###assertion=returns-one
-RETURN
+START n=node(%A%), m=node(%B%)
+MATCH path=(n)-->(m)
+WITH nodes(path) as coll, n, m
+WHERE
 
-timestamp()###
+all(x IN coll WHERE has(x.property))
 
-Milliseconds since midnight, January 1, 1970 UTC.
+RETURN n,m###
+
+Returns `true` if the predicate is `TRUE` for all elements of the collection.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH (n)-[node_or_relationship]->(m)
-RETURN
+MATCH path=(n)-->(m)
+WITH nodes(path) as coll, n, m
+WHERE
 
-id(node_or_relationship)###
+any(x IN coll WHERE has(x.property))
 
-The internal id of the relationship or node.
-"""
+RETURN n,m###
+
+Returns `true` if the predicate is `TRUE` for at least one element of the collection.
+
+###assertion=returns-none
+START n=node(%A%), m=node(%B%)
+MATCH path=(n)-->(m)
+WITH nodes(path) as coll, n, m
+WHERE
+
+none(x IN coll WHERE has(x.property))
+
+RETURN n,m###
+
+Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
+
+###assertion=returns-none
+START n=node(%A%), m=node(%B%)
+MATCH path=(n)-->(m)
+WITH nodes(path) as coll, n, m
+WHERE
+
+single(x IN coll WHERE has(x.property))
+
+RETURN n,m###
+
+Returns `TRUE` if the predicate is `TRUE` for exactly one element in the collection.
+             """
 }

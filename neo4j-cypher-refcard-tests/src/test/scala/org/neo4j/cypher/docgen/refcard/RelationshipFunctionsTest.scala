@@ -18,12 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
+
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
+class RelationshipFunctionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val title = "Scalar Functions"
+  val title = "Relationship Functions"
   val css = "general c2-2 c3-2 c4-2 c5-4 c6-5"
 
   override def assert(name: String, result: ExecutionResult) {
@@ -51,28 +52,40 @@ class ScalarFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("property" -> "Chris"))
 
   def text = """
-###assertion=returns-one parameters=default
-START n=node(%A%)
-RETURN
-
-coalesce(n.property, {defaultValue})###
-
-The first non-++NULL++ expression.
-
 ###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
 RETURN
 
-timestamp()###
+type(a_relationship)###
 
-Milliseconds since midnight, January 1, 1970 UTC.
+String representation of the relationship type.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH (n)-[node_or_relationship]->(m)
+MATCH (n)-[a_relationship]->(m)
 RETURN
 
-id(node_or_relationship)###
+startNode(a_relationship)###
 
-The internal id of the relationship or node.
+Start node of the relationship.
+
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
+
+endNode(a_relationship)###
+
+End node of the relationship.
+
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
+
+id(a_relationship)###
+
+The internal id of the relationship.
 """
 }
