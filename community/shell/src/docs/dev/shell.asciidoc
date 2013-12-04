@@ -41,7 +41,8 @@ remote_shell_enabled = true
 # The default port is 1337, but you can specify something else if you like
 remote_shell_port = 1337
 
-# If you want to be a little protective of your data, you can also tell the shell to only support read operations
+# If you want to be a little protective of your data,
+# you can also tell the shell to only support read operations
 remote_shell_read_only = true
 ----
 

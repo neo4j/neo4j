@@ -52,6 +52,7 @@ The pattern describes the data using a form that is very similar to how one typi
 
 Patterns appear in multiple places in Cypher: in `MATCH`, `CREATE` and `MERGE` clauses, and in pattern expressions. Each of these
 is described in more details in:
+
 * <<query-match>>
 * <<query-optional-match>>
 * <<query-create>>
