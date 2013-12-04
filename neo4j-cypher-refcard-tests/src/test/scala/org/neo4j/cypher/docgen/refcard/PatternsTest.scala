@@ -200,6 +200,5 @@ WHERE n1.name = "Alice"
 RETURN p###
 
 Find all shortest paths.
-
-             """
+"""
 }
