@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -188,7 +189,7 @@ public class CacheLayer implements StoreReadLayer
     public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index );
+        IndexRule rule = indexRule( index, SchemaStorage.IndexRuleKind.ALL );
         if ( rule != null )
         {
             return rule.getOwningConstraint();
@@ -197,9 +198,10 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+            throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( index );
+        IndexRule rule = indexRule( index, kind );
         if ( rule != null )
         {
             return rule.getId();
@@ -208,14 +210,14 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexRule indexRule( IndexDescriptor index )
+    public IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
     {
         for ( SchemaRule rule : schemaCache.schemaRulesForLabel( index.getLabelId() ) )
         {
             if ( rule instanceof IndexRule )
             {
                 IndexRule indexRule = (IndexRule) rule;
-                if ( indexRule.getPropertyKey() == index.getPropertyKeyId() )
+                if ( kind.isOfKind( indexRule ) && indexRule.getPropertyKey() == index.getPropertyKeyId() )
                 {
                     return indexRule;
                 }

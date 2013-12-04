@@ -216,4 +216,8 @@ public interface TxState
     public abstract void constraintDoDrop( UniquenessConstraint constraint );
 
     public abstract boolean constraintDoUnRemove( UniquenessConstraint constraint );
+
+    boolean constraintIndexDoUnRemove( IndexDescriptor index );
+
+    Long indexCreatedForConstraint( UniquenessConstraint constraint );
 }

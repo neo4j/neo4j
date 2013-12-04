@@ -236,8 +236,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
                 catch ( DropIndexFailureException e )
                 {
-                    throw new IllegalStateException( "Constraint index that was created in a transaction should " +
-                            "be " +
+                    throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
                             "possible to drop during rollback of that transaction.", e );
                 }
                 catch ( TransactionFailureException e )
@@ -246,8 +245,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
                 catch ( TransactionalException e )
                 {
-                    throw new IllegalStateException( "The transaction manager could not fulfill the transaction " +
-                            "for " +
+                    throw new IllegalStateException( "The transaction manager could not fulfill the transaction for " +
                             "dropping the constraint.", e );
                 }
             }

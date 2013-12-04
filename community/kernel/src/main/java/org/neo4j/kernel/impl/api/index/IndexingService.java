@@ -601,7 +601,6 @@ public class IndexingService extends LifecycleAdapter
     }
 
     public void validateIndex( long indexId ) throws IndexNotFoundKernelException, ConstraintVerificationFailedKernelException, IndexPopulationFailedKernelException
-
     {
         getProxyForRule( indexId ).validate();
     }

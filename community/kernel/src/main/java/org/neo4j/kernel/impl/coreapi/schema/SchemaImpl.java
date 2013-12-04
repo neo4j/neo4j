@@ -493,7 +493,7 @@ public class SchemaImpl implements Schema
             }
             catch ( IllegalTokenNameException | TooManyLabelsException | DropConstraintFailureException e )
             {
-                throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint" );
+                throw new ThisShouldNotHappenError( "Mattias", "Unable to drop property unique constraint", e );
             }
             catch ( InvalidTransactionTypeKernelException e )
             {

@@ -101,7 +101,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquenessConstraintCreate( state, 10, 66 );
 
         // then
-        verify( txState ).constraintDoUnRemove( any( UniquenessConstraint.class ) );
+        verify( txState ).constraintIndexDoUnRemove( any( IndexDescriptor.class ) );
     }
 
     @Test

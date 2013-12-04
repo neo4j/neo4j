@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
@@ -223,8 +224,19 @@ public class StateHandlingStatementOperations implements
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
         try
         {
-            if ( !state.txState().constraintDoUnRemove( constraint ) )
-            {
+            IndexDescriptor index = new IndexDescriptor( labelId, propertyKeyId );
+            if ( state.txState().constraintIndexDoUnRemove( index ) ) // ..., DROP, *CREATE*
+            { // creation is undoing a drop
+                state.txState().constraintIndexDiffSetsByLabel( labelId ).unRemove( index );
+                if ( !state.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
+                { // ... the drop we are undoing did itself undo a prior create...
+                    state.txState().constraintsChangesForLabel( labelId ).unRemove( constraint );
+                    state.txState().constraintDoAdd(
+                            constraint, state.txState().indexCreatedForConstraint( constraint ) );
+                }
+            }
+            else // *CREATE*
+            { // create from scratch
                 for ( Iterator<UniquenessConstraint> it = storeLayer.constraintsGetForLabelAndPropertyKey(
                         state, labelId, propertyKeyId ); it.hasNext(); )
                 {
@@ -841,10 +853,10 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
             throws SchemaRuleNotFoundException
     {
-        return storeLayer.indexGetCommittedId( state, index );
+        return storeLayer.indexGetCommittedId( state, index, kind );
     }
 
     @Override
