@@ -341,12 +341,6 @@ the relevant Commercial Agreement.
     	<artifactId>logback-classic</artifactId>
       <optional>true</optional>
     </dependency>
-<!--     <dependency>
-    	<groupId>janino</groupId>
-    	<artifactId>janino</artifactId>
-    	<version>2.5.10</version>
-      <optional>true</optional>
-    </dependency> -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
