@@ -51,6 +51,8 @@ angular.module('neo4jApp.controllers')
 
         $scope.cmdchar = Settings.cmdchar
 
+        $scope.goodBrowser = true
+
         # gather info from jmx
         Server.jmx(
           [
