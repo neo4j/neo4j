@@ -128,19 +128,28 @@ article.guide
             code surfer
             | will contain Allison, a friend of a friend who surfs
     slide.row-fluid
-      .span3
+      .span4
         h3 Next steps
-      .span9
-        p
-          | Start your application using Cypher to create and query graph data. Use the REST API
+        p Start your application using Cypher to create and query graph data. Use the REST API
           | to monitor the database. In special cases, consider a plugin.
-        ul
+      .span4
+        h3 Keep getting started
+        ul.undecorated
           li
-            a(href='http://www.neo4j.org/learn/cypher') Learn
-            |  more about Cypher
+            a(play-topic='intro') Intro
+            |  - a guided tour
           li
-            a(href='http://www.neo4j.org/develop/drivers') Download
-            |  a driver for your language of choice
+            a(play-topic='concepts') Concepts
+            |  - GraphDB 101
           li
-            a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/') Read
-            |  the Neo4j manual for details
+            a(href='http://docs.neo4j.org/chunked/{{neo4j.version | neo4jdoc}}/cypher-query-lang.html') Neo4j Manual
+            |  - section about Cypher
+      .span4
+        h3 Jump into code
+        ul.undecorated
+          li
+            a(play-topic='movie-graph') The Movie Graph
+          //- li
+          //-   a(play-topic='network-graph') Network Management
+          //- li
+          //-   a(play-topic='product-graph') Product Recommendations

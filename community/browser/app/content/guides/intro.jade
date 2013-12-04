@@ -4,7 +4,7 @@ article.guide
       .span3
         h3 Introduction
         p.lead Getting started with Neo4j Browser
-      .span9
+      .span6
         p Neo4j Browser is a command driven client, like a web-based shell environment.
           |  It is perfect for running ad-hoc graph queries, with just enough ability
           | to prototype a Neo4j-based application.
@@ -13,6 +13,8 @@ article.guide
           li Exportable tabular results of any query result
           li Graph visualization of query results containing nodes and relationships
           li Convenient exploration of Neo4j's REST API
+      .span3
+        img.pull-right(src='images/click-next.png')
     slide.row-fluid
       .span3
         h3 Editor
@@ -61,14 +63,25 @@ article.guide
       .span4
         img(src='images/screen_sidebar.png')
     slide.row-fluid
-      .span3
+      .span4
         h3 Next steps
-      .span9
-        p Neo4j is like a mashup of a REPL + lightweight IDE + graph visualization.  
-        ul.big
+        p.lead Neo4j is like a mashup of a REPL + lightweight IDE + graph visualization.  
+      .span4
+        h3 Keep getting started
+        ul.undecorated
           li
-            a(play-topic='graphs') Graphs
-            |  - learn basic concepts
+            a(play-topic='concepts') Concepts
+            |  - GraphDB 101
           li
             a(play-topic='cypher') Cypher
-            |  - Neo4j's graph query language
+            |  - query language
+      .span4
+        h3 Jump into code
+        ul.undecorated
+          li
+            a(play-topic='movie-graph') The Movie Graph
+          //- li
+          //-   a(play-topic='network-graph') Network Management
+          //- li
+          //-   a(play-topic='product-graph') Product Recommendations
+

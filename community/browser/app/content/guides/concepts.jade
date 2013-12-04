@@ -1,0 +1,126 @@
+article.guide
+  carousel.deck.container-fluid
+    slide.row-fluid
+      .span3
+        h3 GraphDB 101
+        p.lead Basic concepts to get you going.
+      .span9
+        p A graph database can store any kind of data using a few simple concepts:
+        ol.big
+          li Nodes - graph data records
+          li Relationships - connect nodes
+          li Properties - named data values
+    slide.row-fluid
+      .span3
+        h3 A&nbsp;
+          em Graph
+          |  Database
+        p.lead Neo4j stores data in a Graph, with records called Nodes.
+      .span5
+        p The simplest graph has just a single node with some named values called Properties.
+          | Let's draw a social graph of our friends on the Neo4j team:
+        ol
+          li Start by drawing a circle for the node
+          li Add the name Emil
+          li Note that he is from Sweden
+        ul
+          li Nodes are the name for data records in a graph
+          li Data is stored as Properties
+          li Properties are simple name/value pairs
+      .span4
+        img(src='images/one_node.png')
+    slide.row-fluid
+      .span3
+        h3 Labels
+        p.lead Associate a set of nodes.
+      .span5
+        p Nodes can be grouped together by applying a Label to each member.
+          | In our social graph, we'll label each node that represents a Person.
+        ol
+          li Apply the label "Person" to the node we created for Emil
+          li Color "Person" nodes red
+        ul
+          li A node can have zero or more labels
+          li Labels do not have any properties
+      .span4
+        img(src='images/labeled_node.png')
+    slide.row-fluid
+      .span3
+        h3 More Nodes
+        p.lead Schema-free, nodes can have a mix of common and unique properties.
+      .span5
+        p Like any database, storing data in Neo4j can be as simple
+          | as adding more records. We'll add a few more nodes:
+        ol
+          li Emil has a klout score of 99
+          li Johan, from Sweden, who is learning to surf
+          li Ian, from England, who is an author
+          li Rik, from Belgium, has a cat named Orval
+          li Allison, from California, who surfs
+        ul
+          li Similar nodes can have different properties
+          li Properties can be strings, numbers, or booleans
+          li Neo4j can store billions of nodes
+      .span4
+        img(src='images/more_nodes.png')
+    slide.row-fluid
+      .span3
+        h3 Consider Relationships
+        p.lead Connect nodes in the graph
+      .span5
+        p.summary
+          | The real power of Neo4j is in connected data. To associate any two nodes,
+          | add a Relationship which describes how the records are related.
+        p
+          | In our social graph, we simply say who KNOWS whom:
+        ol
+          li Emil KNOWS Johan and Ian
+          li Johan KNOWS Ian and Rik
+          li Rik and Ian KNOWS Allison
+        ul
+          li Relationships always have direction
+          li Relationships always have a type
+          li Relationships form patterns of data
+      .span4
+        img(src='images/relationships.png')
+    slide.row-fluid
+      .span3
+        h3 Relationship properties
+        p.lead Store information shared by two nodes.
+      .span5
+        p.summary
+          | In a property graph, relationships are data records that can also
+          | contain properties.
+          | Looking more closely at Emil's relationships, note that:
+        ul
+          li Emil has known Johan since 2001
+          li Emil rates Ian 5 (out of 5)
+          li Everyone else can have similar relationship properties
+      .span4
+        img(src='images/rel-props.png')
+    slide.row-fluid
+      .span4
+        h3 Next steps
+        p A property graph contains nodes and relationships, with properties on both.
+      .span4
+        h3 Keep getting started
+        ul.undecorated
+          li
+            a(play-topic='intro') Intro
+            |  - a guided tour
+          li
+            a(play-topic='cypher') Cypher
+            |  - query language
+          li
+            a(href='http://docs.neo4j.org/chunked/{{neo4j.version | neo4jdoc}}/graphdb-concepts.html') Neo4j Manaul
+            |  - section on graphdb concepts
+      .span4
+        h3 Jump into code
+        ul.undecorated
+          li
+            a(play-topic='movie-graph') The Movie Graph
+          //- li
+          //-   a(play-topic='network-graph') Network Management
+          //- li
+          //-   a(play-topic='product-graph') Product Recommendations
+

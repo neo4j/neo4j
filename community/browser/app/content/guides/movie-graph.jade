@@ -1,11 +1,43 @@
 article.guide
-  .container-fluid
-    section.step.row-fluid
-      .span12
-        h1 Mini-app: The Movie Graph
-        p.lead Actors and their appearances. Click the code to load into the editor, then run it.
-    section.step.row-fluid
-      .span12
+  carousel.deck.container-fluid
+    slide.row-fluid
+      .span3
+        h5 Mini graph app
+        br
+        h3 The Movie Graph
+        p.lead Pop-cultural connections
+      .span6
+        p 
+          em The Movie Graph
+          | &nbsp;is a mini graph application containing actors and directors that are related through the movies
+          | they've collaborated on.  
+        p This guide will show you how to:
+        ol.big
+          li Create: insert movie data into the graph
+          li Find: retrieve individual movies and actors
+          li Query: discover related actors and directors
+          li Solve: the Bacon Path
+    slide.row-fluid
+      .span3
+        h5 The Movie Graph
+        br
+        h3 Create
+        p To the right is a giant code block containing a single Cypher query statement
+          | composed of multiple CREATE clauses. This will create the movie graph.
+        ol
+          li Click on the code
+          li Notice it gets copied to the editor above &uarr;
+          li Click the editor's play button to exectute
+          li Wait for the query to finish
+        p.text-center.text-warning WARNING: This adds data to the current database, each time it is run!
+        hr
+        p
+          small :help
+          | &nbsp;
+          a(help-topic='cypher') cypher
+          | &nbsp;
+          a(help-topic='create') CREATE
+      .span9
         figure
           pre.pre-scrollable.code.runnable.
             CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
@@ -297,6 +329,8 @@ article.guide
             CREATE (HalleB:Person {name:'Halle Berry', born:1966})
             CREATE (JimB:Person {name:'Jim Broadbent', born:1949})
             CREATE (TomT:Person {name:'Tom Tykwer', born:1965})
+            CREATE (DavidMitchell:Person {name:'David Mitchell', born:1969})
+            CREATE (StefanArndt:Person {name:'Stefan Arndt', born:1961})
             CREATE
               (TomH)-[:ACTED_IN {roles:['Zachry', 'Dr. Henry Goose', 'Isaac Sachs', 'Dermot Hoggins']}]->(CloudAtlas),
               (Hugo)-[:ACTED_IN {roles:['Bill Smoke', 'Haskell Moore', 'Tadeusz Kesselring', 'Nurse Noakes', 'Boardman Mephi', 'Old Georgie']}]->(CloudAtlas),
@@ -304,7 +338,9 @@ article.guide
               (JimB)-[:ACTED_IN {roles:['Vyvyan Ayrs', 'Captain Molyneux', 'Timothy Cavendish']}]->(CloudAtlas),
               (TomT)-[:DIRECTED]->(CloudAtlas),
               (AndyW)-[:DIRECTED]->(CloudAtlas),
-              (LanaW)-[:DIRECTED]->(CloudAtlas)
+              (LanaW)-[:DIRECTED]->(CloudAtlas),
+              (DavidMitchell)-[:WROTE]->(CloudAtlas),
+              (StefanArndt)-[:PRODUCED]->(CloudAtlas)
 
             CREATE (TheDaVinciCode:Movie {title:'The Da Vinci Code', released:2006, tagline:'Break The Codes'})
             CREATE (IanM:Person {name:'Ian McKellen', born:1939})
@@ -507,9 +543,160 @@ article.guide
               (JessicaThompson)-[:REVIEWED {summary:'Dark, but compelling', rating:85}]->(Unforgiven),
               (JessicaThompson)-[:REVIEWED {summary:"Slapstick redeemed only by the Robin Williams and Gene Hackman's stellar performances", rating:45}]->(TheBirdcage),
               (JessicaThompson)-[:REVIEWED {summary:'A solid romp', rating:68}]->(TheDaVinciCode),
-              (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode)
+              (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode),
+              (JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire)
 
             RETURN TheMatrix
-
             ;
 
+    slide.row-fluid
+      .span3
+        h5 The Movie Graph
+        br
+        h3 Find
+        p Example queries for finding individual nodes.
+        ol
+          li Click on any query example
+          li Run the query from the editor
+          li Notice the syntax pattern
+          li Try looking for other movies or actors
+        hr
+        p
+          small :help
+          | &nbsp;
+          a(help-topic='match') MATCH
+          | &nbsp;
+          a(help-topic='where') WHERE
+          | &nbsp;
+          a(help-topic='return') RETURN
+      .span9
+        p.lead Find the actor named &quot;Tom Hanks&quot;...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (tom {name: "Tom Hanks"}) RETURN tom
+        p.lead Find the movie with title &quot;Cloud Atlas&quot;...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (cloudAtlas {title: "Cloud Atlas"}) RETURN cloudAtlas
+        p.lead Find 10 people...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (people:Person) RETURN people.name LIMIT 10
+        p.lead Find movies released in the 1990s...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (nineties:Movie) WHERE nineties.released > 1990 AND nineties.released < 2000 RETURN nineties.title
+        
+    slide.row-fluid
+      .span3
+        h5 The Movie Graph
+        br
+        h3 Query
+        p Finding patterns within the graph.
+        ol
+          li Actors are people who acted in movies
+          li Directors are people who directed a movie
+          li What other relationships exist?
+        hr
+        p
+          small :help
+          | &nbsp;
+          a(help-topic='match') MATCH
+      .span9
+        p.lead List all Tom Hanks movies...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (tom:Person {name: "Tom Hanks"})-[:ACTED_IN]->(tomHanksMovies) RETURN tom,tomHanksMovies
+        p.lead Who directed "Cloud Atlas"?
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (cloudAtlas {title: "Cloud Atlas"})<-[:DIRECTED]-(directors) RETURN directors.name
+        p.lead Tom Hanks' co-actors...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors) RETURN coActors.name
+        p.lead How people are related to "Cloud Atlas"...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (people:Person)-[relatedTo]-(:Movie {title: "Cloud Atlas"}) RETURN people.name, Type(relatedTo), relatedTo
+        
+    slide.row-fluid
+      .span3
+        h5 The Movie Graph
+        br
+        h3 Solve 
+        p You've heard of the classic "Six Degrees of Kevin Bacon"? 
+          | That is simply a shortest path query called the "Bacon Path".
+        ol
+          li Variable length patterns
+          li Built-in shortestPath() algorithm
+        hr
+        p
+          small Neo4j Manual
+            ul
+              li
+                a(href='http://docs.neo4j.org/chunked/{{neo4j.version | neo4jdoc }}/query-match.html#match-variable-length-relationships') variable length relationships
+              li
+                a(href='http://docs.neo4j.org/chunked/{{neo4j.version | neo4jdoc }}/query-match.html#match-shortest-path') shortestPath
+      .span9
+        p.lead Movies and actors up to 4 "hops" away from Kevin Bacon
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (bacon:Person {name:"Kevin Bacon"})-[*1..4]-(hollywood)
+            RETURN DISTINCT hollywood
+        p.lead Bacon path, the shortest path of any relationships to Meg Ryan
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH p=shortestPath(
+              (bacon:Person {name:"Kevin Bacon"})-[*]-(meg:Person {name:"Meg Ryan"})
+            )
+            RETURN p
+    slide.row-fluid
+      .span3
+        h5 The Movie Graph
+        br
+        h3 Clean up 
+        p When you're done experimenting, you can remove the movie data set. 
+        p Note:
+        ol
+          li Nodes can't be deleted if relationships exist
+          li Delete both nodes and relationships together
+        p.text-center.text-warning WARNING: This will remove all Person and Movie nodes!
+        hr
+        p
+          small :help
+          | &nbsp;
+          a(help-topic='delete') DELETE
+      .span9
+        p.lead Delete all Movie and Person nodes, and their relationships
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (a:Person),(m:Movie) OPTIONAL MATCH (a)-[r1]-(), (m)-[r2]-() DELETE a,r1,m,r2
+        p.lead Prove that the Movie Graph is gone
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (n) RETURN n
+    slide.row-fluid.header
+      .span4
+        h4 The Movie Graph
+        br
+        h3 Next steps
+      .span4
+        h3 Review getting started
+        ul.undecorated
+          li
+            a(play-topic='intro') Intro
+            |  - a guided tour
+          li
+            a(play-topic='concepts') Concepts
+            |  - GraphDB 101
+          li
+            a(play-topic='cypher') Cypher
+            |  - query language
+      .span4
+        //- h3 Try more code
+        //- ul.undecorated
+        //-   li
+        //-     a(play-topic='network-graph') Network Management
+          //- li
+          //-   a(play-topic='product-graph') Product Recommendations
