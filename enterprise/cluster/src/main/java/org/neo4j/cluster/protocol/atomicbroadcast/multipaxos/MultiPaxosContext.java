@@ -47,6 +47,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 import org.neo4j.cluster.protocol.election.ElectionContext;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
@@ -85,13 +86,13 @@ public class MultiPaxosContext
     final private Executor executor;
     final private Logging logging;
 
-    private PaxosInstanceStore paxosInstances = new PaxosInstanceStore();
+    private final PaxosInstanceStore paxosInstances = new PaxosInstanceStore();
     final private org.neo4j.cluster.InstanceId me;
     private ClusterConfiguration configuration;
     private URI boundAt;
     private long lastKnownLearnedInstanceInCluster = -1;
-    private ObjectInputStreamFactory objectInputStreamFactory;
-    private ObjectOutputStreamFactory objectOutputStreamFactory;
+    private final ObjectInputStreamFactory objectInputStreamFactory;
+    private final ObjectOutputStreamFactory objectOutputStreamFactory;
     private long nextInstanceId = 0;
 
     private final ClusterContext clusterContext;
@@ -195,16 +196,19 @@ public class MultiPaxosContext
             return toList( configuration.getMemberURIs() );
         }
 
+        @Override
         public org.neo4j.cluster.InstanceId getMyId()
         {
             return me;
         }
 
+        @Override
         public URI boundAt()
         {
             return boundAt;
         }
 
+        @Override
         public List<URI> getAcceptors()
         {
             // Only use 2f+1 acceptors
@@ -212,11 +216,13 @@ public class MultiPaxosContext
                     .getAllowedFailures() * 2 + 1, configuration.getMemberURIs() ) );
         }
 
+        @Override
         public Map<org.neo4j.cluster.InstanceId, URI> getMembers()
         {
             return configuration.getMembers();
         }
 
+        @Override
         public org.neo4j.cluster.InstanceId getCoordinator()
         {
             return configuration.getElected( ClusterConfiguration.COORDINATOR );
@@ -234,6 +240,7 @@ public class MultiPaxosContext
             return configuration.getIdForUri( uri );
         }
 
+        @Override
         public synchronized boolean isMe( org.neo4j.cluster.InstanceId server )
         {
             return me.equals( server );
@@ -246,16 +253,19 @@ public class MultiPaxosContext
     {
         private Iterable<AtomicBroadcastListener> listeners = Listeners.newListeners();
 
+        @Override
         public void addAtomicBroadcastListener( AtomicBroadcastListener listener )
         {
             listeners = Listeners.addListener( listener, listeners );
         }
 
+        @Override
         public void removeAtomicBroadcastListener( AtomicBroadcastListener listener )
         {
             listeners = Listeners.removeListener( listener, listeners );
         }
 
+        @Override
         public void receive( final Payload value )
         {
             Listeners.notifyListeners( listeners, executor, new Listeners.Notification<AtomicBroadcastListener>()
@@ -274,12 +284,13 @@ public class MultiPaxosContext
             extends AbstractContextImpl
             implements ProposerContext
     {
-        public final int MAX_CONCURRENT_INSTANCES = 10;
+        public static final int MAX_CONCURRENT_INSTANCES = 10;
 
         // ProposerContext
         final Deque<Message> pendingValues = new LinkedList<Message>();
         final Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
 
+        @Override
         public InstanceId newInstanceId()
         {
             // Never propose something lower than last received instance id
@@ -291,6 +302,7 @@ public class MultiPaxosContext
             return new InstanceId( nextInstanceId++ );
         }
 
+        @Override
         public void leave()
         {
             pendingValues.clear();
@@ -354,6 +366,7 @@ public class MultiPaxosContext
             return bookedInstances.size();
         }
 
+        @Override
         public int getMinimumQuorumSize( List<URI> acceptors )
         {
             // n >= 2f+1
@@ -373,6 +386,7 @@ public class MultiPaxosContext
          * such a message. This won't "learn" the message, as in applying it on the cluster configuration, but will
          * just update properly the set of acceptors for pending instances.
          */
+        @Override
         public void patchBookedInstances( ClusterMessage.ConfigurationChangeState value )
         {
             if ( value.getJoin() != null )
@@ -384,8 +398,8 @@ public class MultiPaxosContext
                     {
                         instance.getAcceptors().remove( configuration.getMembers().get( value.getJoin() ) );
 
-                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance + " removed gone " +
-                                "member "
+                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                                " removed gone member "
                                 + configuration.getMembers().get( value.getJoin() ) + " added joining member " +
                                 value.getJoinUri() );
 
@@ -403,8 +417,8 @@ public class MultiPaxosContext
                     PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                     if ( instance.getAcceptors() != null )
                     {
-                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance + " removed " +
-                                "leaving member "
+                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                                " removed leaving member "
                                 + value.getLeave() + " (at URI " + configuration.getMembers().get( value.getLeave() )
                                 + ")" );
                         instance.getAcceptors().remove( configuration.getMembers().get( value.getLeave() ) );
@@ -420,41 +434,44 @@ public class MultiPaxosContext
     {
         // ClusterContext
         Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
-        private List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
+        private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
                 .ConfigurationRequestState>();
-        private String joiningClusterName;
         private Iterable<URI> joiningInstances;
-        private boolean joinDenied;
-        private Set<org.neo4j.cluster.InstanceId> currentlyJoiningInstances = new HashSet<org.neo4j.cluster
-                .InstanceId>();
-
+        private ConfigurationResponseState joinDeniedConfigurationResponseState;
+        private final Map<org.neo4j.cluster.InstanceId, URI> currentlyJoiningInstances =
+                new HashMap<org.neo4j.cluster.InstanceId, URI>();
 
         // Cluster API
+        @Override
         public void addClusterListener( ClusterListener listener )
         {
             clusterListeners = Listeners.addListener( listener, clusterListeners );
         }
 
+        @Override
         public void removeClusterListener( ClusterListener listener )
         {
             clusterListeners = Listeners.removeListener( listener, clusterListeners );
         }
 
         // Implementation
+        @Override
         public void created( String name )
         {
-            configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ), Collections.singleton( boundAt ) );
+            configuration = new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
+                    Collections.singleton( boundAt ) );
             joined();
         }
 
+        @Override
         public void joining( String name, Iterable<URI> instanceList )
         {
-            joiningClusterName = name;
             joiningInstances = instanceList;
             discoveredInstances.clear();
-            joinDenied = false;
+            joinDeniedConfigurationResponseState = null;
         }
 
+        @Override
         public void acquiredConfiguration( final Map<org.neo4j.cluster.InstanceId, URI> memberList, final Map<String,
                 org.neo4j.cluster.InstanceId> roles )
         {
@@ -462,6 +479,7 @@ public class MultiPaxosContext
             configuration.setRoles( roles );
         }
 
+        @Override
         public void joined()
         {
             configuration.joined( me, boundAt );
@@ -475,6 +493,7 @@ public class MultiPaxosContext
             } );
         }
 
+        @Override
         public void left()
         {
             timeouts.cancelAllTimeouts();
@@ -489,6 +508,7 @@ public class MultiPaxosContext
             } );
         }
 
+        @Override
         public void joined( final org.neo4j.cluster.InstanceId instanceId, final URI atURI )
         {
             configuration.joined( instanceId, atURI );
@@ -505,15 +525,14 @@ public class MultiPaxosContext
                     }
                 } );
             }
-            else
-            {
-                // This typically happens in situations when several nodes join at once, and the ordering
-                // of join messages is a little out of whack.
-            }
+            // else:
+            //   This typically happens in situations when several nodes join at once, and the ordering
+            //   of join messages is a little out of whack.
 
             currentlyJoiningInstances.remove( instanceId );
         }
 
+        @Override
         public void left( final org.neo4j.cluster.InstanceId node )
         {
             configuration.left( node );
@@ -527,6 +546,7 @@ public class MultiPaxosContext
             } );
         }
 
+        @Override
         public void elected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
         {
             configuration.elected( roleName, instanceId );
@@ -540,6 +560,7 @@ public class MultiPaxosContext
             } );
         }
 
+        @Override
         public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
         {
             configuration.unelected( roleName );
@@ -553,36 +574,43 @@ public class MultiPaxosContext
             } );
         }
 
+        @Override
         public ClusterConfiguration getConfiguration()
         {
             return configuration;
         }
 
+        @Override
         public boolean isElectedAs( String roleName )
         {
             return me.equals( configuration.getElected( roleName ) );
         }
 
+        @Override
         public boolean isInCluster()
         {
             return Iterables.count( configuration.getMemberURIs() ) != 0;
         }
 
+        @Override
         public Iterable<URI> getJoiningInstances()
         {
             return joiningInstances;
         }
 
+        @Override
         public ObjectOutputStreamFactory getObjectOutputStreamFactory()
         {
             return objectOutputStreamFactory;
         }
 
+        @Override
         public ObjectInputStreamFactory getObjectInputStreamFactory()
         {
             return objectInputStreamFactory;
         }
 
+        @Override
         public List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances()
         {
             return discoveredInstances;
@@ -594,36 +622,59 @@ public class MultiPaxosContext
             return "Me: " + me + " Bound at: " + boundAt + " Config:" + configuration;
         }
 
+        @Override
         public void setBoundAt( URI boundAt )
         {
             MultiPaxosContext.this.boundAt = boundAt;
         }
-
-        public void joinDenied()
+        
+        @Override
+        public void joinDenied( ConfigurationResponseState configurationResponseState )
         {
-            this.joinDenied = true;
+            if ( configurationResponseState == null )
+            {
+                throw new IllegalArgumentException( "Join denied configuration response state was null" );
+            }
+            this.joinDeniedConfigurationResponseState = configurationResponseState;
         }
 
+        @Override
         public boolean hasJoinBeenDenied()
         {
-            return joinDenied;
+            return joinDeniedConfigurationResponseState != null;
         }
 
+        @Override
+        public ConfigurationResponseState getJoinDeniedConfigurationResponseState()
+        {
+            if ( !hasJoinBeenDenied() )
+            {
+                throw new IllegalStateException( "Join has not been denied" );
+            }
+            return joinDeniedConfigurationResponseState;
+        }
+
+        @Override
         public Iterable<org.neo4j.cluster.InstanceId> getOtherInstances()
         {
-            return filter( not( in( me ) ), configuration.getMemberIds() );
+            return Iterables.filter( not( in( me ) ), configuration.getMemberIds() );
         }
 
-        public boolean isInstanceWithIdCurrentlyJoining( org.neo4j.cluster.InstanceId joiningId )
+        /** Used to ensure that no other instance is trying to join with the same id from a different machine */
+        @Override
+        public boolean isInstanceJoiningFromDifferentUri( org.neo4j.cluster.InstanceId joiningId, URI uri )
         {
-            return currentlyJoiningInstances.contains( joiningId );
+            return currentlyJoiningInstances.containsKey( joiningId )
+                    && !currentlyJoiningInstances.get( joiningId ).equals(uri);
         }
 
-        public void instanceIsJoining( org.neo4j.cluster.InstanceId joiningId )
+        @Override
+        public void instanceIsJoining( org.neo4j.cluster.InstanceId joiningId, URI uri )
         {
-            currentlyJoiningInstances.add( joiningId );
+            currentlyJoiningInstances.put( joiningId, uri );
         }
 
+        @Override
         public String myName()
         {
             String name = parameter( "name" ).apply( boundAt );
@@ -662,21 +713,25 @@ public class MultiPaxosContext
             extends AbstractContextImpl
             implements AcceptorContext
     {
+        @Override
         public AcceptorInstance getAcceptorInstance( InstanceId instanceId )
         {
             return instanceStore.getAcceptorInstance( instanceId );
         }
 
+        @Override
         public void promise( AcceptorInstance instance, long ballot )
         {
             instanceStore.promise( instance, ballot );
         }
 
+        @Override
         public void accept( AcceptorInstance instance, Object value )
         {
             instanceStore.accept( instance, value );
         }
 
+        @Override
         public void leave()
         {
             instanceStore.clear();
@@ -691,32 +746,38 @@ public class MultiPaxosContext
         private long lastDeliveredInstanceId = -1;
         private long lastLearnedInstanceId = -1;
 
+        @Override
         public long getLastDeliveredInstanceId()
         {
             return lastDeliveredInstanceId;
         }
 
+        @Override
         public void setLastDeliveredInstanceId( long lastDeliveredInstanceId )
         {
             this.lastDeliveredInstanceId = lastDeliveredInstanceId;
             instanceStore.lastDelivered( new InstanceId( lastDeliveredInstanceId ) );
         }
 
+        @Override
         public long getLastLearnedInstanceId()
         {
             return lastLearnedInstanceId;
         }
 
+        @Override
         public long getLastKnownLearnedInstanceInCluster()
         {
             return lastKnownLearnedInstanceInCluster;
         }
 
+        @Override
         public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster )
         {
             MultiPaxosContext.this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
         }
 
+        @Override
         public void learnedInstanceId( long instanceId )
         {
             this.lastLearnedInstanceId = Math.max( lastLearnedInstanceId, instanceId );
@@ -726,11 +787,13 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public boolean hasDeliveredAllKnownInstances()
         {
             return lastDeliveredInstanceId == lastKnownLearnedInstanceInCluster;
         }
 
+        @Override
         public void leave()
         {
             lastDeliveredInstanceId = -1;
@@ -775,6 +838,7 @@ public class MultiPaxosContext
 
         Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
 
+        @Override
         public void started()
         {
             failed.clear();
@@ -783,6 +847,7 @@ public class MultiPaxosContext
         /**
          * @return True iff the node was suspected
          */
+        @Override
         public boolean alive( final org.neo4j.cluster.InstanceId node )
         {
             Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
@@ -804,6 +869,7 @@ public class MultiPaxosContext
             return suspected;
         }
 
+        @Override
         public void suspect( final org.neo4j.cluster.InstanceId node )
         {
             Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
@@ -830,6 +896,7 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public void suspicions( org.neo4j.cluster.InstanceId from, Set<org.neo4j.cluster.InstanceId> suspicions )
         {
             Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( from );
@@ -874,11 +941,13 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public Set<org.neo4j.cluster.InstanceId> getFailed()
         {
             return failed;
         }
 
+        @Override
         public Iterable<org.neo4j.cluster.InstanceId> getAlive()
         {
             return filter( new Predicate<org.neo4j.cluster.InstanceId>()
@@ -891,16 +960,19 @@ public class MultiPaxosContext
             }, configuration.getMemberIds() );
         }
 
+        @Override
         public void addHeartbeatListener( HeartbeatListener listener )
         {
             heartBeatListeners = Listeners.addListener( listener, heartBeatListeners );
         }
 
+        @Override
         public void removeHeartbeatListener( HeartbeatListener listener )
         {
             heartBeatListeners = Listeners.removeListener( listener, heartBeatListeners );
         }
 
+        @Override
         public void serverLeftCluster( org.neo4j.cluster.InstanceId node )
         {
             failed.remove( node );
@@ -910,6 +982,7 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public boolean isFailed( org.neo4j.cluster.InstanceId node )
         {
             List<org.neo4j.cluster.InstanceId> suspicions = getSuspicionsOf( node );
@@ -929,6 +1002,7 @@ public class MultiPaxosContext
                     (configuration.getMembers().size() - failed.size() - adjust) / 2;
         }
 
+        @Override
         public List<org.neo4j.cluster.InstanceId> getSuspicionsOf( org.neo4j.cluster.InstanceId server )
         {
             List<org.neo4j.cluster.InstanceId> suspicions = new ArrayList<org.neo4j.cluster.InstanceId>();
@@ -945,6 +1019,7 @@ public class MultiPaxosContext
             return suspicions;
         }
 
+        @Override
         public Set<org.neo4j.cluster.InstanceId> getSuspicionsFor( org.neo4j.cluster.InstanceId uri )
         {
             Set<org.neo4j.cluster.InstanceId> serverSuspicions = nodeSuspicions.get( uri );
@@ -989,11 +1064,13 @@ public class MultiPaxosContext
             Iterables.addAll( this.roles, roles );
         }
 
+        @Override
         public void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider )
         {
             this.electionCredentialsProvider = electionCredentialsProvider;
         }
 
+        @Override
         public void created()
         {
             for ( ElectionRole role : roles )
@@ -1003,6 +1080,7 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public List<ElectionRole> getPossibleRoles()
         {
             return roles;
@@ -1012,6 +1090,7 @@ public class MultiPaxosContext
          * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
          * message for a node, since it is the way to ensure that election will happen for each role that node had
          */
+        @Override
         public void nodeFailed( org.neo4j.cluster.InstanceId node )
         {
             Iterable<String> rolesToDemote = getRoles( node );
@@ -1021,6 +1100,7 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public Iterable<String> getRoles( org.neo4j.cluster.InstanceId server )
         {
             return clusterContext.getConfiguration().getRolesOf( server );
@@ -1036,16 +1116,19 @@ public class MultiPaxosContext
             return heartbeatContext;
         }
 
+        @Override
         public void unelect( String roleName )
         {
             clusterContext.getConfiguration().removeElected( roleName );
         }
 
+        @Override
         public boolean isElectionProcessInProgress( String role )
         {
             return elections.containsKey( role );
         }
 
+        @Override
         public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
         {
             elections.put( role, new Election( new WinnerStrategy()
@@ -1084,6 +1167,7 @@ public class MultiPaxosContext
             } ) );
         }
 
+        @Override
         public void startElectionProcess( String role )
         {
             clusterContext.getLogger( getClass() ).info( "Doing elections for role " + role );
@@ -1120,6 +1204,7 @@ public class MultiPaxosContext
             } ) );
         }
 
+        @Override
         public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
         {
             elections.put( role, new Election( new WinnerStrategy()
@@ -1158,6 +1243,7 @@ public class MultiPaxosContext
             } ) );
         }
 
+        @Override
         public void voted( String role, org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> suggestionCredentials )
         {
             if ( isElectionProcessInProgress( role ) )
@@ -1167,6 +1253,7 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public org.neo4j.cluster.InstanceId getElectionWinner( String role )
         {
             Election election = elections.get( role );
@@ -1180,11 +1267,13 @@ public class MultiPaxosContext
             return election.pickWinner();
         }
 
+        @Override
         public Comparable<Object> getCredentialsForRole( String role )
         {
             return electionCredentialsProvider.getCredentials( role );
         }
 
+        @Override
         public int getVoteCount( String role )
         {
             Election election = elections.get( role );
@@ -1204,16 +1293,19 @@ public class MultiPaxosContext
             }
         }
 
+        @Override
         public int getNeededVoteCount()
         {
             return clusterContext.getConfiguration().getMembers().size() - heartbeatContext.getFailed().size();
         }
 
+        @Override
         public void cancelElection( String role )
         {
             elections.remove( role );
         }
 
+        @Override
         public Iterable<String> getRolesRequiringElection()
         {
             return filter( new Predicate<String>() // Only include roles that are not elected
@@ -1233,6 +1325,7 @@ public class MultiPaxosContext
             }, roles ) );
         }
 
+        @Override
         public boolean electionOk()
         {
             int total = clusterContext.getConfiguration().getMembers().size();
@@ -1240,21 +1333,25 @@ public class MultiPaxosContext
             return isQuorum(available, total);
         }
 
+        @Override
         public boolean isInCluster()
         {
             return getClusterContext().isInCluster();
         }
 
+        @Override
         public Iterable<org.neo4j.cluster.InstanceId> getAlive()
         {
             return getHeartbeatContext().getAlive();
         }
 
+        @Override
         public org.neo4j.cluster.InstanceId getMyId()
         {
             return getClusterContext().getMyId();
         }
 
+        @Override
         public boolean isElector()
         {
             // Only the first alive server should try elections. Everyone else waits
@@ -1263,16 +1360,19 @@ public class MultiPaxosContext
             return aliveInstances.indexOf( getMyId() ) == 0;
         }
 
+        @Override
         public boolean isFailed( org.neo4j.cluster.InstanceId key )
         {
             return getHeartbeatContext().getFailed().contains( key );
         }
 
+        @Override
         public org.neo4j.cluster.InstanceId getElected( String roleName )
         {
             return getClusterContext().getConfiguration().getElected( roleName );
         }
 
+        @Override
         public boolean hasCurrentlyElectedVoted( String role, org.neo4j.cluster.InstanceId currentElected )
         {
             return elections.containsKey( role ) && elections.get(role).getVotes().containsKey( currentElected );
@@ -1302,10 +1402,9 @@ public class MultiPaxosContext
             return suggestedNode;
         }
 
-        @Override
-        public int compareTo( Vote o )
+        public Comparable<Object> getCredentials()
         {
-            return this.voteCredentials.compareTo( o.voteCredentials );
+            return voteCredentials;
         }
 
         @Override
@@ -1314,9 +1413,44 @@ public class MultiPaxosContext
             return suggestedNode + ":" + voteCredentials;
         }
 
-        public Comparable<Object> getCredentials()
+        @Override
+        public int compareTo( Vote o )
         {
-            return voteCredentials;
+            return this.voteCredentials.compareTo( o.voteCredentials );
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            Vote vote = (Vote) o;
+
+            if ( !suggestedNode.equals( vote.suggestedNode ) )
+            {
+                return false;
+            }
+            if ( !voteCredentials.equals( vote.voteCredentials ) )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = suggestedNode.hashCode();
+            result = 31 * result + voteCredentials.hashCode();
+            return result;
         }
     }
 

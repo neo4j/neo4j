@@ -194,7 +194,8 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                        new ClusterEntryDeniedException( context.getMyId(), context.getConfiguration() ) ) );
+                                        new ClusterEntryDeniedException( context.getMyId(),
+                                                context.getJoinDeniedConfigurationResponseState() ) ) );
                                 return start;
                             }
                             ClusterMessage.ConfigurationTimeoutState state = message.getPayload();
@@ -317,7 +318,7 @@ public enum ClusterState
 //                            outgoing.offer( internal( ClusterMessage.joinFailure,
 //                                    new ClusterEntryDeniedException( context.me, context.configuration ) ) );
 //                            return start;
-                            context.joinDenied();
+                            context.joinDenied( (ClusterMessage.ConfigurationResponseState) message.getPayload() );
                             return this;
                         }
                     }
@@ -364,7 +365,8 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                    new ClusterEntryDeniedException( context.getMyId(), context.getConfiguration() ) ) );
+                                    new ClusterEntryDeniedException( context.getMyId(),
+                                            context.getJoinDeniedConfigurationResponseState() ) ) );
                                 return start;
                             }
 
@@ -421,16 +423,26 @@ public enum ClusterState
                             request = new ClusterMessage.ConfigurationRequestState( request.getJoiningId(), URI.create(message.getHeader( Message.FROM ) ));
 
                             InstanceId joiningId = request.getJoiningId();
+                            URI joiningUri = request.getJoiningUri();
                             boolean isInCluster = context.getMembers().containsKey( joiningId );
                             boolean isCurrentlyAlive = context.isCurrentlyAlive(joiningId);
                             boolean messageComesFromSameHost = request.getJoiningId().equals( context.getMyId() );
-                            boolean otherInstanceJoiningWithSameId = context.isInstanceWithIdCurrentlyJoining(joiningId);
+                            boolean otherInstanceJoiningWithSameId = context.isInstanceJoiningFromDifferentUri(
+                                    joiningId, joiningUri );
 
                             boolean somethingIsWrong =
                                     (isInCluster && !messageComesFromSameHost && isCurrentlyAlive) || otherInstanceJoiningWithSameId ;
 
                             if ( somethingIsWrong )
                             {
+                                if(otherInstanceJoiningWithSameId)
+                                {
+                                    context.getLogger( ClusterState.class ).info( "Denying entry to instance " + joiningId + " because another instance is currently joining with the same id.");
+                                }
+                                else
+                                {
+                                    context.getLogger( ClusterState.class ).info( "Denying entry to instance " + joiningId + " because that instance is already in the cluster.");
+                                }
                                 outgoing.offer( message.copyHeadersTo( respond( ClusterMessage.joinDenied, message,
                                         new ClusterMessage.ConfigurationResponseState( context.getConfiguration()
                                                 .getRoles(), context.getConfiguration().getMembers(),
@@ -439,7 +451,7 @@ public enum ClusterState
                             }
                             else
                             {
-                                context.instanceIsJoining(joiningId);
+                                context.instanceIsJoining(joiningId, joiningUri );
 
                                 outgoing.offer( message.copyHeadersTo( respond( ClusterMessage.configurationResponse, message,
                                         new ClusterMessage.ConfigurationResponseState( context.getConfiguration()

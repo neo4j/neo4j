@@ -29,6 +29,7 @@ import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 
 /**
  * Context for cluster API state machine
@@ -45,25 +46,25 @@ public interface ClusterContext
     void removeClusterListener( ClusterListener listener );
 
     // Implementation
-    public void created( String name );
+    void created( String name );
 
-    public void joining( String name, Iterable<URI> instanceList );
+    void joining( String name, Iterable<URI> instanceList );
 
-    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles );
+    void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles );
 
-    public void joined();
+    void joined();
 
-    public void left();
+    void left();
 
-    public void joined( final InstanceId instanceId, final URI atURI );
+    void joined( final InstanceId instanceId, final URI atURI );
 
-    public void left( final InstanceId node );
+    void left( final InstanceId node );
 
-    public void elected( final String roleName, final InstanceId instanceId );
+    void elected( final String roleName, final InstanceId instanceId );
 
-    public void unelected( final String roleName, final InstanceId instanceId );
+    void unelected( final String roleName, final InstanceId instanceId );
 
-    public ClusterConfiguration getConfiguration();
+    ClusterConfiguration getConfiguration();
 
     boolean isElectedAs( String roleName );
 
@@ -73,23 +74,25 @@ public interface ClusterContext
 
     ObjectOutputStreamFactory getObjectOutputStreamFactory();
 
-    public ObjectInputStreamFactory getObjectInputStreamFactory();
+    ObjectInputStreamFactory getObjectInputStreamFactory();
 
-    public List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances();
+    List<ClusterMessage.ConfigurationRequestState> getDiscoveredInstances();
 
-    public void setBoundAt( URI boundAt );
+    void setBoundAt( URI boundAt );
 
-    public void joinDenied();
+    void joinDenied( ConfigurationResponseState configurationResponseState );
 
-    public boolean hasJoinBeenDenied();
+    boolean hasJoinBeenDenied();
+    
+    ConfigurationResponseState getJoinDeniedConfigurationResponseState();
 
-    public Iterable<InstanceId> getOtherInstances();
+    Iterable<InstanceId> getOtherInstances();
 
-    public boolean isInstanceWithIdCurrentlyJoining( InstanceId joiningId );
+    boolean isInstanceJoiningFromDifferentUri( InstanceId joiningId, URI joiningUri );
 
-    public void instanceIsJoining( InstanceId joiningId );
+    void instanceIsJoining( InstanceId joiningId, URI uri );
 
-    public String myName();
+    String myName();
 
     void discoveredLastReceivedInstanceId( long id );
 
