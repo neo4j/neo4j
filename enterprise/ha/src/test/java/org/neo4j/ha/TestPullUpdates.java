@@ -19,15 +19,24 @@
  */
 package org.neo4j.ha;
 
+import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -42,15 +51,6 @@ import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-
-import static java.lang.System.currentTimeMillis;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TestPullUpdates
 {
@@ -68,7 +68,6 @@ public class TestPullUpdates
     }
 
     @Test
-    @Ignore("Breaks more often than it passes - must wait for a fix")
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
         File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch", true );
@@ -134,7 +133,7 @@ public class TestPullUpdates
     private long createNodeOnMaster()
     {
         long commonNodeId;
-        try(Transaction tx=cluster.getMaster().beginTx())
+        try( Transaction tx=cluster.getMaster().beginTx() )
         {
             commonNodeId = cluster.getMaster().createNode().getId();
             tx.success();
@@ -163,7 +162,27 @@ public class TestPullUpdates
                     .setConfig( ClusterSettings.server_id, "2" )
                     .setConfig( ClusterSettings.initial_hosts, ":5001" )
                     .newGraphDatabase();
+
+            // Required to block until the slave has left for sure
+            final CountDownLatch slaveLeftLatch = new CountDownLatch( 1 );
+
+            final ClusterClient masterClusterClient = ( (HighlyAvailableGraphDatabase) master ).getDependencyResolver()
+                    .resolveDependency( ClusterClient.class );
+
+            masterClusterClient.addClusterListener( new ClusterListener.Adapter()
+            {
+                @Override
+                public void leftCluster( InstanceId instanceId )
+                {
+                    slaveLeftLatch.countDown();
+                    masterClusterClient.removeClusterListener( this );
+                }
+            } );
+
             slave.shutdown();
+
+            // Make sure that the slave has left, because shutdown() may return before the master knows
+            slaveLeftLatch.await();
 
             long nodeId;
             try ( Transaction tx = master.beginTx() )
@@ -223,15 +242,16 @@ public class TestPullUpdates
             ok = true;
             for ( HighlyAvailableGraphDatabase db : cluster.getAllMembers() )
             {
-                try
+                try ( Transaction tx = db.beginTx() )
                 {
+
                     Number value = (Number)db.getNodeById(nodeId).getProperty( "i", null );
                     if ( value == null || value.intValue() != i )
                     {
                         ok = false;
                     }
                 }
-                catch(NotFoundException e)
+                catch( NotFoundException e )
                 {
                     ok=false;
                 }
