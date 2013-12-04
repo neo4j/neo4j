@@ -41,7 +41,7 @@ This class prepares MergePatternAction objects to be run by creating the match p
 case class MergePatternBuilder(matching: Phase) extends PlanBuilder {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
     plan.query.updates.exists {
-      case Unsolved(x: MergePatternAction)  => !x.readyToExecute && x.symbolDependenciesMet(plan.pipe.symbols)
+      case Unsolved(x: MergePatternAction)  => x.readyToUpdate(plan.pipe.symbols)
       case Unsolved(foreach: ForeachAction) => interesting(foreach, plan.pipe.symbols)
       case _                                => false
     }
@@ -100,15 +100,24 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder {
     case _                     => false
   }
 
-  private def extractFrom(updates: Seq[QueryToken[UpdateAction]], symbols: SymbolTable): UpdateAction = updates.collect {
-    case Unsolved(action: MergePatternAction) if !action.readyToExecute => action
-  }.headOption.getOrElse(updates.collect {
-    case Unsolved(foreach: ForeachAction) if interesting(foreach, symbols) => foreach
-  }.head)
+  private def extractFrom(updates: Seq[QueryToken[UpdateAction]], symbols: SymbolTable): UpdateAction = {
+    val foreachActions: Seq[ForeachAction] = updates.collect {
+      case Unsolved(foreach: ForeachAction) if interesting(foreach, symbols) => foreach
+    }
 
-  private def interesting(x: ForeachAction, symbols: SymbolTable) = x.actions.exists {
-    case (x: MergePatternAction) => !x.readyToExecute && x.symbolDependenciesMet(symbols)
-    case _                       => false
+    updates.collect {
+      case Unsolved(action: MergePatternAction) if !action.readyToExecute => action
+    }.headOption.getOrElse(foreachActions.head)
+  }
+
+  private def interesting(x: ForeachAction, initialSymbols: SymbolTable): Boolean = {
+    x.actions.foldLeft(initialSymbols) {
+      case (symbols: SymbolTable, action: MergePatternAction) if action.readyToUpdate(symbols) =>
+        return true
+      case (symbols: SymbolTable, action: UpdateAction) =>
+        symbols.add(action.identifiers.toMap)
+    }
+    false
   }
 
   private def createMatchQueryFor(patterns: Seq[Pattern]): PartiallySolvedQuery = PartiallySolvedQuery.apply(

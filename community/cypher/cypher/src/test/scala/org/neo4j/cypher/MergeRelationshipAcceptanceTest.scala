@@ -333,6 +333,22 @@ class MergeRelationshipAcceptanceTest
     }
   }
 
+  @Test def should_handle_two_merges_inside_bare_foreach() {
+    createNode("x" -> 1)
+
+    val result = execute("foreach(v in [1, 2] | merge (a {x: v}) merge (b {y: v}) merge (a)-[:FOO]->(b))")
+    assertStats(result, nodesCreated = 3, propertiesSet = 3, relationshipsCreated = 2)
+  }
+
+  @Test def should_handle_two_merges_inside_foreach_after_with() {
+    val result = execute("with 3 as y " +
+      "foreach(x in [1, 2] | " +
+      "merge (a {x: x, y: y}) " +
+      "merge (b {x: x+1, y: y}) " +
+      "merge (a)-[:FOO]->(b))")
+    assertStats(result, nodesCreated = 3, propertiesSet = 6, relationshipsCreated = 2)
+  }
+
   @Test def should_introduce_named_paths1() {
     val result = execute("merge (a) merge p = (a)-[:R]->() return p")
     assertStats(result, relationshipsCreated = 1, nodesCreated = 2)
