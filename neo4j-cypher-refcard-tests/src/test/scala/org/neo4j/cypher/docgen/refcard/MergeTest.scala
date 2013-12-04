@@ -53,13 +53,13 @@ class MergeTest extends RefcardTest with StatisticsChecker {
 //
 
 MERGE (n:Person {property: {value}})
-ON CREATE n SET n.created = timestamp()
-ON MATCH  n SET n.access  = n.access+1
+ON CREATE SET n.created = timestamp()
+ON MATCH  SET n.access  = n.access+1
 
 RETURN n###
 
 Match pattern or create it if it does not exist.
-Use +ON CREATE n+ and +ON MATCH n+ for conditional updates.
+Use +ON CREATE+ and +ON MATCH+ for conditional updates.
 
 """
 }

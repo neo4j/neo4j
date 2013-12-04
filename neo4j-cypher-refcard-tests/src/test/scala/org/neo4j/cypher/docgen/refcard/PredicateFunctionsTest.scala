@@ -57,7 +57,8 @@ Returns `true` if the predicate is `TRUE` for all elements of the collection.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH collection=(n)-->(m)
+MATCH path=(n)-->(m)
+WITH nodes(path) as collection, n, m
 WHERE
 
 any(x IN collection WHERE has(x.property))
@@ -68,7 +69,8 @@ Returns `true` if the predicate is `TRUE` for at least one element of the collec
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
-MATCH collection=(n)-->(m)
+MATCH path=(n)-->(m)
+WITH nodes(path) as collection, n, m
 WHERE
 
 none(x IN collection WHERE has(x.property))
@@ -79,7 +81,8 @@ Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
 
 ###assertion=returns-none
 START n=node(%A%), m=node(%B%)
-MATCH collection=(n)-->(m)
+MATCH path=(n)-->(m)
+WITH nodes(path) as collection, n, m
 WHERE
 
 single(x IN collection WHERE has(x.property))
@@ -87,5 +90,5 @@ single(x IN collection WHERE has(x.property))
 RETURN n,m###
 
 Returns `TRUE` if the predicate is `TRUE` for exactly one element in the collection.
-"""
+             """
 }

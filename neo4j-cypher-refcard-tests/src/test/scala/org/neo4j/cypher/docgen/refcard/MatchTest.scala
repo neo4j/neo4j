@@ -64,8 +64,16 @@ MATCH (n)-->(m)
 
 RETURN n,m###
 
-Any pattern can be used in `MATCH` except the ones containing property maps.
+Any pattern can be used in `MATCH`.
 
+###assertion=related
+//
+
+MATCH (n {name:'Alice'})-->(m)
+
+RETURN n,m###
+
+Patterns with property maps.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)

@@ -65,15 +65,15 @@ The `WITH` syntax is similar to `RETURN`.
 It separates query parts explicitly, allowing you to declare which identifiers to carry over to the next part.
 
 ###assertion=with-limit
-MATCH (user)-[:FRIEND]-(friend)
+//
 
+MATCH (user)-[:FRIEND]-(friend)
 WITH user, count(friend) AS friends
 ORDER BY friends DESC
 SKIP 1 LIMIT 3
-
 RETURN user
 ###
 
-You can also use `ORDER BY` and `SKIP` and `LIMIT` with `WITH`.
-             """
+You can also use `ORDER BY`, `SKIP`, `LIMIT` with `WITH`.
+"""
 }

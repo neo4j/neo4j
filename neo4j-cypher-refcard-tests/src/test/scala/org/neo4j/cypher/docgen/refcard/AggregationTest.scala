@@ -133,7 +133,7 @@ Collection from the values, ignores `NULL`.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-percentile_disc(n.property, {percentile})
+percentileDisc(n.property, {percentile})
 ###
 
 Discrete percentile.
@@ -143,7 +143,7 @@ The `percentile` argument is from `0.0` to `1.0`.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-percentile_cont(n.property, {percentile})
+percentileCont(n.property, {percentile})
 ###
 
 Continuous percentile.

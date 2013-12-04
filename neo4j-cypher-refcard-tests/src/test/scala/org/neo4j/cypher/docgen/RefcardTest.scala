@@ -186,7 +186,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     dir = createDir(section)
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
-    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent(false)
+    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodeIndexName")
