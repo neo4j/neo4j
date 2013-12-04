@@ -2,10 +2,9 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>parent-pom</artifactId>
-    <version>39</version>
-    <relativePath />
+        <groupId>org.neo4j</groupId>
+        <artifactId>cypher-parent</artifactId>
+        <version>2.0-SNAPSHOT</version>
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-cypher-refcard-tests</artifactId>
@@ -64,12 +63,17 @@
       <groupId>org.neo4j</groupId>
       <version>${neo4j.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
-      <version>2.0.M6-SNAP36</version>
-      <scope>test</scope>
-    </dependency>
+      <!--<dependency>-->
+          <!--<groupId>org.scalatest</groupId>-->
+          <!--<artifactId>scalatest_2.10</artifactId>-->
+          <!--<scope>test</scope>-->
+          <!--<exclusions>-->
+              <!--<exclusion>-->
+                  <!--<artifactId>scala-library</artifactId>-->
+                  <!--<groupId>org.scala-lang</groupId>-->
+              <!--</exclusion>-->
+          <!--</exclusions>-->
+      <!--</dependency>-->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -106,12 +110,6 @@
           <artifactId>hamcrest-core</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.2.2</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
