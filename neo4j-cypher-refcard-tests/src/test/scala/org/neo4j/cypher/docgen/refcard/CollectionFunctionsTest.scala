@@ -37,8 +37,8 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
-      case "friends" =>
-        assertStats(result, nodesCreated = 0, propertiesSet = 2)
+      case "foreach" =>
+        assertStats(result, nodesCreated = 3, labelsAdded = 3, propertiesSet = 3)
         assert(result.toList.size === 0)
     }
   }
@@ -59,56 +59,29 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("prop" -> "Chris"))
 
   def text = """
-###assertion=returns-three
-MATCH (n:Person)
+###assertion=returns-one
+WITH [42] as coll
 RETURN
 
-labels(n)
-###
+length(coll)###
 
-The labels of the node.
+Length of the collection.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
-MATCH path=(n)-->(m)
+WITH [42] as coll
 RETURN
 
-nodes(path)
-###
+head(coll)###
 
-The nodes in the path.
+The first element of the collection.
 
 ###assertion=returns-one
-START n=node(%A%), m=node(%B%)
-MATCH path=(n)-->(m)
+WITH [42] as coll
 RETURN
 
-relationships(path)
-###
+last(coll)###
 
-The relationships in the path.
-
-###assertion=returns-one
-START n=node(%A%), m=node(%B%)
-MATCH path=(n)-->(m)
-WITH nodes(path) as coll
-RETURN
-
-extract(x IN coll | x.prop)
-###
-
-A collection of the value of the expression for each element in the collection.
-
-###assertion=returns-one parameters=value
-START n=node(%A%), m=node(%B%)
-MATCH path=(n)-->(m)
-WITH nodes(path) as coll
-RETURN
-
-filter(x IN coll WHERE x.prop <> {value})
-###
-
-A collection of the elements where the predicate is `TRUE`.
+The last element of the collection.
 
 ###assertion=returns-one parameters=value
 START n=node(%A%), m=node(%B%)
@@ -121,10 +94,38 @@ tail(coll)
 
 All but the first element of the collection.
 
-###assertion=returns-one parameters=range
+###assertion=returns-one parameters=value
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
 WITH nodes(path) as coll
+RETURN
+
+[x IN coll WHERE x.prop <> {value} | x.prop]
+###
+
+Combination of filter and extract in a concise notation.
+
+###assertion=returns-one
+START n=node(%A%)
+WITH [n] as coll
+RETURN
+
+extract(x IN coll | x.prop)
+###
+
+A collection of the value of the expression for each element in the orignal collection.
+
+###assertion=returns-one parameters=value
+START n=node(%A%)
+WITH [n] as coll
+RETURN
+
+filter(x IN coll WHERE x.prop <> {value})
+###
+
+A filtered collection of the elements where the predicate is `TRUE`.
+
+###assertion=returns-one parameters=range
 RETURN
 
 range({first_num}, {last_num}, {step})
@@ -134,9 +135,8 @@ Create a range of numbers.
 The `step` argument is optional.
 
 ###assertion=returns-one parameters=range
-START n=node(%A%), m=node(%C%)
-MATCH path=(n)-[*]->(m)
-WITH nodes(path) as coll
+START n=node(%A%)
+WITH [n] as coll
 RETURN
 
 reduce(s = "", n IN coll | s + n.prop)
@@ -144,13 +144,10 @@ reduce(s = "", n IN coll | s + n.prop)
 
 Evaluate expression for each element in the collection, accumulate the results.
 
-###assertion=friends
-//
-START begin = node(%A%), end = node(%B%)
-MATCH path = begin -[*]-> end
-WITH nodes(path) AS coll
+###assertion=foreach
+WITH ["Alice","Bob","Charlie"] AS coll
 
-FOREACH (n IN coll | SET n.marked = TRUE)
+FOREACH (value IN coll | CREATE (:Person {name:value}))
 ###
 
 Execute a mutating operation for each element in a collection.

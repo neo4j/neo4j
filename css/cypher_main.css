@@ -400,6 +400,10 @@ footer div.mid {
   background: #964362;
 }
 
+.col.carddeprecation tr th {
+  background: #808080;
+}
+
 /*p.cardread span {
   color: #ffffff;
   padding: 2px 4px;

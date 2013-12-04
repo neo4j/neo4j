@@ -41,6 +41,8 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=aname" =>
         Map("value" -> "Bob")
+      case "parameters=alice" =>
+        Map("value" -> "Alice")
       case "" =>
         Map()
     }
@@ -79,6 +81,15 @@ MATCH
 RETURN n###
 
 Matches nodes which have both `Person` and `Swedish` labels.
+
+###assertion=related parameters=alice
+MATCH
+
+(n:Person {name: {value}})
+
+RETURN n###
+
+Matches nodes with the declared properties.
 
 ###assertion=related
 MATCH
@@ -131,14 +142,13 @@ Bind an identifier to the relationship.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
-MATCH
 
-(n)-[r?]->(m)
+OPTIONAL MATCH (n)-[r]->(m)
 
 RETURN r###
 
-Optional relationship.
-See the performance tips.
+Optional relationship. Needs one bound node.
+Will yield found nodes or one row with null values for unbound elements.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
@@ -190,6 +200,5 @@ WHERE n1.name = "Alice"
 RETURN p###
 
 Find all shortest paths.
-
 """
 }

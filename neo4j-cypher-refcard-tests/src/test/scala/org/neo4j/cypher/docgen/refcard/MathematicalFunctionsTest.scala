@@ -118,7 +118,7 @@ RETURN
 sin({expr})
 ###
 
-Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2({y-expr}, x-expr})`.
+Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)

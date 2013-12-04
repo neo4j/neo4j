@@ -22,44 +22,70 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class MergeTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
-  val title = "MERGE"
-  val css = "write c4-4 c5-5 c6-3"
+class RelationshipFunctionsTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
+  val title = "Relationship Functions"
+  val css = "general c2-2 c3-2 c4-2 c5-4 c6-5"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "merge" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+      case "returns-one" =>
+        assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
+      case "returns-none" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 0)
     }
   }
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=aname" =>
-        Map("value" -> "Bob")
+      case "parameters=default" =>
+        Map("defaultValue" -> "Bob")
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("value" -> 10),
-    "B" -> Map("value" -> 20),
-    "C" -> Map("value" -> 30))
+    "A" -> Map("property" -> "Andrés"),
+    "B" -> Map("property" -> "Tobias"),
+    "C" -> Map("property" -> "Chris"))
 
   def text = """
-###assertion=merge parameters=aname
-//
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
 
-MERGE (n:Person {property: {value}})
-ON CREATE SET n.created = timestamp()
-ON MATCH  SET n.access  = n.access+1
+type(a_relationship)###
 
-RETURN n###
+String representation of the relationship type.
 
-Match pattern or create it if it does not exist.
-Use +ON CREATE+ and +ON MATCH+ for conditional updates.
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
 
+startNode(a_relationship)###
+
+Start node of the relationship.
+
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
+
+endNode(a_relationship)###
+
+End node of the relationship.
+
+###assertion=returns-one
+START n=node(%A%), m=node(%B%)
+MATCH (n)-[a_relationship]->(m)
+RETURN
+
+id(a_relationship)###
+
+The internal id of the relationship.
 """
 }

@@ -18,74 +18,94 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
+
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class PredicateFunctionsTest extends RefcardTest with StatisticsChecker {
-  val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
-  val title = "Predicate Functions"
-  val css = "general c3-3 c4-2 c5-2 c6-4"
+class PathFunctionsTest extends RefcardTest with StatisticsChecker {
+  val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
+  val title = "Path Functions"
+  val css = "general c3-3 c4-3 c5-4 c6-6"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "returns-one" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
+      case "returns-three" =>
+        assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 3)
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 0)
+      case "friends" =>
+        assertStats(result, nodesCreated = 0, propertiesSet = 1)
         assert(result.toList.size === 0)
     }
   }
 
+  override def parameters(name: String): Map[String, Any] =
+    name match {
+      case "parameters=value" =>
+        Map("value" -> "Bob")
+      case "parameters=range" =>
+        Map("first_num" -> 2, "last_num" -> 18, "step" -> 3)
+      case "" =>
+        Map()
+    }
+
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("property" -> "Andrés"),
-    "B" -> Map("property" -> "Tobias"),
-    "C" -> Map("property" -> "Chris"))
+    "A" -> Map("prop" -> "Andrés"),
+    "B" -> Map("prop" -> "Tobias"),
+    "C" -> Map("prop" -> "Chris"))
 
   def text = """
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
 MATCH path=(n)-->(m)
-WITH nodes(path) as collection, n, m
-WHERE
+RETURN
 
-all(x IN collection WHERE has(x.property))
+length(path)
+###
 
-RETURN n,m###
-
-Returns `true` if the predicate is `TRUE` for all elements of the collection.
+The length of the path.
 
 ###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH collection=(n)-->(m)
-WHERE
+MATCH path=(n)-->(m)
+RETURN
 
-any(x IN collection WHERE has(x.property))
+nodes(path)
+###
 
-RETURN n,m###
+The nodes in the path as a collection.
 
-Returns `true` if the predicate is `TRUE` for at least one element of the collection.
-
-###assertion=returns-none
+###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH collection=(n)-->(m)
-WHERE
+MATCH path=(n)-->(m)
+RETURN
 
-none(x IN collection WHERE has(x.property))
+relationships(path)
+###
 
-RETURN n,m###
+The relationships in the path as a collection.
 
-Returns `TRUE` if the predicate is `FALSE` for all elements of the collection.
-
-###assertion=returns-none
+###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH collection=(n)-->(m)
-WHERE
 
-single(x IN collection WHERE has(x.property))
+MATCH path=(n)-->(m)
+RETURN extract(x IN nodes(path) | x.prop)
+###
 
-RETURN n,m###
+Assign a path and process its nodes.
 
-Returns `TRUE` if the predicate is `TRUE` for exactly one element in the collection.
+###assertion=friends
+START begin = node(%A%), end = node(%B%)
+
+MATCH path = (begin) -[*]-> (end)
+FOREACH (n IN rels(path) | SET n.marked = TRUE)
+###
+
+Execute a mutating operation for each relationship of a path.
 """
 }

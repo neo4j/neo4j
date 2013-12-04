@@ -108,9 +108,9 @@ RETURN n###
 
 Check for node labels.
 
-###assertion=returns-none
+###assertion=returns-one
 START n=node(%A%), m=node(%B%)
-MATCH (n)-[identifier?]->(m)
+OPTIONAL MATCH (n)-[identifier]->(m)
 WHERE
 
 identifier IS NULL
