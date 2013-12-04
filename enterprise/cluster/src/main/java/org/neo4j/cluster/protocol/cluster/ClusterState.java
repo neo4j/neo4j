@@ -194,7 +194,8 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                        new ClusterEntryDeniedException( context.getMyId(), context.getConfiguration() ) ) );
+                                        new ClusterEntryDeniedException( context.getMyId(),
+                                                context.getJoinDeniedConfigurationResponseState() ) ) );
                                 return start;
                             }
                             ClusterMessage.ConfigurationTimeoutState state = message.getPayload();
@@ -317,7 +318,7 @@ public enum ClusterState
 //                            outgoing.offer( internal( ClusterMessage.joinFailure,
 //                                    new ClusterEntryDeniedException( context.me, context.configuration ) ) );
 //                            return start;
-                            context.joinDenied();
+                            context.joinDenied( (ClusterMessage.ConfigurationResponseState) message.getPayload() );
                             return this;
                         }
                     }
@@ -364,7 +365,8 @@ public enum ClusterState
                             if ( context.hasJoinBeenDenied() )
                             {
                                 outgoing.offer( internal( ClusterMessage.joinFailure,
-                                    new ClusterEntryDeniedException( context.getMyId(), context.getConfiguration() ) ) );
+                                    new ClusterEntryDeniedException( context.getMyId(),
+                                            context.getJoinDeniedConfigurationResponseState() ) ) );
                                 return start;
                             }
 

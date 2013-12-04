@@ -29,6 +29,7 @@ import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 
 /**
  * Context for cluster API state machine
@@ -79,9 +80,11 @@ public interface ClusterContext
 
     void setBoundAt( URI boundAt );
 
-    void joinDenied();
+    void joinDenied( ConfigurationResponseState configurationResponseState );
 
     boolean hasJoinBeenDenied();
+    
+    ConfigurationResponseState getJoinDeniedConfigurationResponseState();
 
     Iterable<InstanceId> getOtherInstances();
 

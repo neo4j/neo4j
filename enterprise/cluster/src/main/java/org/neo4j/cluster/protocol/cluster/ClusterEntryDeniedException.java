@@ -20,11 +20,20 @@
 package org.neo4j.cluster.protocol.cluster;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 
 public class ClusterEntryDeniedException extends IllegalStateException
 {
-    public ClusterEntryDeniedException( InstanceId me, ClusterConfiguration configuration )
+    private final ConfigurationResponseState configurationResponseState;
+
+    public ClusterEntryDeniedException( InstanceId me, ConfigurationResponseState configurationResponseState )
     {
-        super( "I was denied entry. I am " + me + ", configuration:" + configuration );
+        super( "I was denied entry. I am " + me + ", configuration response:" + configurationResponseState );
+        this.configurationResponseState = configurationResponseState;
+    }
+    
+    public ConfigurationResponseState getConfigurationResponseState()
+    {
+        return configurationResponseState;
     }
 }
