@@ -48,7 +48,18 @@ goto :main %1
 
 :install
   call "%~dps0functions.bat" :findJavaHome
+  if not "%javaHomeError%" == "" (
+    echo %javaHomeError%
+    call:instructions
+    goto:eof
+  )
 
+  call:verifySupportedJavaVersion
+  if not "%javaVersionError%" == "" (
+    echo %javaVersionError%
+    call:instructions
+    goto:eof
+  )
   rem Remove quotes from javaPath so that it can have /bin/java appended to it
   rem See http://ss64.com/nt/syntax-esc.html, "Removing quotes"
   set javaPath=###%javaPath%###
@@ -106,3 +117,34 @@ goto :main %1
 
 rem end function remove
 
+:verifySupportedJavaVersion
+
+  set javaVersionError=
+  set javaCommand=%javaPath:"=%\bin\java.exe
+
+  rem Remove leading spaces
+  for /f "tokens=* delims= " %%a in ("%javaCommand%") do set javaCommand=%%a
+
+  rem Find version
+  for /f "usebackq tokens=3" %%g in (`"%javaCommand%" -version 2^>^&1`) do (
+      set JAVAVER=%%g
+      goto:breakJavaVersionLoop
+  )
+  :breakJavaVersionLoop
+
+  set JAVAVER=%JAVAVER:"=%
+  set "JAVAVER=%JAVAVER:~0,3%"
+
+  if "%JAVAVER%"=="1.7" goto:eof
+  if "%JAVAVER%"=="1.8" (
+    echo ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+    goto:eof
+  )
+  set javaVersionError=ERROR! You are using an unsupported version of Java, please use Oracle HotSpot 1.7.
+  goto:eof
+
+:instructions
+  echo * Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download "Java Platform (JDK) 7" from:
+  echo   http://www.oracle.com/technetwork/java/javase/downloads/index.html
+  echo * Please see http://docs.neo4j.org/ for Neo4j Server installation instructions.
+  goto:eof
