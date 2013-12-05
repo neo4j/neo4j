@@ -165,7 +165,7 @@ In this case we add a +Person+ label to the node as well.
       text = """
 By providing Cypher an array of maps, it will create a node for each map.
 
-NOTE: When you do this, you can't create anything else in the same +CREATE+ statement.
+NOTE: When you do this, you can't create anything else in the same +CREATE+ clause.
 """,
       prepare = setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
         Map("name" -> "Michael", "position" -> "Developer")))),

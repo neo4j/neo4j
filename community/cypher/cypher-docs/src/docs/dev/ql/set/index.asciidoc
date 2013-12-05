@@ -1,11 +1,12 @@
 [[query-set]]
 Set
 ===
-Updating properties and labels on nodes and relationships is done with the +SET+ clause.
-+SET+ properties can also be used with maps from parameters.
+Updating labels on nodes and properties on nodes and relationships is done with the +SET+ clause.
++SET+ can also be used with maps from parameters to set properties.
 
-NOTE: Setting labels on a node is an idempotent operations -- if you try to set a label on a node that already has that label on it, nothing happens. The
-query statistics will tell you if something needed to be done or not.
+[NOTE]
+Setting labels on a node is an idempotent operations -- if you try to set a label on a node that already has that label on it, nothing happens.
+The query statistics will tell you if something needed to be done or not.
 
 The examples use this graph as a starting point:
 

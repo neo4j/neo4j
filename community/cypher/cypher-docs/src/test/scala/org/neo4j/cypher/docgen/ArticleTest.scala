@@ -96,7 +96,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
     val name = title.toLowerCase.replace(" ", "-")
-    val queryAsciidoc = AsciidocHelper.createCypherSnippet(replaceNodeIds(query))
+    val queryAsciidoc = createCypherSnippet(replaceNodeIds(query))
     val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
     val consoleAsciidoc = consoleSnippet(replaceNodeIds(query), emptyGraph)
     val consoleText = if (!consoleAsciidoc.isEmpty)

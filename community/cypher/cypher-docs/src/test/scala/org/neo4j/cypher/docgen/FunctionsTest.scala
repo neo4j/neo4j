@@ -233,9 +233,9 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "NODES( path )",
       arguments = List("path" -> "A path."),
       text = """Returns all nodes in a path.""",
-      queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and c.name='Eskil' return NODES(p)""",
+      queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and c.name='Eskil' return nodes(p)""",
       returns = """All the nodes in the path `p` are returned by the example query.""",
-      assertions = (p) => assert(List(node("A"), node("B"), node("E")) === p.columnAs[Seq[Node]]("NODES(p)").toList.head)
+      assertions = (p) => assert(List(node("A"), node("B"), node("E")) === p.columnAs[Seq[Node]]("nodes(p)").toList.head)
     )
   }
 
@@ -245,9 +245,9 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "RELATIONSHIPS( path )",
       arguments = List("path" -> "A path."),
       text = """Returns all relationships in a path.""",
-      queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and c.name='Eskil' return RELATIONSHIPS(p)""",
+      queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and c.name='Eskil' return relationships(p)""",
       returns = """All the relationships in the path `p` are returned.""",
-      assertions = (p) => assert(2 === p.columnAs[Seq[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
+      assertions = (p) => assert(2 === p.columnAs[Seq[Node]]("relationships(p)").toSeq.head.length)
     )
   }
 
@@ -257,9 +257,9 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ID( property-container )",
       arguments = List("property-container" -> "A node or a relationship."),
       text = """Returns the id of the relationship or node.""",
-      queryText = """match (a) return ID(a)""",
+      queryText = """match (a) return id(a)""",
       returns = """This returns the node id for three nodes.""",
-      assertions = (p) => assert(Seq(0,1,2,3,4) === p.columnAs[Int]("ID(a)").toSeq)
+      assertions = (p) => assert(Seq(0,1,2,3,4) === p.columnAs[Int]("id(a)").toSeq)
     )
   }
 
