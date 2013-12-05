@@ -468,4 +468,8 @@ class MergeNodeAcceptanceTest
     // then - does not throw
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
   }
+
+  @Test def should_work_when_finding_multiple_elements() {
+    assertStats(execute( "CREATE (:X) CREATE (:X) MERGE (:X)"), nodesCreated = 2, labelsAdded = 2)
+  }
 }
