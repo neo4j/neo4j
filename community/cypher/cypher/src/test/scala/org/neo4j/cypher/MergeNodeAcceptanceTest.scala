@@ -472,4 +472,20 @@ class MergeNodeAcceptanceTest
   @Test def should_work_when_finding_multiple_elements() {
     assertStats(execute( "CREATE (:X) CREATE (:X) MERGE (:X)"), nodesCreated = 2, labelsAdded = 2)
   }
+
+  @Test
+  def should_support_updates_while_merging() {
+    (0 to 2) foreach(x =>
+      (0 to 2) foreach( y=>
+        createNode("x"->x, "y"->y)
+        ))
+
+    // when
+    execute(
+      "MATCH (foo) WITH foo.x AS x, foo.y AS y " +
+        "MERGE (c:N {x: x, y: y+1}) " +
+        "MERGE (a:N {x: x, y: y}) " +
+        "MERGE (b:N {x: x+1, y: y})  " +
+        "RETURN x, y;").toList
+  }
 }

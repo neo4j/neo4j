@@ -25,9 +25,9 @@ import commands.Predicate
 import commands.values.KeyToken
 import data.SimpleVal
 import pipes.{QueryState, EntityProducer}
-import symbols.{NodeType, CypherType, SymbolTable}
+import symbols.{NodeType, CypherType}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
-import org.neo4j.cypher.{MergeConstraintConflictException, InternalException, CypherTypeException}
+import org.neo4j.cypher.{MergeConstraintConflictException, InternalException}
 import org.neo4j.graphdb.Node
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {
@@ -70,11 +70,10 @@ case class MergeNodeAction(identifier: String,
 
       Iterator(newContext)
     } else {
-      foundNodes.map {
+      // eagerly drain foundNodes to prevent concurrent modification exception from kernel transaction state iterator
+      foundNodes.toList.iterator.map {
         nextContext =>
-
           onMatch.foreach(_.exec(nextContext, state))
-
           nextContext
       }
     }
