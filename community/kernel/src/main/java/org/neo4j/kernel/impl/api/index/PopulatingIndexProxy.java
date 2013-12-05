@@ -147,7 +147,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public IndexReader newReader() throws IndexNotFoundKernelException
     {
-        throw new IndexNotFoundKernelException( descriptor + " is still populating" );
+        throw new IndexNotFoundKernelException( "Index is still populating: " + job );
     }
 
     @Override
@@ -160,13 +160,13 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public void activate() throws IndexActivationFailedKernelException
     {
-        throw new IllegalStateException( "Cannot activate index while it is still populating." );
+        throw new IllegalStateException( "Cannot activate index while it is still populating: " + job );
     }
 
     @Override
     public void validate()
     {
-        throw new IllegalStateException( "Cannot validate index while it is still populating." );
+        throw new IllegalStateException( "Cannot validate index while it is still populating: " + job );
     }
 
     @Override

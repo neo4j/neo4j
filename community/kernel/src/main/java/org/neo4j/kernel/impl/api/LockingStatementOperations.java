@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 
 public class LockingStatementOperations implements
     EntityWriteOperations,
@@ -167,10 +168,11 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+            throws SchemaRuleNotFoundException
     {
         state.locks().acquireSchemaReadLock();
-        return schemaReadDelegate.indexGetCommittedId( state, index );
+        return schemaReadDelegate.indexGetCommittedId( state, index, kind );
     }
 
     @Override

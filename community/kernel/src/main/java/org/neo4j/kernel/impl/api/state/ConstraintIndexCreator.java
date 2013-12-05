@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 
 import static java.util.Collections.singleton;
 
@@ -62,7 +63,7 @@ public class ConstraintIndexCreator
         boolean success = false;
         try
         {
-            long indexId = schema.indexGetCommittedId( state, descriptor );
+            long indexId = schema.indexGetCommittedId( state, descriptor, SchemaStorage.IndexRuleKind.CONSTRAINT );
             awaitIndexPopulation( constraint, indexId );
             success = true;
             return indexId;
@@ -134,12 +135,12 @@ public class ConstraintIndexCreator
                 // write lock. It is assumed that the transaction that invoked this "inner" transaction
                 // holds a schema write lock, and that it will wait for this inner transaction to do its
                 // work.
-                IndexDescriptor rule = new IndexDescriptor( labelId, propertyKeyId );
+                IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
                 // TODO (Ben+Jake): The Transactor is really part of the kernel internals, so it needs access to the
                 // internal implementation of Statement. However it is currently used by the external
                 // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
-                ((KernelStatement) kernelStatement).txState().constraintIndexRuleDoAdd( rule );
-                return rule;
+                ((KernelStatement) kernelStatement).txState().constraintIndexRuleDoAdd( descriptor );
+                return descriptor;
             }
         };
     }

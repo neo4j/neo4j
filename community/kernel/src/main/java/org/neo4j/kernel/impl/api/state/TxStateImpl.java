@@ -431,8 +431,16 @@ public final class TxStateImpl implements TxState
     @Override
     public void indexRuleDoAdd( IndexDescriptor descriptor )
     {
-        indexChanges().add( descriptor );
-        getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().add( descriptor );
+        DiffSets<IndexDescriptor> diff = indexChanges();
+        if ( diff.unRemove( descriptor ) )
+        {
+            getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().unRemove( descriptor );
+        }
+        else
+        {
+            indexChanges().add( descriptor );
+            getOrCreateLabelState( descriptor.getLabelId() ).indexChanges().add( descriptor );
+        }
         hasChanges = true;
     }
 
@@ -652,12 +660,7 @@ public final class TxStateImpl implements TxState
     @Override
     public void constraintDoDrop( UniquenessConstraint constraint )
     {
-        if ( constraintsChanges().remove( constraint ) )
-        {
-            createdConstraintIndexesByConstraint().remove( constraint );
-            // TODO: someone needs to make sure that the index we created gets dropped.
-            // I think this can wait until commit/rollback, but we need to be able to know that the index was created...
-        }
+        constraintsChanges().remove( constraint );
 
         constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKeyId() ));
         constraintsChangesForLabel( constraint.label() ).remove( constraint );
@@ -667,10 +670,20 @@ public final class TxStateImpl implements TxState
     @Override
     public boolean constraintDoUnRemove( UniquenessConstraint constraint )
     {
-        // hasChanges should already be set correctly when this is called
-        if(constraintsChanges().unRemove( constraint ))
+        if ( constraintsChanges().unRemove( constraint ) )
         {
-            constraintIndexChanges.unRemove( new IndexDescriptor( constraint.label(), constraint.propertyKeyId() ) );
+            constraintsChangesForLabel( constraint.label() ).unRemove( constraint );
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean constraintIndexDoUnRemove( IndexDescriptor index )
+    {
+        if ( constraintIndexChanges().unRemove( index ) )
+        {
+            constraintIndexDiffSetsByLabel( index.getLabelId() ).unRemove( index );
             return true;
         }
         return false;
@@ -698,11 +711,17 @@ public final class TxStateImpl implements TxState
        return Iterables.empty();
     }
 
+    public Long indexCreatedForConstraint( UniquenessConstraint constraint )
+    {
+        return createdConstraintIndexesByConstraint == null ? null :
+                createdConstraintIndexesByConstraint.get( constraint );
+    }
+
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint()
     {
         if ( !hasCreatedConstraintIndexesMap() )
         {
-            createdConstraintIndexesByConstraint = new HashMap<>(  );
+            createdConstraintIndexesByConstraint = new HashMap<>();
         }
         return createdConstraintIndexesByConstraint;
     }

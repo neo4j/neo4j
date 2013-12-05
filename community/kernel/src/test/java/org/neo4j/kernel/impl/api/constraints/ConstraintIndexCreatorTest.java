@@ -48,6 +48,7 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
+import static org.neo4j.kernel.impl.nioneo.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
 
 public class ConstraintIndexCreatorTest
 {
@@ -64,7 +65,8 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor ) ).thenReturn( 2468l );
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
+                .thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
 
@@ -78,7 +80,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 1, transactor.transactions.size() );
         verify( transactor.transactions.get( 0 ).txState() ).constraintIndexRuleDoAdd( descriptor );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         verify( indexProxy ).awaitStoreScanCompleted();
     }
@@ -95,7 +97,8 @@ public class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubTransactor transactor = new StubTransactor();
 
-        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor ) ).thenReturn( 2468l );
+        when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
+                .thenReturn( 2468l );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getProxyForRule( 2468l ) ).thenReturn( indexProxy );
         PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
@@ -121,7 +124,7 @@ public class ConstraintIndexCreatorTest
         TxState tx1 = transactor.transactions.get( 0 ).txState();
         verify( tx1 ).constraintIndexRuleDoAdd( new IndexDescriptor( 123, 456 ) );
         verifyNoMoreInteractions( tx1 );
-        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor );
+        verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, descriptor, CONSTRAINT );
         verifyNoMoreInteractions( constraintCreationContext.schemaReadOperations() );
         TxState tx2 = transactor.transactions.get( 1 ).txState();
         verify( tx2 ).constraintIndexDoDrop( new IndexDescriptor( 123, 456 ) );
