@@ -133,7 +133,7 @@ public class ClusterStateTest
 
     private Map<InstanceId,URI> members( int... memberIds )
     {
-        Map<InstanceId,URI> members = new HashMap<>();
+        Map<InstanceId,URI> members = new HashMap<InstanceId,URI>();
         for ( int memberId : memberIds )
         {
             members.put( new InstanceId( memberId ), uri( memberId ) );
@@ -153,7 +153,7 @@ public class ClusterStateTest
 
     public static class TrackingMessageHolder implements MessageHolder
     {
-        private final List<Message<? extends MessageType>> messages = new ArrayList<>();
+        private final List<Message<? extends MessageType>> messages = new ArrayList<Message<? extends MessageType>>();
         
         @Override
         public void offer( Message<? extends MessageType> message )
