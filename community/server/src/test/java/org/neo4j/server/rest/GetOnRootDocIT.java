@@ -88,20 +88,12 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * The whole REST API can be transmitted as JSON streams, resulting in
+     * All responses from the REST API can be transmitted as JSON streams, resulting in
      * better performance and lower memory overhead on the server side. To use
-     * it, adjust the request headers for every call, see the example below for
-     * details.
-     * 
-     * CAUTION: This feature is new, and you should make yourself comfortable
-     * with the streamed response style versus the non-streamed API where
-     * results are delivered in a single large response. Expect future releases
-     * to have streaming enabled by default since it is a far more efficient
-     * mechanism for both client and server.
+     * streaming, supply the header `X-Stream: true` with each request.
      */
     @Documented
     @Test
-    @Graph("I know you")
     public void streaming() throws Exception
     {
         data.get();
