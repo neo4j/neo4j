@@ -51,7 +51,7 @@ angular.module('neo4jApp.controllers')
 
         $scope.cmdchar = Settings.cmdchar
 
-        $scope.goodBrowser = true
+        $scope.goodBrowser = (navigator.appName != 'Microsoft Internet Explorer' && navigator.userAgent.indexOf('Trident') == -1)
 
         # gather info from jmx
         Server.jmx(
