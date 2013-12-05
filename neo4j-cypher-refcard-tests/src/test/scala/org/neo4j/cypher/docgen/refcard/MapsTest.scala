@@ -22,9 +22,9 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class CollectionsTest extends RefcardTest with StatisticsChecker {
+class MapsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("A KNOWS B")
-  val title = "Collections"
+  val title = "Maps"
   val css = "general c3-3 c4-2 c5-2 c6-4"
 
   override def assert(name: String, result: ExecutionResult) {
@@ -34,6 +34,9 @@ class CollectionsTest extends RefcardTest with StatisticsChecker {
         assert(result.toList.size === 2)
       case "returns-one" =>
         assertStats(result, nodesCreated = 0)
+        assert(result.toList.size === 1)
+      case "returns-one-merge" =>
+        assertStats(result, nodesCreated = 1, propertiesSet = 3, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
@@ -46,12 +49,8 @@ class CollectionsTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=name" =>
         Map("value" -> "Bob")
-      case "parameters=coll" =>
-        Map("coll" -> List(1,2,3))
-      case "parameters=range" =>
-        Map("first_num" -> 1, "last_num" -> 10, "step" -> 2)
-      case "parameters=subscript" =>
-        Map("start_idx" -> 1, "end_idx" -> -1, "idx" -> 0)
+      case "parameters=map" =>
+        Map("map" -> Map("name"->"Alice","age"->38))
       case "" =>
         Map()
     }
@@ -64,62 +63,49 @@ class CollectionsTest extends RefcardTest with StatisticsChecker {
 ###assertion=returns-one
 RETURN
 
-['a','b','c'] as coll
+{name:'Alice', age:38,
+ address:{city:'London', residential:true}} as map
 
 ###
 
-Literal collections are declared in square brackets.
+Literal maps are declared in curly braces much like property maps.
+Nested maps and collections are supported.
 
-###assertion=returns-one parameters=coll
-RETURN
-
-length({coll}) as len, {coll}[0] as value
-
-###
-
-Collections can be passed in as parameters.
-
-###assertion=returns-one parameters=range
-RETURN
-
-range({first_num},{last_num},{step}) as coll
-
-###
-
-Range creates a collection of numbers (+step+ is optional), other functions returning collections are:
-+labels+, +nodes+, +rels+, +filter+, +extract+.
-
-###assertion=returns-one
+###assertion=returns-one-merge parameters=map
 //
 
-MATCH (a)-[r:KNOWS*]->()
-RETURN r as rels
+MERGE (p:Person {name: {map}.name})
+ON CREATE SET p={map}
+
+RETURN p
+###
+
+Maps can be passed in as parameters and used as map or by accessing keys.
+
+###assertion=returns-one
+MATCH (node:Person)
+
+RETURN node as map
 
 ###
 
-Relationship identifiers of a variable length path contain a collection of relationships.
+Nodes and relationships are returned as maps of their data.
 
-###assertion=returns-two
-MATCH (node)
-
-RETURN node.coll[0] as value, length(node.coll) as len
-
-###
-
-Properties can be arrays/collections of strings, numbers or booleans.
-
-###assertion=returns-one parameters=subscript
-WITH [1,2,3] as coll
+###assertion=returns-one
+WITH {name:'Alice', age:38, children:['John','Max']} as map
 RETURN
 
-coll[{idx}] as value,
-coll[{start_idx}..{end_idx}] as slice
+map.name, map.age, map.children[0]
 
 ###
 
-Collection elements can be accessed with +idx+ subscripts in square brackets. Invalid indexes return +NULL+.
-Slices can
-be retrieved with intervals from +start_idx+ to +end_idx+ each of which can be omitted or negative.
-Out of range elements are ignored.
+Map entries can be accessed by their keys. Invalid keys result in an error.
 """
+/*
+WITH {name:'Alice', age:38, address:{city:'London', residential:true}, children:['John','Max']} as data
+RETURN
+
+data.name, data.address.city, data.children[0]
+
+ */
 }
