@@ -101,6 +101,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.as
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/labels.asciidoc[]
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collections.asciidoc[]
+
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/relationship-functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]

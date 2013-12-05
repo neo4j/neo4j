@@ -47,8 +47,6 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=value" =>
         Map("value" -> "Bob")
-      case "parameters=range" =>
-        Map("first_num" -> 2, "last_num" -> 18, "step" -> 3)
       case "" =>
         Map()
     }
@@ -125,16 +123,7 @@ filter(x IN coll WHERE x.prop <> {value})
 
 A filtered collection of the elements where the predicate is `TRUE`.
 
-###assertion=returns-one parameters=range
-RETURN
-
-range({first_num}, {last_num}, {step})
-###
-
-Create a range of numbers.
-The `step` argument is optional.
-
-###assertion=returns-one parameters=range
+###assertion=returns-one
 START n=node(%A%)
 WITH [n] as coll
 RETURN
