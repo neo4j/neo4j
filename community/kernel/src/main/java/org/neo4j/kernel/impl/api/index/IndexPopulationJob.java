@@ -254,7 +254,7 @@ public class IndexPopulationJob implements Runnable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[populator:" + populator + ", descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[populator:" + populator + ", descriptor:" + indexUserDescription + "]";
     }
 
     public void awaitCompletion() throws InterruptedException
