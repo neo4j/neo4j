@@ -29,16 +29,26 @@ import java.util.concurrent.Executors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.Iterables.first;
 
 public class IndexConstraintsTest
 {
+    private static final Label LABEL = DynamicLabel.label( "Label" );
+    private static final String PROPERTY_KEY = "x";
+
     private GraphDatabaseService graphDb;
 
     @Before
@@ -111,5 +121,89 @@ public class IndexConstraintsTest
             }
         }
         assertEquals( 1, numSucceeded );
+    }
+
+    // The following tests verify that multiple interacting schema commands can be applied in the same transaction.
+
+    @Test
+    public void convertIndexToConstraint()
+    {
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.success();
+        }
+
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            IndexDefinition index = first( graphDb.schema().getIndexes( LABEL ) );
+            index.drop();
+
+            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.success();
+        }
+        // assert no exception is thrown
+    }
+
+    @Test
+    public void convertConstraintToIndex()
+    {
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.success();
+        }
+
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            ConstraintDefinition constraint = first( graphDb.schema().getConstraints( LABEL ) );
+            constraint.drop();
+
+            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.success();
+        }
+        // assert no exception is thrown
+    }
+
+    @Test
+    public void createDropCreateIndex()
+    {
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            IndexDefinition index = graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            index.drop();
+            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.success();
+        }
+
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            IndexDefinition index = first( graphDb.schema().getIndexes( LABEL ) );
+            index.drop();
+            graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();
+            tx.success();
+        }
+        // assert no exception is thrown
+    }
+
+    @Test
+    public void createDropCreateConstraint()
+    {
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            ConstraintDefinition constraint = graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            constraint.drop();
+            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.success();
+        }
+
+        try( Transaction tx = graphDb.beginTx() )
+        {
+            ConstraintDefinition constraint = first( graphDb.schema().getConstraints( LABEL ) );
+            constraint.drop();
+            graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
+            tx.success();
+        }
+        // assert no exception is thrown
     }
 }

@@ -34,6 +34,36 @@ import static org.neo4j.helpers.collection.Iterables.map;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
+    public static enum IndexRuleKind
+    {
+        INDEX
+                {
+                    @Override
+                    public boolean isOfKind( IndexRule rule )
+                    {
+                        return !rule.isConstraintIndex();
+                    }
+                },
+        CONSTRAINT
+                {
+                    @Override
+                    public boolean isOfKind( IndexRule rule )
+                    {
+                        return rule.isConstraintIndex();
+                    }
+                },
+        ALL
+                {
+                    @Override
+                    public boolean isOfKind( IndexRule rule )
+                    {
+                        return true;
+                    }
+                };
+
+        public abstract boolean isOfKind( IndexRule rule );
+    }
+
     private final RecordStore<DynamicRecord> schemaStore;
 
     public SchemaStorage( RecordStore<DynamicRecord> schemaStore )
@@ -41,17 +71,22 @@ public class SchemaStorage implements SchemaRuleAccess
         this.schemaStore = schemaStore;
     }
 
-    public IndexRule constraintIndexRule( int labelId, int propertyKeyId ) throws SchemaRuleNotFoundException
+    /**
+     * Find the IndexRule, of any kind, for the given label and property key.
+     *
+     * Otherwise throw if there are not exactly one matching candidate rule.
+     */
+    public IndexRule indexRule( int labelId, int propertyKeyId ) throws SchemaRuleNotFoundException
     {
-        IndexRule rule = indexRule( labelId, propertyKeyId );
-        if ( rule.isConstraintIndex() )
-        {
-            return rule;
-        }
-        throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "is not a constraint index" );
+        return indexRule( labelId, propertyKeyId, IndexRuleKind.ALL );
     }
 
-    public IndexRule indexRule( int labelId, final int propertyKeyId ) throws SchemaRuleNotFoundException
+    /**
+     * Find and IndexRule of the given kind, for the given label and property.
+     *
+     * Otherwise throw if there are not exactly one matching candidate rule.
+     */
+    public IndexRule indexRule( int labelId, final int propertyKeyId, IndexRuleKind kind ) throws SchemaRuleNotFoundException
     {
         Iterator<IndexRule> rules = schemaRules(
                 IndexRule.class, labelId,
@@ -64,18 +99,27 @@ public class SchemaStorage implements SchemaRuleAccess
                     }
                 } );
 
-        if ( !rules.hasNext() )
+        IndexRule foundRule = null;
+
+        while ( rules.hasNext() )
+        {
+            IndexRule candidate = rules.next();
+            if ( kind.isOfKind( candidate ) )
+            {
+                if ( foundRule != null )
+                {
+                    throw new SchemaRuleNotFoundException( labelId, propertyKeyId, String.format("found more than one matching index rule, %s and %s", foundRule, candidate) );
+                }
+                foundRule = candidate;
+            }
+        }
+
+        if ( foundRule == null )
         {
             throw new SchemaRuleNotFoundException( labelId, propertyKeyId, "not found" );
         }
 
-        IndexRule rule = rules.next();
-
-        if ( rules.hasNext() )
-        {
-            throw new SchemaRuleNotFoundException( labelId, propertyKeyId, String.format("found more than one matching index rule, %s and %s", rule, rules.next()) );
-        }
-        return rule;
+        return foundRule;
     }
 
     public Iterator<IndexRule> allIndexRules()

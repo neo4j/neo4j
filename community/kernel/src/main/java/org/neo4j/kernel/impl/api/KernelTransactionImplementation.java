@@ -340,8 +340,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     try
                     {
-                        IndexRule rule = schemaStorage
-                                .indexRule( element.getLabelId(), element.getPropertyKeyId() );
+                        SchemaStorage.IndexRuleKind kind = isConstraintIndex?
+                                SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
+                        IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
                         persistenceManager.dropSchemaRule( rule );
                     }
                     catch ( SchemaRuleNotFoundException e )
@@ -349,7 +350,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         throw new ThisShouldNotHappenError(
                                 "Tobias Lindaaker",
                                 "Index to be removed should exist, since its existence should have " +
-                                        "been validated earlier and the schema should have been locked." );
+                                        "been validated earlier and the schema should have been locked.", e );
                     }
                 }
 
@@ -361,13 +362,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     IndexRule indexRule;
                     try
                     {
-                        indexRule = schemaStorage.indexRule( element.label(), element.propertyKeyId() );
+                        indexRule = schemaStorage.indexRule(
+                                element.label(),
+                                element.propertyKeyId(),
+                                SchemaStorage.IndexRuleKind.CONSTRAINT );
                     }
                     catch ( SchemaRuleNotFoundException e )
                     {
                         throw new ThisShouldNotHappenError(
                                 "Jacob Hansson",
-                                "Index is always created for the constraint before this point.");
+                                "Index is always created for the constraint before this point.", e );
                     }
                     persistenceManager.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
                             constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
