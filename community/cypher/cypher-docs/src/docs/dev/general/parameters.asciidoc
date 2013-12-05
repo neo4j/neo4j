@@ -8,7 +8,7 @@ In addition to that, it also makes caching of execution plans much easier for Cy
 Parameters can be used for literals and expressions in the +WHERE+ clause, for the index value in the +START+ clause, index queries, and finally for node/relationship ids.
 Parameters can not be used as for property names, relationship types and labels, since these patterns are part of the query structure that is compiled into a query plan.
 
-Accepted names for parameter are letters and number, and any combination of these.
+Accepted names for parameters are letters and numbers, and any combination of these.
 
 For details on parameters when using the Neo4j embedded Java API, see <<tutorials-cypher-parameters-java>>.
 For details on using parameters via the Neo4j REST API, see <<rest-api-cypher>>.
