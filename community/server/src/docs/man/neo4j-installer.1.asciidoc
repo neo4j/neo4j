@@ -1,0 +1,65 @@
+= NEO4J-INSTALLER(1) =
+:author: The Neo4j Team
+
+NAME
+----
+neo4j-installer - Neo4j Server installation and removal
+
+[[neo4j-installer-manpage]]
+SYNOPSIS
+--------
+
+*neo4j-installer* <command>
+
+[[neo4j-installer-manpage-description]]
+DESCRIPTION
+-----------
+
+Neo4j is a graph database, perfect for working with highly connected data.
+
+The preferred way to install Neo4j on Linux systems is by using prebuilt installation packages, but there's also the possibility to use the `neo4j-installer` command to install or remove it as a system service.
+For information regarding Windows, see below.
+
+Use the `neo4j` command to control the Neo4j Server.
+
+[[neo4j-installer-manpage-commands]]
+COMMANDS
+--------
+
+*install*::
+  Installs the server as a platform-appropriate system service.
+
+*remove*::
+  Uninstalls the system service.
+
+[[neo4j-installer-manpage-usage-windows]]
+Usage - Windows
+---------------
+
+To just control the Neo4j Server, use the `Neo4j.bat` command.
+
+*Neo4jInstaller.bat install/remove*
+
+Neo4j can be installed and run as a Windows Service, running without a console
+window. You'll need to run the scripts with Administrator privileges.
+Just use the `Neo4jInstaller.bat` script with the proper argument:
+
+* Neo4jInstaller.bat install - install as a Windows service
+** will install the service 
+* Neo4jInstaller.bat remove - remove the Neo4j service
+** will stop and remove the Neo4j service
+
+[[neo4j-installer-manpage-files]]
+FILES
+-----
+
+*conf/neo4j-server.properties*::
+  Server configuration.
+
+*conf/neo4j-wrapper.conf*::
+  Configuration for service wrapper.
+
+*conf/neo4j.properties*::
+  Tuning configuration for the database.
+
+
