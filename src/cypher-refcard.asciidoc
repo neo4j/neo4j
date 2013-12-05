@@ -18,6 +18,7 @@ For live graph models using Cypher check out our <a href="http://gist.neo4j.org"
 ++++
 
 Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameters, which is the best practice for applications.
+Neo4j properties can be strings, numbers, booleans or arrays thereof. Cypher also supports maps and collections.
 
 == Syntax ==
 
@@ -41,6 +42,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asci
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/union.asciidoc[]
 
 .Write-Only Query Structure 
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
@@ -104,7 +107,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collection-predicates.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/scalar-functions.asciidoc[]
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/path-functions.asciidoc[]
 
