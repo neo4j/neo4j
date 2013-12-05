@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -31,15 +26,14 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.GraphDescription;
+import org.neo4j.test.*;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.JavaTestDocsGenerator;
-import org.neo4j.test.TestData;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
 
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
@@ -69,9 +63,8 @@ public class IntroDocTest implements GraphHolder
                     AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
                             graphdb(), "cypher-intro" ) ) );
 
-            fw.append( "\nFor example, here is a query which finds a user called John and then traverses " +
-                    "the graph looking for friends of Johns friends (though not his direct friends) before returning " +
-                    "both John and any friends-of-friends that are found." );
+            fw.append( "\nFor example, here is a query which finds a user called John and John's friends (though not " +
+                    "his direct friends) before returning both John and any friends-of-friends that are found." );
             fw.append( "\n\n" );
             String query = "MATCH (john {name: 'John'})-[:friend]->()-[:friend]->(fof) RETURN john, fof ";
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
@@ -81,9 +74,8 @@ public class IntroDocTest implements GraphHolder
                     createQueryResultSnippet( engine.execute( query ).dumpToString() ) ) );
 
             fw.append( "\nNext up we will add filtering to set more parts "
-                    + "in motion:\n\nIn this next example, we take a list of users "
-                    + "and traverse the graph looking for those other "
-                    + "users that have an outgoing +friend+ relationship, returning "
+                    + "in motion:\n\nWe take a list of user names "
+                    + "and find all nodes with names from this list, match their friends and return "
                     + "only those followed users who have a +name+ property starting with +S+." );
             query = "MATCH (user)-[:friend]->(follower) WHERE "
                     + "user.name IN ['Joe', 'John', 'Sara', 'Maria', 'Steve'] AND follower.name =~ 'S.*' "

@@ -9,8 +9,9 @@ Very complicated database queries can easily be expressed through Cypher.
 This allows you to focus on your domain instead of getting lost in database access.
 
 Cypher is designed to be a humane query language, suitable for both developers and (importantly, we think) operations professionals.
-Our guiding goal is to make the simple things simple, and the complex things possible.
+Our guiding goal is to make the simple things easy, and the complex things possible.
 Its constructs are based on English prose and neat iconography which helps to make queries more self-explanatory.
+We have tried to optimize the language for reading and not for writing.
 
 Being a declarative language, Cypher focuses on the clarity of expressing _what_ to retrieve from a graph, not on _how_ to retrieve it.
 This is in contrast to imperative languages like Java, scripting languages like http://gremlin.tinkerpop.com[Gremlin], and http://neo4j.rubyforge.org/[the JRuby Neo4j bindings].
@@ -30,11 +31,8 @@ Cypher borrows it structure from SQL -- queries are built up using various claus
 Clauses are chained together, and the they feed intermediate result sets between each other.
 For example, the matching identifiers from one +MATCH+ clause will be the context that the next clause exists in.
 
-You can also break down a query into multiple query parts.
-This is especially important when you are mixing writing and reading clauses in the same query.
-
 The query language is comprised of several distinct clauses.
-You can read about more of them later in the manual, but here are the important ones.
+You can read more details about them later in the manual.
 
 Here are a few clauses used to read from the graph:
 
@@ -46,8 +44,6 @@ Here are a few clauses used to read from the graph:
 
 * +RETURN+: What to return.
 
-* +WITH+: Divides a query into multiple, distinct parts.
-
 Let's see +MATCH+ and +RETURN+ in action.
 
 include::intro-examples.asciidoc[]
@@ -56,7 +52,7 @@ And here are examples of clauses that are used to update the graph:
 
 * +CREATE+ (and +DELETE+): Create (and delete) nodes and relationships.
 
-* +SET+ (and +REMOVE+): Set values to properties and add labels on nodes using +SET  and use +REMOVE+ to remove them.
+* +SET+ (and +REMOVE+): Set values to properties and add labels on nodes using +SET+ and use +REMOVE+ to remove them.
 
 * +MERGE+: Match existing or create new nodes and patterns. This is especially useful together with uniqueness constraints.
 
