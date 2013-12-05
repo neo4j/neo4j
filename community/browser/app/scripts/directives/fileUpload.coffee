@@ -27,8 +27,7 @@ angular.module('neo4jApp.directives')
     '$scope'
     '$window'
     ($attrs, $parse, $rootScope, $scope, $window) ->
-
-      INITIAL_STATUS = 'Drop Cypher script file to import'
+      INITIAL_STATUS = $attrs.message or 'Drop Cypher script file to import'
       $scope.status = INITIAL_STATUS
 
       onUploadSuccess = (content)->
@@ -93,6 +92,8 @@ angular.module('neo4jApp.directives')
           $scope.status = INITIAL_STATUS
 
         reader.readAsDataURL(file)
+
+      return @
   ])
 
 
@@ -104,7 +105,7 @@ angular.module('neo4jApp.directives')
       restrict: 'E'
       scope: '@'
       transclude: yes
-      template: '<div class="file-drop-area" ng-class="{active: active}" ng-transclude>{{status}}</div>'
+      template: '<div class="file-drop-area" ng-class="{active: active}" ng-bind="status"></div>'
       link: (scope, element, attrs, ctrl) ->
         return unless $window.FileReader and $window.atob
         element.bind 'dragenter', ctrl.onDragEnter

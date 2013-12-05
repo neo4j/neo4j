@@ -63,6 +63,23 @@ describe('buttons', function () {
       expect($scope.model).toEqual(0);
       expect(btn).not.toHaveClass('active');
     });
+
+    it('should monitor true / false value changes - issue 666', function () {
+
+      $scope.model = 1;
+      $scope.trueVal = 1;
+      var btn = compileButton('<button ng-model="model" btn-checkbox btn-checkbox-true="trueVal">click</button>', $scope);
+
+      expect(btn).toHaveClass('active');
+      expect($scope.model).toEqual(1);
+
+      $scope.model = 2;
+      $scope.trueVal = 2;
+      $scope.$digest();
+
+      expect(btn).toHaveClass('active');
+      expect($scope.model).toEqual(2);
+    });
   });
 
   describe('radio', function () {

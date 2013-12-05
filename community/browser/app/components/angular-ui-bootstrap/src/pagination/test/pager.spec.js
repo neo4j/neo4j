@@ -101,6 +101,18 @@ describe('pager directive with default configuration', function () {
     expect($rootScope.currentPage).toBe(2);
     expect($rootScope.selectPageHandler).toHaveBeenCalledWith(2);
   });
+
+  describe('when `current-page` is not a number', function () {
+    it('handles string', function() {
+      $rootScope.currentPage = '1';
+      $rootScope.$digest();
+      expect(element.find('li').eq(0).hasClass('disabled')).toBe(true);
+
+      $rootScope.currentPage = '05';
+      $rootScope.$digest();
+      expect(element.find('li').eq(-1).hasClass('disabled')).toBe(true);
+    });
+  });
 });
 
 describe('setting pagerConfig', function() {
@@ -141,7 +153,7 @@ describe('setting pagerConfig', function() {
 
 });
 
-describe('pagination bypass configuration from attributes', function () {
+describe('pager bypass configuration from attributes', function () {
   var $rootScope, element;
   beforeEach(module('ui.bootstrap.pagination'));
   beforeEach(module('template/pagination/pager.html'));
@@ -150,7 +162,7 @@ describe('pagination bypass configuration from attributes', function () {
     $rootScope = _$rootScope_;
     $rootScope.numPages = 5;
     $rootScope.currentPage = 3;
-    element = $compile('<pager align="false" previous-text="\'<\'" next-text="\'>\'" num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
+    element = $compile('<pager align="false" previous-text="<" next-text=">" num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
     $rootScope.$digest();
   }));
 
@@ -166,6 +178,16 @@ describe('pagination bypass configuration from attributes', function () {
   it('should not align previous & next page link', function () {
     expect(element.find('li').eq(0).hasClass('previous')).toBe(false);
     expect(element.find('li').eq(-1).hasClass('next')).toBe(false);
+  });
+
+  it('changes "previous" & "next" text from interpolated attributes', function() {
+    $rootScope.previousText = '<<';
+    $rootScope.nextText = '>>';
+    element = $compile('<pager align="false" previous-text="{{previousText}}" next-text="{{nextText}}" num-pages="numPages" current-page="currentPage"></pager>')($rootScope);
+    $rootScope.$digest();
+
+    expect(element.find('li').eq(0).text()).toBe('<<');
+    expect(element.find('li').eq(-1).text()).toBe('>>');
   });
 
 });

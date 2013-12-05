@@ -16,14 +16,15 @@ var MAX_LENGTH = 70;
 var PATTERN = /^(?:fixup!\s*)?(\w*)(\((\w+)\))?\: (.*)$/;
 var IGNORED = /^WIP\:/;
 var TYPES = {
+  chore: true,
+  demo: true,
+  docs: true,
   feat: true,
   fix: true,
-  docs: true,
-  style: true,
   refactor: true,
-  test: true,
-  chore: true,
-  revert: true
+  revert: true,
+  style: true,
+  test: true
 };
 
 

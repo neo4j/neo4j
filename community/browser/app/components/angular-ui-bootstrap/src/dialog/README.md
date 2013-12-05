@@ -22,7 +22,9 @@ Sets the default global options for your application. Options can be overridden 
 *   `dialogFade`: a boolean value indicating whether the modal should fade in and out using a CSS transition, defaults to false
 *   `keyboard`: indicates whether the dialog should be closable by hitting the ESC key, defaults to true
 *   `backdropClick`: indicates whether the dialog should be closable by clicking the backdrop area, defaults to true
-
+*   `template`: the template for dialog
+*   `templateUrl`: path to the template for dialog
+  
 Example:
 
     var app = angular.module('App', ['ui.bootstrap.dialog'] , function($dialogProvider){

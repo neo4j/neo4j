@@ -82,16 +82,9 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
        * undefined; otherwise, it uses the `triggerMap` value of the show
        * trigger; else it will just use the show trigger.
        */
-      function setTriggers ( trigger ) {
-        var show, hide;
-       
-        show = trigger || options.trigger || defaultTriggerShow;
-        if ( angular.isDefined ( options.trigger ) ) {
-          hide = triggerMap[options.trigger] || show;
-        } else {
-          hide = triggerMap[show] || show;
-        }
-
+      function getTriggers ( trigger ) {
+        var show = trigger || options.trigger || defaultTriggerShow;
+        var hide = triggerMap[show] || show;
         return {
           show: show,
           hide: hide
@@ -99,7 +92,6 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
       }
 
       var directiveName = snake_case( type );
-      var triggers = setTriggers( undefined );
 
       var startSym = $interpolate.startSymbol();
       var endSym = $interpolate.endSymbol();
@@ -122,6 +114,8 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
           var popupTimeout;
           var $body;
           var appendToBody = angular.isDefined( options.appendToBody ) ? options.appendToBody : false;
+          var triggers = getTriggers( undefined );
+          var hasRegisteredTriggers = false;
 
           // By default, the tooltip is not open.
           // TODO add ability to start tooltip opened
@@ -181,7 +175,7 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
             }
 
             // Get the position of the directive element.
-            position = options.appendToBody ? $position.offset( element ) : $position.position( element );
+            position = appendToBody ? $position.offset( element ) : $position.position( element );
 
             // Get the height and width of the tooltip so we can center it.
             ttWidth = tooltip.prop( 'offsetWidth' );
@@ -276,10 +270,13 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
           });
 
           attrs.$observe( prefix+'Trigger', function ( val ) {
-            element.unbind( triggers.show );
-            element.unbind( triggers.hide );
 
-            triggers = setTriggers( val );
+            if (hasRegisteredTriggers) {
+              element.unbind( triggers.show, showTooltipBind );
+              element.unbind( triggers.hide, hideTooltipBind );
+            }
+
+            triggers = getTriggers( val );
 
             if ( triggers.show === triggers.hide ) {
               element.bind( triggers.show, toggleTooltipBind );
@@ -287,6 +284,8 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
               element.bind( triggers.show, showTooltipBind );
               element.bind( triggers.hide, hideTooltipBind );
             }
+
+            hasRegisteredTriggers = true;
           });
 
           attrs.$observe( prefix+'AppendToBody', function ( val ) {

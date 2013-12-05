@@ -1,11 +1,11 @@
-#drawer(ng-switch on="whichDrawer", ng-animate="'animate-drawer'")
-  div.pane(ng-switch-when="database")
+#drawer(ng-switch on="whichDrawer")
+  div.pane.animate-drawer(ng-switch-when="database")
     include drawer-database
-  div.pane(ng-switch-when="scripts")
+  div.pane.animate-drawer(ng-switch-when="scripts")
     include drawer-scripts
-  div.pane(ng-switch-when="info")
+  div.pane.animate-drawer(ng-switch-when="info")
     include drawer-info
-  div.pane(ng-switch-when="credits")
+  div.pane.animate-drawer(ng-switch-when="credits")
     include drawer-credits
-  div.pane(ng-switch-default)
+  div.pane.animate-drawer(ng-switch-default)
     h4 Super secret sidebar. Shh!!

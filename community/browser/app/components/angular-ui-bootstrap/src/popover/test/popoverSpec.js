@@ -44,6 +44,28 @@ describe('popover', function() {
     elm.trigger( 'click' );
     expect( elmScope.tt_isOpen ).toBe( false );
   }));
+
+  it('should not unbind event handlers created by other directives - issue 456', inject( function( $compile ) {
+
+    scope.click = function() {
+      scope.clicked = !scope.clicked;
+    };
+
+    elmBody = angular.element(
+      '<div><input popover="Hello!" ng-click="click()" popover-trigger="mouseenter"/></div>'
+    );
+    $compile(elmBody)(scope);
+    scope.$digest();
+
+    elm = elmBody.find('input');
+
+    elm.trigger( 'mouseenter' );
+    elm.trigger( 'mouseleave' );
+    expect(scope.clicked).toBeFalsy();
+
+    elm.click();
+    expect(scope.clicked).toBeTruthy();
+  }));
 });
 
     

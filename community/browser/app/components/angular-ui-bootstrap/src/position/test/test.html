@@ -67,9 +67,19 @@
 
 <h3>Within absolute-positioned DIV</h3>
 
-<div style="position: absolute; left: 400px" class="container">
-    <div class="content" position>Content</div>
+<div style="position: absolute; left: 400px; top: 400px" class="container">
+    <div class="content" position>Content - absolute</div>
 </div>
+
+<h3>Within overflowing absolute-positioned DIV</h3>
+<div class="container" style="height: 50px; overflow: scroll;overflow-x: hidden; position: absolute;">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur non velit nulla. Suspendisse sit amet tempus diam. Sed at ultricies neque. Suspendisse id felis a sem placerat ornare. Donec auctor, purus at molestie tempor, arcu enim molestie lacus, ac imperdiet massa urna eu massa. Praesent velit tellus, scelerisque a fermentum ut, ornare in diam. Phasellus egestas molestie feugiat. Vivamus sit amet viverra metus.
+    <div class="content" position>Content absolute overflow</div>
+</div>
+
+<br>
+<br>
+<br>
 
 <h3>Next to a float element</h3>
 

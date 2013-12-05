@@ -92,10 +92,6 @@ dialogModule.provider("$dialog", function(){
         e.preventDefault();
         self.$scope.$apply();
       };
-
-      this.handleLocationChange = function() {
-        self.close();
-      };
     }
 
     // The `isOpen()` method returns wether the dialog is currently visible.
