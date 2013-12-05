@@ -237,4 +237,6 @@ angular.module('neo4jApp.controllers')
         .then (result) =>
           graph.addRelationships(result.relationships)
           @update()
+
+      return @
   ])

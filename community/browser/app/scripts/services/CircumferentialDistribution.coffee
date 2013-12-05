@@ -93,3 +93,5 @@ angular.module('neo4jApp.services')
           result[key] = arrowAngles.floating[key]
 
       result
+
+    return @

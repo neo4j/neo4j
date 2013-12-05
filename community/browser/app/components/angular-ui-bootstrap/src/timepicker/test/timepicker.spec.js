@@ -64,6 +64,12 @@ describe('timepicker directive', function () {
     e.wheelDelta = delta;
     return e;
   }
+  
+  function wheelThatOtherMouse(delta) {
+    var e = $.Event('wheel');
+    e.deltaY = delta;
+    return e;
+  }
 
   it('contains three row & three input elements', function() {
     expect(element.find('tr').length).toBe(3);
@@ -215,7 +221,7 @@ describe('timepicker directive', function () {
     expect(getModelState()).toEqual([23, 0]);
   });
 
-  it('changes only the time part', function() {
+  it('changes only the time part when hours change', function() {
     $rootScope.time = newTime(23, 50);
     $rootScope.$digest();
 
@@ -228,11 +234,87 @@ describe('timepicker directive', function () {
     expect(date).toEqual($rootScope.time.getDate());
   });
 
+  it('changes only the time part when minutes change', function() {
+    element = $compile('<timepicker ng-model="time" minute-step="15"></timepicker>')($rootScope);
+    $rootScope.time = newTime(0, 0);
+    $rootScope.$digest();
+
+    var date =  $rootScope.time.getDate();
+    var up = getMinutesButton(true);
+    doClick(up, 2);
+    expect(getTimeState()).toEqual(['12', '30', 'AM']);
+    expect(getModelState()).toEqual([0, 30]);
+    expect(date).toEqual($rootScope.time.getDate());
+
+    var down = getMinutesButton(false);
+    doClick(down, 2);
+    expect(getTimeState()).toEqual(['12', '00', 'AM']);
+    expect(getModelState()).toEqual([0, 0]);
+    expect(date).toEqual($rootScope.time.getDate());
+
+    doClick(down, 2);
+    expect(getTimeState()).toEqual(['11', '30', 'PM']);
+    expect(getModelState()).toEqual([23, 30]);
+    expect(date).toEqual($rootScope.time.getDate());
+  });
+
   it('responds properly on "mousewheel" events', function() {
     var inputs = element.find('input');
     var hoursEl = inputs.eq(0), minutesEl = inputs.eq(1);
     var upMouseWheelEvent = wheelThatMouse(1);
     var downMouseWheelEvent = wheelThatMouse(-1);
+
+    expect(getTimeState()).toEqual(['02', '40', 'PM']);
+    expect(getModelState()).toEqual([14, 40]);
+
+    // UP
+    hoursEl.trigger( upMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['03', '40', 'PM']);
+    expect(getModelState()).toEqual([15, 40]);
+
+    hoursEl.trigger( upMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['04', '40', 'PM']);
+    expect(getModelState()).toEqual([16, 40]);
+
+    minutesEl.trigger( upMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['04', '41', 'PM']);
+    expect(getModelState()).toEqual([16, 41]);
+
+    minutesEl.trigger( upMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['04', '42', 'PM']);
+    expect(getModelState()).toEqual([16, 42]);
+
+    // DOWN
+    minutesEl.trigger( downMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['04', '41', 'PM']);
+    expect(getModelState()).toEqual([16, 41]);
+
+    minutesEl.trigger( downMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['04', '40', 'PM']);
+    expect(getModelState()).toEqual([16, 40]);
+
+    hoursEl.trigger( downMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['03', '40', 'PM']);
+    expect(getModelState()).toEqual([15, 40]);
+
+    hoursEl.trigger( downMouseWheelEvent );
+    $rootScope.$digest();
+    expect(getTimeState()).toEqual(['02', '40', 'PM']);
+    expect(getModelState()).toEqual([14, 40]);
+  });
+
+  it('responds properly on "wheel" events', function() {
+    var inputs = element.find('input');
+    var hoursEl = inputs.eq(0), minutesEl = inputs.eq(1);
+    var upMouseWheelEvent = wheelThatOtherMouse(-1);
+    var downMouseWheelEvent = wheelThatOtherMouse(1);
 
     expect(getTimeState()).toEqual(['02', '40', 'PM']);
     expect(getModelState()).toEqual([14, 40]);
@@ -363,6 +445,38 @@ describe('timepicker directive', function () {
       var hoursEl = inputs.eq(0), minutesEl = inputs.eq(1);
       var upMouseWheelEvent = wheelThatMouse(1);
       var downMouseWheelEvent = wheelThatMouse(-1);
+
+      expect(getTimeState()).toEqual(['02', '00', 'PM']);
+      expect(getModelState()).toEqual([14, 0]);
+
+      // UP
+      hoursEl.trigger( upMouseWheelEvent );
+      $rootScope.$digest();
+      expect(getTimeState()).toEqual(['04', '00', 'PM']);
+      expect(getModelState()).toEqual([16, 0]);
+
+      minutesEl.trigger( upMouseWheelEvent );
+      $rootScope.$digest();
+      expect(getTimeState()).toEqual(['04', '30', 'PM']);
+      expect(getModelState()).toEqual([16, 30]);
+
+      // DOWN
+      minutesEl.trigger( downMouseWheelEvent );
+      $rootScope.$digest();
+      expect(getTimeState()).toEqual(['04', '00', 'PM']);
+      expect(getModelState()).toEqual([16, 0]);
+
+      hoursEl.trigger( downMouseWheelEvent );
+      $rootScope.$digest();
+      expect(getTimeState()).toEqual(['02', '00', 'PM']);
+      expect(getModelState()).toEqual([14, 0]);
+    });
+    
+    it('responds properly on "wheel" events with configurable steps', function() {
+      var inputs = element.find('input');
+      var hoursEl = inputs.eq(0), minutesEl = inputs.eq(1);
+      var upMouseWheelEvent = wheelThatOtherMouse(-1);
+      var downMouseWheelEvent = wheelThatOtherMouse(1);
 
       expect(getTimeState()).toEqual(['02', '00', 'PM']);
       expect(getModelState()).toEqual([14, 0]);

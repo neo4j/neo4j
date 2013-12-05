@@ -22,30 +22,15 @@ angular.module("neo4jApp.animations", [])
 
   # Animation for creating and removing result frames
   #
-  .animation("frame-out", ["$window", ($window) ->
-    setup: (element) ->
-      element.css height: element.height()
-
-    start: (element, done) ->
-      element.animate
-        opacity: 0
-        height: 0
-      ,
-        duration: 400
-        easing: "easeInOutCubic"
-        complete: done
-
-  ]).animation("frame-in", ["$window", ($window) ->
-    setup: (element) ->
+  .animation(".frame-in", ["$window", ($window) ->
+    enter: (element, done) ->
       element.css
         position: "absolute"
-        top: -100
+        top: "-100px"
         opacity: 0
 
-    start: (element, done) ->
-      afterFirst = () ->
+      afterFirst = ->
         element.css position: "relative"
-
         element.animate
           opacity: 1
           top: 0
@@ -54,37 +39,40 @@ angular.module("neo4jApp.animations", [])
           duration: 400
           easing: "easeInOutCubic"
           complete: ->
-            # remove max-height to be able to resize the frame when interacting
-            element.css maxHeight: 'initial'
+            element.css maxHeight: 10000 # "remove" max-height
             done()
 
       # render object to get a size
       element.animate
         opacity: 0.01
-      , 200, ->
-        afterFirst()
-  ])
+        # FIX: nested .animate() not triggered when using animate-enhanced
+        # in combination with AngularJS, so timeout to execute separately
+      , 200, -> setTimeout(afterFirst, 0)
 
-  # Animation for message bar below editor
-  #
-  .animation("intro-out", ["$window", ($window) ->
-    start: (element, done) ->
+      ->
+
+    leave: (element, done) ->
+      element.css height: element.height()
       element.animate
         opacity: 0
-        top: 40
+        height: 0
       ,
         duration: 400
         easing: "easeInOutCubic"
         complete: done
 
-  ]).animation("intro-in", ["$window", ($window) ->
-    setup: (element) ->
+      ->
+  ])
+
+  # Animation for message bar below editor
+  #
+  .animation(".intro-in", ["$window", ($window) ->
+    enter: (element, done) ->
       element.css
         opacity: 0
         top: 0
         display: 'block'
 
-    start: (element, done) ->
       element.animate
         opacity: 1
         top: 0
@@ -92,30 +80,41 @@ angular.module("neo4jApp.animations", [])
         duration: 1600
         easing: "easeInOutCubic"
         complete: done
-  ])
-
-  # Animation for message bar below editor
-  #
-  .animation("slide-down-out", ["$window", ($window) ->
-    start: (element, done) ->
+    leave: (element, done) ->
       element.animate
-        height: 0
+        opacity: 0
+        top: 40
       ,
         duration: 400
         easing: "easeInOutCubic"
         complete: done
+  ])
 
-  ]).animation("slide-down-in", ["$window", ($window) ->
-    setup: (element) ->
+  # Animation for message bar below editor
+  #
+  .animation(".slide-down", ["$window", ($window) ->
+    enter: (element, done) ->
+      console.log "ey"
       element.css
         height: 0
         display: 'block'
 
-    start: (element, done) ->
       element.animate
         height: 49
       ,
         duration: 400
         easing: "easeInOutCubic"
         complete: done
+
+      ->
+
+    leave: (element, done) ->
+      element.animate
+        height: 0
+      ,
+        duration: 400
+        easing: "easeInOutCubic"
+        complete: done
+
+      ->
   ])

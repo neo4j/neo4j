@@ -1,9 +1,19 @@
 <div ng-controller="DatepickerDemoCtrl">
-    <datepicker ng-model="dt" show-weeks="showWeeks" starting-day="1" date-disabled="disabled(date, mode)" min="minDate" max="'2015-06-22'"></datepicker>
     <pre>Selected date is: <em>{{dt | date:'fullDate' }}</em></pre>
 
+    <div class="well well-small pull-left" ng-model="dt">
+        <datepicker min="minDate" show-weeks="showWeeks"></datepciker>
+    </div>
+
+    <div class="form-horizontal">
+        <input type="text" datepicker-popup="dd-MMMM-yyyy" ng-model="dt" open="opened" min="minDate" max="'2015-06-22'" datepicker-options="dateOptions" date-disabled="disabled(date, mode)" ng-required="true" />
+        <button class="btn" ng-click="open()"><i class="icon-calendar"></i></button>
+    </div>
+
+    <hr />
     <button class="btn btn-small btn-inverse" ng-click="today()">Today</button>
-    <button class="btn btn-small btn-success" ng-click="toggleWeeks()">Toggle Weeks</button>
+    <button class="btn btn-small btn-inverse" ng-click="dt = '2009-08-24'">2009-08-24</button>
+    <button class="btn btn-small btn-success" ng-click="toggleWeeks()" tooltip="For inline datepicker">Toggle Weeks</button>
     <button class="btn btn-small btn-danger" ng-click="clear()">Clear</button>
-    <button class="btn btn-small" ng-click="toggleMin()">After today restriction</button>
+    <button class="btn btn-small" ng-click="toggleMin()" tooltip="After today restriction">Min date</button>
 </div>

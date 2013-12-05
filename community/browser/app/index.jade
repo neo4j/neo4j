@@ -20,6 +20,13 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
 
   body(ng-class="{'connection-error': offline, 'show-drawer': isDrawerShown, 'modal-shown': isPopupShown, 'maximize-editor': editor.maximized}", ng-controller="LayoutCtrl", keydown="globalKey($event)")
 
+
+    //if lt IE 9
+      #incompatible
+        | Sorry, you need to upgrade to the latest version of Internet Explorer
+        br
+        | in order to use the Neo4j browser
+
     #page-container.ng-cloak
       include views/main
 
@@ -46,7 +53,8 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='components/jquery-ui/ui/jquery.ui.draggable.js')
     script(src='components/jquery-ui/ui/jquery.ui.sortable.js')
     script(src='components/local-storage-js/storage.js')
-    script(src='components/angular-unstable/angular.js')
+    script(src='components/angular/angular.js')
+    script(src='components/angular-animate/angular-animate.js')
     script(src='components/angular-sanitize/angular-sanitize.js')
     script(src='components/angular-local-storage/angular-local-storage.js')
     script(src='components/angular-ui-bootstrap/src/transition/transition.js')
@@ -73,7 +81,7 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='components/UUID.js/src/uuid.js')
     script(src='components/modernizr/modernizr.js')
     script(src='components/jquery.easing/js/jquery.easing.js')
-    script(src='components/jquery.animate-enhanced/scripts/src/jquery.animate-enhanced.js')
+    //script(src='components/jquery.animate-enhanced/scripts/src/jquery.animate-enhanced.js')
     //endbuild
 
     //build:js(.tmp) scripts/scripts.js
@@ -83,7 +91,6 @@ html(class="no-js", lang="en", ng-app="neo4jApp", ng-controller="MainCtrl")
     script(src='scripts/utils.js')
     script(src='scripts/app.js')
     script(src='scripts/init/httpHeaders.js')
-    script(src='scripts/init/routes.js')
     script(src='scripts/init/statusCheck.js')
     script(src='scripts/init/tooltip.js')
     script(src='scripts/init/defaultContent.js')
