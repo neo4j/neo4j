@@ -53,6 +53,8 @@ public class SchemaRecoveryIT
         // then
         assertEquals(1, constraints( recoveredDatabase ).size());
         assertEquals(1, indexes( recoveredDatabase ).size());
+
+        recoveredDatabase.shutdown();
     }
 
     @Rule
