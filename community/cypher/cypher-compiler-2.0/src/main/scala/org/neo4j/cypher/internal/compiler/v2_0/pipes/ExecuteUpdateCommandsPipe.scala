@@ -55,10 +55,11 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])
 
     val result: Iterator[ExecutionContext] = cmd.exec(ctx, state)
 
-    if(!singleCommand) {
-      singleOr(result, new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
-    } else {
-      result
+    cmd match {
+      case _:CreateNode if !singleCommand =>
+        singleOr(result, new ParameterWrongTypeException("If you create multiple elements, you can only create one of each."))
+      case _ =>
+        result
     }
   }
 
