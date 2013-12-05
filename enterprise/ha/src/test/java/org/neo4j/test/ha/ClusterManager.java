@@ -19,6 +19,12 @@
  */
 package org.neo4j.test.ha;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -76,12 +82,6 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
-
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -867,7 +867,7 @@ public class ClusterManager
             public boolean accept( ManagedCluster cluster )
             {
                 ClusterMembers members = cluster.getMaster().getDependencyResolver().resolveDependency( ClusterMembers.class );
-                return Iterables.count(members.getMembers()) >= count;
+                return Iterables.count(members.getMembers()) == count;
             }
 
             @Override

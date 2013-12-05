@@ -395,8 +395,8 @@ public class MultiPaxosContext
                     {
                         instance.getAcceptors().remove( configuration.getMembers().get( value.getJoin() ) );
 
-                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance + " removed gone " +
-                                "member "
+                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                                " removed gone member "
                                 + configuration.getMembers().get( value.getJoin() ) + " added joining member " +
                                 value.getJoinUri() );
 
@@ -414,8 +414,8 @@ public class MultiPaxosContext
                     PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                     if ( instance.getAcceptors() != null )
                     {
-                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance + " removed " +
-                                "leaving member "
+                        getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                                " removed leaving member "
                                 + value.getLeave() + " (at URI " + configuration.getMembers().get( value.getLeave() )
                                 + ")" );
                         instance.getAcceptors().remove( configuration.getMembers().get( value.getLeave() ) );
