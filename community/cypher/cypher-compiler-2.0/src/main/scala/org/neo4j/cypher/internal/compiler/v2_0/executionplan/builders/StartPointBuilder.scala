@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes._
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 
 /*
 This class is responsible for taking unsolved StartItems and transforming them into StartPipes
@@ -34,11 +35,11 @@ class StartPointBuilder extends PlanBuilder {
     val p = plan.pipe
 
     val item = q.start.filter({ (startItemToken: QueryToken[StartItem]) =>
-        mapQueryToken().isDefinedAt((context, startItemToken))
+        mapQueryToken().isDefinedAt((context, startItemToken, p.symbols))
       }).head
 
 
-    val newPipe = mapQueryToken().apply((context, item))(p)
+    val newPipe = mapQueryToken().apply((context, item, p.symbols))(p)
 
     plan.copy(pipe = newPipe, query = q.copy(start = q.start.filterNot(_ == item) :+ item.solve))
   }
@@ -47,10 +48,10 @@ class StartPointBuilder extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) =
     plan.query.start.exists({ (itemToken: QueryToken[StartItem]) =>
-      mapQueryToken().isDefinedAt((context, itemToken))
+      mapQueryToken().isDefinedAt((context, itemToken, plan.pipe.symbols))
     })
 
-  private def genNodeStart(entityFactory: EntityProducerFactory): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+  private def genNodeStart(entityFactory: EntityProducerFactory): MaybeProducerOf[Node] =
     entityFactory.nodeByIndex orElse
       entityFactory.nodeByIndexQuery orElse
       entityFactory.nodeByIndexHint orElse
@@ -59,24 +60,26 @@ class StartPointBuilder extends PlanBuilder {
       entityFactory.nodeByLabel
 
 
-  private def genRelationshipStart(entityFactory: EntityProducerFactory): PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] =
+  private def genRelationshipStart(entityFactory: EntityProducerFactory): MaybeProducerOf[Relationship] =
     entityFactory.relationshipByIndex orElse
       entityFactory.relationshipByIndexQuery orElse
       entityFactory.relationshipById orElse
       entityFactory.relationshipsAll
 
-  private def mapQueryToken(): PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
+  type MaybeProducerOfPipeProducer = PartialFunction[(PlanContext, QueryToken[StartItem], SymbolTable), (Pipe => Pipe)]
+
+  private def mapQueryToken(): MaybeProducerOfPipeProducer = {
     val entityFactory = new EntityProducerFactory
     val nodeStart = genNodeStart(entityFactory)
     val relationshipStart = genRelationshipStart(entityFactory)
-    val result: PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
-      case (planContext, Unsolved(item)) if nodeStart.isDefinedAt((planContext, item)) =>
+    val result: MaybeProducerOfPipeProducer = {
+      case (planContext, Unsolved(item), symbols) if nodeStart.isDefinedAt((planContext, item, Some(symbols))) =>
         (p: Pipe) =>
-          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)))
+          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item, Some(symbols))))
 
-      case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) =>
+      case (planContext, Unsolved(item), symbols) if relationshipStart.isDefinedAt((planContext, item, Some(symbols))) =>
         (p: Pipe) =>
-          new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item)))
+          new RelationshipStartPipe(p, item.identifierName, relationshipStart.apply((planContext, item, Some(symbols))))
     }
     result
   }

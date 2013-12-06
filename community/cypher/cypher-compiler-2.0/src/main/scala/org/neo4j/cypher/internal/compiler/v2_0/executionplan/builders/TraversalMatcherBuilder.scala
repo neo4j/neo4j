@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{builders, PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_0.commands._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb
@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.NullPipe
 import graphdb.Node
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.{TraversalMatchPipe, EntityProducer}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndex
-import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndexQuery
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 
@@ -40,9 +38,9 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
         val LongestTrail(start, end, longestTrail) = longestPath
 
         val unsolvedItems = plan.query.start.filter(_.unsolved)
-        val (startToken, startNodeFn) = identifier2nodeFn(ctx, start, unsolvedItems)
+        val (startToken, startNodeFn) = identifier2nodeFn(ctx, start, plan.pipe.symbols, unsolvedItems)
 
-        val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems, ctx)
+        val (matcher, tokens) = chooseCorrectMatcher(end, longestPath, startNodeFn, startToken, unsolvedItems, ctx, plan.pipe.symbols)
 
         val solvedPatterns = longestTrail.patterns
 
@@ -97,17 +95,18 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     old ++ solvedPreds.map(_.solve)
   }
 
-  private def chooseCorrectMatcher(end:Option[String],
-                           longestPath:LongestTrail,
-                           startNodeFn:EntityProducer[Node],
-                           startToken:QueryToken[StartItem],
-                           unsolvedItems: Seq[QueryToken[StartItem]],
-                           ctx:PlanContext): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
+  private def chooseCorrectMatcher(end: Option[String],
+                                   longestPath: LongestTrail,
+                                   startNodeFn: EntityProducer[Node],
+                                   startToken: QueryToken[StartItem],
+                                   unsolvedItems: Seq[QueryToken[StartItem]],
+                                   ctx: PlanContext,
+                                   symbols: SymbolTable): (TraversalMatcher,Seq[QueryToken[StartItem]]) = {
     val (matcher, tokens) = if (end.isEmpty) {
       val matcher = new MonoDirectionalTraversalMatcher(longestPath.step, startNodeFn)
       (matcher, Seq(startToken))
     } else {
-      val (endToken, endNodeFn) = identifier2nodeFn(ctx, end.get, unsolvedItems)
+      val (endToken, endNodeFn) = identifier2nodeFn(ctx, end.get, symbols, unsolvedItems)
       val step = longestPath.step
       val matcher = new BidirectionalTraversalMatcher(step, startNodeFn, endNodeFn)
       (matcher, Seq(startToken, endToken))
@@ -115,15 +114,18 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     (matcher,tokens)
   }
 
-  def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
-  (QueryToken[StartItem], EntityProducer[Node]) = {
+  private def identifier2nodeFn(ctx: PlanContext,
+                                identifier: String,
+                                symbols: SymbolTable,
+                                unsolvedItems: Seq[QueryToken[StartItem]]):
+  (builders.QueryToken[StartItem], EntityProducer[Node]) = {
     val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
-    (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token))
+    (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token, Some(symbols)))
   }
 
   val entityFactory = new EntityProducerFactory
 
-  private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
+  private def mapNodeStartCreator(): MaybeProducerOf[Node] =
     entityFactory.nodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
