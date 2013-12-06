@@ -3,6 +3,15 @@ Merge
 =====
 
 == Introduction ==
+
+.Provisional Feature
+[CAUTION]
+====
++MERGE+ is a new addition and a provisional feature of Cypher.
+Its scope and syntax are subject to change.
+Therefore, please be aware that you may need to change queries that use +MERGE+ in the future.
+====
+
 +MERGE+ ensures that a pattern exists in the graph.
 Either the pattern already exists, or it needs to be created.
 
@@ -21,11 +30,6 @@ If there are multiple matches, they will all be passed on to later stages of the
 
 The last part of +MERGE+ is the +ON CREATE+ and +ON MATCH+.
 These allow a query to express additional changes to the properties of a node or relationship, depending on if the element was ++MATCH++ed in the database or if it was ++CREATE++d.
-
-[NOTE]
-+MERGE+ is a new addition to Cypher.
-Its scope and syntax are subject to change.
-Therefore, please be aware that you may need to change queries that use +MERGE+ in the future.
 
 The following graph is used for the examples below:
 
