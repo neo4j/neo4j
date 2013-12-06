@@ -2621,4 +2621,44 @@ RETURN x0.name""")
     assert(result("name") === "Foo")
     assert(result("count") === 1)
   }
+
+  @Test
+  def should_handle_queries_that_cant_be_index_solved_because_expressions_lack_dependencies() {
+    // Given
+    val a = createLabeledNode(Map("property"->42), "Label")
+    val b = createLabeledNode(Map("property"->42), "Label")
+    val c = createLabeledNode(Map("property"->666), "Label")
+    val d = createLabeledNode(Map("property"->666), "Label")
+    val e = createLabeledNode(Map("property"->1), "Label")
+    relate(a,b)
+    relate(a,e)
+    graph.createIndex("Label", "property")
+
+    // when
+    val result = execute("match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+
+    // then does not throw exceptions
+    assert(result.toList === List(Map("a" -> a, "b" -> b)))
+  }
+
+  @Test
+  def should_handle_queries_that_cant_be_index_solved_because_expressions_lack_dependencies_with_two_disjoin_patterns() {
+    // Given
+    val a = createLabeledNode(Map("property"->42), "Label")
+    val b = createLabeledNode(Map("property"->42), "Label")
+    val e = createLabeledNode(Map("property"->1), "Label")
+    graph.createIndex("Label", "property")
+
+    // when
+    val result = execute("match (a:Label), (b:Label) where a.property = b.property return *")
+
+    // then does not throw exceptions
+    assert(result.toSet === Set(
+      Map("a"->a, "b"->a),
+      Map("a"->a, "b"->b),
+      Map("a"->b, "b"->b),
+      Map("a"->b, "b"->a),
+      Map("a"->e, "b"->e)
+    ))
+  }
 }

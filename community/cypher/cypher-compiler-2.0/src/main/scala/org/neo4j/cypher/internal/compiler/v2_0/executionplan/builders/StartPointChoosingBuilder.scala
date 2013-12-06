@@ -79,7 +79,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
       }.flatten.toSet
 
       val startPoints: Set[RatedStartItem] =
-        pattern.nodes.map(key => NodeFetchStrategy.findStartStrategy(key, plan.boundIdentifiers, allPredicates, ctx)).toSet
+        pattern.nodes.map(key => NodeFetchStrategy.findStartStrategy(key, allPredicates, ctx, plan.pipe.symbols)).toSet
 
       val singleNodePoints = findSingleNodePoints(startPoints)
       val shortestPathPointsInPattern: Set[IdentifierName] = shortestPathPoints intersect pattern.nodes.toSet

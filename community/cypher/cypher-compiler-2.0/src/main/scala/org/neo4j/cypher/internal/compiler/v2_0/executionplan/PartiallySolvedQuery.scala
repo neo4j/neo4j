@@ -200,6 +200,4 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
     f(copy(tail = tail.map(_.rewriteFromTheTail(f))))
 }
 
-case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false) {
-  def boundIdentifiers: Set[String] = pipe.symbols.keys.toSet
-}
+case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false)
