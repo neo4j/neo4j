@@ -4,19 +4,39 @@ Setup and configuration
 
 Neo4j HA can be set up to accommodate differing requirements for load, fault tolerance and available hardware.
 
-Within a cluster, Neo4j HA uses its own Paxos implementation for all cluster membership related tasks, from instances joining/leaving a cluster to master election and availability information propagation.
-Read operations through the +GraphDatabaseService+ API will always work, whereas write operations requires an available master.
-
-For reaching quorum among the members in the cluster the number of members should be odd.
-
-== Installation Notes ==
+In HA mode, Neo4j instances form a cluster.
+The instances monitor each others' availability to take account of instances joining and leaving the cluster.
+They elect one instance to be the master, and designate the other instances to be slaves.
 
 For installation instructions of a High Availability cluster see <<ha-setup-tutorial>>.
 
-Note that while the HA version of Neo4j supports the same API as the single instance embedded version, it does have additional configuration parameters.
-Although there are many parameters, most of them have defaults that should work in most cases.
+== Specifying cluster members ==
 
-.HA configuration parameters
+Specify the instances that should form the cluster by supplying +ha.initial_hosts+, a comma-separated list of URLs.
+When each instance starts, if it can contact any of the initial hosts, then it will form a cluster with them,
+otherwise it will start its own cluster.
+
+Note that the parameter is called +ha.initial_hosts+ because it's only used when instances initially join the cluster.
+This means that you can extend the cluster without changing the configuration of existing instances.
+
+== Server configuration ==
+
+If you are running Neo4j server, specify +org.neo4j.server.database.mode=HA+ in 'neo4j-server.properties'.
+
+.HA server configuration parameters
+[options="header", cols="<33m,<25,<25m,<20"]
+|==============================================================================================================
+| Parameter Name                 | Description                                      | Example value | Required?
+| org.neo4j.server.database.mode | Whether to run as a single server or in HA mode. | single or HA  | yes
+|==============================================================================================================
+
+== Database configuration ==
+
+HA configuration parameters should be supplied alongside general Neo4j parameters in 'neo4j.properties'.
+There are many configurable parameters, most in most cases it isn't necessary to modify the default values.
+The only parameters that need to be specified are +ha.server_id+ and +ha.initial_hosts+.
+
+.HA database configuration parameters
 [options="header", cols="<33m,<25,<25m,<20"]
 |========================================================================================
 | Parameter Name        | Description                                     | Example value  | Required?
@@ -49,16 +69,3 @@ Although there are many parameters, most of them have defaults that should work 
 | ha.tx_push_strategy   | Push strategy of a transaction to a slave during commit. | fixed or round_robin | no
 |========================================================================================
 
-[NOTE]
-Note that the +org.neo4j.server.database.mode+ setting in the 'neo4j-server.properties' file has to be set to +HA+ to run Neo4j in High Availability mode.
-
-== Different methods for participating in a cluster ==
-
-There are currently multiple ways of telling your database instance which cluster to create/join, different ways for different occasions.
-
-=== Knowing at least one other member ===
-
-A database instance can join a cluster by supplying +ha.initial_hosts+ a comma-separated list of URLs to at least one other cluster member of the cluster to join.
-It's called initial hosts since it's only for joining the cluster. After an instance joins it gets aware of all the members of the cluster.
-It will take turn contacting each one in the list until it gets a response, where it will await a decision by the existing cluster members to have it join.
-If it cannot contact any of the members in the URL list it will create a new cluster with itself as master.
