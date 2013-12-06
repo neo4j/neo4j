@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
 
 /*
 This rather simple class finds a starting strategy for a given single node and a list of predicates required
@@ -34,8 +35,8 @@ object NodeFetchStrategy {
 
   val nodeStrategies: Seq[NodeStrategy] = Seq(NodeByIdStrategy, IndexSeekStrategy, LabelScanStrategy, GlobalStrategy)
 
-  def findStartStrategy(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): RatedStartItem = {
-    val ratedItems = nodeStrategies.flatMap(_.findRatedStartItems(node, boundIdentifiers, where, ctx))
+  def findStartStrategy(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): RatedStartItem = {
+    val ratedItems = nodeStrategies.flatMap(_.findRatedStartItems(node, where, ctx, symbols))
     ratedItems.sortBy(_.rating).head
   }
 
@@ -78,7 +79,7 @@ trait NodeStrategy {
   type IdentifierName = String
   type PropertyKey = String
 
-  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem]
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): Seq[RatedStartItem]
 
   protected def findLabelsForNode(node: String, where: Seq[Predicate]): Seq[SolvedPredicate[LabelName]] =
     where.collect {
@@ -90,8 +91,8 @@ trait NodeStrategy {
 
 object NodeByIdStrategy extends NodeStrategy {
 
-  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
-    val solvedPredicates: Seq[SolvedPredicate[Expression]] = findEqualityPredicatesForBoundIdentifiers(node, boundIdentifiers, where)
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): Seq[RatedStartItem] = {
+    val solvedPredicates: Seq[SolvedPredicate[Expression]] = findEqualityPredicatesForBoundIdentifiers(node, symbols, where)
     val solutions: Seq[Expression] = solvedPredicates.map(_.solution)
     val predicates: Seq[Predicate] = solvedPredicates.map(_.predicate)
 
@@ -101,12 +102,9 @@ object NodeByIdStrategy extends NodeStrategy {
     }
   }
 
-  private def findEqualityPredicatesForBoundIdentifiers(identifier: IdentifierName, boundIdentifiers: Set[String], where: Seq[Predicate]): Seq[SolvedPredicate[Expression]] = {
-    def computable(expression: Expression): Boolean = ! expression.exists {
-      case Identifier(name) => !boundIdentifiers(name)
-      case _                => false
-    }
-    
+  private def findEqualityPredicatesForBoundIdentifiers(identifier: IdentifierName, symbols: SymbolTable, where: Seq[Predicate]): Seq[SolvedPredicate[Expression]] = {
+    def computable(expression: Expression): Boolean = expression.symbolDependenciesMet(symbols)
+
     where.collect {
       case predicate @ Equals(IdFunction(Identifier(id)), Literal(idValue)) if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(Literal(idValue.asInstanceOf[Number].longValue()), predicate)
       case predicate @ Equals(Literal(idValue), IdFunction(Identifier(id))) if id == identifier && idValue.isInstanceOf[Number] => SolvedPredicate(Literal(idValue.asInstanceOf[Number].longValue()), predicate)
@@ -121,9 +119,9 @@ object NodeByIdStrategy extends NodeStrategy {
 
 object IndexSeekStrategy extends NodeStrategy {
 
-  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): Seq[RatedStartItem] = {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
-    val propertyPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where)
+    val propertyPredicates: Seq[SolvedPredicate[PropertyKey]] = findEqualityPredicatesOnProperty(node, where, symbols)
 
     for (
       labelPredicate <- labelPredicates;
@@ -137,20 +135,26 @@ object IndexSeekStrategy extends NodeStrategy {
     }
   }
 
-  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate]): Seq[SolvedPredicate[PropertyKey]] =
+  private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
+    val symbols = initialSymbols.add(identifier, NodeType())
+
     where.collect {
-      case predicate @ Equals(Property(Identifier(id), propertyKey), expression) if id == identifier => SolvedPredicate(propertyKey.name, predicate)
-      case predicate @ Equals(expression, Property(Identifier(id), propertyKey)) if id == identifier => SolvedPredicate(propertyKey.name, predicate)
+      case predicate @ Equals(Property(Identifier(id), propertyKey), expression)
+        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+
+      case predicate @ Equals(expression, Property(Identifier(id), propertyKey))
+        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
+  }
 }
 
 object GlobalStrategy extends NodeStrategy {
-  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] =
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): Seq[RatedStartItem] =
     Seq(RatedStartItem(AllNodes(node), Global, Seq.empty))
 }
 
 object LabelScanStrategy extends NodeStrategy {
-  def findRatedStartItems(node: String, boundIdentifiers: Set[String], where: Seq[Predicate], ctx: PlanContext): Seq[RatedStartItem] = {
+  def findRatedStartItems(node: String, where: Seq[Predicate], ctx: PlanContext, symbols: SymbolTable): Seq[RatedStartItem] = {
     val labelPredicates: Seq[SolvedPredicate[LabelName]] = findLabelsForNode(node, where)
 
     labelPredicates.map {
