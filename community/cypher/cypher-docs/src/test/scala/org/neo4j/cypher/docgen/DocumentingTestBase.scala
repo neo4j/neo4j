@@ -65,6 +65,12 @@ trait DocumentationHelper extends GraphIcing {
     new PrintWriter(new File(dir, nicefy(title) + ".asciidoc"), "UTF-8")
   }
 
+  def createCypherSnippet(query: String) = {
+    val prettifiedQuery = Prettifier(query.trim())
+    val result = AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery)
+    result
+  }
+
   def prepareFormatting(query: String): String = {
     val str = Prettifier(query.trim())
     if ((str takeRight 1) == ";") {
@@ -406,12 +412,6 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
       output.append("\n----")
       writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".console", output.toString()))
     }
-  }
-
-  private def createCypherSnippet(query: String) = {
-    val prettifiedQuery = Prettifier(query.trim())
-    val result = AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery)
-    result
   }
 }
 

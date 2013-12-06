@@ -44,7 +44,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_node_label() {
     testQuery(
       title = "Filter on node label",
-      text = "To filter nodes by label, write a label predicate after the `WHERE` keyword using either the short `WHERE n:foo` or the long `WHERE n LABEL [:foo, :bar]` form.",
+      text = "To filter nodes by label, write a label predicate after the `WHERE` keyword using `WHERE n:foo`.",
       queryText = """match (n) where n:Swedish return n""",
       returns = """The "+Andres+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
@@ -139,7 +139,7 @@ class WhereTest extends DocumentingTestBase {
   @Test def filter_on_null() {
     testQuery(
       title = "Filter on NULL",
-      text = "Sometimes you might want to test if a value or an identifier is +null+. This is done just like SQL does it, " +
+      text = "Sometimes you might want to test if a value or an identifier is +NULL+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """match (person) where person.name = 'Peter' AND person.belt is null return person""",
       returns = "Nodes that Tobias is not connected to are returned.",
