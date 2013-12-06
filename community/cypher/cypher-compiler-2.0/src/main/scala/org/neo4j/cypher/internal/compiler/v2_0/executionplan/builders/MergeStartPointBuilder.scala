@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.PlainMergeNodeProducer
 import org.neo4j.cypher.internal.compiler.v2_0.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 
 /*
 This builder is concerned with finding queries that use MERGE, and finds a way to try to find matching nodes
@@ -45,18 +46,27 @@ class MergeStartPointBuilder extends PlanBuilder {
     val q: PartiallySolvedQuery = plan.query
 
     // Find merge points that do not have a node producer, and produce one for them
-    val updatesWithSolvedMergePoints = plan.query.updates.map(update => update.map(solveUnsolvedMergePoints(plan.boundIdentifiers, ctx)))
+    val updatesWithSolvedMergePoints = plan.query.updates.map {
+      updateAction => updateAction.map(solveUnsolvedMergePoints(plan.boundIdentifiers, ctx, plan.pipe.symbols))
+    }
 
     plan.copy(query = q.copy(updates = updatesWithSolvedMergePoints))
   }
 
-  private def solveUnsolvedMergePoints(boundIdentifiers: Set[String], ctx: PlanContext): (UpdateAction => UpdateAction) = {
-    case merge: MergeNodeAction if merge.maybeNodeProducer.isEmpty => findNodeProducer(merge, boundIdentifiers, ctx)
-    case foreach: ForeachAction                                    => foreach.copy(actions = foreach.actions.map(solveUnsolvedMergePoints(boundIdentifiers, ctx)))
+  private def solveUnsolvedMergePoints(boundIdentifiers: Set[String], ctx: PlanContext, symbols: SymbolTable): (UpdateAction => UpdateAction) = {
+    case merge: MergeNodeAction if merge.maybeNodeProducer.isEmpty => 
+      findNodeProducer(merge, boundIdentifiers, ctx, symbols)
+      
+    case foreach: ForeachAction                                    => 
+      foreach.copy(actions = foreach.actions.map(solveUnsolvedMergePoints(boundIdentifiers, ctx, symbols)))
+      
     case x                                                         => x
   }
 
-  private def findNodeProducer(mergeNodeAction: MergeNodeAction, boundIdentifiers: Set[String], ctx: PlanContext): MergeNodeAction = {
+  private def findNodeProducer(mergeNodeAction: MergeNodeAction,
+                               boundIdentifiers: Set[String],
+                               ctx: PlanContext,
+                               symbols: SymbolTable): MergeNodeAction = {
     val identifier = mergeNodeAction.identifier
     val props = mergeNodeAction.props
     val propsByName = mergeNodeAction.props.map { case (k,v) => k.name->v }
@@ -70,7 +80,7 @@ class MergeStartPointBuilder extends PlanBuilder {
           case other                                          => other
         }
 
-        val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s)))
+        val nodeProducer = PlainMergeNodeProducer(entityProducerFactory.nodeStartItems((ctx, startItem.s, Some(symbols))))
         val solvedPredicates = startItem.solvedPredicates
         val predicatesLeft = where.toSet -- solvedPredicates
 
@@ -91,7 +101,8 @@ class MergeStartPointBuilder extends PlanBuilder {
         }
 
         val nodeProducer = UniqueMergeNodeProducers(startItems.map {
-          case (label: KeyToken, propertyKey: KeyToken, item: RatedStartItem) => IndexNodeProducer(label, propertyKey, entityProducerFactory.nodeStartItems((ctx, item.s)))
+          case (label: KeyToken, propertyKey: KeyToken, item: RatedStartItem) =>
+            IndexNodeProducer(label, propertyKey, entityProducerFactory.nodeStartItems((ctx, item.s, None)))
         })
         val solvedPredicates = startItems.flatMap {
           case (_, _, item: RatedStartItem) => item.solvedPredicates

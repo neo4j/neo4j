@@ -32,6 +32,7 @@ import org.neo4j.cypher.PlanDescription
 import org.neo4j.cypher.internal.compiler.v2_0.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndex
 import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 
 
 class StartPipePlanDescriptionTest extends MockitoSugar {
@@ -122,7 +123,7 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
   }
 
   private def createPlanDescription(startItem: StartItem): PlanDescription = {
-    val producer = factory.nodeStartItems((planContext, startItem))
+    val producer = factory.nodeStartItems((planContext, startItem, Some(new SymbolTable())))
     val pipe = new NodeStartPipe(NullPipe(), "n", producer)
     pipe.executionPlanDescription
   }
