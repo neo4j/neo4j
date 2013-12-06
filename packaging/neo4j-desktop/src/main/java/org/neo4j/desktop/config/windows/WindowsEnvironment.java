@@ -56,13 +56,13 @@ class WindowsEnvironment extends PortableEnvironment
                 e.printStackTrace( System.out );
             }
         }
-
         windowsEditFile( file );
     }
 
     private void windowsEditFile( File file ) throws IOException
     {
-        getRuntime().exec( new String[]{"rundll32", "url.dll,FileProtocolHandler", file.getAbsolutePath()} );
+        String[] cmdarray = { "notepad", file.getAbsolutePath() };
+        getRuntime().exec( cmdarray );
     }
 
     @Override
