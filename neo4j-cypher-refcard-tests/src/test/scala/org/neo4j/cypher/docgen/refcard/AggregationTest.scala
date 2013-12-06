@@ -88,82 +88,44 @@ which removes duplicates from the values.
 START n=node(%A%, %B%, %C%)
 RETURN
 
-sum(n.property)
-###
-
-Sum numerical values.
-
-###assertion=returns-one
-START n=node(%A%, %B%, %C%)
-RETURN
-
-avg(n.property)
-###
-
-Calculates the average.
-
-###assertion=returns-one
-START n=node(%A%, %B%, %C%)
-RETURN
-
-max(n.property)
-###
-
-Maximum numerical value.
-
-###assertion=returns-one
-START n=node(%A%, %B%, %C%)
-RETURN
-
-min(n.property)
-###
-
-Minimum numerical value.
-
-###assertion=returns-one
-START n=node(%A%, %B%, %C%)
-RETURN
-
 collect(n.property)
 ###
 
 Collection from the values, ignores `NULL`.
+
+###assertion=returns-one
+START n=node(%A%, %B%, %C%)
+RETURN
+
+sum(n.property)
+
+,avg(n.property),min(n.property),max(n.property)
+###
+
+Sum numerical values. Similar functions are +avg+, +min+, +max+.
 
 ###assertion=returns-one parameters=percentile
 START n=node(%A%, %B%, %C%)
 RETURN
 
 percentileDisc(n.property, {percentile})
+
+,percentileCont(n.property, {percentile})
 ###
 
-Discrete percentile.
+Discrete percentile. Continuous percentile is +percentileCont+.
 The `percentile` argument is from `0.0` to `1.0`.
 
 ###assertion=returns-one parameters=percentile
 START n=node(%A%, %B%, %C%)
 RETURN
 
-percentileCont(n.property, {percentile})
-###
-
-Continuous percentile.
-
-###assertion=returns-one parameters=percentile
-START n=node(%A%, %B%, %C%)
-RETURN
-
 stdev(n.property)
+
+, stdevp(n.property)
 ###
 
 Standard deviation for a sample of a population.
-
-###assertion=returns-one parameters=percentile
-START n=node(%A%, %B%, %C%)
-RETURN
-
-stdevp(n.property)
-###
-
-Standard deviation for an entire population.
+For an entire population use +stdevp+.
 """
 }

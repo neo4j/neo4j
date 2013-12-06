@@ -62,14 +62,6 @@ CREATE INDEX ON :Person(name)
 
 Create an index on the label `Person` and property `name`.
 
-###assertion=drop-index
-//
-
-DROP INDEX ON :Person(name)
-###
-
-Drop the index on the label `Person` and property `name`.
-
 ###assertion=match parameters=aname
 //
 
@@ -81,5 +73,25 @@ RETURN n
 An index can be automatically used for the equality comparison.
 Note that for example `lower(n.name) = {value}` will not use an index.
 
+###assertion=match parameters=aname
+//
+
+MATCH (n:Person)
+USING INDEX n:Person(name)
+WHERE n.name = {value}
+
+RETURN n
+###
+
+Index usage can be enforced, when Cypher uses a suboptimal index or
+more than one index should be used.
+
+###assertion=drop-index
+//
+
+DROP INDEX ON :Person(name)
+###
+
+Drop the index on the label `Person` and property `name`.
 """
 }

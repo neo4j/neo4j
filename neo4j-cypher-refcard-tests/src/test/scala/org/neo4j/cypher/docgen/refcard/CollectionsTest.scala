@@ -25,7 +25,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class CollectionsTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("A KNOWS B")
   val title = "Collections"
-  val css = "general c3-3 c4-2 c5-2 c6-4"
+  val css = "general c2-2 c3-2 c4-3 c5-2 c6-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
@@ -102,7 +102,8 @@ Relationship identifiers of a variable length path contain a collection of relat
 ###assertion=returns-two
 MATCH (node)
 
-RETURN node.coll[0] as value, length(node.coll) as len
+RETURN node.coll[0] as value,
+       length(node.coll) as len
 
 ###
 
@@ -121,5 +122,5 @@ Collection elements can be accessed with +idx+ subscripts in square brackets. In
 Slices can
 be retrieved with intervals from +start_idx+ to +end_idx+ each of which can be omitted or negative.
 Out of range elements are ignored.
-"""
+             """
 }

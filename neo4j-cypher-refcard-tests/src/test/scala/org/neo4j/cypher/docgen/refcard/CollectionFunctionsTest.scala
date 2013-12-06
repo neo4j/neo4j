@@ -45,6 +45,8 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
 
   override def parameters(name: String): Map[String, Any] =
     name match {
+      case "parameters=coll" =>
+        Map("coll" -> List(1,2,3))
       case "parameters=value" =>
         Map("value" -> "Bob")
       case "" =>
@@ -57,40 +59,23 @@ class CollectionFunctionsTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("prop" -> "Chris"))
 
   def text = """
-###assertion=returns-one
-WITH [42] as coll
+###assertion=returns-one parameters=coll
 RETURN
 
-length(coll)###
+length({coll})
+###
 
 Length of the collection.
 
-###assertion=returns-one
-WITH [42] as coll
+###assertion=returns-one parameters=coll
 RETURN
 
-head(coll)###
-
-The first element of the collection.
-
-###assertion=returns-one
-WITH [42] as coll
-RETURN
-
-last(coll)###
-
-The last element of the collection.
-
-###assertion=returns-one parameters=value
-START n=node(%A%), m=node(%B%)
-MATCH path=(n)-->(m)
-WITH nodes(path) as coll
-RETURN
-
-tail(coll)
+head({coll}), last({coll}), tail({coll})
 ###
 
-All but the first element of the collection.
++head+ returns the first, +last+ the last element
+of the collection. +tail+ the remainder of the
+collection. All return null for an empty collection.
 
 ###assertion=returns-one parameters=value
 START n=node(%A%), m=node(%B%)
@@ -128,7 +113,7 @@ START n=node(%A%)
 WITH [n] as coll
 RETURN
 
-reduce(s = "", n IN coll | s + n.prop)
+reduce(s = "", x IN coll | s + x.prop)
 ###
 
 Evaluate expression for each element in the collection, accumulate the results.
@@ -136,9 +121,10 @@ Evaluate expression for each element in the collection, accumulate the results.
 ###assertion=foreach
 WITH ["Alice","Bob","Charlie"] AS coll
 
-FOREACH (value IN coll | CREATE (:Person {name:value}))
+FOREACH (value IN coll |
+ CREATE (:Person {name:value}))
 ###
 
 Execute a mutating operation for each element in a collection.
-"""
+             """
 }

@@ -71,27 +71,11 @@ START n=node(%ROOT%)
 RETURN
 
 round({expr})
+
+,floor({expr}),ceil({expr})
 ###
 
-Round to the nearest integer.
-
-###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
-RETURN
-
-floor({expr})
-###
-
-The greatest integer less than or equal to a decimal number.
-
-###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
-RETURN
-
-ceil({expr})
-###
-
-The smallest integer greater than or equal to a decimal number.
+Round to the nearest integer, +ceil+ and +floor+ find the next integer up or down.
 
 ###assertion=returns-one parameters=expression
 START n=node(%ROOT%)
@@ -116,6 +100,8 @@ START n=node(%ROOT%)
 RETURN
 
 sin({expr})
+
+,cos({expr}),tan({expr}),cot({expr}),asin({expr}),acos({expr}),atan({expr}),atan2({expr},{expr}),haversin({expr})
 ###
 
 Trigonometric functions, also `cos`, `tan`, `cot`, `asin`, `acos`, `atan`, `atan2`, `haversin`.

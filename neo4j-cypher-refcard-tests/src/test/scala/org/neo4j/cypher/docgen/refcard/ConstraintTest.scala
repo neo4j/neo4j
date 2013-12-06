@@ -57,7 +57,8 @@ class ConstraintTest extends RefcardTest with StatisticsChecker {
 ###assertion=create-constraint
 //
 
-CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE
+CREATE CONSTRAINT ON (p:Person)
+       ASSERT p.name IS UNIQUE
 ###
 
 Create an unique constraint on the label `Person` and property `name`.
@@ -68,7 +69,8 @@ This constraint will create an accompanying index.
 ###assertion=drop-constraint
 //
 
-DROP CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE
+DROP CONSTRAINT ON (p:Person)
+     ASSERT p.name IS UNIQUE
 ###
 
 Drop the unique constraint and index on the label `Person` and property `name`.
