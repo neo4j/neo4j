@@ -387,7 +387,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def e() {
     testThis(
       title = "E",
-      syntax = "E( expression )",
+      syntax = "E()",
       arguments = List.empty,
       text = "`E` returns the constant, e.",
       queryText = """return e()""",
