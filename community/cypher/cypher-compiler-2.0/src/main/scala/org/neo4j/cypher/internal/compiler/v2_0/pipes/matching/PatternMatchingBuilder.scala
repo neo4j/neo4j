@@ -107,5 +107,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
 
     case (key, _) => Nil
   }
+
+  def name = "PatternMatcher"
 }
 
