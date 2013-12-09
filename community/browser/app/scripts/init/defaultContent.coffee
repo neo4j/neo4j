@@ -44,6 +44,7 @@ MATCH (n) RETURN n LIMIT 100
         content: """
 // What is related, and how
 MATCH (a)-[r]->(b)
+WHERE labels(a) <> [] AND labels(b) <> []
 RETURN DISTINCT head(labels(a)) AS This, type(r) as To, head(labels(b)) AS That
 LIMIT 10
         """
