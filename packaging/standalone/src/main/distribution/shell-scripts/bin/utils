@@ -357,6 +357,12 @@ selectinittool() {
   fi
 }
 
+warn_about_java_runtime() {
+  echo "WARNING! You are using an unsupported Java runtime. "
+  show_java_requirements
+  show_installation_instructions
+}
+
 complain_about_java_version() {
   echo "ERROR! Neo4j cannot be started using java version $JAVAVERSION. "
   show_java_requirements
@@ -375,13 +381,7 @@ checkjvmcompatibility() {
   $JAVACMD -version 2>&1 | egrep -q "Java HotSpot\\(TM\\) (64-Bit Server|Server|Client) VM"
   if [ $? -eq 1 ]
   then
-    complain_about_java_version
-  else
-    $JAVACMD -version 2>&1 | egrep -q "java version \"1.7"
-    if [ $? -eq 1 ]
-    then
-      complain_about_java_version
-    fi
+    warn_about_java_runtime
   fi
 }
 
