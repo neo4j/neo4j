@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object BooleanType {
-  val instance = new BooleanType()
+  private val instance = new BooleanType() {
+    val parentType = AnyType()
+    override def toString = "Boolean"
+  }
 
   def apply() = instance
 }
 
-class BooleanType extends AnyType {
-  override def parentType: CypherType = AnyType()
-  override def toString = "Boolean"
-}
+sealed abstract class BooleanType extends CypherType

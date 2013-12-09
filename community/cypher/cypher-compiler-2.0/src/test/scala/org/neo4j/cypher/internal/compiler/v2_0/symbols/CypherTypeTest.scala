@@ -24,6 +24,25 @@ import org.scalatest.Assertions
 
 class CypherTypeTest extends Assertions {
   @Test
+  def testParents() {
+    assert(IntegerType().parents === Seq(NumberType(), AnyType()))
+    assert(NumberType().parents === Seq(AnyType()))
+    assert(AnyType().parents === Seq())
+    assert(CollectionType(StringType()).parents === Seq(CollectionType(AnyType()), AnyType()))
+  }
+
+  @Test
+  def testTypesAreAssignable() {
+    assert(NumberType().isAssignableFrom(IntegerType()) === true)
+    assert(AnyType().isAssignableFrom(StringType()) === true)
+    assert(CollectionType(StringType()).isAssignableFrom(CollectionType(StringType())) === true)
+    assert(CollectionType(NumberType()).isAssignableFrom(CollectionType(IntegerType())) === true)
+    assert(IntegerType().isAssignableFrom(LongType()) === false)
+    assert(IntegerType().isAssignableFrom(NumberType()) === false)
+    assert(CollectionType(IntegerType()).isAssignableFrom(CollectionType(StringType())) === false)
+  }
+
+  @Test
   def testTypeMergeDown() {
     assertCorrectTypeMergeDown(NumberType(), NumberType(), NumberType())
     assertCorrectTypeMergeDown(NumberType(), AnyType(), AnyType())
@@ -42,7 +61,7 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMergeUp(NumberType(), CollectionType(AnyType()), None)
     assertCorrectTypeMergeUp(LongType(), DoubleType(), None)
     assertCorrectTypeMergeUp(MapType(), DoubleType(), None)
-    assertCorrectTypeMergeUp(BooleanType(), CollectionType(AnyType()), Some(BooleanType()))
+    assertCorrectTypeMergeUp(BooleanType(), CollectionType(AnyType()), None)
   }
 
   private def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: Option[CypherType]) {

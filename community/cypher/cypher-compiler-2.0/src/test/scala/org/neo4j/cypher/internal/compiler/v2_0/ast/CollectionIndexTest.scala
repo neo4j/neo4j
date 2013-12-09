@@ -39,7 +39,7 @@ class CollectionIndexTest extends Assertions {
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(NodeType(), StringType()), index.types(result.state))
+    assertEquals(TypeSet(NodeType(), StringType()), index.types(result.state))
   }
 
   @Test
@@ -49,6 +49,6 @@ class CollectionIndexTest extends Assertions {
       DummyToken(4, 8))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer or Long but was Double", index.idx.token, SortedSet(index.idx.token))), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer or Long but was Double", index.idx.token)), result.errors)
   }
 }

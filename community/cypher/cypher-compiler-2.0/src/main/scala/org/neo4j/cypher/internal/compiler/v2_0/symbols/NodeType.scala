@@ -20,39 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object NodeType {
-  lazy val instance = new NodeType()
+  private val instance = new NodeType() {
+    val parentType = MapType()
+    override def toString = "Node"
+  }
 
   def apply() = instance
 }
 
-
-class NodeType extends MapType {
-  override def parentType:CypherType = MapType()
-  override def toString = "Node"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class NodeType extends CypherType

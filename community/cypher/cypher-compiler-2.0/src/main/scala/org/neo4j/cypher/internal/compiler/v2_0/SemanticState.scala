@@ -46,37 +46,8 @@ case class SemanticState(
   def symbol(name: String): Option[Symbol] = symbolTable.get(name) orElse parent.flatMap(_.symbol(name))
   def symbolTypes(name: String) = this.symbol(name).map(_.types).getOrElse(TypeSet.empty)
 
-  def expressionTypes(expression: ast.Expression): TypeSet = typeTable.get(expression).getOrElse(TypeSet.empty)
-
-  def specifyType(expression: ast.Expression, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
-    specifyType(expression, (possibleType +: possibleTypes).toSet)
-
-  def specifyType(expression: ast.Expression, possibleTypes: TypeSet): Either[SemanticError, SemanticState] =
-    expression match {
-      case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
-      case _                          => Right(SemanticState(symbolTable, typeTable + ((expression, possibleTypes)), parent))
-    }
-
-  def constrainType(expression: ast.Expression, token: InputToken, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
-    constrainType(expression, token, (possibleType +: possibleTypes).toSet)
-
-  def constrainType(expression: ast.Expression, token: InputToken, possibleTypes: TypeSet): Either[SemanticError, SemanticState] =
-    expression match {
-      case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
-      case _                          =>
-        val currentTypes = expressionTypes(expression)
-        val inferredTypes = (currentTypes mergeUp possibleTypes)
-        if (inferredTypes.nonEmpty) {
-          Right(updateType(expression, inferredTypes))
-        } else {
-          val existingTypes = currentTypes.formattedString
-          val expectedTypes = possibleTypes.formattedString
-          Left(SemanticError(s"Type mismatch: expected ${expectedTypes} but was ${existingTypes}", token, expression.token))
-        }
-    }
-
   def declareIdentifier(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
-    declareIdentifier(identifier, (possibleType +: possibleTypes).toSet)
+    declareIdentifier(identifier, TypeSet(possibleType +: possibleTypes))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSet): Either[SemanticError, SemanticState] =
     symbolTable.get(identifier.name) match {
@@ -90,19 +61,19 @@ case class SemanticState(
     }
 
   def implicitIdentifier(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
-    implicitIdentifier(identifier, (possibleType +: possibleTypes).toSet)
+    implicitIdentifier(identifier, TypeSet(possibleType +: possibleTypes))
 
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSet): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
         Right(updateIdentifier(identifier, possibleTypes, Set(identifier)))
       case Some(symbol) =>
-        val inferredTypes = (symbol.types mergeUp possibleTypes)
+        val inferredTypes = (symbol.types constrain possibleTypes)
         if (inferredTypes.nonEmpty) {
           Right(updateIdentifier(identifier, inferredTypes, symbol.identifiers + identifier))
         } else {
-          val existingTypes = symbol.types.formattedString
-          val expectedTypes = possibleTypes.formattedString
+          val existingTypes = symbol.types.mkString(", ", " or ")
+          val expectedTypes = possibleTypes.mkString(", ", " or ")
           Left(SemanticError(
             s"Type mismatch: ${identifier.name} already defined with conflicting type ${existingTypes} (expected ${expectedTypes})",
             identifier.token, symbol.tokens))
@@ -115,12 +86,53 @@ case class SemanticState(
       case Some(symbol) => Right(updateIdentifier(identifier, symbol.types, symbol.identifiers + identifier))
     }
 
+  def expressionTypes(expression: ast.Expression): TypeSet = typeTable.get(expression).getOrElse(TypeSet.empty)
+
+  def specifyType(expression: ast.Expression, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
+    specifyType(expression, TypeSet(possibleType +: possibleTypes))
+
+  def specifyType(expression: ast.Expression, possibleTypes: TypeSet): Either[SemanticError, SemanticState] =
+    expression match {
+      case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
+      case _                          => Right(copy(typeTable = typeTable + ((expression, possibleTypes))))
+    }
+
+  def constrainType(expression: ast.Expression, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
+    constrainType(expression, TypeSet(possibleType +: possibleTypes))
+
+  def constrainType(expression: ast.Expression, possibleTypes: TypeSet): Either[SemanticError, SemanticState] = {
+    val currentTypes = expressionTypes(expression)
+    val inferredTypes = (currentTypes constrain possibleTypes)
+    if (inferredTypes.nonEmpty) {
+      Right(updateType(expression, inferredTypes))
+    } else {
+      Left(typeMismatch(expression, currentTypes, possibleTypes))
+    }
+  }
+
   def importSymbols(symbols: Map[String, Symbol]) =
     copy(symbolTable = symbolTable ++ symbols)
+
+  private def updateType(expression: ast.Expression, types: TypeSet) = expression match {
+    case identifier: ast.Identifier =>
+      val identifiers = symbol(identifier.name).map(_.identifiers).getOrElse(Set.empty)
+      updateIdentifier(identifier, types, identifiers + identifier)
+    case _ =>
+      copy(typeTable = typeTable + ((expression, types)))
+  }
 
   private def updateIdentifier(identifier: ast.Identifier, types: TypeSet, identifiers: Set[ast.Identifier]) =
     copy(symbolTable = symbolTable + ((identifier.name, Symbol(identifiers, types))), typeTable = typeTable + ((identifier, types)))
 
-  private def updateType(expression: ast.Expression, types: TypeSet) =
-    copy(typeTable = typeTable + ((expression, types)))
+  private def typeMismatch(expression: ast.Expression, existingTypes: TypeSet, expectedTypes: TypeSet) = {
+    val existingTypesString = existingTypes.mkString(", ", " or ")
+    val expectedTypesString = expectedTypes.mkString(", ", " or ")
+    expression match {
+      case identifier: ast.Identifier =>
+        val tokens = symbol(identifier.name).map(_.tokens).getOrElse(SortedSet.empty[InputToken]) - identifier.token
+        SemanticError(s"Type mismatch: ${identifier.name} already defined with conflicting type ${existingTypesString} (expected ${expectedTypesString})", identifier.token, tokens)
+      case _ =>
+        SemanticError(s"Type mismatch: expected ${expectedTypesString} but was ${existingTypesString}", expression.token)
+    }
+  }
 }

@@ -53,7 +53,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
     val aT = a.getType(symbols)
     val bT = b.getType(symbols)
 
-    (aT.isCollection, bT.isCollection) match {
+    (CollectionType(AnyType()).isAssignableFrom(aT), CollectionType(AnyType()).isAssignableFrom(bT)) match {
       case (true, false) => mergeWithCollection(collection = aT, singleElement = bT)
       case (false, true) => mergeWithCollection(collection = bT, singleElement = aT)
       case _ => (aT, bT) match {
@@ -66,7 +66,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
 
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[CollectionType]
-    val mergedInnerType = collectionType.iteratedType.mergeDown(singleElement)
+    val mergedInnerType = collectionType.innerType.mergeDown(singleElement)
     CollectionType(mergedInnerType)
   }
 

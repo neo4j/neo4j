@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
 case class ShortestPathExpression(pattern: ShortestPath) extends Expression with SimpleTypedExpression {
   def token = pattern.token
-  protected def possibleTypes = Set(CollectionType(PathType()))
+  protected def possibleTypes = TypeSet(CollectionType(PathType()))
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.declareIdentifiers(Pattern.SemanticContext.Expression) then

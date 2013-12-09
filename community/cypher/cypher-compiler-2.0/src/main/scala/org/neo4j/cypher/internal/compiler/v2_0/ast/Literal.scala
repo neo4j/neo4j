@@ -30,20 +30,20 @@ sealed trait Number extends Expression {
 }
 
 case class SignedInteger(value: java.lang.Long, token: InputToken) extends Number with SimpleTypedExpression {
-  protected def possibleTypes = Set(LongType())
+  protected def possibleTypes = TypeSet(LongType())
 }
 case class UnsignedInteger(value: java.lang.Long, token: InputToken) extends Number with SimpleTypedExpression {
-  protected def possibleTypes = Set(LongType())
+  protected def possibleTypes = TypeSet(LongType())
   if (value < 0)
     throw new IllegalArgumentException("signed integer used in UnsignedInteger Literal")
 }
 
 case class Double(value: java.lang.Double, token: InputToken) extends Number with SimpleTypedExpression {
-  protected def possibleTypes = Set(DoubleType())
+  protected def possibleTypes = TypeSet(DoubleType())
 }
 
 case class StringLiteral(value: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(StringType())
+  protected def possibleTypes = TypeSet(StringType())
 
   def toCommand = commandexpressions.Literal(value)
 }
