@@ -35,7 +35,7 @@ public enum LearnerMessage
     public static class LearnState
             implements Serializable
     {
-        private Object value;
+        private final Object value;
 
         public LearnState( Object value )
         {
