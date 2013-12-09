@@ -129,9 +129,7 @@ object SimpleVal {
 
   implicit def fromStr[T](v: T): StrVal = StrVal(v.toString)
 
-  implicit def fromMap[V](v: Map[String, V], conv: V => SimpleVal): MapVal = MapVal(Materialized.mapValues(v, conv))
-
-  implicit def fromMap[V](v: Map[String, V]): MapVal = fromMap(v, fromStr)
+  implicit def fromMap[V](v: Map[String, SimpleVal]): MapVal = MapVal(v)
 
   implicit def fromIterable[V](v: Iterable[V], conv: V => SimpleVal): SeqVal = SeqVal(v.map(conv).toSeq)
 

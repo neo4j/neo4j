@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryState
 import org.neo4j.graphdb.Path
+import org.neo4j.cypher.internal.compiler.v2_0.data.SimpleVal
 
 trait TraversalMatcher {
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path]
+  def description: Seq[(String, SimpleVal)]
 }
