@@ -84,11 +84,13 @@ public class Message<MESSAGETYPE extends MessageType>
     final private MESSAGETYPE messageType;
     final private Object payload;
     final private Map<String, String> headers = new HashMap<String, String>();
+    private final Throwable tempDebugCreator;
 
     protected Message( MESSAGETYPE messageType, Object payload )
     {
         this.messageType = messageType;
         this.payload = payload;
+        this.tempDebugCreator = new Throwable();
     }
 
     public MESSAGETYPE getMessageType()
@@ -131,6 +133,11 @@ public class Message<MESSAGETYPE extends MessageType>
             throw new IllegalArgumentException( "No such header:" + name );
         }
         return value;
+    }
+
+    public Throwable getCreatorDebugStacktrace()
+    {
+        return tempDebugCreator;
     }
 
     public <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> copyHeadersTo( Message<MESSAGETYPE> message,
