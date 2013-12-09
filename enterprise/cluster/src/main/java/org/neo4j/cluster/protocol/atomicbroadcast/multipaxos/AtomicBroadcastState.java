@@ -19,10 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-import static org.neo4j.cluster.com.message.Message.timeout;
-import static org.neo4j.cluster.com.message.Message.to;
-
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
@@ -33,6 +29,10 @@ import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.statemachine.State;
+
+import static org.neo4j.cluster.com.message.Message.internal;
+import static org.neo4j.cluster.com.message.Message.timeout;
+import static org.neo4j.cluster.com.message.Message.to;
 
 /**
  * State Machine for implementation of Atomic Broadcast client interface
@@ -169,9 +169,14 @@ public enum AtomicBroadcastState
                                             Message.FROM ) );
                                 }
                             }
-                            else
+                            else if ( message.getPayload() instanceof Payload )
                             {
                                 context.receive( message.<Payload>getPayload() );
+                            }
+                            else
+                            {
+                                throw new RuntimeException( "Error, unable to handle message:  " + message,
+                                        message.getCreatorDebugStacktrace() );
                             }
 
                             break;
