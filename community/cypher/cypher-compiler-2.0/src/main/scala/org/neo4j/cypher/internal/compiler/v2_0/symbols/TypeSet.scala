@@ -25,6 +25,7 @@ object TypeSet {
 
   val empty: TypeSet = RangedTypeSet()
   val all: TypeSet = RangedTypeSet(TypeRange(AnyType(), None))
+  val allNumbers: TypeSet = RangedTypeSet(TypeRange(NumberType(), None))
 
   private val simpleTypes = Seq(
     AnyType(),
