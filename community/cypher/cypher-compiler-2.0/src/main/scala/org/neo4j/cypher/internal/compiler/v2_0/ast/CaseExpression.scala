@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
 case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression], token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
-    val possibleTypes : TypeGenerator = (alternatives.map(_._2) ++ default) mergeDownTypes
+    val possibleTypes : TypeGenerator = (alternatives.map(_._2) ++ default).mergeDownTypes
 
     expression.semanticCheck(ctx) then
       alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then

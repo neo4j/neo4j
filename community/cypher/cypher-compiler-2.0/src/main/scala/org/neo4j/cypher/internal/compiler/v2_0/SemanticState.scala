@@ -44,7 +44,7 @@ case class SemanticState(
   def clearSymbols = copy(symbolTable = HashMap.empty, parent = None)
 
   def symbol(name: String): Option[Symbol] = symbolTable.get(name) orElse parent.flatMap(_.symbol(name))
-  def symbolTypes(name: String) = this.symbol(name).map(_.types).getOrElse(TypeSet.empty)
+  def symbolTypes(name: String) = this.symbol(name).map(_.types).getOrElse(TypeSet.all)
 
   def declareIdentifier(identifier: ast.Identifier, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
     declareIdentifier(identifier, TypeSet(possibleType +: possibleTypes))
@@ -86,7 +86,7 @@ case class SemanticState(
       case Some(symbol) => Right(updateIdentifier(identifier, symbol.types, symbol.identifiers + identifier))
     }
 
-  def expressionTypes(expression: ast.Expression): TypeSet = typeTable.get(expression).getOrElse(TypeSet.empty)
+  def expressionTypes(expression: ast.Expression): TypeSet = typeTable.get(expression).getOrElse(TypeSet.all)
 
   def specifyType(expression: ast.Expression, possibleType: CypherType, possibleTypes: CypherType*): Either[SemanticError, SemanticState] =
     specifyType(expression, TypeSet(possibleType +: possibleTypes))

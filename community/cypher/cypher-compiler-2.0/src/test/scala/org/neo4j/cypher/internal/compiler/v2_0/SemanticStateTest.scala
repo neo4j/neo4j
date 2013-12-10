@@ -322,7 +322,8 @@ class SemanticStateTest extends Assertions {
   @Test
   def shouldNotReturnSymbolOfIdentifierAfterClear() {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
-    assertEquals(TypeSet(), s1.clearSymbols.symbolTypes("foo"))
+    assertEquals(None, s1.clearSymbols.symbol("foo"))
+    assertEquals(TypeSet.all, s1.clearSymbols.symbolTypes("foo"))
   }
 
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {

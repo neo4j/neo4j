@@ -27,14 +27,14 @@ import org.scalatest.Assertions
 class ExpressionTest extends Assertions {
 
   @Test
-  def shouldReturnEmptyTypeSetIfTypesRequestedButNotEvaluated() {
+  def shouldReturnTypeSetOfAllIfTypesRequestedButNotEvaluated() {
     val expression = new Expression() {
       val token = DummyToken(0, 1)
       def semanticCheck(ctx: Expression.SemanticContext) = ???
       def toCommand = ???
     }
 
-    assert(expression.types(SemanticState.clean) === TypeSet.empty)
+    assert(expression.types(SemanticState.clean) === TypeSet.all)
   }
 
   @Test
