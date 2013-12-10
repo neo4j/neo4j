@@ -46,7 +46,8 @@ trait FilteringExpression extends Expression {
       SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
     }
 
-  protected def possibleInnerTypes : TypeGenerator = expression.types(_).collect { case c: CollectionType => c.innerType }
+  protected def possibleInnerTypes : TypeGenerator =
+    expression.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
 
   private def checkInnerPredicate : SemanticCheck = {
     innerPredicate match {
@@ -113,7 +114,7 @@ case class ExtractExpression(
       e => withScopedState {
         identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
       } then {
-        val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+        val outerTypes : TypeGenerator = e.types(_).reparent(CollectionType(_))
         this.specifyType(outerTypes)
       }
     }
@@ -143,7 +144,7 @@ case class ListComprehension(
         withScopedState {
           identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
         } then {
-          val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+          val outerTypes : TypeGenerator = e.types(_).reparent(CollectionType(_))
           this.specifyType(outerTypes)
         }
       case None    => this.specifyType(expression.types)
@@ -213,7 +214,7 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
       collection.semanticCheck(ctx) then
       collection.constrainType(CollectionType(AnyType())) then
       withScopedState {
-        val indexType: TypeGenerator = collection.types(_).collect { case c: CollectionType => c.innerType }
+        val indexType: TypeGenerator = collection.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
         val accType: TypeGenerator = init.types
         id.declare(indexType) then
         accumulator.declare(accType) then

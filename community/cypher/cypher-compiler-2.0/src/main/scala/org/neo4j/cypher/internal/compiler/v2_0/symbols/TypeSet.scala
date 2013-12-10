@@ -81,15 +81,6 @@ object TypeSet {
         }
     }
 
-    def mergeUp(other: TypeSet): TypeSet = other match {
-      case rts: RangedTypeSet =>
-        rts mergeUp this
-      case _                  =>
-        set.flatMap {
-          t => other.flatMap(_ mergeUp t)
-        }
-    }
-
     def iterator: Iterator[CypherType] = set.iterator
 
     override def equals(that: Any) = that match {
@@ -218,7 +209,6 @@ sealed trait TypeSet extends Iterable[CypherType] {
   def constrain(types: TypeSet): TypeSet
   def mergeDown(types: CypherType*): TypeSet = mergeDown(TypeSet(types:_*))
   def mergeDown(other: TypeSet): TypeSet
-  def mergeUp(other: TypeSet): TypeSet
 
   def reparent(f: CypherType => CypherType): TypeSet = map(f)
 

@@ -364,6 +364,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldGiveTypeErrorForActionsOnMixedCollection() {
+    test(
+      "RETURN (['a', 1][0]).prop",
+      "Type mismatch: expected Map but was Any (line 1, column 19)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
