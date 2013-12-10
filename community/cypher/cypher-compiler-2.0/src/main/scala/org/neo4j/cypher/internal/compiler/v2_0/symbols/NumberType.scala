@@ -19,40 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-
 object NumberType {
-  val instance = new NumberType()
+  private val instance = new NumberType() {
+    val parentType = AnyType()
+    override val isAbstract = true
+    override val toString = "Number"
+  }
 
   def apply(): NumberType = instance
 }
 
-class NumberType extends AnyType {
-  override def parentType: CypherType = AnyType()
-  override def toString = "Number"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class NumberType extends CypherType

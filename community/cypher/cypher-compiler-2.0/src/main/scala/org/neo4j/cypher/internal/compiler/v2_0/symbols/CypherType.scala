@@ -19,20 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-import org.neo4j.cypher.CypherTypeException
+abstract class CypherType {
+  def parentType: CypherType
+  val isAbstract: Boolean = false
 
-trait CypherType {
+  def parents: Seq[CypherType] =
+    if (this.parentType == this)
+      Seq()
+    else
+      this.parentType +: this.parentType.parents
+
   /*
   Determines if the class or interface represented by this
   {@code CypherType} object is either the same as, or is a
   supertype of, the class or interface represented by the
   specified {@code CypherType} parameter.
    */
-  def isAssignableFrom(other: CypherType): Boolean = this.getClass.isAssignableFrom(other.getClass)
+  def isAssignableFrom(other: CypherType): Boolean =
+    if (other == this)
+      true
+    else if (other.parentType == other)
+      false
+    else
+      isAssignableFrom(other.parentType)
 
-  def isCoercibleFrom(other: CypherType):Boolean = isAssignableFrom(other)
-
-  def iteratedType: CypherType = throw new CypherTypeException("This is not a collection type")
+  def iteratedType: CypherType = this
 
   def mergeDown(other: CypherType): CypherType =
     if (this.isAssignableFrom(other)) this
@@ -43,8 +54,6 @@ trait CypherType {
     if (this.isCoercibleFrom(other)) Some(other)
     else if (other.isCoercibleFrom(this)) Some(this)
     else None
-
-  def parentType: CypherType
 
   def rewrite(f: CypherType => CypherType) = f(this)
 }

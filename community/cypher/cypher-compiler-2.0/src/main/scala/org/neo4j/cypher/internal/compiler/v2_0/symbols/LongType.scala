@@ -20,38 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object LongType {
-  lazy val instance = new LongType()
+  private val instance = new LongType() {
+    val parentType = NumberType()
+    override val toString = "Long"
+  }
 
   def apply() = instance
 }
 
-class LongType extends NumberType {
-  override def parentType:CypherType = NumberType()
-  override def toString = "Long"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class LongType extends CypherType
