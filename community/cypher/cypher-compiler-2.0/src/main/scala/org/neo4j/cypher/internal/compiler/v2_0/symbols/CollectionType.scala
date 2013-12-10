@@ -50,8 +50,6 @@ class CollectionType(override val iteratedType: CypherType) extends AnyType {
       super.mergeUp(other)
   }
 
-  override val isCollection = true
-
   override def equals(other: Any) = other match {
     case null => false
     case t: CollectionType => t.iteratedType.equals(iteratedType)
