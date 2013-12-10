@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands
 
-import expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
 import expressions.Identifier._
 import org.neo4j.cypher.internal.compiler.v2_0._
 import executionplan.builders.PatternGraphBuilder
-import pipes.matching.MatchingContext
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.MatchingContext
 import pipes.QueryState
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -36,7 +36,12 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   val symbols2 = SymbolTable(identifiers.toMap)
   val identifiersInClause = Pattern.identifiers(pathPattern)
 
-  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), identifiersInClause)
+  val matchingContext = {
+    val patternGraph = buildPatternGraph(symbols2, pathPattern)
+    val pathPredicates = pathPattern.collect { case r: RelatedTo  => r.toPropertyPredicates }.flatten
+    new MatchingContext(symbols2, predicate.atoms ++ pathPredicates, patternGraph, identifiersInClause)
+  }
+
   val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).

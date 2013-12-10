@@ -395,8 +395,6 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
       SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
-    case (Some(e), SemanticContext.Expression) =>
-      SemanticError("Cypher can not currently handle relationships with properties in expressions", e.token)
     case _                                           =>
       properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(MapType())
   }
