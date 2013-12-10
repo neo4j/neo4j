@@ -43,7 +43,7 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
   def arguments: Seq[Expression] = Seq(collection)
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    val iteratorType = collection.evaluateType(CollectionType(AnyType()), symbols).iteratedType
+    val iteratorType = collection.evaluateType(CollectionType(AnyType()), symbols).legacyIteratedType
     val innerSymbols = symbols.add(id, iteratorType)
     CollectionType(expression.evaluateType(AnyType(), innerSymbols))
   }

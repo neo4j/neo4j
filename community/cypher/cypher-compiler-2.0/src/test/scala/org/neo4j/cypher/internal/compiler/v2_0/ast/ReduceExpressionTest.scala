@@ -37,7 +37,7 @@ class ReduceExpressionTest extends Assertions {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
         (this.specifyType(StringType()) then error)(s)
       }
 
@@ -67,7 +67,7 @@ class ReduceExpressionTest extends Assertions {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
         (this.specifyType(DoubleType()) then SemanticCheckResult.success)(s)
       }
 
@@ -96,7 +96,7 @@ class ReduceExpressionTest extends Assertions {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
         (this.specifyType(NodeType()) then SemanticCheckResult.success)(s)
       }
 

@@ -43,7 +43,7 @@ abstract class CypherType {
     else
       isAssignableFrom(other.parentType)
 
-  def iteratedType: CypherType = this
+  def legacyIteratedType: CypherType = this
 
   def mergeDown(other: CypherType): CypherType =
     if (this.isAssignableFrom(other)) this
