@@ -83,7 +83,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
     case _                              => false
   }
 
-  def rewrite(f: (Expression) => Expression) = Equals(a.rewrite(f), b.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = f(Equals(a.rewrite(f), b.rewrite(f)))
 
   def arguments = Seq(a, b)
 
@@ -93,23 +93,23 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult < 0
   def sign: String = "<"
-  def rewrite(f: (Expression) => Expression) = LessThan(a.rewrite(f), b.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = f(LessThan(a.rewrite(f), b.rewrite(f)))
 }
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult > 0
   def sign: String = ">"
-  def rewrite(f: (Expression) => Expression) = GreaterThan(a.rewrite(f), b.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = f(GreaterThan(a.rewrite(f), b.rewrite(f)))
 }
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult <= 0
   def sign: String = "<="
-  def rewrite(f: (Expression) => Expression) = LessThanOrEqual(a.rewrite(f), b.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = f(LessThanOrEqual(a.rewrite(f), b.rewrite(f)))
 }
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult >= 0
   def sign: String = ">="
-  def rewrite(f: (Expression) => Expression) = GreaterThanOrEqual(a.rewrite(f), b.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = f(GreaterThanOrEqual(a.rewrite(f), b.rewrite(f)))
 }

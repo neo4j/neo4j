@@ -49,7 +49,7 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
 
   def rewrite(f: (Expression) => Expression): Expression = {
     val newAlternatives: Seq[(Predicate, Expression)] = alternatives map {
-      case (p, e) => (p.rewrite(f), e.rewrite(f))
+      case (p, e) => (p.typedRewrite[Predicate](f), e.rewrite(f))
     }
 
     val newDefault = default.map(_.rewrite(f))
