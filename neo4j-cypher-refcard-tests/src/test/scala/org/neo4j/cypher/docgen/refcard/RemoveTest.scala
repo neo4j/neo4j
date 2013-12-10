@@ -21,15 +21,18 @@ package org.neo4j.cypher.docgen.refcard
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class DeleteTest extends RefcardTest with StatisticsChecker {
+class RemoveTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A:Person", "A LINK B", "B LINK C", "C LINK ROOT")
-  val title = "DELETE"
+  val title = "REMOVE"
   val css = "write c2-2 c4-4 c5-5 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
-      case "delete" =>
-        assertStats(result, nodesCreated = 1, nodesDeleted = 1, relationshipsDeleted = 1)
+      case "remove-label" =>
+        assertStats(result, labelsRemoved = 1)
+        assert(result.toList.size === 0)
+      case "remove-prop" =>
+        assertStats(result, nodesCreated = 1, propertiesSet = 2)
         assert(result.toList.size === 0)
     }
   }
@@ -50,13 +53,20 @@ class DeleteTest extends RefcardTest with StatisticsChecker {
     "C" -> Map("value" -> 30))
 
   def text = """
-###assertion=delete
-START r = relationship(1)
-CREATE (n)
+###assertion=remove-label
+MATCH (n:Person)
 
-DELETE n, r
+REMOVE n:Person
 ###
 
-Delete a node and a relationship.
+Remove a label from `n`.
+
+###assertion=remove-prop
+CREATE (n {property: "value"})
+
+REMOVE n.property
+###
+
+Remove a property.
 """
 }

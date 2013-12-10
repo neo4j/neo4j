@@ -42,8 +42,6 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asci
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
-
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/union.asciidoc[]
 
 .Write-Only Query Structure 
@@ -72,6 +70,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/merge.ascii
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/remove.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
 
@@ -107,6 +107,8 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/maps.asciid
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/relationship-functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collection-predicates.asciidoc[]
 

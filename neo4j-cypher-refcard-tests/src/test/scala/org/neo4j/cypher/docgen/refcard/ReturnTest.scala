@@ -43,6 +43,8 @@ class ReturnTest extends RefcardTest with StatisticsChecker {
       case "skiplimit" =>
         assertStats(result, nodesDeleted = 0)
         assert(result.toList.size === 2)
+      case "count" =>
+        assert(result.toList.size === 1)
     }
   }
 
@@ -134,5 +136,14 @@ SKIP {skip_number} LIMIT {limit_number}
 ###
 
 Skip results at the top and limit the number of results.
+
+###assertion=count
+START n=node(*)
+
+RETURN count(*)
+###
+
+The number of matching rows.
+See Aggregation for more.
 """
 }
