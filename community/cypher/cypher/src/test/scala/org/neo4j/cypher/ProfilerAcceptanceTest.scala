@@ -22,6 +22,10 @@ package org.neo4j.cypher
 import javacompat.ProfilerStatistics
 import org.scalatest.Assertions
 import org.junit.Test
+import scala.collection.JavaConverters._
+import java.lang.{Iterable => JIterable}
+import org.neo4j.cypher.internal.compiler.v2_0
+import org.neo4j.cypher.internal.compiler.v2_0.data.{SimpleVal, MapVal, SeqVal}
 
 class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test
@@ -83,7 +87,40 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
 
     //WHEN THEN
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch")
-    assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "PatternMatch")
+    assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "SimplePatternMatcher")
+  }
+
+  @Test
+  def tracks_pattern_matcher_start_items() {
+    //GIVEN
+    createNode()
+    val result: ExecutionResult = engine.profile("match (n:Person)-->(x) return x")
+
+    //WHEN THEN
+    assertDbHits(0)(result)("ColumnFilter")
+    assertDbHits(0)(result)("ColumnFilter", "TraversalMatcher")
+
+    val start = result.executionPlanDescription().asJava.cd("TraversalMatcher").getArguments.get("start")
+    assert( Map("label" -> "Person").asJava === start )
+  }
+
+  @Test
+  def tracks_merge_node_producers() {
+    //GIVEN
+    val result: ExecutionResult = engine.profile("merge (n:Person {id: 1})")
+
+    //WHEN THEN
+    val planDescription = result.executionPlanDescription().asInstanceOf[v2_0.PlanDescription]
+
+    val commands = planDescription.cd("UpdateGraph").arguments("commands").asInstanceOf[SeqVal]
+    assert( 1 === commands.v.size )
+    val command = commands.v.seq.head.asInstanceOf[MapVal]
+
+    val producers = command.v("producers").asInstanceOf[SeqVal]
+    assert( 1 === producers.v.size )
+    val producer = producers.v.head.asInstanceOf[MapVal]
+
+    assert( Map("label" -> SimpleVal.fromStr("Person")) === producer.v )
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {

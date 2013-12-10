@@ -62,7 +62,6 @@ final case class StrVal(v: String) extends SimpleVal {
   }
 }
 
-
 final case class MapVal(v: Map[String, SimpleVal]) extends SimpleVal {
   override type Value = Map[String, SimpleVal]
   override type JValue = java.util.Map[String, Any]
@@ -134,6 +133,8 @@ object SimpleVal {
   implicit def fromIterable[V](v: Iterable[V], conv: V => SimpleVal): SeqVal = SeqVal(v.map(conv).toSeq)
 
   implicit def fromIterable[V](v: Iterable[V]): SeqVal = fromIterable(v, fromStr)
+
+  implicit def fromSeq[T](values: Seq[T]): SeqVal = SeqVal(values.map(v => SimpleVal.fromStr(v)))
 
   implicit def fromExpr(e: Expression) = StrVal(e.toString())
 }
