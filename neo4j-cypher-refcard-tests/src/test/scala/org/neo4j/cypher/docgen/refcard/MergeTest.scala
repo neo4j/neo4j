@@ -30,13 +30,13 @@ class MergeTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "merge" =>
-        assertStats(result, nodesCreated = 1, propertiesSet = 3, labelsAdded = 1)
+        assertStats(result, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
         assert(result.toList.size === 1)
       case "merge-rel" =>
         assertStats(result, relationshipsCreated = 1)
         assert(result.toList.size === 1)
       case "merge-sub" =>
-        assertStats(result, relationshipsCreated = 1,nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
+        assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
         assert(result.toList.size === 1)
     }
   }
@@ -46,7 +46,7 @@ class MergeTest extends RefcardTest with StatisticsChecker {
       case "parameters=aname" =>
         Map("value" -> "Charlie")
       case "parameters=names" =>
-        Map("value1" -> "Alice","value2"->"Bob","value3"->"Charlie")
+        Map("value1" -> "Alice", "value2" -> "Bob", "value3" -> "Charlie")
       case "" =>
         Map()
     }
@@ -60,8 +60,10 @@ class MergeTest extends RefcardTest with StatisticsChecker {
 //
 
 MERGE (n:Person {name: {value}})
-ON CREATE SET n.created = timestamp(), n.access = 0
-ON MATCH  SET n.access  = n.access + 1
+ON CREATE SET n.created=timestamp()
+ON MATCH SET
+    n.counter= coalesce(n.counter, 0) + 1,
+    n.accessTime = timestamp()
 
 RETURN n###
 
@@ -71,7 +73,8 @@ Use +ON CREATE+ and +ON MATCH+ for conditional updates.
 ###assertion=merge-rel parameters=names
 //
 
-MATCH (a:Person {name: {value1}}), (b:Person {name: {value2}})
+MATCH (a:Person {name: {value1}}),
+      (b:Person {name: {value2}})
 MERGE (a)-[r:LOVES]->(b)
 
 RETURN r###
@@ -82,7 +85,8 @@ RETURN r###
 //
 
 MATCH (a:Person {name: {value1}})
-MERGE (a)-[r:KNOWS]->(b:Person {name: {value3}})
+MERGE
+  (a)-[r:KNOWS]->(b:Person {name: {value3}})
 
 RETURN r,b###
 

@@ -103,7 +103,8 @@ Assign a path and process its nodes.
 START begin = node(%A%), end = node(%B%)
 
 MATCH path = (begin) -[*]-> (end)
-FOREACH (n IN rels(path) | SET n.marked = TRUE)
+FOREACH
+  (n IN rels(path) | SET n.marked = TRUE)
 ###
 
 Execute a mutating operation for each relationship of a path.

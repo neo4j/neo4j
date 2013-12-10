@@ -137,7 +137,7 @@ n.property = {value}
 
 RETURN n###
 
-Non-existing property returns `NULL`, which is only equal to `NULL`.
+Non-existing property returns `NULL`, which is not equal to anything.
 
 ###assertion=returns-one parameters=regex
 START n=node(*)

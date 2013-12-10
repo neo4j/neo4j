@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class StartTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "START"
-  val css = "col carddeprecation c2-2 c3-3 c4-4 c5-5"
+  val css = "col carddeprecation c2-1 c3-2 c4-3 c5-4"
   override def indexProps: List[String] = List("value", "name", "key")
 
   override def assert(name: String, result: ExecutionResult) {

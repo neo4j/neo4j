@@ -90,8 +90,7 @@ OPTIONAL MATCH (n)-[r]->(m)
 
 RETURN r###
 
-Optional pattern.
-Will yield found nodes or one row with ++NULL++s for unbound elements.
+Optional pattern, ++NULL++s will be used for missing parts.
 
 """
 }

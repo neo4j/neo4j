@@ -44,27 +44,26 @@ class MapsTest extends RefcardTest with StatisticsChecker {
     }
   }
 
-
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=name" =>
         Map("value" -> "Bob")
       case "parameters=map" =>
-        Map("map" -> Map("name"->"Alice","age"->38))
+        Map("map" -> Map("name" -> "Alice", "age" -> 38))
       case "" =>
         Map()
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice","coll"->Array(1,2,3)),
-    "B" -> Map("name" -> "Bob","coll"->Array(1,2,3)))
+    "A" -> Map("name" -> "Alice", "coll" -> Array(1, 2, 3)),
+    "B" -> Map("name" -> "Bob", "coll" -> Array(1, 2, 3)))
 
   def text = """
 ###assertion=returns-one
 RETURN
 
 {name:'Alice', age:38,
- address:{city:'London', residential:true}} AS map
+ address:{city:'London', residential:true}}
 
 ###
 
@@ -102,7 +101,7 @@ map.name, map.age, map.children[0]
 Map entries can be accessed by their keys.
 Invalid keys result in an error.
 """
-/*
+  /*
 WITH {name:'Alice', age:38, address:{city:'London', residential:true}, children:['John','Max']} as data
 RETURN
 

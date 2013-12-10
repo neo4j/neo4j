@@ -25,12 +25,12 @@ import org.neo4j.cypher.docgen.RefcardTest
 class ConstraintTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("A:Person KNOWS B:Person")
   val title = "CONSTRAINT"
-  val css = "write c4-4 c5-5 c6-3"
+  val css = "write c2-2 c4-4 c5-5 c6-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "create-constraint" =>
-//        assertStats(result, constraintAdded = 1)
+        //        assertStats(result, constraintAdded = 1)
         assert(result.toList.size === 0)
       case "drop-constraint" =>
         // assertStats(result, constraintDeleted = 1)

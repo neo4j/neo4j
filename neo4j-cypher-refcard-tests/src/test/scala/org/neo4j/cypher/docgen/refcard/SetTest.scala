@@ -54,7 +54,8 @@ class SetTest extends RefcardTest with StatisticsChecker {
 ###assertion=set parameters=set
 START n = node(%A%)
 
-SET n.property = {value}, n.property2 = {value2}
+SET n.property = {value},
+    n.property2 = {value2}
 
 RETURN n.property###
 

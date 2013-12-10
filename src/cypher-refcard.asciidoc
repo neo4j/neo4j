@@ -96,6 +96,28 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.
 </div></div>
 ++++
 
+++++
+<div class="col cardgeneral c3-2 c6-2"><div class="blk">
+++++
+
+[options="header", cols="a"]
+|===
+| NULL
+| 
+* +NULL+ is used to represent missing/undefined values.
+* +NULL+ is not equal to +NULL+.
+  Not knowing two values does not imply that they are the same value. 
+  So the expression `NULL = NULL` yields +NULL+ and not +TRUE+.
+  To check if an expressoin is +NULL+, use +IS NULL+.
+* Arithmetic expressions, comparisons and function calls (except +coalesce+) will return +NULL+ if any argument is +NULL+.
+* Missing elements like a property that doesn't exist or accessing elements that don't exist in a collection yields +NULL+.
+* In +OPTIONAL MATCH+ clauses, ++NULL++s will be used for missing parts of the pattern.
+|===
+
+++++
+</div></div>
+++++
+
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/labels.asciidoc[]
@@ -107,8 +129,6 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/maps.asciid
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/relationship-functions.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collection-predicates.asciidoc[]
 
@@ -124,8 +144,43 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-func
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
 
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
+
 ++++
-<div class="col cardperformance c3-2 c5-1 c6-2"><div class="blk">
+<div class="col carddeprecation c2-2 c3-3 c4-4 c5-5 c6-6"><div class="blk">
+++++
+
+[options="header", cols="a"]
+|===
+|Upgrading
+|
+With Neo4j 2.0 several Cypher features in ersion 1.9 have been deprecated or removed.
+
+* +START+ is optional.
+* +MERGE+ will take +CREATE UNIQUE+'s role for the unique creation of patterns.
+  Note that they are not the same, though.
+* Optional relationships are handled by +OPTIONAL MATCH+, not question marks.
+* Non-existing properties return +NULL+, +n.prop?+ and +n.prop!+ have been removed.
+* The separator for collection functions changed form +:+ to +\|+.
+* Paths are no longer collections, use +nodes(path)+ or +rels(path)+.
+* Parentheses around nodes in patterns are no longer optional.
+* +CREATE a=\{property:’value’\}+ has been removed.
+* Use +REMOVE+ to remove properties.
+* Parameters for index-keys and nodes in patterns are no longer allowed.
+* To still use the older syntax, prepend you Cypher statement with `CYPHER 1.9`.
+|===
+
+++++
+</div></div>
+++++
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
+
+include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
+
+
+++++
+<div class="col cardperformance c3-1 c5-1 c6-2"><div class="blk">
 ++++
 
 [options="header", cols="a"]
@@ -144,34 +199,4 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation
 </div></div>
 ++++
 
-++++
-<div class="col carddeprecation c3-3 c5-4 c6-6"><div class="blk">
-++++
-
-[options="header", cols="a"]
-|===
-|Upgrading
-|
-With Neo4j 2.0 several Cypher features in ersion 1.9 have been deprecated or removed.
-
-* +START+ is optional.
-* +MERGE+ will take +CREATE UNIQUE+'s role for the unique creation of patterns.
-* Optional relationships are handled by +OPTIONAL MATCH+ not question marks.
-* Non-existing properties return null, +n.prop?+ and +n.prop!+ have been removed.
-* The separator for collection functions changed form +:+ to +\|+.
-* Paths are no longer collections, use +nodes(path)+ or +rels(path)+.
-* Parentheses around nodes in patterns are no longer optional.
-* +CREATE a=\{property:’value’\}+ has been removed.
-* Use +REMOVE+ to remove properties.
-* Parameters for index-keys and nodes in patterns are no longer allowed.
-* To still use the older syntax, prepend you Cypher statement with `CYPHER 1.9`.
-|===
-
-++++
-</div></div>
-++++
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
-
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
 

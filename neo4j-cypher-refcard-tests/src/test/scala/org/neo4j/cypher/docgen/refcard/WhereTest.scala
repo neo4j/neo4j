@@ -55,5 +55,7 @@ WHERE n.property <> {value}
 RETURN n,m###
 
 Use a predicate to filter.
+Note that +WHERE+ is always part of a  +MATCH+, +OPTIONAL MATCH+, +WITH+ or +START+ clause.
+Putting it after a different clause in a query will alter what it does.
 """
 }

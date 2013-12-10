@@ -24,22 +24,22 @@ import org.neo4j.cypher.docgen.RefcardTest
 
 class UnionTest extends RefcardTest with StatisticsChecker {
   def graphDescription = List(
-    "A KNOWS B","A LOVES B")
+    "A KNOWS B", "A LOVES B")
   val title = "UNION"
-  val css = "read c2-1 c3-1 c4-2 c5-3"
+  val css = "read c2-2 c3-2 c4-2 c5-4"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "one" =>
         assertStats(result)
         val list = result.toList
-        assert(list === List(Map("b.name" ->"Beth")))
+        assert(list === List(Map("b.name" -> "Beth")))
         assert(list.size === 1)
       case "two" =>
         assertStats(result)
         val list = result.toList
         assert(list.size === 2)
-        assert(list === List(Map("b.name" ->"Beth"),Map("b.name" ->"Beth")))
+        assert(list === List(Map("b.name" -> "Beth"), Map("b.name" -> "Beth")))
     }
   }
 

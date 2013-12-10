@@ -24,7 +24,7 @@ import org.neo4j.cypher.docgen.RefcardTest
 class CreateUniqueTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "CREATE UNIQUE"
-  val css = "col carddeprecation c3-3 c4-4 c5-5 c6-5"
+  val css = "col carddeprecation c2-1 c3-2 c4-2 c5-4 c6-5"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {

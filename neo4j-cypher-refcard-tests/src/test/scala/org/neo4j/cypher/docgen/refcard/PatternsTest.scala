@@ -31,6 +31,8 @@ class PatternsTest extends RefcardTest with StatisticsChecker {
       case "related" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 1)
+      case "empty" =>
+        assert(result.toList.size === 0)
       case "create" =>
         assertStats(result, nodesCreated = 1, relationshipsCreated = 1, propertiesSet = 1)
         assert(result.toList.size === 1)
@@ -192,3 +194,14 @@ RETURN p###
 Find all shortest paths.
 """
 }
+/* confirm this, then add.
+###assertion=empty parameters=alice
+MATCH
+
+()-[r {name: {value}}]-()
+
+RETURN r###
+
+Matches relationships with the declared properties.
+
+*/ 
