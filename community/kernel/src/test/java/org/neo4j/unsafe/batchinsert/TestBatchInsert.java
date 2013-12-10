@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,7 +48,6 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -90,6 +88,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -481,7 +480,7 @@ public class TestBatchInsert
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
         long endNodes[] = new long[25];
-        Set<Long> rels = new HashSet<Long>();
+        Set<Long> rels = new HashSet<>();
         for ( int i = 0; i < 25; i++ )
         {
             endNodes[i] = graphDb.createNode( properties );
@@ -561,16 +560,6 @@ public class TestBatchInsert
         {
             return db.getNodeById( nodeId );
         }
-    }
-
-    private static <T> Set<T> asSet( T... items )
-    {
-        return new HashSet<T>( Arrays.asList( items ) );
-    }
-
-    private static <T> Set<T> asSet( Iterable<T> items )
-    {
-        return new HashSet<T>( IteratorUtil.asCollection( items ) );
     }
 
     private void setProperties( Node node )
@@ -990,7 +979,7 @@ public class TestBatchInsert
         verifyNoMoreInteractions( populator );
     }
 
-    @Test @Ignore("once we implement verify constraint on existing data")
+    @Test
     public void shouldRunConstraintPopulationJobAtShutdown() throws Throwable
     {
         // GIVEN
@@ -1114,6 +1103,37 @@ public class TestBatchInsert
         labelScanStore.assertRecivedUpdate( node3, 2 );
         labelScanStore.assertRecivedUpdate( node4, 0, 1 );
         labelScanStore.assertRecivedUpdate( node5, 0, 2 );
+    }
+
+    @Test
+    public void propertiesCanBeReSetUsingBatchInserter() throws IOException {
+        BatchInserter batchInserter = newBatchInserter();
+        Map<String, Object> props = new HashMap<>();
+        props.put("name", "One");
+        props.put("count", 1);
+        props.put("tags", new String[]{"one", "two"});
+        props.put("something", "something");
+        batchInserter.createNode(1, props);
+
+        batchInserter.setNodeProperty(1, "name", "NewOne");
+        batchInserter.removeNodeProperty(1, "count");
+        batchInserter.removeNodeProperty(1, "something");
+
+        batchInserter.setNodeProperty(1, "name", "YetAnotherOne");
+        batchInserter.setNodeProperty(1, "additional", "something");
+
+        batchInserter.shutdown();
+    }
+
+    @Test
+    public void propertiesCanBeReSetUsingBatchInserter2() throws IOException {
+        BatchInserter batchInserter = newBatchInserter();
+        long id = batchInserter.createNode(new HashMap<String, Object>());
+        batchInserter.setNodeProperty(id, "test", "looooooooooong test");
+
+        batchInserter.setNodeProperty(id, "test", "small test");
+
+        batchInserter.shutdown();
     }
 
     private static class UpdateTrackingLabelScanStore implements LabelScanStore
