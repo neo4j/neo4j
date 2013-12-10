@@ -32,12 +32,8 @@ case object Head extends Function {
         invocation.specifyType(iteratedTypes(invocation.arguments(0)))
     }
 
-  private def iteratedTypes(expression: ast.Expression): SemanticState => TypeSet = {
-    expression.types(_).flatMap {
-      case t if CollectionType(AnyType()).isAssignableFrom(t) => Some(t.iteratedType)
-      case _                   => None
-    }
-  }
+  private def iteratedTypes(expression: ast.Expression) : TypeGenerator =
+    expression.types(_).collect { case c: CollectionType => c.iteratedType }
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.CollectionIndex(
