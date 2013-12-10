@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.expressions.Expression
 import commands.Predicate
 import commands.values.KeyToken
-import data.SimpleVal
+import org.neo4j.cypher.internal.compiler.v2_0.data.{SeqVal, MapVal, SimpleVal}
 import pipes.{QueryState, EntityProducer}
 import symbols.{NodeType, CypherType}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
@@ -37,9 +37,17 @@ final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, produ
   override def toString() = s":${label.name}.${propertyKey.name}" //":Person.name"
 }
 
-sealed abstract class MergeNodeProducer
-final case class PlainMergeNodeProducer(nodeProducer: EntityProducer[Node]) extends MergeNodeProducer
-final case class UniqueMergeNodeProducers(nodeProducers: Seq[IndexNodeProducer]) extends MergeNodeProducer
+sealed abstract class MergeNodeProducer {
+  def producerDescriptions: Seq[SimpleVal]
+}
+
+final case class PlainMergeNodeProducer(nodeProducer: EntityProducer[Node]) extends MergeNodeProducer {
+  def producerDescriptions = Seq(MapVal(nodeProducer.description.toMap))
+}
+
+final case class UniqueMergeNodeProducers(nodeProducers: Seq[IndexNodeProducer]) extends MergeNodeProducer {
+  def producerDescriptions = nodeProducers.map(producer => MapVal(producer.description.toMap))
+}
 
 case class MergeNodeAction(identifier: String,
                            props: Map[KeyToken, Expression],
@@ -77,6 +85,11 @@ case class MergeNodeAction(identifier: String,
           nextContext
       }
     }
+  }
+
+  override def description: Seq[(String, SimpleVal)] = {
+    val producers = maybeNodeProducer.map(producer => Seq("producers" -> SeqVal(producer.producerDescriptions))).toSeq.flatten
+    super.description ++ producers
   }
 
   def findNodes(context: ExecutionContext)(implicit state: QueryState): Iterator[ExecutionContext] = definedProducer match {
