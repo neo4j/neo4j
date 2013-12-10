@@ -74,7 +74,11 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
   def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = forAll(value)
   def name = "all"
 
-  def rewrite(f: (Expression) => Expression) = AllInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) =
+    f(AllInCollection(
+      collection = collection.rewrite(f),
+      symbolName = symbolName,
+      inner = inner.typedRewrite[Predicate](f)))
 }
 
 case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
@@ -98,7 +102,11 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
 
   def name = "any"
 
-  def rewrite(f: (Expression) => Expression) = AnyInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) =
+    f(AnyInCollection(
+      collection = collection.rewrite(f),
+      symbolName = symbolName,
+      inner = inner.typedRewrite[Predicate](f)))
 }
 
 case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
@@ -122,7 +130,11 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
 
   def name = "none"
 
-  def rewrite(f: (Expression) => Expression) = NoneInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) =
+    f(NoneInCollection(
+      collection = collection.rewrite(f),
+      symbolName = symbolName,
+      inner = inner.typedRewrite[Predicate](f)))
 }
 
 case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
@@ -147,5 +159,9 @@ case class SingleInCollection(collection: Expression, symbolName: String, inner:
 
   def name = "single"
 
-  def rewrite(f: (Expression) => Expression) = SingleInCollection(collection.rewrite(f), symbolName, inner.rewrite(f))
+  def rewrite(f: (Expression) => Expression) =
+    f(SingleInCollection(
+      collection = collection.rewrite(f),
+      symbolName = symbolName,
+      inner = inner.typedRewrite[Predicate](f)))
 }

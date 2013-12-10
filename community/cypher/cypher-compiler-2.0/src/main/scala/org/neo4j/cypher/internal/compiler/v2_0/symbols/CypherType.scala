@@ -56,11 +56,9 @@ TypeSafe is everything that needs to check it's types
  */
 trait TypeSafe {
   def symbolDependenciesMet(symbols: SymbolTable): Boolean =
-    symbolTableDependencies.forall(name => check(symbols, name))
+    symbolTableDependencies.forall(symbols.identifiers.contains)
 
   def symbolTableDependencies: Set[String]
-
-  private def check(symbols: SymbolTable, name: String): Boolean = symbols.identifiers.contains(name)
 }
 
 

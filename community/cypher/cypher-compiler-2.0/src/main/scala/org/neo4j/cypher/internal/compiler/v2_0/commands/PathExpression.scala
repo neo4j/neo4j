@@ -61,7 +61,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
 
   def arguments: Seq[Expression] = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewrite(f)))
+  def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.typedRewrite[Predicate](f)))
 
   def calculateType(symbols: SymbolTable): CypherType = CollectionType(PathType())
 
