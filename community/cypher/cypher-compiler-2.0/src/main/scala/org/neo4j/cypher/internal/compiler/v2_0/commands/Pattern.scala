@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands
 
-import expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Identifier, Expression}
 import expressions.Identifier._
 import org.neo4j.graphdb.Direction
 import collection.Seq
@@ -27,6 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.GraphElementPropertyFunctions
 import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
+import scala.Some
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.AnyType
 
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
@@ -112,6 +116,10 @@ case class RelatedTo(left: SingleNode,
   }
 
   val possibleStartPoints: Seq[(String, MapType)] = left.possibleStartPoints ++ right.possibleStartPoints :+ relName->RelationshipType()
+
+  def toPropertyPredicates: Seq[Predicate] = properties.map {
+    case (name, expression) => Equals(Property(Identifier(relName), PropertyKey(name)), expression)
+  }.toSeq
 
   def rewrite(f: (Expression) => Expression) =
     new RelatedTo(left.rewrite(f), right.rewrite(f), relName, relTypes, direction, properties.rewrite(f))
