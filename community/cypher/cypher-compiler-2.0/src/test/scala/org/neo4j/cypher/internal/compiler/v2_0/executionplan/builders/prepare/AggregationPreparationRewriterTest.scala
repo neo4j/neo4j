@@ -20,15 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.prepare
 
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{SortItem, Query, ReturnItem, SingleNode}
+import org.neo4j.cypher.internal.compiler.v2_0.commands._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedProperty
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Add
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.CountStar
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.BuilderTest
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.ReturnItem
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Add
+import org.neo4j.cypher.internal.compiler.v2_0.commands.SingleNode
 import org.neo4j.cypher.internal.compiler.v2_0.commands.AllIdentifiers
+import org.neo4j.cypher.internal.compiler.v2_0.commands.SortItem
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.CountStar
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
+import org.neo4j.graphdb.Direction
 
 class AggregationPreparationRewriterTest extends BuilderTest {
 
@@ -163,16 +167,54 @@ class AggregationPreparationRewriterTest extends BuilderTest {
     assert(result === query)
   }
 
+  @Test
+  def should_handle_literal_map_with_keys_and_aggregates_as_values() {
+    // given  MATCH (a:Start)<-[:R]-(b) RETURN { foo:a.prop=42, bar:collect(b.prop2) }
+    val q = Query.
+      matches(r).
+      returns(
+        ReturnItem(LiteralMap(Map("foo" -> aProp, "bar" -> collect)), "literal-map")
+      )
+
+    // when
+    val result = assertAccepts(q).query
+
+    // then MATCH n WITH a.pro=42 as x1, collect(b.prop2) AS x2 RETURN { foo: x1, bar: x2 }
+    val expectedTail =
+      Query.
+        start().
+        returns(
+          ReturnItem(LiteralMap(Map("foo" -> Identifier(aPropString), "bar" -> Identifier(collectString))), "literal-map"))
+
+    val expected = Query.
+      matches(r).
+      tail(expectedTail).
+      returns(
+        ReturnItem(aProp, aPropString, renamed = true),
+        ReturnItem(collect, collectString, renamed = true))
+
+    val expectation = PartiallySolvedQuery(expected)
+    assert(result === expectation)
+  }
+
   val nFoo = Property(Identifier("n"), UnresolvedProperty("foo"))
   val nBar = Property(Identifier("n"), UnresolvedProperty("bar"))
   val n = SingleNode("n")
+  val r = RelatedTo("a", "b", "r", "R", Direction.OUTGOING)
+  val aProp = Equals(Property(Identifier("a"), UnresolvedProperty("prop")), Literal(42))
+  val collect = Collect(Property(Identifier("b"), UnresolvedProperty("prop2")))
+
   val nFooString = "n.foo"
   val nBarString = "n.bar"
   val countStartString = "count(*)"
   val addNFooCountStarString = "n.foo + count(*)"
+  val aPropString = "a.prop=42"
+  val collectString = "collect(b.prop2)"
   val countStar = CountStar()
   val namer = Map[Expression, String](
     countStar -> countStartString,
     nFoo -> nFooString,
-    nBar -> nBarString)
+    nBar -> nBarString,
+    aProp -> aPropString,
+    collect -> collectString)
 }
