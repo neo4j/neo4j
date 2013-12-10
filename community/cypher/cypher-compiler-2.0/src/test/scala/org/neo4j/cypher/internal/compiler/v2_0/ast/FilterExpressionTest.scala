@@ -40,7 +40,7 @@ class FilterExpressionTest extends Assertions {
       token = DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType()), BooleanType()), filter.types(result.state))
+    assertEquals(TypeSet(CollectionType(NodeType()), CollectionType(StringType()), BooleanType()), filter.types(result.state))
   }
 
   @Test

@@ -46,7 +46,7 @@ class CaseExpressionTest extends Assertions {
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === Set(NumberType()))
+    assert(caseExpression.types(result.state) === TypeSet(NumberType()))
   }
 
   @Test
@@ -68,7 +68,7 @@ class CaseExpressionTest extends Assertions {
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === Set(NumberType(), AnyType()))
+    assert(caseExpression.types(result.state) === TypeSet(NumberType(), AnyType()))
   }
 
   @Test

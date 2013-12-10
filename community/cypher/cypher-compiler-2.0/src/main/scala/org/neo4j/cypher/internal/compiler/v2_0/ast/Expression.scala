@@ -38,7 +38,7 @@ object Expression {
       option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
 
     def constrainType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
-      constrainType((possibleType +: possibleTypes).toSet)
+      constrainType(TypeSet(possibleType +: possibleTypes))
     def constrainType(possibleTypes: => TypeSet) : SemanticCheck =
       option.fold(SemanticCheckResult.success) { _.constrainType(possibleTypes) }
   }
@@ -67,13 +67,13 @@ abstract class Expression extends AstNode with SemanticChecking {
   // double-dispatch helpers
   final def types: TypeGenerator = s => s.expressionTypes(this)
   final def specifyType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
-    specifyType((possibleType +: possibleTypes).toSet)
+    specifyType(TypeSet(possibleType +: possibleTypes))
   final def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
     s => s.specifyType(this, typeGen(s))
   final def specifyType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
     _.specifyType(this, possibleTypes)
   final def constrainType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
-    constrainType((possibleType +: possibleTypes).toSet)
+    constrainType(TypeSet(possibleType +: possibleTypes))
   final def constrainType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
     s => s.constrainType(this, token, typeGen(s))
   final def constrainType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
@@ -89,7 +89,7 @@ trait SimpleTypedExpression { self: Expression =>
 }
 
 trait PredicateExpression extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType())
+  protected def possibleTypes = TypeSet(BooleanType())
   def toCommand: CommandExpression = internalToPredicate
   override def toPredicate : CommandPredicate = internalToPredicate
 
@@ -119,13 +119,13 @@ case class Identifier(name: String, token: InputToken) extends Expression {
 }
 
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(AnyType()))
+  protected def possibleTypes = TypeSet(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(AnyType()))
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }
 
 case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(AnyType())
+  protected def possibleTypes = TypeSet(AnyType())
 
   def toCommand = commandexpressions.Literal(null)
 }
@@ -139,7 +139,7 @@ case class False(token: InputToken) extends Expression with PredicateExpression 
 }
 
 case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(LongType())
+  protected def possibleTypes = TypeSet(LongType())
 
   def toCommand = commandexpressions.CountStar()
 }
@@ -147,7 +147,7 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken)
   extends Expression with SimpleTypedExpression {
 
-  protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
+  protected def possibleTypes = TypeSet(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
 
   override def semanticCheck(ctx: SemanticContext) =
     map.semanticCheck(ctx) then
@@ -173,7 +173,7 @@ object LegacyProperty {
 
 case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTypedExpression {
   def token = pattern.token
-  protected def possibleTypes = Set(CollectionType(PathType()), BooleanType())
+  protected def possibleTypes = TypeSet(CollectionType(PathType()), BooleanType())
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.semanticCheck(Pattern.SemanticContext.Expression) then
@@ -200,7 +200,7 @@ case class Collection(expressions: Seq[Expression], token: InputToken) extends E
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
-    case Seq() => Set(CollectionType(AnyType()))
+    case Seq() => TypeSet(CollectionType(AnyType()))
     case _     => expressions.mergeDownTypes(state).map(CollectionType.apply)
   }
 
@@ -208,7 +208,7 @@ case class Collection(expressions: Seq[Expression], token: InputToken) extends E
 }
 
 case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(MapType())
+  protected def possibleTypes = TypeSet(MapType())
 
   override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) then super.semanticCheck(ctx)
 
