@@ -19,24 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable.Builder
-
 object TypeSet {
-  implicit def canBuildFrom = new CanBuildFrom[Iterable[CypherType], CypherType, TypeSet] {
-    def apply(from: Iterable[CypherType]): Builder[CypherType, TypeSet] = this.apply()
-    def apply(): Builder[CypherType, TypeSet] = new Builder[CypherType, TypeSet] {
-      protected var elems: Set[CypherType] = Set.empty
-      def +=(elem: CypherType): this.type = { elems = elems + elem; this }
-      def clear() { elems = Set.empty }
-      def result(): TypeSet = TypeSet(elems)
-    }
-  }
+  def apply(types: CypherType*): TypeSet = apply(types)
+  def apply[T <: CypherType](traversable: TraversableOnce[T]): TypeSet = RangedTypeSet(traversable.map(t => TypeRange(t, t)))
 
-  def apply(types: CypherType*): TypeSet = new DiscreteTypeSet(types.toSet)
-  def apply[T <: CypherType](traversable: TraversableOnce[T]): TypeSet = new DiscreteTypeSet(traversable.toSet)
-
-  val empty: TypeSet = new DiscreteTypeSet(Set.empty[CypherType])
+  val empty: TypeSet = RangedTypeSet()
   val all: TypeSet = RangedTypeSet(TypeRange(AnyType(), None))
 
   private val simpleTypes = Seq(
@@ -53,50 +40,10 @@ object TypeSet {
     StringType()
   )
 
-  case class DiscreteTypeSet(set: Set[CypherType]) extends TypeSet {
-    def contains(elem: CypherType): Boolean = set.contains(elem)
-
-    def +(elem: CypherType): TypeSet = copy(set.+(elem))
-
-    def ++(that: TypeSet): TypeSet = that match {
-      case rts: RangedTypeSet   => rts ++ this
-      case dts: DiscreteTypeSet => copy(set ++ dts.set)
-    }
-
-    def intersect(that: TypeSet): TypeSet = that match {
-      case rts: RangedTypeSet   => rts & this
-      case dts: DiscreteTypeSet => copy(set & dts.set)
-    }
-
-    def constrain(other: TypeSet): TypeSet = copy(set.filter {
-      t => other.exists(_.isAssignableFrom(t))
-    })
-
-    def mergeDown(other: TypeSet): TypeSet = other match {
-      case rts: RangedTypeSet =>
-        rts mergeDown this
-      case _                =>
-        set.flatMap {
-          t => other.map(_ mergeDown t)
-        }
-    }
-
-    def iterator: Iterator[CypherType] = set.iterator
-
-    override def equals(that: Any) = that match {
-      case rts: RangedTypeSet   => rts.equals(this)
-      case dts: DiscreteTypeSet => (dts canEqual this) && set.equals(dts.set)
-      case _                    => false
-    }
-
-    def toStrings: IndexedSeq[String] = set.map(_.toString).toIndexedSeq.sorted
-
-    override def stringPrefix: String = "DiscreteTypeSet"
-  }
-
   object RangedTypeSet {
+    def apply(): RangedTypeSet = new RangedTypeSet(Seq.empty)
     def apply(range: TypeRange): RangedTypeSet = new RangedTypeSet(Seq(range))
-    def apply(ranges: Seq[TypeRange]): RangedTypeSet = new RangedTypeSet(ranges.foldLeft(Seq.empty[TypeRange]) {
+    def apply(ranges: TraversableOnce[TypeRange]): RangedTypeSet = new RangedTypeSet(ranges.foldLeft(Seq.empty[TypeRange]) {
       case (set, range) =>
         if (set.exists(_ contains range))
           set
@@ -112,40 +59,36 @@ object TypeSet {
     def +(elem: CypherType): RangedTypeSet = RangedTypeSet(ranges :+ TypeRange(elem, elem))
 
     def ++(that: TypeSet): RangedTypeSet = that match {
-      case dts: DiscreteTypeSet => RangedTypeSet(ranges ++ dts.set.map(t => TypeRange(t, t)))
       case rts: RangedTypeSet => RangedTypeSet(ranges ++ rts.ranges)
     }
 
     def intersect(that: TypeSet): RangedTypeSet = that match {
-      case dts: DiscreteTypeSet => intersect(RangedTypeSet(dts.set.toSeq.map(t => TypeRange(t, t))))
-      case rts: RangedTypeSet   => RangedTypeSet(ranges.flatMap {
+      case rts: RangedTypeSet => RangedTypeSet(ranges.flatMap {
         r => rts.ranges.flatMap(r intersect)
       })
     }
 
     def constrain(other: TypeSet): RangedTypeSet = other match {
-      case dts: DiscreteTypeSet => constrain(RangedTypeSet(dts.set.toSeq.map(TypeRange(_, None))))
-      case rts: RangedTypeSet   => RangedTypeSet(ranges.flatMap {
+      case rts: RangedTypeSet => RangedTypeSet(ranges.flatMap {
         r => rts.ranges.flatMap(r constrain _.lower)
       })
     }
 
     def mergeDown(other: TypeSet): RangedTypeSet = other match {
-      case dts: DiscreteTypeSet => mergeDown(RangedTypeSet(dts.set.toSeq.map(t => TypeRange(t, t))))
-      case rts: RangedTypeSet   => RangedTypeSet(ranges.flatMap {
+      case rts: RangedTypeSet => RangedTypeSet(ranges.flatMap {
         r => rts.ranges.flatMap(r mergeDown)
       })
     }
 
     override def reparent(f: CypherType => CypherType): RangedTypeSet = RangedTypeSet(ranges.map(_.reparent(f)))
 
-    override def isEmpty: Boolean = ranges.isEmpty
-    override def nonEmpty: Boolean = !isEmpty
+    def isEmpty: Boolean = ranges.isEmpty
+    def nonEmpty: Boolean = !isEmpty
 
-    override def hasDefiniteSize: Boolean = _hasDefiniteSize
+    def hasDefiniteSize: Boolean = _hasDefiniteSize
     private lazy val _hasDefiniteSize = ranges.forall(_.hasDefiniteSize)
 
-    override def toStream: Stream[CypherType] = toStream(ranges)
+    def toStream: Stream[CypherType] = toStream(ranges)
     private def toStream(rs: Seq[TypeRange]): Stream[CypherType] =
       if (rs.isEmpty) Stream()
       else
@@ -153,25 +96,16 @@ object TypeSet {
 
     def iterator: Iterator[CypherType] = toStream.iterator
 
-    override def foreach[U](f: CypherType => U): Unit = {
-      if (!hasDefiniteSize)
-        throw new UnsupportedOperationException("Cannot map over indefinite collection")
-      super.foreach(f)
-    }
-
     override def hashCode = 41 * ranges.hashCode
     override def equals(that: Any): Boolean = that match {
-      case that: RangedTypeSet  =>
+      case that: RangedTypeSet =>
         (that canEqual this) && {
           val (finite1, infinite1) = ranges.partition(_.hasDefiniteSize)
           val (finite2, infinite2) = that.ranges.partition(_.hasDefiniteSize)
           (infinite1 == infinite2) &&
             ((finite1 == finite2) || (RangedTypeSet(finite1).toStream == RangedTypeSet(finite2).toStream))
         }
-      case dts: DiscreteTypeSet =>
-        if (!hasDefiniteSize) false
-        else TypeSet(this.iterator).equals(dts)
-      case _                    => false
+      case _                   => false
     }
     override def canEqual(other: Any): Boolean = other.isInstanceOf[TypeSet]
 
@@ -181,8 +115,6 @@ object TypeSet {
       if (rs.isEmpty) Vector()
       else if (rs.exists({ case TypeRange(_: AnyType, None) => true case _ => false })) Vector("T")
       else simpleTypes.filter(contains(_, rs)).map(_.toString).toIndexedSeq ++ toStrings(innerTypeRanges(rs)).map(t => s"Collection<$t>")
-
-    override def stringPrefix: String = "RangedTypeSet"
 
     private def innerTypeRanges: Seq[TypeRange] => Seq[TypeRange] = _.flatMap {
       case TypeRange(c: CollectionType, Some(u: CollectionType)) => Some(TypeRange(c.innerType, u.innerType))
@@ -195,7 +127,7 @@ object TypeSet {
 }
 
 
-sealed trait TypeSet extends Iterable[CypherType] {
+sealed trait TypeSet extends Any with Equals {
   def contains(elem: CypherType): Boolean
 
   def +(elem: CypherType): TypeSet
@@ -210,17 +142,26 @@ sealed trait TypeSet extends Iterable[CypherType] {
   def mergeDown(types: CypherType*): TypeSet = mergeDown(TypeSet(types:_*))
   def mergeDown(other: TypeSet): TypeSet
 
-  def reparent(f: CypherType => CypherType): TypeSet = map(f)
+  def reparent(f: CypherType => CypherType): TypeSet
+
+  def isEmpty: Boolean
+  def nonEmpty: Boolean
+
+  def hasDefiniteSize: Boolean
+
+  def iterator: Iterator[CypherType]
 
   def toStrings: IndexedSeq[String]
 
+  def mkString(sep: String): String =
+    mkString("", sep, sep, "")
   def mkString(sep: String, lastSep: String): String =
     mkString("", sep, lastSep, "")
+  def mkString(start: String, sep: String, end: String): String =
+    mkString(start, sep, sep, end)
   def mkString(start: String, sep: String, lastSep: String, end: String): String =
     addString(new StringBuilder(), start, sep, lastSep, end).toString()
 
-  override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
-    addString(b, start, sep, sep, end)
   def addString(b: StringBuilder, start: String, sep: String, lastSep: String, end: String): StringBuilder = {
     val strings = toStrings
     if (strings.length > 1)
@@ -228,4 +169,6 @@ sealed trait TypeSet extends Iterable[CypherType] {
     else
       strings.addString(b, start, sep, end)
   }
+
+  override def toString = mkString("TypeSet(", ", ", ")")
 }
