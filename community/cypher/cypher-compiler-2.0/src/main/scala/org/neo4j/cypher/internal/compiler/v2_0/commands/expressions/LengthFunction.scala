@@ -39,7 +39,7 @@ case class LengthFunction(inner: Expression)
 
   def arguments = Seq(inner)
 
-  def calculateType(symbols: SymbolTable): CypherType = LongType()
+  def calculateType(symbols: SymbolTable): CypherType = CTLong
 
   def symbolTableDependencies = inner.symbolTableDependencies
 }

@@ -33,11 +33,11 @@ import org.neo4j.cypher.internal.compiler.v2_0.data.SeqVal
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateRelationship
 
 trait NodeStartItemIdentifiers extends StartItem {
-  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> NodeType())
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTNode)
 }
 
 trait RelationshipStartItemIdentifiers extends StartItem {
-  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> RelationshipType())
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTRelationship)
 }
 
 abstract class StartItem(val identifierName: String, val args: Map[String, String])

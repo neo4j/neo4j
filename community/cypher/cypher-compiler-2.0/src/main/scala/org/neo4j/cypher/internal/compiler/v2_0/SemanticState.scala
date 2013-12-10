@@ -65,7 +65,7 @@ case class SemanticState(
       case identifier: ast.Identifier => implicitIdentifier(identifier, possibleTypes)
       case _                          =>
         val currentTypes = expressionTypes(expression)
-        val inferredTypes = (currentTypes mergeUp possibleTypes)
+        val inferredTypes = (currentTypes mergeDown possibleTypes)
         if (inferredTypes.nonEmpty) {
           Right(updateType(expression, inferredTypes))
         } else {
@@ -97,7 +97,7 @@ case class SemanticState(
       case None         =>
         Right(updateIdentifier(identifier, possibleTypes, Set(identifier)))
       case Some(symbol) =>
-        val inferredTypes = (symbol.types mergeUp possibleTypes)
+        val inferredTypes = (symbol.types mergeDown possibleTypes)
         if (inferredTypes.nonEmpty) {
           Right(updateIdentifier(identifier, inferredTypes, symbol.identifiers + identifier))
         } else {

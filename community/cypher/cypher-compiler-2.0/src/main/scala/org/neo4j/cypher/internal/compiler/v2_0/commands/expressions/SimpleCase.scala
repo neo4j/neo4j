@@ -46,7 +46,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
   def arguments = (expression +: (alternativeComparison ++ alternativeExpressions)).distinct
 
   protected def calculateType(symbols: SymbolTable): CypherType =
-    calculateUpperTypeBound(AnyType(), symbols, alternativeExpressions ++ default.toSeq)
+    calculateUpperTypeBound(CTAny, symbols, alternativeExpressions ++ default.toSeq)
 
   def rewrite(f: (Expression) => Expression): Expression = {
     val newAlternatives = alternatives map {

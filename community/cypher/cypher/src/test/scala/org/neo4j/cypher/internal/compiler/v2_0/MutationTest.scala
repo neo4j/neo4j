@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.{Expression, Literal}
 import mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
-import symbols.{SymbolTable, CypherType, NodeType}
+import symbols._
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.scalatest.Assertions
@@ -89,7 +89,7 @@ class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTrip
     assertInTx(graph.getNodeById(0).getProperty("name") === "Andres")
   }
 
-  private def getNode(key: String, n: Node) = InjectValue(n, NodeType())
+  private def getNode(key: String, n: Node) = InjectValue(n, CTNode)
 
   @Test
   def create_rel() {

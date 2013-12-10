@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CypherType, SymbolTable, NumberType}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.MinFunction
+import org.neo4j.cypher.internal.compiler.v2_0._
+import pipes.aggregation.MinFunction
+import symbols._
 
 case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new MinFunction(anInner)
 
-  def expectedInnerType = NumberType()
+  val expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Min(anInner.rewrite(f)))
 

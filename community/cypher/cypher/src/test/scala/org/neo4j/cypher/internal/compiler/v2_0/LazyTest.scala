@@ -23,7 +23,7 @@ import commands.expressions.{Literal, Identifier}
 import commands.{GreaterThan, True}
 import pipes._
 import pipes.matching._
-import symbols.IntegerType
+import symbols.CTInteger
 import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache}
 import org.neo4j.cypher._
 import org.neo4j.graphdb._
@@ -229,7 +229,7 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
   @Test def filterpipe_is_lazy() {
     //Given:
     val limited = new LimitedIterator[Map[String, Any]](4, (x) => Map("val" -> x))
-    val input = new FakePipe(limited, "val" -> IntegerType())
+    val input = new FakePipe(limited, "val" -> CTInteger)
     val pipe = new FilterPipe(input, GreaterThan(Identifier("val"), Literal(3)))
 
     //When:

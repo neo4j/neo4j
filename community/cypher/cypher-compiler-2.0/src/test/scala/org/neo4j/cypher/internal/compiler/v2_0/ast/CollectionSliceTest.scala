@@ -28,7 +28,7 @@ import scala.collection.immutable.SortedSet
 
 class CollectionSliceTest extends Assertions {
   val dummyCollection = DummyExpression(
-    TypeSet(CollectionType(NodeType()), NodeType(), CollectionType(StringType())),
+    TypeSet(CTCollection(CTNode), CTNode, CTCollection(CTString)),
     DummyToken(2,3))
 
   @Test
@@ -40,7 +40,7 @@ class CollectionSliceTest extends Assertions {
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CollectionType(NodeType()), CollectionType(StringType())), slice.types(result.state))
+    assertEquals(Set(CTCollection(CTNode), CTCollection(CTString)), slice.types(result.state))
   }
 
   @Test

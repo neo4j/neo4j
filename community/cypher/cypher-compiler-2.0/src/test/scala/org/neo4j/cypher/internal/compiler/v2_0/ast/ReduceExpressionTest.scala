@@ -29,16 +29,16 @@ class ReduceExpressionTest extends Assertions {
 
   @Test
   def shouldEvaluateReduceExpressionWithTypedIdentifiers() {
-    val accumulatorType = TypeSet(StringType())
-    val collectionType = CollectionType(IntegerType())
+    val accumulatorType = TypeSet(CTString)
+    val collectionType = CTCollection(CTInteger)
     val error = SemanticError("dummy error", DummyToken(10,11))
 
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
-        (this.specifyType(StringType()) then error)(s)
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
+        (this.specifyType(CTString) then error)(s)
       }
 
       def toCommand = ???
@@ -60,15 +60,15 @@ class ReduceExpressionTest extends Assertions {
 
   @Test
   def shouldReturnMinimalTypeOfAccumulatorAndReduceFunction() {
-    val accumulatorType = TypeSet(StringType(), NumberType())
-    val collectionType = CollectionType(IntegerType())
+    val accumulatorType = TypeSet(CTString, CTNumber)
+    val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
-        (this.specifyType(DoubleType()) then SemanticCheckResult.success)(s)
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
+        (this.specifyType(CTDouble) then SemanticCheckResult.success)(s)
       }
 
       def toCommand = ???
@@ -84,20 +84,20 @@ class ReduceExpressionTest extends Assertions {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(filter.types(result.state) === TypeSet(NumberType()))
+    assert(filter.types(result.state) === TypeSet(CTNumber))
   }
 
   @Test
   def shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator() {
-    val accumulatorType = TypeSet(StringType(), NumberType())
-    val collectionType = CollectionType(IntegerType())
+    val accumulatorType = TypeSet(CTString, CTNumber)
+    val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
-        (this.specifyType(NodeType()) then SemanticCheckResult.success)(s)
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
+        (this.specifyType(CTNode) then SemanticCheckResult.success)(s)
       }
 
       def toCommand = ???

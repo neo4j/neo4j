@@ -28,8 +28,8 @@ case object Pow extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.arguments.constrainType(NumberType()) then
-    invocation.specifyType(NumberType())
+    invocation.arguments.constrainType(CTNumber) then
+    invocation.specifyType(CTNumber)
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)

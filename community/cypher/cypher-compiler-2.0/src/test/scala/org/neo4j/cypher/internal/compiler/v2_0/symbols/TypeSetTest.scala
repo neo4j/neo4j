@@ -35,60 +35,60 @@ class TypeSetTest extends Assertions {
 
   @Test
   def shouldFormatSingleType() {
-    assertEquals("Any", SortedSet(AnyType()).formattedString)
-    assertEquals("Node", SortedSet(NodeType()).formattedString)
+    assertEquals("Any", SortedSet(CTAny).formattedString)
+    assertEquals("Node", SortedSet(CTNode).formattedString)
   }
 
   @Test
   def shouldFormatTwoTypes() {
-    assertEquals("Any or Node", SortedSet(AnyType(), NodeType()).formattedString)
-    assertEquals("Node or Relationship", SortedSet(RelationshipType(), NodeType()).formattedString)
+    assertEquals("Any or Node", SortedSet(CTAny, CTNode).formattedString)
+    assertEquals("Node or Relationship", SortedSet(CTRelationship, CTNode).formattedString)
   }
 
   @Test
   def shouldFormatThreeTypes() {
-	  assertEquals("Any, Node or Relationship", SortedSet(RelationshipType(), AnyType(), NodeType()).formattedString)
-	  assertEquals("Integer, Node or Relationship", SortedSet(RelationshipType(), IntegerType(), NodeType()).formattedString)
+	  assertEquals("Any, Node or Relationship", SortedSet(CTRelationship, CTAny, CTNode).formattedString)
+	  assertEquals("Integer, Node or Relationship", SortedSet(CTRelationship, CTInteger, CTNode).formattedString)
   }
 
   @Test
-  def shouldInferTypeSetsUsingCovariantMergeDown() {
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType()))
+  def shouldInferTypeSetsUsingCovariantMergeUp() {
+    assertEquals(Set(CTNode, CTNumber), Set(CTNode, CTNumber) mergeUp Set(CTNode, CTNumber))
 
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType()))
-    assertEquals(Set(NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeDown Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(AnyType()), Set(NodeType(), NumberType()) mergeDown Set(AnyType()))
-    assertEquals(Set(AnyType()), Set(AnyType()) mergeDown Set(NodeType(), NumberType()))
+    assertEquals(Set(CTNode, CTNumber), Set(CTNode, CTNumber) mergeUp Set(CTNode, CTNumber))
+    assertEquals(Set(CTNumber), Set(CTNode, CTNumber) mergeUp Set(CTNumber))
+    assertEquals(Set(CTNode, CTNumber), Set(CTNode, CTNumber) mergeUp Set(CTNode, CTNumber, CTRelationship))
+    assertEquals(Set(CTAny), Set(CTNode, CTNumber) mergeUp Set(CTAny))
+    assertEquals(Set(CTAny), Set(CTAny) mergeUp Set(CTNode, CTNumber))
 
-    assertEquals(Set(MapType()), Set(RelationshipType()) mergeDown Set(NodeType()))
-    assertEquals(Set(MapType(), NumberType()), Set(RelationshipType(), LongType()) mergeDown Set(NodeType(), NumberType()))
-  }
-
-  @Test
-  def shouldMergeDownCollectionIterable() {
-    assertEquals(Set(NumberType(), CollectionType(AnyType())),
-      Set(IntegerType(), CollectionType(StringType())) mergeDown Set(NumberType(), CollectionType(IntegerType())))
+    assertEquals(Set(CTMap), Set(CTRelationship) mergeUp Set(CTNode))
+    assertEquals(Set(CTMap, CTNumber), Set(CTRelationship, CTLong) mergeUp Set(CTNode, CTNumber))
   }
 
   @Test
   def shouldMergeUpCollectionIterable() {
-    assertEquals(Set(IntegerType()),
-      Set(IntegerType(), StringType(), CollectionType(IntegerType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
-    assertEquals(Set(IntegerType(), CollectionType(StringType())),
-      Set(IntegerType(), StringType(), CollectionType(AnyType())) mergeUp Set(NumberType(), CollectionType(StringType())) )
+    assertEquals(Set(CTNumber, CTCollectionAny),
+      Set(CTInteger, CTCollection(CTString)) mergeUp Set(CTNumber, CTCollection(CTInteger)))
   }
 
   @Test
-  def shouldInferTypeSetsUsingContravariantMergeUp() {
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType()))
-    assertEquals(Set(NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(NodeType(), NumberType(), RelationshipType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(NodeType(), NumberType()) mergeUp Set(AnyType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
+  def shouldMergeDownCollectionIterable() {
+    assertEquals(Set(CTInteger),
+      Set(CTInteger, CTString, CTCollection(CTInteger)) mergeDown Set(CTNumber, CTCollection(CTString)) )
+    assertEquals(Set(CTInteger, CTCollection(CTString)),
+      Set(CTInteger, CTString, CTCollectionAny) mergeDown Set(CTNumber, CTCollection(CTString)) )
+  }
 
-    assertEquals(Set(), Set(RelationshipType()) mergeUp Set(NodeType()))
-    assertEquals(Set(LongType()), Set(RelationshipType(), LongType()) mergeUp Set(NodeType(), NumberType()))
-    assertEquals(Set(NodeType(), NumberType()), Set(AnyType()) mergeUp Set(NodeType(), NumberType()))
+  @Test
+  def shouldInferTypeSetsUsingContravariantMergeDown() {
+    assertEquals(Set(CTNode, CTNumber), Set(CTNode, CTNumber) mergeDown Set(CTNode, CTNumber))
+    assertEquals(Set(CTNumber), Set(CTNode, CTNumber) mergeDown Set(CTNumber))
+    assertEquals(Set(CTNode, CTNumber), Set(CTNode, CTNumber) mergeDown Set(CTNode, CTNumber, CTRelationship))
+    assertEquals(Set(CTNode, CTNumber), Set(CTNode, CTNumber) mergeDown Set(CTAny))
+    assertEquals(Set(CTNode, CTNumber), Set(CTAny) mergeDown Set(CTNode, CTNumber))
+
+    assertEquals(Set(), Set(CTRelationship) mergeDown Set(CTNode))
+    assertEquals(Set(CTLong), Set(CTRelationship, CTLong) mergeDown Set(CTNode, CTNumber))
+    assertEquals(Set(CTNode, CTNumber), Set(CTAny) mergeDown Set(CTNode, CTNumber))
   }
 }

@@ -28,10 +28,10 @@ class SemanticStateTest extends Assertions {
 
   @Test
   def shouldDeclareIdentifierOnce() {
-    SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType()) match {
+    SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0,1)), CTNode) match {
       case Left(_) => fail("Expected first declaration to succeed")
       case Right(state) => {
-        state.declareIdentifier(ast.Identifier("foo", DummyToken(2,3)), NodeType()) match {
+        state.declareIdentifier(ast.Identifier("foo", DummyToken(2,3)), CTNode) match {
           case Right(_) => fail("Expected an error from second declaration")
           case Left(error) => {
             assertEquals(DummyToken(2,3), error.token)
@@ -44,9 +44,9 @@ class SemanticStateTest extends Assertions {
 
   @Test
   def shouldCollectAllIdentifiersWhenImplicitlyDeclared() {
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType()) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(2,3)), NodeType())) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), NodeType())) match {
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), CTNode) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(2,3)), CTNode)) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val tokens = for (symbol <- state.symbolTable.get("foo")) yield symbol.tokens
@@ -56,38 +56,38 @@ class SemanticStateTest extends Assertions {
   }
 
   @Test
-  def shouldMergeUpTypesForImplicitIdentifierDeclarations() {
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType(), RelationshipType()) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), NodeType())) match {
+  def shouldMergeDownTypesForImplicitIdentifierDeclarations() {
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), CTNode, CTRelationship) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
-        assertEquals(Set(NodeType()), types)
+        assertEquals(Set(CTNode), types)
       }
     }
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), RelationshipType()) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), NodeType(), RelationshipType())) match {
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), CTRelationship) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), CTNode, CTRelationship)) match {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
-        assertEquals(Set(RelationshipType()), types)
+        assertEquals(Set(CTRelationship), types)
       }
     }
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType(), RelationshipType()) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), AnyType())) match {
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), CTNode, CTRelationship) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), CTAny)) match {
       case Left(_) => fail("Expected success")
       case Right(state) => {
         val types = state.symbolTypes("foo")
-        assertEquals(Set(NodeType(), RelationshipType()), types)
+        assertEquals(Set(CTNode, CTRelationship), types)
       }
     }
   }
 
   @Test
   def shouldFailIfNoPossibleTypesRemainAfterImplicitIdentifierDeclaration() {
-    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), NodeType(), RelationshipType()) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), NodeType(), IntegerType())) then
-    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(9,12)), IntegerType(), RelationshipType())) match {
+    SemanticState.clean.implicitIdentifier(ast.Identifier("foo", DummyToken(0,1)), CTNode, CTRelationship) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(3,6)), CTNode, CTInteger)) then
+    ((_: SemanticState).implicitIdentifier(ast.Identifier("foo", DummyToken(9,12)), CTInteger, CTRelationship)) match {
       case Right(_) => fail("Expected an error")
       case Left(error) => {
         assertEquals(DummyToken(9,12), error.token)
@@ -99,69 +99,69 @@ class SemanticStateTest extends Assertions {
 
   @Test
   def shouldFindSymbolInParent() {
-    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTNode).right.get
     val s2 = s1.newScope
-    assertEquals(Set(NodeType()), s2.symbolTypes("foo"))
+    assertEquals(Set(CTNode), s2.symbolTypes("foo"))
   }
 
   @Test
   def shouldOverrideSymbolInParent() {
-    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
-    val s2 = s1.newScope.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), StringType()).right.get
-    assertEquals(Set(StringType()), s2.symbolTypes("foo"))
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTNode).right.get
+    val s2 = s1.newScope.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTString).right.get
+    assertEquals(Set(CTString), s2.symbolTypes("foo"))
   }
 
   @Test
   def shouldExtendSymbolInParent() {
-    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
-    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), AnyType()).right.get
-    assertEquals(Set(NodeType()), s2.symbolTypes("foo"))
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTNode).right.get
+    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTAny).right.get
+    assertEquals(Set(CTNode), s2.symbolTypes("foo"))
   }
 
   @Test
   def shouldReturnTypesOfIdentifier() {
     val identifier = ast.Identifier("foo", DummyToken(0, 1))
-    val s1 = SemanticState.clean.declareIdentifier(identifier, NodeType()).right.get
-    assertEquals(Set(NodeType()), s1.expressionTypes(identifier))
+    val s1 = SemanticState.clean.declareIdentifier(identifier, CTNode).right.get
+    assertEquals(Set(CTNode), s1.expressionTypes(identifier))
   }
 
   @Test
   def shouldReturnTypesOfIdentifierAtLaterExpression() {
     val identifier1 = ast.Identifier("foo", DummyToken(0, 1))
     val identifier2 = ast.Identifier("foo", DummyToken(3, 5))
-    val s1 = SemanticState.clean.declareIdentifier(identifier1, NodeType()).right.get
-    val s2 = s1.implicitIdentifier(identifier2, NodeType()).right.get
-    assertEquals(Set(NodeType()), s2.expressionTypes(identifier2))
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
+    val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
+    assertEquals(Set(CTNode), s2.expressionTypes(identifier2))
   }
 
   @Test
   def shouldReturnTypesOfIdentifierAfterClear() {
     val identifier = ast.Identifier("foo", DummyToken(0, 1))
-    val s1 = SemanticState.clean.declareIdentifier(identifier, NodeType()).right.get
-    assertEquals(Set(NodeType()), s1.clearSymbols.expressionTypes(identifier))
+    val s1 = SemanticState.clean.declareIdentifier(identifier, CTNode).right.get
+    assertEquals(Set(CTNode), s1.clearSymbols.expressionTypes(identifier))
   }
 
   @Test
   def shouldReturnTypesOfLaterImplicitIdentifierAfterClear() {
     val identifier1 = ast.Identifier("foo", DummyToken(0, 1))
     val identifier2 = ast.Identifier("foo", DummyToken(3, 5))
-    val s1 = SemanticState.clean.declareIdentifier(identifier1, NodeType()).right.get
-    val s2 = s1.implicitIdentifier(identifier2, NodeType()).right.get
-    assertEquals(Set(NodeType()), s2.clearSymbols.expressionTypes(identifier2))
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
+    val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
+    assertEquals(Set(CTNode), s2.clearSymbols.expressionTypes(identifier2))
   }
 
   @Test
   def shouldReturnTypesOfLaterEnsuredIdentifierAfterClear() {
     val identifier1 = ast.Identifier("foo", DummyToken(0, 1))
     val identifier2 = ast.Identifier("foo", DummyToken(3, 5))
-    val s1 = SemanticState.clean.declareIdentifier(identifier1, NodeType()).right.get
+    val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.ensureIdentifierDefined(identifier2).right.get
-    assertEquals(Set(NodeType()), s2.clearSymbols.expressionTypes(identifier2))
+    assertEquals(Set(CTNode), s2.clearSymbols.expressionTypes(identifier2))
   }
 
   @Test
   def shouldNotReturnSymbolOfIdentifierAfterClear() {
-    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), NodeType()).right.get
+    val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTNode).right.get
     assertEquals(Set(), s1.clearSymbols.symbolTypes("foo"))
   }
 

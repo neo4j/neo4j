@@ -30,23 +30,23 @@ class CaseExpressionTest extends Assertions {
   @Test
   def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
     val caseExpression = CaseExpression(
-      Some(DummyExpression(TypeSet(StringType()), DummyToken(2, 3))),
+      Some(DummyExpression(TypeSet(CTString), DummyToken(2, 3))),
       Seq(
         (
-          DummyExpression(TypeSet(StringType()), DummyToken(5, 7)),
-          DummyExpression(TypeSet(DoubleType()), DummyToken(10, 11))
+          DummyExpression(TypeSet(CTString), DummyToken(5, 7)),
+          DummyExpression(TypeSet(CTDouble), DummyToken(10, 11))
         ), (
-          DummyExpression(TypeSet(StringType()), DummyToken(12, 15)),
-          DummyExpression(TypeSet(IntegerType()), DummyToken(17, 20))
+          DummyExpression(TypeSet(CTString), DummyToken(12, 15)),
+          DummyExpression(TypeSet(CTInteger), DummyToken(17, 20))
         )
       ),
-      Some(DummyExpression(TypeSet(DoubleType()), DummyToken(22, 25))),
+      Some(DummyExpression(TypeSet(CTDouble), DummyToken(22, 25))),
       DummyToken(2, 25)
     )
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === Set(NumberType()))
+    assert(caseExpression.types(result.state) === Set(CTNumber))
   }
 
   @Test
@@ -55,20 +55,20 @@ class CaseExpressionTest extends Assertions {
       None,
       Seq(
         (
-          DummyExpression(TypeSet(BooleanType()), DummyToken(5, 7)),
-          DummyExpression(TypeSet(DoubleType(), StringType()), DummyToken(10, 11))
+          DummyExpression(TypeSet(CTBoolean), DummyToken(5, 7)),
+          DummyExpression(TypeSet(CTDouble, CTString), DummyToken(10, 11))
         ), (
-          DummyExpression(TypeSet(BooleanType()), DummyToken(12, 15)),
-          DummyExpression(TypeSet(IntegerType()), DummyToken(17, 20))
+          DummyExpression(TypeSet(CTBoolean), DummyToken(12, 15)),
+          DummyExpression(TypeSet(CTInteger), DummyToken(17, 20))
         )
       ),
-      Some(DummyExpression(TypeSet(DoubleType(), NodeType()), DummyToken(22, 25))),
+      Some(DummyExpression(TypeSet(CTDouble, CTNode), DummyToken(22, 25))),
       DummyToken(2, 25)
     )
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(caseExpression.types(result.state) === Set(NumberType(), AnyType()))
+    assert(caseExpression.types(result.state) === Set(CTNumber, CTAny))
   }
 
   @Test
@@ -77,14 +77,14 @@ class CaseExpressionTest extends Assertions {
       None,
       Seq(
         (
-          DummyExpression(TypeSet(BooleanType()), DummyToken(5, 7)),
-          DummyExpression(TypeSet(DoubleType()), DummyToken(10, 11))
+          DummyExpression(TypeSet(CTBoolean), DummyToken(5, 7)),
+          DummyExpression(TypeSet(CTDouble), DummyToken(10, 11))
         ), (
-          DummyExpression(TypeSet(StringType()), DummyToken(12, 15)),
-          DummyExpression(TypeSet(IntegerType()), DummyToken(17, 20))
+          DummyExpression(TypeSet(CTString), DummyToken(12, 15)),
+          DummyExpression(TypeSet(CTInteger), DummyToken(17, 20))
         )
       ),
-      Some(DummyExpression(TypeSet(DoubleType()), DummyToken(22, 25))),
+      Some(DummyExpression(TypeSet(CTDouble), DummyToken(22, 25))),
       DummyToken(2, 25)
     )
 

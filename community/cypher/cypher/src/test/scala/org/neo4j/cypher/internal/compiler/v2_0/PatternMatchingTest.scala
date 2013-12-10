@@ -23,14 +23,14 @@ import commands.{HasLabel, RelatedTo}
 import commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedLabel
 import executionplan.builders.PatternGraphBuilder
-import symbols.{NodeType, SymbolTable}
+import symbols._
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.neo4j.graphdb.Direction
 import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.PatternMatchingBuilder
 
 class PatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
-  val symbols = new SymbolTable(Map("a" -> NodeType()))
+  val symbols = new SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, Direction.OUTGOING)
   val rightNode = patternRelationship.right
 

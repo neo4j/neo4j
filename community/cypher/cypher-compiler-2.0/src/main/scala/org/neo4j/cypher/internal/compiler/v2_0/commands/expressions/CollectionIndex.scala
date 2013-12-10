@@ -41,11 +41,11 @@ with CollectionSupport {
   }
 
   protected def calculateType(symbols: SymbolTable): CypherType = {
-    index.evaluateType(NumberType(), symbols)
+    index.evaluateType(CTNumber, symbols)
 
-    collection.evaluateType(CollectionType(AnyType()), symbols) match {
-      case collectionType: CollectionType => collectionType.iteratedType
-      case x if x.isInstanceOf[AnyType]   => AnyType()
+    collection.evaluateType(CTCollectionAny, symbols) match {
+      case collectionType: CollectionType => collectionType.innerType
+      case x if x.isInstanceOf[AnyType]   => CTAny
       case x                              => throw new CypherTypeException("Expected a collection, but was " + x)
     }
   }

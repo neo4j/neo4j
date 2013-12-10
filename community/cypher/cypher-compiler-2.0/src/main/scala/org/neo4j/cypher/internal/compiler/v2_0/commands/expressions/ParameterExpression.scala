@@ -32,7 +32,7 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   def arguments = Seq()
 
-  def calculateType(symbols: SymbolTable) = AnyType()
+  def calculateType(symbols: SymbolTable) = CTAny
 
   def symbolTableDependencies = Set()
 }

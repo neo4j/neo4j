@@ -28,8 +28,8 @@ case object Rels extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(PathType()) then
-    invocation.specifyType(CollectionType(RelationshipType()))
+    invocation.arguments.constrainType(CTPath) then
+    invocation.specifyType(CTCollection(CTRelationship))
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.RelationshipFunction(invocation.arguments(0).toCommand)

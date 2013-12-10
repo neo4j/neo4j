@@ -24,39 +24,58 @@ import org.scalatest.Assertions
 
 class CypherTypeTest extends Assertions {
   @Test
-  def testTypeMergeDown() {
-    assertCorrectTypeMergeDown(NumberType(), NumberType(), NumberType())
-    assertCorrectTypeMergeDown(NumberType(), AnyType(), AnyType())
-    assertCorrectTypeMergeDown(NumberType(), StringType(), AnyType())
-    assertCorrectTypeMergeDown(NumberType(), CollectionType(AnyType()), AnyType())
-    assertCorrectTypeMergeDown(LongType(), DoubleType(), NumberType())
-    assertCorrectTypeMergeDown(MapType(), DoubleType(), AnyType())
+  def testParents() {
+    assert(CTInteger.parents === Seq(CTNumber, CTAny))
+    assert(CTNumber.parents === Seq(CTAny))
+    assert(CTAny.parents === Seq())
+    assert(CTCollection(CTString).parents === Seq(CTCollectionAny, CTAny))
+  }
+
+  @Test
+  def testTypesAreAssignable() {
+    assert(CTNumber.isAssignableFrom(CTInteger) === true)
+    assert(CTAny.isAssignableFrom(CTString) === true)
+    assert(CTCollection(CTString).isAssignableFrom(CTCollection(CTString)) === true)
+    assert(CTCollection(CTNumber).isAssignableFrom(CTCollection(CTInteger)) === true)
+    assert(CTInteger.isAssignableFrom(CTLong) === false)
+    assert(CTInteger.isAssignableFrom(CTNumber) === false)
+    assert(CTCollection(CTInteger).isAssignableFrom(CTCollection(CTString)) === false)
   }
 
   @Test
   def testTypeMergeUp() {
-    assertCorrectTypeMergeUp(NumberType(), NumberType(), Some(NumberType()))
-    assertCorrectTypeMergeUp(NumberType(), AnyType(), Some(NumberType()))
-    assertCorrectTypeMergeUp(CollectionType(NumberType()), CollectionType(LongType()), Some(CollectionType(LongType())))
-    assertCorrectTypeMergeUp(NumberType(), StringType(), None)
-    assertCorrectTypeMergeUp(NumberType(), CollectionType(AnyType()), None)
-    assertCorrectTypeMergeUp(LongType(), DoubleType(), None)
-    assertCorrectTypeMergeUp(MapType(), DoubleType(), None)
-    assertCorrectTypeMergeUp(BooleanType(), CollectionType(AnyType()), Some(BooleanType()))
+    assertCorrectTypeMergeUp(CTNumber, CTNumber, CTNumber)
+    assertCorrectTypeMergeUp(CTNumber, CTAny, CTAny)
+    assertCorrectTypeMergeUp(CTNumber, CTString, CTAny)
+    assertCorrectTypeMergeUp(CTNumber, CTCollectionAny, CTAny)
+    assertCorrectTypeMergeUp(CTLong, CTDouble, CTNumber)
+    assertCorrectTypeMergeUp(CTMap, CTDouble, CTAny)
   }
 
-  private def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: Option[CypherType]) {
-    val simpleMergedType: Option[CypherType] = a mergeUp b
-    assert(simpleMergedType === result)
-    val collectionMergedType: Option[CypherType] = CollectionType(a) mergeUp CollectionType(b)
-    assert(collectionMergedType === (for (t <- result) yield CollectionType(t)))
+  @Test
+  def testTypeMergeDown() {
+    assertCorrectTypeMergeDown(CTNumber, CTNumber, Some(CTNumber))
+    assertCorrectTypeMergeDown(CTNumber, CTAny, Some(CTNumber))
+    assertCorrectTypeMergeDown(CTCollection(CTNumber), CTCollection(CTLong), Some(CTCollection(CTLong)))
+    assertCorrectTypeMergeDown(CTNumber, CTString, None)
+    assertCorrectTypeMergeDown(CTNumber, CTCollectionAny, None)
+    assertCorrectTypeMergeDown(CTLong, CTDouble, None)
+    assertCorrectTypeMergeDown(CTMap, CTDouble, None)
+    assertCorrectTypeMergeDown(CTBoolean, CTCollectionAny, None)
   }
 
-  private def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: CypherType) {
-    val simpleMergedType: CypherType = a mergeDown b
+  private def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: Option[CypherType]) {
+    val simpleMergedType: Option[CypherType] = a mergeDown b
     assert(simpleMergedType === result)
-    val collectionMergedType: CypherType = CollectionType(a) mergeDown CollectionType(b)
-    assert(collectionMergedType === CollectionType(result))
+    val collectionMergedType: Option[CypherType] = CTCollection(a) mergeDown CTCollection(b)
+    assert(collectionMergedType === (for (t <- result) yield CTCollection(t)))
+  }
+
+  private def assertCorrectTypeMergeUp(a: CypherType, b: CypherType, result: CypherType) {
+    val simpleMergedType: CypherType = a mergeUp b
+    assert(simpleMergedType === result)
+    val collectionMergedType: CypherType = CTCollection(a) mergeUp CTCollection(b)
+    assert(collectionMergedType === CTCollection(result))
   }
 
 }

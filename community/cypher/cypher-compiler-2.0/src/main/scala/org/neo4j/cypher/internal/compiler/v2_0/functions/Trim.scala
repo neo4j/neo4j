@@ -28,8 +28,8 @@ case object Trim extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(StringType()) then
-    invocation.specifyType(StringType())
+    invocation.arguments.constrainType(CTString) then
+    invocation.specifyType(CTString)
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.TrimFunction(invocation.arguments(0).toCommand)

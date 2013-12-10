@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.mutation._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.ForeachAction
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.expressions.Identifier
+import mutation._
+import symbols._
 
 /*
 Expands a query. Example:
@@ -50,7 +48,7 @@ trait UpdateCommandExpander {
 
     def addCreateNodeIfNecessary(e: RelationshipEndpoint) =
       e.node match {
-        case Identifier(name) if !symbols.checkType(name, NodeType()) =>
+        case Identifier(name) if !symbols.checkType(name, CTNode) =>
           add(CreateNode(name, e.props, e.labels))
           e.asBare
 

@@ -28,8 +28,8 @@ case object Type extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(RelationshipType()) then
-    invocation.specifyType(StringType())
+    invocation.arguments.constrainType(CTRelationship) then
+    invocation.specifyType(CTString)
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.RelationshipTypeFunction(invocation.arguments(0).toCommand)

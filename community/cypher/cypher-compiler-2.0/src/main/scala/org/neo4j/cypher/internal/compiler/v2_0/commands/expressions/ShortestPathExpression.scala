@@ -87,7 +87,7 @@ class SingleShortestPathStrategy(expander: Expander, depth: Int) extends Shortes
 
   def findResult(start: Node, end: Node): Path = finder.findSinglePath(start, end)
 
-  def typ = PathType()
+  def typ = CTPath
 }
 
 class AllShortestPathsStrategy(expander: Expander, depth: Int) extends ShortestPathStrategy {
@@ -97,5 +97,5 @@ class AllShortestPathsStrategy(expander: Expander, depth: Int) extends ShortestP
     finder.findAllPaths(start, end).asScala.toStream
   }
 
-  def typ = CollectionType(PathType())
+  def typ = CTCollection(CTPath)
 }

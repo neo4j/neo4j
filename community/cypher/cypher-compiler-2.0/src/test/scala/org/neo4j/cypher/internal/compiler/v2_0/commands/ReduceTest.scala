@@ -57,7 +57,7 @@ class ReduceTest extends Assertions {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
     val typ = reduce.calculateType(SymbolTable())
 
-    assert(typ === StringType())
+    assert(typ === CTString)
   }
 
   @Test def reduce_has_the_expected_type_number() {
@@ -67,7 +67,7 @@ class ReduceTest extends Assertions {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
     val typ = reduce.calculateType(SymbolTable())
 
-    assert(typ === NumberType())
+    assert(typ === CTNumber)
   }
 
   @Test def reduce_has_the_expected_type_array() { 
@@ -77,6 +77,6 @@ class ReduceTest extends Assertions {
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
     val typ = reduce.calculateType(new SymbolTable())
 
-    assert(typ === CollectionType(NumberType()))
+    assert(typ === CTCollection(CTNumber))
   }
 }

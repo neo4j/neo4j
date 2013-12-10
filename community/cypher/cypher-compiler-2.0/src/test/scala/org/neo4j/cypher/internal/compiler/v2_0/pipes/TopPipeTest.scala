@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.SortItem
+import commands.expressions.{Literal, Identifier}
+import symbols._
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Literal, Identifier}
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.IntegerType
 import util.Random
-
 
 class TopPipeTest extends Assertions {
   @Test def top10From5ReturnsAll() {
@@ -46,7 +46,7 @@ class TopPipeTest extends Assertions {
 
   @Test def reversedTop5From10ReturnsAll() {
     val in = (0 until 100).toSeq.map(i => Map("a" -> i)).reverse
-    val input = new FakePipe(in, "a" -> IntegerType())
+    val input = new FakePipe(in, "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
@@ -55,7 +55,7 @@ class TopPipeTest extends Assertions {
   }
 
   @Test def emptyInputIsNotAProblem() {
-    val input = new FakePipe(Iterator.empty, "a" -> IntegerType())
+    val input = new FakePipe(Iterator.empty, "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
@@ -68,6 +68,6 @@ class TopPipeTest extends Assertions {
     val r = new Random(1337)
 
     val in = (0 until count).toSeq.map(i => Map("a" -> i)).sortBy( x => r.nextInt(100))
-    new FakePipe(in, "a" -> IntegerType())
+    new FakePipe(in, "a" -> CTInteger)
   }
 }

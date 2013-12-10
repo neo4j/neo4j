@@ -19,18 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
+import org.neo4j.cypher.internal.compiler.v2_0._
+import executionplan.{PlanBuilder, ExecutionPlanInProgress}
+import commands._
+import pipes.{EntityProducer, NullPipe, TraversalMatchPipe}
+import pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
+import spi.PlanContext
+import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.graphdb
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.NullPipe
-import graphdb.Node
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.{TraversalMatchPipe, EntityProducer}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndex
-import org.neo4j.cypher.internal.compiler.v2_0.commands.NodeByIndexQuery
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
+import org.neo4j.graphdb.Node
 
 class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress =
@@ -62,7 +59,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     }
 
   private def checkPattern(plan: ExecutionPlanInProgress, tokens: Seq[QueryToken[StartItem]]) {
-    val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> NodeType()).toMap
+    val newIdentifiers = tokens.map(_.token).map(x => x.identifierName -> CTNode).toMap
     val newSymbolTable = plan.pipe.symbols.add(newIdentifiers)
     validatePattern(newSymbolTable, plan.query.patterns.map(_.token))
   }

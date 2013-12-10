@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.SumFunction
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new SumFunction(anInner)
 
-  def expectedInnerType = NumberType()
+  def expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Sum(anInner.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = anInner.evaluateType(NumberType(), symbols)
+  def calculateType(symbols: SymbolTable): CypherType = anInner.evaluateType(CTNumber, symbols)
 }

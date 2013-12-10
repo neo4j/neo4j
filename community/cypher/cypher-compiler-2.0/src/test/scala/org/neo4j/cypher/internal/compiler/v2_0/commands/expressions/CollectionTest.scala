@@ -28,16 +28,16 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols.AnyType
 class CollectionTest extends Assertions {
   @Test
   def empty_collection_should_have_any_type() {
-    assert(Collection().getType(SymbolTable()) === CollectionType(AnyType()))
+    assert(Collection().getType(SymbolTable()) === CTCollectionAny)
   }
 
   @Test
   def collection_with_one_item_should_be_typed_for_that_items_type() {
-    assert(Collection(Literal(1)).getType(SymbolTable()) === CollectionType(NumberType()))
+    assert(Collection(Literal(1)).getType(SymbolTable()) === CTCollection(CTNumber))
   }
 
   @Test
   def collection_with_several_items_should_be_typed_for_their_common_supertype(){
-    assert(Collection(Literal(1), Literal(true)).getType(SymbolTable()) === CollectionType(AnyType()))
+    assert(Collection(Literal(1), Literal(true)).getType(SymbolTable()) === CTCollectionAny)
   }
 }

@@ -28,24 +28,23 @@ import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
 case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression], token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
-    val possibleTypes : TypeGenerator = (alternatives.map(_._2) ++ default) mergeDownTypes
+    val possibleTypes: TypeGenerator = (alternatives.map(_._2) ++ default).mergeUpTypes
 
     expression.semanticCheck(ctx) then
       alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then
       default.semanticCheck(ctx) then
       when (expression.isEmpty) {
-        alternatives.map(_._1).constrainType(BooleanType())
+        alternatives.map(_._1).constrainType(CTBoolean)
       } then this.specifyType(possibleTypes)
   }
 
   def toCommand: CommandExpression = expression match {
-    case Some(e) => {
+    case Some(e) =>
       val legacyAlternatives = alternatives.map {
         a => (a._1.toCommand, a._2.toCommand)
       }
       commandexpressions.SimpleCase(e.toCommand, legacyAlternatives, default.map(_.toCommand))
-    }
-    case None => {
+    case None =>
       val predicateAlternatives = alternatives.map { a =>
         a._1.toCommand match {
           case predicate: CommandPredicate => (predicate, a._2.toCommand)
@@ -53,6 +52,5 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
         }
       }
       commandexpressions.GenericCase(predicateAlternatives, default.map(_.toCommand))
-    }
   }
 }

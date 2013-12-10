@@ -29,7 +29,7 @@ case object Collect extends AggregatingFunction  {
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
       val arg = invocation.arguments(0)
-      invocation.specifyType(arg.types(_).map(t => CollectionType(t)))
+      invocation.specifyType(arg.types(_).map(t => CTCollection(t)))
     }
 
   def toCommand(invocation: ast.FunctionInvocation) = {

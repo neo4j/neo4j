@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CypherType, SymbolTable, NumberType}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.MaxFunction
+import org.neo4j.cypher.internal.compiler.v2_0._
+import pipes.aggregation.MaxFunction
+import symbols._
 
 case class Max(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new MaxFunction(anInner)
 
-  def expectedInnerType = NumberType()
+  val expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Max(anInner.rewrite(f)))
 

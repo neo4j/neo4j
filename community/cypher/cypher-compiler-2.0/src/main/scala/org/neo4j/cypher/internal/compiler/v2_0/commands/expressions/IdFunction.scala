@@ -36,7 +36,7 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
 
   def arguments = Seq(inner)
 
-  def calculateType(symbols: SymbolTable): CypherType = LongType()
+  def calculateType(symbols: SymbolTable): CypherType = CTLong
 
   def symbolTableDependencies = inner.symbolTableDependencies
 }

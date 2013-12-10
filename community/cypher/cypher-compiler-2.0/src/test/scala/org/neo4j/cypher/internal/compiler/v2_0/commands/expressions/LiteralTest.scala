@@ -1,9 +1,3 @@
-package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
-
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, StringType, CollectionType}
-
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -23,11 +17,18 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, StringType,
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
+
+import org.neo4j.cypher.internal.compiler.v2_0._
+import symbols._
+import org.scalatest.Assertions
+import org.junit.Test
+
 class LiteralTest extends Assertions {
   @Test
   def collections_should_be_typed_correctly() {
     val value = Literal(Seq(Seq("Text")))
-    val typ = CollectionType(CollectionType(StringType()))
+    val typ = CTCollection(CTCollection(CTString))
 
     assert(value.calculateType(SymbolTable()) === typ)
   }

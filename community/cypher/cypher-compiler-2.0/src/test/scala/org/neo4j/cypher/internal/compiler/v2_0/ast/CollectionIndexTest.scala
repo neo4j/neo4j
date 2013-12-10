@@ -28,7 +28,7 @@ import scala.collection.immutable.SortedSet
 
 class CollectionIndexTest extends Assertions {
   val dummyCollection = DummyExpression(
-    TypeSet(CollectionType(NodeType()), NodeType(), CollectionType(StringType())),
+    TypeSet(CTCollection(CTNode), CTNode, CTCollection(CTString)),
     DummyToken(2,3))
 
   @Test
@@ -39,7 +39,7 @@ class CollectionIndexTest extends Assertions {
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(NodeType(), StringType()), index.types(result.state))
+    assertEquals(Set(CTNode, CTString), index.types(result.state))
   }
 
   @Test

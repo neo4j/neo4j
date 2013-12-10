@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, RelationshipType}
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
 sealed trait StartItem extends AstNode with SemanticCheckable {
   def identifier : Identifier
@@ -31,7 +30,7 @@ sealed trait StartItem extends AstNode with SemanticCheckable {
 }
 
 sealed trait NodeStartItem extends StartItem {
-  def semanticCheck = identifier.declare(NodeType())
+  def semanticCheck = identifier.declare(CTNode)
 }
 
 case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral], token: InputToken) extends NodeStartItem {
@@ -59,7 +58,7 @@ case class NodeByIndexQuery(identifier: Identifier, index: Identifier, query: Ex
 }
 
 sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck = identifier.declare(RelationshipType())
+  def semanticCheck = identifier.declare(CTRelationship)
 }
 
 case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral], token: InputToken) extends RelationshipStartItem {

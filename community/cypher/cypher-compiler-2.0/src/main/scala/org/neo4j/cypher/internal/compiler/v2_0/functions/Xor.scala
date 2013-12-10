@@ -29,8 +29,8 @@ case object Xor extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-//    invocation.arguments.constrainType(BooleanType()) then // TODO: should constrain to boolean, when coercion is possible
-    invocation.specifyType(BooleanType())
+//    invocation.arguments.constrainType(CTBoolean) then // TODO: should constrain to boolean, when coercion is possible
+    invocation.specifyType(CTBoolean)
 
 
   protected def internalToPredicate(invocation: FunctionInvocation) =

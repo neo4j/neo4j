@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, CypherType, AnyType}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.DistinctFunction
+import org.neo4j.cypher.internal.compiler.v2_0._
+import pipes.aggregation.DistinctFunction
+import symbols._
 
 case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationWithInnerExpression(expression) {
-  def expectedInnerType = AnyType()
+  val expectedInnerType = CTAny
 
   def createAggregationFunction = new DistinctFunction(expression, innerAggregator.createAggregationFunction)
 

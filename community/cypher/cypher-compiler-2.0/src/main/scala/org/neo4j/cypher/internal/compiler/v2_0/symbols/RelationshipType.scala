@@ -20,38 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object RelationshipType {
-  lazy val instance = new RelationshipType()
-
-  def apply() = instance
+  val instance = new RelationshipType() {
+    val parentType = CTMap
+    override val toString = "Relationship"
+  }
 }
 
-
-class RelationshipType extends MapType {
-  override def parentType: CypherType = MapType()
-  override def toString = "Relationship"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class RelationshipType extends CypherType

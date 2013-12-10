@@ -28,8 +28,8 @@ case object Or extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-//    invocation.arguments.constrainType(BooleanType()) then // TODO: should constrain to boolean, when coercion is possible
-    invocation.specifyType(invocation.arguments.mergeDownTypes)
+//    invocation.arguments.constrainType(CTBoolean) then // TODO: should constrain to boolean, when coercion is possible
+    invocation.specifyType(invocation.arguments.mergeUpTypes)
 
   protected def internalToPredicate(invocation: FunctionInvocation) =
     commands.Or(invocation.arguments(0).toPredicate, invocation.arguments(1).toPredicate)

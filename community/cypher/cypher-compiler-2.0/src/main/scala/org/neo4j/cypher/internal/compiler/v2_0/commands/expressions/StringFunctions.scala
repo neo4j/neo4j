@@ -31,11 +31,11 @@ import scala.collection.Map
 import org.neo4j.cypher.internal.compiler.v2_0.helpers.IsMap
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
-  def innerExpectedType = StringType()
+  def innerExpectedType = CTString
 
   def arguments = Seq(arg)
 
-  def calculateType(symbols: SymbolTable) = StringType()
+  def calculateType(symbols: SymbolTable) = CTString
 
   def symbolTableDependencies = arg.symbolTableDependencies
 }
@@ -154,7 +154,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
   def rewrite(f: (Expression) => Expression) = f(SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
-  def calculateType(symbols: SymbolTable) = StringType()
+  def calculateType(symbols: SymbolTable) = CTString
 
   def symbolTableDependencies = {
     val a = orig.symbolTableDependencies ++
@@ -184,7 +184,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 
   def rewrite(f: (Expression) => Expression) = f(ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = StringType()
+  def calculateType(symbols: SymbolTable) = CTString
 
   def symbolTableDependencies = orig.symbolTableDependencies ++
                                 search.symbolTableDependencies ++
@@ -206,7 +206,7 @@ case class LeftFunction(orig: Expression, length: Expression)
 
   def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = StringType()
+  def calculateType(symbols: SymbolTable) = CTString
 
   def symbolTableDependencies = orig.symbolTableDependencies ++
                                 length.symbolTableDependencies
@@ -227,7 +227,7 @@ case class RightFunction(orig: Expression, length: Expression)
 
   def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable) = StringType()
+  def calculateType(symbols: SymbolTable) = CTString
 
   def symbolTableDependencies = orig.symbolTableDependencies ++
                                 length.symbolTableDependencies

@@ -67,7 +67,7 @@ case class ParsedEntity(name: String,
   def rewrite(f: (Expression) => Expression) =
     copy(expression = expression.rewrite(f), props = props.rewrite(f), labels = labels.map(_.rewrite(f)))
 
-  def possibleStartPoints: Seq[(String, CypherType)] = Seq(name -> NodeType())
+  def possibleStartPoints: Seq[(String, CypherType)] = Seq(name -> CTNode)
 
   def start: AbstractPattern = this
 
@@ -107,7 +107,7 @@ with GraphElementPropertyFunctions {
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
   def possibleStartPoints: Seq[(String, CypherType)] =
-    (start.possibleStartPoints :+  name -> RelationshipType()) ++ end.possibleStartPoints
+    (start.possibleStartPoints :+ name -> CTRelationship) ++ end.possibleStartPoints
 }
 
 trait Turnable {
@@ -162,7 +162,7 @@ case class ParsedVarLengthRelation(name: String,
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
   def possibleStartPoints: Seq[(String, CypherType)] =
-    (start.possibleStartPoints :+ name -> CollectionType(RelationshipType())) ++ end.possibleStartPoints
+    (start.possibleStartPoints :+ name -> CTCollection(CTRelationship)) ++ end.possibleStartPoints
 }
 
 case class ParsedShortestPath(name: String,
@@ -188,7 +188,7 @@ case class ParsedShortestPath(name: String,
     copy(props = props.rewrite(f), start = start.rewrite(f), end = end.rewrite(f))
 
   def possibleStartPoints: Seq[(String, CypherType)] =
-    (start.possibleStartPoints :+ name -> PathType()) ++ end.possibleStartPoints
+    (start.possibleStartPoints :+ name -> CTPath) ++ end.possibleStartPoints
 }
 
 case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends PatternWithPathName(name) {

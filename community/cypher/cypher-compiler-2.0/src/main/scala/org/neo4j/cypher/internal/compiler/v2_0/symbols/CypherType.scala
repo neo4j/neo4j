@@ -19,34 +19,42 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-import org.neo4j.cypher.CypherTypeException
+abstract class CypherType {
+  def parentType: CypherType
+  val isAbstract: Boolean = false
 
-trait CypherType {
+  def parents: Seq[CypherType] = parents(Vector.empty)
+  private def parents(accumulator: Seq[CypherType]): Seq[CypherType] =
+    if (this.parentType == this)
+      accumulator
+    else
+      this.parentType.parents(accumulator :+ this.parentType)
+
   /*
   Determines if the class or interface represented by this
   {@code CypherType} object is either the same as, or is a
   supertype of, the class or interface represented by the
   specified {@code CypherType} parameter.
    */
-  def isAssignableFrom(other: CypherType): Boolean = this.getClass.isAssignableFrom(other.getClass)
+  def isAssignableFrom(other: CypherType): Boolean =
+    if (other == this)
+      true
+    else if (other.parentType == other)
+      false
+    else
+      isAssignableFrom(other.parentType)
 
-  def isCoercibleFrom(other: CypherType):Boolean = isAssignableFrom(other)
+  def legacyIteratedType: CypherType = this
 
-  def iteratedType: CypherType = throw new CypherTypeException("This is not a collection type")
-
-  def mergeDown(other: CypherType): CypherType =
+  def mergeUp(other: CypherType): CypherType =
     if (this.isAssignableFrom(other)) this
     else if (other.isAssignableFrom(this)) other
-    else parentType mergeDown other.parentType
+    else parentType mergeUp other.parentType
 
-  def mergeUp(other: CypherType): Option[CypherType] =
-    if (this.isCoercibleFrom(other)) Some(other)
-    else if (other.isCoercibleFrom(this)) Some(this)
+  def mergeDown(other: CypherType): Option[CypherType] =
+    if (this.isAssignableFrom(other)) Some(other)
+    else if (other.isAssignableFrom(this)) Some(this)
     else None
-
-  def parentType: CypherType
-
-  val isCollection: Boolean = false
 
   def rewrite(f: CypherType => CypherType) = f(this)
 }
@@ -75,5 +83,5 @@ trait Typed {
   /*
   Checks if internal type dependencies are met and returns the actual type of the expression
   */
-  def getType(symbols: SymbolTable): CypherType = evaluateType(AnyType(), symbols)
+  def getType(symbols: SymbolTable): CypherType = evaluateType(CTAny, symbols)
 }

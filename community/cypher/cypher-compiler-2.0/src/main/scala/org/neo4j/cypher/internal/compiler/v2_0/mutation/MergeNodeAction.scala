@@ -25,7 +25,7 @@ import commands.Predicate
 import commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_0.data.{SeqVal, MapVal, SimpleVal}
 import pipes.{QueryState, EntityProducer}
-import symbols.{NodeType, CypherType}
+import symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
 import org.neo4j.cypher.{MergeConstraintConflictException, InternalException}
 import org.neo4j.graphdb.Node
@@ -139,7 +139,7 @@ case class MergeNodeAction(identifier: String,
       None
     }
 
-  def identifiers: Seq[(String, CypherType)] = Seq(identifier -> NodeType())
+  def identifiers: Seq[(String, CypherType)] = Seq(identifier -> CTNode)
 
   def rewrite(f: (Expression) => Expression) =
     MergeNodeAction(identifier = identifier,

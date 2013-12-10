@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.RelatedTo
 import executionplan.builders.PatternGraphBuilder
-import symbols.{SymbolTable, RelationshipType, NodeType}
+import symbols._
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.neo4j.graphdb.Direction
 import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.SimplePatternMatcherBuilder
 
 class SimplePatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
-  val symbols = new SymbolTable(Map("a" -> NodeType()))
+  val symbols = new SymbolTable(Map("a" -> CTNode))
 
   var tx : org.neo4j.graphdb.Transaction = null
 
@@ -66,7 +66,7 @@ class SimplePatternMatchingTest extends ExecutionEngineHelper with PatternGraphB
     // This matcher is responsible for (b)-[r2]-(c), and needs to check the result from previous steps
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
 
-    val symbolTable = symbols.add("b", NodeType()).add("r", RelationshipType())
+    val symbolTable = symbols.add("b", CTNode).add("r", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
     val matcher = new SimplePatternMatcherBuilder(patternGraph, Seq(), symbolTable, Set("a", "r", "b", "r2", "c"))
     val n0 = createNode()
@@ -87,7 +87,7 @@ class SimplePatternMatchingTest extends ExecutionEngineHelper with PatternGraphB
     // This matcher is responsible for (b)-[r2]-(c), and needs to check the result from previous steps
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
 
-    val symbolTable = symbols.add("b", NodeType()).add("r", RelationshipType())
+    val symbolTable = symbols.add("b", CTNode).add("r", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
     val matcher = new SimplePatternMatcherBuilder(patternGraph, Seq(), symbolTable, Set("b", "r2", "c"))
     val n0 = createNode()

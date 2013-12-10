@@ -47,10 +47,10 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
 
 class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])
   extends StartPipe[Node](source, name, createSource) {
-  def identifierType = NodeType()
+  def identifierType = CTNode
 }
 
 class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
   extends StartPipe[Relationship](source, name, createSource) {
-  def identifierType = RelationshipType()
+  def identifierType = CTRelationship
 }

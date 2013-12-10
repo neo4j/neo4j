@@ -28,7 +28,7 @@ case object Max extends AggregatingFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments.constrainType(NumberType()) then
+      invocation.arguments.constrainType(CTNumber) then
       invocation.specifyType(invocation.arguments(0).types)
     }
 

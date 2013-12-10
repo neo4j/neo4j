@@ -26,13 +26,13 @@ import symbols._
 case class TimestampFunction() extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = state.readTimeStamp()
 
-  def innerExpectedType = StringType()
+  def innerExpectedType = CTString
 
   def arguments = Seq()
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def calculateType(symbols: SymbolTable) = IntegerType()
+  def calculateType(symbols: SymbolTable) = CTInteger
 
   def symbolTableDependencies = Set.empty
 }

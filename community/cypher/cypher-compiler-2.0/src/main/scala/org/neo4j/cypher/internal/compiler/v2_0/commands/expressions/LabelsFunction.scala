@@ -45,7 +45,7 @@ case class LabelsFunction(nodeExpr: Expression) extends Expression {
   def symbolTableDependencies = nodeExpr.symbolTableDependencies
 
   protected def calculateType(symbols: SymbolTable) = {
-    nodeExpr.evaluateType(NodeType(), symbols)
-    CollectionType(StringType())
+    nodeExpr.evaluateType(CTNode, symbols)
+    CTCollection(CTString)
   }
 }

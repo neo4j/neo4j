@@ -28,19 +28,19 @@ class AllIdentifiersTest extends Assertions {
   val x = AllIdentifiers()
 
   @Test def nodes() {
-    val symbols = getSymbols("n" -> NodeType())
+    val symbols = getSymbols("n" -> CTNode)
 
     assert(x.expressions(symbols) === Map("n" -> Identifier("n")))
   }
 
   @Test def relationships() {
-    val symbols = getSymbols("r" -> RelationshipType())
+    val symbols = getSymbols("r" -> CTRelationship)
 
     assert(x.expressions(symbols) === Map("r" -> Identifier("r")))
   }
 
   @Test def paths() {
-    val symbols = getSymbols("p" -> PathType())
+    val symbols = getSymbols("p" -> CTPath)
 
     assert(x.expressions(symbols) === Map("p" -> Identifier("p")))
   }

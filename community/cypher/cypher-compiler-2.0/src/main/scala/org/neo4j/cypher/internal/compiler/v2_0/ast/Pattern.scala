@@ -77,7 +77,7 @@ sealed abstract class PatternPart extends AstNode {
 }
 
 case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart, token: InputToken) extends PatternPart {
-  def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) then identifier.declare(PathType())
+  def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) then identifier.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
   lazy val toLegacyPatterns = patternPart.toLegacyPatterns(Some(identifier.name))
@@ -115,7 +115,7 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
 
   def declareIdentifiers(ctx: SemanticContext) = (element, ctx) match {
     case (n: NamedNodePattern, SemanticContext.Match) => element.declareIdentifiers(ctx) // single node identifier may be already bound in MATCH
-    case (n: NamedNodePattern, _)                     => n.identifier.declare(NodeType()) then element.declareIdentifiers(ctx)
+    case (n: NamedNodePattern, _)                     => n.identifier.declare(CTNode) then element.declareIdentifiers(ctx)
     case _                                            => element.declareIdentifiers(ctx)
   }
   def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
@@ -303,7 +303,7 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(MapType())
+      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(CTMap)
   }
 
   def legacyName: String
@@ -341,8 +341,8 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
 
 case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
   override def declareIdentifiers(ctx: SemanticContext) = ((ctx match {
-    case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(NodeType())
-    case _                          => identifier.implicitDeclaration(NodeType())
+    case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(CTNode)
+    case _                          => identifier.implicitDeclaration(CTNode)
   }): SemanticCheck) then super.declareIdentifiers(ctx)
 
   val legacyName = identifier.name
@@ -393,7 +393,7 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(MapType())
+      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(CTMap)
   }
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
@@ -460,7 +460,7 @@ case class NamedRelationshipPattern(
     token: InputToken) extends RelationshipPattern {
 
   override def declareIdentifiers(ctx: SemanticContext) = {
-    val possibleType = if (length.isEmpty) RelationshipType() else CollectionType(RelationshipType())
+    val possibleType = if (length.isEmpty) CTRelationship else CTCollection(CTRelationship)
 
     ((ctx match {
       case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)

@@ -52,7 +52,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
     throw new ThisShouldNotHappenError("Andres", "This class should override evaluateType, and this method should never be run")
 
   override def evaluateType(expectedType: CypherType, symbols: SymbolTable) = {
-    mapExpr.evaluateType(MapType(), symbols)
+    mapExpr.evaluateType(CTMap, symbols)
     expectedType
   }
 

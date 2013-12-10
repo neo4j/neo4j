@@ -19,23 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands._
+import commands.expressions._
+import commands.values.TokenType._
+import commands.values.{KeyToken, TokenType}
+import executionplan.PartiallySolvedQuery
+import mutation.UpdateAction
+import pipes.FakePipe
+import spi.PlanContext
+import symbols._
+import org.neo4j.graphdb.Direction
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.UpdateAction
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.FakePipe
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.NodeType
-import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new StartPointChoosingBuilder
@@ -366,7 +367,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       patterns = Seq(SingleNode(otherIdentifier))
     )
 
-    val pipe = new FakePipe(Seq.empty, identifier -> NodeType())
+    val pipe = new FakePipe(Seq.empty, identifier -> CTNode)
     val plan = assertAccepts(pipe, query)
 
     assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
@@ -385,7 +386,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
       patterns = Seq(SingleNode(otherIdentifier))
     )
 
-    val pipe = new FakePipe(Seq.empty, identifier -> NodeType())
+    val pipe = new FakePipe(Seq.empty, identifier -> CTNode)
     val plan = assertAccepts(pipe, query)
 
     assert(plan.query.start.toList === List(Unsolved(NodeByIdOrEmpty(otherIdentifier, propertyLookup))))
@@ -477,7 +478,7 @@ class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_not_introduce_start_points_if_provided_by_last_pipe() {
     // Given
-    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
+    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
     val query = q(
       patterns = Seq(SingleNode(identifier), SingleNode(otherIdentifier))
     )

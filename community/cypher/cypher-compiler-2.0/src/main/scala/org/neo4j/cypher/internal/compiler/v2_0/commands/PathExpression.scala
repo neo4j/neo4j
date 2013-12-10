@@ -63,7 +63,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
 
   def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = CollectionType(PathType())
+  def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTPath)
 
   def symbolTableDependencies = {
     val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet

@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CypherType, SymbolTable, NumberType}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.AvgFunction
+import org.neo4j.cypher.internal.compiler.v2_0._
+import pipes.aggregation.AvgFunction
+import symbols._
 
 case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new AvgFunction(anInner)
 
-  def expectedInnerType = NumberType()
+  val expectedInnerType = CTNumber
 
   def rewrite(f: (Expression) => Expression) = f(Avg(anInner.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = NumberType()
+  def calculateType(symbols: SymbolTable): CypherType = CTNumber
 }

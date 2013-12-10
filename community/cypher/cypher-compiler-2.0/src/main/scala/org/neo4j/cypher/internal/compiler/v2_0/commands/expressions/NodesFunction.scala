@@ -39,9 +39,9 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   def arguments = Seq(path)
 
   def calculateType(symbols: SymbolTable) = {
-    path.evaluateType(PathType(), symbols)
+    path.evaluateType(CTPath, symbols)
 
-    CollectionType(NodeType())
+    CTCollection(CTNode)
   }
 
   def symbolTableDependencies = path.symbolTableDependencies

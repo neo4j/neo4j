@@ -45,10 +45,10 @@ class ExpressionTest extends Assertions {
       def toCommand = ???
     }
     val state = (
-      expression.specifyType(NodeType(), IntegerType()) then
-      expression.constrainType(NumberType())
+      expression.specifyType(CTNode, CTInteger) then
+      expression.constrainType(CTNumber)
       )(SemanticState.clean).state
 
-    assert(expression.types(state) === TypeSet(IntegerType()))
+    assert(expression.types(state) === TypeSet(CTInteger))
   }
 }

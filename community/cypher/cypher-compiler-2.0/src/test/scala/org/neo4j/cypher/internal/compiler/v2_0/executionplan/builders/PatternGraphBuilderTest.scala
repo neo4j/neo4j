@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.RelatedTo
+import symbols._
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.RelatedTo
 
 class PatternGraphBuilderTest extends PatternGraphBuilder with Assertions {
   @Test
   def should_only_include_connected_patterns() {
     // given MATCH a-[r1]->b, c-[r2]->d
-    val symbols = new SymbolTable(Map("a" -> NodeType(), "b" -> NodeType(), "c" -> NodeType(), "d" -> NodeType()))
+    val symbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode, "c" -> CTNode, "d" -> CTNode))
     val r1 = RelatedTo("a", "b", "r1", "FOO", Direction.OUTGOING)
     val r2 = RelatedTo("c", "d", "r2", "FOO", Direction.OUTGOING)
 
@@ -43,7 +44,7 @@ class PatternGraphBuilderTest extends PatternGraphBuilder with Assertions {
   @Test
   def should_include_connected_patterns() {
     // given MATCH a-[r1]->b-[r2]->c-[r2]->d
-    val symbols = new SymbolTable(Map("a" -> NodeType()))
+    val symbols = new SymbolTable(Map("a" -> CTNode))
     val r1 = RelatedTo("a", "b", "r1", "FOO", Direction.OUTGOING)
     val r2 = RelatedTo("b", "c", "r2", "FOO", Direction.OUTGOING)
     val r3 = RelatedTo("c", "d", "r3", "FOO", Direction.OUTGOING)

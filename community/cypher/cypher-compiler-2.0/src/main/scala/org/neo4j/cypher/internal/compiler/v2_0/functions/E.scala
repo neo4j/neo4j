@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.DoubleType
+import commands.{expressions => commandexpressions}
+import symbols._
 
 case object E extends Function {
   def name = "e"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 0) then
-    invocation.specifyType(DoubleType())
+    invocation.specifyType(CTDouble)
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.EFunction()

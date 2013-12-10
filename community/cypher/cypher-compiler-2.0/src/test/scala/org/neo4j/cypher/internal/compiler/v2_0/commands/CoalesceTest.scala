@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands
 import expressions.{Expression, Null, Literal, CoalesceFunction}
 import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.{QueryStateHelper, QueryState}
-import symbols.{SymbolTable, CypherType, AnyType}
+import symbols._
 import org.scalatest.Assertions
 import org.junit.{Assert, Test}
 
@@ -59,7 +59,7 @@ case class BreakingExpression() extends Expression {
 
   def arguments = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = AnyType()
+  def calculateType(symbols: SymbolTable): CypherType = CTAny
 
   def symbolTableDependencies = Set()
 }

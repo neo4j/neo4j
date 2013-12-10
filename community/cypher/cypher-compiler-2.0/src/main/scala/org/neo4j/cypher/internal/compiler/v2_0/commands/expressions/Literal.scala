@@ -39,13 +39,13 @@ case class Literal(v: Any) extends Expression {
   override def toString = "Literal(" + v + ")"
 
   private def deriveType(obj: Any): CypherType = obj match {
-    case _: String                          => StringType()
-    case _: Char                            => StringType()
-    case _: Number                          => NumberType()
-    case _: Boolean                         => BooleanType()
-    case IsMap(_)                           => MapType()
-    case IsCollection(coll) if coll.isEmpty => CollectionType(AnyType())
-    case IsCollection(coll)                 => CollectionType(coll.map(deriveType).reduce(_ mergeDown _))
-    case _                                  => AnyType()
+    case _: String                          => CTString
+    case _: Char                            => CTString
+    case _: Number                          => CTNumber
+    case _: Boolean                         => CTBoolean
+    case IsMap(_)                           => CTMap
+    case IsCollection(coll) if coll.isEmpty => CTCollectionAny
+    case IsCollection(coll)                 => CTCollection(coll.map(deriveType).reduce(_ mergeUp _))
+    case _                                  => CTAny
   }
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{SymbolTable, CypherType, LongType}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.CountStarFunction
+import org.neo4j.cypher.internal.compiler.v2_0._
+import pipes.aggregation.CountStarFunction
+import symbols._
 
 case class CountStar() extends AggregationExpression {
   def rewrite(f: (Expression) => Expression) = f(CountStar())
@@ -29,7 +30,7 @@ case class CountStar() extends AggregationExpression {
 
   def arguments = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = LongType()
+  def calculateType(symbols: SymbolTable): CypherType = CTLong
 
   def symbolTableDependencies = Set()
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.SortItem
 import commands.expressions.{Add, Literal, RandFunction, Identifier}
-import symbols.{NumberType, StringType, AnyType}
+import symbols._
 import org.neo4j.cypher.PatternException
 import org.junit.Test
 import org.junit.Assert._
@@ -32,7 +32,7 @@ import scala.util.Random
 
 class SortPipeTest extends JUnitSuite {
   @Test def emptyInIsEmptyOut() {
-    val source = new FakePipe(List(), "x" -> AnyType())
+    val source = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("x"), true)))
 
     assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)
@@ -40,7 +40,7 @@ class SortPipeTest extends JUnitSuite {
 
   @Test def simpleSortingIsSupported() {
     val list:Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
-    val source = new FakePipe(list, "x" -> StringType())
+    val source = new FakePipe(list, "x" -> CTString)
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("x"), true)))
 
     assertEquals(List(MutableMap("x" -> "A"), MutableMap("x" -> "B")), sortPipe.createResults(QueryStateHelper.empty).toList)
@@ -50,7 +50,7 @@ class SortPipeTest extends JUnitSuite {
     val source = new FakePipe(List(
       MutableMap("x" -> "B", "y" -> 20),
       MutableMap("x" -> "A", "y" -> 100),
-      MutableMap("x" -> "B", "y" -> 10)), "x" -> StringType(), "y"->NumberType())
+      MutableMap("x" -> "B", "y" -> 10)), "x" -> CTString, "y"->CTNumber)
 
     val sortPipe = new SortPipe(source, List(
       SortItem(Identifier("x"), true),
@@ -66,7 +66,7 @@ class SortPipeTest extends JUnitSuite {
     val source = new FakePipe(List(
       MutableMap("x" -> "B", "y" -> 20),
       MutableMap("x" -> "A", "y" -> 100),
-      MutableMap("x" -> "B", "y" -> 10)), "x" -> StringType(), "y"->NumberType())
+      MutableMap("x" -> "B", "y" -> 10)), "x" -> CTString, "y"->CTNumber)
 
     val sortPipe = new SortPipe(source, List(
       SortItem(Identifier("x"), true),
@@ -83,7 +83,7 @@ class SortPipeTest extends JUnitSuite {
       MutableMap("y" -> 1),
       MutableMap("y" -> null),
       MutableMap("y" -> 2))
-    val source = new FakePipe(list, "y"->NumberType())
+    val source = new FakePipe(list, "y"->CTNumber)
 
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("y"), true)))
 
@@ -99,7 +99,7 @@ class SortPipeTest extends JUnitSuite {
       MutableMap("x" -> 1),
       MutableMap("x" -> 2))
 
-    val source = new FakePipe(list, "x" -> NumberType())
+    val source = new FakePipe(list, "x" -> CTNumber)
 
     val sortPipe = new SortPipe(source, List(SortItem(Add(Identifier("x"), Literal(1)), true)))
 
@@ -115,7 +115,7 @@ class SortPipeTest extends JUnitSuite {
     val list:Seq[MutableMap[String, Any]] = Random.shuffle(
       for (v <- 1 to 1000) yield MutableMap("x" -> (v: Any)))
 
-    val source = new FakePipe(list, "x" -> NumberType())
+    val source = new FakePipe(list, "x" -> CTNumber)
 
     val sortPipe = new SortPipe(source, List(SortItem(Add(Add(Literal(1), RandFunction()), Literal(1)), true)))
 

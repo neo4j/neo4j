@@ -39,25 +39,25 @@ object TypeSet {
 
 trait TypeSet extends Set[CypherType] {
 
-  def mergeDown(other: TypeSet): TypeSet = {
+  def mergeUp(other: TypeSet): TypeSet = {
     TypeSet(foldLeft(Vector.empty[CypherType])((ts, t) => {
-      val dt = other.mergeDown(t)
-      ts.filter(_.mergeUp(dt) != Some(dt)) :+ dt
+      val dt = other.mergeUp(t)
+      ts.filter(_.mergeDown(dt) != Some(dt)) :+ dt
     }))
   }
 
-  def mergeDown(other: CypherType): CypherType = {
+  def mergeUp(other: CypherType): CypherType = {
     map {
-      _.mergeDown(other)
+      _.mergeUp(other)
     } reduce {
-      (t1, t2) => (t1 mergeUp t2).get
+      (t1, t2) => (t1 mergeDown t2).get
     }
   }
 
-  def mergeUp(other: TypeSet): TypeSet = {
+  def mergeDown(other: TypeSet): TypeSet = {
     TypeSet(flatMap {
       t => other.flatMap {
-        _ mergeUp t
+        _ mergeDown t
       }
     })
   }

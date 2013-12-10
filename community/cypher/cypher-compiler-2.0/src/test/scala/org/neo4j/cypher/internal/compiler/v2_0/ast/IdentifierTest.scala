@@ -36,6 +36,6 @@ class IdentifierTest extends Assertions {
     assertEquals(1, result.errors.size)
     assertEquals(token, result.errors.head.token)
     assertTrue(result.state.symbol("x").isDefined)
-    assertEquals(Set(AnyType()), result.state.symbolTypes("x"))
+    assertEquals(Set(CTAny), result.state.symbolTypes("x"))
   }
 }

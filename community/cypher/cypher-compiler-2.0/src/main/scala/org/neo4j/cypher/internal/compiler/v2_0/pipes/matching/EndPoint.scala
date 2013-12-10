@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import symbols._
 import org.neo4j.graphdb.PropertyContainer
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
 
 final case class EndPoint(name: String) extends Trail {
   val end = name
@@ -48,7 +49,7 @@ final case class EndPoint(name: String) extends Trail {
       Iterator.empty
     }
 
-  def symbols(table: SymbolTable): SymbolTable = table.add(name, NodeType())
+  def symbols(table: SymbolTable): SymbolTable = table.add(name, CTNode)
 
   def contains(target: String): Boolean = target == name
 

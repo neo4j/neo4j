@@ -19,37 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-/**
- * Copyright (c) 2002-2014 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
- *
- * This file is part of Neo4j.
- *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.ReturnItem
+import commands.expressions._
+import executionplan._
+import symbols._
+import pipes.ExtractPipe
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.ExtractPipe
-import org.neo4j.cypher.internal.compiler.v2_0.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.AbsFunction
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.RandFunction
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{DoubleType, NumberType}
 
 class ExtractBuilderTest extends BuilderTest {
 
@@ -128,8 +105,8 @@ class ExtractBuilderTest extends BuilderTest {
 
     val returnItems = result.query.returns.toSet
     assertEquals( Set(
-      Solved(ReturnItem(CachedExpression("bar", DoubleType()), "bar")),
-      Solved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
+      Solved(ReturnItem(CachedExpression("bar", CTDouble), "bar")),
+      Solved(ReturnItem(CachedExpression("foo", CTNumber), "foo"))
     ), returnItems )
   }
 
@@ -151,7 +128,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     assertEquals(Set(
       Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
-      Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
+      Unsolved(ReturnItem(CachedExpression("foo", CTNumber), "foo"))
     ), returnItems)
 
 
@@ -164,7 +141,7 @@ class ExtractBuilderTest extends BuilderTest {
     //    val returnItems = result.query.returns.toSet
     //    assertEquals( Set(
     //      Unsolved(ReturnItem(AbsFunction(RandFunction()), "bar")),
-    //      Unsolved(ReturnItem(CachedExpression("foo", NumberType()), "foo"))
+    //      Unsolved(ReturnItem(CachedExpression("foo", CTNumber), "foo"))
     //    ), returnItems )
   }
 }

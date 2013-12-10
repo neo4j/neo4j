@@ -36,8 +36,8 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
   def arguments = data.values.toSeq
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    data.values.foreach(_.evaluateType(AnyType(), symbols))
-    MapType()
+    data.values.foreach(_.evaluateType(CTAny, symbols))
+    CTMap
   }
 
   def symbolTableDependencies = data.symboltableDependencies

@@ -35,10 +35,10 @@ class LabelsTest extends Assertions {
       DummyToken(5,14)
     )
 
-    val state = SemanticState.clean.declareIdentifier(nodeIdentifier, NodeType()).right.get
+    val state = SemanticState.clean.declareIdentifier(nodeIdentifier, CTNode).right.get
     val result = labelsInvocation.semanticCheck(ast.Expression.SemanticContext.Simple)(state)
     assert(result.errors === Seq())
-    assert(labelsInvocation.types(result.state) === Set(CollectionType(StringType())))
+    assert(labelsInvocation.types(result.state) === Set(CTCollection(CTString)))
   }
 
   @Test
@@ -50,7 +50,7 @@ class LabelsTest extends Assertions {
       DummyToken(5,14)
     )
 
-    val state = SemanticState.clean.declareIdentifier(nonNodeIdentifier, RelationshipType()).right.get
+    val state = SemanticState.clean.declareIdentifier(nonNodeIdentifier, CTRelationship).right.get
     val result = labelsInvocation.semanticCheck(ast.Expression.SemanticContext.Simple)(state)
     assert(result.errors.size === 1)
     assert(result.errors.head.msg === "Type mismatch: n already defined with conflicting type Relationship (expected Node)")

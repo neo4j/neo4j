@@ -205,7 +205,7 @@ class SemanticCheckableTest extends Assertions with SemanticChecking {
 
   @Test
   def shouldScopeState() {
-    val func1 : SemanticCheck = Identifier("name", DummyToken(0, 1)).declare(NodeType())
+    val func1 : SemanticCheck = Identifier("name", DummyToken(0, 1)).declare(CTNode)
 
     val error2 = SemanticError("an error", DummyToken(0,1))
     val func2 : SemanticCheck = s => {

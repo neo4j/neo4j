@@ -35,7 +35,7 @@ case object Has extends PredicateFunction {
         case _: ast.Property => None
         case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.token, invocation.token))
       }
-    } then invocation.specifyType(BooleanType())
+    } then invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {
     val property = invocation.arguments(0).asInstanceOf[ast.Property]

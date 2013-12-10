@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{Phase, PartiallySolvedQuery, PlanBuilder}
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_0.mutation._
-import org.neo4j.cypher.internal.compiler.v2_0.pipes._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{Pattern, Query}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_0.commands.AllIdentifiers
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.{AllIdentifiers, Pattern, Query}
+import commands.expressions.Identifier
+import executionplan.{ExecutionPlanInProgress, Phase, PartiallySolvedQuery, PlanBuilder}
+import mutation._
+import pipes._
+import spi.PlanContext
+import symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 /*
@@ -108,7 +107,7 @@ object MergePatternBuilder {
 
   def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
     case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) => 
-      (symbols.add(name, NodeType()), Some(CreateNode(name, props, labels)))
+      (symbols.add(name, CTNode), Some(CreateNode(name, props, labels)))
     case _ =>
       (symbols, None)
   }

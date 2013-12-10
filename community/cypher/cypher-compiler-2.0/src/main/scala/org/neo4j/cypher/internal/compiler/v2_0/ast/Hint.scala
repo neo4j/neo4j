@@ -28,13 +28,13 @@ sealed trait Hint extends AstNode with SemanticCheckable {
 }
 
 case class UsingIndexHint(identifier: Identifier, label: Identifier, property: Identifier, token: InputToken) extends Hint {
-  def semanticCheck = identifier.ensureDefined then identifier.constrainType(NodeType())
+  def semanticCheck = identifier.ensureDefined then identifier.constrainType(CTNode)
 
   def toLegacySchemaIndex = commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
 }
 
 case class UsingScanHint(identifier: Identifier, label: Identifier, token: InputToken) extends Hint {
-  def semanticCheck = identifier.ensureDefined then identifier.constrainType(NodeType())
+  def semanticCheck = identifier.ensureDefined then identifier.constrainType(CTNode)
 
   def toLegacySchemaIndex = commands.NodeByLabel(identifier.name, label.name)
 }

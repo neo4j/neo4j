@@ -43,7 +43,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(s
     result.map(x => ctx.newWith(pathName -> x))
   })
 
-  val symbols = source.symbols.add(pathName, PathType())
+  val symbols = source.symbols.add(pathName, CTPath)
 
   override def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "ShortestPath", "ast" -> ast)

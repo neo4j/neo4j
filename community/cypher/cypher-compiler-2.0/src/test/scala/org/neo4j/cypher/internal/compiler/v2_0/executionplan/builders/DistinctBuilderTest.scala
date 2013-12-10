@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.{SortItem, ReturnItem}
+import commands.expressions._
+import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import pipes.FakePipe
+import symbols._
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{SortItem, ReturnItem}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.IdFunction
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.FakePipe
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.NodeType
 
 class DistinctBuilderTest extends BuilderTest {
 
@@ -71,7 +71,7 @@ class DistinctBuilderTest extends BuilderTest {
       aggregateToDo = true,
       sort = Seq(Unsolved(SortItem(IdFunction(Identifier("n")), ascending = false))))
 
-    val pipe = new FakePipe(Iterator.empty, ("n", NodeType()))
+    val pipe = new FakePipe(Iterator.empty, ("n", CTNode))
     val planInProgress: ExecutionPlanInProgress = plan(pipe, query)
 
     val resultPlan: ExecutionPlanInProgress = assertAccepts(planInProgress)

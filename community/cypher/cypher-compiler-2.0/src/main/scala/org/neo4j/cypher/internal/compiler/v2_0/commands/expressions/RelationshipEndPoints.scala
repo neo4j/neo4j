@@ -40,7 +40,7 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
 
   def arguments = Seq(relExpression)
 
-  protected def calculateType(symbols: SymbolTable): CypherType = NodeType()
+  protected def calculateType(symbols: SymbolTable): CypherType = CTNode
 
   def rewrite(f: (Expression) => Expression): Expression = f(RelationshipEndPoints(relExpression.rewrite(f), start))
 

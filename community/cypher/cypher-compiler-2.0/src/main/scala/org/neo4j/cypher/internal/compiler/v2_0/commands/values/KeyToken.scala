@@ -47,7 +47,7 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = ???
 
-  protected def calculateType(symbols: SymbolTable) = StringType()
+  protected def calculateType(symbols: SymbolTable) = CTString
 }
 
 object KeyToken {

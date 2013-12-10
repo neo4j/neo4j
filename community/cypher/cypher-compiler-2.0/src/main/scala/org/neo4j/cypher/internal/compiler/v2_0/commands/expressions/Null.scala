@@ -30,7 +30,7 @@ case class Null() extends Expression {
 
   def arguments = Seq()
 
-  def calculateType(symbols: SymbolTable): CypherType = AnyType()
+  def calculateType(symbols: SymbolTable): CypherType = CTAny
 
   def symbolTableDependencies = Set()
 }

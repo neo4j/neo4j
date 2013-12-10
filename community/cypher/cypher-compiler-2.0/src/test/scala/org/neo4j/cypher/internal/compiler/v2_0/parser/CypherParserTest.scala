@@ -481,7 +481,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  @Test def djangoRelationshipType() {
+  @Test def djangoCTRelationship {
     test(
       "start a = NODE(1) match a -[r:`<<KNOWS>>`]-> b return b",
       Query.

@@ -29,7 +29,7 @@ case object InvalidNotEquals extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.specifyType(BooleanType()) then
+    invocation.specifyType(CTBoolean) then
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {

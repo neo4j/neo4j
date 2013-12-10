@@ -26,11 +26,11 @@ import org.neo4j.cypher.CypherTypeException
 import java.lang.Math
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
-  def innerExpectedType = NumberType()
+  def innerExpectedType = CTNumber
 
   def arguments = Seq(arg)
 
-  def calculateType(symbols: SymbolTable) = arg.evaluateType(NumberType(), symbols)
+  def calculateType(symbols: SymbolTable) = arg.evaluateType(CTNumber, symbols)
 
   def symbolTableDependencies = arg.symbolTableDependencies
 }
@@ -57,7 +57,7 @@ case class AcosFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class AsinFunction(argument: Expression) extends MathFunction(argument) {
@@ -65,7 +65,7 @@ case class AsinFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(AsinFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class AtanFunction(argument: Expression) extends MathFunction(argument) {
@@ -73,7 +73,7 @@ case class AtanFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(AtanFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
@@ -83,7 +83,7 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
 
   def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = DoubleType()
+  def calculateType(symbols: SymbolTable): CypherType = CTDouble
 
   def symbolTableDependencies = x.symbolTableDependencies ++ y.symbolTableDependencies
 }
@@ -99,7 +99,7 @@ case class CosFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(CosFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class CotFunction(argument: Expression) extends MathFunction(argument) {
@@ -107,7 +107,7 @@ case class CotFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(CotFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class DegreesFunction(argument: Expression) extends MathFunction(argument) {
@@ -115,7 +115,7 @@ case class DegreesFunction(argument: Expression) extends MathFunction(argument) 
 
   def rewrite(f: (Expression) => Expression) = f(DegreesFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class EFunction() extends Expression() {
@@ -127,7 +127,7 @@ case class EFunction() extends Expression() {
 
   def rewrite(f: (Expression) => Expression) = f(EFunction())
 
-  def calculateType(symbols: SymbolTable) = DoubleType()
+  def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class ExpFunction(argument: Expression) extends MathFunction(argument) {
@@ -135,7 +135,7 @@ case class ExpFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(ExpFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class FloorFunction(argument: Expression) extends MathFunction(argument) {
@@ -149,7 +149,7 @@ case class LogFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(LogFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class Log10Function(argument: Expression) extends MathFunction(argument) {
@@ -157,7 +157,7 @@ case class Log10Function(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(Log10Function(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class PiFunction() extends Expression {
@@ -169,7 +169,7 @@ case class PiFunction() extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(PiFunction())
 
-  def calculateType(symbols: SymbolTable) = DoubleType()
+  def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class RadiansFunction(argument: Expression) extends MathFunction(argument) {
@@ -177,7 +177,7 @@ case class RadiansFunction(argument: Expression) extends MathFunction(argument) 
 
   def rewrite(f: (Expression) => Expression) = f(RadiansFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class SinFunction(argument: Expression) extends MathFunction(argument) {
@@ -185,7 +185,7 @@ case class SinFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(SinFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class HaversinFunction(argument: Expression) extends MathFunction(argument) {
@@ -194,7 +194,7 @@ case class HaversinFunction(argument: Expression) extends MathFunction(argument)
 
   def rewrite(f: (Expression) => Expression) = f(HaversinFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class TanFunction(argument: Expression) extends MathFunction(argument) {
@@ -202,7 +202,7 @@ case class TanFunction(argument: Expression) extends MathFunction(argument) {
 
   def rewrite(f: (Expression) => Expression) = f(TanFunction(argument.rewrite(f)))
 
-  override def calculateType(symbols: SymbolTable) = DoubleType()
+  override def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class RandFunction() extends Expression {
@@ -214,7 +214,7 @@ case class RandFunction() extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(RandFunction())
 
-  def calculateType(symbols: SymbolTable) = DoubleType()
+  def calculateType(symbols: SymbolTable) = CTDouble
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
@@ -230,10 +230,10 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
   def rewrite(f: (Expression) => Expression) = f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 
   def calculateType(symbols: SymbolTable): CypherType = {
-    start.evaluateType(NumberType(), symbols)
-    end.evaluateType(NumberType(), symbols)
-    step.evaluateType(NumberType(), symbols)
-    CollectionType(NumberType())
+    start.evaluateType(CTNumber, symbols)
+    end.evaluateType(CTNumber, symbols)
+    step.evaluateType(CTNumber, symbols)
+    CTCollection(CTNumber)
   }
 
   def symbolTableDependencies = start.symbolTableDependencies ++

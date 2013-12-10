@@ -30,8 +30,8 @@ case object In extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(1).constrainType(CollectionType(AnyType()))
-    } then invocation.specifyType(BooleanType())
+      invocation.arguments(1).constrainType(CTCollectionAny)
+    } then invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {
     val left = invocation.arguments(0)

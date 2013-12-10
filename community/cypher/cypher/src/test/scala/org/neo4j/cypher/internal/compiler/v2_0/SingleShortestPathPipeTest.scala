@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.scalatest.Assertions
+import commands._
+import pipes.{ShortestPathPipe, FakePipe}
+import symbols._
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Direction, Node, Path}
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
+import org.scalatest.Assertions
 import org.junit.Test
 import collection.mutable.Map
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.NodeType
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.{ShortestPathPipe, FakePipe}
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
   val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->NodeType(), "b"->NodeType())
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)
 
     val pipe = new ShortestPathPipe(source, path)
     graph.inTx(pipe.createResults(QueryStateHelper.empty).next()("p").asInstanceOf[Path])

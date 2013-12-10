@@ -29,10 +29,10 @@ import org.scalatest.Assertions
 class SymbolTableTest extends Assertions {
   @Test def anytype_is_ok() {
     //given
-    val s = createSymbols("p" -> PathType())
+    val s = createSymbols("p" -> CTPath)
 
     //then
-    assert(s.evaluateType("p", AnyType()) === PathType())
+    assert(s.evaluateType("p", CTAny) === CTPath)
   }
 
   @Test def missing_identifier() {
@@ -40,65 +40,65 @@ class SymbolTableTest extends Assertions {
     val s = createSymbols()
 
     //then
-    intercept[SyntaxException](s.evaluateType("p", AnyType()))
+    intercept[SyntaxException](s.evaluateType("p", CTAny))
   }
 
   @Test def identifier_with_wrong_type() {
     //given
-    val symbolTable = createSymbols("x" -> StringType())
+    val symbolTable = createSymbols("x" -> CTString)
 
     //then
-    intercept[CypherTypeException](symbolTable.evaluateType("x", NumberType()))
+    intercept[CypherTypeException](symbolTable.evaluateType("x", CTNumber))
   }
 
   @Test def identifier_with_type_not_specific_enough() {
     //given
-    val symbolTable = createSymbols("x" -> MapType())
+    val symbolTable = createSymbols("x" -> CTMap)
 
     //then
-    symbolTable.evaluateType("x", RelationshipType())
+    symbolTable.evaluateType("x", CTRelationship)
   }
 
   @Test def adding_string_with_string_gives_string_type() {
     //given
     val symbolTable = createSymbols()
-    val exp = new Add(new FakeExpression(StringType()), new FakeExpression(StringType()))
+    val exp = new Add(new FakeExpression(CTString), new FakeExpression(CTString))
 
     //when
-    val returnType = exp.evaluateType(AnyType(), symbolTable)
+    val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    assert(returnType === StringType())
+    assert(returnType === CTString)
   }
 
   @Test def adding_number_with_number_gives_number_type() {
     //given
     val symbolTable = createSymbols()
-    val exp = new Add(new FakeExpression(NumberType()), new FakeExpression(NumberType()))
+    val exp = new Add(new FakeExpression(CTNumber), new FakeExpression(CTNumber))
 
     //when
-    val returnType = exp.evaluateType(AnyType(), symbolTable)
+    val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    assert(returnType === NumberType())
+    assert(returnType === CTNumber)
   }
 
   @Test def adding_to_string_collection() {
     //given
     val symbolTable = createSymbols()
-    val exp = new Add(new FakeExpression(CollectionType(StringType())), new FakeExpression(StringType()))
+    val exp = new Add(new FakeExpression(CTCollection(CTString)), new FakeExpression(CTString))
 
     //when
-    val returnType = exp.evaluateType(AnyType(), symbolTable)
+    val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    assert(returnType === CollectionType(StringType()))
+    assert(returnType === CTCollection(CTString))
   }
 
   @Test def covariance() {
     //given
-    val actual = CollectionType(NodeType())
-    val expected = CollectionType(MapType())
+    val actual = CTCollection(CTNode)
+    val expected = CTCollection(CTMap)
 
     //then
     assert(expected.isAssignableFrom(actual))

@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.{HasLabel, Equals}
+import commands.values.{UnresolvedLabel, UnresolvedProperty}
+import commands.expressions.{Property, Identifier}
+import spi.PlanContext
+import symbols._
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{HasLabel, Equals}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Property, Identifier}
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.kernel.api.index.IndexDescriptor
 import org.scalatest.Assertions
 
 class NodeFetchStrategyTest extends MockitoSugar with Assertions {
@@ -53,7 +54,7 @@ class NodeFetchStrategyTest extends MockitoSugar with Assertions {
 
   @Test def should_select_schema_index_when_expression_valid() {
     //Given
-    val noSymbols = new SymbolTable(Map("b"->NodeType()))
+    val noSymbols = new SymbolTable(Map("b"->CTNode))
     val equalityPredicate = Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("b"))
     val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
     val planCtx = mock[PlanContext]

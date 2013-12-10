@@ -38,7 +38,7 @@ abstract class Predicate extends Expression {
   // together
   def atoms: Seq[Predicate] = Seq(this)
   def containsIsNull: Boolean
-  protected def calculateType(symbols: SymbolTable) = BooleanType()
+  protected def calculateType(symbols: SymbolTable) = CTBoolean
 
   def andWith(preds: Predicate*): Predicate = { preds match {
     case _ if preds.isEmpty => this

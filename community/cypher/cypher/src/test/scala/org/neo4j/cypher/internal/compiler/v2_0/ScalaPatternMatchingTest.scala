@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Direction
 import org.junit.{After, Test}
 
 class ScalaPatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
-  val symbols = new SymbolTable(Map("a" -> NodeType()))
+  val symbols = new SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, Direction.OUTGOING)
   val rightNode = patternRelationship.right
 
@@ -99,7 +99,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineHelper with PatternGraphBu
     // This matcher is responsible for (b)--(c), and should exclude matches from the previous step
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
 
-    val symbolTable = symbols.add("b", NodeType()).add("r1", RelationshipType())
+    val symbolTable = symbols.add("b", CTNode).add("r1", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
     val matcher = new PatternMatchingBuilder(patternGraph, Seq(), Set("a", "r1", "b", "r2", "c"))
 
@@ -120,7 +120,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineHelper with PatternGraphBu
     // Given MATCH (b)-[r2]-(c), in scope is (a), [r1]
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
 
-    val symbolTable = symbols.add("b", NodeType()).add("r1", RelationshipType())
+    val symbolTable = symbols.add("b", CTNode).add("r1", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
     val matcher = new PatternMatchingBuilder(patternGraph, Seq(), Set("b", "r2", "c"))
 

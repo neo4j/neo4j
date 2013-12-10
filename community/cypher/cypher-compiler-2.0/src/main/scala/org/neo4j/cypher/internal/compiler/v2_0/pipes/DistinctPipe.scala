@@ -59,7 +59,7 @@ class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends P
   override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Distinct")
 
   def symbols: SymbolTable = {
-    val identifiers = Materialized.mapValues(expressions, (e: Expression) => e.evaluateType(AnyType(), source.symbols))
+    val identifiers = Materialized.mapValues(expressions, (e: Expression) => e.evaluateType(CTAny, source.symbols))
     SymbolTable(identifiers)
   }
 }

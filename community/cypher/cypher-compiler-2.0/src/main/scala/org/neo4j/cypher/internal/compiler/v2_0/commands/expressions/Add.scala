@@ -53,21 +53,21 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
     val aT = a.getType(symbols)
     val bT = b.getType(symbols)
 
-    (aT.isCollection, bT.isCollection) match {
+    (CTCollectionAny.isAssignableFrom(aT), CTCollectionAny.isAssignableFrom(bT)) match {
       case (true, false) => mergeWithCollection(collection = aT, singleElement = bT)
       case (false, true) => mergeWithCollection(collection = bT, singleElement = aT)
       case _ => (aT, bT) match {
-        case (x:StringType, y:NumberType) => StringType()
-        case (x:NumberType, y:StringType) => StringType()
-        case _ => aT.mergeDown(bT)
+        case (x:StringType, y:NumberType) => CTString
+        case (x:NumberType, y:StringType) => CTString
+        case _ => aT.mergeUp(bT)
       }
     }
   }
 
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[CollectionType]
-    val mergedInnerType = collectionType.iteratedType.mergeDown(singleElement)
-    CollectionType(mergedInnerType)
+    val mergedInnerType = collectionType.innerType.mergeUp(singleElement)
+    CTCollection(mergedInnerType)
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies

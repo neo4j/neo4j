@@ -28,8 +28,8 @@ case object Log10 extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(NumberType()) then
-    invocation.specifyType(DoubleType())
+    invocation.arguments.constrainType(CTNumber) then
+    invocation.specifyType(CTDouble)
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.Log10Function(invocation.arguments(0).toCommand)

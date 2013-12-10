@@ -29,7 +29,7 @@ case object GreaterThan extends PredicateFunction {
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
 //    invocation.arguments.constrainType(???) then // TODO: should constrain types
-    invocation.specifyType(BooleanType())
+    invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {
     val left = invocation.arguments(0)

@@ -72,7 +72,7 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
     soFar ++ pathTail
   }
 
-  val symbols = source.symbols.add(pathName, PathType())
+  val symbols = source.symbols.add(pathName, CTPath)
 
   override def executionPlanDescription = {
     val name = SimpleVal.fromStr(pathName)

@@ -19,46 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-import java.lang.String
-import org.neo4j.cypher.CypherTypeException
+object AnyType {
+  val instance = new AnyType() {
+    val parentType = this
+    override val isAbstract = true
 
-case class AnyType() extends CypherType {
-  override def equals(other: Any) = if (other == null)
-    false
-  else
-    other match {
-      case x: AnyRef => x.getClass == this.getClass
-      case _         => false
-    }
+    override def isAssignableFrom(other: CypherType): Boolean = true
 
-  override def hashCode = 23 * this.getClass.hashCode
-
-  override val iteratedType: CypherType = this
-
-  def parentType: CypherType = this
-
-  //This is the root of all
-  override def toString: String = "Any"
+    override val toString = "Any"
+  }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class AnyType extends CypherType

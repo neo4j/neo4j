@@ -38,7 +38,7 @@ class PatternRelationship(key: String,
                           val dir: Direction)
   extends PatternElement(key) {
 
-  def identifiers2: Map[String, CypherType] = Map(startNode.key -> NodeType(), endNode.key -> NodeType(), key -> RelationshipType())
+  def identifiers2: Map[String, CypherType] = Map(startNode.key -> CTNode, endNode.key -> CTNode, key -> CTRelationship)
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
@@ -132,9 +132,9 @@ class VariableLengthPatternRelationship(pathName: String,
 
 
   override def identifiers2: Map[String, CypherType] =
-    Map(startNode.key -> NodeType(),
-      endNode.key -> NodeType(),
-      key -> CollectionType(RelationshipType())) ++ relIterable.map(_ -> CollectionType(RelationshipType())).toMap
+    Map(startNode.key -> CTNode,
+      endNode.key -> CTNode,
+      key -> CTCollection(CTRelationship)) ++ relIterable.map(_ -> CTCollection(CTRelationship)).toMap
 
   override def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
 

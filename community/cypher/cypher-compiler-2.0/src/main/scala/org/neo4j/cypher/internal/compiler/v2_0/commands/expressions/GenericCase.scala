@@ -45,7 +45,7 @@ case class GenericCase(alternatives: Seq[(Predicate, Expression)], default: Opti
   def arguments = alternatives.map(_._1) ++ alternatives.map(_._2) ++ default.toSeq
 
   protected def calculateType(symbols: SymbolTable): CypherType =
-    calculateUpperTypeBound(AnyType(), symbols, alternativeExpressions ++ default.toSeq)
+    calculateUpperTypeBound(CTAny, symbols, alternativeExpressions ++ default.toSeq)
 
   def rewrite(f: (Expression) => Expression): Expression = {
     val newAlternatives: Seq[(Predicate, Expression)] = alternatives map {

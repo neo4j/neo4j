@@ -29,8 +29,8 @@ case object Not extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(BooleanType()) then
-    invocation.specifyType(BooleanType())
+    invocation.arguments.constrainType(CTBoolean) then
+    invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = commands.Not(invocation.arguments(0).toPredicate)
 }

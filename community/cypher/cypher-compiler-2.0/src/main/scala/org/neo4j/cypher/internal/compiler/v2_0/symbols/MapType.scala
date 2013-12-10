@@ -20,39 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
 object MapType {
-  lazy val instance = new MapType()
-
-  def apply() = instance
+  val instance = new MapType() {
+    val parentType = CTAny
+    override val toString = "Map"
+  }
 }
 
-
-class MapType extends AnyType {
-  override def parentType: CypherType = AnyType()
-  override def toString = "Map"
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sealed abstract class MapType extends CypherType

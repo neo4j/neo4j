@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands.SortItem
+import commands.expressions._
+import commands.values.TokenType._
+import executionplan.PartiallySolvedQuery
+import symbols._
 import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.CachedExpression
-import org.neo4j.cypher.internal.compiler.v2_0.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.AnyType
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.CountStar
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
 
 class SortBuilderTest extends BuilderTest {
 
@@ -40,14 +37,14 @@ class SortBuilderTest extends BuilderTest {
       extracted = true
     )
 
-    val expected = List(Solved(SortItem(CachedExpression("x.foo", AnyType()), ascending = true)))
+    val expected = List(Solved(SortItem(CachedExpression("x.foo", CTAny), ascending = true)))
 
     val p = createPipe(nodes = Seq("x"))
 
     val resultQ = assertAccepts(p, q).query
 
     resultQ.sort match {
-      case List(Solved(SortItem(CachedExpression(_, AnyType()), true))) => //correct, don't check anything else
+      case List(Solved(SortItem(CachedExpression(_, _: AnyType), true))) => //correct, don't check anything else
       case _                                                            => assert(resultQ.sort === expected)
     }
   }

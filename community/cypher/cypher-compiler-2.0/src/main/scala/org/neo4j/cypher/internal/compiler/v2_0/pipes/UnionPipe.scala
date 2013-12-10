@@ -28,7 +28,7 @@ case class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
   def executionPlanDescription: PlanDescription = PlanDescription(this, "Union").
     withChildren(in.map(_.executionPlanDescription): _*)
 
-  def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> AnyType()).toMap)
+  def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> CTAny).toMap)
 
   def exists(pred: Pipe => Boolean) = pred(this) || in.exists(_.exists(pred))
 }

@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands._
+import commands.expressions._
+import commands.values.KeyToken
+import spi.PlanContext
+import symbols._
 
 /*
 This rather simple class finds a starting strategy for a given single node and a list of predicates required
@@ -136,7 +137,7 @@ object IndexSeekStrategy extends NodeStrategy {
   }
 
   private def findEqualityPredicatesOnProperty(identifier: IdentifierName, where: Seq[Predicate], initialSymbols: SymbolTable): Seq[SolvedPredicate[PropertyKey]] = {
-    val symbols = initialSymbols.add(identifier, NodeType())
+    val symbols = initialSymbols.add(identifier, CTNode)
 
     where.collect {
       case predicate @ Equals(Property(Identifier(id), propertyKey), expression)

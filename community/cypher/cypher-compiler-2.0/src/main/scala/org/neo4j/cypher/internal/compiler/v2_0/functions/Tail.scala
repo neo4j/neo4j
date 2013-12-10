@@ -28,7 +28,7 @@ case object Tail extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments(0).constrainType(CollectionType(AnyType())) then
+      invocation.arguments(0).constrainType(CTCollectionAny) then
       invocation.specifyType(invocation.arguments(0).types)
     }
 

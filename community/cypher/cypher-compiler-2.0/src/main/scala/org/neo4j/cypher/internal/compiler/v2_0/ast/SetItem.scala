@@ -33,13 +33,13 @@ case class SetPropertyItem(property: Property, expression: Expression, token: In
   def semanticCheck =
     property.semanticCheck(Expression.SemanticContext.Simple) then
     expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.constrainType(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
+    expression.constrainType(CTBoolean, CTNumber, CTString, CTCollectionAny)
 
   def toLegacyUpdateAction = mutation.PropertySetAction(property.toCommand, expression.toCommand)
 }
 
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(NodeType())
+  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(CTNode)
 
   def toLegacyUpdateAction =
     commands.LabelAction(expression.toCommand, commands.LabelSetOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
@@ -48,9 +48,9 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
 case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.constrainType(NodeType(), RelationshipType()) then
+    identifier.constrainType(CTNode, CTRelationship) then
     expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.constrainType(MapType())
+    expression.constrainType(CTMap)
 
   def toLegacyUpdateAction = mutation.MapPropertySetAction(commandexpressions.Identifier(identifier.name), expression.toCommand)
 }

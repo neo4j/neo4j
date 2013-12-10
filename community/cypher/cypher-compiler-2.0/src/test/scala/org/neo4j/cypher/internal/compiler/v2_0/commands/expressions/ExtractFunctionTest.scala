@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import symbols._
 import org.scalatest.Assertions
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{StringType, CollectionType, SymbolTable}
 
 class ExtractFunctionTest extends Assertions {
   @Test def apa() {
@@ -31,9 +32,9 @@ class ExtractFunctionTest extends Assertions {
     val symbols = SymbolTable()
 
     //WHEN
-    val typ = func.evaluateType(CollectionType(StringType()), symbols)
+    val typ = func.evaluateType(CTCollection(CTString), symbols)
 
     //THEN
-    assert(typ === CollectionType(StringType()))
+    assert(typ === CTCollection(CTString))
   }
 }

@@ -43,26 +43,26 @@ class ExpressionTest extends Assertions {
 
   @Test def merge_two_different_identifiers() {
     testMerge(
-      Map("a" -> AnyType()),
-      Map("b" -> AnyType()),
+      Map("a" -> CTAny),
+      Map("b" -> CTAny),
 
-      Map("a" -> AnyType(), "b" -> AnyType()))
+      Map("a" -> CTAny, "b" -> CTAny))
   }
 
   @Test def merge_two_deps_on_the_same_identifier() {
     testMerge(
-      Map("a" -> AnyType()),
-      Map("a" -> AnyType()),
+      Map("a" -> CTAny),
+      Map("a" -> CTAny),
 
-      Map("a" -> AnyType()))
+      Map("a" -> CTAny))
   }
 
   @Test def merge_two_deps_same_id_different_types() {
     testMerge(
-      Map("a" -> AnyType()),
-      Map("a" -> MapType()),
+      Map("a" -> CTAny),
+      Map("a" -> CTMap),
 
-      Map("a" -> AnyType()))
+      Map("a" -> CTAny))
   }
 
   @Test
@@ -122,7 +122,7 @@ class ExpressionTest extends Assertions {
     val result = keys.toSeq.map(k => (a.get(k), b.get(k)) match {
       case (Some(x), None)    => k -> x
       case (None, Some(x))    => k -> x
-      case (Some(x), Some(y)) => k -> x.mergeDown(y)
+      case (Some(x), Some(y)) => k -> x.mergeUp(y)
       case (None, None)       => throw new ThisShouldNotHappenError("Andres", "only here to stop warnings")
     }).toMap
 

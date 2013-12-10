@@ -19,20 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
+import org.neo4j.cypher.internal.compiler.v2_0._
+import commands._
+import commands.expressions._
+import commands.values.{KeyToken, TokenType}
+import commands.values.TokenType._
+import commands.values.KeyToken.Unresolved
+import executionplan.PartiallySolvedQuery
+import mutation.{ForeachAction, UpdateAction, MergeNodeAction}
+import pipes.FakePipe
+import spi.PlanContext
+import symbols._
 import org.junit.Test
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.{ForeachAction, UpdateAction, MergeNodeAction}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.FakePipe
-import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.NodeType
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_0.commands._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken.Unresolved
-
 
 class MergeStartPointBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new MergeStartPointBuilder
@@ -51,7 +51,7 @@ class MergeStartPointBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_solved_merge_node_start_points() {
     // Given MERGE (x:Label)
-    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
+    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
     val query = q(
       updates = Seq(mergeNodeAction)
     )
@@ -71,7 +71,7 @@ class MergeStartPointBuilderTest extends BuilderTest with MockitoSugar {
   @Test
   def should_solved_merge_node_start_points_inside_foreach() {
     // Given FOREACH(x in [1,2,3] | MERGE (x:Label {prop:x}))
-    val pipe = new FakePipe(Iterator.empty, identifier -> NodeType())
+    val pipe = new FakePipe(Iterator.empty, identifier -> CTNode)
     val collection = Collection(Literal(1), Literal(2), Literal(3))
     val prop = Unresolved("prop", TokenType.PropertyKey)
     val query = q(

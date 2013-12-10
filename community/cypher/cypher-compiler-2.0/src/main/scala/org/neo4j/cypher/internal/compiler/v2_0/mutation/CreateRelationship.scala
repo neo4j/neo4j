@@ -80,7 +80,7 @@ extends UpdateAction
     Iterator(context)
   }
 
-  def identifiers = Seq(key-> RelationshipType())
+  def identifiers = Seq(key-> CTRelationship)
 
   override def symbolTableDependencies: Set[String] = {
       val a = props.flatMap(_._2.symbolTableDependencies).toSet

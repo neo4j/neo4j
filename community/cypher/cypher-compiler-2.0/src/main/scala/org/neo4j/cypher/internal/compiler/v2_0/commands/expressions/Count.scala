@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.aggregation.CountFunction
 case class Count(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new CountFunction(anInner)
 
-  def expectedInnerType = AnyType()
+  def expectedInnerType = CTAny
 
   def rewrite(f: (Expression) => Expression) = f(Count(anInner.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = LongType()
+  def calculateType(symbols: SymbolTable): CypherType = CTLong
 }
