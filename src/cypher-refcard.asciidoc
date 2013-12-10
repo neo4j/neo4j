@@ -10,15 +10,16 @@ Key principles and capabilities of Cypher are as follows:
 * Cypher manages indexes and constraints.
 
 ++++
-<div class="paragraph"><p>You can try cypher snippets live in the Neo4j Console at 
+<div class="paragraph"><p>You can try Cypher snippets live in the Neo4j Console at 
 <a href="http://console.neo4j.org" target="_blank">console.neo4j.org</a>
 or read the full Cypher documentation at 
 <a href="http://docs.neo4j.org" target="_blank">docs.neo4j.org</a>.
-For live graph models using Cypher check out our <a href="http://gist.neo4j.org" target="_blank">GraphGist collection</a></p></div>
+For live graph models using Cypher check out <a href="http://gist.neo4j.org" target="_blank">GraphGist</a>.</p></div>
 ++++
 
 Note: `{value}` denotes either literals, for ad hoc Cypher queries; or parameters, which is the best practice for applications.
-Neo4j properties can be strings, numbers, booleans or arrays thereof. Cypher also supports maps and collections.
+Neo4j properties can be strings, numbers, booleans or arrays thereof.
+Cypher also supports maps and collections.
 
 == Syntax ==
 
@@ -87,7 +88,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.
 | Comparison         | `=`, `<>`, `<`, `>`, `<=`, `>=`
 | Boolean            | `AND`, `OR`, `XOR`, `NOT`
 | String             | `+`
-| Collection         | `+`, `IN`
+| Collection         | `+`, `IN`, `[x]`, `[x .. y]`
 | Regular Expression | `=~`
 |===
 
@@ -147,20 +148,21 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation
 
 [options="header", cols="a"]
 |===
-|Deprecation
+|Upgrading
 |
-With Neo4j 2.0 several Cypher features have been deprecated or removed.
+With Neo4j 2.0 several Cypher features in ersion 1.9 have been deprecated or removed.
 
-* +START+ is optional
+* +START+ is optional.
 * +MERGE+ will take +CREATE UNIQUE+'s role for the unique creation of patterns.
-* Optional relationships are handled by +OPTIONAL MATCH+ not question marks
-* Non-existing properties return null, +n.prop?+ and +n.prop!+ have been removed
-* Separator for collection functions changed form +:+ to +\|+
-* Paths are no longer collections, use +nodes(path)+ or +rels(path)+
-* Parentheses around nodes in patterns are no longer optional
-* +CREATE a=\{property:’value’\}+ has been removed
-* Use +REMOVE+ to remove properties
-* Parameters for index-keys and nodes in patterns are no longer allowed
+* Optional relationships are handled by +OPTIONAL MATCH+ not question marks.
+* Non-existing properties return null, +n.prop?+ and +n.prop!+ have been removed.
+* The separator for collection functions changed form +:+ to +\|+.
+* Paths are no longer collections, use +nodes(path)+ or +rels(path)+.
+* Parentheses around nodes in patterns are no longer optional.
+* +CREATE a=\{property:’value’\}+ has been removed.
+* Use +REMOVE+ to remove properties.
+* Parameters for index-keys and nodes in patterns are no longer allowed.
+* To still use the older syntax, prepend you Cypher statement with `CYPHER 1.9`.
 |===
 
 ++++
@@ -170,3 +172,4 @@ With Neo4j 2.0 several Cypher features have been deprecated or removed.
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
 
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
+

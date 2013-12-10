@@ -64,7 +64,7 @@ class CollectionsTest extends RefcardTest with StatisticsChecker {
 ###assertion=returns-one
 RETURN
 
-['a','b','c'] as coll
+['a','b','c'] AS coll
 
 ###
 
@@ -73,7 +73,7 @@ Literal collections are declared in square brackets.
 ###assertion=returns-one parameters=coll
 RETURN
 
-length({coll}) as len, {coll}[0] as value
+length({coll}) AS len, {coll}[0] AS value
 
 ###
 
@@ -82,28 +82,28 @@ Collections can be passed in as parameters.
 ###assertion=returns-one parameters=range
 RETURN
 
-range({first_num},{last_num},{step}) as coll
+range({first_num},{last_num},{step}) AS coll
 
 ###
 
 Range creates a collection of numbers (+step+ is optional), other functions returning collections are:
-+labels+, +nodes+, +rels+, +filter+, +extract+.
++labels+, +nodes+, +relationships+, +rels+, +filter+, +extract+.
 
 ###assertion=returns-one
 //
 
 MATCH (a)-[r:KNOWS*]->()
-RETURN r as rels
+RETURN r AS rels
 
 ###
 
 Relationship identifiers of a variable length path contain a collection of relationships.
 
 ###assertion=returns-two
-MATCH (node)
+MATCH (matchedNode)
 
-RETURN node.coll[0] as value,
-       length(node.coll) as len
+RETURN matchedNode.coll[0] AS value,
+       length(matchedNode.coll) AS len
 
 ###
 
@@ -113,14 +113,14 @@ Properties can be arrays/collections of strings, numbers or booleans.
 WITH [1,2,3] as coll
 RETURN
 
-coll[{idx}] as value,
-coll[{start_idx}..{end_idx}] as slice
+coll[{idx}] AS value,
+coll[{start_idx}..{end_idx}] AS slice
 
 ###
 
-Collection elements can be accessed with +idx+ subscripts in square brackets. Invalid indexes return +NULL+.
-Slices can
-be retrieved with intervals from +start_idx+ to +end_idx+ each of which can be omitted or negative.
+Collection elements can be accessed with +idx+ subscripts in square brackets.
+Invalid indexes return +NULL+.
+Slices can be retrieved with intervals from +start_idx+ to +end_idx+ each of which can be omitted or negative.
 Out of range elements are ignored.
-             """
+"""
 }

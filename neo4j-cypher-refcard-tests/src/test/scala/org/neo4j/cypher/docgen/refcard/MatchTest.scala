@@ -82,5 +82,16 @@ MATCH p = (n)-->(m)
 RETURN p###
 
 Assign a path to `p`.
+
+###assertion=related
+START n=node(%A%), m=node(%B%)
+
+OPTIONAL MATCH (n)-[r]->(m)
+
+RETURN r###
+
+Optional pattern.
+Will yield found nodes or one row with ++NULL++s for unbound elements.
+
 """
 }

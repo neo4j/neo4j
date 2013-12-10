@@ -142,16 +142,6 @@ Bind an identifier to the relationship.
 
 ###assertion=related
 START n=node(%A%), m=node(%B%)
-
-OPTIONAL MATCH (n)-[r]->(m)
-
-RETURN r###
-
-Optional relationship. Needs one bound node.
-Will yield found nodes or one row with null values for unbound elements.
-
-###assertion=related
-START n=node(%A%), m=node(%B%)
 MATCH
 
 (n)-[*1..5]->(m)

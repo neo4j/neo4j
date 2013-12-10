@@ -73,6 +73,6 @@ RETURN b.name
 
 ###
 
-Returns the added union of all query results.
+Returns the union of all query results, including duplicated rows.
 """
 }

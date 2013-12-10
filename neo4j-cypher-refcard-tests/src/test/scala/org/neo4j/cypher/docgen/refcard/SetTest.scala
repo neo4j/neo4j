@@ -29,7 +29,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "set" =>
-        assertStats(result, propertiesSet = 1)
+        assertStats(result, propertiesSet = 2)
         assert(result.dumpToString().contains("a value"))
       case "set-label" =>
         assertStats(result, nodesCreated = 1, labelsAdded = 1)
@@ -42,7 +42,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
 
   override def parameters(name: String): Map[String, Any] =
     name match {
-      case "parameters=set" => Map("value" -> "a value")
+      case "parameters=set" => Map("value" -> "a value", "value2" -> "another value")
       case "parameters=map" => Map("map" -> Map("property" -> "a value"))
       case "" => Map()
     }
@@ -54,7 +54,7 @@ class SetTest extends RefcardTest with StatisticsChecker {
 ###assertion=set parameters=set
 START n = node(%A%)
 
-SET n.property={value}
+SET n.property = {value}, n.property2 = {value2}
 
 RETURN n.property###
 

@@ -64,7 +64,7 @@ class MapsTest extends RefcardTest with StatisticsChecker {
 RETURN
 
 {name:'Alice', age:38,
- address:{city:'London', residential:true}} as map
+ address:{city:'London', residential:true}} AS map
 
 ###
 
@@ -83,23 +83,24 @@ RETURN p
 Maps can be passed in as parameters and used as map or by accessing keys.
 
 ###assertion=returns-one
-MATCH (node:Person)
+MATCH (matchedNode:Person)
 
-RETURN node as map
+RETURN matchedNode AS map
 
 ###
 
 Nodes and relationships are returned as maps of their data.
 
 ###assertion=returns-one
-WITH {name:'Alice', age:38, children:['John','Max']} as map
+WITH {name:'Alice', age:38, children:['John','Max']} AS map
 RETURN
 
 map.name, map.age, map.children[0]
 
 ###
 
-Map entries can be accessed by their keys. Invalid keys result in an error.
+Map entries can be accessed by their keys.
+Invalid keys result in an error.
 """
 /*
 WITH {name:'Alice', age:38, address:{city:'London', residential:true}, children:['John','Max']} as data

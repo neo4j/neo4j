@@ -61,7 +61,7 @@ CREATE CONSTRAINT ON (p:Person)
        ASSERT p.name IS UNIQUE
 ###
 
-Create an unique constraint on the label `Person` and property `name`.
+Create a unique constraint on the label `Person` and property `name`.
 If any other node with that label is updated or created with a `name` that
 already exists, the write operation will fail.
 This constraint will create an accompanying index.

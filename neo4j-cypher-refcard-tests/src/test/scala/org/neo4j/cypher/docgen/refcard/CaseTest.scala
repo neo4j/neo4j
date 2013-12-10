@@ -25,7 +25,7 @@ class CaseTest extends RefcardTest with StatisticsChecker {
   def graphDescription = List(
     "A KNOWS B")
   val title = "CASE"
-  val css = "read c2-1 c3-1 c4-2 c5-3"
+  val css = "general c2-1 c3-1 c4-2 c5-3"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {
