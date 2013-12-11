@@ -42,7 +42,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
     case _              => throw new ThisShouldNotHappenError("Andres", "Need something with properties")
   }
 
-  def rewrite(f: (Expression) => Expression) = f(new Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))
 
   override def children = Seq(mapExpr, propertyKey)
 

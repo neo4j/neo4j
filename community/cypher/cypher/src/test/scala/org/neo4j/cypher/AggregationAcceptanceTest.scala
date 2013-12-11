@@ -17,20 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.executionplan
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
-import scala.util.Random
+import org.junit.Test
 
-
-trait Namer extends (Expression => String) {
-  def nextName(): String
-
-  def apply(e: Expression): String = nextName()
-}
-
-class RandomNamer extends Namer {
-  val rand = new Random()
-
-  def nextName(): String = "  UNNAMED" + rand.nextString(5)
+class AggregationAcceptanceTest extends ExecutionEngineHelper {
+  @Test def should_handle_aggregates_inside_non_aggregate_expressions() {
+    val result = execute("MATCH (a { name: 'Andres' })<-[:FATHER_OF]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}")
+    println(result.dumpToString())
+  }
 }

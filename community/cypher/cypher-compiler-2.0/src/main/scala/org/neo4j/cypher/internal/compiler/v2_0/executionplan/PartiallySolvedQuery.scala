@@ -126,7 +126,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
         case x => x
       },
       where = where.map {
-        case Unsolved(pred) => Unsolved(pred.rewrite(f))
+        case Unsolved(pred) => Unsolved(pred.typedRewrite[Predicate](f))
         case x => x
       },
       updates = updates.map {
