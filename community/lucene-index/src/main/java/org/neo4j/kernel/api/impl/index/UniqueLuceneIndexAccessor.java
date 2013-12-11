@@ -55,6 +55,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
         }
     }
 
+    @Override
     public Long currentlyIndexedNode( Object value ) throws IOException
     {
         IndexSearcher searcher = searcherManager.acquire();
@@ -120,8 +121,8 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
             for ( NodePropertyUpdate update : updates )
             {
                 delegate.process( update );
-                delegate.close();
             }
+            delegate.close();
         }
 
         @Override
