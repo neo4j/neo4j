@@ -23,9 +23,11 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
@@ -33,6 +35,7 @@ import org.neo4j.kernel.impl.util.TestLogging;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class MultiPaxosContextTest
@@ -58,6 +61,23 @@ public class MultiPaxosContextTest
         assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI( joiningUri ) ));
         assertTrue( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI("http://127.0.0.1:80")));
         assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
+    }
+
+    @Test @Ignore
+    public void shouldDeepClone() throws Exception
+    {
+        // Given
+        MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
+                Collections.<ElectionRole>emptyList(),
+                mock( ClusterConfiguration.class ), mock( Executor.class ),
+                new TestLogging(), new ObjectStreamFactory(),
+                new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ) );
+
+        // When
+        MultiPaxosContext snapshot = ctx.snapshot();
+
+        // Then
+        assertEquals( ctx, snapshot );
     }
 
 }
