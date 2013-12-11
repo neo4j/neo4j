@@ -36,6 +36,8 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
   def readyToExecute = maybeMatchPipe.nonEmpty && maybeUpdateActions.nonEmpty
 
+  def readyToUpdate(symbols: SymbolTable) = !readyToExecute && symbolDependenciesMet(symbols)
+
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     state.initialContext = Some(context)
 
