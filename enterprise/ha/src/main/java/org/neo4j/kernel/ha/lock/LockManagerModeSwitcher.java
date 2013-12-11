@@ -41,17 +41,16 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     private final AbstractTransactionManager txManager;
     private final RemoteTxHook txHook;
     private final HaXaDataSourceManager xaDsm;
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Config config;
 
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<LockManager> delegate,
-                                    AbstractTransactionManager txManager,
-                                    RemoteTxHook txHook, HaXaDataSourceManager xaDsm, Master master,
-                                    RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                                    Config config )
+                                    HaXaDataSourceManager xaDsm, DelegateInvocationHandler<Master> master,
+                                    RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
+                                    RemoteTxHook txHook, AvailabilityGuard availabilityGuard, Config config )
     {
         super( stateMachine, delegate );
         this.txManager = txManager;
@@ -81,6 +80,6 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
             }
         };
         return new SlaveLockManager( txManager, txHook, availabilityGuard, slaveConfig, new RagManager( txManager ),
-                requestContextFactory, master, xaDsm );
+                requestContextFactory, master.cement(), xaDsm );
     }
 }

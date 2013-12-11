@@ -25,19 +25,19 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerator>
 {
     private final HaXaDataSourceManager xaDsm;
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private StringLogger msgLog;
     private Config config;
@@ -45,7 +45,7 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
 
     public TxIdGeneratorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                       DelegateInvocationHandler<TxIdGenerator> delegate, HaXaDataSourceManager xaDsm,
-                                      Master master, RequestContextFactory requestContextFactory,
+                                      DelegateInvocationHandler<Master> master, RequestContextFactory requestContextFactory,
                                       StringLogger msgLog, Config config, Slaves slaves
     )
     {
@@ -67,7 +67,7 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
     @Override
     protected TxIdGenerator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ), master,
+        return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ), master.cement(),
                 HighAvailabilityModeSwitcher.getServerId( serverHaUri ), requestContextFactory, xaDsm );
     }
 }

@@ -162,6 +162,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     {
         waitUntilThreadState( Thread.State.WAITING );
     }
+
+    public void waitUntilBlocked() throws TimeoutException
+    {
+        waitUntilThreadState( Thread.State.BLOCKED );
+    }
     
     public void waitUntilThreadState( Thread.State... possibleStates ) throws TimeoutException
     {
@@ -188,13 +193,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
                         timeout + " ms. Seen states: " + seenStates );
             }
         }
-    }
-    
-    private Thread getThread()
-    {
-        Thread thread = null;
-        while (thread == null) thread = this.thread;
-        return thread;
     }
     
     public void shutdown()
