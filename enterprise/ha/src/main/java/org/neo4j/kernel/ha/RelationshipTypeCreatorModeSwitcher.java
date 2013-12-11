@@ -23,8 +23,8 @@ import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.logging.Logging;
@@ -32,15 +32,15 @@ import org.neo4j.kernel.logging.Logging;
 public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
     private final HaXaDataSourceManager xaDsm;
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final Logging logging;
 
     public RelationshipTypeCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                                 DelegateInvocationHandler<TokenCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
-                                                Master master, RequestContextFactory requestContextFactory,
-                                                Logging logging
+                                                DelegateInvocationHandler<Master> master,
+                                                RequestContextFactory requestContextFactory, Logging logging
     )
     {
         super( stateMachine, delegate );
@@ -59,6 +59,6 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<To
     @Override
     protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveRelationshipTypeCreator( master, requestContextFactory, xaDsm );
+        return new SlaveRelationshipTypeCreator( master.cement(), requestContextFactory, xaDsm );
     }
 }
