@@ -23,16 +23,43 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 
 class PatternRelationshipTest extends JUnitSuite with Assertions {
-  @Test def returnsTheOtherNode() {
+
+  @Test def should_provide_the_other_node() {
+    // given
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
+    // then r can be constructed
     val r = a.relateTo("r", b, Seq(), Direction.BOTH)
 
-    val result = r.getOtherNode(a)
+    // such that
+    assert(r.getOtherNode(a) === b)
+  }
 
-    assert(result === b)
+  @Test def should_filter_out_relationships_based_on_properties_and_provide_the_other_node() {
+    // given
+    val a = new PatternNode("a")
+    val b = new PatternNode("b")
+
+    // then r can be constructed
+    val r = a.relateTo("r", b, Seq(), Direction.BOTH, Map("prop" -> Literal(42)))
+
+    // such that
+    assert(r.getOtherNode(a) === b)
+  }
+
+  @Test def should_filter_out_var_length_relationships_based_on_properties_and_provide_the_other_node() {
+    // given
+    val a = new PatternNode("a")
+    val b = new PatternNode("b")
+
+    // then r can be constructed
+    val r = a.relateViaVariableLengthPathTo("p", b, Some(1), Some(2), Seq("REL"), Direction.BOTH, Some("r"),  Map("prop" -> Literal(42)))
+
+    // such that
+    assert(r.getOtherNode(a) === b)
   }
 }
