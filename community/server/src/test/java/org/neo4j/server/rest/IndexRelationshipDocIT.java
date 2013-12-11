@@ -542,7 +542,33 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void already_indexed_relationship_should_not_fail_on_create_or_fail() throws Exception
+    public void already_indexed_node_should_fail_on_create_or_fail() throws Exception
+    {
+        // Given
+        final String index = "nodeIndex", key = "name", value = "Peter";
+        GraphDatabaseService graphdb = graphdb();
+        helper.createNodeIndex( index );
+        Node node;
+        try ( Transaction tx = graphdb.beginTx() )
+        {
+            node = graphdb.createNode();
+            graphdb.index().forNodes( index ).add( node, key, value );
+            tx.success();
+        }
+
+        // When & Then
+        gen.get()
+                .noGraph()
+                .expectedStatus( 409 )
+                .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                .payload(
+                        "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\""
+                                + functionalTestHelper.nodeUri( node.getId() ) + "\"}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
+    }
+
+    @Test
+    public void already_indexed_relationship_should_fail_on_create_or_fail() throws Exception
     {
         // Given
         final String index = "rels", key = "name", value = "Peter";
@@ -561,7 +587,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
         // When & Then
         gen.get()
                 .noGraph()
-                .expectedStatus( 201 )
+                .expectedStatus( 409 )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload(
                         "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\""
