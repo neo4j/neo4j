@@ -625,6 +625,21 @@ public final class Iterables
         return addAll( new HashSet<T>(), iterable );
     }
 
+    public static String toString( Iterable<?> values, String separator )
+    {
+        Iterator<?> it = values.iterator();
+        StringBuilder sb = new StringBuilder();
+        while(it.hasNext())
+        {
+            sb.append( it.next().toString() );
+            if(it.hasNext())
+            {
+                sb.append( separator );
+            }
+        }
+        return sb.toString();
+    }
+
     private static class MapIterable<FROM, TO>
             implements Iterable<TO>
     {

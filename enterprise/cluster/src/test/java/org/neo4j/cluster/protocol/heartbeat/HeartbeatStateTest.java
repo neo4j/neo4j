@@ -32,8 +32,9 @@ import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.MultiPaxosContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
@@ -65,7 +66,8 @@ public class HeartbeatStateTest
                         new ElectionRole( "coordinator" ) ), configuration,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
-                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
+                mock( ElectionCredentialsProvider.class) );
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
@@ -98,7 +100,8 @@ public class HeartbeatStateTest
                         new ElectionRole( "coordinator" ) ), configuration,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
-                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
+                mock( ElectionCredentialsProvider.class) );
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,

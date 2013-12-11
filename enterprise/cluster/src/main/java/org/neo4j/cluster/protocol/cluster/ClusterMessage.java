@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.cluster;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
@@ -118,12 +119,13 @@ public enum ClusterMessage
     public static class ConfigurationResponseState
             implements Serializable
     {
-        private Map<InstanceId, URI> nodes;
-        private org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
-        private Map<String, InstanceId> roles;
-        private String clusterName;
+        private final Map<InstanceId, URI> nodes;
+        private final org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
+        private final Map<String, InstanceId> roles;
+        private final String clusterName;
 
-        public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes, org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,
+        public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes,
+                                           org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,
                                           String clusterName )
         {
             this.roles = roles;
@@ -150,6 +152,68 @@ public enum ClusterMessage
         public String getClusterName()
         {
             return clusterName;
+        }
+
+        public ConfigurationResponseState snapshot()
+        {
+            return new ConfigurationResponseState( new HashMap<>(roles), new HashMap<>(nodes),
+                    latestReceivedInstanceId, clusterName );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ConfigurationResponseState{" +
+                    "nodes=" + nodes +
+                    ", latestReceivedInstanceId=" + latestReceivedInstanceId +
+                    ", roles=" + roles +
+                    ", clusterName='" + clusterName + '\'' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            ConfigurationResponseState that = (ConfigurationResponseState) o;
+
+            if ( clusterName != null ? !clusterName.equals( that.clusterName ) : that.clusterName != null )
+            {
+                return false;
+            }
+            if ( latestReceivedInstanceId != null ? !latestReceivedInstanceId.equals( that.latestReceivedInstanceId )
+                    : that.latestReceivedInstanceId != null )
+            {
+                return false;
+            }
+            if ( nodes != null ? !nodes.equals( that.nodes ) : that.nodes != null )
+            {
+                return false;
+            }
+            if ( roles != null ? !roles.equals( that.roles ) : that.roles != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = nodes != null ? nodes.hashCode() : 0;
+            result = 31 * result + (latestReceivedInstanceId != null ? latestReceivedInstanceId.hashCode() : 0);
+            result = 31 * result + (roles != null ? roles.hashCode() : 0);
+            result = 31 * result + (clusterName != null ? clusterName.hashCode() : 0);
+            return result;
         }
     }
 
@@ -250,6 +314,65 @@ public enum ClusterMessage
             else
                 return "Change cluster config, unelected:" + loser + " as " + roleWon;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            ConfigurationChangeState that = (ConfigurationChangeState) o;
+
+            if ( join != null ? !join.equals( that.join ) : that.join != null )
+            {
+                return false;
+            }
+            if ( joinUri != null ? !joinUri.equals( that.joinUri ) : that.joinUri != null )
+            {
+                return false;
+            }
+            if ( leave != null ? !leave.equals( that.leave ) : that.leave != null )
+            {
+                return false;
+            }
+            if ( loser != null ? !loser.equals( that.loser ) : that.loser != null )
+            {
+                return false;
+            }
+            if ( roleLost != null ? !roleLost.equals( that.roleLost ) : that.roleLost != null )
+            {
+                return false;
+            }
+            if ( roleWon != null ? !roleWon.equals( that.roleWon ) : that.roleWon != null )
+            {
+                return false;
+            }
+            if ( winner != null ? !winner.equals( that.winner ) : that.winner != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = join != null ? join.hashCode() : 0;
+            result = 31 * result + (joinUri != null ? joinUri.hashCode() : 0);
+            result = 31 * result + (leave != null ? leave.hashCode() : 0);
+            result = 31 * result + (roleWon != null ? roleWon.hashCode() : 0);
+            result = 31 * result + (winner != null ? winner.hashCode() : 0);
+            result = 31 * result + (roleLost != null ? roleLost.hashCode() : 0);
+            result = 31 * result + (loser != null ? loser.hashCode() : 0);
+            return result;
+        }
     }
 
     public static class ConfigurationTimeoutState
@@ -262,6 +385,34 @@ public enum ClusterMessage
         }
 
         public int getRemainingPings()
+        {
+            return remainingPings;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            ConfigurationTimeoutState that = (ConfigurationTimeoutState) o;
+
+            if ( remainingPings != that.remainingPings )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
         {
             return remainingPings;
         }

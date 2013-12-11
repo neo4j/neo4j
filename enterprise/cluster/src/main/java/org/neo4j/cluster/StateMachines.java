@@ -29,9 +29,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -40,8 +37,9 @@ import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
-import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
 import static org.neo4j.cluster.com.message.Message.CREATED_BY;
@@ -71,15 +69,16 @@ public class StateMachines
 
     public StateMachines( MessageSource source,
                           final MessageSender sender,
-                          TimeoutStrategy timeoutStrategy,
+                          Timeouts timeouts,
                           DelayedDirectExecutor executor, Executor stateMachineExecutor )
     {
         this.sender = sender;
         this.executor = executor;
         this.stateMachineExecutor = stateMachineExecutor;
-        this.timeouts = new Timeouts( this, timeoutStrategy );
+        this.timeouts = timeouts;
 
         outgoing = new OutgoingMessageHolder();
+        timeouts.addMessageProcessor( this );
         source.addMessageProcessor( this );
     }
 

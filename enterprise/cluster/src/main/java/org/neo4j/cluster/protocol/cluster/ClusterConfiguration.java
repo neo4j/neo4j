@@ -77,8 +77,13 @@ public class ClusterConfiguration
 
     public ClusterConfiguration( ClusterConfiguration copy )
     {
+        this(copy, copy.logger);
+    }
+
+    private ClusterConfiguration( ClusterConfiguration copy, StringLogger logger )
+    {
         this.name = copy.name;
-        this.logger = copy.logger;
+        this.logger = logger;
         this.candidateMembers = new ArrayList<URI>( copy.candidateMembers );
         this.roles = new HashMap<String, InstanceId>( copy.roles );
         this.members = new HashMap<InstanceId, URI>( copy.members );
@@ -211,12 +216,6 @@ public class ClusterConfiguration
         }, roles.entrySet() ) );
     }
 
-    @Override
-    public String toString()
-    {
-        return "Name:" + name + " Nodes:" + members + " Roles:" + roles;
-    }
-
     public URI getUriForId( InstanceId node )
     {
         return members.get( node );
@@ -232,5 +231,65 @@ public class ClusterConfiguration
             }
         }
         return null;
+    }
+
+    public ClusterConfiguration snapshot(StringLogger logger)
+    {
+        return new ClusterConfiguration(this, logger);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Name:" + name + " Nodes:" + members + " Roles:" + roles;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ClusterConfiguration that = (ClusterConfiguration) o;
+
+        if ( allowedFailures != that.allowedFailures )
+        {
+            return false;
+        }
+        if ( !candidateMembers.equals( that.candidateMembers ) )
+        {
+            return false;
+        }
+        if ( !members.equals( that.members ) )
+        {
+            return false;
+        }
+        if ( !name.equals( that.name ) )
+        {
+            return false;
+        }
+        if ( !roles.equals( that.roles ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = name.hashCode();
+        result = 31 * result + candidateMembers.hashCode();
+        result = 31 * result + members.hashCode();
+        result = 31 * result + roles.hashCode();
+        result = 31 * result + allowedFailures;
+        return result;
     }
 }

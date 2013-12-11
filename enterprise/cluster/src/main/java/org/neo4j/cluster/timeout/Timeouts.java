@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
+import org.neo4j.cluster.com.message.MessageSource;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -33,7 +34,7 @@ import org.neo4j.cluster.com.message.MessageType;
  * Then either the timeout will trigger or cancelTimeout will have been called with
  * the key used to create the timeout.
  */
-public class Timeouts
+public class Timeouts implements MessageSource
 {
     private long now = 0;
 
@@ -43,10 +44,19 @@ public class Timeouts
     private Map<Object, Timeout> timeouts = new HashMap<Object, Timeout>();
     private List<Map.Entry<Object, Timeout>> triggeredTimeouts = new ArrayList<Map.Entry<Object, Timeout>>();
 
-    public Timeouts( MessageProcessor receiver, TimeoutStrategy timeoutStrategy )
+    public Timeouts( TimeoutStrategy timeoutStrategy )
     {
-        this.receiver = receiver;
         this.timeoutStrategy = timeoutStrategy;
+    }
+
+    @Override
+    public void addMessageProcessor( MessageProcessor messageProcessor )
+    {
+        if(receiver != null)
+        {
+            throw new UnsupportedOperationException( "Timeouts does not yet support multiple message processors" );
+        }
+        receiver = messageProcessor;
     }
 
     /**

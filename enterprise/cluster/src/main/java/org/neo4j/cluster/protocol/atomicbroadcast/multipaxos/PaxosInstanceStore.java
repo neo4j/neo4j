@@ -70,4 +70,55 @@ public class PaxosInstanceStore
         delivered.clear();
         instances.clear();
     }
+
+    public PaxosInstanceStore snapshot()
+    {
+        PaxosInstanceStore snapshotStore = new PaxosInstanceStore();
+        snapshotStore.queued = queued;
+        snapshotStore.delivered = new LinkedList<>(delivered);
+        for ( Map.Entry<InstanceId, PaxosInstance> instance : instances.entrySet() )
+        {
+            snapshotStore.instances.put( instance.getKey(), instance.getValue().snapshot(snapshotStore) );
+        }
+        return snapshotStore;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        PaxosInstanceStore that = (PaxosInstanceStore) o;
+
+        if ( queued != that.queued )
+        {
+            return false;
+        }
+        if ( !delivered.equals( that.delivered ) )
+        {
+            return false;
+        }
+        if ( !instances.equals( that.instances ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = queued;
+        result = 31 * result + delivered.hashCode();
+        result = 31 * result + instances.hashCode();
+        return result;
+    }
 }

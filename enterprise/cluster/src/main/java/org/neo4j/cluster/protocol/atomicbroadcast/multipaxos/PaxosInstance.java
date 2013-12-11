@@ -28,6 +28,8 @@ import java.util.List;
  */
 public class PaxosInstance
 {
+
+
     enum State
     {
         empty,
@@ -35,10 +37,10 @@ public class PaxosInstance
         p1_ready,
         p2_pending,
         closed,
-        delivered
+        delivered;
     }
-
     PaxosInstanceStore store;
+
     InstanceId id = null;
     State state = State.empty;
     long ballot = 0;
@@ -165,6 +167,25 @@ public class PaxosInstance
     public List<URI> getAcceptors()
     {
         return acceptors;
+    }
+
+    public PaxosInstance snapshot(PaxosInstanceStore store)
+    {
+        PaxosInstance snap = new PaxosInstance( store, id );
+
+        snap.state = state;
+        snap.ballot = ballot;
+        snap.acceptors = acceptors == null ? null : new ArrayList<>(acceptors);
+        snap.promises = promises == null ? null : new ArrayList<>(promises);
+        snap.accepts = accepts == null ? null : new ArrayList<>(accepts);
+        snap.rejectedAccepts = rejectedAccepts == null ? null : new ArrayList<>(rejectedAccepts);
+        snap.value_1 = value_1;
+        snap.phase1Ballot = phase1Ballot;
+        snap.value_2 = value_2;
+        snap.clientValue = clientValue;
+        snap.conversationIdHeader = conversationIdHeader;
+
+        return snap;
     }
 
     @Override
