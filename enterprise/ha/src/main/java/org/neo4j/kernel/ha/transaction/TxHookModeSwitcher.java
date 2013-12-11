@@ -31,6 +31,8 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+
 public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
 {
     private final Master master;
@@ -59,7 +61,7 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
     @Override
     protected RemoteTxHook getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxHook( master, resolver.resolveDependency( HaXaDataSourceManager.class ),
+        return new SlaveTxHook( snapshot( master ), resolver.resolveDependency( HaXaDataSourceManager.class ),
                 requestContextFactory, log );
     }
 

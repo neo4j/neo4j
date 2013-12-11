@@ -23,11 +23,13 @@ import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 
 public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
@@ -59,6 +61,6 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<To
     @Override
     protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveRelationshipTypeCreator( master, requestContextFactory, xaDsm );
+        return new SlaveRelationshipTypeCreator( snapshot( master ), requestContextFactory, xaDsm );
     }
 }
