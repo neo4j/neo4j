@@ -33,8 +33,10 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -48,9 +50,11 @@ import org.neo4j.kernel.IdType;
 
 import static java.lang.Math.pow;
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -137,6 +141,7 @@ public class BigStoreIT implements RelationshipType
          *           
          * Each node/relationship will have a bunch of different properties on them.
          */
+        Node refNode = createReferenceNode( db );
         setHighIds( startId-1000 );
         
         byte[] bytes = new byte[45];
@@ -150,10 +155,11 @@ public class BigStoreIT implements RelationshipType
         {
             Node node = db.createNode();
             setProperties( node, properties );
-            Relationship rel = db.createNode().createRelationshipTo( node, this );
-            setProperties( rel, properties );
+            Relationship rel1 = refNode.createRelationshipTo( node, this );
+            setProperties( rel1, properties );
             Node highNode = db.createNode();
-            node.createRelationshipTo( highNode, OTHER_TYPE );
+            Relationship rel2 = node.createRelationshipTo( highNode, OTHER_TYPE );
+            setProperties( rel2, properties );
             setProperties( highNode, properties );
             if ( i % 100 == 0 && i > 0 )
             {
@@ -170,18 +176,36 @@ public class BigStoreIT implements RelationshipType
         
         // Verify the data
         int verified = 0;
-        for ( Relationship rel : db.createNode().getRelationships( Direction.OUTGOING ) )
+        
+        try ( Transaction transaction = db.beginTx() )
         {
-            Node node = rel.getEndNode();
-            assertProperties( properties, node );
-            assertProperties( properties, rel );
-            Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
-            assertProperties( properties, highNode );
-            verified++;
+            refNode = db.getNodeById( refNode.getId() );
+	        for ( Relationship rel : refNode.getRelationships( Direction.OUTGOING ) )
+	        {
+	            Node node = rel.getEndNode();
+	            assertProperties( properties, node );
+	            assertProperties( properties, rel );
+	            Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
+	            assertProperties( properties, highNode );
+	            verified++;
+	        }
+	        transaction.success();
         }
         assertEquals( count, verified );
     }
     
+    private static final Label REFERENCE = DynamicLabel.label( "Reference" );
+    
+    private Node createReferenceNode( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( REFERENCE );
+            tx.success();
+            return node;
+        }
+    }
+
     public static boolean machineIsOkToRunThisTest( String testName, int requiredHeapMb )
     {
         if ( Settings.osIsWindows() )
@@ -266,18 +290,23 @@ public class BigStoreIT implements RelationshipType
 
         for ( int i = 0; i < 2; i++ )
         {
-            assertEquals( nodeAboveTheLine, db.getNodeById( highMark ) );
-            assertEquals( idBelow, nodeBelowTheLine.getId() );
-            assertEquals( highMark, nodeAboveTheLine.getId() );
-            assertEquals( idBelow, relBelowTheLine.getId() );
-            assertEquals( highMark, relAboveTheLine.getId() );
-            assertEquals( relBelowTheLine, db.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ) );
-            assertEquals( relAboveTheLine, db.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ) );
-            assertEquals( idBelow, relBelowTheLine.getId() );
-            assertEquals( highMark, relAboveTheLine.getId() );
-            assertEquals(   asSet( asList( relBelowTheLine, relAboveTheLine ) ),
-                            asSet( asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
-            
+            try ( Transaction transaction = db.beginTx() )
+            {
+                assertEquals( nodeAboveTheLine, db.getNodeById( highMark ) );
+                assertEquals( idBelow, nodeBelowTheLine.getId() );
+                assertEquals( highMark, nodeAboveTheLine.getId() );
+                assertEquals( idBelow, relBelowTheLine.getId() );
+                assertEquals( highMark, relAboveTheLine.getId() );
+                assertEquals( relBelowTheLine,
+                        db.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ) );
+                assertEquals( relAboveTheLine,
+                        db.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ) );
+                assertEquals( idBelow, relBelowTheLine.getId() );
+                assertEquals( highMark, relAboveTheLine.getId() );
+                assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ),
+                        asSet( asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
+                transaction.success();
+            }
             if ( i == 0 )
             {
                 db.shutdown();
