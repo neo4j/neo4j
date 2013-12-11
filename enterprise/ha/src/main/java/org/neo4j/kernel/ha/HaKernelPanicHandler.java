@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
@@ -33,13 +34,16 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
     private final TxManager txManager;
     private final AtomicInteger epoch = new AtomicInteger();
     private final AvailabilityGuard availabilityGuard;
+    private final DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
 
     public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
-                                 AvailabilityGuard availabilityGuard )
+                                 AvailabilityGuard availabilityGuard,
+                                 DelegateInvocationHandler<Master> masterDelegateInvocationHandler )
     {
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
+        this.masterDelegateInvocationHandler = masterDelegateInvocationHandler;
         availabilityGuard.grant(this);
     }
 
@@ -71,6 +75,7 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
                         dataSourceManager.start();
                         txManager.start();
                         txManager.doRecovery();
+                        masterDelegateInvocationHandler.harden();
                         epoch.incrementAndGet();
                     }
                     finally

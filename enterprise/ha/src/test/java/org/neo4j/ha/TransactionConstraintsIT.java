@@ -45,12 +45,14 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
+import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
@@ -101,6 +103,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
 
         // WHEN
+        HighlyAvailableGraphDatabase theOtherSlave;
         Transaction tx = db.beginTx();
         try
         {
@@ -109,7 +112,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         }
         finally
         {
-            HighlyAvailableGraphDatabase theOtherSlave = cluster.getAnySlave( db );
+            theOtherSlave = cluster.getAnySlave( db );
             takeTheLeadInAnEventualMasterSwitch( theOtherSlave );
             cluster.shutdown( cluster.getMaster() );
             assertFinishGetsTransactionFailure( tx );
@@ -119,6 +122,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
         // THEN
         assertFalse( db.isMaster() );
+        assertTrue( theOtherSlave.isMaster() );
         // to prevent a deadlock scenario which occurs if this test exists (and @After starts)
         // before the db has recovered from its KERNEL_PANIC
         awaitFullyOperational( db );
@@ -443,7 +447,8 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
     private void awaitFullyOperational( GraphDatabaseService db ) throws InterruptedException
     {
-        while ( true )
+        long endTime = currentTimeMillis() + MINUTES.toMillis( 1 );
+        for ( int i = 0; currentTimeMillis() < endTime; i++ )
         {
             try
             {
@@ -452,7 +457,11 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             }
             catch ( Exception e )
             {
-                Thread.sleep( 100 );
+                if ( i > 0 && i%10 == 0 )
+                {
+                    e.printStackTrace();
+                }
+                Thread.sleep( 1000 );
             }
         }
     }

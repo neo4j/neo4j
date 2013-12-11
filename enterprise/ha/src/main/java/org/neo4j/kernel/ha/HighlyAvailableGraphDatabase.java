@@ -23,6 +23,7 @@ import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
+
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
@@ -143,14 +144,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected void create()
     {
         life.add( new BranchedDataMigrator( storeDir ) );
-        masterDelegateInvocationHandler = new DelegateInvocationHandler();
+        masterDelegateInvocationHandler = new DelegateInvocationHandler( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
 
         super.create();
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
-                (TxManager) txManager, availabilityGuard ) );
+                (TxManager) txManager, availabilityGuard, masterDelegateInvocationHandler ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, msgLog ) );
 
@@ -243,9 +244,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected RemoteTxHook createTxHook()
     {
-        clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler();
-        memberContextDelegateInvocationHandler = new DelegateInvocationHandler();
-        clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler();
+        clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberEvents.class );
+        memberContextDelegateInvocationHandler = new DelegateInvocationHandler( HighAvailabilityMemberContext.class );
+        clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberAvailability.class );
 
         clusterEvents = (ClusterMemberEvents) Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
                 new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler );
@@ -349,11 +350,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         paxosLife.add( clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        DelegateInvocationHandler<RemoteTxHook> txHookDelegate = new DelegateInvocationHandler<>();
+        DelegateInvocationHandler<RemoteTxHook> txHookDelegate = new DelegateInvocationHandler<>( RemoteTxHook.class );
         RemoteTxHook txHook = (RemoteTxHook) Proxy.newProxyInstance( RemoteTxHook.class.getClassLoader(), new Class[]{RemoteTxHook.class},
                 txHookDelegate );
         new TxHookModeSwitcher( memberStateMachine, txHookDelegate,
-                master, new TxHookModeSwitcher.RequestContextFactoryResolver()
+                masterDelegateInvocationHandler, new TxHookModeSwitcher.RequestContextFactoryResolver()
         {
             @Override
             public RequestContextFactory get()
@@ -378,7 +379,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected TxIdGenerator createTxIdGenerator()
     {
-        DelegateInvocationHandler<TxIdGenerator> txIdGeneratorDelegate = new DelegateInvocationHandler<>();
+        DelegateInvocationHandler<TxIdGenerator> txIdGeneratorDelegate =
+                new DelegateInvocationHandler<>( TxIdGenerator.class );
         TxIdGenerator txIdGenerator =
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
@@ -386,15 +388,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 xaDataSourceManager, logging, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
 
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, msgLog, config, slaves,
-                txManager );
+                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,
+                msgLog, config, slaves, txManager );
         return txIdGenerator;
     }
 
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        idGeneratorFactory = new HaIdGeneratorFactory( master, logging );
+        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging );
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors );
@@ -417,13 +419,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected LockManager createLockManager()
     {
-        DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<>();
+        DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<>( LockManager.class );
         LockManager lockManager =
                 (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
                         new Class[]{LockManager.class}, lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, txManager, txHook,
-                availabilityGuard, config );
+                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,
+                txManager, txHook, availabilityGuard, config );
         return lockManager;
     }
 
@@ -431,12 +433,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected TokenCreator createRelationshipTypeCreator()
     {
         DelegateInvocationHandler<TokenCreator> relationshipTypeCreatorDelegate =
-                new DelegateInvocationHandler<>();
+                new DelegateInvocationHandler<>( TokenCreator.class );
         TokenCreator relationshipTypeCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
         new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler,
+                requestContextFactory, logging );
         return relationshipTypeCreator;
     }
 
@@ -444,12 +447,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected TokenCreator createPropertyKeyCreator()
     {
         DelegateInvocationHandler<TokenCreator> propertyKeyCreatorDelegate =
-                new DelegateInvocationHandler<>();
+                new DelegateInvocationHandler<>( TokenCreator.class );
         TokenCreator propertyTokenCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
         new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler,
+                requestContextFactory, logging );
         return propertyTokenCreator;
     }
 
@@ -457,12 +461,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected TokenCreator createLabelIdCreator()
     {
         DelegateInvocationHandler<TokenCreator> labelIdCreatorDelegate =
-                new DelegateInvocationHandler<>();
+                new DelegateInvocationHandler<>( TokenCreator.class );
         TokenCreator labelIdCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
         new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
-                (HaXaDataSourceManager) xaDataSourceManager, master, requestContextFactory, logging );
+                (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler,
+                requestContextFactory, logging );
         return labelIdCreator;
     }
 
