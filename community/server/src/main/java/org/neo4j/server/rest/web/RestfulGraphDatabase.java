@@ -988,7 +988,27 @@ public class RestfulGraphDatabase
                             String.valueOf( entityBody.get( "key" ) ),
                             String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
-                    return result.other() ? output.created( result.first() ) : output.conflict( result.first() );
+                    if ( result.other() )
+                    {
+                        return output.created( result.first() );
+                    }
+
+                    String uri = getStringOrNull( entityBody, "uri" );
+
+                    if ( uri == null )
+                    {
+                        return output.conflict( result.first() );
+                    }
+
+                    long idOfNodeToBeIndexed = extractNodeId( uri );
+                    long idOfNodeAlreadyInIndex = extractNodeId( result.first().getIdentity() );
+
+                    if ( idOfNodeToBeIndexed == idOfNodeAlreadyInIndex )
+                    {
+                        return output.created( result.first() );
+                    }
+
+                    return output.conflict( result.first() );
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );
@@ -1058,7 +1078,27 @@ public class RestfulGraphDatabase
                             getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody,
                             "end" ) ),
                             getMapOrNull( entityBody, "properties" ) );
-                    return result.other() ? output.created( result.first() ) : output.conflict( result.first() );
+                    if ( result.other() )
+                    {
+                        return output.created( result.first() );
+                    }
+
+                    String uri = getStringOrNull( entityBody, "uri" );
+
+                    if ( uri == null )
+                    {
+                        return output.conflict( result.first() );
+                    }
+
+                    long idOfRelationshipToBeIndexed = extractRelationshipId( uri );
+                    long idOfRelationshipAlreadyInIndex = extractRelationshipId( result.first().getIdentity() );
+
+                    if ( idOfRelationshipToBeIndexed == idOfRelationshipAlreadyInIndex )
+                    {
+                        return output.created( result.first() );
+                    }
+
+                    return output.conflict( result.first() );
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );

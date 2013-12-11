@@ -42,6 +42,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -54,6 +55,7 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
+import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
@@ -1520,5 +1522,132 @@ public class DatabaseActionsTest
         assertEquals( labelName, definition.get( "label" ) );
         assertEquals( asList( propertyKey ), definition.get( "property_keys" ) );
         assertEquals( "UNIQUENESS", definition.get( "type" ) );
+    }
+
+    @Test
+    public void shouldIndexNodeOnlyOnce() throws Exception
+    {
+        long nodeId = graphdbHelper.createNode();
+        graphdbHelper.createRelationshipIndex( "myIndex" );
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedNode( "myIndex",
+                    "foo", "bar", nodeId, null );
+
+            assertThat( result.other(), is(true) );
+            assertThat( serialize( actions.getIndexedNodes( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.nodeIsIndexed( "myIndex", "foo", "bar", nodeId ), is(true) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedNode( "myIndex",
+                    "foo", "bar", nodeId, null );
+
+            assertThat( result.other(), is(false) );
+            assertThat( serialize( actions.getIndexedNodes( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.nodeIsIndexed( "myIndex", "foo", "bar", nodeId ), is(true) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldIndexRelationshipOnlyOnce() throws Exception
+    {
+        long relationshipId = graphdbHelper.createRelationship( "FOO" );
+        graphdbHelper.createRelationshipIndex( "myIndex" );
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedRelationship( "myIndex",
+                    "foo", "bar", relationshipId, null, null, null, null );
+
+            assertThat( result.other(), is(true) );
+            assertThat( serialize( actions.getIndexedRelationships( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.relationshipIsIndexed( "myIndex", "foo", "bar", relationshipId ), is(true) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedRelationship( "myIndex",
+                    "foo", "bar", relationshipId, null, null, null, null );
+
+            assertThat( result.other(), is(false) );
+            assertThat( serialize( actions.getIndexedRelationships( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.relationshipIsIndexed( "myIndex", "foo", "bar", relationshipId ), is(true) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotIndexNodeWhenAnotherNodeAlreadyIndexed() throws Exception
+    {
+        graphdbHelper.createRelationshipIndex( "myIndex" );
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            long nodeId = graphdbHelper.createNode();
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedNode( "myIndex",
+                    "foo", "bar", nodeId, null );
+
+            assertThat( result.other(), is(true) );
+            assertThat( serialize( actions.getIndexedNodes( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.nodeIsIndexed( "myIndex", "foo", "bar", nodeId ), is(true) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            long nodeId = graphdbHelper.createNode();
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedNode( "myIndex",
+                    "foo", "bar", nodeId, null );
+
+            assertThat( result.other(), is(false) );
+            assertThat( serialize( actions.getIndexedNodes( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.nodeIsIndexed( "myIndex", "foo", "bar", nodeId ), is(false) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotIndexRelationshipWhenAnotherRelationshipAlreadyIndexed() throws Exception
+    {
+
+        graphdbHelper.createRelationshipIndex( "myIndex" );
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            long relationshipId = graphdbHelper.createRelationship( "FOO" );
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedRelationship( "myIndex",
+                    "foo", "bar", relationshipId, null, null, null, null );
+
+            assertThat( result.other(), is(true) );
+            assertThat( serialize( actions.getIndexedRelationships( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.relationshipIsIndexed( "myIndex", "foo", "bar", relationshipId ), is(true) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = graph.beginTx() )
+        {
+            long relationshipId = graphdbHelper.createRelationship( "FOO" );
+            Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedRelationship( "myIndex",
+                    "foo", "bar", relationshipId, null, null, null, null );
+
+            assertThat( result.other(), is(false) );
+            assertThat( serialize( actions.getIndexedRelationships( "myIndex", "foo", "bar" ) ).size(), is( 1 ) );
+            assertThat( actions.relationshipIsIndexed( "myIndex", "foo", "bar", relationshipId ), is(false) );
+
+            tx.success();
+        }
     }
 }

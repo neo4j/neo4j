@@ -922,19 +922,21 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         final String indexName = "favorites";
         final String key = "some-key";
         final String value = "some value";
-        long nodeId = createNode();
-        // implicitly create the index
-        gen().noGraph()
-                .expectedStatus( 201 /* created */ )
-                .payload(
-                        JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
-                                functionalTestHelper.nodeUri( nodeId ) ) ) )
-                .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
+
+        try ( Transaction tx = graphdb().beginTx() )
+        {
+            Node peter = graphdb().createNode();
+            peter.setProperty( key, value );
+            graphdb().index().forNodes( indexName ).add( peter, key, value );
+
+            tx.success();
+        }
+
         gen().noGraph()
                 .expectedStatus( 409 /* conflict */ )
                 .payload(
                         JsonHelper.createJsonFrom( generateNodeIndexCreationPayload( key, value,
-                                functionalTestHelper.nodeUri( nodeId ) ) ) )
+                                functionalTestHelper.nodeUri( createNode() ) ) ) )
                 .post( functionalTestHelper.indexNodeUri( indexName ) + "?uniqueness=create_or_fail" );
     }
 
@@ -956,6 +958,32 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                  .payloadType( MediaType.APPLICATION_JSON_TYPE )
                  .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
                  .post( uri );
+    }
+
+    @Test
+    public void already_indexed_node_should_not_fail_on_create_or_fail() throws Exception
+    {
+        // Given
+        final String index = "nodeIndex", key = "name", value = "Peter";
+        GraphDatabaseService graphdb = graphdb();
+        helper.createNodeIndex( index );
+        Node node;
+        try ( Transaction tx = graphdb.beginTx() )
+        {
+            node = graphdb.createNode();
+            graphdb.index().forNodes( index ).add( node, key, value );
+            tx.success();
+        }
+
+        // When & Then
+        gen.get()
+                .noGraph()
+                .expectedStatus( 201 )
+                .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                .payload(
+                        "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\""
+                                + functionalTestHelper.nodeUri( node.getId() ) + "\"}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
     }
 
     private static <T> T assertCast( Class<T> type, Object object )

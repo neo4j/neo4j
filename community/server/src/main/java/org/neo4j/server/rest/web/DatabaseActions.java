@@ -866,12 +866,16 @@ public class DatabaseActions
                         "when a node to index is specified." );
             }
             Node node = node( nodeOrNull );
-
-            UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
-            UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
-            // when given a node id, return as created if that node was newly added to the index
-            created = entity.entity().getId() == node.getId() || entity.wasCreated();
-            result = entity.entity();
+            result = graphDb.index().forNodes( indexName ).putIfAbsent( node, key, value );
+            created = result == null;
+            if ( created )
+            {
+                UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
+                UniqueEntity<Node> entity = factory.getOrCreateWithOutcome( key, value );
+                // when given a node id, return as created if that node was newly added to the index
+                created = entity.entity().getId() == node.getId() || entity.wasCreated();
+                result = entity.entity();
+            }
         }
         else
         {
@@ -908,14 +912,17 @@ public class DatabaseActions
                         "or the means for creating it." );
             }
             Relationship relationship = relationship( relationshipOrNull );
-
-            UniqueRelationshipFactory factory =
-                new UniqueRelationshipFactory( indexName, relationship.getStartNode(), relationship.getEndNode(),
-                        relationship.getType().name(), properties );
-            UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
-            // when given a relationship id, return as created if that relationship was newly added to the index
-            created = entity.entity().getId() == relationship.getId() || entity.wasCreated();
-            result = entity.entity();
+            result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
+            if ( created = result == null )
+            {
+                UniqueRelationshipFactory factory =
+                        new UniqueRelationshipFactory( indexName, relationship.getStartNode(),
+                                relationship.getEndNode(), relationship.getType().name(), properties );
+                UniqueEntity<Relationship> entity = factory.getOrCreateWithOutcome( key, value );
+                // when given a relationship id, return as created if that relationship was newly added to the index
+                created = entity.entity().getId() == relationship.getId() || entity.wasCreated();
+                result = entity.entity();
+            }
         }
         else if ( startNode == null || type == null || endNode == null )
         {
