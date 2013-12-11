@@ -78,8 +78,7 @@ case class MergeNodeAction(identifier: String,
 
       Iterator(newContext)
     } else {
-      // eagerly drain foundNodes to prevent concurrent modification exception from kernel transaction state iterator
-      foundNodes.toList.iterator.map {
+      foundNodes.map {
         nextContext =>
           onMatch.foreach(_.exec(nextContext, state))
           nextContext
