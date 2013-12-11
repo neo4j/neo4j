@@ -21,7 +21,8 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <docs-plugin.skip>true</docs-plugin.skip>
+    <attach-javadoc-phase>none</attach-javadoc-phase>
+    <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
   <scm>
@@ -101,6 +102,41 @@
     </plugins>
 
   </build>
+
+  <profiles>
+    <profile>
+      <id>neo-full-build-with-javadoc</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>fullBuild</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>generate-dummy-javadocs-jar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <classifier>javadoc</classifier>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <distributionManagement>
     <repository>
