@@ -26,7 +26,7 @@ class UnionTest extends RefcardTest with StatisticsChecker {
   def graphDescription = List(
     "A KNOWS B", "A LOVES B")
   val title = "UNION"
-  val css = "read c2-2 c3-2 c4-2 c5-4"
+  val css = "read c2-2 c3-2 c4-2 c5-4 c6-2"
 
   override def assert(name: String, result: ExecutionResult) {
     name match {

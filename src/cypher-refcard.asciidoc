@@ -78,7 +78,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.ascii
 include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.asciidoc[]
 
 ++++
-<div class="col cardgeneral c3-2 c6-2"><div class="blk">
+<div class="col cardgeneral c3-2 c6-1"><div class="blk">
 ++++
 
 [options="header", cols=",m"]
@@ -97,7 +97,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.
 ++++
 
 ++++
-<div class="col cardgeneral c3-2 c6-2"><div class="blk">
+<div class="col cardgeneral c3-2 c6-1"><div class="blk">
 ++++
 
 [options="header", cols="a"]
