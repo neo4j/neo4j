@@ -122,6 +122,8 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
       }
     })
   }
+
+  def name = "SimplePatternMatcher"
 }
 
 object SimplePatternMatcherBuilder {

@@ -32,6 +32,11 @@ import java.util
  * Abstract description of an execution plan
  */
 trait PlanDescription extends cypher.PlanDescription {
+
+  def arguments: Map[String, SimpleVal] = args.toMap
+
+  def cd(name: String): PlanDescription = children.find(_.name == name).get
+
   def pipe: Pipe
 
   def args: Seq[(String, SimpleVal)]
