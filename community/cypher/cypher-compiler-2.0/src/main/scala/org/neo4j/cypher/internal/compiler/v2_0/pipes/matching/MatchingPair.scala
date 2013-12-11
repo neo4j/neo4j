@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes.matching
 
-import org.neo4j.graphdb.{NotFoundException, Relationship, Node, PropertyContainer}
+import org.neo4j.graphdb.{Relationship, Node}
 import collection.Map
-import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 
 case class MatchingPair(patternElement: PatternElement, entity: Any) {
   def matches(x: Any) = x == entity || x == patternElement || entity == x || patternElement == x
@@ -41,8 +42,8 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
     case None             => true
   }
 
-  def getGraphRelationships(pRel: PatternRelationship, ctx: QueryContext): Seq[GraphRelationship] =
-    patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[Node], pRel, ctx)
+  def getGraphRelationships(pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
+    patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[Node], pRel, state, f)
 
   def getPatternAndGraphPoint: (PatternNode, Node) = (patternElement.asInstanceOf[PatternNode], entity.asInstanceOf[Node])
 

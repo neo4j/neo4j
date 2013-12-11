@@ -25,12 +25,16 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.RelationshipType
-import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
                           val endNode: PatternNode,
                           val relTypes: Seq[String],
+                          val properties: Map[KeyToken, Expression] = Map.empty,
                           val dir: Direction)
   extends PatternElement(key) {
 
@@ -38,10 +42,13 @@ class PatternRelationship(key: String,
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
-  def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
+  def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
 
     val result: Iterator[GraphRelationship] =
-      ctx.getRelationshipsFor(realNode, getDirection(node), relTypes).map(new SingleGraphRelationship(_))
+      state.query.
+        getRelationshipsFor(realNode, getDirection(node), relTypes).
+        filter(r => canUseThis(r, state, f)).
+        map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
       result.filter(r => r.getOtherNode(realNode) == realNode).toSeq
@@ -92,6 +99,24 @@ class PatternRelationship(key: String,
       Seq(startNode, endNode).filter(shouldFollow).foreach(n => n.traverse(shouldFollow, visitNode, visitRelationship, moreData, path :+ this))
     }
   }
+
+  protected def canUseThis(rel: Relationship, state: QueryState, f: => ExecutionContext): Boolean =
+    if (properties.isEmpty) {
+      true
+    } else {
+      val ctx: ExecutionContext = f
+      properties.forall {
+        case (token, expression) =>
+          val propertyId = token.getOptId(state.query)
+          if (propertyId.isEmpty) {
+            false // The property doesn't exist in the graph
+          } else {
+            val value = state.query.relationshipOps.getProperty(rel.getId, propertyId.get)
+            val expectedValue = expression(ctx)(state)
+            expectedValue == value
+          }
+      }
+    }
 }
 
 class VariableLengthPatternRelationship(pathName: String,
@@ -101,8 +126,9 @@ class VariableLengthPatternRelationship(pathName: String,
                                         minHops: Option[Int],
                                         maxHops: Option[Int],
                                         relType: Seq[String],
+                                        properties: Map[KeyToken, Expression] = Map.empty,
                                         dir: Direction)
-  extends PatternRelationship(pathName, start, end, relType, dir) {
+  extends PatternRelationship(pathName, start, end, relType, properties, dir) {
 
 
   override def identifiers2: Map[String, CypherType] =
@@ -110,7 +136,7 @@ class VariableLengthPatternRelationship(pathName: String,
       endNode.key -> NodeType(),
       key -> CollectionType(RelationshipType())) ++ relIterable.map(_ -> CollectionType(RelationshipType())).toMap
 
-  override def getGraphRelationships(node: PatternNode, realNode: Node, ctx:QueryContext): Seq[GraphRelationship] = {
+  override def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
 
     val depthEval = (minHops, maxHops) match {
       case (None, None)           => Evaluators.fromDepth(1)
@@ -134,7 +160,17 @@ class VariableLengthPatternRelationship(pathName: String,
       baseTraversalDescription.expand(expander)
     }
 
-    traversalDescription.traverse(realNode).asScala.toStream.map(p => VariableLengthGraphRelationship(p))
+    val matchedPaths = traversalDescription.traverse(realNode).asScala
+
+    val filteredPaths = if (properties.isEmpty) {
+      matchedPaths
+    } else {
+      matchedPaths.filter {
+        path => path.relationships().iterator().asScala.forall(r => canUseThis(r, state, f))
+      }
+    }
+
+    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(p))
   }
 }
 
