@@ -22,6 +22,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 import java.net.URI;
 
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 class CommonContextState
 {
@@ -32,6 +33,15 @@ class CommonContextState
 
     public CommonContextState( ClusterConfiguration configuration )
     {
+        this.configuration = configuration;
+    }
+
+    private CommonContextState( URI boundAt, long lastKnownLearnedInstanceInCluster, long nextInstanceId,
+                        ClusterConfiguration configuration )
+    {
+        this.boundAt = boundAt;
+        this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
+        this.nextInstanceId = nextInstanceId;
         this.configuration = configuration;
     }
 
@@ -78,5 +88,55 @@ class CommonContextState
     public void setConfiguration( ClusterConfiguration configuration )
     {
         this.configuration = configuration;
+    }
+
+    public CommonContextState snapshot( StringLogger logger )
+    {
+        return new CommonContextState( boundAt, lastKnownLearnedInstanceInCluster, nextInstanceId,
+                configuration.snapshot(logger) );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        CommonContextState that = (CommonContextState) o;
+
+        if ( lastKnownLearnedInstanceInCluster != that.lastKnownLearnedInstanceInCluster )
+        {
+            return false;
+        }
+        if ( nextInstanceId != that.nextInstanceId )
+        {
+            return false;
+        }
+        if ( boundAt != null ? !boundAt.equals( that.boundAt ) : that.boundAt != null )
+        {
+            return false;
+        }
+        if ( configuration != null ? !configuration.equals( that.configuration ) : that.configuration != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = boundAt != null ? boundAt.hashCode() : 0;
+        result = 31 * result + (int) (lastKnownLearnedInstanceInCluster ^ (lastKnownLearnedInstanceInCluster >>> 32));
+        result = 31 * result + (int) (nextInstanceId ^ (nextInstanceId >>> 32));
+        result = 31 * result + (configuration != null ? configuration.hashCode() : 0);
+        return result;
     }
 }

@@ -63,4 +63,38 @@ class AcceptorContextImpl
     {
         instanceStore.clear();
     }
+
+    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+                                         AcceptorInstanceStore instanceStore )
+    {
+        return new AcceptorContextImpl( me, commonStateSnapshot, logging, timeouts, instanceStore );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        AcceptorContextImpl that = (AcceptorContextImpl) o;
+
+        if ( instanceStore != null ? !instanceStore.equals( that.instanceStore ) : that.instanceStore != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return instanceStore != null ? instanceStore.hashCode() : 0;
+    }
 }

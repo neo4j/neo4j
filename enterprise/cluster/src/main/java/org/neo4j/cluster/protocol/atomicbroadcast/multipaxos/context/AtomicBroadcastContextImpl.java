@@ -67,4 +67,31 @@ class AtomicBroadcastContextImpl
             }
         } );
     }
+
+    public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging,
+                                                Timeouts timeouts, Executor executor )
+    {
+        return new AtomicBroadcastContextImpl( me, commonStateSnapshot, logging, timeouts, executor );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return 0;
+    }
 }

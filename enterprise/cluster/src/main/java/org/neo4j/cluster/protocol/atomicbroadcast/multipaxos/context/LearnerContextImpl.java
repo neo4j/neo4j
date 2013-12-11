@@ -61,6 +61,22 @@ class LearnerContextImpl
         this.paxosInstances = paxosInstances;
     }
 
+    private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+                                Timeouts timeouts, long lastDeliveredInstanceId, long lastLearnedInstanceId,
+                                HeartbeatContext heartbeatContext,
+                        AcceptorInstanceStore instanceStore, ObjectInputStreamFactory objectInputStreamFactory,
+                        ObjectOutputStreamFactory objectOutputStreamFactory, PaxosInstanceStore paxosInstances )
+    {
+        super( me, commonState, logging, timeouts );
+        this.lastDeliveredInstanceId = lastDeliveredInstanceId;
+        this.lastLearnedInstanceId = lastLearnedInstanceId;
+        this.heartbeatContext = heartbeatContext;
+        this.instanceStore = instanceStore;
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
+        this.paxosInstances = paxosInstances;
+    }
+
     @Override
     public long getLastDeliveredInstanceId()
     {
@@ -138,5 +154,65 @@ class LearnerContextImpl
     public void setNextInstanceId( long id )
     {
         commonState.setNextInstanceId( id );
+    }
+
+    public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+                                        PaxosInstanceStore paxosInstancesSnapshot, AcceptorInstanceStore instanceStore,
+                                        ObjectInputStreamFactory objectInputStreamFactory, ObjectOutputStreamFactory
+            objectOutputStreamFactory, HeartbeatContextImpl snapshotHeartbeatContext )
+    {
+        return new LearnerContextImpl( me, commonStateSnapshot, logging, timeouts, lastDeliveredInstanceId,
+                lastLearnedInstanceId, snapshotHeartbeatContext, instanceStore, objectInputStreamFactory,
+                objectOutputStreamFactory, paxosInstancesSnapshot );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        LearnerContextImpl that = (LearnerContextImpl) o;
+
+        if ( lastDeliveredInstanceId != that.lastDeliveredInstanceId )
+        {
+            return false;
+        }
+        if ( lastLearnedInstanceId != that.lastLearnedInstanceId )
+        {
+            return false;
+        }
+        if ( heartbeatContext != null ? !heartbeatContext.equals( that.heartbeatContext ) : that.heartbeatContext !=
+                null )
+        {
+            return false;
+        }
+        if ( instanceStore != null ? !instanceStore.equals( that.instanceStore ) : that.instanceStore != null )
+        {
+            return false;
+        }
+        if ( paxosInstances != null ? !paxosInstances.equals( that.paxosInstances ) : that.paxosInstances != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = (int) (lastDeliveredInstanceId ^ (lastDeliveredInstanceId >>> 32));
+        result = 31 * result + (int) (lastLearnedInstanceId ^ (lastLearnedInstanceId >>> 32));
+        result = 31 * result + (heartbeatContext != null ? heartbeatContext.hashCode() : 0);
+        result = 31 * result + (instanceStore != null ? instanceStore.hashCode() : 0);
+        result = 31 * result + (paxosInstances != null ? paxosInstances.hashCode() : 0);
+        return result;
     }
 }

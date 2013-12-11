@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.cluster;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
@@ -118,12 +119,13 @@ public enum ClusterMessage
     public static class ConfigurationResponseState
             implements Serializable
     {
-        private Map<InstanceId, URI> nodes;
-        private org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
-        private Map<String, InstanceId> roles;
-        private String clusterName;
+        private final Map<InstanceId, URI> nodes;
+        private final org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
+        private final Map<String, InstanceId> roles;
+        private final String clusterName;
 
-        public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes, org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,
+        public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes,
+                                           org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,
                                           String clusterName )
         {
             this.roles = roles;
@@ -150,6 +152,12 @@ public enum ClusterMessage
         public String getClusterName()
         {
             return clusterName;
+        }
+
+        public ConfigurationResponseState snapshot()
+        {
+            return new ConfigurationResponseState( new HashMap<>(roles), new HashMap<>(nodes),
+                    latestReceivedInstanceId, clusterName );
         }
     }
 

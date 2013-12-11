@@ -44,13 +44,14 @@ import org.neo4j.kernel.logging.Logging;
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 class ClusterContextImpl
         extends AbstractContextImpl
         implements ClusterContext
 {
     // ClusterContext
-    Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
+    private Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
     private final List<ClusterMessage.ConfigurationRequestState> discoveredInstances = new ArrayList<ClusterMessage
             .ConfigurationRequestState>();
     private Iterable<URI> joiningInstances;
@@ -73,6 +74,23 @@ class ClusterContextImpl
                         LearnerContext learnerContext, HeartbeatContext heartbeatContext )
     {
         super( me, commonState, logging, timeouts );
+        this.executor = executor;
+        this.objectOutputStreamFactory = objectOutputStreamFactory;
+        this.objectInputStreamFactory = objectInputStreamFactory;
+        this.learnerContext = learnerContext;
+        this.heartbeatContext = heartbeatContext;
+    }
+
+    private ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
+                        Iterable<URI> joiningInstances, ClusterMessage.ConfigurationResponseState
+            joinDeniedConfigurationResponseState, Executor executor,
+                        ObjectOutputStreamFactory objectOutputStreamFactory,
+                        ObjectInputStreamFactory objectInputStreamFactory, LearnerContext learnerContext,
+                        HeartbeatContext heartbeatContext )
+    {
+        super( me, commonState, logging, timeouts );
+        this.joiningInstances = joiningInstances;
+        this.joinDeniedConfigurationResponseState = joinDeniedConfigurationResponseState;
         this.executor = executor;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
         this.objectInputStreamFactory = objectInputStreamFactory;
@@ -347,5 +365,84 @@ class ClusterContextImpl
     public long getLastDeliveredInstanceId()
     {
         return learnerContext.getLastDeliveredInstanceId();
+    }
+
+    public ClusterContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+                                        Executor executor, ObjectOutputStreamFactory objectOutputStreamFactory,
+                                        ObjectInputStreamFactory objectInputStreamFactory,
+                                        LearnerContextImpl snapshotLearnerContext,
+                                        HeartbeatContextImpl snapshotHeartbeatContext )
+    {
+        return new ClusterContextImpl( me, commonStateSnapshot, logging, timeouts,
+                joiningInstances == null ? null : new ArrayList<>(toList(joiningInstances)),
+                joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
+                executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,
+                snapshotHeartbeatContext);
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ClusterContextImpl that = (ClusterContextImpl) o;
+
+        if ( clusterListeners != null ? !clusterListeners.equals( that.clusterListeners ) : that.clusterListeners !=
+                null )
+        {
+            return false;
+        }
+        if ( currentlyJoiningInstances != null ? !currentlyJoiningInstances.equals( that.currentlyJoiningInstances )
+                : that.currentlyJoiningInstances != null )
+        {
+            return false;
+        }
+        if ( discoveredInstances != null ? !discoveredInstances.equals( that.discoveredInstances ) : that
+                .discoveredInstances != null )
+        {
+            return false;
+        }
+        if ( heartbeatContext != null ? !heartbeatContext.equals( that.heartbeatContext ) : that.heartbeatContext !=
+                null )
+        {
+            return false;
+        }
+        if ( joinDeniedConfigurationResponseState != null ? !joinDeniedConfigurationResponseState.equals( that
+                .joinDeniedConfigurationResponseState ) : that.joinDeniedConfigurationResponseState != null )
+        {
+            return false;
+        }
+        if ( joiningInstances != null ? !joiningInstances.equals( that.joiningInstances ) : that.joiningInstances !=
+                null )
+        {
+            return false;
+        }
+        if ( learnerContext != null ? !learnerContext.equals( that.learnerContext ) : that.learnerContext != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = clusterListeners != null ? clusterListeners.hashCode() : 0;
+        result = 31 * result + (discoveredInstances != null ? discoveredInstances.hashCode() : 0);
+        result = 31 * result + (joiningInstances != null ? joiningInstances.hashCode() : 0);
+        result = 31 * result + (joinDeniedConfigurationResponseState != null ? joinDeniedConfigurationResponseState
+                .hashCode() : 0);
+        result = 31 * result + (currentlyJoiningInstances != null ? currentlyJoiningInstances.hashCode() : 0);
+        result = 31 * result + (learnerContext != null ? learnerContext.hashCode() : 0);
+        result = 31 * result + (heartbeatContext != null ? heartbeatContext.hashCode() : 0);
+        return result;
     }
 }

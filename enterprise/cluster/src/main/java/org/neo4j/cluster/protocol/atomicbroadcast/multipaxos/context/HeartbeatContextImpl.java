@@ -39,6 +39,8 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 class HeartbeatContextImpl
     extends AbstractContextImpl
     implements HeartbeatContext
@@ -58,6 +60,17 @@ class HeartbeatContextImpl
                           Timeouts timeouts, Executor executor )
     {
         super( me, commonState, logging, timeouts );
+        this.executor = executor;
+    }
+
+    private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
+                          Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
+                          Iterable<HeartbeatListener> heartBeatListeners, Executor executor)
+    {
+        super( me, commonState, logging, timeouts );
+        this.failed = failed;
+        this.nodeSuspicions = nodeSuspicions;
+        this.heartBeatListeners = heartBeatListeners;
         this.executor = executor;
     }
 
@@ -276,5 +289,52 @@ class HeartbeatContextImpl
     public long getLastLearnedInstanceId()
     {
         return learnerContext.getLastLearnedInstanceId();
+    }
+
+    public HeartbeatContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+                                          Executor executor )
+    {
+        return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>(failed),
+                new HashMap<>(nodeSuspicions), new ArrayList<>(toList(heartBeatListeners)), executor );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        HeartbeatContextImpl that = (HeartbeatContextImpl) o;
+
+        if ( failed != null ? !failed.equals( that.failed ) : that.failed != null )
+        {
+            return false;
+        }
+        if ( heartBeatListeners != null ? !heartBeatListeners.equals( that.heartBeatListeners ) : that
+                .heartBeatListeners != null )
+        {
+            return false;
+        }
+        if ( nodeSuspicions != null ? !nodeSuspicions.equals( that.nodeSuspicions ) : that.nodeSuspicions != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = failed != null ? failed.hashCode() : 0;
+        result = 31 * result + (nodeSuspicions != null ? nodeSuspicions.hashCode() : 0);
+        result = 31 * result + (heartBeatListeners != null ? heartBeatListeners.hashCode() : 0);
+        return result;
     }
 }

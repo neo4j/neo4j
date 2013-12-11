@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-
 import java.net.URI;
 import java.util.concurrent.Executor;
 
@@ -35,9 +33,9 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMess
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerState;
-import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerState;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
@@ -64,6 +62,8 @@ import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.cluster.com.message.Message.internal;
 
 /**
  * Factory for MultiPaxos {@link ProtocolServer}s.
@@ -101,7 +101,7 @@ public class MultiPaxosServerFactory
         final MultiPaxosContext context = new MultiPaxosContext( me,
                 Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(ClusterConfiguration.COORDINATOR )),
                 new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ), initialConfig.getMemberURIs() ),executor, logging,
-                objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts);
+                objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts, electionCredentialsProvider);
 
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(), context.getLearnerContext() );
 
@@ -137,7 +137,6 @@ public class MultiPaxosServerFactory
                 .class ), logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
         context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ),
                 logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
-        context.getElectionContext().setElectionCredentialsProvider( electionCredentialsProvider );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )
                 .rule( ClusterState.start, ClusterMessage.create, ClusterState.entered,

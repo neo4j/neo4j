@@ -43,8 +43,8 @@ class ProposerContextImpl
     public static final int MAX_CONCURRENT_INSTANCES = 10;
 
     // ProposerContext
-    private final Deque<Message> pendingValues = new LinkedList<Message>();
-    private final Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
+    private final Deque<Message> pendingValues;
+    private final Map<InstanceId, Message> bookedInstances;
 
     private final PaxosInstanceStore paxosInstances;
 
@@ -53,6 +53,18 @@ class ProposerContextImpl
                          Timeouts timeouts, PaxosInstanceStore paxosInstances )
     {
         super( me, commonState, logging, timeouts );
+        this.paxosInstances = paxosInstances;
+        pendingValues = new LinkedList<>(  );
+        bookedInstances = new HashMap<>();
+    }
+
+    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+                                 Timeouts timeouts, Deque<Message> pendingValues,
+                                 Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances )
+    {
+        super( me, commonState, logging, timeouts );
+        this.pendingValues = pendingValues;
+        this.bookedInstances = bookedInstances;
         this.paxosInstances = paxosInstances;
     }
 
@@ -193,5 +205,51 @@ class ProposerContextImpl
                 }
             }
         }
+    }
+
+    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+                                         PaxosInstanceStore paxosInstancesSnapshot )
+    {
+        return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),
+                new HashMap<>(bookedInstances), paxosInstancesSnapshot );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ProposerContextImpl that = (ProposerContextImpl) o;
+
+        if ( bookedInstances != null ? !bookedInstances.equals( that.bookedInstances ) : that.bookedInstances != null )
+        {
+            return false;
+        }
+        if ( paxosInstances != null ? !paxosInstances.equals( that.paxosInstances ) : that.paxosInstances != null )
+        {
+            return false;
+        }
+        if ( pendingValues != null ? !pendingValues.equals( that.pendingValues ) : that.pendingValues != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = pendingValues != null ? pendingValues.hashCode() : 0;
+        result = 31 * result + (bookedInstances != null ? bookedInstances.hashCode() : 0);
+        result = 31 * result + (paxosInstances != null ? paxosInstances.hashCode() : 0);
+        return result;
     }
 }

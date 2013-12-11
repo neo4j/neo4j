@@ -23,14 +23,15 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogging;
 
 import static junit.framework.Assert.assertTrue;
@@ -49,7 +50,8 @@ public class MultiPaxosContextTest
                 Collections.<ElectionRole>emptyList(),
                 mock( ClusterConfiguration.class ), mock( Executor.class ),
                 new TestLogging(), new ObjectStreamFactory(),
-                new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ) );
+                new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                mock( ElectionCredentialsProvider.class) );
 
         InstanceId joiningId = new InstanceId( 12 );
         String joiningUri = "http://127.0.0.1:900";
@@ -63,18 +65,27 @@ public class MultiPaxosContextTest
         assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
     }
 
-    @Test @Ignore
+    @Test
     public void shouldDeepClone() throws Exception
     {
         // Given
+        ObjectStreamFactory objStream = new ObjectStreamFactory();
+        AcceptorInstanceStore acceptorInstances = mock( AcceptorInstanceStore.class );
+        Executor executor = mock( Executor.class );
+        Timeouts timeouts = mock( Timeouts.class );
+        TestLogging logging = new TestLogging();
+        ClusterConfiguration clusterConfig = new ClusterConfiguration( "myCluster", StringLogger.DEV_NULL );
+        ElectionCredentialsProvider electionCredentials = mock( ElectionCredentialsProvider.class );
+
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
-                mock( ClusterConfiguration.class ), mock( Executor.class ),
-                new TestLogging(), new ObjectStreamFactory(),
-                new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ) );
+                clusterConfig, executor,
+                logging, objStream,
+                objStream, acceptorInstances, timeouts, electionCredentials );
 
         // When
-        MultiPaxosContext snapshot = ctx.snapshot();
+        MultiPaxosContext snapshot = ctx.snapshot( logging, timeouts, executor, acceptorInstances, objStream, objStream,
+                electionCredentials );
 
         // Then
         assertEquals( ctx, snapshot );

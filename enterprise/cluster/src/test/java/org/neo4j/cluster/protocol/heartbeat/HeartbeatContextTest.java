@@ -40,6 +40,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
@@ -97,7 +98,8 @@ public class HeartbeatContextTest
                         new ElectionRole( "coordinator" ) ), config,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
-                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class),
+                mock( ElectionCredentialsProvider.class) );
 
 
         toTest = context.getHeartbeatContext();

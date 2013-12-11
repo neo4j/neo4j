@@ -42,6 +42,7 @@ import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 class ElectionContextImpl
     extends AbstractContextImpl
@@ -50,25 +51,32 @@ class ElectionContextImpl
     private final ClusterContext clusterContext;
     private final HeartbeatContext heartbeatContext;
 
-    private final List<ElectionRole> roles = new ArrayList<ElectionRole>();
-
-    private final Map<String, Election> elections = new HashMap<String, Election>();
-    private ElectionCredentialsProvider electionCredentialsProvider;
+    private final List<ElectionRole> roles;
+    private final Map<String, Election> elections;
+    private final ElectionCredentialsProvider electionCredentialsProvider;
 
     ElectionContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
                          Logging logging,
                          Timeouts timeouts, Iterable<ElectionRole> roles, ClusterContext clusterContext,
-                         HeartbeatContext heartbeatContext )
+                         HeartbeatContext heartbeatContext, ElectionCredentialsProvider electionCredentialsProvider )
     {
         super( me, commonState, logging, timeouts );
-        Iterables.addAll( this.roles, roles );
+        this.electionCredentialsProvider = electionCredentialsProvider;
+        this.roles = new ArrayList<>(toList(roles));
+        this.elections = new HashMap<>();
         this.clusterContext = clusterContext;
         this.heartbeatContext = heartbeatContext;
     }
 
-    @Override
-    public void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider )
+    ElectionContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
+                         ClusterContext clusterContext, HeartbeatContext heartbeatContext, List<ElectionRole> roles,
+                         Map<String, Election> elections, ElectionCredentialsProvider electionCredentialsProvider )
     {
+        super( me, commonState, logging, timeouts );
+        this.clusterContext = clusterContext;
+        this.heartbeatContext = heartbeatContext;
+        this.roles = roles;
+        this.elections = elections;
         this.electionCredentialsProvider = electionCredentialsProvider;
     }
 
@@ -130,12 +138,12 @@ class ElectionContextImpl
             {
 
                 // Remove blank votes
-                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                List<Vote> filteredVoteList = toList( Iterables.filter( new Predicate<Vote>()
                 {
                     @Override
                     public boolean accept( Vote item )
                     {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials);
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
                     }
                 }, voteList ) );
 
@@ -169,12 +177,12 @@ class ElectionContextImpl
             public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
             {
                 // Remove blank votes
-                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                List<Vote> filteredVoteList = toList( Iterables.filter( new Predicate<Vote>()
                 {
                     @Override
                     public boolean accept( Vote item )
                     {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials );
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
                     }
                 }, voteList ) );
 
@@ -206,12 +214,12 @@ class ElectionContextImpl
             {
 
                 // Remove blank votes
-                List<Vote> filteredVoteList = Iterables.toList( Iterables.filter( new Predicate<Vote>()
+                List<Vote> filteredVoteList = toList( Iterables.filter( new Predicate<Vote>()
                 {
                     @Override
                     public boolean accept( Vote item )
                     {
-                        return !( item.getCredentials() instanceof NotElectableElectionCredentials);
+                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
                     }
                 }, voteList ) );
 
@@ -347,7 +355,7 @@ class ElectionContextImpl
     public boolean isElector()
     {
         // Only the first alive server should try elections. Everyone else waits
-        List<org.neo4j.cluster.InstanceId> aliveInstances = Iterables.toList( getAlive() );
+        List<org.neo4j.cluster.InstanceId> aliveInstances = toList( getAlive() );
         Collections.sort( aliveInstances );
         return aliveInstances.indexOf( getMyId() ) == 0;
     }
@@ -374,6 +382,22 @@ class ElectionContextImpl
     public Set<InstanceId> getFailed()
     {
         return heartbeatContext.getFailed();
+    }
+
+    public ElectionContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+                                         ClusterContextImpl snapshotClusterContext,
+                                         HeartbeatContextImpl snapshotHeartbeatContext,
+                                         ElectionCredentialsProvider credentialsProvider )
+
+    {
+        Map<String, Election> electionsSnapshot = new HashMap<>();
+        for ( Map.Entry<String, Election> election : elections.entrySet() )
+        {
+            electionsSnapshot.put( election.getKey(), election.getValue().snapshot() );
+        }
+
+        return new ElectionContextImpl( me, commonStateSnapshot, logging, timeouts, snapshotClusterContext,
+                snapshotHeartbeatContext, new ArrayList<>(roles), electionsSnapshot, credentialsProvider );
     }
 
     private static class Vote
@@ -448,10 +472,17 @@ class ElectionContextImpl
     static class Election
     {
         private final WinnerStrategy winnerStrategy;
-        private final Map<org.neo4j.cluster.InstanceId, Vote> votes = new HashMap<org.neo4j.cluster.InstanceId, Vote>();
+        private final Map<org.neo4j.cluster.InstanceId, Vote> votes;
 
         private Election( WinnerStrategy winnerStrategy )
         {
+            this.winnerStrategy = winnerStrategy;
+            this.votes = new HashMap<org.neo4j.cluster.InstanceId, Vote>();
+        }
+
+        private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId, Vote> votes )
+        {
+            this.votes = votes;
             this.winnerStrategy = winnerStrategy;
         }
 
@@ -464,10 +495,55 @@ class ElectionContextImpl
         {
             return winnerStrategy.pickWinner( votes.values() );
         }
+
+        public Election snapshot()
+        {
+            return new Election( winnerStrategy, new HashMap<>(votes));
+        }
     }
 
     interface WinnerStrategy
     {
         org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        ElectionContextImpl that = (ElectionContextImpl) o;
+
+        if ( electionCredentialsProvider != null ? !electionCredentialsProvider.equals( that
+                .electionCredentialsProvider ) : that.electionCredentialsProvider != null )
+        {
+            return false;
+        }
+        if ( elections != null ? !elections.equals( that.elections ) : that.elections != null )
+        {
+            return false;
+        }
+        if ( roles != null ? !roles.equals( that.roles ) : that.roles != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = roles != null ? roles.hashCode() : 0;
+        result = 31 * result + (elections != null ? elections.hashCode() : 0);
+        result = 31 * result + (electionCredentialsProvider != null ? electionCredentialsProvider.hashCode() : 0);
+        return result;
     }
 }
