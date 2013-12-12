@@ -16,8 +16,10 @@ An expression in Cypher can be:
 * A function call: `length(p)`, `nodes(p)`.
 * An aggregate function: `avg(x.prop)`, `count(*)`.
 * A path-pattern: `(a)-->()<--(b)`.
-* A predicate expression is an expression that returns true or false: `a.prop = "Hello"`, `length(p) > 10`, `has(a.name)`
-* a +CASE+ expression
+* An operator application: `1 + 2` and `3 < 4`.
+* A predicate expression is an expression that returns true or false: `a.prop = "Hello"`, `length(p) > 10`,
+`has(a.name)`.
+* A +CASE+ expression.
 
 == Note on string literals ==
 String literals can contain these escape sequences.

@@ -10,7 +10,8 @@ The mathematical operators are `+`, `-`, `*`, `/` and `%`, `^`.
 [[query-operators-comparison]]
 == Comparison operators ==
 
-The comparison operators are `=`, `<>`, `<`, `>`, `<=`, `>=`.
+The comparison operators are `=`, `<>`, `<`, `>`, `<=`, `>=`, `IS NULL`, and `IS NOT NULL`.
+See <<cypher-comparison>> on how they behave.
 
 [[query-operators-boolean]]
 == Boolean operators ==
