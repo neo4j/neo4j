@@ -5,7 +5,7 @@ The nitty-gritty details of Cypher syntax.
 
 :leveloffset: 2
 
-include::operators.asciidoc[]
+include::values.asciidoc[]
 
 :leveloffset: 2
 
@@ -14,6 +14,14 @@ include::expressions.asciidoc[]
 :leveloffset: 2
 
 include::identifiers.asciidoc[]
+
+:leveloffset: 2
+
+include::operators.asciidoc[]
+
+:leveloffset: 2
+
+include::comparison.asciidoc[]
 
 :leveloffset: 2
 
