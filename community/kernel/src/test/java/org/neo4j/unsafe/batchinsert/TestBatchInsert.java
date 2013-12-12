@@ -773,6 +773,69 @@ public class TestBatchInsert
         assertTrue( "Relationship#isType returned false for the correct type", relationship.isType( type ) );
     }
 
+    @Test
+    public void propertiesCanBeReSetUsingBatchInserter()
+    {
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "name", "One" );
+        props.put( "count", 1 );
+        props.put( "tags", new String[] { "one", "two" } );
+        props.put( "something", "something" );
+        batchInserter.createNode( 1, props );
+        batchInserter.setNodeProperty( 1, "name", "NewOne" );
+        batchInserter.removeNodeProperty( 1, "count" );
+        batchInserter.removeNodeProperty( 1, "something" );
+        
+        // WHEN setting new properties
+        batchInserter.setNodeProperty( 1, "name", "YetAnotherOne" );
+        batchInserter.setNodeProperty( 1, "additional", "something" );
+        
+        // THEN there should be no problems doing so
+        assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( 1 ).get( "name" ) );
+        assertEquals( "something", batchInserter.getNodeProperties( 1 ).get( "additional" ) );
+        
+        batchInserter.shutdown();
+    }
+
+    @Test
+    public void propertiesCanBeReSetUsingBatchInserter2()
+    {
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        long id = batchInserter.createNode( new HashMap<String, Object>() );
+        
+        // WHEN
+        batchInserter.setNodeProperty( id, "test", "looooooooooong test" );
+        batchInserter.setNodeProperty( id, "test", "small test" );
+        
+        // THEN
+        assertEquals( "small test", batchInserter.getNodeProperties( id ).get( "test" ) );
+        
+        batchInserter.shutdown();
+    }
+
+    @Test
+    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord()
+    {
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "name", "One" );
+        props.put( "count", 1 );
+        props.put( "tags", new String[] { "one", "two" } );
+        long id = batchInserter.createNode( props );
+        batchInserter.setNodeProperty( id, "name", "NewOne" );
+        
+        // WHEN
+        batchInserter.setNodeProperty( id, "count", "something" );
+        
+        // THEN
+        assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
+        batchInserter.shutdown();
+    }
+
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );

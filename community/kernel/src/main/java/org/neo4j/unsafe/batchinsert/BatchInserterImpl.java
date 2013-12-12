@@ -96,7 +96,7 @@ public class BatchInserterImpl implements BatchInserter
     private StoreLocker storeLocker;
 
     // Helper structure for setNodeProperty
-    private Set<PropertyRecord> updatedRecords = new HashSet<PropertyRecord>();
+    private final Set<PropertyRecord> updatedPropertyRecords = new HashSet<PropertyRecord>();
 
     BatchInserterImpl( String storeDir )
     {
@@ -337,7 +337,8 @@ public class BatchInserterImpl implements BatchInserter
          * thatHas is the record that already has a block for this index
          */
         PropertyRecord current = null, thatFits = null, thatHas = null;
-        updatedRecords.clear();
+        updatedPropertyRecords.clear();
+
         /*
          * We keep going while there are records or until we both found the
          * property if it exists and the place to put it, if exists.
@@ -362,7 +363,7 @@ public class BatchInserterImpl implements BatchInserter
                     dynRec.setInUse( false );
                     thatHas.addDeletedRecord( dynRec );
                 }
-                updatedRecords.add( thatHas );
+                updatedPropertyRecords.add( thatHas );
             }
             /*
              * We check the size after we remove - potentially we can put in the same record.
@@ -370,13 +371,13 @@ public class BatchInserterImpl implements BatchInserter
              * current.size() is cheap but not free. If we already found somewhere
              * where it fits, no need to look again.
              */
-            if ( thatFits == null
-                    && (PropertyType.getPayloadSize() - current.size() >= size) )
+            if ( thatFits == null && (PropertyType.getPayloadSize() - current.size() >= size) )
             {
                 thatFits = current;
             }
             nextProp = current.getNextProp();
         }
+
         /*
          * thatHas is of no importance here. We know that the block is definitely not there.
          * However, we can be sure that if the property existed, thatHas is not null and does
@@ -393,22 +394,21 @@ public class BatchInserterImpl implements BatchInserter
 
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                PropertyRecord first = getPropertyStore().getRecord(
-                        primitive.getNextProp() );
+                PropertyRecord first = getPropertyStore().getRecord( primitive.getNextProp() );
                 thatFits.setNextProp( first.getId() );
                 first.setPrevProp( thatFits.getId() );
-                getPropertyStore().updateRecord( first );
+                updatedPropertyRecords.add( first );
             }
             primitive.setNextProp( thatFits.getId() );
         }
         thatFits.addPropertyBlock( block );
-        updatedRecords.add( thatFits );
+        updatedPropertyRecords.add( thatFits );
 
         // This ensures that a particular record is not updated twice in this method
         // It could lead to freeId being called multiple times for same id
-        for ( PropertyRecord updatedRecord : updatedRecords )
+        for ( PropertyRecord updatedRecord : updatedPropertyRecords )
         {
-            getPropertyStore().updateRecord( thatFits );
+            getPropertyStore().updateRecord( updatedRecord );
         }
 
         return result;

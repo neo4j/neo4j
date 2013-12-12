@@ -31,6 +31,7 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance.State;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.Integer.parseInt;
 import static java.net.URI.create;
@@ -155,7 +156,7 @@ public class ProposerStateTest
         
         // THEN
         verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
-                argThat( new MessageArgumentMatcher<>().withPayload( payload ) ) );
+                argThat( new MessageArgumentMatcher<MessageType>().withPayload( payload ) ) );
     }
     
     @SuppressWarnings( "unchecked" )
@@ -180,6 +181,6 @@ public class ProposerStateTest
         
         // THEN
         verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
-                argThat( new MessageArgumentMatcher<>().withPayload( payload ) ) );
+                argThat( new MessageArgumentMatcher<MessageType>().withPayload( payload ) ) );
     }
 }
