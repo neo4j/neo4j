@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.Identifier
-import data.SimpleVal
 import pipes.matching._
 import symbols.{NodeType, NumberType}
 import org.neo4j.cypher.GraphDatabaseTestBase
@@ -204,9 +203,7 @@ object PipeLazynessTest extends MockitoSugar {
     val node = mock[Node]
     val (iter, src) = emptyFakes
     val pipe = new NodeStartPipe(src, "y", new EntityProducer[Node]() {
-      def description: Seq[(String, SimpleVal)] = Seq.empty
-
-      def name: String = ""
+      def producerType: String = "SingleNodeMock"
 
       def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
     })

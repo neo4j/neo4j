@@ -100,8 +100,17 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     assertDbHits(0)(result)("ColumnFilter")
     assertDbHits(0)(result)("ColumnFilter", "TraversalMatcher")
 
-    val start = result.executionPlanDescription().asJava.cd("TraversalMatcher").getArguments.get("start")
-    assert( Map("label" -> "Person").asJava === start )
+    val start = result.executionPlanDescription()
+      .asJava
+      .cd("TraversalMatcher")
+      .getArguments
+      .get("start")
+      .asInstanceOf[java.util.Map[String, Any]]
+      .asScala
+
+    assert( "Person" === start("label") )
+    assert( "NodeByLabel" === start("producer") )
+    assert( Seq("n") === start("identifiers").asInstanceOf[java.lang.Iterable[String]].asScala.toSeq )
   }
 
   @Test
@@ -120,7 +129,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
     assert( 1 === producers.v.size )
     val producer = producers.v.head.asInstanceOf[MapVal]
 
-    assert( Map("label" -> SimpleVal.fromStr("Person")) === producer.v )
+    assert( Map(
+        "label" -> SimpleVal.fromStr("Person"),
+        "producer" -> SimpleVal.fromStr("NodeByLabel"),
+        "identifiers" -> SimpleVal.fromSeq("n")
+      ) === producer.v )
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{AnyIndex, NodeByLabel, SchemaIndex}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{AllNodes, AnyIndex, NodeByLabel, SchemaIndex}
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 import pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{QueryContext, PlanContext}
@@ -30,6 +30,7 @@ import org.junit.{Before, Test}
 import org.mockito.Mockito._
 import org.scalatest.Assertions
 import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_0.data.{SeqVal, SimpleVal}
 
 class EntityProducerFactoryTest extends MockitoSugar with Assertions {
   var planContext: PlanContext = null
@@ -105,4 +106,16 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     //THEN
     verify(queryContext, times(1)).exactIndexSearch(index, Array(1,2,3))
   }
+
+  @Test
+  def should_describe_all_nodes() {
+    //GIVEN
+    val entityProducer = factory.nodesAll((null, AllNodes("x")))
+
+    // WHEN
+    assert( Set(
+      "producer" -> SimpleVal.fromStr("AllNodes"),
+      "identifiers" -> SeqVal(Seq(SimpleVal.fromStr("x"))) ) === entityProducer.description.toSet )
+  }
+
 }

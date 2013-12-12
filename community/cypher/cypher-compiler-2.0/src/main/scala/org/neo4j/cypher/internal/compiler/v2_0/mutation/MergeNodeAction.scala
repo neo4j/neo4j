@@ -31,8 +31,8 @@ import org.neo4j.cypher.{MergeConstraintConflictException, InternalException}
 import org.neo4j.graphdb.Node
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {
-  def name: String = producer.name
-  def description: Seq[(String, SimpleVal)] = producer.description
+  def producerType: String = s"IndexNodProducer(${producer.producerType})"
+  override def description: Seq[(String, SimpleVal)] = producer.description ++ super.description
   def apply(ctx: ExecutionContext, state: QueryState) : Iterator[Node] = producer(ctx, state)
   override def toString() = s":${label.name}.${propertyKey.name}" //":Person.name"
 }

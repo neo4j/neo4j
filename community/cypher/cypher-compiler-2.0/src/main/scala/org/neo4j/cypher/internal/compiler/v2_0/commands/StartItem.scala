@@ -22,11 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_0.mutation._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.neo4j.cypher.internal.compiler.v2_0.data.SimpleVal
+import org.neo4j.cypher.internal.helpers.Materialized
+import org.neo4j.cypher.internal.compiler.v2_0.data.SimpleVal._
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.MergeNodeAction
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateUniqueAction
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_0.data.SeqVal
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateRelationship
 
 trait NodeStartItemIdentifiers extends StartItem {
@@ -40,8 +43,17 @@ trait RelationshipStartItemIdentifiers extends StartItem {
 abstract class StartItem(val identifierName: String, val args: Map[String, String])
   extends TypeSafe with AstNode[StartItem] {
   def mutating: Boolean
-  def name: String = getClass.getSimpleName
+  def producerType: String = getClass.getSimpleName
   def identifiers: Seq[(String, CypherType)]
+
+  def description: Seq[(String, SimpleVal)] = {
+    val argValues = Materialized.mapValues(args, fromStr).toSeq
+    val otherValues = Seq(
+      "producer" -> SimpleVal.fromStr(producerType),
+      "identifiers" -> SeqVal(identifiers.toMap.keys.map(SimpleVal.fromStr).toSeq)
+    )
+    argValues ++ otherValues
+  }
 }
 
 trait ReadOnlyStartItem {

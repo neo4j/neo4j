@@ -2642,6 +2642,14 @@ RETURN x0.name""")
   }
 
   @Test
+  def apa() {
+    execute("CREATE CONSTRAINT ON (n:Person) ASSERT n.foo IS UNIQUE");
+    val result = engine.profile("MATCH (n:Person)-[:X]->(m) WHERE n.foo=1 RETURN n, m;")
+    result.toList
+    println(result.executionPlanDescription().toString)
+  }
+
+  @Test
   def should_handle_queries_that_cant_be_index_solved_because_expressions_lack_dependencies_with_two_disjoin_patterns() {
     // Given
     val a = createLabeledNode(Map("property"->42), "Label")

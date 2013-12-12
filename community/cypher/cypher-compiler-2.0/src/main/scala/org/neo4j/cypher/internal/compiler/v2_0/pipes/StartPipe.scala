@@ -41,7 +41,7 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
   override def executionPlanDescription = {
     val description = createSource.description :+ (("identifier" -> fromStr(name)))
     source.executionPlanDescription
-      .andThen(this, s"${createSource.name}", description: _*)
+      .andThen(this, s"${createSource.producerType}", description: _*)
   }
 }
 

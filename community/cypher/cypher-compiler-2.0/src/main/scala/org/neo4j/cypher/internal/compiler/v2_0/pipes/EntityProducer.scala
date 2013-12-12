@@ -24,15 +24,15 @@ import data.SimpleVal
 import org.neo4j.graphdb.PropertyContainer
 
 trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QueryState) => Iterator[T]) {
-  def name: String
-  def description: Seq[(String, SimpleVal)]
+  def producerType: String
+  def description: Seq[(String, SimpleVal)] = Seq("producer" -> SimpleVal.fromStr(producerType))
 }
 
 object EntityProducer {
   def apply[T <: PropertyContainer](nameStr: String, args: (String, SimpleVal)*)(f:(ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
-      def name = nameStr
-      def description = args
+      def producerType = nameStr
+      override def description = args ++ super.description
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
     }
 }

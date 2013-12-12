@@ -21,11 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands._
-import data.SimpleVal
-import data.SimpleVal._
 import mutation.GraphElementPropertyFunctions
 import pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.{EntityNotFoundException, IndexHintException, InternalException}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
@@ -37,9 +34,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     new EntityProducer[T] {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
 
-      def name = startItem.name
-
-      def description = Materialized.mapValues(startItem.args, fromStr).toSeq
+      def producerType = startItem.producerType
+      override def description = startItem.description ++ super.description
     }
 
   def nodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
@@ -183,9 +179,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   object NO_NODES extends EntityProducer[Node] {
-    def description: Seq[(String, SimpleVal)] = Seq.empty
-
-    def name: String = "No nodes"
+    def producerType: String = "NoNodes"
 
     def apply(v1: ExecutionContext, v2: QueryState) = Iterator.empty
   }
