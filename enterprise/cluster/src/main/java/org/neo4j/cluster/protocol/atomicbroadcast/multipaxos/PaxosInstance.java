@@ -94,10 +94,7 @@ public class PaxosInstance
 
     public void ready( Object value, boolean clientValue )
     {
-        if ( value == null )
-        {
-            throw new IllegalArgumentException( "value null" );
-        }
+        assertNotNull( value );
         
         state = State.p1_ready;
         promises.clear();
@@ -141,10 +138,7 @@ public class PaxosInstance
 
     public void closed( Object value, String conversationIdHeader )
     {
-        if ( value == null )
-        {
-            throw new IllegalArgumentException( "value null" );
-        }
+        assertNotNull( value );
         
         value_2 = value;
         state = State.closed;
@@ -152,6 +146,14 @@ public class PaxosInstance
         rejectedAccepts.clear();
         acceptors = null;
         this.conversationIdHeader = conversationIdHeader;
+    }
+
+    private void assertNotNull( Object value )
+    {
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "value null" );
+        }
     }
 
     public void delivered()

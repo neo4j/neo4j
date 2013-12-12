@@ -312,6 +312,10 @@ public class MultiPaxosContext
         @Override
         public void bookInstance( InstanceId instanceId, Message message )
         {
+            if ( message.getPayload() == null )
+            {
+                throw new IllegalArgumentException( "null payload for booking instance: " + message );
+            }
             bookedInstances.put( instanceId, message );
         }
 
