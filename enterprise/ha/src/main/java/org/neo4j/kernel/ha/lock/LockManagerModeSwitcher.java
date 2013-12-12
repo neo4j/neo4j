@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
 {
     private final HaXaDataSourceManager xaDsm;
@@ -71,8 +73,8 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     @Override
     protected LockManager getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveLockManager( new RagManager(), requestContextFactory, master, xaDsm, txManager, remoteTxHook,
-                availabilityGuard, new SlaveLockManager.Configuration()
+        return new SlaveLockManager( new RagManager(), requestContextFactory, snapshot( master ), xaDsm, txManager,
+                remoteTxHook, availabilityGuard, new SlaveLockManager.Configuration()
         {
             @Override
             public long getAvailabilityTimeout()

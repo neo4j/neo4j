@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+
 public class LabelTokenCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
     private final HaXaDataSourceManager xaDsm;
@@ -59,6 +61,6 @@ public class LabelTokenCreatorModeSwitcher extends AbstractModeSwitcher<TokenCre
     @Override
     protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveLabelTokenCreator( master, requestContextFactory, xaDsm );
+        return new SlaveLabelTokenCreator( snapshot( master ), requestContextFactory, xaDsm );
     }
 }

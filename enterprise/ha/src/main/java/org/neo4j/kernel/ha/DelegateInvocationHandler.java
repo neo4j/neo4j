@@ -35,6 +35,12 @@ import org.neo4j.graphdb.TransactionFailureException;
 public class DelegateInvocationHandler<T> implements InvocationHandler
 {
     private volatile T delegate;
+    private final Class<?> interfaceClass;
+    
+    public DelegateInvocationHandler( Class<T> interfaceClass )
+    {
+        this.interfaceClass = interfaceClass;
+    }
 
     public void setDelegate( T delegate )
     {
@@ -58,10 +64,57 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         }
     }
     
+    @SuppressWarnings( "unchecked" )
     public static <T> T snapshot( T proxiedInstance )
     {
-        @SuppressWarnings( "unchecked" )
-        DelegateInvocationHandler<T> delegateHandler = (DelegateInvocationHandler<T>) Proxy.getInvocationHandler( proxiedInstance );
-        return delegateHandler.delegate;
+        final DelegateInvocationHandler<T> delegateHandler =
+                (DelegateInvocationHandler<T>) Proxy.getInvocationHandler( proxiedInstance );
+            // It's assigned, so return it.
+            if ( delegateHandler.delegate != null )
+            {
+                return delegateHandler.delegate;
+            }
+            
+            // It's null, return something that will update the first change to it and then cement the value
+            return (T) Proxy.newProxyInstance( DelegateInvocationHandler.class.getClassLoader(),
+                    new Class[] {delegateHandler.interfaceClass}, new InvocationHandler()
+                    {
+                        private volatile T cementedDelegate = delegateHandler.delegate;
+                
+                        @Override
+                        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
+                        {
+                            if ( cementedDelegate == null )
+                            {   // Try to update
+                                cementedDelegate = delegateHandler.delegate;
+                            }
+                            if ( cementedDelegate == null )
+                            {
+                                throw new TransactionFailureException(
+                                        "Instance state changed after this transaction started." );
+                            }
+                            
+                            try
+                            {
+                                return method.invoke( cementedDelegate, args );
+                            }
+                            catch ( InvocationTargetException e )
+                            {
+                                throw e.getCause();
+                            }
+                        }
+                        
+                        @Override
+                        public String toString()
+                        {
+                            return "SnapshotDelegate[" + cementedDelegate + "]";
+                        }
+                    } );
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "Delegate[" + delegate + "]";
     }
 }
