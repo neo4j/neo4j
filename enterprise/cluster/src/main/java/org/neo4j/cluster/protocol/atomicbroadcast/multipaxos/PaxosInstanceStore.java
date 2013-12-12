@@ -70,4 +70,55 @@ public class PaxosInstanceStore
         delivered.clear();
         instances.clear();
     }
+
+    public PaxosInstanceStore snapshot()
+    {
+        PaxosInstanceStore snapshot = new PaxosInstanceStore();
+        snapshot.queued = queued;
+        snapshot.delivered = new LinkedList<>(delivered);
+        for ( Map.Entry<InstanceId, PaxosInstance> instance : instances.entrySet() )
+        {
+            throw new UnsupportedOperationException(  );
+        }
+        return snapshot;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        PaxosInstanceStore that = (PaxosInstanceStore) o;
+
+        if ( queued != that.queued )
+        {
+            return false;
+        }
+        if ( !delivered.equals( that.delivered ) )
+        {
+            return false;
+        }
+        if ( !instances.equals( that.instances ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = queued;
+        result = 31 * result + delivered.hashCode();
+        result = 31 * result + instances.hashCode();
+        return result;
+    }
 }

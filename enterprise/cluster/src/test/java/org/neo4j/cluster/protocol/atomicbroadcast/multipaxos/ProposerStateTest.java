@@ -22,6 +22,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
@@ -29,7 +30,10 @@ import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ProposerStateTest
 {
@@ -44,7 +48,7 @@ public class ProposerStateTest
 
         // The instance is closed
         PaxosInstance paxosInstance = new PaxosInstance( paxosInstanceStore, instanceId ); // the instance
-        paxosInstance.closed( null, "1/15#" ); // is closed for that conversation, not really important
+        paxosInstance.closed( instanceId, "1/15#" ); // is closed for that conversation, not really important
         when( context.unbookInstance( instanceId ) ).thenReturn( Message.internal( ProposerMessage.accepted, "the closed payload" ) );
 
         when( context.getPaxosInstance( instanceId ) ).thenReturn( paxosInstance ); // required for

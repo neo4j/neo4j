@@ -94,6 +94,11 @@ public class PaxosInstance
 
     public void ready( Object value, boolean clientValue )
     {
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "value null" );
+        }
+        
         state = State.p1_ready;
         promises.clear();
         value_1 = null;
@@ -136,6 +141,11 @@ public class PaxosInstance
 
     public void closed( Object value, String conversationIdHeader )
     {
+        if ( value == null )
+        {
+            throw new IllegalArgumentException( "value null" );
+        }
+        
         value_2 = value;
         state = State.closed;
         accepts.clear();
