@@ -103,9 +103,10 @@ public enum ProposerState
                                             InstanceId.INSTANCE ) );
                                 }
                                 // This will reset the phase1Timeout if existing
+                                // TODO no payload associated with the phase1Timeout here.
+                                //      but what payload to use? instance.value_2?
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage
-                                                .phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -142,8 +143,8 @@ public enum ProposerState
                                                 InstanceId.INSTANCE ) );
                                     }
                                     context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                            ProposerMessage
-                                                    .phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                            ProposerMessage.phase1Timeout, message, message.getPayload() ),
+                                            InstanceId.INSTANCE ) );
                                 }
                             }
                             else if ( instance.isState( PaxosInstance.State.closed ) || instance.isState(
@@ -283,7 +284,7 @@ public enum ProposerState
                                 }
 
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage.phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, message.getPayload() ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -424,8 +425,8 @@ public enum ProposerState
                         ballot ) ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
             }
 
-            context.setTimeout( instanceId, Message.timeout( ProposerMessage.phase1Timeout, message )
-                    .setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
+            context.setTimeout( instanceId, Message.timeout( ProposerMessage.phase1Timeout, message,
+                    message.getPayload() ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
         }
         else
         {
