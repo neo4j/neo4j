@@ -52,16 +52,16 @@ import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 public class TxPushStrategyConfigIT
 {
     @Test
-    public void twoFixed() throws Exception
+    public void shouldPushToSlavesInDescendingOrder() throws Exception
     {
         startCluster( 4, 2, "fixed" );
         
         for ( int i = 0; i < 5; i++ )
         {
             createTransactionOnMaster();
-            assertLastTransactions( lastTx( 4, 2 + i ) );
-            assertLastTransactions( lastTx( 3, 2 + i ) );
-            assertLastTransactions( lastTx( 2, 1 ) );
+            assertLastTransactions( lastTx( THIRD_SLAVE, 2 + i ) );
+            assertLastTransactions( lastTx( SECOND_SLAVE, 2 + i ) );
+            assertLastTransactions( lastTx( FIRST_SLAVE, 1 ) );
         }
     }
 
@@ -71,31 +71,31 @@ public class TxPushStrategyConfigIT
         startCluster( 5, 2, "round_robin" );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 2 ), lastTx( 4, 1 ), lastTx( 5, 1 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 1 ), lastTx( FOURTH_SLAVE, 1 ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 3 ), lastTx( 4, 3 ), lastTx( 5, 1 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 3 ), lastTx( FOURTH_SLAVE, 1 ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 3 ), lastTx( 4, 4 ), lastTx( 5, 4 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 4 ), lastTx( FOURTH_SLAVE, 4 ) );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( 2, 5 ), lastTx( 3, 3 ), lastTx( 4, 4 ), lastTx( 5, 5 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, 5 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 4 ), lastTx( FOURTH_SLAVE, 5 ) );
     }
 
     @Test
-    public void twoFixedFromSlaveCommit() throws Exception
+    public void shouldPushToOneLessSlaveOnSlaveCommit() throws Exception
     {
         startCluster( 4, 2, "fixed" );
 
-        createTransactionOn( 2 );
-        assertLastTransactions( lastTx( 4, 2 ), lastTx( 3, 1 ), lastTx( 2, 2 ), lastTx( 1, 2 ) );
+        createTransactionOn( FIRST_SLAVE );
+        assertLastTransactions( lastTx( MASTER, 2 ), lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 1 ), lastTx( THIRD_SLAVE, 2 ) );
 
-        createTransactionOn( 3 );
-        assertLastTransactions( lastTx( 4, 3 ), lastTx( 3, 3 ), lastTx( 2, 2 ), lastTx( 1, 3 ) );
+        createTransactionOn( SECOND_SLAVE );
+        assertLastTransactions( lastTx( MASTER, 3 ), lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 3 ) );
 
-        createTransactionOn( 4 );
-        assertLastTransactions( lastTx( 4, 4 ), lastTx( 3, 4 ), lastTx( 2, 2 ), lastTx( 1, 4 ) );
+        createTransactionOn( THIRD_SLAVE );
+        assertLastTransactions( lastTx( MASTER, 4 ), lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 4 ), lastTx( THIRD_SLAVE, 4 ) );
     }
 
     @Test
@@ -116,7 +116,7 @@ public class TxPushStrategyConfigIT
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
         createTransaction( newMaster );
-        assertLastTransactions( lastTx( 2, 2 ), lastTx( 3, 2 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 2 ) );
     }
 
     @Test
@@ -134,6 +134,15 @@ public class TxPushStrategyConfigIT
 
     @Rule
     public TestName name = new TestName();
+
+    /**
+     * These are _indexes_ of cluster members in machineIds
+     */
+    private static int MASTER = 1;
+    private static int FIRST_SLAVE = 2;
+    private static int SECOND_SLAVE = 3;
+    private static int THIRD_SLAVE = 4;
+    private static int FOURTH_SLAVE = 5;
     private int[] machineIds;
 
     @Before
@@ -245,15 +254,15 @@ public class TxPushStrategyConfigIT
         createTransaction( cluster.getMaster() );
     }
 
-    private void createTransactionOn( int serverId )
+    private void createTransactionOn( int serverIndex )
     {
+        int serverId = machineIds[serverIndex-1];
         createTransaction( cluster.getMemberByServerId( serverId ) );
     }
 
     private void createTransaction( GraphDatabaseAPI db )
     {
-        Transaction tx = db.beginTx();
-        try
+        try (Transaction tx = db.beginTx())
         {
             db.createNode();
             tx.success();
@@ -262,10 +271,6 @@ public class TxPushStrategyConfigIT
         {
             e.printStackTrace();
             throw e;
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }
