@@ -93,9 +93,9 @@ public class MultiPaxosServerFactory
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
 
         // Create state machines
-        StateMachines stateMachines = new StateMachines( input, output, latencyCalculator,
-                executor, stateMachineExecutor );
-        Timeouts timeouts = stateMachines.getTimeouts();
+        Timeouts timeouts = new Timeouts( timeoutStrategy );
+
+        StateMachines stateMachines = new StateMachines( input, output, timeouts, executor, stateMachineExecutor );
         stateMachines.addMessageProcessor( latencyCalculator );
 
         final MultiPaxosContext context = new MultiPaxosContext( me,
@@ -135,7 +135,8 @@ public class MultiPaxosServerFactory
 
         context.getHeartbeatContext().addHeartbeatListener( new HeartbeatReelectionListener( server.newClient( Election
                 .class ), logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
-        context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient( Election.class ),
+        context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient(
+                Election.class ),
                 logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )
