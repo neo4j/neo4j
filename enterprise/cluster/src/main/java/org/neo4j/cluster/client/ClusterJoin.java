@@ -111,7 +111,7 @@ public class ClusterJoin
 
         try
         {
-            if ( !semaphore.tryAcquire( 5, TimeUnit.SECONDS ) )
+            if ( !semaphore.tryAcquire( 60, TimeUnit.SECONDS ) )
             {
                 logger.info( "Unable to leave cluster, timeout" );
             }

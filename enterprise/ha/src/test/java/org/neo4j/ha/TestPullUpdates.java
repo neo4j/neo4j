@@ -29,9 +29,10 @@ import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,8 +40,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -135,7 +138,32 @@ public class TestPullUpdates
                     .setConfig( ClusterSettings.server_id, "2" )
                     .setConfig( ClusterSettings.initial_hosts, ":5001" )
                     .newGraphDatabase();
+
+            // Required to block until the slave has left for sure
+            final CountDownLatch slaveLeftLatch = new CountDownLatch( 1 );
+
+            final ClusterClient masterClusterClient = ( (HighlyAvailableGraphDatabase) master ).getDependencyResolver()
+                    .resolveDependency( ClusterClient.class );
+
+            masterClusterClient.addClusterListener( new ClusterListener.Adapter()
+            {
+                @Override
+                public void leftCluster( InstanceId instanceId )
+                {
+                    slaveLeftLatch.countDown();
+                    masterClusterClient.removeClusterListener( this );
+                }
+            } );
+
+            System.out.println("MASTER:"+master.isAvailable( 60 ));
+            System.out.println("SLAVE:"+slave.isAvailable( 60 ));
+
+            ((GraphDatabaseAPI)master).getDependencyResolver().resolveDependency( StringLogger.class ).info( "SHUTTING DOWN SLAVE" );
             slave.shutdown();
+
+            // Make sure that the slave has left, because shutdown() may return before the master knows
+            if (!slaveLeftLatch.await(60, TimeUnit.SECONDS))
+                throw new IllegalStateException( "Timeout waiting for slave to leave" );
 
             long nodeId = -1;
             Transaction tx = master.beginTx();
@@ -144,7 +172,7 @@ public class TestPullUpdates
             nodeId = node.getId();
             tx.success();
             tx.finish();
-
+            
             // Store is already in place, should pull updates
             slave = new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
