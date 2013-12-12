@@ -24,6 +24,7 @@ import java.net.URI;
 
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
 
@@ -80,6 +81,8 @@ public class MessageArgumentMatcher<T extends MessageType> extends ArgumentMatch
     @Override
     public void describeTo( Description description )
     {
-        description.appendText( theMessageType.name()+"{from="+from+", to="+to+", payload="+payload+"}" );
+        description.appendText(
+                (theMessageType != null ? theMessageType.name() : "<no particular message type>") +
+                "{from=" + from + ", to=" + to + ", payload=" + payload + "}" );
     }
 }
