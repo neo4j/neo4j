@@ -20,12 +20,9 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Outcome;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -33,14 +30,11 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
  */
 public class UpgradableDatabase
 {
-    /*
-     * Initialized by the static block below.
-     */
-    private final FileSystemAbstraction fs;
-    
-    public UpgradableDatabase( FileSystemAbstraction fs )
+    private final StoreVersionCheck storeVersionCheck;
+
+    public UpgradableDatabase( StoreVersionCheck storeVersionCheck )
     {
-        this.fs = fs;
+        this.storeVersionCheck = storeVersionCheck;
     }
 
     public boolean storeFilesUpgradeable( File neoStoreFile )
@@ -62,50 +56,21 @@ public class UpgradableDatabase
         for ( StoreFile store : StoreFile.legacyStoreFiles() )
         {
             String expectedVersion = store.legacyVersion();
-            FileChannel fileChannel = null;
-            byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
-            try
+            File storeFile = new File( storeDirectory, store.storeFileName() );
+            Pair<Outcome, String> outcome = storeVersionCheck.hasVersion( storeFile, expectedVersion );
+            if ( !outcome.first().isSuccessful() )
             {
-                File storeFile = new File( storeDirectory, store.storeFileName() );
-                if ( !fs.fileExists( storeFile ) )
+                switch ( outcome.first() )
                 {
+                case missingStoreFile:
                     throw new StoreUpgrader.UpgradeMissingStoreFilesException( storeFile.getName() );
-                }
-                fileChannel = fs.open( storeFile, "r" );
-                if ( fileChannel.size() < expectedVersionBytes.length )
-                {
+                case storeVersionNotFound:
                     throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( storeFile.getName() );
-                }
-                fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
-                byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
-                fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
-                String actualVersion = UTF8.decode( foundVersionBytes );
-                if ( !actualVersion.startsWith( store.typeDescriptor() ) )
-                {
-                    throw new StoreUpgrader.UpgradingStoreVersionNotFoundException( store.storeFileName() );
-                }
-                if ( !expectedVersion.equals( actualVersion ) )
-                {
+                case unexpectedUpgradingStoreVersion:
                     throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException(
-                            storeFile.getName(), expectedVersion, actualVersion );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                if ( fileChannel != null )
-                {
-                    try
-                    {
-                        fileChannel.close();
-                    }
-                    catch ( IOException e )
-                    {
-                        return;
-                    }
+                            storeFile.getName(), expectedVersion, outcome.other() );
+                default:
+                    throw new IllegalArgumentException( outcome.first().name() );
                 }
             }
         }

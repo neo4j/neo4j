@@ -19,28 +19,30 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 
 public class UpgradableDatabaseTestIT
 {
@@ -61,7 +63,7 @@ public class UpgradableDatabaseTestIT
 
         copyRecursively( resourceDirectory, workingDirectory );
 
-        assertTrue( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertTrue( new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -78,7 +80,7 @@ public class UpgradableDatabaseTestIT
 
         changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
 
-        assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertFalse( new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -95,7 +97,7 @@ public class UpgradableDatabaseTestIT
 
         truncateFile( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "StringPropertyStore " + LEGACY_VERSION );
 
-        assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertFalse( new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -114,7 +116,7 @@ public class UpgradableDatabaseTestIT
         assertTrue( shortFileLength < UTF8.encode( "StringPropertyStore " + LEGACY_VERSION ).length );
         truncateToFixedLength( fileSystem, new File( workingDirectory, "neostore.relationshiptypestore.db" ), shortFileLength );
 
-        assertFalse( new UpgradableDatabase(fileSystem).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
+        assertFalse( new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ).storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -135,7 +137,8 @@ public class UpgradableDatabaseTestIT
 
         try
         {
-            new UpgradableDatabase( fileSystem ).checkUpgradeable( new File( workingDirectory, "neostore" ) );
+            new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ).checkUpgradeable(
+                    new File( workingDirectory, "neostore" ) );
             fail( "should not have been able to upgrade" );
         }
         catch (StoreUpgrader.UnexpectedUpgradingStoreVersionException e)
