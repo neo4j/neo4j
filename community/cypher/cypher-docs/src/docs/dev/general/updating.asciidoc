@@ -26,8 +26,7 @@ aggregating, and the second query filters on the results coming from the first o
 
 [source,cypher]
 ----
-START n=node(...)
-MATCH n-[:friend]-friend
+MATCH (n {name: 'John'})-[:FRIEND]-friend
 WITH n, count(friend) as friendsCount
 WHERE friendsCount > 3
 RETURN n, friendsCount
@@ -49,4 +48,4 @@ is a period symbol at the end of a query. The `RETURN` clause has three sub-clau
 
 If you return graph elements from a query that has just deleted them -- beware, you are holding a pointer that is no
  longer valid. Operations on that node might fail mysteriously and unpredictably.
- 
+

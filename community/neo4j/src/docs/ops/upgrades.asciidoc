@@ -132,6 +132,14 @@ When migrating a database with an existing reference node, add a label to it dur
 This is how to add the label: `START ref=node(0) SET ref:MyReference`.
 In case you have altered the database so a different node is the reference node, substitute the node id in the statement.
 
+=== Embedded Java API ===
+
+Mandatory Transactions::
+Transactions are now mandatory for read operations as well.
+
+The Reference Node::
+See the Cypher section above as well as the JavaDoc on http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/class-use/Label.html[Label].
+
 === Other significant changes ===
 
 Plugins::
