@@ -164,7 +164,7 @@ public class BatchInserterImpl implements BatchInserter
     private boolean isShutdown = false;
 
     // Helper structure for setNodeProperty
-    private Set<PropertyRecord> updatedRecords = new HashSet<PropertyRecord>();
+    private final Set<PropertyRecord> updatedPropertyRecords = new HashSet<PropertyRecord>();
 
 
     BatchInserterImpl( String storeDir,
@@ -576,7 +576,7 @@ public class BatchInserterImpl implements BatchInserter
          * thatHas is the record that already has a block for this index
          */
         PropertyRecord current = null, thatFits = null, thatHas = null;
-        updatedRecords.clear();
+        updatedPropertyRecords.clear();
 
         /*
          * We keep going while there are records or until we both found the
@@ -594,16 +594,13 @@ public class BatchInserterImpl implements BatchInserter
                 thatHas = current;
 
                 PropertyBlock removed = thatHas.removePropertyBlock( index );
-                if ( removed.isLight() )
-                {
-                    getPropertyStore().makeHeavyIfLight( removed );
-                }
+                getPropertyStore().makeHeavyIfLight( removed );
                 for ( DynamicRecord dynRec : removed.getValueRecords() )
                 {
                     dynRec.setInUse( false );
                     thatHas.addDeletedRecord( dynRec );
                 }
-                updatedRecords.add( thatHas );
+                updatedPropertyRecords.add( thatHas );
             }
             /*
              * We check the size after we remove - potentially we can put in the same record.
@@ -611,29 +608,11 @@ public class BatchInserterImpl implements BatchInserter
              * current.size() is cheap but not free. If we already found somewhere
              * where it fits, no need to look again.
              */
-            if ( thatFits == null
-                 && (PropertyType.getPayloadSize() - current.size() >= size) )
+            if ( thatFits == null && (PropertyType.getPayloadSize() - current.size() >= size) )
             {
                 thatFits = current;
             }
             nextProp = current.getNextProp();
-        }
-
-        /*
-         * If there was a record that contained a property for this key already, and if
-         * we will not be able to re-use those records to store the new property,
-         * release the old records.
-         */
-        if( thatHas != null && thatFits != thatHas )
-        {
-            PropertyBlock removed = thatHas.removePropertyBlock( index );
-            getPropertyStore().ensureHeavy( removed );
-            for ( DynamicRecord dynRec : removed.getValueRecords() )
-            {
-                dynRec.setInUse( false );
-                thatHas.addDeletedRecord( dynRec );
-            }
-            getPropertyStore().updateRecord( thatHas );
         }
 
         /*
@@ -652,23 +631,22 @@ public class BatchInserterImpl implements BatchInserter
 
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                PropertyRecord first = getPropertyStore().getRecord(
-                        primitive.getNextProp() );
+                PropertyRecord first = getPropertyStore().getRecord( primitive.getNextProp() );
                 thatFits.setNextProp( first.getId() );
                 first.setPrevProp( thatFits.getId() );
-                getPropertyStore().updateRecord( first );
+                updatedPropertyRecords.add( first );
             }
             primitive.setNextProp( thatFits.getId() );
         }
 
         thatFits.addPropertyBlock( block );
-        updatedRecords.add( thatFits );
+        updatedPropertyRecords.add( thatFits );
 
         // This ensures that a particular record is not updated twice in this method
         // It could lead to freeId being called multiple times for same id
-        for ( PropertyRecord updatedRecord : updatedRecords )
+        for ( PropertyRecord updatedRecord : updatedPropertyRecords )
         {
-            getPropertyStore().updateRecord( thatFits );
+            getPropertyStore().updateRecord( updatedRecord );
         }
 
         return result;

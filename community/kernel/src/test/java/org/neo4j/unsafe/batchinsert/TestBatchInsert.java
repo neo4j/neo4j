@@ -1106,33 +1106,65 @@ public class TestBatchInsert
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter() throws IOException {
+    public void propertiesCanBeReSetUsingBatchInserter()
+    {
+        // GIVEN
         BatchInserter batchInserter = newBatchInserter();
         Map<String, Object> props = new HashMap<>();
-        props.put("name", "One");
-        props.put("count", 1);
-        props.put("tags", new String[]{"one", "two"});
-        props.put("something", "something");
-        batchInserter.createNode(1, props);
-
-        batchInserter.setNodeProperty(1, "name", "NewOne");
-        batchInserter.removeNodeProperty(1, "count");
-        batchInserter.removeNodeProperty(1, "something");
-
-        batchInserter.setNodeProperty(1, "name", "YetAnotherOne");
-        batchInserter.setNodeProperty(1, "additional", "something");
-
+        props.put( "name", "One" );
+        props.put( "count", 1 );
+        props.put( "tags", new String[] { "one", "two" } );
+        props.put( "something", "something" );
+        batchInserter.createNode( 1, props );
+        batchInserter.setNodeProperty( 1, "name", "NewOne" );
+        batchInserter.removeNodeProperty( 1, "count" );
+        batchInserter.removeNodeProperty( 1, "something" );
+        
+        // WHEN setting new properties
+        batchInserter.setNodeProperty( 1, "name", "YetAnotherOne" );
+        batchInserter.setNodeProperty( 1, "additional", "something" );
+        
+        // THEN there should be no problems doing so
+        assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( 1 ).get( "name" ) );
+        assertEquals( "something", batchInserter.getNodeProperties( 1 ).get( "additional" ) );
+        
         batchInserter.shutdown();
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter2() throws IOException {
+    public void propertiesCanBeReSetUsingBatchInserter2()
+    {
+        // GIVEN
         BatchInserter batchInserter = newBatchInserter();
-        long id = batchInserter.createNode(new HashMap<String, Object>());
-        batchInserter.setNodeProperty(id, "test", "looooooooooong test");
+        long id = batchInserter.createNode( new HashMap<String, Object>() );
+        
+        // WHEN
+        batchInserter.setNodeProperty( id, "test", "looooooooooong test" );
+        batchInserter.setNodeProperty( id, "test", "small test" );
+        
+        // THEN
+        assertEquals( "small test", batchInserter.getNodeProperties( id ).get( "test" ) );
+        
+        batchInserter.shutdown();
+    }
 
-        batchInserter.setNodeProperty(id, "test", "small test");
-
+    @Test
+    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord()
+    {
+        // GIVEN
+        BatchInserter batchInserter = newBatchInserter();
+        Map<String, Object> props = new HashMap<>();
+        props.put( "name", "One" );
+        props.put( "count", 1 );
+        props.put( "tags", new String[] { "one", "two" } );
+        long id = batchInserter.createNode( props );
+        batchInserter.setNodeProperty( id, "name", "NewOne" );
+        
+        // WHEN
+        batchInserter.setNodeProperty( id, "count", "something" );
+        
+        // THEN
+        assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
         batchInserter.shutdown();
     }
 
