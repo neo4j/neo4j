@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-
 import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -39,12 +32,16 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+
 public class CurrentDatabase
 {
+    private final StoreVersionCheck storeVersionCheck;
     private Map<String, String> fileNamesToTypeDescriptors = new HashMap<String, String>();
 
-    public CurrentDatabase()
+    public CurrentDatabase(StoreVersionCheck storeVersionCheck)
     {
+        this.storeVersionCheck = storeVersionCheck;
         fileNamesToTypeDescriptors.put( NeoStore.DEFAULT_NAME, NeoStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.nodestore.db", NodeStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db", PropertyStore.TYPE_DESCRIPTOR );
@@ -62,41 +59,10 @@ public class CurrentDatabase
         for ( String fileName : fileNamesToTypeDescriptors.keySet() )
         {
             String expectedVersion = buildTypeDescriptorAndVersion( fileNamesToTypeDescriptors.get( fileName ) );
-            FileChannel fileChannel = null;
-            byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
-            try
+
+            if ( !storeVersionCheck.hasVersion( new File( storeDirectory, fileName ), expectedVersion ) )
             {
-                File storeFile = new File( storeDirectory, fileName );
-                if ( !storeFile.exists() )
-                {
-                    return false;
-                }
-                fileChannel = new RandomAccessFile( storeFile, "r" ).getChannel();
-                fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
-                byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
-                fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
-                if ( !expectedVersion.equals( UTF8.decode( foundVersionBytes ) ) )
-                {
-                    return false;
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                if ( fileChannel != null )
-                {
-                    try
-                    {
-                        fileChannel.close();
-                    }
-                    catch ( IOException e )
-                    {
-                        // Ignore exception on close
-                    }
-                }
+                return false;
             }
         }
         return true;

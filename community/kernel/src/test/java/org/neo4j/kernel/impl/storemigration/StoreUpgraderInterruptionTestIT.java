@@ -82,7 +82,7 @@ public class StoreUpgraderInterruptionTestIT
     
     private StoreUpgrader newUpgrader( StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
+        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, alwaysAllowed(), new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), migrator,
                 files, defaultIdGeneratorFactory(), defaultFileSystemAbstraction() );        
     }
 
