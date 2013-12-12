@@ -124,6 +124,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private URI masterHaURI;
     public static final String INADDR_ANY = "0.0.0.0";
     private URI slaveHaURI;
+    private BindingListener bindingListener;
 
     public static int getServerId( URI haUri )
     {
@@ -182,33 +183,30 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public synchronized void init() throws Throwable
     {
+        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(  );
+
         stateHandler.addHighAvailabilityMemberListener( this );
-        bindingNotifier.addBindingListener( new BindingListener()
+        bindingListener = new BindingListener()
         {
             @Override
             public void listeningAt( URI myUri )
             {
                 me = myUri;
             }
-        } );
+        };
+        bindingNotifier.addBindingListener( bindingListener );
         life.init();
     }
 
     @Override
     public synchronized void start() throws Throwable
     {
-        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(  );
-
         life.start();
     }
 
     @Override
     public synchronized void stop() throws Throwable
     {
-        scheduledExecutorService.shutdown();
-
-        scheduledExecutorService.awaitTermination( 60, TimeUnit.SECONDS );
-
         life.stop();
     }
 
@@ -216,6 +214,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public synchronized void shutdown() throws Throwable
     {
         stateHandler.removeHighAvailabilityMemberListener( this );
+        bindingNotifier.removeBindingListener( bindingListener );
+
+        scheduledExecutorService.shutdown();
+
+        scheduledExecutorService.awaitTermination( 60, TimeUnit.SECONDS );
+
         life.shutdown();
     }
 

@@ -302,7 +302,7 @@ public enum ProposerState
                                 instance.accepted( acceptedState );
 
                                 // Value has been accepted! Now distribute to all learners
-                                if ( instance.accepts.size() == context.getMinimumQuorumSize( instance.getAcceptors()
+                                if ( instance.accepts.size() >= context.getMinimumQuorumSize( instance.getAcceptors()
                                 ) )
                                 {
                                     context.cancelTimeout( instance.id );
@@ -370,9 +370,9 @@ public enum ProposerState
                                         outgoing.offer( proposeMessage );
                                     }
                                 }
-                                else
-                                {
-                                }
+                            } else
+                            {
+                                context.getLogger( ProposerState.class ).debug( "Instance receiving an accepted is in the wrong state:"+instance );
                             }
                             break;
                         }
