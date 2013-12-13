@@ -4,7 +4,7 @@ Order by
 
 To sort the output, use the +ORDER BY+ clause. Note that you can not sort on nodes or relationships,
 just on properties on these.
-+ORDER BY+ relies on comparisons to sort the output, see <<cypher-comparison>>.
++ORDER BY+ relies on comparisons to sort the output, see <<cypher-ordering>>.
 
 .Graph
 include::includes/cypher-orderby-graph.asciidoc[]
