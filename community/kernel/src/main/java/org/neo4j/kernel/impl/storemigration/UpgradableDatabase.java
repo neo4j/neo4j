@@ -20,14 +20,10 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStoreReader;
@@ -44,7 +40,6 @@ public class UpgradableDatabase
      * Initialized by the static block below.
      */
     public static final Map<String, String> fileNamesToExpectedVersions;
-    private final FileSystemAbstraction fs;
 
     static
     {
@@ -69,17 +64,20 @@ public class UpgradableDatabase
                 LegacyDynamicStoreReader.FROM_VERSION_STRING );
         fileNamesToExpectedVersions = Collections.unmodifiableMap( before );
     }
-    
-    public UpgradableDatabase( FileSystemAbstraction fs )
+
+    private final StoreVersionCheck storeVersionCheck;
+
+    public UpgradableDatabase( StoreVersionCheck storeVersionCheck )
     {
-        this.fs = fs;
+        this.storeVersionCheck = storeVersionCheck;
     }
 
     public void checkUpgradeable( File neoStoreFile )
     {
         if ( !storeFilesUpgradeable( neoStoreFile ) )
         {
-            throw new StoreUpgrader.UnableToUpgradeException( "Not all store files match the version required for successful upgrade" );
+            throw new StoreUpgrader.UnableToUpgradeException( "Not all store files match the version required for " +
+                    "successful upgrade" );
         }
     }
 
@@ -89,47 +87,13 @@ public class UpgradableDatabase
         for ( String fileName : fileNamesToExpectedVersions.keySet() )
         {
             String expectedVersion = fileNamesToExpectedVersions.get( fileName );
-            FileChannel fileChannel = null;
-            byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
-            try
+
+            if ( !storeVersionCheck.hasVersion( new File( storeDirectory, fileName ), expectedVersion ) )
             {
-                File storeFile = new File( storeDirectory, fileName );
-                if ( !fs.fileExists( storeFile ) )
-                {
-                    return false;
-                }
-                fileChannel = fs.open( storeFile, "r" );
-                if ( fileChannel.size() < expectedVersionBytes.length )
-                {
-                    return false;
-                }
-                fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
-                byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
-                fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
-                if ( !expectedVersion.equals( UTF8.decode( foundVersionBytes ) ) )
-                {
-                    return false;
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                if ( fileChannel != null )
-                {
-                    try
-                    {
-                        fileChannel.close();
-                    }
-                    catch ( IOException e )
-                    {
-                        // Ignore exception on close
-                    }
-                }
+                return false;
             }
         }
         return true;
     }
+
 }

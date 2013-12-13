@@ -177,7 +177,7 @@ public class StoreUpgraderTestIT
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase( fs.get() ), migrator,
+        return new StoreUpgrader( defaultConfig(), StringLogger.DEV_NULL, config, new UpgradableDatabase( new StoreVersionCheck( fs.get() ) ), migrator,
                 files, new DefaultIdGeneratorFactory(), fs.get() );
     }
     
