@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
 {
     private final HaXaDataSourceManager xaDsm;
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final AbstractTransactionManager txManager;
     private final RemoteTxHook remoteTxHook;
@@ -48,7 +48,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
 
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<LockManager> delegate,
-                                    HaXaDataSourceManager xaDsm, Master master,
+                                    HaXaDataSourceManager xaDsm, DelegateInvocationHandler<Master> master,
                                     RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
                                     RemoteTxHook remoteTxHook, AvailabilityGuard availabilityGuard, Config config )
     {
@@ -71,8 +71,8 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<LockManager>
     @Override
     protected LockManager getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveLockManager( new RagManager(), requestContextFactory, master, xaDsm, txManager, remoteTxHook,
-                availabilityGuard, new SlaveLockManager.Configuration()
+        return new SlaveLockManager( new RagManager(), requestContextFactory, master.cement(), xaDsm, txManager,
+                remoteTxHook, availabilityGuard, new SlaveLockManager.Configuration()
         {
             @Override
             public long getAvailabilityTimeout()

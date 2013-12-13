@@ -33,13 +33,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
 {
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactoryResolver requestContextFactory;
     private final StringLogger log;
     private final DependencyResolver resolver;
 
     public TxHookModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                               DelegateInvocationHandler<RemoteTxHook> delegate, Master master,
+                               DelegateInvocationHandler<RemoteTxHook> delegate,
+                               DelegateInvocationHandler<Master> master,
                                RequestContextFactoryResolver requestContextFactory, StringLogger log,
                                DependencyResolver resolver )
     {
@@ -59,7 +60,7 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
     @Override
     protected RemoteTxHook getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxHook( master, resolver.resolveDependency( HaXaDataSourceManager.class ),
+        return new SlaveTxHook( master.cement(), resolver.resolveDependency( HaXaDataSourceManager.class ),
                 requestContextFactory, log );
     }
 

@@ -29,18 +29,57 @@ import org.neo4j.graphdb.TransactionFailureException;
 /**
  * InvocationHandler for dynamic proxies that delegate calls to a given backing implementation. This is mostly
  * used to present a single object to others, while being able to switch implementation at runtime.
- *
- * @param <T>
+ * 
+ * There are concepts of {@link #snapshot(Object)} and {@link #cement(Object)} in here, which serves different purposes:
+ * <ol>
+ * <li>{@link #snapshot(Object)}: acquire the actual delegate at this particular point in time, pulling it out
+ * from the proxy and using it directly. This is used for acquiring a snapshot and keep using that particular
+ * instance, even if a new delegate is assigned for this handler.</li>
+ * <li>{@link #cement(Object)}: acquire a proxy that will have its delegate assigned the next call to
+ * {@link #setDelegate(Object)}. This is useful if one {@link DelegateInvocationHandler} depends on
+ * another which will have its delegate set later than this one.</li>
+ * </ol>
  */
 public class DelegateInvocationHandler<T> implements InvocationHandler
 {
     private volatile T delegate;
+    private final Class<?> interfaceClass;
+    
+    // A concrete version of delegate, where a user can request to cement this delegate so that it gets concrete
+    // the next call to setDelegate and will never change since.
+    private volatile T concrete;
+    
+    public DelegateInvocationHandler( Class<T> interfaceClass )
+    {
+        this.interfaceClass = interfaceClass;
+    }
 
+    /**
+     * Updates the delegate for this handler, also {@link #harden() hardens} instances
+     * {@link #cement(Object) cemented} from the last call to {@link #setDelegate(Object)}.
+     * @param delegate the new delegate to set.
+     */
     public void setDelegate( T delegate )
     {
         this.delegate = delegate;
+        harden();
     }
 
+    /**
+     * Updates {@link #cement(Object) cemented} delegates with the current delegate, making it concrete.
+     * Callers of {@link #cement(Object)} in between this call and the previous call to {@link #setDelegate(Object)}
+     * will see the current delegate.
+     */
+    @SuppressWarnings( "unchecked" )
+    public void harden()
+    {
+        if ( concrete != null )
+        {   // If there's any cement then make it concrete.
+            // About concurrency: setDelegate and harden is expected to be called by only a single thread at a time.
+            ((Concrete<T>)Proxy.getInvocationHandler( concrete )).set( delegate );
+        }
+    }
+    
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
     {
@@ -48,6 +87,12 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         {
             throw new TransactionFailureException( "Instance state changed after this transaction started." );
         }
+        return proxyInvoke( delegate, method, args );
+    }
+
+    private static Object proxyInvoke( Object delegate, Method method, Object[] args )
+            throws Throwable
+    {
         try
         {
             return method.invoke( delegate, args );
@@ -58,10 +103,70 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         }
     }
     
+    /**
+     * Cements this delegate, i.e. returns an instance which will have its delegate assigned and hardened
+     * later on so that it never will change after that point.
+     */
+    @SuppressWarnings( "unchecked" )
+    public T cement()
+    {
+        // Make sure there's precisely one concrete instance
+        if ( concrete == null )
+        {
+            synchronized ( this )
+            {
+                if ( concrete == null )
+                {
+                    concrete = (T) Proxy.newProxyInstance( DelegateInvocationHandler.class.getClassLoader(),
+                          new Class[] {interfaceClass}, new Concrete<>() );
+                }
+            }
+        }
+
+        return concrete;
+    }
+    
+    /**
+     * Takes a snapshot of the current delegate and returns that.
+     */
+    @SuppressWarnings( "unchecked" )
     public static <T> T snapshot( T proxiedInstance )
     {
-        @SuppressWarnings( "unchecked" )
-        DelegateInvocationHandler<T> delegateHandler = (DelegateInvocationHandler<T>) Proxy.getInvocationHandler( proxiedInstance );
+        DelegateInvocationHandler<T> delegateHandler =
+                (DelegateInvocationHandler<T>) Proxy.getInvocationHandler( proxiedInstance );
         return delegateHandler.delegate;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "Delegate[" + delegate + "]";
+    }
+    
+    private static class Concrete<T> implements InvocationHandler
+    {
+        private volatile T delegate;
+        
+        void set( T delegate )
+        {
+            this.delegate = delegate;
+        }
+        
+        @Override
+        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
+        {
+            if ( delegate == null )
+            {
+                throw new IllegalStateException( "Cement hasn't hardened yet" );
+            }
+            
+            return proxyInvoke( delegate, method, args );
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "Concrete[" + delegate + "]";
+        }
     }
 }
