@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.mutation._
 import org.neo4j.cypher.internal.compiler.v2_0.pipes._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{Pattern, Query}
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CypherType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{NodeType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.compiler.v2_0.commands.AllIdentifiers
-import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 /*
 This class solves MERGE for patterns. It does this by creating an execution plan that uses normal pattern matching
@@ -38,86 +38,54 @@ By doing it this way, we rely on already existing code to both match and create 
 
 This class prepares MergePatternAction objects to be run by creating the match pipe
 */
-case class MergePatternBuilder(matching: Phase) extends PlanBuilder {
+case class MergePatternBuilder(matching: Phase) extends PlanBuilder with CollectionSupport {
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
-    plan.query.updates.exists {
-      case Unsolved(x: MergePatternAction)  => x.readyToUpdate(plan.pipe.symbols)
-      case Unsolved(foreach: ForeachAction) => interesting(foreach, plan.pipe.symbols)
-      case _                                => false
+    apply(plan, ctx) != apply(plan, ctx)
+
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+    def prepareMergeAction(symbols: SymbolTable, originalMerge: MergePatternAction): MergePatternAction = {
+      val updateActions: Seq[UpdateAction] = MergePatternBuilder.createActions(symbols, originalMerge.actions)
+      val matchPipe = solveMatchQuery(symbols, originalMerge).pipe
+      val preparedMerge = originalMerge.copy(maybeMatchPipe = Some(matchPipe), maybeUpdateActions = Some(updateActions))
+      preparedMerge
     }
 
-  def apply(in: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+    def solveMatchQuery(symbols: SymbolTable, patternAction: MergePatternAction): ExecutionPlanInProgress = {
+      val pipe = NullPipe(symbols, plan.pipe.executionPlanDescription)
+      val matchQuery = createMatchQueryFor(patternAction.patterns)
+      var planInProgress = plan.copy(query = matchQuery, pipe = pipe)
 
-    extractFrom(in.query.updates, in.pipe.symbols) match {
-      case originalMerge: MergePatternAction =>
-        val preparedMerge: MergePatternAction = prepareMergeAction(in, originalMerge, ctx, in.pipe.symbols)
-        val newQuery = in.query.copy(updates = in.query.updates.replace(Unsolved(originalMerge), Unsolved(preparedMerge)))
+      planInProgress = matching(planInProgress, ctx)
 
-        in.copy(query = newQuery)
+      if (patternAction.onMatch.nonEmpty)
+        planInProgress = planInProgress.copy(pipe = new ExecuteUpdateCommandsPipe(planInProgress.pipe, patternAction.onMatch))
 
-      case originalForeach: ForeachAction =>
-        val originalMerge: MergePatternAction = extractMergeAction(originalForeach.actions)
-        val symbols: SymbolTable = collectSymbols(originalForeach, originalMerge, in)
-
-        val preparedMerge: MergePatternAction = prepareMergeAction(in, originalMerge, ctx, symbols)
-        val preparedForeach = originalForeach.copy(actions = originalForeach.actions.replace(originalMerge, preparedMerge))
-        val newQuery = in.query.copy(updates = in.query.updates.replace(Unsolved(originalForeach), Unsolved(preparedForeach)))
-
-        in.copy(query = newQuery)
-    }
-  }
-
-  private def collectSymbolsFromResolvedUpdateActions(actions: Seq[UpdateAction], originalMerge: UpdateAction): Seq[(String, CypherType)] =
-    actions.
-    takeWhile(action => action != originalMerge). // Find all UpdateActions up to the one we are looking for
-    flatMap(action => action.identifiers) // Get all symbol table changes from these actions
-
-  private def collectSymbols(originalForeach: ForeachAction, originalMerge: MergePatternAction, in: ExecutionPlanInProgress): SymbolTable = {
-    val symbolsInLoop = collectSymbolsFromResolvedUpdateActions(originalForeach.actions, originalMerge).toMap
-    var symbols: SymbolTable = originalForeach.addInnerIdentifier(in.pipe.symbols)
-    symbols = symbols.add(symbolsInLoop)
-    symbols
-  }
-
-  private def prepareMergeAction(in: ExecutionPlanInProgress,
-                         originalMerge: MergePatternAction,
-                         ctx: PlanContext,
-                         symbols:SymbolTable): MergePatternAction = {
-    val updateActions: Seq[UpdateAction] = MergePatternBuilder.createActions(symbols, originalMerge.actions)
-    val matchPipe = solveMatchQuery(in, ctx, originalMerge, symbols).pipe
-    val preparedMerge = originalMerge.copy(maybeMatchPipe = Some(matchPipe), maybeUpdateActions = Some(updateActions))
-    preparedMerge
-  }
-
-  private def extractMergeAction(actions: Seq[UpdateAction]) = actions.find(validAction) match {
-    case Some(e: MergePatternAction) => e
-    case _                           => throw new InternalException("Query plan went wrong solving MERGE inside a foreach")
-  }
-
-
-  private def validAction: (UpdateAction) => Boolean = {
-    case m: MergePatternAction => !m.readyToExecute
-    case _                     => false
-  }
-
-  private def extractFrom(updates: Seq[QueryToken[UpdateAction]], symbols: SymbolTable): UpdateAction = {
-    val foreachActions: Seq[ForeachAction] = updates.collect {
-      case Unsolved(foreach: ForeachAction) if interesting(foreach, symbols) => foreach
+      planInProgress
     }
 
-    updates.collect {
-      case Unsolved(action: MergePatternAction) if !action.readyToExecute => action
-    }.headOption.getOrElse(foreachActions.head)
-  }
+    def unsolved(pair: (SymbolTable, UpdateAction)) = (pair._1, Unsolved(pair._2))
 
-  private def interesting(x: ForeachAction, initialSymbols: SymbolTable): Boolean = {
-    x.actions.foldLeft(initialSymbols) {
-      case (symbols: SymbolTable, action: MergePatternAction) if action.readyToUpdate(symbols) =>
-        return true
-      case (symbols: SymbolTable, action: UpdateAction) =>
-        symbols.add(action.identifiers.toMap)
+    def rewrite(symbols: SymbolTable, inAction: UpdateAction): (SymbolTable, UpdateAction) = inAction match {
+      case mergeAction: MergePatternAction if mergeAction.maybeMatchPipe.isEmpty =>
+        val newAction = prepareMergeAction(symbols, mergeAction)
+        val newSymbols = symbols.add(newAction.identifiers.toMap)
+        (newSymbols, newAction)
+
+      case foreachAction: ForeachAction =>
+        val innerSymbols = foreachAction.addInnerIdentifier(symbols)
+        val (_, newActions) = foreachAction.actions.foldMap(innerSymbols)(rewrite)
+        (symbols, foreachAction.copy(actions = newActions))
+
+      case action =>
+        (symbols.add(action.identifiers.toMap), action)
     }
-    false
+
+    val (_, newUpdates) = plan.query.updates.foldMap(plan.pipe.symbols) {
+      case (symbols, Unsolved(action)) if action.symbolDependenciesMet(symbols) => unsolved(rewrite(symbols, action))
+      case (symbols, qt) => (symbols.add(qt.token.identifiers.toMap), qt)
+    }
+
+    plan.copy(query = plan.query.copy(updates = newUpdates))
   }
 
   private def createMatchQueryFor(patterns: Seq[Pattern]): PartiallySolvedQuery = PartiallySolvedQuery.apply(
@@ -125,22 +93,6 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder {
       matches(patterns: _*).
       returns(AllIdentifiers())
   )
-
-  private def solveMatchQuery(plan: ExecutionPlanInProgress,
-                              ctx: PlanContext,
-                              patternAction: MergePatternAction,
-                              symbols:SymbolTable): ExecutionPlanInProgress = {
-    val pipe = NullPipe(symbols, plan.pipe.executionPlanDescription)
-    val matchQuery = createMatchQueryFor(patternAction.patterns)
-    var planInProgress = plan.copy(query = matchQuery, pipe = pipe)
-
-    planInProgress = matching(planInProgress, ctx)
-
-    if (patternAction.onMatch.nonEmpty)
-      planInProgress = planInProgress.copy(pipe = new ExecuteUpdateCommandsPipe(planInProgress.pipe, patternAction.onMatch))
-
-    planInProgress
-  }
 }
 
 object MergePatternBuilder {

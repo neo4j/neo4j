@@ -308,7 +308,7 @@ class MergeRelationshipAcceptanceTest
     createLabeledNode(Map("id"->666), "Person")
 
     // when then fails
-    intercept[CypherExecutionException](execute("CREATE (a:A) MERGE (a)-[:KNOWS]->(:Person {id:666})"))
+    intercept[CypherExecutionException](execute("CREATE (a:A) MERGE (a)-[:KNOWS]->(b:Person {id:666})"))
   }
 
   @Test def should_work_well_inside_foreach() {
@@ -371,5 +371,32 @@ class MergeRelationshipAcceptanceTest
     val resultList = result.toList
     assert(resultList.size === 1)
     assert(resultList.head.head._2.isInstanceOf[Path], "Expected to get a path back")
+  }
+
+  @Test def should_handle_foreach_in_foreach_game_of_life_ftw() {
+
+    /* creates a grid 4 nodes wide and 4 nodes deep.
+     o-o-o-o
+     | | | |
+     o-o-o-o
+     | | | |
+     o-o-o-o
+     | | | |
+     o-o-o-o
+     */
+
+    val result = execute(
+      "foreach(x in [0,1,2] |" +
+        "foreach(y in [0,1,2] |" +
+        "  merge (a {x:x, y:y})" +
+        "  merge (b {x:x+1, y:y})" +
+        "  merge (c {x:x, y:y+1})" +
+        "  merge (d {x:x+1, y:y+1})" +
+        "  merge (a)-[:R]->(b)" +
+        "  merge (a)-[:R]->(c)" +
+        "  merge (b)-[:R]->(d)" +
+        "  merge (c)-[:R]->(d)))")
+
+    assertStats(result, nodesCreated = 16, relationshipsCreated = 24, propertiesSet = 16 * 2)
   }
 }
