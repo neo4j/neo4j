@@ -87,7 +87,10 @@ public class DumpProcessInformation
     
     private static String fileName( String category, Pair<Long,String> pid )
     {
-        return category + "-" + pid.first() + "-" + pid.other() + "-" + time().replace( ':', '_' ).replace( '.', '_' );
+        return time().replace( ':', '_' ).replace( '.', '_' ) +
+                "-" + category +
+                "-" + pid.first() +
+                "-" + pid.other();
     }
 
     private static void doHeapDump( Pair<Long, String> pid, File dir ) throws Exception
