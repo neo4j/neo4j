@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.profiler
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import pipes.{NullPipe, QueryState, Pipe, PipeWithSource}
+import pipes._
 import symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
 import org.junit.Test
@@ -64,6 +64,19 @@ class ProfilerTest extends Assertions with MockitoSugar {
     assertRecorded(decoratedResult, "foo", rows = 10, dbAccess = 25)
     assertRecorded(decoratedResult, "bar", rows = 20, dbAccess = 40)
     assertRecorded(decoratedResult, "baz", rows = 1, dbAccess = 2)
+  }
+
+  @Test
+  def should_ignore_null_pipe_in_profile() {
+    // GIVEN
+    val pipes = UnionPipe(List(NullPipe(), NullPipe()), List())
+    val queryContext = mock[QueryContext]
+    val profiler = new Profiler
+    val queryState = QueryState(null, queryContext, Map.empty, profiler)
+
+    // WHEN we create the results,
+    // THEN it should not throw an assertion about profiling the same pipe twice.
+    materialize(pipes.createResults(queryState))
   }
 
   private def assertRecorded(result: PlanDescription, name: String, rows: Int, dbAccess: Int) {
