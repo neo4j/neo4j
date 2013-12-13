@@ -21,6 +21,8 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
 import org.neo4j.cypher.docgen.RefcardTest
+import org.neo4j.graphdb.DynamicLabel
+import java.util.concurrent.TimeUnit
 
 class IndexTest extends RefcardTest with StatisticsChecker {
   val graphDescription = List("A:Person KNOWS B:Person")
@@ -30,8 +32,8 @@ class IndexTest extends RefcardTest with StatisticsChecker {
   override def assert(name: String, result: ExecutionResult) {
     name match {
       case "create-index" =>
-        // assertStats(result, indexAdded = 1)
         assert(result.toList.size === 0)
+        db.schema().awaitIndexesOnline(1, TimeUnit.SECONDS)
       case "drop-index" =>
         // assertStats(result, indexDeleted = 1)
         assert(result.toList.size === 0)

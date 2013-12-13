@@ -93,8 +93,11 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   }
 
   def runQuery(query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
+    var result: ExecutionResult = null
     db.inTx {
-      val result = executeQuery(query, parameters(parametersChoice))
+      result = executeQuery(query, parameters(parametersChoice))
+    }
+    db.inTx {
       possibleAssertion.foreach(name => {
         try {
           assert(name, result)
