@@ -36,10 +36,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-
-import static java.util.Arrays.asList;
-
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -88,15 +84,13 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         when( searcher.search( new TermQuery( format.rangeTerm( 0 ) ), 1 ) ).thenReturn( docs() );
         when( searcher.search( new TermQuery( format.rangeTerm( 1 ) ), 1 ) ).thenReturn( null );
 
-        NodeRangeDocumentLabelScanStorageStrategy strategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
-        List<NodeLabelUpdate> updates = asList(
-                labelChanges( 0, labels(), labels( 6, 7 ) ),
-                labelChanges( 1, labels(), labels( 6, 8 ) ),
-                labelChanges( 1 << format.bitmapFormat().shift, labels(), labels( 7 ) )
-        );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage,  format );
 
         // when
-        strategy.applyUpdates( storage, updates.iterator() );
+        writer.write( labelChanges( 0, labels(), labels( 6, 7 ) ) );
+        writer.write( labelChanges( 1, labels(), labels( 6, 8 ) ) );
+        writer.write( labelChanges( 1 << format.bitmapFormat().shift, labels(), labels( 7 ) ) );
+        writer.close();
 
         // then
         verify( storage ).acquireSearcher();
@@ -124,13 +118,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                           format.labelField( 7, 0x70 ) )
         );
 
-        NodeRangeDocumentLabelScanStorageStrategy strategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
-        List<NodeLabelUpdate> updates = asList(
-                labelChanges( 0, labels(), labels( 7, 8 ) )
-        );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
 
         // when
-        strategy.applyUpdates( storage, updates.iterator() );
+        writer.write( labelChanges( 0, labels(), labels( 7, 8 ) ) );
+        writer.close();
 
         // then
         verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
@@ -149,13 +141,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                           format.labelField( 7, 0x1 ),
                           format.labelField( 8, 0x1 ) ) );
 
-        NodeRangeDocumentLabelScanStorageStrategy strategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
-        List<NodeLabelUpdate> updates = asList(
-                labelChanges( 0, labels( 7, 8 ), labels( 8 ) )
-        );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
 
         // when
-        strategy.applyUpdates( storage, updates.iterator() );
+        writer.write( labelChanges( 0, labels( 7, 8 ), labels( 8 ) ) );
+        writer.close();
 
         // then
         verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
@@ -172,13 +162,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                 document( format.rangeField( 0 ),
                           format.labelField( 7, 0x1 ) ) );
 
-        NodeRangeDocumentLabelScanStorageStrategy strategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
-        List<NodeLabelUpdate> updates = asList(
-                labelChanges( 0, labels( 7 ), labels() )
-        );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
 
         // when
-        strategy.applyUpdates( storage, updates.iterator() );
+        writer.write( labelChanges( 0, labels( 7 ), labels() ) );
+        writer.close();
 
         // then
         verify( storage ).deleteDocuments( format.rangeTerm( 0 ) );
@@ -193,13 +181,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
                           format.labelField( 6, 0x1 ),
                           format.labelField( 7, 0x1 ) ) );
 
-        NodeRangeDocumentLabelScanStorageStrategy strategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
-        List<NodeLabelUpdate> updates = asList(
-                labelChanges( 0, labels( 7 ), labels( 7, 8 ) )
-        );
+        LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
 
         // when
-        strategy.applyUpdates( storage, updates.iterator() );
+        writer.write( labelChanges( 0, labels( 7 ), labels( 7, 8 ) ) );
+        writer.close();
 
         // then
         verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),
@@ -218,12 +204,11 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
             // given
             LabelScanStorageStrategy.StorageService storage = storage();
 
-            NodeRangeDocumentLabelScanStorageStrategy strategy = new NodeRangeDocumentLabelScanStorageStrategy(
-                    format );
-            List<NodeLabelUpdate> updates = asList( labelChanges( i, labels(), labels( 7 ) ) );
+            LuceneLabelScanWriter writer = new LuceneLabelScanWriter(storage, format );
 
             // when
-            strategy.applyUpdates( storage, updates.iterator() );
+            writer.write( labelChanges( i, labels(), labels( 7 ) ) );
+            writer.close();
 
             // then
             verify( storage ).updateDocument( eq( format.rangeTerm( 0 ) ),

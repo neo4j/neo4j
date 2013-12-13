@@ -32,6 +32,10 @@ public enum BitmapFormat
         this.mask = mask;
     }
 
+    public int rangeSize() {
+        return 1 << shift;
+    }
+
     public long rangeOf( long id )
     {
         return id >> shift;
@@ -59,7 +63,7 @@ public enum BitmapFormat
     }
 
     // Returns true if the label exists on the given node for the given bitmap
-    public boolean peek( long bitmap, long nodeId )
+    public boolean hasLabel( long bitmap, long nodeId )
     {
         long normalizedNodeId = nodeId % (1L << shift);
 

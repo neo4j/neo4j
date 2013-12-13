@@ -124,7 +124,6 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -380,7 +379,7 @@ public class BatchInserterImpl implements BatchInserter
             }
         };
 
-        NodeLabelUpdateVisitor labelUpdateVisitor = new NodeLabelUpdateVisitor();
+        InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();
         StoreScan<IOException> storeScan = storeView.visitNodes( labelIds, propertyKeyIds,
                 propertyUpdateVisitor, labelUpdateVisitor );
         storeScan.run();
@@ -392,31 +391,20 @@ public class BatchInserterImpl implements BatchInserter
         labelUpdateVisitor.close();
     }
 
-    private class NodeLabelUpdateVisitor implements Visitor<NodeLabelUpdate, IOException>
+    private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>
     {
-        private final NodeLabelUpdate[] updateBatch = new NodeLabelUpdate[10000];
-        private int cursor;
+        LabelScanWriter writer = labelScanStore.newWriter();
 
         @Override
         public boolean visit( NodeLabelUpdate update ) throws IOException
         {
-            if ( cursor >= updateBatch.length )
-            {
-                writeAndResetBatch();
-            }
-            updateBatch[cursor++] = update;
+            writer.write( update );
             return true;
         }
 
-        private void writeAndResetBatch() throws IOException
+        public void close() throws IOException
         {
-            labelScanStore.updateAndCommit( iterator( cursor, updateBatch ) );
-            cursor = 0;
-        }
-
-        void close() throws IOException
-        {
-            writeAndResetBatch();
+            writer.close();
         }
     }
 
@@ -575,7 +563,7 @@ public class BatchInserterImpl implements BatchInserter
          * thatFits is the earliest record that can host the block
          * thatHas is the record that already has a block for this index
          */
-        PropertyRecord current = null, thatFits = null, thatHas = null;
+        PropertyRecord current, thatFits = null, thatHas = null;
         updatedPropertyRecords.clear();
 
         /*

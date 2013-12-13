@@ -76,11 +76,20 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
@@ -958,8 +967,15 @@ public class WriteTransactionTest
     public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()
     {
         @Override
-        public void updateAndCommit( Iterator<NodeLabelUpdate> updates )
-        {   // Do nothing
+        public LabelScanReader newReader()
+        {
+            return LabelScanReader.EMPTY;
+        }
+
+        @Override
+        public LabelScanWriter newWriter()
+        {
+            return LabelScanWriter.EMPTY;
         }
 
         @Override
@@ -980,12 +996,6 @@ public class WriteTransactionTest
         @Override
         public void recover( Iterator<NodeLabelUpdate> updates )
         {   // Do nothing
-        }
-
-        @Override
-        public LabelScanReader newReader()
-        {
-            return LabelScanReader.EMPTY;
         }
 
         @Override

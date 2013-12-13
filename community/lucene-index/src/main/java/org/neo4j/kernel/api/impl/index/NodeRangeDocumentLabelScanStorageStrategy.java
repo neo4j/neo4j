@@ -21,25 +21,19 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.flatten;
@@ -67,8 +61,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.flatten;
  */
 public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStorageStrategy
 {
-    private static final int DOCUMENT_BATCH_SIZE = 32, CHANGES_BATCH_SIZE = 256;
-
     // This must be high to avoid to many calls to the lucene searcher. Tweak using LabelScanBenchmark
     private static final int RANGES_PER_PAGE = 4096;
     private final BitmapDocumentFormat format;
@@ -133,7 +125,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
                 {
                     NumericField labelField = (NumericField) fields;
                     Long bitmap = Long.decode( labelField.stringValue() );
-                    if ( format.bitmapFormat().peek( bitmap, nodeId ) )
+                    if ( format.bitmapFormat().hasLabel( bitmap, nodeId ) )
                     {
                         labels.add( Long.decode( labelField.name() ) );
                     }
@@ -149,131 +141,8 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public void applyUpdates( StorageService storage, Iterator<NodeLabelUpdate> updates ) throws IOException
+    public LabelScanWriter acquireWriter( final StorageService storage )
     {
-        Map<Long, List<NodeLabelUpdate>> rangedUpdates = new HashMap<>();
-        for ( int size = 0; updates.hasNext(); size++ )
-        {
-            NodeLabelUpdate update = updates.next();
-            Long range = format.bitmapFormat().rangeOf( update.getNodeId() );
-            List<NodeLabelUpdate> updateList = rangedUpdates.get( range );
-            if ( updateList == null )
-            {
-                rangedUpdates.put( range, updateList = new ArrayList<>( 8 ) );
-            }
-            updateList.add( update );
-            if ( rangedUpdates.size() >= DOCUMENT_BATCH_SIZE // number of documents to create exceed threshold
-                 || size >= CHANGES_BATCH_SIZE ) // number of updates exceed threshold
-            {
-                flush( storage, rangedUpdates );
-                rangedUpdates.clear();
-                size = 0;
-            }
-        }
-        if ( !rangedUpdates.isEmpty() )
-        {
-            flush( storage, rangedUpdates );
-        }
-    }
-
-    private void flush( StorageService storage, Map<Long/*range*/, List<NodeLabelUpdate>> updates ) throws IOException
-    {
-        for ( Document document : updatedDocuments( storage, updates ) )
-        {
-            if ( isEmpty( document ) )
-            {
-                storage.deleteDocuments( format.rangeTerm( document ) );
-            }
-            else
-            {
-                storage.updateDocument( format.rangeTerm( document ), document );
-            }
-        }
-        storage.refreshSearcher();
-    }
-
-    private boolean isEmpty( Document document )
-    {
-        for ( Fieldable fieldable : document.getFields() )
-        {
-            if ( !format.isRangeField( fieldable ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private List<Document> updatedDocuments( StorageService storage, Map<Long/*range*/, List<NodeLabelUpdate>> updates )
-            throws IOException
-    {
-        List<Document> updatedDocuments = new ArrayList<>();
-        IndexSearcher searcher = storage.acquireSearcher();
-        try
-        {
-            for ( Map.Entry<Long/*range*/, List<NodeLabelUpdate>> update : updates.entrySet() )
-            {
-                Map<Long/*label*/, Bitmap> fields = readLabelBitMapsInRange( searcher, update.getKey() );
-                updateFields( update.getValue(), fields );
-                // one document per range
-                Document document = new Document();
-                document.add( format.rangeField( update.getKey() ) );
-                for ( Map.Entry<Long/*label*/, Bitmap> field : fields.entrySet() )
-                {
-                    // one field per label
-                    Bitmap value = field.getValue();
-                    if ( value.hasContent() )
-                    {
-                        format.addLabelField( document, field.getKey(), value );
-                    }
-                }
-                updatedDocuments.add( document );
-            }
-        }
-        finally
-        {
-            storage.releaseSearcher( searcher );
-        }
-        return updatedDocuments;
-    }
-
-    private void updateFields( Iterable<NodeLabelUpdate> updates, Map<Long/*label*/, Bitmap> fields )
-    {
-        for ( NodeLabelUpdate update : updates )
-        {
-            for ( Bitmap bitmap : fields.values() )
-            {
-                format.bitmapFormat().set( bitmap, update.getNodeId(), false );
-            }
-            for ( long label : update.getLabelsAfter() )
-            {
-                Bitmap bitmap = fields.get( label );
-                if ( bitmap == null )
-                {
-                    fields.put( label, bitmap = new Bitmap() );
-                }
-                format.bitmapFormat().set( bitmap, update.getNodeId(), true );
-            }
-        }
-    }
-
-    private Map<Long/*range*/, Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException
-    {
-        Map<Long/*label*/, Bitmap> fields = new HashMap<>();
-        Term documentTerm = format.rangeTerm( range );
-        TopDocs docs = searcher.search( new TermQuery( documentTerm ), 1 );
-        if ( docs != null && docs.totalHits != 0 )
-        {
-            Document document = searcher.doc( docs.scoreDocs[0].doc );
-            for ( Fieldable field : document.getFields() )
-            {
-                if ( !format.isRangeField( field ) )
-                {
-                    Long label = Long.valueOf( field.name() );
-                    fields.put( label, format.readBitmap( field ) );
-                }
-            }
-        }
-        return fields;
+        return new LuceneLabelScanWriter( storage, format );
     }
 }

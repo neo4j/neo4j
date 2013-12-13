@@ -39,12 +39,13 @@ import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public class LuceneLabelScanStore
         implements LabelScanStore, LabelScanStorageStrategy.StorageService
@@ -165,13 +166,6 @@ public class LuceneLabelScanStore
     }
 
     @Override
-    public void updateAndCommit( Iterator<NodeLabelUpdate> updates ) throws IOException
-    {
-        strategy.applyUpdates( this, updates );
-        searcherManager.maybeRefresh();
-    }
-
-    @Override
     public AllEntriesLabelScanReader newAllEntriesReader()
     {
         return strategy.newNodeLabelReader( searcherManager );
@@ -182,7 +176,7 @@ public class LuceneLabelScanStore
     {
         // The way we update and commit fits for recovery as well since we use writer.updateDocument(...)
         // which deletes any existing documents and just adds the new and up-to-date version.
-        updateAndCommit( updates );
+        write( updates );
     }
 
     @Override
@@ -286,9 +280,20 @@ public class LuceneLabelScanStore
         {   // we saw in init() that we need to rebuild the index, so do it here after the
             // neostore has been properly started.
             monitor.rebuilding();
-            updateAndCommit( fullStoreStream.iterator() );
+            write( fullStoreStream.iterator() );
             monitor.rebuilt( fullStoreStream.highestNodeId() );
             needsRebuild = false;
+        }
+    }
+
+    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException
+    {
+        try ( LabelScanWriter writer = newWriter() )
+        {
+            while ( updates.hasNext() )
+            {
+                writer.write( updates.next() );
+            }
         }
     }
 
@@ -304,6 +309,12 @@ public class LuceneLabelScanStore
         writer.close( true );
         directory.close();
         directory = null;
+    }
+
+    @Override
+    public LabelScanWriter newWriter()
+    {
+        return strategy.acquireWriter( this );
     }
 
     private boolean indexExists()
