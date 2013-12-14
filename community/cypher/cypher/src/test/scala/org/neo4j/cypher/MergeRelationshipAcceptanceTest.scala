@@ -399,4 +399,33 @@ class MergeRelationshipAcceptanceTest
 
     assertStats(result, nodesCreated = 16, relationshipsCreated = 24, propertiesSet = 16 * 2)
   }
+
+  @Test def should_handle_merge_with_no_known_points() {
+    val result = execute("merge ({name:'Andres'})-[:R]->({name:'Emil'})")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 2)
+  }
+
+  @Test def should_handle_foreach_in_foreach_game_without_known_points() {
+
+    /* creates a grid 4 nodes wide and 4 nodes deep.
+     o-o o-o o-o
+     | | | | | |
+     o-o o-o o-o
+     | | | | | |
+     o-o o-o o-o
+     | | | | | |
+     o-o o-o o-o
+     */
+
+    val result = execute(
+      "foreach(x in [0,1,2] |" +
+        "foreach(y in [0,1,2] |" +
+        "  merge (a {x:x, y:y})-[:R]->(b {x:x+1, y:y})" +
+        "  merge (c {x:x, y:y+1})-[:R]->(d {x:x+1, y:y+1})" +
+        "  merge (a)-[:R]->(c)" +
+        "  merge (b)-[:R]->(d)))")
+
+    assertStats(result, nodesCreated = 6*4, relationshipsCreated = 3*4+6*3, propertiesSet = 6*4*2)
+  }
 }

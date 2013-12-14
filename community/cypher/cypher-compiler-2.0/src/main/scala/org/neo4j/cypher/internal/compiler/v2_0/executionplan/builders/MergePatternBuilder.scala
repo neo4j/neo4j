@@ -43,11 +43,11 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
     apply(plan, ctx) != apply(plan, ctx)
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
-    def prepareMergeAction(symbols: SymbolTable, originalMerge: MergePatternAction): MergePatternAction = {
-      val updateActions: Seq[UpdateAction] = MergePatternBuilder.createActions(symbols, originalMerge.actions)
+    def prepareMergeAction(symbols: SymbolTable, originalMerge: MergePatternAction): (SymbolTable, MergePatternAction) = {
+      val (newSymbols,updateActions) = MergePatternBuilder.createActions(symbols, originalMerge.actions)
       val matchPipe = solveMatchQuery(symbols, originalMerge).pipe
       val preparedMerge = originalMerge.copy(maybeMatchPipe = Some(matchPipe), maybeUpdateActions = Some(updateActions))
-      preparedMerge
+      (newSymbols, preparedMerge)
     }
 
     def solveMatchQuery(symbols: SymbolTable, patternAction: MergePatternAction): ExecutionPlanInProgress = {
@@ -67,9 +67,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
 
     def rewrite(symbols: SymbolTable, inAction: UpdateAction): (SymbolTable, UpdateAction) = inAction match {
       case mergeAction: MergePatternAction if mergeAction.maybeMatchPipe.isEmpty =>
-        val newAction = prepareMergeAction(symbols, mergeAction)
-        val newSymbols = symbols.add(newAction.identifiers.toMap)
-        (newSymbols, newAction)
+        prepareMergeAction(symbols, mergeAction)
 
       case foreachAction: ForeachAction =>
         val innerSymbols = foreachAction.addInnerIdentifier(symbols)
@@ -96,22 +94,22 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
 }
 
 object MergePatternBuilder {
-  def createActions(in: SymbolTable, createRels: Seq[UpdateAction]): Seq[UpdateAction] = {
+  def createActions(in: SymbolTable, createRels: Seq[UpdateAction]): (SymbolTable, Seq[UpdateAction]) =
+    createRels.foldLeft((in, Seq[UpdateAction]())) {
+      case ((s0, acc), rel@CreateRelationship(_, lhs, rhs, _, _)) =>
+        val (s1, r1) = optCreateNode(s0, lhs) 
+        val (s2, r2) = optCreateNode(s1, rhs)
+        (s2, acc ++ r1 ++ r2 :+ rel)
 
-    var symbol = in
-
-    createRels.flatMap {
-      case rel@CreateRelationship(_, RelationshipEndpoint(Identifier(name), props, labels), _, _, _)
-        if !symbol.hasIdentifierNamed(name) =>
-        symbol = symbol.add(name, NodeType())
-        Seq(CreateNode(name, props, labels), rel)
-
-      case rel@CreateRelationship(_, _, RelationshipEndpoint(Identifier(name), props, labels), _, _)
-        if !symbol.hasIdentifierNamed(name) =>
-        symbol = symbol.add(name, NodeType())
-        Seq(CreateNode(name, props, labels), rel)
-
-      case x => Some(x)
+      case ((symbols, acc), action) =>
+        (symbols, acc :+ action)
     }
+    
+
+  def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
+    case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) => 
+      (symbols.add(name, NodeType()), Some(CreateNode(name, props, labels)))
+    case _ =>
+      (symbols, None)
   }
 }

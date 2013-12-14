@@ -159,13 +159,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
-  @Test def shortestPathNeedsBothEndNodes() {
-    test(
-      "start a=node(0) match p=shortestPath(a-->b) return p",
-      "Unknown identifier `b`"
-    )
-  }
-
   @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInCreateConstraint() {
     test(
       "create constraint on (foo:Foo) bar.name is unique",
@@ -368,13 +361,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     test(
       "MATCH (a)-->(b) START c=node(0) return c",
       "WITH is required between MATCH and START (line 1, column 1)"
-    )
-  }
-
-  @Test def shouldMakeItClearThatAtLeastOneNodeMustBeBoundForPatternMerge() {
-    test(
-      "MERGE (a {prop:1})-[:FOO]->(b {prop:2})",
-      "MERGE needs at least some part of the pattern to already be known. Please provide values for one of: a, b"
     )
   }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands
 
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.{CreateUniqueAction, UniqueLink, UpdateAction}
+import org.neo4j.cypher.internal.compiler.v2_0.mutation._
 import expressions.{Expression, AggregationExpression}
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 
@@ -86,7 +86,9 @@ case class Query(returns: Return,
       tailQ.hints.isEmpty &&
       tailQ.sort.isEmpty &&
       tailQ.slice.isEmpty &&
-      tailQ.aggregation.isEmpty
+      tailQ.aggregation.isEmpty &&
+      !tailQ.updatedCommands.exists(containsMergeForPattern)
+      
 
     // If we have updating actions, we can't merge with a tail part that has updating start items
     // That would mess with the order of actions
@@ -110,6 +112,12 @@ case class Query(returns: Return,
       result
     } else this
 
+  }
+
+  private def containsMergeForPattern(action: UpdateAction): Boolean = action match {
+    case _: MergePatternAction => true
+    case ForeachAction(_, _, actions) => actions.exists(containsMergeForPattern)
+    case _ => false
   }
 
   def includeIfNotEmpty(title:String, objects:Iterable[_]):String = if(objects.isEmpty) "" else

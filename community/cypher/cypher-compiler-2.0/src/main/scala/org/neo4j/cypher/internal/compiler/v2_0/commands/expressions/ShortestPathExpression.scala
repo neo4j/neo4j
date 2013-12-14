@@ -26,7 +26,6 @@ import symbols._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.Traversal
 import collection.Map
 import scala.collection.JavaConverters._
@@ -52,11 +51,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
     throw new SyntaxException(s"To find a shortest path, both ends of the path need to be provided. Couldn't find `${start}`")).asInstanceOf[Node]
 
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
-    symbolTableDependencies.exists(key => m.get(key) match {
-      case None => throw new ThisShouldNotHappenError("Andres", "This execution plan should not exist.")
-      case Some(null) => true
-      case Some(x) => false
-    })
+    m(ast.left.name) == null || m(ast.right.name) == null
 
   override def children = Seq(ast)
 
@@ -79,7 +74,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def calculateType(symbols: SymbolTable) =  shortestPathStrategy.typ
 
-  def symbolTableDependencies = ast.symbolTableDependencies
+  def symbolTableDependencies = ast.symbolTableDependencies + ast.left.name + ast.right.name
 }
 
 trait ShortestPathStrategy {
