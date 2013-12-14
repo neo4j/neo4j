@@ -49,14 +49,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def cantUseTYPEOnNodes() {
     test(
       "start r=node(0) return type(r)",
-      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 29)"
+      "Type mismatch: expected Relationship but was Node (line 1, column 29)"
     )
   }
 
   @Test def cantUseLENGTHOnNodes() {
     test(
       "start n=node(0) return length(n)",
-      "Type mismatch: n already defined with conflicting type Node (expected Path, String or Collection<Any>) (line 1, column 31)"
+      "Type mismatch: expected Path, String or Collection<Any> but was Node (line 1, column 31)"
     )
   }
 

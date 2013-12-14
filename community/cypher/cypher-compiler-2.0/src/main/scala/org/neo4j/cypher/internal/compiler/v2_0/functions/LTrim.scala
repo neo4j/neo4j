@@ -28,7 +28,7 @@ case object LTrim extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(StringType()) then
+    invocation.arguments.expectType(StringType()) then
     invocation.specifyType(StringType())
 
   def toCommand(invocation: ast.FunctionInvocation) =

@@ -26,29 +26,41 @@ import org.scalatest.Assertions
 
 class ExpressionTest extends Assertions {
 
+  val expression = new Expression() {
+    val token = DummyToken(0, 1)
+    def semanticCheck(ctx: Expression.SemanticContext) = ???
+    def toCommand = ???
+  }
+
+  @Test
+  def shouldReturnCalculatedType() {
+    assert(expression.types(SemanticState.clean) === TypeSet.all)
+  }
+
   @Test
   def shouldReturnTypeSetOfAllIfTypesRequestedButNotEvaluated() {
-    val expression = new Expression() {
-      val token = DummyToken(0, 1)
-      def semanticCheck(ctx: Expression.SemanticContext) = ???
-      def toCommand = ???
-    }
-
     assert(expression.types(SemanticState.clean) === TypeSet.all)
   }
 
   @Test
   def shouldReturnSpecifiedAndConstrainedTypes() {
-    val expression = new Expression() {
-      val token = DummyToken(0, 1)
-      def semanticCheck(ctx: Expression.SemanticContext) = ???
-      def toCommand = ???
-    }
     val state = (
       expression.specifyType(NodeType(), IntegerType()) then
-      expression.constrainType(NumberType())
-      )(SemanticState.clean).state
+      expression.expectType(NumberType())
+    )(SemanticState.clean).state
 
     assert(expression.types(state) === TypeSet(IntegerType()))
+  }
+
+  @Test
+  def shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType() {
+    val result = (
+      expression.specifyType(NodeType(), IntegerType()) then
+      expression.expectType(StringType())
+    )(SemanticState.clean)
+
+    assert(result.errors.size === 1)
+    assert(result.errors.head.token === expression.token)
+    assert(expression.types(result.state) === TypeSet())
   }
 }

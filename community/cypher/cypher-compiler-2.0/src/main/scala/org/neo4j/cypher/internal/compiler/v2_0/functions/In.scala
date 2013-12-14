@@ -30,7 +30,7 @@ case object In extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(1).constrainType(CollectionType(AnyType()))
+      invocation.arguments(1).expectType(CollectionType(AnyType()))
     } then invocation.specifyType(BooleanType())
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {

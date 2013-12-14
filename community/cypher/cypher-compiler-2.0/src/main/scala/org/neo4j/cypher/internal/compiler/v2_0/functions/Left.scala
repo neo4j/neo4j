@@ -28,8 +28,8 @@ case object Left extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(0).constrainType(StringType()) then
-      invocation.arguments(1).constrainType(LongType())
+      invocation.arguments(0).expectType(StringType()) then
+      invocation.arguments(1).expectType(LongType())
     } then invocation.specifyType(StringType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {

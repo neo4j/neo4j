@@ -33,7 +33,7 @@ trait FilteringExpression extends Expression {
 
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
-      expression.constrainType(CollectionType(AnyType())) then
+      expression.expectType(CollectionType(AnyType())) then
       checkInnerPredicate
 
   protected def checkPredicateDefined =
@@ -212,14 +212,14 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) then
       collection.semanticCheck(ctx) then
-      collection.constrainType(CollectionType(AnyType())) then
+      collection.expectType(CollectionType(AnyType())) then
       withScopedState {
         val indexType: TypeGenerator = collection.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
         val accType: TypeGenerator = init.types
         id.declare(indexType) then
         accumulator.declare(accType) then
         expression.semanticCheck(SemanticContext.Simple)
-      } then expression.constrainType(init.types) then
+      } then expression.expectType(init.types) then
       this.specifyType(s => init.types(s) mergeDown expression.types(s))
 
   def toCommand: CommandExpression = commandexpressions.ReduceFunction(collection.toCommand, id.name, expression.toCommand, accumulator.name, init.toCommand)

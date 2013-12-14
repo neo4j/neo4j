@@ -141,13 +141,13 @@ class AddTest extends Assertions {
     testInvalidTypes(
       TypeSet(IntegerType()),
       TypeSet(StringType()),
-      "Type mismatch: m already defined with conflicting type String (expected Double, Integer, Long or Number)"
+      "Type mismatch: expected Double, Integer, Long or Number but was String"
     )
 
     testInvalidTypes(
       TypeSet(IntegerType()),
       TypeSet(BooleanType()),
-      "Type mismatch: m already defined with conflicting type Boolean (expected Double, Integer, Long or Number)"
+      "Type mismatch: expected Double, Integer, Long or Number but was Boolean"
     )
   }
 
@@ -156,7 +156,7 @@ class AddTest extends Assertions {
     testInvalidTypes(
       TypeSet(CollectionType(IntegerType())),
       TypeSet(StringType()),
-      "Type mismatch: m already defined with conflicting type String (expected Integer or Collection<Integer>)"
+      "Type mismatch: expected Integer or Collection<Integer> but was String"
     )
   }
 
@@ -165,7 +165,7 @@ class AddTest extends Assertions {
     testInvalidTypes(
       TypeSet(CollectionType(IntegerType())),
       TypeSet(CollectionType(StringType())),
-      "Type mismatch: m already defined with conflicting type Collection<String> (expected Integer or Collection<Integer>)"
+      "Type mismatch: expected Integer or Collection<Integer> but was Collection<String>"
     )
   }
 

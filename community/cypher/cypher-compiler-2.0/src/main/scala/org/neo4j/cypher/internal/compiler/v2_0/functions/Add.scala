@@ -29,11 +29,11 @@ case object Add extends Function {
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
     when(invocation.arguments.length == 1) {
-      invocation.arguments.constrainType(NumberType()) then
+      invocation.arguments.expectType(NumberType()) then
       invocation.specifyType(invocation.arguments(0).types)
     } then when(invocation.arguments.length == 2) {
-      invocation.arguments(0).constrainType(StringType(), NumberType(), CollectionType(AnyType())) then
-      invocation.arguments(1).constrainType(validRhsTypes(invocation.arguments(0))) then
+      invocation.arguments(0).expectType(StringType(), NumberType(), CollectionType(AnyType())) then
+      invocation.arguments(1).expectType(validRhsTypes(invocation.arguments(0))) then
       invocation.specifyType(validOutputTypes(invocation.arguments(0), invocation.arguments(1)))
     }
 
