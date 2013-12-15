@@ -1,3 +1,7 @@
+2.0.1
+-----
+o Fixes bug around MERGE inside a FOREACH inside a FOREACH
+
 2.0.0-RC1
 ---------
 o Add OPTIONAL MATCH to Cypher

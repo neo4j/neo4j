@@ -99,9 +99,4 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val introducedIdentifiers = actions.flatMap(_.identifiers.map(_._1))
     dependencies -- introducedIdentifiers
   }
-
-  override def symbolDependenciesMet(symbols: SymbolTable): Boolean =
-    patterns.exists {
-      pattern => pattern.possibleStartPoints.exists { case (k, _) => symbols.hasIdentifierNamed(k) }
-    }
 }

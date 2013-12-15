@@ -76,7 +76,7 @@ case class SingleNode(name: String,
 
   def children = Seq.empty
 
-  def symbolTableDependencies = Set.empty
+  def symbolTableDependencies = properties.symboltableDependencies
 
   override def toString: String = {
     val namePart = if (notNamed(name)) s"${name.drop(9)}" else name
@@ -118,7 +118,10 @@ case class RelatedTo(left: SingleNode,
 
   def rels = Seq(relName)
 
-  def symbolTableDependencies = Set.empty
+  def symbolTableDependencies =
+      properties.symboltableDependencies ++
+      left.symbolTableDependencies ++
+      right.symbolTableDependencies
 
   def children = Seq.empty
 
@@ -152,7 +155,10 @@ case class VarLengthRelatedTo(pathName: String,
 
   override def toString: String = pathName + "=" + left + leftArrow(direction) + relInfo + rightArrow(direction) + right
 
-  def symbolTableDependencies = Set.empty
+  def symbolTableDependencies =
+    properties.symboltableDependencies ++
+      left.symbolTableDependencies ++
+      right.symbolTableDependencies
 
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 
@@ -205,7 +211,9 @@ case class ShortestPath(pathName: String,
 
   def cloneWithOtherName(newName: String) = copy(pathName = newName)
 
-  def symbolTableDependencies = Set(left.name, right.name)
+  def symbolTableDependencies =
+      left.symbolTableDependencies ++
+      right.symbolTableDependencies
 
   private def relInfo: String = {
     var info = "["

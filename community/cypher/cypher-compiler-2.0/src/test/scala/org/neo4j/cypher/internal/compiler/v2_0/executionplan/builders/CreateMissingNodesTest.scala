@@ -32,9 +32,10 @@ class CreateMissingNodesTest extends Assertions {
 
     val symbolTable = new SymbolTable(Map("a" -> NodeType()))
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b"), "FOO", Map.empty)
-    val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
+    val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", Map.empty, Seq.empty), relationship))
+    assert(actions.toList === List(CreateNode("b", Map.empty, Seq.empty), relationship))
+    assert(symbols === symbolTable.add("b", NodeType()))
   }
 
   private def endPoint(name: String, props: Map[String, Expression] = Map.empty, labels: Seq[KeyToken] = Seq.empty) =
@@ -46,9 +47,10 @@ class CreateMissingNodesTest extends Assertions {
     val symbolTable = new SymbolTable(Map("a" -> NodeType()))
     val props = Map("id" -> Literal(42))
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", props), "FOO", Map.empty)
-    val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
+    val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", props, Seq.empty), relationship))
+    assert(actions.toList === List(CreateNode("b", props, Seq.empty), relationship))
+    assert(symbols === symbolTable.add("b", NodeType()))
   }
 
   @Test def should_handle_labels() {
@@ -57,9 +59,10 @@ class CreateMissingNodesTest extends Assertions {
     val symbolTable = new SymbolTable(Map("a" -> NodeType()))
     val labels = Seq(UnresolvedLabel("FOO"))
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", labels = labels), "FOO", Map.empty)
-    val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
+    val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", Map.empty, labels), relationship))
+    assert(actions.toList === List(CreateNode("b", Map.empty, labels), relationship))
+    assert(symbols === symbolTable.add("b", NodeType()))
   }
 
   @Test def should_handle_labels_and_properties() {
@@ -69,9 +72,10 @@ class CreateMissingNodesTest extends Assertions {
     val labels = Seq(UnresolvedLabel("FOO"))
     val props = Map("id" -> Literal(42))
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", labels = labels, props = props), "FOO", Map.empty)
-    val result = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
+    val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(result.toList === List(CreateNode("b", props, labels), relationship))
+    assert(actions.toList === List(CreateNode("b", props, labels), relationship))
+    assert(symbols === symbolTable.add("b", NodeType()))
   }
 
   @Test def should_not_create_nodes() {
@@ -80,9 +84,23 @@ class CreateMissingNodesTest extends Assertions {
     val symbolTable = new SymbolTable(Map("a" -> NodeType()))
     val r1 = CreateRelationship("r1", endPoint("a"), endPoint("b"), "FOO", Map.empty)
     val r2 = CreateRelationship("r2", endPoint("b"), endPoint("c"), "FOO", Map.empty)
-    val result = MergePatternBuilder.createActions(symbolTable, Seq(r1, r2))
+    val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(r1, r2))
 
-    assert(result.toList === List(bareNode("b"), r1, bareNode("c"), r2))
+    assert(actions.toList === List(bareNode("b"), r1, bareNode("c"), r2))
+    val expectedSymbols = symbolTable.add("b", NodeType()).add("c", NodeType())
+    assert(symbols === expectedSymbols)
+  }
+
+  @Test def should_create_both_nodes()   {
+    // Given (a)-[:FOO]->(b)
+
+    val symbolTable = new SymbolTable()
+    val relationship = CreateRelationship("r", endPoint("a"), endPoint("b"), "FOO", Map.empty)
+    val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
+
+    assert(actions.toList === List(CreateNode("a", Map.empty, Seq.empty), CreateNode("b", Map.empty, Seq.empty), relationship))
+    val expectedSymbols = new SymbolTable(Map("a" -> NodeType(), "b" -> NodeType()))
+    assert(symbols === expectedSymbols)
   }
 
   private def bareNode(name: String) = CreateNode(name, Map.empty, Seq.empty)
