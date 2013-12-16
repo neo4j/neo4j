@@ -29,6 +29,7 @@ public class VerifyingTransactionEventHandler implements
 {
     private final ExpectedTransactionData expectedData;
     private boolean hasBeenCalled;
+    private Throwable failure;
 
     public VerifyingTransactionEventHandler( ExpectedTransactionData expectedData )
     {
@@ -38,6 +39,7 @@ public class VerifyingTransactionEventHandler implements
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
+        verify( data );
     }
 
     @Override
@@ -48,18 +50,38 @@ public class VerifyingTransactionEventHandler implements
     @Override
     public Object beforeCommit( TransactionData data ) throws Exception
     {
+        return verify( data );
+    }
+    
+    private Object verify( TransactionData data )
+    {
         // TODO Hmm, makes me think... should we really call transaction event handlers
         // for these relationship type / property index transactions?
         if ( count( data.createdNodes() ) == 0 )
+        {
             return null;
+        }
         
-        this.expectedData.compareTo( data );
-        this.hasBeenCalled = true;
-        return null;
+        try
+        {
+            this.expectedData.compareTo( data );
+            this.hasBeenCalled = true;
+            return null;
+        }
+        catch ( Exception e )
+        {
+            failure = e;
+            throw e;
+        }
     }
-    
+
     boolean hasBeenCalled()
     {
         return this.hasBeenCalled;
+    }
+    
+    Throwable failure()
+    {
+        return this.failure;
     }
 }
