@@ -28,6 +28,7 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -40,11 +41,11 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private final Map<IdType, HaIdGenerator> generators =
             new EnumMap<IdType, HaIdGenerator>( IdType.class );
     private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final StringLogger logger;
     private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
-    public HaIdGeneratorFactory( Master master, Logging logging )
+    public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, Logging logging )
     {
         this.master = master;
         this.logger = logging.getMessagesLog( getClass() );
@@ -55,7 +56,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
+        {
             previous.close();
+        }
         
         IdGenerator initialIdGenerator;
         switch ( globalState )
@@ -64,7 +67,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType, highId );
             break;
         case SLAVE:
-            initialIdGenerator = new SlaveIdGenerator( idType, highId, master, logger );
+            initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), logger );
             break;
         default:
             throw new IllegalStateException( globalState.name() );
@@ -100,7 +103,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         globalState = IdGeneratorState.SLAVE;
         for ( HaIdGenerator generator : generators.values() )
         {
-            generator.switchToSlave();
+            generator.switchToSlave( master.cement() );
         }
     }
 
@@ -132,7 +135,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             logger.debug( "Instantiated HaIdGenerator for " + initialDelegate + " " + idType + ", " + initialState );
         }
 
-        private void switchToSlave()
+        private void switchToSlave( Master master )
         {
             long highId = delegate.getHighId();
             delegate.close();
@@ -148,7 +151,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 long highId = delegate.getHighId();
                 delegate.close();
                 if ( fs.fileExists( fileName ) )
+                {
                     fs.deleteFile( fileName );
+                }
                     
                 localFactory.create( fs, fileName, highId );
                 delegate = localFactory.open( fs, fileName, grabSize, idType, highId );
@@ -184,7 +189,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public long nextId()
         {
             if ( state == IdGeneratorState.PENDING )
+            {
                 throw new IllegalStateException( state.name() );
+            }
             
             long result = delegate.nextId();
             return result;
@@ -194,7 +201,9 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         public IdRange nextIdBatch( int size )
         {
             if ( state == IdGeneratorState.PENDING )
+            {
                 throw new IllegalStateException( state.name() );
+            }
             
             return delegate.nextIdBatch( size );
         }

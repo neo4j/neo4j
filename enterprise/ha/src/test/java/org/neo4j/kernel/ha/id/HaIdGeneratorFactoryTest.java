@@ -21,13 +21,14 @@ package org.neo4j.kernel.ha.id;
 
 import java.io.File;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -48,24 +49,17 @@ public class HaIdGeneratorFactoryTest
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 123, 0 );
         Response<IdAllocation> toReturn = mock( Response.class );
         when(toReturn.response()).thenReturn( firstResult );
-
-        Master returning = mock(Master.class);
-        when(returning.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-
-        HaIdGeneratorFactory fac  = new HaIdGeneratorFactory( returning, new DevNullLoggingService() );
+        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
 
         // WHEN
-        fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.NODE, 1 );
+        IdGenerator gen = switchToSlave();
 
         // THEN
         for ( long i = firstResult.getIdRange().getRangeStart(); i < firstResult.getIdRange().getRangeLength(); i++ )
         {
             assertEquals(i, gen.nextId());
         }
-        verify( returning, times(1) ).allocateIds( IdType.NODE );
+        verify( master, times(1) ).allocateIds( IdType.NODE );
     }
 
     @Test
@@ -77,17 +71,10 @@ public class HaIdGeneratorFactoryTest
         IdAllocation secondResult = new IdAllocation( new IdRange( new long[]{}, 1042, 223 ), 1042 + 223, 0 );
         Response<IdAllocation> toReturn = mock( Response.class );
         when(toReturn.response()).thenReturn( firstResult, secondResult );
-
-        Master returning = mock(Master.class);
-        when(returning.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-
-        HaIdGeneratorFactory fac  = new HaIdGeneratorFactory( returning, new DevNullLoggingService() );
+        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
 
         // WHEN
-        fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.NODE, 1 );
+        IdGenerator gen = switchToSlave();
 
         // THEN
         long startAt = firstResult.getIdRange().getRangeStart();
@@ -96,7 +83,7 @@ public class HaIdGeneratorFactoryTest
         {
             assertEquals(i, gen.nextId());
         }
-        verify( returning, times(1) ).allocateIds( IdType.NODE );
+        verify( master, times(1) ).allocateIds( IdType.NODE );
 
         startAt = secondResult.getIdRange().getRangeStart();
         forThatMany = secondResult.getIdRange().getRangeLength();
@@ -105,7 +92,7 @@ public class HaIdGeneratorFactoryTest
             assertEquals(i, gen.nextId());
         }
 
-        verify( returning, times(2) ).allocateIds( IdType.NODE );
+        verify( master, times(2) ).allocateIds( IdType.NODE );
     }
 
     @Test
@@ -116,17 +103,10 @@ public class HaIdGeneratorFactoryTest
         IdAllocation firstResult = new IdAllocation( new IdRange( defragIds, 0, 0 ), 0, defragIds.length );
         Response<IdAllocation> toReturn = mock( Response.class );
         when(toReturn.response()).thenReturn( firstResult );
-
-        Master returning = mock(Master.class);
-        when(returning.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-
-        HaIdGeneratorFactory fac  = new HaIdGeneratorFactory( returning, new DevNullLoggingService() );
+        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
 
         // WHEN
-        fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.NODE, 1 );
+        IdGenerator gen = switchToSlave();
 
         // THEN
         for ( int i = 0; i < defragIds.length; i++ )
@@ -143,17 +123,10 @@ public class HaIdGeneratorFactoryTest
         IdAllocation firstResult = new IdAllocation( new IdRange( defragIds, 0, 10 ), 100, defragIds.length );
         Response<IdAllocation> toReturn = mock( Response.class );
         when(toReturn.response()).thenReturn( firstResult );
-
-        Master returning = mock(Master.class);
-        when(returning.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-
-        HaIdGeneratorFactory fac  = new HaIdGeneratorFactory( returning, new DevNullLoggingService() );
+        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
 
         // WHEN
-        fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.NODE, 1 );
+        IdGenerator gen = switchToSlave();
 
         // THEN
         for ( int i = 0; i < defragIds.length; i++ )
@@ -167,25 +140,41 @@ public class HaIdGeneratorFactoryTest
     {
         // GIVEN
         final int highIdFromAllocation =  123;
-        IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, highIdFromAllocation ), highIdFromAllocation, 0 );
+        IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, highIdFromAllocation ),
+                highIdFromAllocation, 0 );
         Response<IdAllocation> toReturn = mock( Response.class );
         when(toReturn.response()).thenReturn( firstResult );
-
-        Master returning = mock(Master.class);
-        when(returning.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
-        FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-
-        HaIdGeneratorFactory fac  = new HaIdGeneratorFactory( returning, new DevNullLoggingService() );
+        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
 
         // WHEN
-        fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.PROPERTY, 1 );
+        IdGenerator gen = switchToSlave();
         final int highIdFromUpdatedRecord = highIdFromAllocation + 1;
         gen.setHighId( highIdFromUpdatedRecord ); // Assume this is from a received transaction
         gen.nextId(); // that will ask the master for an IdRange
 
         // THEN
         assertEquals ( highIdFromUpdatedRecord, gen.getHighId() );
+    }
+    
+    private Master master;
+    private DelegateInvocationHandler<Master> masterDelegate;
+    private EphemeralFileSystemAbstraction fs;
+    private HaIdGeneratorFactory fac;
+    
+    @Before
+    public void before()
+    {
+        master = mock( Master.class );
+        masterDelegate = new DelegateInvocationHandler<>( Master.class );
+        fs = new EphemeralFileSystemAbstraction();
+        fac  = new HaIdGeneratorFactory( masterDelegate, new DevNullLoggingService() );
+    }
+
+    private IdGenerator switchToSlave()
+    {
+        fac.switchToSlave();
+        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.NODE, 1 );
+        masterDelegate.setDelegate( master );
+        return gen;
     }
 }

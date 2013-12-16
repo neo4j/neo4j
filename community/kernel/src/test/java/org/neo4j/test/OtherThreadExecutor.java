@@ -178,6 +178,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         waitUntilThreadState( Thread.State.WAITING );
     }
 
+    public void waitUntilBlocked() throws TimeoutException
+    {
+        waitUntilThreadState( Thread.State.BLOCKED );
+    }
+    
     public void waitUntilThreadState( Thread.State... possibleStates ) throws TimeoutException
     {
         Set<Thread.State> stateSet = new HashSet<>( asList( possibleStates ) );
@@ -217,6 +222,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         return thread;
     }
 
+    @Override
     public void close()
     {
         commandExecutor.shutdown();

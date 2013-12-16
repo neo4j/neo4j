@@ -32,15 +32,15 @@ import org.neo4j.kernel.logging.Logging;
 public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
     private final HaXaDataSourceManager xaDsm;
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final Logging logging;
 
     public PropertyKeyCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                                                DelegateInvocationHandler<TokenCreator> delegate,
-                                                HaXaDataSourceManager xaDsm,
-                                                Master master, RequestContextFactory requestContextFactory,
-                                                Logging logging
+                                           DelegateInvocationHandler<TokenCreator> delegate,
+                                           HaXaDataSourceManager xaDsm,
+                                           DelegateInvocationHandler<Master> master,
+                                           RequestContextFactory requestContextFactory, Logging logging
     )
     {
         super( stateMachine, delegate );
@@ -59,6 +59,6 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCr
     @Override
     protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlavePropertyTokenCreator( master, requestContextFactory, xaDsm );
+        return new SlavePropertyTokenCreator( master.cement(), requestContextFactory, xaDsm );
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import java.io.IOException;
-
 import org.jboss.netty.channel.Channel;
 
 import org.neo4j.com.RequestContext;
@@ -39,7 +37,6 @@ public class SlaveServer extends Server<Slave, Void>
     public static final byte APPLICATION_PROTOCOL_VERSION = 1;
 
     public SlaveServer( Slave requestTarget, Configuration config, Logging logging )
-            throws IOException
     {
         super( requestTarget, config, logging, DEFAULT_FRAME_LENGTH, APPLICATION_PROTOCOL_VERSION, ALWAYS_MATCH, 
                 SYSTEM_CLOCK );
