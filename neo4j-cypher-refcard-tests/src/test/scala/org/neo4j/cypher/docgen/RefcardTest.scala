@@ -22,7 +22,7 @@ package org.neo4j.cypher.docgen
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
-import java.io.{ File, PrintWriter }
+import java.io.{ File, FileOutputStream, OutputStreamWriter, PrintWriter, Writer }
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -34,6 +34,7 @@ import org.neo4j.test.AsciiDocGenerator
 import org.junit.Before
 import org.junit.After
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
 
 /*
 Use this base class for refcard tests
@@ -48,6 +49,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   val properties: Map[String, Map[String, Any]] = Map()
   var generateConsole: Boolean = true
   var dir: File = null
+  var allQueriesWriter: Writer = null
 
   def title: String
   def css: String
@@ -58,7 +60,10 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def indexProps: List[String] = List()
 
   def executeQuery(queryText: String, params: Map[String, Any])(implicit engine: ExecutionEngine): ExecutionResult = try {
-    val result = engine.execute(replaceNodeIds(queryText), params)
+    val query = replaceNodeIds(queryText)
+    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(query))
+    allQueriesWriter.append(fullQuerySnippet).append("\n\n")
+    val result = engine.execute(query, params)
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
@@ -182,11 +187,13 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   @After
   def teardown() {
     if (db != null) db.shutdown()
+    allQueriesWriter.close()
   }
 
   @Before
   def init() {
     dir = createDir(section)
+    allQueriesWriter = new OutputStreamWriter(new FileOutputStream( new File("target/all-queries.asciidoc"), true), "UTF-8")
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
