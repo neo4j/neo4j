@@ -106,7 +106,7 @@ public enum ProposerState
                                 // TODO no payload associated with the phase1Timeout here.
                                 //      but what payload to use? instance.value_2?
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage.phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, instance.value_1 ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -228,7 +228,7 @@ public enum ProposerState
 
                                     context.setTimeout( instance.id,
                                             message.copyHeadersTo( Message.timeout( ProposerMessage.phase2Timeout,
-                                                    message ), InstanceId.INSTANCE ) );
+                                                    message, readyValue ), InstanceId.INSTANCE ) );
                                 }
                                 else
                                 {
