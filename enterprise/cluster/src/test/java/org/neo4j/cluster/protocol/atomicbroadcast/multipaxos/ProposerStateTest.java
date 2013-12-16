@@ -33,9 +33,12 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance.State
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.Integer.parseInt;
 import static java.net.URI.create;
+import static java.util.Arrays.asList;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -46,7 +49,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.cluster.com.message.Message.to;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.phase1Timeout;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.promise;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.propose;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.rejectAccept;
 
 public class ProposerStateTest
 {
@@ -119,6 +124,58 @@ public class ProposerStateTest
         Serializable payload = "myPayload";
         Message<ProposerMessage> message = to( phase1Timeout, create( "http://something" ), payload )
                 .setHeader( INSTANCE, instanceId );
+        
+        // WHEN
+        ProposerState.proposer.handle( context, message, outgoing );
+        
+        // THEN
+        verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
+                argThat( new MessageArgumentMatcher<>().withPayload( payload ) ) );
+    }
+
+    @Test
+    public void proposer_rejectAcceptShouldCarryOnPayload() throws Throwable
+    {
+        // GIVEN
+        String instanceId = "1";
+        PaxosInstance instance = new PaxosInstance( mock( PaxosInstanceStore.class ), new InstanceId( instanceId ) );
+        Serializable payload = "myPayload";
+        instance.propose( 1, asList( create( "http://some-guy" ) ) );
+        instance.ready( payload, true );
+        instance.pending();
+        ProposerContext context = mock( ProposerContext.class );
+        when( context.getLogger( any(Class.class) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
+        when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( parseInt( instanceId ) ) );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        Message<ProposerMessage> message = to( rejectAccept, create( "http://something" ),
+                new ProposerMessage.RejectAcceptState() )
+                .setHeader( INSTANCE, instanceId );
+        
+        // WHEN
+        ProposerState.proposer.handle( context, message, outgoing );
+        
+        // THEN
+        verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
+                argThat( new MessageArgumentMatcher<>().withPayload( payload ) ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void proposer_promiseShouldCarryOnPayloadToPhase2Timeout() throws Throwable
+    {
+        // GIVEN
+        String instanceId = "1";
+        Serializable payload = "myPayload";
+        PaxosInstance instance = new PaxosInstance( mock( PaxosInstanceStore.class ), new InstanceId( instanceId ) );
+        instance.propose( 1, asList( create( "http://some-guy" ) ) );
+        instance.value_2 = payload; // don't blame me for making it package access.
+        ProposerContext context = mock( ProposerContext.class );
+        when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
+        when( context.getMinimumQuorumSize( anyList() ) ).thenReturn( 1 );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        Message<ProposerMessage> message = to( promise, create( "http://something" ),
+                new ProposerMessage.PromiseState( 1, payload ) ).setHeader( INSTANCE, instanceId );
         
         // WHEN
         ProposerState.proposer.handle( context, message, outgoing );
