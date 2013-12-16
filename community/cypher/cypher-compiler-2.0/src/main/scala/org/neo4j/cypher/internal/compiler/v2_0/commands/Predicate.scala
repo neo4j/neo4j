@@ -71,7 +71,7 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = "(" + a + " AND " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(And(a.typedRewrite[Predicate](f), b.typedRewrite[Predicate](f)))
+  def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
 
@@ -98,7 +98,7 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 
   override def toString: String = "(" + a + " OR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Or(a.typedRewrite[Predicate](f), b.typedRewrite[Predicate](f)))
+  def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
 
@@ -113,7 +113,7 @@ case class Not(a: Predicate) extends Predicate {
   }
   override def toString: String = "NOT(" + a + ")"
   def containsIsNull = a.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Not(a.typedRewrite[Predicate](f)))
+  def rewrite(f: (Expression) => Expression) = f(Not(a.rewriteAsPredicate(f)))
   def arguments = Seq(a)
   def symbolTableDependencies = a.symbolTableDependencies
 }
@@ -127,7 +127,7 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 
   override def toString: String = "(" + a + " XOR " + b + ")"
   def containsIsNull = a.containsIsNull||b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(Xor(a.typedRewrite[Predicate](f), b.typedRewrite[Predicate](f)))
+  def rewrite(f: (Expression) => Expression) = f(Xor(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
 

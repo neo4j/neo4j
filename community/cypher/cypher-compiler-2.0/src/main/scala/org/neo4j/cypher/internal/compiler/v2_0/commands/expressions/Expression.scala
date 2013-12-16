@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.AstNode
+import commands.{CoercedPredicate, Predicate, AstNode}
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers._
@@ -28,6 +28,12 @@ import org.neo4j.cypher.CypherTypeException
 
 abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   def rewrite(f: Expression => Expression): Expression
+
+  def rewriteAsPredicate(f: Expression => Expression): Predicate = rewrite(f) match {
+    case pred: Predicate => pred
+    case e               => CoercedPredicate(e)
+  }
+
 
   def subExpressions: Seq[Expression] = {
     def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)

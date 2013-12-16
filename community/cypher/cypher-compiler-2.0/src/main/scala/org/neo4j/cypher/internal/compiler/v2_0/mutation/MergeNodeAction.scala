@@ -146,7 +146,7 @@ case class MergeNodeAction(identifier: String,
     MergeNodeAction(identifier = identifier,
       props = props.map { case (k, v) => k.rewrite(f) -> v.rewrite(f) },
       labels = labels.map(_.rewrite(f)),
-      expectations = expectations.map(_.typedRewrite[Predicate](f)),
+      expectations = expectations.map(_.rewriteAsPredicate(f)),
       onCreate = onCreate.map(_.rewrite(f)),
       onMatch = onMatch.map(_.rewrite(f)),
       maybeNodeProducer = maybeNodeProducer)

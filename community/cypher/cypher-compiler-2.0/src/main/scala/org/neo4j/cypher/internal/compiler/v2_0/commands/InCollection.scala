@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands
 import org.neo4j.cypher.internal.compiler.v2_0._
 import expressions.{Closure, Expression}
 import pipes.QueryState
-import symbols._
 import collection.Seq
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
@@ -78,7 +77,7 @@ case class AllInCollection(collection: Expression, symbolName: String, inner: Pr
     f(AllInCollection(
       collection = collection.rewrite(f),
       symbolName = symbolName,
-      inner = inner.typedRewrite[Predicate](f)))
+      inner = inner.rewriteAsPredicate(f)))
 }
 
 case class AnyInCollection(collection: Expression, symbolName: String, inner: Predicate)
@@ -106,7 +105,7 @@ case class AnyInCollection(collection: Expression, symbolName: String, inner: Pr
     f(AnyInCollection(
       collection = collection.rewrite(f),
       symbolName = symbolName,
-      inner = inner.typedRewrite[Predicate](f)))
+      inner = inner.rewriteAsPredicate(f)))
 }
 
 case class NoneInCollection(collection: Expression, symbolName: String, inner: Predicate)
@@ -134,7 +133,7 @@ case class NoneInCollection(collection: Expression, symbolName: String, inner: P
     f(NoneInCollection(
       collection = collection.rewrite(f),
       symbolName = symbolName,
-      inner = inner.typedRewrite[Predicate](f)))
+      inner = inner.rewriteAsPredicate(f)))
 }
 
 case class SingleInCollection(collection: Expression, symbolName: String, inner: Predicate)
@@ -163,5 +162,5 @@ case class SingleInCollection(collection: Expression, symbolName: String, inner:
     f(SingleInCollection(
       collection = collection.rewrite(f),
       symbolName = symbolName,
-      inner = inner.typedRewrite[Predicate](f)))
+      inner = inner.rewriteAsPredicate(f)))
 }

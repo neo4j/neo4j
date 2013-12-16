@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.values.TokenType._
-import commands.ReturnItem
+import commands.{CoercedPredicate, True, Not, ReturnItem}
 import pipes.QueryState
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -87,6 +87,21 @@ class ExpressionTest extends Assertions {
 
     //THEN
     assert(aggregates.toList ===  List(Avg(Property(Identifier("a"), PropertyKey("age")))))
+  }
+
+  @Test
+  def should_handle_rewriting_to_non_predicates() {
+    // given
+    val expression = Not(True())
+
+    // when
+    val result = expression.rewrite {
+      case True() => Literal(true)
+      case e      => e
+    }
+
+    // then
+    assert(result === Not(CoercedPredicate(Literal(true))))
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

@@ -63,11 +63,11 @@ final class TrailBuilder(patterns: Seq[Pattern], boundPoints: Seq[String], predi
 
         val relPred: Predicate = Predicate.
           fromSeq(orgRelPred).
-          typedRewrite[Predicate](rewriteTo(rel.relName, RelationshipIdentifier()))
+          rewriteAsPredicate(rewriteTo(rel.relName, RelationshipIdentifier()))
 
         val nodePred: Predicate = Predicate.
           fromSeq(orgNodePred).
-          typedRewrite[Predicate](rewriteTo(end, NodeIdentifier()))
+          rewriteAsPredicate(rewriteTo(end, NodeIdentifier()))
 
         done.add(start => SingleStepTrail(EndPoint(end), dir, rel.relName, rel.relTypes, start, relPred, nodePred, rel, orgNodePred ++ orgRelPred))
       }
