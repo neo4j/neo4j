@@ -193,10 +193,10 @@ public class MultiPaxosContext
         {
             return false;
         }
-        if ( !clusterContext.equals( that.clusterContext ) )
-        {
-            return false;
-        }
+//        if ( !clusterContext.equals( that.clusterContext ) )
+//        {
+//            return false;
+//        }
         if ( !commonState.equals( that.commonState ) )
         {
             return false;
@@ -209,18 +209,18 @@ public class MultiPaxosContext
         {
             return false;
         }
-        if ( !learnerContext.equals( that.learnerContext ) )
-        {
-            return false;
-        }
-        if ( !paxosInstances.equals( that.paxosInstances ) )
-        {
-            return false;
-        }
-        if ( !proposerContext.equals( that.proposerContext ) )
-        {
-            return false;
-        }
+//        if ( !learnerContext.equals( that.learnerContext ) )
+//        {
+//            return false;
+//        }
+//        if ( !paxosInstances.equals( that.paxosInstances ) )
+//        {
+//            return false;
+//        }
+//        if ( !proposerContext.equals( that.proposerContext ) )
+//        {
+//            return false;
+//        }
 
         return true;
     }

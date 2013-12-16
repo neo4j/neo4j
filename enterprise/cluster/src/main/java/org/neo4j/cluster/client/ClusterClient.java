@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;

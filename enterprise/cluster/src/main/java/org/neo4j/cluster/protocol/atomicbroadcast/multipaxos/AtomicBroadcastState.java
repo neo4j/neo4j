@@ -169,14 +169,9 @@ public enum AtomicBroadcastState
                                             Message.FROM ) );
                                 }
                             }
-                            else if ( message.getPayload() instanceof Payload )
-                            {
-                                context.receive( message.<Payload>getPayload() );
-                            }
                             else
                             {
-                                throw new RuntimeException( "Error, unable to handle message:  " + message,
-                                        message.getCreatorDebugStacktrace() );
+                                context.receive( message.<Payload>getPayload() );
                             }
 
                             break;

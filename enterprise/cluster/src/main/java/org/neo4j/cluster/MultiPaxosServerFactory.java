@@ -104,6 +104,15 @@ public class MultiPaxosServerFactory
 
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),context.getLearnerContext());
 
+        return newProtocolServer( me, input, output, stateMachineExecutor, latencyCalculator, executor, timeouts,
+                context, snapshotContext );
+    }
+
+    public ProtocolServer newProtocolServer( InstanceId me, MessageSource input, MessageSender output,
+                                              Executor stateMachineExecutor, LatencyCalculator latencyCalculator,
+                                              DelayedDirectExecutor executor, Timeouts timeouts,
+                                              MultiPaxosContext context, SnapshotContext snapshotContext )
+    {
         return constructSupportingInfrastructureFor( me, input, output, executor, timeouts, latencyCalculator,
                 stateMachineExecutor, context, new StateMachine[]
         {

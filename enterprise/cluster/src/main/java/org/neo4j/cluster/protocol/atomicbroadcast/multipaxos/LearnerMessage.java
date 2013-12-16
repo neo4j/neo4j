@@ -52,6 +52,34 @@ public enum LearnerMessage
         {
             return value.toString();
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            LearnState that = (LearnState) o;
+
+            if ( value != null ? !value.equals( that.value ) : that.value != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return value != null ? value.hashCode() : 0;
+        }
     }
 
     public static class LearnRequestState
@@ -66,6 +94,18 @@ public enum LearnerMessage
         {
             return "Learn request";
         }
+
+        @Override
+        public int hashCode()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj instanceof LearnRequestState;
+        }
     }
 
     public static class LearnFailedState
@@ -79,6 +119,18 @@ public enum LearnerMessage
         public String toString()
         {
             return "Learn failed";
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj instanceof LearnFailedState;
         }
     }
 }

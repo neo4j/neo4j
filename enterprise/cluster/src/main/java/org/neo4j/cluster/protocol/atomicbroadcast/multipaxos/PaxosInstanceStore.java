@@ -73,14 +73,14 @@ public class PaxosInstanceStore
 
     public PaxosInstanceStore snapshot()
     {
-        PaxosInstanceStore snapshot = new PaxosInstanceStore();
-        snapshot.queued = queued;
-        snapshot.delivered = new LinkedList<>(delivered);
+        PaxosInstanceStore snapshotStore = new PaxosInstanceStore();
+        snapshotStore.queued = queued;
+        snapshotStore.delivered = new LinkedList<>(delivered);
         for ( Map.Entry<InstanceId, PaxosInstance> instance : instances.entrySet() )
         {
-            throw new UnsupportedOperationException(  );
+            snapshotStore.instances.put( instance.getKey(), instance.getValue().snapshot(snapshotStore) );
         }
-        return snapshot;
+        return snapshotStore;
     }
 
     @Override

@@ -316,11 +316,6 @@ class HeartbeatContextImpl
         {
             return false;
         }
-        if ( heartBeatListeners != null ? !heartBeatListeners.equals( that.heartBeatListeners ) : that
-                .heartBeatListeners != null )
-        {
-            return false;
-        }
         if ( nodeSuspicions != null ? !nodeSuspicions.equals( that.nodeSuspicions ) : that.nodeSuspicions != null )
         {
             return false;
@@ -334,7 +329,6 @@ class HeartbeatContextImpl
     {
         int result = failed != null ? failed.hashCode() : 0;
         result = 31 * result + (nodeSuspicions != null ? nodeSuspicions.hashCode() : 0);
-        result = 31 * result + (heartBeatListeners != null ? heartBeatListeners.hashCode() : 0);
         return result;
     }
 }

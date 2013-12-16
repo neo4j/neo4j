@@ -394,11 +394,6 @@ class ClusterContextImpl
 
         ClusterContextImpl that = (ClusterContextImpl) o;
 
-        if ( clusterListeners != null ? !clusterListeners.equals( that.clusterListeners ) : that.clusterListeners !=
-                null )
-        {
-            return false;
-        }
         if ( currentlyJoiningInstances != null ? !currentlyJoiningInstances.equals( that.currentlyJoiningInstances )
                 : that.currentlyJoiningInstances != null )
         {
@@ -435,7 +430,7 @@ class ClusterContextImpl
     @Override
     public int hashCode()
     {
-        int result = clusterListeners != null ? clusterListeners.hashCode() : 0;
+        int result = 0;
         result = 31 * result + (discoveredInstances != null ? discoveredInstances.hashCode() : 0);
         result = 31 * result + (joiningInstances != null ? joiningInstances.hashCode() : 0);
         result = 31 * result + (joinDeniedConfigurationResponseState != null ? joinDeniedConfigurationResponseState

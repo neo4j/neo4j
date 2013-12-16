@@ -58,6 +58,34 @@ public enum HeartbeatMessage
         {
             return "i_am_alive[" + server + "]";
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            IAmAliveState that = (IAmAliveState) o;
+
+            if ( server != null ? !server.equals( that.server ) : that.server != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return server != null ? server.hashCode() : 0;
+        }
     }
 
     public static class SuspicionsState
@@ -82,6 +110,34 @@ public enum HeartbeatMessage
         public String toString()
         {
             return "Suspicions:"+suspicions;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            SuspicionsState that = (SuspicionsState) o;
+
+            if ( suspicions != null ? !suspicions.equals( that.suspicions ) : that.suspicions != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return suspicions != null ? suspicions.hashCode() : 0;
         }
     }
 }

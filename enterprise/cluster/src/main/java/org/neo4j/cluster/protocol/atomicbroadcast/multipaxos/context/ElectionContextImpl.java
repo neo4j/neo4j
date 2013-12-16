@@ -521,11 +521,6 @@ class ElectionContextImpl
 
         ElectionContextImpl that = (ElectionContextImpl) o;
 
-        if ( electionCredentialsProvider != null ? !electionCredentialsProvider.equals( that
-                .electionCredentialsProvider ) : that.electionCredentialsProvider != null )
-        {
-            return false;
-        }
         if ( elections != null ? !elections.equals( that.elections ) : that.elections != null )
         {
             return false;
@@ -543,7 +538,6 @@ class ElectionContextImpl
     {
         int result = roles != null ? roles.hashCode() : 0;
         result = 31 * result + (elections != null ? elections.hashCode() : 0);
-        result = 31 * result + (electionCredentialsProvider != null ? electionCredentialsProvider.hashCode() : 0);
         return result;
     }
 }
