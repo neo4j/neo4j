@@ -2642,14 +2642,6 @@ RETURN x0.name""")
   }
 
   @Test
-  def apa() {
-    execute("CREATE CONSTRAINT ON (n:Person) ASSERT n.foo IS UNIQUE");
-    val result = engine.profile("MATCH (n:Person)-[:X]->(m) WHERE n.foo=1 RETURN n, m;")
-    result.toList
-    println(result.executionPlanDescription().toString)
-  }
-
-  @Test
   def should_handle_queries_that_cant_be_index_solved_because_expressions_lack_dependencies_with_two_disjoin_patterns() {
     // Given
     val a = createLabeledNode(Map("property"->42), "Label")
@@ -2668,5 +2660,11 @@ RETURN x0.name""")
       Map("a"->b, "b"->a),
       Map("a"->e, "b"->e)
     ))
+  }
+
+  @Test
+  def should_not_mind_rewriting_NOT_queries() {
+    val result = execute(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
+    assert(result.toList === List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 }
