@@ -338,7 +338,7 @@ public class StartClient
                     File file = new File( fileName );
                     if ( !file.exists() )
                     {
-                        throw new ShellException( "File to execute " + "does not exist " + fileName );
+                        throw new ShellException( "File to execute " + "does not exist: " + fileName );
                     }
                     reader = newBufferedFileReader( file, UTF_8 );
                 }
@@ -346,7 +346,10 @@ public class StartClient
             }
             finally
             {
-                reader.close();
+                if ( reader != null )
+                {
+                    reader.close();
+                }
             }
             return;
         }
