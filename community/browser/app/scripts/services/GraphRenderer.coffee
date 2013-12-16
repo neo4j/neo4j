@@ -37,6 +37,7 @@ angular.module('neo4jApp.services')
         relationshipRenderers: @relationshipRenderers
         Renderer: @Renderer
       }
-    @
+
+    return @
   ]
 

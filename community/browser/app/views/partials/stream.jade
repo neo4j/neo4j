@@ -19,8 +19,7 @@ div()
       br
       &mdash; {{motd.quote.author}}
   #stream(scroll-top-when="frames.length")
-    .frame(
+    .frame.frame-in(
       ng-repeat = 'frame in frames.items | orderBy:"startTime":true'
-      ng-animate="{leave:'frame-out', enter:'frame-in'}"
-      ng-include = "frame.templateUrl"
     )
+      div(ng-include='frame.templateUrl')

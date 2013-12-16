@@ -141,4 +141,6 @@ angular.module('neo4jApp.services')
 
       @onTick = (graph) ->
         layoutRelationships(graph.relationships())
+
+      return @
   ]

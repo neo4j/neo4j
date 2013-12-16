@@ -209,6 +209,32 @@ describe('tooltip', function() {
       elm.trigger('fakeTriggerAttr');
       expect( elmScope.tt_isOpen ).toBeFalsy();
     }));
+
+    it('should not share triggers among different element instances - issue 692', inject( function ($compile) {
+
+      scope.test = true;
+      elmBody = angular.element(
+        '<div>' +
+          '<input tooltip="Hello!" tooltip-trigger="{{ (test && \'mouseenter\' || \'click\') }}" />' +
+          '<input tooltip="Hello!" tooltip-trigger="{{ (test && \'mouseenter\' || \'click\') }}" />' +
+        '</div>'
+      );
+
+      $compile(elmBody)(scope);
+      scope.$apply();
+      var elm1 = elmBody.find('input').eq(0);
+      var elm2 = elmBody.find('input').eq(1);
+      var elmScope1 = elm1.scope();
+      var elmScope2 = elm2.scope();
+
+      scope.$apply('test = false');
+
+      elm2.trigger('mouseenter');
+      expect( elmScope2.tt_isOpen ).toBeFalsy();
+
+      elm2.click();
+      expect( elmScope2.tt_isOpen ).toBeTruthy();
+    }));
   });
 
   describe( 'with an append-to-body attribute', function() {
@@ -465,6 +491,24 @@ describe( '$tooltipProvider', function() {
         elm.trigger('focus');
         expect( elmScope.tt_isOpen ).toBeTruthy();
         elm.trigger('blur');
+        expect( elmScope.tt_isOpen ).toBeFalsy();
+      }));
+
+      it( 'should override the show and hide triggers if there is an attribute', inject( function ( $rootScope, $compile ) {
+        elmBody = angular.element(
+          '<div><input tooltip="tooltip text" tooltip-trigger="mouseenter"/></div>'
+        );
+
+        scope = $rootScope;
+        $compile(elmBody)(scope);
+        scope.$digest();
+        elm = elmBody.find('input');
+        elmScope = elm.scope();
+
+        expect( elmScope.tt_isOpen ).toBeFalsy();
+        elm.trigger('mouseenter');
+        expect( elmScope.tt_isOpen ).toBeTruthy();
+        elm.trigger('mouseleave');
         expect( elmScope.tt_isOpen ).toBeFalsy();
       }));
     });

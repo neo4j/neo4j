@@ -15,26 +15,27 @@ angular.module('ui.bootstrap.tabs', [])
   };
 })
 
-.controller('TabsetController', ['$scope', '$element', 
+.controller('TabsetController', ['$scope', '$element',
 function TabsetCtrl($scope, $element) {
+
   var ctrl = this,
     tabs = ctrl.tabs = $scope.tabs = [];
 
   ctrl.select = function(tab) {
     angular.forEach(tabs, function(tab) {
       tab.active = false;
-    });  
+    });
     tab.active = true;
   };
 
   ctrl.addTab = function addTab(tab) {
     tabs.push(tab);
-    if (tabs.length == 1) {
+    if (tabs.length === 1 || tab.active) {
       ctrl.select(tab);
     }
   };
 
-  ctrl.removeTab = function removeTab(tab) { 
+  ctrl.removeTab = function removeTab(tab) {
     var index = tabs.indexOf(tab);
     //Select a new tab if the tab to be removed is selected
     if (tab.active && tabs.length > 1) {
@@ -55,6 +56,8 @@ function TabsetCtrl($scope, $element) {
  * Tabset is the outer container for the tabs directive
  *
  * @param {boolean=} vertical Whether or not to use vertical styling for the tabs.
+ * @param {string=} direction  What direction the tabs should be rendered. Available:
+ * 'right', 'left', 'below'.
  *
  * @example
 <example module="ui.bootstrap">
@@ -75,12 +78,20 @@ function TabsetCtrl($scope, $element) {
   return {
     restrict: 'EA',
     transclude: true,
+    replace: true,
+    require: '^tabset',
     scope: {},
     controller: 'TabsetController',
     templateUrl: 'template/tabs/tabset.html',
-    link: function(scope, element, attrs) {
-      scope.vertical = angular.isDefined(attrs.vertical) ? scope.$eval(attrs.vertical) : false;
-      scope.type = angular.isDefined(attrs.type) ? scope.$parent.$eval(attrs.type) : 'tabs';
+    compile: function(elm, attrs, transclude) {
+      return function(scope, element, attrs, tabsetCtrl) {
+        scope.vertical = angular.isDefined(attrs.vertical) ? scope.$eval(attrs.vertical) : false;
+        scope.type = angular.isDefined(attrs.type) ? scope.$parent.$eval(attrs.type) : 'tabs';
+        scope.direction = angular.isDefined(attrs.direction) ? scope.$parent.$eval(attrs.direction) : 'top';
+        scope.tabsAbove = (scope.direction != 'below');
+        tabsetCtrl.$scope = scope;
+        tabsetCtrl.$transcludeFn = transclude;
+      };
     }
   };
 })
@@ -95,7 +106,7 @@ function TabsetCtrl($scope, $element) {
  * @param {boolean=} active A binding, telling whether or not this tab is selected.
  * @param {boolean=} disabled A binding, telling whether or not this tab is disabled.
  *
- * @description 
+ * @description
  * Creates a tab with a heading and content. Must be placed within a {@link ui.bootstrap.tabs.directive:tabset tabset}.
  *
  * @example
@@ -175,8 +186,9 @@ function($parse, $http, $templateCache, $compile) {
     transclude: true,
     scope: {
       heading: '@',
-      onSelect: '&select' //This callback is called in contentHeadingTransclude
+      onSelect: '&select', //This callback is called in contentHeadingTransclude
                           //once it inserts the tab's content into the dom
+      onDeselect: '&deselect'
     },
     controller: function() {
       //Empty controller so other directives can require being 'under' a tab
@@ -184,17 +196,13 @@ function($parse, $http, $templateCache, $compile) {
     compile: function(elm, attrs, transclude) {
       return function postLink(scope, elm, attrs, tabsetCtrl) {
         var getActive, setActive;
-        scope.active = false; // default value
         if (attrs.active) {
           getActive = $parse(attrs.active);
           setActive = getActive.assign;
           scope.$parent.$watch(getActive, function updateActive(value) {
-            if ( !!value && scope.disabled ) {
-              setActive(scope.$parent, false); // Prevent active assignment
-            } else {
-              scope.active = !!value;
-            }
+            scope.active = !!value;
           });
+          scope.active = getActive(scope.$parent);
         } else {
           setActive = getActive = angular.noop;
         }
@@ -204,6 +212,8 @@ function($parse, $http, $templateCache, $compile) {
           if (active) {
             tabsetCtrl.select(scope);
             scope.onSelect();
+          } else {
+            scope.onDeselect();
           }
         });
 
@@ -224,42 +234,14 @@ function($parse, $http, $templateCache, $compile) {
         scope.$on('$destroy', function() {
           tabsetCtrl.removeTab(scope);
         });
-        //If the tabset sets this tab to active, set the parent scope's active
-        //binding too.  We do this so the watch for the parent's initial active
-        //value won't overwrite what is initially set by the tabset
         if (scope.active) {
           setActive(scope.$parent, true);
-        } 
+        }
 
-        //Transclude the collection of sibling elements. Use forEach to find
-        //the heading if it exists. We don't use a directive for tab-heading
-        //because it is problematic. Discussion @ http://git.io/MSNPwQ
-        transclude(scope.$parent, function(clone) {
-          //Look at every element in the clone collection. If it's tab-heading,
-          //mark it as that.  If it's not tab-heading, mark it as tab contents
-          var contents = [], heading;
-          angular.forEach(clone, function(el) {
-            //See if it's a tab-heading attr or element directive
-            //First make sure it's a normal element, one that has a tagName
-            if (el.tagName &&
-                (el.hasAttribute("tab-heading") || 
-                 el.hasAttribute("data-tab-heading") ||
-                 el.tagName.toLowerCase() == "tab-heading" ||
-                 el.tagName.toLowerCase() == "data-tab-heading"
-                )) {
-              heading = el;
-            } else {
-              contents.push(el);
-            }
-          });
-          //Share what we found on the scope, so our tabHeadingTransclude and
-          //tabContentTransclude directives can find out what the heading and
-          //contents are.
-          if (heading) { 
-            scope.headingElement = angular.element(heading);
-          }
-          scope.contentElement = angular.element(contents);
-        });
+
+        //We need to transclude later, once the content container is ready.
+        //when this link happens, we're inside a tab heading.
+        scope.$transcludeFn = transclude;
       };
     }
   };
@@ -268,7 +250,7 @@ function($parse, $http, $templateCache, $compile) {
 .directive('tabHeadingTransclude', [function() {
   return {
     restrict: 'A',
-    require: '^tab', 
+    require: '^tab',
     link: function(scope, elm, attrs, tabCtrl) {
       scope.$watch('headingElement', function updateHeadingElement(heading) {
         if (heading) {
@@ -280,20 +262,55 @@ function($parse, $http, $templateCache, $compile) {
   };
 }])
 
-.directive('tabContentTransclude', ['$parse', function($parse) {
+.directive('tabContentTransclude', ['$compile', '$parse', function($compile, $parse) {
   return {
     restrict: 'A',
     require: '^tabset',
-    link: function(scope, elm, attrs, tabsetCtrl) {
-      scope.$watch($parse(attrs.tabContentTransclude), function(tab) {
-        elm.html('');
-        if (tab) {
-          elm.append(tab.contentElement);
-        }
+    link: function(scope, elm, attrs) {
+      var tab = scope.$eval(attrs.tabContentTransclude);
+
+      //Now our tab is ready to be transcluded: both the tab heading area
+      //and the tab content area are loaded.  Transclude 'em both.
+      tab.$transcludeFn(tab.$parent, function(contents) {
+        angular.forEach(contents, function(node) {
+          if (isTabHeading(node)) {
+            //Let tabHeadingTransclude know.
+            tab.headingElement = node;
+          } else {
+            elm.append(node);
+          }
+        });
       });
     }
   };
+  function isTabHeading(node) {
+    return node.tagName &&  (
+      node.hasAttribute('tab-heading') ||
+      node.hasAttribute('data-tab-heading') ||
+      node.tagName.toLowerCase() === 'tab-heading' ||
+      node.tagName.toLowerCase() === 'data-tab-heading'
+    );
+  }
 }])
+
+.directive('tabsetTitles', function($http) {
+  return {
+    restrict: 'A',
+    require: '^tabset',
+    templateUrl: 'template/tabs/tabset-titles.html',
+    replace: true,
+    link: function(scope, elm, attrs, tabsetCtrl) {
+      if (!scope.$eval(attrs.tabsetTitles)) {
+        elm.remove();
+      } else {
+        //now that tabs location has been decided, transclude the tab titles in
+        tabsetCtrl.$transcludeFn(tabsetCtrl.$scope.$parent, function(node) {
+          elm.append(node);
+        });
+      }
+    }
+  };
+})
 
 ;
 

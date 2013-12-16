@@ -57,8 +57,8 @@ angular.module('ui.bootstrap.position', [])
         var offsetParentEl = parentOffsetEl(element[0]);
         if (offsetParentEl != $document[0]) {
           offsetParentBCR = this.offset(angular.element(offsetParentEl));
-          offsetParentBCR.top += offsetParentEl.clientTop;
-          offsetParentBCR.left += offsetParentEl.clientLeft;
+          offsetParentBCR.top += offsetParentEl.clientTop - offsetParentEl.scrollTop;
+          offsetParentBCR.left += offsetParentEl.clientLeft - offsetParentEl.scrollLeft;
         }
 
         return {

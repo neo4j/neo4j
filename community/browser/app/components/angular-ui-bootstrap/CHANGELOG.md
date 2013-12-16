@@ -1,3 +1,86 @@
+# 0.5.0 (2013-08-04)
+
+## Features
+
+- **buttons:** 
+  - support dynamic true / false values in btn-checkbox ([3e30cd94](http://github.com/angular-ui/bootstrap/commit/3e30cd94))  
+- **datepikcer:** 
+  - `ngModelController` plug & new `datepikcerPopup` ([dab18336](http://github.com/angular-ui/bootstrap/commit/dab18336))  
+- **rating:** 
+  - added onHover and onLeave. ([5b1115e3](http://github.com/angular-ui/bootstrap/commit/5b1115e3))  
+- **tabs:** 
+  - added onDeselect callback, used similarly as onSelect ([fe47c9bb](http://github.com/angular-ui/bootstrap/commit/fe47c9bb))  
+  - add the ability to set the direction of the tabs ([220e7b60](http://github.com/angular-ui/bootstrap/commit/220e7b60))  
+- **typeahead:** 
+  - support custom templates for matched items ([e2238174](http://github.com/angular-ui/bootstrap/commit/e2238174))  
+  - expose index to custom templates ([5ffae83d](http://github.com/angular-ui/bootstrap/commit/5ffae83d))   
+
+## Bug Fixes
+
+- **datepicker:** 
+  - handle correctly `min`/`max` when cleared ([566bdd16](http://github.com/angular-ui/bootstrap/commit/566bdd16))  
+  - add type attribute for buttons ([25caf5fb](http://github.com/angular-ui/bootstrap/commit/25caf5fb))  
+- **pagination:** 
+  - handle `currentPage` number as string ([b1fa7bb8](http://github.com/angular-ui/bootstrap/commit/b1fa7bb8))  
+  - use interpolation for text attributes ([f45815cb](http://github.com/angular-ui/bootstrap/commit/f45815cb))  
+- **popover:** 
+  - don't unbind event handlers created by other directives ([56f624a2](http://github.com/angular-ui/bootstrap/commit/56f624a2))  
+  - correctly position popovers appended to body ([93a82af0](http://github.com/angular-ui/bootstrap/commit/93a82af0))  
+- **rating:** 
+  - evaluate `max` attribute on parent scope ([60619d51](http://github.com/angular-ui/bootstrap/commit/60619d51))  
+- **tabs:** 
+  - make tab contents be correctly connected to parent (#524) ([be7ecff0](http://github.com/angular-ui/bootstrap/commit/be7ecff0))  
+  - Make tabset template correctly use tabset attributes (#584) ([8868f236](http://github.com/angular-ui/bootstrap/commit/8868f236))  
+  - fix tab content compiling wrong (Closes #599, #631, #574) ([224bc2f5](http://github.com/angular-ui/bootstrap/commit/224bc2f5))  
+  - make tabs added with active=true be selected ([360cd5ca](http://github.com/angular-ui/bootstrap/commit/360cd5ca))  
+  - if tab is active at start, always select it ([ba1f741d](http://github.com/angular-ui/bootstrap/commit/ba1f741d))  
+- **timepicker:** 
+  - prevent date change ([ee741707](http://github.com/angular-ui/bootstrap/commit/ee741707))  
+  - added wheel event to enable mousewheel on Firefox ([8dc92afa](http://github.com/angular-ui/bootstrap/commit/8dc92afa))  
+- **tooltip:** 
+  - fix positioning inside scrolling element ([63ae7e12](http://github.com/angular-ui/bootstrap/commit/63ae7e12))  
+  - triggers should be local to tooltip instances ([58e8ef4f](http://github.com/angular-ui/bootstrap/commit/58e8ef4f))  
+  - correctly handle initial events unbinding ([4fd5bf43](http://github.com/angular-ui/bootstrap/commit/4fd5bf43))  
+  - bind correct 'hide' event handler ([d50b0547](http://github.com/angular-ui/bootstrap/commit/d50b0547))  
+- **typeahead:** 
+  - play nicelly with existing formatters ([d2df0b35](http://github.com/angular-ui/bootstrap/commit/d2df0b35))  
+  - properly render initial input value ([c4e169cb](http://github.com/angular-ui/bootstrap/commit/c4e169cb))  
+  - separate text field rendering and drop down rendering ([ea1e858a](http://github.com/angular-ui/bootstrap/commit/ea1e858a))  
+  - fixed waitTime functionality ([90a8aa79](http://github.com/angular-ui/bootstrap/commit/90a8aa79))  
+  - correctly close popup on match selection ([624fd5f5](http://github.com/angular-ui/bootstrap/commit/624fd5f5))   
+
+## Breaking Changes
+
+- **pagination:** 
+ The 'first-text', 'previous-text', 'next-text' and 'last-text'
+  attributes are now interpolated.
+
+  To migrate your code, remove quotes for constant attributes and/or
+  interpolate scope variables.
+
+  Before:
+
+```html
+  <pagination first-text="'<<'" ...></pagination>
+```
+  and/or
+
+```html
+  $scope.var1 = '<<';
+  <pagination first-text="var1" ...></pagination>
+```
+  After:
+
+```html
+  <pagination first-text="<<" ...></pagination>
+```
+  and/or
+
+```html
+  $scope.var1 = '<<';
+  <pagination first-text="{{var1}}" ...></pagination>
+```
+
 # 0.4.0 (2013-06-24)
 
 ## Features
@@ -58,23 +141,31 @@
   To migrate your code, surround the text of these attributes with quotes.
 
   Before:
-
-  <pagination first-text="<<" ...></pagination>
+      
+    ```html
+    <pagination first-text="<<"></pagination>
+    ```
 
   After:
-
-  <pagination first-text="'<<'" ...></pagination>
+    
+    ```html
+    <pagination first-text="'<<'"></pagination>
+    ```
 
 - **progressbar:** 
  The 'value' is replaced by 'percent'.
 
   Before:
-
-  <progress value="..."></progress>
+    
+    ```html
+    <progress value="..."></progress>
+    ```
 
   After:
-
-  <progress percent="..."></progress>
+    
+    ```html
+    <progress percent="..."></progress>
+    ```
 
 - **tabs:** 
  The 'tabs' directive has been renamed to 'tabset', and
@@ -82,8 +173,9 @@
 
     To migrate your code, follow the example below.
 
-    Before:
+  Before:
 
+    ```html
     <tabs>
       <pane heading="one">
         First Content
@@ -92,9 +184,11 @@
         {{apple.content}}
       </pane>
     </tabs>
+    ```
 
-    After:
+  After:
 
+    ```html
     <tabset>
       <tab heading="one">
         First Content
@@ -103,6 +197,8 @@
         {{apple.content}}
       </tab>
     </tabset>
+    ```
+
  
 # 0.3.0 (2013-04-30)
 
