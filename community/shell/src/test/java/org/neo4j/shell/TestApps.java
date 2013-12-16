@@ -648,6 +648,13 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void commentsAloneAreIgnored() throws Exception
+    {
+        // See GitHub issue #1204
+        executeCommand( "// a comment\n" );
+    }
+
+    @Test
     public void canAddLabelToNode() throws Exception
     {
         // GIVEN
