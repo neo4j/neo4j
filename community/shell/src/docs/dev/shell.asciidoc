@@ -290,13 +290,13 @@ Cypher queries need to be terminated by a semicolon `;`.
 
 Cypher commands are given all shell variables as parameters and the special +self+ parameter for the current node or relationship.
 
-* +start n = node(0) return n;+ will give you a listing of the node with ID 0
-* +cypher 1.9 start n = node(0) return n;+ will execute the query with Cypher version 1.9
-//* +profile start n = node(0) return n;+ will execute the cypher query and display profiling information
+* `start n = node(0) return n;` will give you a listing of the node with ID 0
+* `cypher 1.9 start n = node(0) return n;` will execute the query with Cypher version 1.9
+// +profile start n = node(0) return n;+ will execute the cypher query and display profiling information
 
-* +START n = node(\{self}) MATCH (n)-[:KNOWS]->(friend) RETURN friend;+ will
+* `START n = node({self}) MATCH (n)-[:KNOWS]->(friend) RETURN friend;` will
 return the nodes connected to the current node.
-* +START n=node(\{me}) CREATE friend=\{props}, (me)-[r:KNOWS]->(friend);+ will
+* `START n=node({me}) CREATE friend={props}, (me)-[r:KNOWS]->(friend);` will
 create the friend and the relationship according to the variables available.
 
 [[shell-listing-indexes-and-constraints]]
@@ -366,8 +366,8 @@ Constraint export is not yet supported.
 Examples:
 
 * +dump+ dumps the whole database as single cypher create statement
-* +dump START n=node(\{self}) MATCH p=(n)-[r:KNOWS*]->(m) RETURN n,r,m;+ dumps the transitive friendship graph of the current node.
-* +neo4j-shell -path db1 -c dump START n=node:node_auto_index(name=\'Mattias\') MATCH p=(n)-[r:KNOWS]->(m) RETURN p; | neo4j-shell -path db2+
+* `dump START n=node({self}) MATCH p=(n)-[r:KNOWS*]->(m) RETURN n,r,m;` dumps the transitive friendship graph of the current node.
+* `neo4j-shell -path db1 -c dump START n=node:node_auto_index(name='Mattias') MATCH p=(n)-[r:KNOWS]->(m) RETURN p; | neo4j-shell -path db2`
   imports the subgraph of the first database (db1) into the second (db2)
 
 ==== Example Dump Scripts ====
