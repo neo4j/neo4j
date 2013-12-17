@@ -54,3 +54,5 @@ angular.module('neo4jApp')
       cache(text + font, () ->
         measureUsingCanvas(text, font)
       )
+
+    return @

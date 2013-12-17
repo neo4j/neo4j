@@ -1,6 +1,33 @@
+# bower-angular
+
+This repo is for distribution on `bower`. The source for this module is in the
+[main AngularJS repo](https://github.com/angular/angular.js).
+Please file issues and pull requests against that repo.
+
+## Install
+
+Install with `bower`:
+
+```shell
+bower install angular
+```
+
+Add a `<script>` to your `index.html`:
+
+```html
+<script src="/bower_components/angular/angular.js"></script>
+```
+
+## Documentation
+
+Documentation is available on the
+[AngularJS docs site](http://docs.angularjs.org/).
+
+## License
+
 The MIT License
 
-Copyright (c) 2012 Codility Limited, 107 Cheapside, London EC2V 6DN, UK
+Copyright (c) 2010-2012 Google, Inc. http://angularjs.org
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

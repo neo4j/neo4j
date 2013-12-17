@@ -1,5 +1,39 @@
-Copyright (C) 2011 by MarkLogic Corporation
-Author: Mike Brevoort <mike@brevoort.com>
+# bower-angular-animate
+
+This repo is for distribution on `bower`. The source for this module is in the
+[main AngularJS repo](https://github.com/angular/angular.js/tree/master/src/ngAnimate).
+Please file issues and pull requests against that repo.
+
+## Install
+
+Install with `bower`:
+
+```shell
+bower install angular-animate
+```
+
+Add a `<script>` to your `index.html`:
+
+```html
+<script src="/bower_components/angular-animate/angular-animate.js"></script>
+```
+
+And add `ngAnimate` as a dependency for your app:
+
+```javascript
+angular.module('myApp', ['ngAnimate']);
+```
+
+## Documentation
+
+Documentation is available on the
+[AngularJS docs site](http://docs.angularjs.org/api/ngAnimate).
+
+## License
+
+The MIT License
+
+Copyright (c) 2010-2012 Google, Inc. http://angularjs.org
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

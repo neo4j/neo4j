@@ -8,7 +8,7 @@
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/<%= ngversion %>/angular.min.js"></script>
-    <script src="ui-bootstrap-tpls-<%= pkg.version%>.min.js"></script>
+    <script src="ui-bootstrap-tpls-<%= pkg.version%>.js"></script>
     <script src="assets/select2.js"></script>
     <script src="assets/ui-select2.js"></script>
     <script src="assets/plunker.js"></script>
@@ -182,11 +182,15 @@
                     <button class="btn btn-info" id="plunk-btn" ng-click="edit('<%= ngversion%>', '<%= bsversion %>', '<%= pkg.version%>', '<%= module.name %>')"><i class="icon-edit icon-white"></i> Edit in plunker</button>
                 </div>
                 <tabset>
-                    <tab heading="Markup" plunker-content="markup">
-                      <pre ng-non-bindable><code data-language="html"><%- module.docs.html %></code></pre>
+                    <tab heading="Markup">
+                        <div plunker-content="markup">
+                            <pre ng-non-bindable><code data-language="html"><%- module.docs.html %></code></pre>
+                        </div>
                     </tab>
-                    <tab heading="JavaScript" plunker-content="javascript">
-                      <pre ng-non-bindable><code data-language="javascript"><%- module.docs.js %></code></pre>
+                    <tab heading="JavaScript">
+                        <div plunker-content="javascript">
+                            <pre ng-non-bindable><code data-language="javascript"><%- module.docs.js %></code></pre>
+                        </div>
                     </tab>
                 </tabset>
             </div>

@@ -25,9 +25,22 @@ a
     color: color-link-hover
     text-decoration: none
 
+#incompatible
+  background-color: #fff
+  bottom: 0
+  font-size: 20px
+  left: 0
+  padding-top: 100px
+  position: absolute
+  right: 0
+  text-align: center
+  top: 0
+  z-index: 10000
+
 svg
   display: block
   width: 100%
+  overflow: hidden
 
 [play-topic], [help-topic], a[target]
   &:before
@@ -182,6 +195,8 @@ p.lead
       height: 100%
       svg
         height: 100%
+  .legend
+    max-height: none;
 
 .key.code
   display: inline-block

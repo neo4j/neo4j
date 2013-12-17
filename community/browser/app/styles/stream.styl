@@ -70,7 +70,7 @@
       position: relative
       padding: 0
       p
-        margin: 0 
+        margin: 0
 
 .code-bar
   color: #848790
@@ -79,7 +79,8 @@
   line-height: middlebar-height
   padding-left: horizontal-padding
   padding: 0 25px
-  overflow: hidden
+  //overflow: hidden
+  position: relative
 
   .label
     text-shadow: 0 1px 1px rgba(0,0,0,0.15)
@@ -102,6 +103,11 @@
       padding-bottom: 2px
   a.close-fullscreen
     display: none
+
+  .status
+    display: block
+    max-height: 30px
+    overflow: hidden
   .actions
     opacity: 0
     transist: opacity 0.2s
