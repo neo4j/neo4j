@@ -173,7 +173,11 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             expectedData.assignedProperty( node3, "name", "Node 3", null );
 
             newTransaction();
-            assertTrue( handler.hasBeenCalled() );
+            assertTrue( "Should have been invoked", handler.hasBeenCalled() );
+            if ( handler.failure() != null )
+            {
+                throw new RuntimeException( handler.failure() );
+            }
         }
         finally
         {
@@ -187,6 +191,9 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
         newTransaction();
         try
         {
+            Node newNode = getGraphDb().createNode();
+            expectedData.expectedCreatedNodes.add( newNode );
+            
             Node tempNode = getGraphDb().createNode();
             Relationship tempRel = tempNode.createRelationshipTo( node1,
                     RelTypes.TXEVENT );
@@ -228,6 +235,11 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
             tempNode.delete();
 
             newTransaction();
+            assertTrue( "Should have been invoked", handler.hasBeenCalled() );
+            if ( handler.failure() != null )
+            {
+                throw new RuntimeException( handler.failure() );
+            }
         }
         finally
         {
@@ -474,7 +486,9 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
 		public Object beforeCommit(TransactionData data) throws Exception 
 		{
 			if(beforeCommitException != null)
-				throw beforeCommitException;
+            {
+                throw beforeCommitException;
+            }
 			return null;
 		}
 
@@ -482,14 +496,18 @@ public class TestTransactionEvents extends AbstractNeo4jTestCase
 		public void afterCommit(TransactionData data, Object state) 
 		{
 			if(afterCommitException != null)
-				throw new RuntimeException(afterCommitException);
+            {
+                throw new RuntimeException(afterCommitException);
+            }
 		}
 
 		@Override
 		public void afterRollback(TransactionData data, Object state) 
 		{
 			if(afterRollbackException != null)
-				throw new RuntimeException(afterRollbackException);
+            {
+                throw new RuntimeException(afterRollbackException);
+            }
 		}
     	
     }

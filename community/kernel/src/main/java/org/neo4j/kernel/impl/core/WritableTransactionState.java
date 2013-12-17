@@ -541,7 +541,6 @@ public class WritableTransactionState implements TransactionState
     {
         PrimitiveElement element = getPrimitiveElement( true );
         element.nodeElement( id, true ).setDeleted();
-        element.createdNodes.remove( id );
     }
 
     @Override
@@ -549,7 +548,6 @@ public class WritableTransactionState implements TransactionState
     {
         PrimitiveElement element = getPrimitiveElement( true );
         element.relationshipElement( id, true ).setDeleted();
-        element.createdRelationships.remove( id );
     }
 
     @Override
