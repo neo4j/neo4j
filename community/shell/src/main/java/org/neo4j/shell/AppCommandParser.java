@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.shell.apps.NoopApp;
+
 import static org.neo4j.shell.TextUtil.tokenizeStringWithQuotes;
 
 /**
@@ -89,6 +91,7 @@ public class AppCommandParser
     {
         if ( line == null || line.trim().length() == 0 )
         {
+            app = new NoopApp();
             return;
         }
 
