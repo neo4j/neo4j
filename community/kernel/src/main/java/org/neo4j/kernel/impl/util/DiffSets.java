@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -28,6 +27,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -248,7 +248,7 @@ public class DiffSets<T>
 
     private Set<T> newSet()
     {
-        return new HashSet<>();
+        return new CopyOnWriteAfterIteratorHashSet<>();
     }
 
     private Set<T> resultSet( Set<T> coll )
