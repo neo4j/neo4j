@@ -32,6 +32,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -45,6 +46,7 @@ import org.neo4j.server.webadmin.rest.MasterInfoService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ha.ServerCluster;
 
+@Ignore
 public class ClusterHaInfoFunctionalTest
 {
     @SuppressWarnings( "unchecked" )

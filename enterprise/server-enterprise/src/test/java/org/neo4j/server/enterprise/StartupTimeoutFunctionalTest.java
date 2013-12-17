@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -37,6 +38,7 @@ import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.test.TargetDirectory;
 
+@Ignore
 public class StartupTimeoutFunctionalTest {
 
     public EnterpriseNeoServer server;

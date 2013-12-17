@@ -29,6 +29,7 @@ import javax.ws.rs.core.MediaType;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -38,6 +39,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.ha.ServerCluster;
 
+@Ignore
 public class HaServerFunctionalTest
 {
     @SuppressWarnings( "unchecked" )

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Map;
 
 import org.apache.http.HttpStatus;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -32,6 +33,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 import org.neo4j.test.server.ha.AbstractEnterpriseRestFunctionalTestBase;
 
+@Ignore
 public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFunctionalTestBase
 {
     @Test
