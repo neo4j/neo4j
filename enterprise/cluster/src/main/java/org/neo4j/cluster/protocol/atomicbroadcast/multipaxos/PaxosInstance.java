@@ -170,6 +170,10 @@ public class PaxosInstance
     @Override
     public String toString()
     {
-        return id + ": " + state.name() + " b=" + ballot;
+        return "[id:" + id +
+               " state:" + state.name() +
+               " b:" + ballot +
+               " v1:" + value_1 +
+               " v2:" + value_2 + "]";
     }
 }

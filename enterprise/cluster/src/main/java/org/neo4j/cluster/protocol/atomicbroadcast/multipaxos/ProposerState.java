@@ -79,10 +79,9 @@ public enum ProposerState
                             ProposerMessage.RejectPrepare rejectPropose = message.getPayload();
                             InstanceId instanceId = new InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
-                            context.getLogger( ProposerState.class ).debug(
-                                    "Propose for instance " + instanceId + " at ballot " + instance.ballot
-                                            + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
-                                            + rejectPropose.getBallot() );
+                            context.getLogger( ProposerState.class ).debug( "Propose for instance " + instance
+                                    + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
+                                    + rejectPropose.getBallot() );
 
                             if ( instance.isState( PaxosInstance.State.p1_pending ) )
                             {
@@ -103,8 +102,6 @@ public enum ProposerState
                                             InstanceId.INSTANCE ) );
                                 }
                                 // This will reset the phase1Timeout if existing
-                                // TODO no payload associated with the phase1Timeout here.
-                                //      but what payload to use? instance.value_2?
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
                                         ProposerMessage.phase1Timeout, message, instance.value_1 ), InstanceId.INSTANCE ) );
                             }
