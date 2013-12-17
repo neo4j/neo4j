@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
@@ -48,45 +49,6 @@ public class InMemoryLabelScanStore implements LabelScanStore
 {
     // LabelId --> Set<NodeId>
     private final Map<Long, Set<Long>> data = new HashMap<>();
-
-    @Override
-    public void updateAndCommit( Iterator<NodeLabelUpdate> updates )
-    {
-        while ( updates.hasNext() )
-        {
-            NodeLabelUpdate update = updates.next();
-            // Split up into added/removed from before/after
-            long[] added = new long[update.getLabelsAfter().length]; // pessimistic length
-            long[] removed = new long[update.getLabelsBefore().length]; // pessimistic length
-
-            int addedIndex = 0, removedIndex = 0;
-            for ( long labelAfter : update.getLabelsAfter() )
-            {
-                if ( binarySearch( update.getLabelsBefore(), labelAfter ) < 0 )
-                {
-                    added[addedIndex++] = labelAfter;
-                }
-            }
-
-            for ( long labelBefore : update.getLabelsBefore() )
-            {
-                if ( binarySearch( update.getLabelsAfter(), labelBefore ) < 0 )
-                {
-                    removed[removedIndex++] = labelBefore;
-                }
-            }
-
-            // Update the internal map with those changes
-            for ( int i = 0; i < addedIndex; i++ )
-            {
-                nodeSetForAdding( added[i] ).add( update.getNodeId() );
-            }
-            for ( int i = 0; i < removedIndex; i++ )
-            {
-                nodeSetForRemoving( removed[i] ).remove( update.getNodeId() );
-            }
-        }
-    }
 
     private Set<Long> nodeSetForRemoving( long labelId )
     {
@@ -106,9 +68,14 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public void recover( Iterator<NodeLabelUpdate> updates )
+    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException
     {
-        updateAndCommit( updates );
+        try(LabelScanWriter writer = newWriter()) {
+            while ( updates.hasNext() )
+            {
+                writer.write( updates.next() );
+            }
+        }
     }
 
     @Override
@@ -255,6 +222,53 @@ public class InMemoryLabelScanStore implements LabelScanStore
     @Override
     public void shutdown()
     {   // Nothing to shutdown
+    }
+
+    @Override
+    public LabelScanWriter newWriter()
+    {
+        return new LabelScanWriter()
+        {
+            @Override
+            public void write( NodeLabelUpdate update ) throws IOException
+            {
+                // Split up into added/removed from before/after
+                long[] added = new long[update.getLabelsAfter().length]; // pessimistic length
+                long[] removed = new long[update.getLabelsBefore().length]; // pessimistic length
+
+                int addedIndex = 0, removedIndex = 0;
+                for ( long labelAfter : update.getLabelsAfter() )
+                {
+                    if ( binarySearch( update.getLabelsBefore(), labelAfter ) < 0 )
+                    {
+                        added[addedIndex++] = labelAfter;
+                    }
+                }
+
+                for ( long labelBefore : update.getLabelsBefore() )
+                {
+                    if ( binarySearch( update.getLabelsAfter(), labelBefore ) < 0 )
+                    {
+                        removed[removedIndex++] = labelBefore;
+                    }
+                }
+
+                // Update the internal map with those changes
+                for ( int i = 0; i < addedIndex; i++ )
+                {
+                    nodeSetForAdding( added[i] ).add( update.getNodeId() );
+                }
+                for ( int i = 0; i < removedIndex; i++ )
+                {
+                    nodeSetForRemoving( removed[i] ).remove( update.getNodeId() );
+                }
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+        };
     }
 
     @Override

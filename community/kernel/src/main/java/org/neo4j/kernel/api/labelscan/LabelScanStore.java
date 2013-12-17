@@ -27,6 +27,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 /**
  * Stores label-->nodes mappings. It receives updates in the form of condensed label->node transaction data
@@ -35,12 +36,17 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public interface LabelScanStore extends Lifecycle
 {
     /**
-     * Update the store with a stream of updates of label->node mappings.
+     * From the point a {@link LabelScanReader} is created till it's {@link LabelScanReader#close() closed} the contents it
+     * returns cannot change, i.e. it honors repeatable reads.
      *
-     * @param updates the updates to store.
-     * @throws IOException if there was a problem updating the store.
+     * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
      */
-    void updateAndCommit( Iterator<NodeLabelUpdate> updates ) throws IOException;
+    LabelScanReader newReader();
+
+    /**
+     * Acquire a writer for updating the store.
+     */
+    LabelScanWriter newWriter();
 
     /**
      * Recover updates the store with a stream of updates of label->node mappings. Done during the recovery
@@ -60,14 +66,6 @@ public interface LabelScanStore extends Lifecycle
      * @throws UnderlyingStorageException if there was a problem forcing the state to persistent storage.
      */
     void force() throws UnderlyingStorageException;
-
-    /**
-     * From the point a {@link LabelScanReader} is created till it's {@link LabelScanReader#close() closed} the contents it
-     * returns cannot change, i.e. it honors repeatable reads.
-     *
-     * @return a {@link LabelScanReader} capable of retrieving nodes for labels.
-     */
-    LabelScanReader newReader();
 
     AllEntriesLabelScanReader newAllEntriesReader();
 

@@ -54,7 +54,7 @@ public enum BitmapDocumentFormat
         }
     };
 
-    static final String RANGE = "range", LABEL = "label";
+    public static final String RANGE = "range", LABEL = "label";
     private final BitmapFormat format;
 
     private BitmapDocumentFormat( BitmapFormat format )

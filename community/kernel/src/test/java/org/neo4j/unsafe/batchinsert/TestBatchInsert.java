@@ -1172,12 +1172,6 @@ public class TestBatchInsert
     {
         private final List<NodeLabelUpdate> allUpdates = new ArrayList<>();
 
-        @Override
-        public void updateAndCommit( Iterator<NodeLabelUpdate> updates ) throws IOException
-        {
-            addToCollection( updates, allUpdates );
-        }
-
         public void assertRecivedUpdate( long node, long... labels )
         {
             for ( NodeLabelUpdate update : allUpdates )
@@ -1239,6 +1233,23 @@ public class TestBatchInsert
         @Override
         public void shutdown() throws IOException
         {
+        }
+
+        @Override public LabelScanWriter newWriter()
+        {
+            return new LabelScanWriter()
+            {
+                @Override
+                public void write( NodeLabelUpdate update ) throws IOException
+                {
+                    addToCollection( Collections.singletonList( update ).iterator(), allUpdates );
+                }
+
+                @Override
+                public void close() throws IOException
+                {
+                }
+            };
         }
     }
 

@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdateNodeIdComparator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -90,6 +91,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
@@ -805,7 +807,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
 
             // property change set for index updates
-            Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdates();
+            Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
             if ( !labelUpdates.isEmpty() )
             {
                 updateLabelScanStore( labelUpdates );
@@ -867,7 +869,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private Collection<NodeLabelUpdate> gatherLabelUpdates()
+    private Collection<NodeLabelUpdate> gatherLabelUpdatesSortedByNodeId()
     {
         List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
         for ( NodeCommand nodeCommand : nodeCommands.values() )
@@ -887,14 +889,20 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
             labelUpdates.add( NodeLabelUpdate.labelChanges( nodeCommand.getKey(), labelsBefore, labelsAfter ) );
         }
+
+        Collections.sort(labelUpdates, new NodeLabelUpdateNodeIdComparator());
+
         return labelUpdates;
     }
 
     private void updateLabelScanStore( Iterable<NodeLabelUpdate> labelUpdates )
     {
-        try
+        try ( LabelScanWriter writer = labelScanStore.newWriter() )
         {
-            labelScanStore.updateAndCommit( labelUpdates.iterator() );
+            for ( NodeLabelUpdate update : labelUpdates )
+            {
+                writer.write( update );
+            }
         }
         catch ( IOException e )
         {

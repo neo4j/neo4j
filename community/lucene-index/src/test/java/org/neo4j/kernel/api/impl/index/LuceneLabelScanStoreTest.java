@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -45,14 +48,17 @@ import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+
+import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -62,6 +68,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -84,7 +91,7 @@ public class LuceneLabelScanStoreTest
         start();
 
         // WHEN
-        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
+        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId} ) ) );
 
         // THEN
         assertNodesForLabel( labelId, nodeId );
@@ -97,11 +104,11 @@ public class LuceneLabelScanStoreTest
         int labelId1 = 1, labelId2 = 2;
         long nodeId = 10;
         start();
-        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1} ) ) );
+        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1} ) ) );
         assertNodesForLabel( labelId2 );
 
         // WHEN
-        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
+        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
 
         // THEN
         assertNodesForLabel( labelId1, nodeId );
@@ -115,12 +122,12 @@ public class LuceneLabelScanStoreTest
         int labelId1 = 1, labelId2 = 2;
         long nodeId = 10;
         start();
-        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId1, labelId2} ) ) );
+        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
         assertNodesForLabel( labelId1, nodeId );
         assertNodesForLabel( labelId2, nodeId );
 
         // WHEN
-        store.updateAndCommit( iterator( labelChanges( nodeId, new long[] {labelId1, labelId2}, new long[] {labelId2} ) ) );
+        write( iterator( labelChanges( nodeId, new long[]{labelId1, labelId2}, new long[]{labelId2} ) ) );
 
         // THEN
         assertNodesForLabel( labelId1 );
@@ -134,10 +141,10 @@ public class LuceneLabelScanStoreTest
         int labelId = 1;
         long nodeId = 10;
         start();
-        store.updateAndCommit( iterator( labelChanges( nodeId, NO_LABELS, new long[] {labelId} ) ) );
+        write( iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId} ) ) );
 
         // WHEN
-        store.updateAndCommit( iterator( labelChanges( nodeId, new long[] {labelId}, NO_LABELS ) ) );
+        write( iterator( labelChanges( nodeId, new long[]{labelId}, NO_LABELS ) ) );
 
         // THEN
         assertNodesForLabel( labelId );
@@ -192,6 +199,69 @@ public class LuceneLabelScanStoreTest
         assertArrayEquals( new long[] { labelId1, labelId2 }, sorted( range2.labels( nodeId2 ) ) );
     }
 
+    @Test
+    public void shouldWorkWithAFullRange() throws Exception
+    {
+        // given
+        long labelId = 0;
+        List<NodeLabelUpdate> updates = new ArrayList<>(  );
+        for ( int i = 0; i < 34; i++)
+        {
+            updates.add( NodeLabelUpdate.labelChanges(i, new long[] {}, new long[]{labelId}));
+        }
+
+        start(updates);
+
+        // when
+        LabelScanReader reader = store.newReader();
+        Set<Long> nodesWithLabel = asSet( reader.nodesWithLabel( (int) labelId ) );
+
+        // then
+        for ( long i = 0; i < 34; i++ )
+        {
+            assertThat( nodesWithLabel, hasItem( i ) );
+            Set<Long> labels = asSet( reader.labelsForNode( i ) );
+            assertThat( labels, hasItem( labelId ) );
+        }
+    }
+
+    @Test
+    public void shouldUpdateAFullRange() throws Exception
+    {
+        // given
+        long label0Id = 0;
+        List<NodeLabelUpdate> label0Updates = new ArrayList<>(  );
+        for ( int i = 0; i < 34; i++)
+        {
+            label0Updates.add( NodeLabelUpdate.labelChanges( i, new long[]{}, new long[]{label0Id} ) );
+        }
+
+        start(label0Updates);
+
+        // when
+        write( Collections.<NodeLabelUpdate>emptyIterator() );
+
+        // then
+        LabelScanReader reader = store.newReader();
+        Set<Long> nodesWithLabel0 = asSet( reader.nodesWithLabel( (int) label0Id ) );
+        for ( long i = 0; i < 34; i++ )
+        {
+            assertThat( nodesWithLabel0, hasItem( i ) );
+            Set<Long> labels = asSet( reader.labelsForNode( i ) );
+            assertThat( labels, hasItem( label0Id ) );
+        }
+    }
+    private void write( Iterator<NodeLabelUpdate> iterator ) throws IOException
+    {
+        try ( LabelScanWriter writer = store.newWriter() )
+        {
+            while ( iterator.hasNext() )
+            {
+                writer.write( iterator.next() );
+            }
+        }
+    }
+
     private long[] sorted( long[] input )
     {
         Arrays.sort( input );
@@ -205,7 +275,7 @@ public class LuceneLabelScanStoreTest
         start( asList(
                 labelChanges( 1, NO_LABELS, new long[] {1} ),
                 labelChanges( 2, NO_LABELS, new long[] {1, 2} )
-                ) );
+        ) );
 
         // THEN
         assertTrue( "Didn't rebuild the store on startup",
@@ -237,8 +307,8 @@ public class LuceneLabelScanStoreTest
             assertThat(e.getCause(), instanceOf( IOException.class ));
             assertThat(e.getCause().getMessage(), equalTo(
                     "Label scan store is corrupted, and needs to be rebuilt. To trigger a rebuild, ensure the " +
-                    "database is stopped, delete the files in '"+dir.getAbsolutePath()+"', and then start the " +
-                    "database again." ));
+                            "database is stopped, delete the files in '"+dir.getAbsolutePath()+"', and then start the " +
+                            "database again." ));
         }
     }
 
@@ -250,14 +320,14 @@ public class LuceneLabelScanStoreTest
         // 32 is the number of nodes in each lucene document
         final int labelId = 1, nodeCount = 32*16 + 10;
         start();
-        store.updateAndCommit( new PrefetchingIterator<NodeLabelUpdate>()
+        write( new PrefetchingIterator<NodeLabelUpdate>()
         {
             private int i = -1;
 
             @Override
             protected NodeLabelUpdate fetchNextOrNull()
             {
-                return ++i < nodeCount ? labelChanges( i, NO_LABELS, new long[] {labelId} ) : null;
+                return ++i < nodeCount ? labelChanges( i, NO_LABELS, new long[]{labelId} ) : null;
             }
         } );
 
@@ -285,8 +355,8 @@ public class LuceneLabelScanStoreTest
         start();
 
         int nodeId = 42;
-        store.updateAndCommit( IteratorUtil.iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
-        store.updateAndCommit( IteratorUtil.iterator( labelChanges( 41, NO_LABELS, new long[]{labelId3, labelId2} ) ) );
+        write( IteratorUtil.iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
+        write( IteratorUtil.iterator( labelChanges( 41, NO_LABELS, new long[]{labelId3, labelId2} ) ) );
 
         // WHEN
         LabelScanReader reader = store.newReader();
