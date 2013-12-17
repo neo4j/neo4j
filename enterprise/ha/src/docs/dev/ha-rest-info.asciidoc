@@ -11,25 +11,34 @@ In this section, we'll deal with this REST endpoint and explain its semantics.
 
 == The endpoints ==
 
-Each HA instance comes with 2 endpoints regarding its HA status.
+Each HA instance comes with 3 endpoints regarding its HA status.
 They are complimentary but each may be used depending on your load balancing needs and your production setup.
 Those are:
 
 * +/db/manage/server/ha/master+
 * +/db/manage/server/ha/slave+
+* +/db/manage/server/ha/available+
 
-To use them, perform an HTTP GET operation on either and the following will be returned:
+The +/master+ and +/slave+ endpoints can be used to direct write and non-write traffic respectively to specific
+instances. This is the optimal way to take advantage of Neo4j's scaling characteristics. The +/available+ endpoint
+exists for the general case of directing arbitrary request types to instances that are available for transaction
+processing.
+
+To use the endpoints, perform an HTTP GET operation on either and the following will be returned:
 
 .HA REST endpoint responses
 [options="header", cols="2m,<1,<2m,<2m"]
 |========================================================================================
-| Endpoint                           | Instance State  | Returned Code  | Body text
-1.3+^.^| /db/manage/server/ha/master | Master          | 200 OK         | true
-                                     | Slave           | 404 Not Found  | false
-                                     | Unknown         | 404 Not Found  | UNKNOWN
-1.3+^.^| /db/manage/server/ha/slave  | Master          | 404 Not Found  | false
-                                     | Slave           | 200 OK         | true
-                                     | Unknown         | 404 Not Found  | UNKNOWN
+| Endpoint                              | Instance State  | Returned Code  | Body text
+1.3+^.^| /db/manage/server/ha/master    | Master          | 200 OK         | true
+                                        | Slave           | 404 Not Found  | false
+                                        | Unknown         | 404 Not Found  | UNKNOWN
+1.3+^.^| /db/manage/server/ha/slave     | Master          | 404 Not Found  | false
+                                        | Slave           | 200 OK         | true
+                                        | Unknown         | 404 Not Found  | UNKNOWN
+1.3+^.^| /db/manage/server/ha/available | Master          | 200 OK         | master
+                                        | Slave           | 200 OK         | slave
+                                        | Unknown         | 404 Not Found  | UNKNOWN
 |========================================================================================
 
 
