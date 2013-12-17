@@ -49,6 +49,9 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
   // that individual tests don't need to worry about that.
   def execute(q: String, params: (String, Any)*): ExecutionResult =
     new EagerExecutionResult(engine.execute(q, params.toMap))
+  
+  def profile(q: String, params: (String, Any)*): ExecutionResult =
+    new EagerExecutionResult(engine.profile(q, params.toMap))
 
   def executeLazy(q: String, params: (String, Any)*): ExecutionResult =
     engine.execute(q, params.toMap)
