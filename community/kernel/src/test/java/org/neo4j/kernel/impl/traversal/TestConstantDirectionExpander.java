@@ -22,51 +22,57 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
-public class TestConstantDirectionExpander extends TraversalTestBase {
-    private static enum Types implements RelationshipType {
+public class TestConstantDirectionExpander extends TraversalTestBase
+{
+    private static enum Types implements RelationshipType
+    {
         A, B
     }
 
     private Transaction tx;
 
     @Before
-    public void createGraph() {
+    public void createGraph()
+    {
         /*
          *   (l)--[A]-->(m)--[A]-->(n)<--[A]--(o)<--[B]--(p)<--[B]--(q)
          */
-        createGraph("l A m", "m A n", "o A n", "p B o", "q B p");
+        createGraph( "l A m", "m A n", "o A n", "p B o", "q B p" );
         tx = beginTx();
     }
 
     @After
-    public void tearDown() {
+    public void tearDown()
+    {
         tx.close();
     }
 
     @Test
-    public void pathWithConstantDirection() {
-        Node l = getNodeWithName("l");
-        expectPaths(getGraphDb().traversalDescription()
+    public void pathWithConstantDirection()
+    {
+        Node l = getNodeWithName( "l" );
+        expectPaths( getGraphDb().traversalDescription()
                 .expand(
-                        PathExpanders.forConstantDirectionWithTypes(Types.A))
-                .traverse(l), "l", "l,m", "l,m,n");
+                        PathExpanders.forConstantDirectionWithTypes( Types.A ) )
+                .traverse( l ), "l", "l,m", "l,m,n" );
 
-        Node n = getNodeWithName("n");
-        expectPaths(getGraphDb().traversalDescription()
+        Node n = getNodeWithName( "n" );
+        expectPaths( getGraphDb().traversalDescription()
                 .expand(
-                        PathExpanders.forConstantDirectionWithTypes(Types.A))
-                .traverse(n), "n", "n,m", "n,m,l", "n,o");
+                        PathExpanders.forConstantDirectionWithTypes( Types.A ) )
+                .traverse( n ), "n", "n,m", "n,m,l", "n,o" );
 
-        Node q = getNodeWithName("q");
-        expectPaths(getGraphDb().traversalDescription()
+        Node q = getNodeWithName( "q" );
+        expectPaths( getGraphDb().traversalDescription()
                 .expand(
-                        PathExpanders.forConstantDirectionWithTypes(Types.B))
-                .traverse(q), "q", "q,p", "q,p,o");
+                        PathExpanders.forConstantDirectionWithTypes( Types.B ) )
+                .traverse( q ), "q", "q,p", "q,p,o" );
 
     }
 }
