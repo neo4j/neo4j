@@ -45,8 +45,6 @@ public class StartupTimeoutFunctionalTest
     @After
     public void stopServer()
     {
-        System.out.println( "shutdown" );
-
         if ( server != null )
         {
             server.stop();
