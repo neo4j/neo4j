@@ -93,7 +93,7 @@ public enum ProposerState
 
                                 instance.phase1Timeout( ballot );
                                 context.getLogger( ProposerState.class ).debug(
-                                        "Reproposing instance " + instanceId + " at ballot " + instance.ballot
+                                        "Reproposing instance " + instance + " at ballot " + instance.ballot
                                                 + " after rejectPrepare" );
                                 for ( URI acceptor : instance.getAcceptors() )
                                 {
@@ -101,9 +101,13 @@ public enum ProposerState
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                             InstanceId.INSTANCE ) );
                                 }
+                                
+                                assert instance.value_1 == null : "value_1 should have been null at this point";
+                                Object payload = context.getBookedInstance( instanceId ).getPayload();
+                                assert payload != null : "Should have a booked instance payload for " + instanceId;
                                 // This will reset the phase1Timeout if existing
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage.phase1Timeout, message, instance.value_1 ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, payload ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
