@@ -20,6 +20,7 @@
 package org.neo4j.server.enterprise;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,7 +29,6 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -38,120 +38,126 @@ import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.test.TargetDirectory;
 
-@Ignore
-public class StartupTimeoutFunctionalTest {
-
+public class StartupTimeoutFunctionalTest
+{
     public EnterpriseNeoServer server;
 
-    TargetDirectory target = TargetDirectory.forTest( StartupTimeoutFunctionalTest.class );
-    
     @After
     public void stopServer()
     {
-    	if(server != null)
-    	{
-    		server.stop();
-    		server = null;
-    	}
+        System.out.println( "shutdown" );
+
+        if ( server != null )
+        {
+            server.stop();
+            server = null;
+        }
     }
-    
-	@Test
-	public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException 
-	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 1);
-		server = createSlowServer(configurator);
-		
-		try {
-			server.start();
-			fail("Should have been interrupted.");
-		} catch(ServerStartupException e) {
-			// ok!
-		}
-		
-	}
-    
-	@Test
-	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException 
-	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 5);
-		server = new EnterpriseNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				return Arrays.asList();
-			}
-		};
-		
-		try {
-			server.start();
-			Thread.sleep(1000 * 6);
-		} catch(ServerStartupException e) {
-			fail("Should not have been interupted.");
-		} catch (InterruptedException e) {
-			fail("Should not have been interupted.");
-		}
-	}
-    
-	@Test
-	public void shouldNotTimeOutIfTimeoutDisabled() throws IOException 
-	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.STARTUP_TIMEOUT, 0);
-		server = createSlowServer(configurator);
-		
-		try {
-			server.start();
-		} catch(ServerStartupException e) {
-			fail("Should not have been interupted.");
-		}
-	}
-    
-	@Test
-	public void shouldNotTimeOutIfNoTimeoutSpecifiedAndIsHAMode() throws IOException 
-	{
-		Configurator configurator = buildProperties();
-		configurator.configuration().setProperty(Configurator.DB_MODE_KEY, "ha");
 
-		server = createSlowServer(configurator);
-		
-		try {
-			server.start();
-		} catch(ServerStartupException e) {
-			fail("Should not have been interupted.");
-		}
-	}
-
-	private EnterpriseNeoServer createSlowServer(Configurator configurator) {
-		EnterpriseNeoServer server = new EnterpriseNeoServer(configurator){
-			@Override
-			protected Iterable<ServerModule> createServerModules(){
-				ServerModule slowModule = new ServerModule() {
-					@Override
-					public void start(StringLogger logger) {
-						try {
-							Thread.sleep(1000 * 5);
-						} catch (InterruptedException e) {
-							throw new RuntimeException(e);
-						}
-					}
-
-					@Override
-					public void stop() { }
-        		};
-				return Arrays.asList(slowModule);
-			}
-		};
-		return server;
-	}
-	
-	private Configurator buildProperties() throws IOException
+    @Test
+    public void shouldTimeoutIfStartupTakesLongerThanTimeout() throws IOException
     {
+        Configurator configurator = buildProperties();
+        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 1 );
+        server = createSlowServer( configurator );
+
+        try
+        {
+            server.start();
+            fail( "Should have been interrupted." );
+        }
+        catch ( ServerStartupException e )
+        {
+            // ok!
+        }
+
+    }
+
+    @Test
+    public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
+    {
+        Configurator configurator = buildProperties();
+        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 10 );
+        server = new EnterpriseNeoServer( configurator )
+        {
+            @Override
+            protected Iterable<ServerModule> createServerModules()
+            {
+                return Arrays.asList();
+            }
+        };
+
+        try
+        {
+            server.start();
+        }
+        catch ( ServerStartupException e )
+        {
+            fail( "Should not have been interrupted." );
+        }
+    }
+
+    @Test
+    public void shouldNotTimeOutIfTimeoutDisabled() throws IOException
+    {
+        Configurator configurator = buildProperties();
+        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 0 );
+        server = createSlowServer( configurator );
+
+        try
+        {
+            server.start();
+        }
+        catch ( ServerStartupException e )
+        {
+            fail( "Should not have been interrupted." );
+        }
+    }
+
+    private EnterpriseNeoServer createSlowServer( Configurator configurator )
+    {
+        EnterpriseNeoServer server = new EnterpriseNeoServer( configurator )
+        {
+            @Override
+            protected Iterable<ServerModule> createServerModules()
+            {
+                ServerModule slowModule = new ServerModule()
+                {
+                    @Override
+                    public void start( StringLogger logger )
+                    {
+                        try
+                        {
+                            Thread.sleep( 1000 * 5 );
+                        }
+                        catch ( InterruptedException e )
+                        {
+                            throw new RuntimeException( e );
+                        }
+                    }
+
+                    @Override
+                    public void stop()
+                    {
+                    }
+                };
+                return Arrays.asList( slowModule );
+            }
+        };
+        return server;
+    }
+
+    private Configurator buildProperties() throws IOException
+    {
+        TargetDirectory target = forTest( StartupTimeoutFunctionalTest.class );
+        target.cleanup();
+
         target.directory( "conf" );
 
         Properties databaseProperties = new Properties();
         String databasePropertiesFileName = target.file( "conf/neo4j.properties" ).getAbsolutePath();
-        databaseProperties.setProperty( ClusterSettings.server_id.name(), "1");
+        databaseProperties.setProperty( ClusterSettings.server_id.name(), "1" );
+        databaseProperties.setProperty( ClusterSettings.initial_hosts.name(), ":5001,:5002,:5003" );
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
@@ -160,8 +166,8 @@ public class StartupTimeoutFunctionalTest {
                 target.directory( "data/graph.db", true ).getAbsolutePath() );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
-        serverProperties.store( new FileWriter(serverPropertiesFilename), null);
-        	
-        return new PropertyFileConfigurator(new File(serverPropertiesFilename));
+        serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
+
+        return new PropertyFileConfigurator( new File( serverPropertiesFilename ) );
     }
 }

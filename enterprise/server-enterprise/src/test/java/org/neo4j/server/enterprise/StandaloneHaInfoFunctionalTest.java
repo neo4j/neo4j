@@ -19,61 +19,84 @@
  */
 package org.neo4j.server.enterprise;
 
+import static org.apache.http.HttpStatus.SC_FORBIDDEN;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.webadmin.rest.MasterInfoService.BASE_PATH;
+import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_MASTER_PATH;
+import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_SLAVE_PATH;
+import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersistentServer;
 
+import java.io.IOException;
 import java.util.Map;
 
-import org.apache.http.HttpStatus;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.webadmin.rest.MasterInfoService;
-import org.neo4j.test.server.ha.AbstractEnterpriseRestFunctionalTestBase;
 
-@Ignore
-public class StandaloneHaInfoFunctionalTest extends AbstractEnterpriseRestFunctionalTestBase
+public class StandaloneHaInfoFunctionalTest
 {
+    private static EnterpriseNeoServer server;
+
+    @Before
+    public void before() throws IOException
+    {
+        server = createNonPersistentServer();
+    }
+
+    @After
+    public void after()
+    {
+        if ( server != null )
+        {
+            server.stop();
+        }
+    }
+
     @Test
     public void testHaDiscoveryOnStandaloneReturns403() throws Exception
     {
-        FunctionalTestHelper helper = new FunctionalTestHelper( server() );
+        FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = RestRequest.req().get( helper.managementUri() + MasterInfoService.BASE_PATH );
-        assertEquals( HttpStatus.SC_FORBIDDEN, response.getStatus() );
+        JaxRsResponse response = RestRequest.req().get( getBasePath( helper ) );
+        assertEquals( SC_FORBIDDEN, response.getStatus() );
+    }
+
+    private String getBasePath( FunctionalTestHelper helper )
+    {
+        return helper.managementUri() + "/" + BASE_PATH;
     }
 
     @Test
     public void testIsMasterOnStandaloneReturns403() throws Exception
     {
-        FunctionalTestHelper helper = new FunctionalTestHelper( server() );
+        FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = RestRequest.req().get(helper.managementUri() +
-                MasterInfoService.BASE_PATH + MasterInfoService.IS_MASTER_PATH);
-        assertEquals( HttpStatus.SC_FORBIDDEN, response.getStatus() );
+        JaxRsResponse response = RestRequest.req().get( getBasePath( helper ) + IS_MASTER_PATH );
+        assertEquals( SC_FORBIDDEN, response.getStatus() );
     }
 
     @Test
     public void testIsSlaveOnStandaloneReturns403() throws Exception
     {
-        FunctionalTestHelper helper = new FunctionalTestHelper( server() );
+        FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = RestRequest.req().get(helper.managementUri() +
-                MasterInfoService.BASE_PATH + MasterInfoService.IS_SLAVE_PATH );
-        assertEquals( HttpStatus.SC_FORBIDDEN, response.getStatus() );
+        JaxRsResponse response = RestRequest.req().get( getBasePath( helper ) + IS_SLAVE_PATH );
+        assertEquals( SC_FORBIDDEN, response.getStatus() );
     }
 
     @Test
     public void testDiscoveryListingOnStandaloneDoesNotContainHA() throws Exception
     {
-        FunctionalTestHelper helper = new FunctionalTestHelper( server() );
+        FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
         JaxRsResponse response = RestRequest.req().get( helper.managementUri() );
 
         Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity() );
 
-        assertEquals( 3, ((Map) map.get( "services" )).size());
+        assertEquals( 3, ((Map) map.get( "services" )).size() );
     }
 }
