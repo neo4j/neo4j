@@ -344,7 +344,7 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
 
 case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
   override def declareIdentifiers(ctx: SemanticContext) = ((ctx match {
-    case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(NodeType())
+    case SemanticContext.Expression => identifier.ensureDefined() then identifier.expectType(NodeType())
     case _                          => identifier.implicitDeclaration(NodeType())
   }): SemanticCheck) then super.declareIdentifiers(ctx)
 
@@ -467,7 +467,7 @@ case class NamedRelationshipPattern(
 
     ((ctx match {
       case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
-      case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(possibleType)
+      case SemanticContext.Expression => identifier.ensureDefined() then identifier.expectType(possibleType)
       case _                          => identifier.declare(possibleType)
     }): SemanticCheck) then super.declareIdentifiers(ctx)
   }

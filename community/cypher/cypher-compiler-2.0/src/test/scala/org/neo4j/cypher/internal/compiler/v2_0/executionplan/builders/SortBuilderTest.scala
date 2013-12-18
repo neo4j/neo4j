@@ -47,7 +47,7 @@ class SortBuilderTest extends BuilderTest {
     val resultQ = assertAccepts(p, q).query
 
     resultQ.sort match {
-      case List(Solved(SortItem(CachedExpression(_, AnyType()), true))) => //correct, don't check anything else
+      case List(Solved(SortItem(CachedExpression(_, _: AnyType), true))) => //correct, don't check anything else
       case _                                                            => assert(resultQ.sort === expected)
     }
   }

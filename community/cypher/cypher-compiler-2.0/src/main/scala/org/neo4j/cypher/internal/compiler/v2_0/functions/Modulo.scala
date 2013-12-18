@@ -28,7 +28,7 @@ case object Modulo extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.arguments.constrainType(NumberType()) then
+    invocation.arguments.expectType(NumberType()) then
     invocation.specifyType(NumberType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {

@@ -38,9 +38,9 @@ object Expression {
       option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
 
     def constrainType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
-      constrainType((possibleType +: possibleTypes).toSet)
+      constrainType(TypeSet(possibleType +: possibleTypes))
     def constrainType(possibleTypes: => TypeSet) : SemanticCheck =
-      option.fold(SemanticCheckResult.success) { _.constrainType(possibleTypes) }
+      option.fold(SemanticCheckResult.success) { _.expectType(possibleTypes) }
   }
 
   implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
@@ -52,9 +52,9 @@ object Expression {
     def mergeDownTypes : TypeGenerator =
       (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
 
-    def constrainType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
+    def expectType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
       traversable.foldLeft(SemanticCheckResult.success) {
-        (f, e) => f then e.constrainType(possibleType, possibleTypes:_*)
+        (f, e) => f then e.expectType(possibleType, possibleTypes:_*)
       }
   }
 }
@@ -64,20 +64,29 @@ import Expression._
 abstract class Expression extends AstNode with SemanticChecking {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
-  // double-dispatch helpers
-  final def types: TypeGenerator = s => s.expressionTypes(this)
-  final def specifyType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
-    specifyType((possibleType +: possibleTypes).toSet)
-  final def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
-    s => s.specifyType(this, typeGen(s))
-  final def specifyType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
+  def types: TypeGenerator = s => s.expressionType(this).actual
+
+  def specifyType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
+    specifyType(TypeSet(possibleType +: possibleTypes))
+  def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
+    s => specifyType(typeGen(s))(s)
+  def specifyType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
     _.specifyType(this, possibleTypes)
-  final def constrainType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => Either[SemanticError, SemanticState] =
-    constrainType((possibleType +: possibleTypes).toSet)
-  final def constrainType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
-    s => s.constrainType(this, token, typeGen(s))
-  final def constrainType(possibleTypes: => TypeSet): SemanticState => Either[SemanticError, SemanticState] =
-    _.constrainType(this, token, possibleTypes)
+
+  def expectType(possibleType: CypherType, possibleTypes: CypherType*): SemanticState => SemanticCheckResult =
+    expectType(TypeSet(possibleType +: possibleTypes))
+  def expectType(typeGen: TypeGenerator): SemanticState => SemanticCheckResult =
+    s => expectType(typeGen(s))(s)
+  def expectType(possibleTypes: => TypeSet): SemanticState => SemanticCheckResult = s => {
+    s.expectType(this, possibleTypes) match {
+      case (ss, TypeSet.empty) =>
+        val existingTypesString = ss.expressionType(this).specified.mkString(", ", " or ")
+        val expectedTypesString = possibleTypes.mkString(", ", " or ")
+        SemanticCheckResult.error(ss, SemanticError(s"Type mismatch: expected $expectedTypesString but was $existingTypesString", this.token))
+      case (ss, _)             =>
+        SemanticCheckResult.success(ss)
+    }
+  }
 
   def toCommand: CommandExpression
   def toPredicate: CommandPredicate = CoercedPredicate(toCommand)
@@ -89,7 +98,7 @@ trait SimpleTypedExpression { self: Expression =>
 }
 
 trait PredicateExpression extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType())
+  protected def possibleTypes = TypeSet(BooleanType())
   def toCommand: CommandExpression = internalToPredicate
   override def toPredicate : CommandPredicate = internalToPredicate
 
@@ -104,28 +113,28 @@ case class Identifier(name: String, token: InputToken) extends Expression {
   }
 
   // double-dispatch helpers
-  final def declare(possibleTypes: TypeSet) =
+  def declare(possibleTypes: TypeSet) =
       (_: SemanticState).declareIdentifier(this, possibleTypes)
-  final def declare(possibleType: CypherType, possibleTypes: CypherType*) =
+  def declare(possibleType: CypherType, possibleTypes: CypherType*) =
       (_: SemanticState).declareIdentifier(this, possibleType, possibleTypes:_*)
-  final def declare(typeGen: SemanticState => TypeSet) =
+  def declare(typeGen: SemanticState => TypeSet) =
       (s: SemanticState) => s.declareIdentifier(this, typeGen(s))
-  final def implicitDeclaration(possibleType: CypherType, possibleTypes: CypherType*) =
+  def implicitDeclaration(possibleType: CypherType, possibleTypes: CypherType*) =
       (_: SemanticState).implicitIdentifier(this, possibleType, possibleTypes:_*)
-  final def ensureDefined() =
+  def ensureDefined() =
       (_: SemanticState).ensureIdentifierDefined(this)
 
   def toCommand = commands.expressions.Identifier(name)
 }
 
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(BooleanType(), MapType(), NumberType(), StringType(), CollectionType(AnyType()))
+  protected def possibleTypes = TypeSet.all
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }
 
 case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(AnyType())
+  protected def possibleTypes = TypeSet.all
 
   def toCommand = commandexpressions.Literal(null)
 }
@@ -139,7 +148,7 @@ case class False(token: InputToken) extends Expression with PredicateExpression 
 }
 
 case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(LongType())
+  protected def possibleTypes = TypeSet(LongType())
 
   def toCommand = commandexpressions.CountStar()
 }
@@ -147,11 +156,11 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken)
   extends Expression with SimpleTypedExpression {
 
-  protected def possibleTypes = Set(BooleanType(), NumberType(), StringType(), CollectionType(AnyType()))
+  protected def possibleTypes = TypeSet.all
 
   override def semanticCheck(ctx: SemanticContext) =
     map.semanticCheck(ctx) then
-    map.constrainType(MapType()) then
+    map.expectType(MapType()) then
     super.semanticCheck(ctx)
 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
@@ -173,7 +182,7 @@ object LegacyProperty {
 
 case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTypedExpression {
   def token = pattern.token
-  protected def possibleTypes = Set(CollectionType(PathType()), BooleanType())
+  protected def possibleTypes = TypeSet(CollectionType(PathType()), BooleanType())
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.semanticCheck(Pattern.SemanticContext.Expression) then
@@ -187,7 +196,7 @@ case class PatternExpression(pattern: RelationshipsPattern) extends Expression w
 case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with PredicateExpression {
   override def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
-      expression.constrainType(NodeType()) then
+      expression.expectType(NodeType()) then
       super.semanticCheck(ctx)
 
   private def toPredicate(l: Identifier): commands.Predicate =
@@ -199,16 +208,16 @@ case class HasLabels(expression: Expression, labels: Seq[Identifier], token: Inp
 case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
-  private def possibleTypes: SemanticState => TypeSet = state => expressions match {
-    case Seq() => Set(CollectionType(AnyType()))
-    case _     => expressions.mergeDownTypes(state).map(CollectionType.apply)
+  private def possibleTypes: TypeGenerator = state => expressions match {
+    case Seq() => TypeSet(CollectionType(AnyType()))
+    case _     => expressions.mergeDownTypes(state).reparent(CollectionType(_))
   }
 
   def toCommand = commandexpressions.Collection(expressions.map(_.toCommand):_*)
 }
 
 case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = Set(MapType())
+  protected def possibleTypes = TypeSet(MapType())
 
   override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) then super.semanticCheck(ctx)
 
@@ -226,7 +235,7 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
 
   override def semanticCheck(ctx: SemanticContext) =
     collection.semanticCheck(ctx) then
-      collection.constrainType(CollectionType(AnyType())) then
+      collection.expectType(CollectionType(AnyType())) then
       when(from.isEmpty && to.isEmpty) {
         SemanticError("The start or end (or both) is required for a collection slice", token)
       } then
@@ -244,10 +253,10 @@ case class CollectionIndex(collection: Expression, idx: Expression, token: Input
 
   override def semanticCheck(ctx: SemanticContext) =
     collection.semanticCheck(ctx) then
-      collection.constrainType(CollectionType(AnyType())) then
+      collection.expectType(CollectionType(AnyType())) then
       idx.semanticCheck(ctx) then
-      idx.constrainType(IntegerType(), LongType()) then
-      specifyType(collection.types(_).map(_.iteratedType))
+      idx.expectType(IntegerType(), LongType()) then
+      specifyType(collection.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType })
 
   def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)
 }

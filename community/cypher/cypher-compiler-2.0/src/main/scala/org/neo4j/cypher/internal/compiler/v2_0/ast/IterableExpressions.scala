@@ -33,7 +33,7 @@ trait FilteringExpression extends Expression {
 
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
-      expression.constrainType(CollectionType(AnyType())) then
+      expression.expectType(CollectionType(AnyType())) then
       checkInnerPredicate
 
   protected def checkPredicateDefined =
@@ -46,11 +46,13 @@ trait FilteringExpression extends Expression {
       SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
     }
 
+  protected def possibleInnerTypes : TypeGenerator =
+    expression.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
+
   private def checkInnerPredicate : SemanticCheck = {
     innerPredicate match {
       case Some(e) => withScopedState {
-        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+        identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
       }
       case None    => SemanticCheckResult.success
     }
@@ -110,10 +112,9 @@ case class ExtractExpression(
   private def checkInnerExpression : SemanticCheck =
     extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
-        val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-        identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+        identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
       } then {
-        val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+        val outerTypes : TypeGenerator = e.types(_).reparent(CollectionType(_))
         this.specifyType(outerTypes)
       }
     }
@@ -139,11 +140,11 @@ case class ListComprehension(
 
   private def checkInnerExpression : SemanticCheck = {
     extractExpression match {
-      case Some(e) => withScopedState {
-          val innerTypes : TypeGenerator = expression.types(_).map(_.iteratedType)
-          identifier.declare(innerTypes) then e.semanticCheck(SemanticContext.Simple)
+      case Some(e) =>
+        withScopedState {
+          identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
         } then {
-          val outerTypes : TypeGenerator = e.types(_).map(CollectionType(_))
+          val outerTypes : TypeGenerator = e.types(_).reparent(CollectionType(_))
           this.specifyType(outerTypes)
         }
       case None    => this.specifyType(expression.types)
@@ -211,14 +212,14 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) then
       collection.semanticCheck(ctx) then
-      collection.constrainType(CollectionType(AnyType())) then
+      collection.expectType(CollectionType(AnyType())) then
       withScopedState {
-        val indexType: TypeGenerator = collection.types(_).map(_.iteratedType)
+        val indexType: TypeGenerator = collection.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
         val accType: TypeGenerator = init.types
         id.declare(indexType) then
         accumulator.declare(accType) then
         expression.semanticCheck(SemanticContext.Simple)
-      } then expression.constrainType(init.types) then
+      } then expression.expectType(init.types) then
       this.specifyType(s => init.types(s) mergeDown expression.types(s))
 
   def toCommand: CommandExpression = commandexpressions.ReduceFunction(collection.toCommand, id.name, expression.toCommand, accumulator.name, init.toCommand)

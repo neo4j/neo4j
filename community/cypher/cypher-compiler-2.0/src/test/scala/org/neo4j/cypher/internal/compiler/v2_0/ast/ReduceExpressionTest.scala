@@ -37,7 +37,7 @@ class ReduceExpressionTest extends Assertions {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
         (this.specifyType(StringType()) then error)(s)
       }
 
@@ -67,7 +67,7 @@ class ReduceExpressionTest extends Assertions {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
         (this.specifyType(DoubleType()) then SemanticCheckResult.success)(s)
       }
 
@@ -84,7 +84,7 @@ class ReduceExpressionTest extends Assertions {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(filter.types(result.state) === TypeSet(NumberType()))
+    assert(filter.types(result.state) === TypeSet(AnyType(), NumberType()))
   }
 
   @Test
@@ -96,7 +96,7 @@ class ReduceExpressionTest extends Assertions {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.iteratedType))
+        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
         (this.specifyType(NodeType()) then SemanticCheckResult.success)(s)
       }
 
@@ -113,7 +113,7 @@ class ReduceExpressionTest extends Assertions {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Type mismatch: expected String or Number but was Node")
+    assert(result.errors.head.msg === "Type mismatch: expected Number or String but was Node")
     assert(result.errors.head.token === reduceExpression.token)
   }
 

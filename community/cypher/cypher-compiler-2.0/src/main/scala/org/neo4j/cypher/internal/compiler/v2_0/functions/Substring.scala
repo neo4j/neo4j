@@ -28,10 +28,10 @@ case object Substring extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 2) then checkMaxArgs(invocation, 3) then when(invocation.arguments.length >= 2) {
-      invocation.arguments(0).constrainType(StringType()) then
-        invocation.arguments(1).constrainType(LongType())
+      invocation.arguments(0).expectType(StringType()) then
+        invocation.arguments(1).expectType(LongType())
     } then when(invocation.arguments.length == 3) {
-      invocation.arguments(2).constrainType(LongType())
+      invocation.arguments(2).expectType(LongType())
     } then invocation.specifyType(StringType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {

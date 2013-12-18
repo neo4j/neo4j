@@ -2605,6 +2605,15 @@ RETURN x0.name""")
   }
 
   @Test
+  def should_be_able_to_coerce_literal_collections_to_predicates() {
+    val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
+
+    val foundNode = execute("match (n:LABEL) where [1,2,3] and n.bool return n").columnAs[Node]("n").next()
+
+    assert(foundNode === n)
+  }
+
+  @Test
   def query_should_work() {
     assert(executeScalar[Int]("WITH 1 AS x RETURN 1 + x") === 2)
   }

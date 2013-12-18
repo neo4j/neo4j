@@ -28,7 +28,7 @@ case object Subtract extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
-    invocation.arguments.constrainType(NumberType()) then
+    invocation.arguments.expectType(NumberType()) then
     invocation.specifyType(NumberType())
 
   def toCommand(invocation: ast.FunctionInvocation) = {

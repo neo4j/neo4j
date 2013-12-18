@@ -210,7 +210,7 @@ case class Delete(expressions: Seq[Expression], token: InputToken) extends Updat
   def semanticCheck =
     expressions.semanticCheck(Expression.SemanticContext.Simple) then
       warnAboutDeletingLabels then
-      expressions.constrainType(NodeType(), RelationshipType(), PathType())
+      expressions.expectType(NodeType(), RelationshipType(), PathType())
 
   def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
@@ -243,9 +243,9 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
 
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
-      expression.constrainType(CollectionType(AnyType())) then withScopedState {
-        val innerTypes: TypeGenerator = expression.types(_).map(_.iteratedType)
-        identifier.declare(innerTypes) then updates.semanticCheck
+      expression.expectType(CollectionType(AnyType())) then withScopedState {
+        val possibleInnerTypes: TypeGenerator = expression.types(_).constrain(CollectionType(AnyType())).reparent { case c: CollectionType => c.innerType }
+        identifier.declare(possibleInnerTypes) then updates.semanticCheck
       } then updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.token))
 
   def legacyUpdateActions = Seq(ForeachAction(expression.toCommand, identifier.name, updates.flatMap {
