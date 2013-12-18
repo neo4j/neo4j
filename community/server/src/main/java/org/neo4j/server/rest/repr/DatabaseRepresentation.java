@@ -43,6 +43,7 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
         serializer.putUri( "node_index", "index/node" );
         serializer.putUri( "relationship_index", "index/relationship" );
         serializer.putUri( "extensions_info", "ext" );
+        serializer.putUri( "node_labels", "labels" );
         serializer.putUri( "relationship_types", "relationship/types" );
         serializer.putUri( "batch", "batch" );
         serializer.putUri( "cypher", "cypher" );

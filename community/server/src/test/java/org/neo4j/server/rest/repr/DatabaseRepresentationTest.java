@@ -35,6 +35,21 @@ import static org.neo4j.test.mocking.Properties.properties;
 public class DatabaseRepresentationTest
 {
     @Test
+    public void shouldProvideUriForTheAvailableNodeLabels()
+    {
+        // given
+        Node refNode = node( 0, properties() );
+        GraphDatabaseService mockDb = mock( GraphDatabaseService.class );
+        DatabaseRepresentation representation = new DatabaseRepresentation( mockDb );
+
+        // when
+        Map<String, Object> map = RepresentationTestAccess.serialize( representation );
+
+        // then
+        assertTrue( map.containsKey( "node_labels" ) );
+    }
+
+    @Test
     public void shouldProvideUriForTheAvailableRelationshipTypes()
     {
         // given
