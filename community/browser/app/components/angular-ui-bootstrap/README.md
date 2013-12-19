@@ -67,15 +67,15 @@ This will start Karma server and will continously watch files in the project, ex
 
 ### Release
 * Bump up version number in `package.json`
-* Commit the version change with the following message: `chore(release): [versio number]`
+* Commit the version change with the following message: `chore(release): [version number]`
 * tag
 * push changes and a tag (`git push --tags`)
 * switch to the `gh-pages` branch: `git checkout gh-pages`
 * copy content of the dist folder to the main folder
-* Commit the version change with the following message: `chore(release): [versio number]`
+* Commit the version change with the following message: `chore(release): [version number]`
 * push changes
 * switch back to the `main branch` and modify `package.json` to bump up version for the next iteration
-* commit (`chore(release): starting [versio number]`) and push
+* commit (`chore(release): starting [version number]`) and push
 * publish Bower and NuGet packages
 
 Well done! (If you don't like repeating yourself open a PR with a grunt task taking care of the above!)

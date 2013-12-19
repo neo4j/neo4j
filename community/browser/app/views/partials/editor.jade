@@ -2,7 +2,7 @@
   .view-editor(ng-mousedown="focusEditor($event)", ng-controller = "EditorCtrl")
     span(ng-class="{'one-line': editorOneLine, 'disable-highlighting': disableHighlighting}")
       .prompt.code-style $
-      textarea('ui-codemirror'="{theme: 'neo', mode: 'cypher', autofocus: true, lineNumbers: true, lineWrapping: true, onChange: editorChanged, onFocus: editorChanged}",
+      textarea('ui-codemirror'="{theme: 'neo', mode: 'cypher', autofocus: true, lineNumbers: true, lineWrapping: true, onLoad: codemirrorLoaded}",
         ng-model='editor.content',
         placeholder='{{motd.tip}}'
         )
@@ -18,7 +18,7 @@
         a.balled.success('ng-click' = 'editor.execScript(editor.content)', ng-class="{active: editor.content}")
           i.icon-play
 
-    .message-bar.error(ng-show='editor.showMessage', ng-animate="{hide:'slide-down-out', show:'slide-down-in'}", ng-class="editor.errorCode")
+    .message-bar.error.slide-down(ng-if='editor.showMessage', ng-class="editor.errorCode")
       span(ng-bind-html-unsafe="editor.errorMessage")
       |  Type <code click-to-code="':help'">:help</code> for a list of available commands.
       .actions

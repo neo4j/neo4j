@@ -90,20 +90,22 @@ angular.module('ui.bootstrap.timepicker', [])
       // Respond on mousewheel spin
       var mousewheel = (angular.isDefined(attrs.mousewheel)) ? scope.$eval(attrs.mousewheel) : timepickerConfig.mousewheel;
       if ( mousewheel ) {
-
+        
         var isScrollingUp = function(e) {
           if (e.originalEvent) {
             e = e.originalEvent;
           }
-          return (e.detail || e.wheelDelta > 0);
+          //pick correct delta variable depending on event
+          var delta = (e.wheelDelta) ? e.wheelDelta : -e.deltaY;
+          return (e.detail || delta > 0);
         };
-
-        hoursInputEl.bind('mousewheel', function(e) {
+        
+        hoursInputEl.bind('mousewheel wheel', function(e) {
           scope.$apply( (isScrollingUp(e)) ? scope.incrementHours() : scope.decrementHours() );
           e.preventDefault();
         });
 
-        minutesInputEl.bind('mousewheel', function(e) {
+        minutesInputEl.bind('mousewheel wheel', function(e) {
           scope.$apply( (isScrollingUp(e)) ? scope.incrementMinutes() : scope.decrementMinutes() );
           e.preventDefault();
         });
@@ -190,10 +192,8 @@ angular.module('ui.bootstrap.timepicker', [])
 
       function addMinutes( minutes ) {
         var dt = new Date( selected.getTime() + minutes * 60000 );
-        if ( dt.getDate() !== selected.getDate()) {
-          dt.setDate( dt.getDate() - 1 );
-        }
-        selected.setTime( dt.getTime() );
+        selected.setHours( dt.getHours() );
+        selected.setMinutes( dt.getMinutes() );
         scope.model = new Date( selected );
       }
 

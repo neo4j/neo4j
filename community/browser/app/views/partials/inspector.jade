@@ -1,6 +1,6 @@
 inspector(show='isInspectorShown', ng-controller='InspectorCtrl', style="top: 60px; right: 24px")
   .header
-    span.preview(style='background-color: {{ style.color }};')
+    span.preview(ng-style='{"background-color": style.color }')
     {{item.type || item.labels.join(', ')}}&nbsp;
     span.muted [{{item.id}}]
     a.close.icon-remove(ng-click='toggleInspector()')
@@ -34,19 +34,19 @@ inspector(show='isInspectorShown', ng-controller='InspectorCtrl', style="top: 60
         li.node-sizes(ng-show='item.isNode')
           ul.inline
             li(ng-repeat='size in sizes')
-              a(style='width: {{size.diameter}}; height: {{size.diameter}}'
+              a(ng-style='{width: size.diameter, height: size.diameter}'
                 ng-class='{active: size.diameter == style.diameter}'
                 ng-click='selectSize(size)')
         li.arrow-widths(ng-show='item.isRelationship')
           ul.inline
             li(ng-repeat='arrowWidth in arrowWidths')
-              a(style='width: {{arrowWidth["shaft-width"]}}'
+              a(ng-style='{width: arrowWidth["shaft-width"]}'
                 ng-class='{active: arrowWidth["shaft-width"] == style["shaft-width"]}'
                 ng-click='selectArrowWidth(arrowWidth)')
         li.colors
           ul.inline
             li(ng-repeat='scheme in colors')
-              a(style='background-color: {{scheme.color}}'
+              a(ng-style='{"background-color": scheme.color}'
                 ng-class='{active: scheme.color == style.color && scheme["border-color"] == style["border-color"]}'
                 ng-click="selectScheme(scheme)")
         li

@@ -1,0 +1,12 @@
+<ul class="dropdown-menu" ng-style="{display: (isOpen && 'block') || 'none', top: position.top+'px', left: position.left+'px'}" class="dropdown-menu">
+	<li ng-transclude></li>
+	<li class="divider"></li>
+	<li style="padding: 9px;">
+		<span class="btn-group">
+			<button class="btn btn-small btn-inverse" ng-click="today()">Today</button>
+			<button class="btn btn-small btn-info" ng-click="showWeeks = ! showWeeks" ng-class="{active: showWeeks}">Weeks</button>
+			<button class="btn btn-small btn-danger" ng-click="clear()">Clear</button>
+		</span>
+		<button class="btn btn-small btn-success pull-right" ng-click="isOpen = false">Close</button>
+	</li>
+</ul>

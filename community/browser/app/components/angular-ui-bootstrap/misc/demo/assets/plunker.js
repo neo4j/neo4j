@@ -52,7 +52,7 @@ angular.module('plunker', [])
   .directive('plunkerContent', function () {
     return {
       link:function (scope, element, attrs) {
-        scope.$parent.content[attrs.plunkerContent] = element.text();
+        scope.content[attrs.plunkerContent] = element.text().trim();
       }
     }
   });
