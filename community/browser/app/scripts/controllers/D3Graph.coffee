@@ -230,6 +230,9 @@ angular.module('neo4jApp.controllers')
 
         nodeGroups.exit().remove();
 
+        # notify other graph observers
+        $rootScope.$broadcast 'graph:changed', graph
+
       @render = (g) ->
         graph = g
         return if graph.nodes().length is 0

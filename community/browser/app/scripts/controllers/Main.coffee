@@ -42,7 +42,7 @@ angular.module('neo4jApp.controllers')
           license =
             type: "GPLv3"
             url: "http://www.gnu.org/licenses/gpl.html"
-            edition: "Enterprise"
+            edition: "Enterprise" # TODO: determine edition via REST
             hasData: Server.hasData()
 
         $scope.$on 'db:changed:labels', refresh
@@ -64,6 +64,10 @@ angular.module('neo4jApp.controllers')
             for a in r.attributes
               $scope.kernel[a.name] = a.value
         )
+
+        $scope.$watch 'offline', (serverIsOffline) ->
+          if not serverIsOffline
+            refresh()
 
         # XXX: Temporary for now having to change all help files
         $scope.$watch 'server', (val) ->
