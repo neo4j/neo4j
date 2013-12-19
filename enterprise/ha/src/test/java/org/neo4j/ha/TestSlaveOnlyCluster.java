@@ -49,7 +49,7 @@ public class TestSlaveOnlyCluster
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster1", true ), MapUtil.stringMap(),
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                                                   3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
 
@@ -127,7 +127,7 @@ public class TestSlaveOnlyCluster
     public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster2", true ), MapUtil.stringMap(),
+                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
 
