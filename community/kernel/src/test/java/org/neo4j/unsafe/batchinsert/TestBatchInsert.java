@@ -1104,7 +1104,23 @@ public class TestBatchInsert
         labelScanStore.assertRecivedUpdate( node4, 0, 1 );
         labelScanStore.assertRecivedUpdate( node5, 0, 2 );
     }
-
+    
+    @Test
+    public void shouldSkipStoreScanIfNoLabelsAdded() throws Exception
+    {
+        // GIVEN
+        UpdateTrackingLabelScanStore labelScanStore = new UpdateTrackingLabelScanStore();
+        BatchInserter inserter = newBatchInserterWithLabelScanStore( new ControlledLabelScanStore( labelScanStore ) );
+        
+        // WHEN
+        inserter.createNode( null );
+        inserter.createNode( null );
+        inserter.shutdown();
+        
+        // THEN
+        assertEquals( 0, labelScanStore.writersCreated );
+    }
+    
     @Test
     public void propertiesCanBeReSetUsingBatchInserter()
     {
@@ -1171,6 +1187,7 @@ public class TestBatchInsert
     private static class UpdateTrackingLabelScanStore implements LabelScanStore
     {
         private final List<NodeLabelUpdate> allUpdates = new ArrayList<>();
+        int writersCreated;
 
         public void assertRecivedUpdate( long node, long... labels )
         {
@@ -1237,6 +1254,7 @@ public class TestBatchInsert
 
         @Override public LabelScanWriter newWriter()
         {
+            writersCreated++;
             return new LabelScanWriter()
             {
                 @Override
