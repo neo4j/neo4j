@@ -2331,7 +2331,7 @@ RETURN x0.name""")
     createNode()
     createNode()
     createNode()
-    val result = engine.profile("""START n=node(*) RETURN n LIMIT 1""")
+    val result = profile("""START n=node(*) RETURN n LIMIT 1""")
 
     // WHEN
     result.toList
@@ -2589,7 +2589,7 @@ RETURN x0.name""")
     relate(g, b)
     relate(t, b)
 
-    val result = engine.profile("START h=node(1),g=node(2) MATCH h-[r1]-n-[r2]-g-[r3]-o-[r4]-h, n-[r]-o RETURN o")
+    val result = profile("START h=node(1),g=node(2) MATCH h-[r1]-n-[r2]-g-[r3]-o-[r4]-h, n-[r]-o RETURN o")
 
     // then
     assert(!result.columnAs[Node]("o").exists(_ == null), "Result should not contain nulls")
@@ -2666,5 +2666,32 @@ RETURN x0.name""")
   def should_not_mind_rewriting_NOT_queries() {
     val result = execute(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     assert(result.toList === List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
+  }
+
+  @Test
+  def should_not_mind_profiling_union_queries() {
+    val result = profile("return 1 as A union return 2 as A")
+    assert(result.toList === List(Map("A" -> 1), Map("A" -> 2)))
+  }
+
+  @Test
+  def should_not_mind_profiling_merge_queries() {
+    val result = profile("merge (a {x: 1}) return a.x as A")
+    assert(result.toList.head("A") === 1)
+  }
+
+  @Test
+  def should_not_mind_profiling_optional_match_queries() {
+    createLabeledNode(Map("x" -> 1), "Label")
+    val result = profile("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
+    assert(result("A") === 1)
+    assert(result("B") === null)
+  }
+
+  @Test
+  def should_not_mind_profiling_optional_match_and_with() {
+    createLabeledNode(Map("x" -> 1), "Label")
+    val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
+    assert(result("A") === 1)
   }
 }
