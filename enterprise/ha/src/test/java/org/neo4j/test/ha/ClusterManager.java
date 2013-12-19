@@ -19,12 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -48,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -60,6 +53,7 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -80,8 +74,18 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
+
 import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
+import ch.qos.logback.classic.LoggerContext;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -885,14 +889,13 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
-
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
                     ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
 
                     for ( ClusterMember clusterMember : members.getMembers() )
                     {
-                        if (clusterMember.getHARole().equals( "UNKNOWN" ))
+                        if ( clusterMember.getHARole().equals( "UNKNOWN" ) )
                         {
                             return false;
                         }
@@ -911,6 +914,29 @@ public class ClusterManager
         };
     }
 
+    public static Predicate<ManagedCluster> allAvailabilityGuardsReleased()
+    {
+        return new Predicate<ManagedCluster>()
+        {
+            @Override
+            public boolean accept( ManagedCluster item )
+            {
+                for ( HighlyAvailableGraphDatabaseProxy member : item.members.values() )
+                {
+                    try
+                    {
+                        member.get().beginTx().close();
+                    }
+                    catch ( TransactionFailureException e )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+    }
+    
     private static String printState(ManagedCluster cluster)
     {
         StringBuilder buf = new StringBuilder();
