@@ -22,11 +22,14 @@ package org.neo4j.kernel.impl.event;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 public class VerifyingTransactionEventHandler implements
         TransactionEventHandler<Object>
 {
     private final ExpectedTransactionData expectedData;
     private boolean hasBeenCalled;
+    private Throwable failure;
 
     public VerifyingTransactionEventHandler( ExpectedTransactionData expectedData )
     {
@@ -35,6 +38,7 @@ public class VerifyingTransactionEventHandler implements
     
     public void afterCommit( TransactionData data, Object state )
     {
+        verify( data );
     }
 
     public void afterRollback( TransactionData data, Object state )
@@ -43,13 +47,38 @@ public class VerifyingTransactionEventHandler implements
 
     public Object beforeCommit( TransactionData data ) throws Exception
     {
-        this.expectedData.compareTo( data );
-        this.hasBeenCalled = true;
-        return null;
+        return verify( data );
     }
     
+    private Object verify( TransactionData data )
+    {
+        // TODO Hmm, makes me think... should we really call transaction event handlers
+        // for these relationship type / property index transactions?
+        if ( count( data.createdNodes() ) == 0 )
+        {
+            return null;
+        }
+        
+        try
+        {
+            this.expectedData.compareTo( data );
+            this.hasBeenCalled = true;
+            return null;
+        }
+        catch ( RuntimeException e )
+        {
+            failure = e;
+            throw e;
+        }
+    }
+
     boolean hasBeenCalled()
     {
         return this.hasBeenCalled;
+    }
+    
+    Throwable failure()
+    {
+        return this.failure;
     }
 }

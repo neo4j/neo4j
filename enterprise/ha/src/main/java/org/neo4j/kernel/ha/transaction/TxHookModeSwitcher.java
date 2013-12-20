@@ -32,13 +32,15 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
 {
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactoryResolver requestContextFactory;
     private final DependencyResolver resolver;
 
     public TxHookModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                               DelegateInvocationHandler<RemoteTxHook> delegate, Master master,
-                               RequestContextFactoryResolver requestContextFactory, DependencyResolver resolver )
+                               DelegateInvocationHandler<RemoteTxHook> delegate,
+                               DelegateInvocationHandler<Master> master,
+                               RequestContextFactoryResolver requestContextFactory,
+                               DependencyResolver resolver )
     {
         super( stateMachine, delegate );
         this.master = master;
@@ -55,7 +57,7 @@ public class TxHookModeSwitcher extends AbstractModeSwitcher<RemoteTxHook>
     @Override
     protected RemoteTxHook getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxHook( master, resolver.resolveDependency( HaXaDataSourceManager.class ),
+        return new SlaveTxHook( master.cement(), resolver.resolveDependency( HaXaDataSourceManager.class ),
                 requestContextFactory );
     }
 

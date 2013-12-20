@@ -20,10 +20,8 @@
 package org.neo4j.cluster.protocol.cluster;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -31,8 +29,8 @@ import org.mockito.ArgumentMatcher;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationRequestState;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -48,7 +46,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.cluster.com.message.Message.to;
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.configurationRequest;
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.joinDenied;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class ClusterStateTest
 {
@@ -70,8 +67,7 @@ public class ClusterStateTest
         ClusterState.entered.handle( context, message, outgoing );
         
         // THEN assert that the responding instance sends its configuration along with the response
-        @SuppressWarnings( "unchecked" )
-        Message<ClusterMessage> response = (Message<ClusterMessage>) single( outgoing.messages );
+        Message<ClusterMessage> response = outgoing.single();
         assertTrue( response.getPayload() instanceof ConfigurationResponseState );
         ConfigurationResponseState responseState = response.getPayload();
         assertEquals( existingMembers, responseState.getMembers() );
@@ -113,7 +109,7 @@ public class ClusterStateTest
                 .setHeader( Message.CONVERSATION_ID, "bla" ), outgoing );
         
         // THEN assert that the failure contains the received configuration
-        Message<? extends MessageType> response = single( outgoing.messages );
+        Message<? extends MessageType> response = outgoing.single();
         ClusterEntryDeniedException deniedException = response.getPayload();
         assertEquals( existingMembers, deniedException.getConfigurationResponseState().getMembers() );
     }
@@ -149,17 +145,6 @@ public class ClusterStateTest
     private URI uri( int i )
     {
         return URI.create( "http://localhost:" + (6000+i) + "?serverId=" + i );
-    }
-
-    public static class TrackingMessageHolder implements MessageHolder
-    {
-        private final List<Message<? extends MessageType>> messages = new ArrayList<Message<? extends MessageType>>();
-        
-        @Override
-        public void offer( Message<? extends MessageType> message )
-        {
-            messages.add( message );
-        }
     }
 
     private static class ConfigurationResponseStateMatcher extends ArgumentMatcher<ConfigurationResponseState>

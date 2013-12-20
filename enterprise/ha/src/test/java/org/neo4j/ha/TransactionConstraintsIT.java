@@ -47,6 +47,8 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.junit.Assert.assertTrue;
+
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
     @Before
@@ -89,6 +91,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
 
         // WHEN
+        HighlyAvailableGraphDatabase theOtherSlave;
         Transaction tx = db.beginTx();
         try
         {
@@ -97,7 +100,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         }
         finally
         {
-            HighlyAvailableGraphDatabase theOtherSlave = cluster.getAnySlave( db );
+            theOtherSlave = cluster.getAnySlave( db );
             takeTheLeadInAnEventualMasterSwitch( theOtherSlave );
             cluster.shutdown( cluster.getMaster() );
             assertFinishGetsTransactionFailure( tx );
@@ -107,6 +110,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
 
         // THEN
         assertFalse( db.isMaster() );
+        assertTrue( theOtherSlave.isMaster() );
     }
     
     @Test

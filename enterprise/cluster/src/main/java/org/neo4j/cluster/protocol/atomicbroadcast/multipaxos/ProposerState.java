@@ -94,7 +94,7 @@ public enum ProposerState
 
                                 instance.phase1Timeout( ballot );
                                 context.getLogger( ProposerState.class ).debug(
-                                        "Reproposing instance " + instanceId + " at ballot " + instance.ballot
+                                        "Reproposing instance " + instance + " at ballot " + instance.ballot
                                                 + " after rejectPrepare" );
                                 for ( URI acceptor : instance.getAcceptors() )
                                 {
@@ -102,10 +102,15 @@ public enum ProposerState
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                             InstanceId.INSTANCE ) );
                                 }
+                                
+                                assert instance.value_1 == null : "value_1 should have been null at this point";
+                                Object payload = context.getBookedInstance( instanceId ).getPayload();
+                                assert payload != null : "Should have a booked instance payload for " + instanceId;
                                 // This will reset the phase1Timeout if existing
+                                // TODO no payload associated with the phase1Timeout here.
+                                //      but what payload to use? instance.value_2?
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage
-                                                .phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, payload ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -142,8 +147,8 @@ public enum ProposerState
                                                 InstanceId.INSTANCE ) );
                                     }
                                     context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                            ProposerMessage
-                                                    .phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                            ProposerMessage.phase1Timeout, message, message.getPayload() ),
+                                            InstanceId.INSTANCE ) );
                                 }
                             }
                             else if ( instance.isState( PaxosInstance.State.closed ) || instance.isState(
@@ -172,12 +177,13 @@ public enum ProposerState
                                     context.cancelTimeout( instance.id );
 
                                     // No promises contained a value
+                                    Object readyValue = instance.value_2 == null ?
+                                            context.getBookedInstance( instance.id ).getPayload() : instance
+                                            .value_2;
                                     if ( instance.value_1 == null )
                                     {
                                         // R0
-                                        instance.ready( instance.value_2 == null ?
-                                                context.getBookedInstance( instance.id ).getPayload() : instance
-                                                .value_2, true );
+                                        instance.ready( readyValue, true );
                                     }
                                     else
                                     {
@@ -190,10 +196,7 @@ public enum ProposerState
 
                                             instance.ready( instance.value_1, false );
                                         }
-                                        else if ( instance.value_1.equals( instance.value_2 == null ?
-                                                context.getBookedInstance( instance.id ).getPayload() :
-                                                instance
-                                                .value_2 ) )
+                                        else if ( instance.value_1.equals( readyValue ) )
                                         {
                                             instance.ready( instance.value_2, instance.clientValue );
                                         }
@@ -226,7 +229,7 @@ public enum ProposerState
 
                                     context.setTimeout( instance.id,
                                             message.copyHeadersTo( Message.timeout( ProposerMessage.phase2Timeout,
-                                                    message ), InstanceId.INSTANCE ) );
+                                                    message, readyValue ), InstanceId.INSTANCE ) );
                                 }
                                 else
                                 {
@@ -285,7 +288,7 @@ public enum ProposerState
                                 }
 
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage.phase1Timeout, message ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, message.getPayload() ), InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -427,7 +430,7 @@ public enum ProposerState
             }
 
             context.setTimeout( instanceId, Message.timeout( ProposerMessage.phase1Timeout, message,
-                    instanceId ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
+                    message.getPayload() ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
         }
         else
         {

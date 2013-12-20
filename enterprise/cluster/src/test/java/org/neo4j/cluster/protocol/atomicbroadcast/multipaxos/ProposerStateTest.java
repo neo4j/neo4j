@@ -19,21 +19,43 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import java.io.Serializable;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
+
+import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.com.message.TrackingMessageHolder;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance.State;
+import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.lang.Integer.parseInt;
+import static java.net.URI.create;
+import static java.util.Arrays.asList;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
-import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
+import static org.neo4j.cluster.com.message.Message.to;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.phase1Timeout;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.promise;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.propose;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage.rejectAccept;
 
 public class ProposerStateTest
 {
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Test
     public void ifProposingWithClosedInstanceThenRetryWithNextInstance() throws Throwable
     {
@@ -44,7 +66,7 @@ public class ProposerStateTest
 
         // The instance is closed
         PaxosInstance paxosInstance = new PaxosInstance( paxosInstanceStore, instanceId ); // the instance
-        paxosInstance.closed( null, "1/15#" ); // is closed for that conversation, not really important
+        paxosInstance.closed( instanceId, "1/15#" ); // is closed for that conversation, not really important
         when( context.unbookInstance( instanceId ) ).thenReturn( Message.internal( ProposerMessage.accepted, "the closed payload" ) );
 
         when( context.getPaxosInstance( instanceId ) ).thenReturn( paxosInstance ); // required for
@@ -64,5 +86,101 @@ public class ProposerStateTest
                         new MessageArgumentMatcher().onMessageType( ProposerMessage.propose ).withPayload( theTimedoutPayload )
                 ) );
         verify( context, times(1) ).unbookInstance( instanceId );
+    }
+    
+    @Test
+    public void proposer_proposePhase1TimeoutShouldCarryOnPayload() throws Throwable
+    {
+        // GIVEN
+        PaxosInstance instance = mock( PaxosInstance.class );
+        ProposerContext context = mock( ProposerContext.class );
+        when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
+        when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( 0 ) );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        String instanceId = "1";
+        Serializable payload = "myPayload";
+        Message<ProposerMessage> message = to( propose, create( "http://something" ), payload )
+                .setHeader( INSTANCE, instanceId );
+        
+        // WHEN
+        ProposerState.proposer.handle( context, message, outgoing );
+        
+        // THEN
+        verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
+                argThat( new MessageArgumentMatcher<MessageType>().withPayload( payload ) ) );
+    }
+    
+    @Test
+    public void proposer_phase1TimeoutShouldCarryOnPayload() throws Throwable
+    {
+        // GIVEN
+        PaxosInstance instance = mock( PaxosInstance.class );
+        when( instance.isState( State.p1_pending ) ).thenReturn( true );
+        ProposerContext context = mock( ProposerContext.class );
+        when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        String instanceId = "1";
+        Serializable payload = "myPayload";
+        Message<ProposerMessage> message = to( phase1Timeout, create( "http://something" ), payload )
+                .setHeader( INSTANCE, instanceId );
+        
+        // WHEN
+        ProposerState.proposer.handle( context, message, outgoing );
+        
+        // THEN
+        verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
+                argThat( new MessageArgumentMatcher<MessageType>().withPayload( payload ) ) );
+    }
+
+    @Test
+    public void proposer_rejectAcceptShouldCarryOnPayload() throws Throwable
+    {
+        // GIVEN
+        String instanceId = "1";
+        PaxosInstance instance = new PaxosInstance( mock( PaxosInstanceStore.class ), new InstanceId( instanceId ) );
+        Serializable payload = "myPayload";
+        instance.propose( 1, asList( create( "http://some-guy" ) ) );
+        instance.ready( payload, true );
+        instance.pending();
+        ProposerContext context = mock( ProposerContext.class );
+        when( context.getLogger( any(Class.class) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
+        when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( parseInt( instanceId ) ) );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        Message<ProposerMessage> message = to( rejectAccept, create( "http://something" ),
+                new ProposerMessage.RejectAcceptState() )
+                .setHeader( INSTANCE, instanceId );
+        
+        // WHEN
+        ProposerState.proposer.handle( context, message, outgoing );
+        
+        // THEN
+        verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
+                argThat( new MessageArgumentMatcher<MessageType>().withPayload( payload ) ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void proposer_promiseShouldCarryOnPayloadToPhase2Timeout() throws Throwable
+    {
+        // GIVEN
+        String instanceId = "1";
+        Serializable payload = "myPayload";
+        PaxosInstance instance = new PaxosInstance( mock( PaxosInstanceStore.class ), new InstanceId( instanceId ) );
+        instance.propose( 1, asList( create( "http://some-guy" ) ) );
+        instance.value_2 = payload; // don't blame me for making it package access.
+        ProposerContext context = mock( ProposerContext.class );
+        when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
+        when( context.getMinimumQuorumSize( anyList() ) ).thenReturn( 1 );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        Message<ProposerMessage> message = to( promise, create( "http://something" ),
+                new ProposerMessage.PromiseState( 1, payload ) ).setHeader( INSTANCE, instanceId );
+        
+        // WHEN
+        ProposerState.proposer.handle( context, message, outgoing );
+        
+        // THEN
+        verify( context ).setTimeout( eq( new InstanceId( instanceId ) ),
+                argThat( new MessageArgumentMatcher<MessageType>().withPayload( payload ) ) );
     }
 }

@@ -23,21 +23,22 @@ import java.net.URI;
 
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
-import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
 
 public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<RelationshipTypeCreator>
 {
     private final HaXaDataSourceManager xaDsm;
-    private final Master master;
+    private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
 
     public RelationshipTypeCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                                 DelegateInvocationHandler<RelationshipTypeCreator> delegate,
                                                 HaXaDataSourceManager xaDsm,
-                                                Master master, RequestContextFactory requestContextFactory
+                                                DelegateInvocationHandler<Master> master,
+                                                RequestContextFactory requestContextFactory
     )
     {
         super( stateMachine, delegate );
@@ -55,6 +56,6 @@ public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<Re
     @Override
     protected RelationshipTypeCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveRelationshipTypeCreator( master, requestContextFactory, xaDsm );
+        return new SlaveRelationshipTypeCreator( master.cement(), requestContextFactory, xaDsm );
     }
 }

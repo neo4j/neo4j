@@ -127,8 +127,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private URI availableMasterId;
 
     private final HighAvailabilityMemberStateMachine stateHandler;
-    private BindingNotifier bindingNotifier;
-    private final DelegateInvocationHandler delegateHandler;
+    private final BindingNotifier bindingNotifier;
+    private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
     private final Config config;
@@ -141,13 +141,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private ScheduledExecutorService scheduledExecutorService;
     private volatile URI me;
 
-    public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier, DelegateInvocationHandler delegateHandler,
+    public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier,
+                                         DelegateInvocationHandler<Master> delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
                                          HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging)
     {
         this.bindingNotifier = bindingNotifier;
-        this.delegateHandler = delegateHandler;
+        this.masterDelegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -311,7 +312,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         new BranchDetectingTxVerifier( graphDb ) );
                 life.add( masterImpl );
                 life.add( masterServer );
-                delegateHandler.setDelegate( masterImpl );
+                assignMaster( masterImpl );
 
                 life.start();
 
@@ -330,14 +331,20 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             return;
         }
     }
-    
-    private URI createHaURI(Server server) {
-            String hostString = ServerUtil.getHostString(server.getSocketAddress());
-            int port = server.getSocketAddress().getPort();
-            Integer serverId = config.get(ClusterSettings.server_id);
-            String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
-            return URI.create("ha://" + host + ":" + port + "?serverId=" + serverId);
-        }
+
+    private void assignMaster( Master master )
+    {
+        masterDelegateHandler.setDelegate( master );
+    }
+
+    private URI createHaURI( Server<?,?> server )
+    {
+        String hostString = ServerUtil.getHostString( server.getSocketAddress() );
+        int port = server.getSocketAddress().getPort();
+        Integer serverId = config.get( ClusterSettings.server_id );
+        String host = hostString.contains( INADDR_ANY ) ? me.getHost() : hostString;
+        return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
+    }
 
     private void switchToSlave()
     {
@@ -349,7 +356,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             public void run()
             {
                 if (life.getStatus() == LifecycleStatus.STARTED)
+                 {
                     return; // Already switched - this can happen if a second master becomes available while waiting
+                }
 
                 try
                 {
@@ -419,7 +428,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                             graphDb.getDependencyResolver() ), xaDataSourceManager );
 
             SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging );
-            delegateHandler.setDelegate( master );
+            assignMaster( master );
             life.add( master );
             life.add( slaveImpl );
             life.add( server );
@@ -606,15 +615,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         @SuppressWarnings( "rawtypes" )
         List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        for ( Class<Lifecycle> serviceClass : services )
-            graphDb.getDependencyResolver().resolveDependency( serviceClass ).start();
+        for ( Class<?> serviceClass : services )
+        {
+            Lifecycle service = (Lifecycle) graphDb.getDependencyResolver().resolveDependency( serviceClass );
+            service.start();
+        }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy )
-            throws Throwable
+    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-
         List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
         for ( Class<Lifecycle> serviceClass : services )
@@ -675,10 +684,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 throw new StoreOutOfDateException( "The master is missing the log required to complete the " +
                         "consistency check", e.getCause() );
             }
-            else
-            {
-                throw e;
-            }
+            throw e;
         }
         finally
         {
@@ -700,5 +706,4 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +
                 myLastCommittedTx + " with masterId=" + myMaster, true );
     }
-
 }
