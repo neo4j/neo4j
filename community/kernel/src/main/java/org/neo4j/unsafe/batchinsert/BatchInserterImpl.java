@@ -150,6 +150,7 @@ public class BatchInserterImpl implements BatchInserter
     private final Config config;
     private final BatchInserterImpl.BatchSchemaActions actions;
     private final StoreLocker storeLocker;
+    private boolean labelsTouched;
 
     private final FunctionFromPrimitiveLong<Label> labelIdToLabelFunction = new FunctionFromPrimitiveLong<Label>()
     {
@@ -327,10 +328,16 @@ public class BatchInserterImpl implements BatchInserter
             schemaStore.updateRecord( record );
         }
         schemaCache.addSchemaRule( schemaRule );
+        labelsTouched = true;
     }
 
     private void repopulateAllIndexes() throws IOException
     {
+        if ( !labelsTouched )
+        {
+            return;
+        }
+        
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final IndexPopulator[] populators = new IndexPopulator[rules.length];
         // the store is uncontended at this point, so creating a local LockService is safe.
@@ -459,6 +466,7 @@ public class BatchInserterImpl implements BatchInserter
             schemaStore.updateRecord( record );
         }
         schemaCache.addSchemaRule( indexRule );
+        labelsTouched = true;
     }
 
     private boolean removePrimitiveProperty( PrimitiveRecord primitive,
@@ -716,7 +724,10 @@ public class BatchInserterImpl implements BatchInserter
         nodeRecord.setCreated();
         nodeRecord.setNextProp( createPropertyChain( properties ) );
 
-        setNodeLabels( nodeRecord, labels );
+        if ( labels.length > 0 )
+        {
+            setNodeLabels( nodeRecord, labels );
+        }
 
         getNodeStore().updateRecord( nodeRecord );
         return nodeId;
@@ -726,6 +737,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
         getNodeStore().updateDynamicLabelRecords( nodeLabels.put( getOrCreateLabelIds( labels ), getNodeStore() ) );
+        labelsTouched = true;
     }
 
     private long[] getOrCreateLabelIds( Label[] labels )
