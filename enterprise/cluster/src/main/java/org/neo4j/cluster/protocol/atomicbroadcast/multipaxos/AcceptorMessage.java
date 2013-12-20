@@ -48,6 +48,42 @@ public enum AcceptorMessage
         {
             return ballot;
         }
+
+        @Override
+        public String toString()
+        {
+            return "PrepareState{" +
+                    "ballot=" + ballot +
+                    '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            PrepareState that = (PrepareState) o;
+
+            if ( ballot != that.ballot )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (int) (ballot ^ (ballot >>> 32));
+        }
     }
 
     public static class AcceptState
@@ -70,6 +106,40 @@ public enum AcceptorMessage
         public Object getValue()
         {
             return value;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            AcceptState that = (AcceptState) o;
+
+            if ( ballot != that.ballot )
+            {
+                return false;
+            }
+            if ( value != null ? !value.equals( that.value ) : that.value != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) (ballot ^ (ballot >>> 32));
+            result = 31 * result + (value != null ? value.hashCode() : 0);
+            return result;
         }
     }
 }

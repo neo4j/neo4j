@@ -28,12 +28,19 @@ import java.util.Map;
 public class InMemoryAcceptorInstanceStore
         implements AcceptorInstanceStore
 {
-    Map<InstanceId, AcceptorInstance> instances = new HashMap<InstanceId, AcceptorInstance>(  );
+    private final Map<InstanceId, AcceptorInstance> instances;
 
-    long lastDeliveredInstanceId = -1;
+    private long lastDeliveredInstanceId;
 
     public InMemoryAcceptorInstanceStore()
     {
+        this(new HashMap<InstanceId, AcceptorInstance>(), -1);
+    }
+
+    private InMemoryAcceptorInstanceStore(Map<InstanceId, AcceptorInstance> instances, long lastDeliveredInstanceId)
+    {
+        this.instances = instances;
+        this.lastDeliveredInstanceId = lastDeliveredInstanceId;
     }
 
     @Override
@@ -76,5 +83,44 @@ public class InMemoryAcceptorInstanceStore
     public void clear()
     {
         instances.clear();
+    }
+
+    public InMemoryAcceptorInstanceStore snapshot()
+    {
+        return new InMemoryAcceptorInstanceStore( new HashMap<>(instances), lastDeliveredInstanceId );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        InMemoryAcceptorInstanceStore that = (InMemoryAcceptorInstanceStore) o;
+
+        if ( lastDeliveredInstanceId != that.lastDeliveredInstanceId )
+        {
+            return false;
+        }
+        if ( !instances.equals( that.instances ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = instances.hashCode();
+        result = 31 * result + (int) (lastDeliveredInstanceId ^ (lastDeliveredInstanceId >>> 32));
+        return result;
     }
 }

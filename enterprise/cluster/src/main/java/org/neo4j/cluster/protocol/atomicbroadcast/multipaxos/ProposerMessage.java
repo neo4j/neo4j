@@ -57,6 +57,49 @@ public enum ProposerMessage
         {
             return value;
         }
+
+        @Override
+        public String toString()
+        {
+            return "PromiseState{" +
+                    "ballot=" + ballot +
+                    ", value=" + value +
+                    '}';
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            PromiseState that = (PromiseState) o;
+
+            if ( ballot != that.ballot )
+            {
+                return false;
+            }
+            if ( value != null ? !value.equals( that.value ) : that.value != null )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) (ballot ^ (ballot >>> 32));
+            result = 31 * result + (value != null ? value.hashCode() : 0);
+            return result;
+        }
     }
 
     public static class RejectPrepare
@@ -73,6 +116,34 @@ public enum ProposerMessage
         {
             return ballot;
         }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            RejectPrepare that = (RejectPrepare) o;
+
+            if ( ballot != that.ballot )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return (int) (ballot ^ (ballot >>> 32));
+        }
     }
 
     public static class RejectAcceptState
@@ -81,6 +152,18 @@ public enum ProposerMessage
         public RejectAcceptState()
         {
         }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj instanceof RejectAcceptState;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 0;
+        }
     }
 
     public static class AcceptedState
@@ -88,6 +171,18 @@ public enum ProposerMessage
     {
         public AcceptedState()
         {
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj instanceof AcceptedState;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 0;
         }
     }
 }

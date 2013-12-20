@@ -53,4 +53,6 @@ public interface LearnerContext
     Iterable<org.neo4j.cluster.InstanceId> getAlive();
 
     void setNextInstanceId( long id );
+
+
 }

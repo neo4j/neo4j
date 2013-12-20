@@ -33,7 +33,6 @@ import org.neo4j.cluster.protocol.TimeoutsContext;
 public interface ElectionContext
     extends TimeoutsContext, LoggingContext, ConfigurationContext
 {
-    void setElectionCredentialsProvider( ElectionCredentialsProvider electionCredentialsProvider );
 
     void created();
 
