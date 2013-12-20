@@ -58,7 +58,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE n" ) ) ).location();
 
         // When
-        Thread.sleep( 1000 * 2 );
+        Thread.sleep( 1000 * 5 );
         Map<String, Object> response = HTTP.POST( tx + "/commit" ).content();
 
         // Then
