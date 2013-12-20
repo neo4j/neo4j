@@ -54,6 +54,9 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "batch" ) );
         assertNotNull( map.get( "cypher" ) );
+        assertNotNull( map.get( "indexes" ) );
+        assertNotNull( map.get( "constraints" ) );
+        assertNotNull( map.get( "node_labels" ) );
         assertEquals( Version.getKernel().getReleaseVersion(), map.get( "neo4j_version" ) );
 
         // Make sure advertised urls work
@@ -83,6 +86,18 @@ public class GetOnRootDocIT extends AbstractRestFunctionalTestBase
         response.close();
 
         response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"CREATE (n) RETURN n\"}" );
+        assertEquals( 200, response.getStatus() );
+        response.close();
+
+        response = RestRequest.req().get( (String) map.get( "indexes" ) );
+        assertEquals( 200, response.getStatus() );
+        response.close();
+
+        response = RestRequest.req().get( (String) map.get( "constraints" ) );
+        assertEquals( 200, response.getStatus() );
+        response.close();
+
+        response = RestRequest.req().get( (String) map.get( "node_labels" ) );
         assertEquals( 200, response.getStatus() );
         response.close();
     }

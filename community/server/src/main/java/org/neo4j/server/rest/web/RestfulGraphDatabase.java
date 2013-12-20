@@ -68,6 +68,13 @@ import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.toMap;
+import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
+import static org.neo4j.server.rest.web.Surface.PATH_NODES;
+import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 
 @Path( "/" )
 public class RestfulGraphDatabase
@@ -88,12 +95,11 @@ public class RestfulGraphDatabase
         }
     }
 
-    private static final String PATH_NODES = "node";
     private static final String PATH_NODE = PATH_NODES + "/{nodeId}";
     private static final String PATH_NODE_PROPERTIES = PATH_NODE + "/properties";
     private static final String PATH_NODE_PROPERTY = PATH_NODE_PROPERTIES + "/{key}";
     private static final String PATH_NODE_RELATIONSHIPS = PATH_NODE + "/relationships";
-    private static final String PATH_RELATIONSHIP = "relationship/{relationshipId}";
+    private static final String PATH_RELATIONSHIP = PATH_RELATIONSHIPS + "/{relationshipId}";
     private static final String PATH_NODE_RELATIONSHIPS_W_DIR = PATH_NODE_RELATIONSHIPS + "/{direction}";
     private static final String PATH_NODE_RELATIONSHIPS_W_DIR_N_TYPES = PATH_NODE_RELATIONSHIPS_W_DIR + "/{types}";
     private static final String PATH_RELATIONSHIP_PROPERTIES = PATH_RELATIONSHIP + "/properties";
@@ -104,11 +110,8 @@ public class RestfulGraphDatabase
     private static final String PATH_NODE_LABELS = PATH_NODE + "/labels";
     private static final String PATH_NODE_LABEL = PATH_NODE + "/labels/{label}";
 
-    private static final String PATH_LABELS = "labels";
-
     private static final String PATH_PROPERTY_KEYS = "propertykeys";
 
-    protected static final String PATH_NODE_INDEX = "index/node";
     protected static final String PATH_NAMED_NODE_INDEX = PATH_NODE_INDEX + "/{indexName}";
     protected static final String PATH_NODE_INDEX_GET = PATH_NAMED_NODE_INDEX + "/{key}/{value}";
     protected static final String PATH_NODE_INDEX_QUERY_WITH_KEY = PATH_NAMED_NODE_INDEX + "/{key}"; //
@@ -117,7 +120,6 @@ public class RestfulGraphDatabase
     protected static final String PATH_NODE_INDEX_REMOVE_KEY = PATH_NAMED_NODE_INDEX + "/{key}/{id}";
     protected static final String PATH_NODE_INDEX_REMOVE = PATH_NAMED_NODE_INDEX + "/{id}";
 
-    protected static final String PATH_RELATIONSHIP_INDEX = "index/relationship";
     protected static final String PATH_NAMED_RELATIONSHIP_INDEX = PATH_RELATIONSHIP_INDEX + "/{indexName}";
     protected static final String PATH_RELATIONSHIP_INDEX_GET = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{value}";
     protected static final String PATH_RELATIONSHIP_INDEX_QUERY_WITH_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}";
@@ -133,12 +135,9 @@ public class RestfulGraphDatabase
 
     public static final String PATH_ALL_NODES_LABELED = "label/{label}/nodes";
 
-    public static final String PATH_SCHEMA = "schema";
-    public static final String PATH_SCHEMA_INDEX = PATH_SCHEMA + "/index";
     public static final String PATH_SCHEMA_INDEX_LABEL = PATH_SCHEMA_INDEX + "/{label}";
     public static final String PATH_SCHEMA_INDEX_LABEL_PROPERTY = PATH_SCHEMA_INDEX_LABEL + "/{property}";
 
-    public static final String PATH_SCHEMA_CONSTRAINT = PATH_SCHEMA + "/constraint";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL = PATH_SCHEMA_CONSTRAINT + "/{label}";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS = PATH_SCHEMA_CONSTRAINT_LABEL + "/uniqueness";
     public static final String PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS_PROPERTY = PATH_SCHEMA_CONSTRAINT_LABEL_UNIQUENESS + "/{property}";
@@ -435,7 +434,7 @@ public class RestfulGraphDatabase
             Object rawInput = input.readValue( body );
             if ( rawInput instanceof String )
             {
-                ArrayList<String> s = new ArrayList<String>();
+                ArrayList<String> s = new ArrayList<>();
                 s.add((String) rawInput);
                 actions( force ).addLabelToNode( nodeId, s );
             }
@@ -1766,8 +1765,15 @@ public class RestfulGraphDatabase
     }
     
     @GET
+    @Path( PATH_SCHEMA_INDEX )
+    public Response getSchemaIndexes()
+    {
+        return output.ok( actions.getSchemaIndexes() );
+    }
+
+    @GET
     @Path( PATH_SCHEMA_INDEX_LABEL )
-    public Response getSchemaIndexes( @PathParam( "label" ) String labelName )
+    public Response getSchemaIndexesForLabel( @PathParam("label") String labelName )
     {
         return output.ok( actions.getSchemaIndexes( labelName ) );
     }
@@ -1820,7 +1826,7 @@ public class RestfulGraphDatabase
     }
     
     @GET
-    @Path( PATH_SCHEMA_CONSTRAINT )
+    @Path(PATH_SCHEMA_CONSTRAINT)
     public Response getSchemaConstraints()
     {
         return output.ok( actions.getConstraints() );

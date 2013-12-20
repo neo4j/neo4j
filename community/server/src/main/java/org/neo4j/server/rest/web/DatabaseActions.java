@@ -202,7 +202,7 @@ public class DatabaseActions
 
     public DatabaseRepresentation root()
     {
-        return new DatabaseRepresentation( graphDb );
+        return new DatabaseRepresentation();
     }
 
     // Nodes
@@ -1465,6 +1465,21 @@ public class DatabaseActions
             indexCreator = indexCreator.on( key );
         }
         return new IndexDefinitionRepresentation( indexCreator.create() );
+    }
+
+    public ListRepresentation getSchemaIndexes()
+    {
+        Iterable<IndexDefinition> definitions = graphDb.schema().getIndexes();
+        Iterable<IndexDefinitionRepresentation> representations = map( new Function<IndexDefinition,
+                IndexDefinitionRepresentation>()
+        {
+            @Override
+            public IndexDefinitionRepresentation apply( IndexDefinition definition )
+            {
+                return new IndexDefinitionRepresentation( definition );
+            }
+        }, definitions );
+        return new ListRepresentation( RepresentationType.INDEX_DEFINITION, representations );
     }
 
     public ListRepresentation getSchemaIndexes( String labelName )

@@ -106,7 +106,7 @@ public class ObjectToRepresentationConverter
         }
         else if ( result instanceof GraphDatabaseService )
         {
-            return new DatabaseRepresentation( ( (GraphDatabaseService) result ) );
+            return new DatabaseRepresentation();
         }
         else if ( result instanceof Node )
         {

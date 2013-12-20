@@ -304,7 +304,7 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     }
 
     @Override
-    public Response getSchemaIndexes( String labelName )
+    public Response getSchemaIndexesForLabel( String labelName )
     {
         throw new UnsupportedOperationException( "TODO" );
     }
