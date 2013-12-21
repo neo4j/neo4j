@@ -151,19 +151,13 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToMergeNodeWhenNoneExists() throws Exception
+    public void mergeShouldCreateNodeWhenNoMatchesExist() throws Exception
     {
         // TODO
     }
 
     @Test
-    public void shouldBeAbleToMergeNodeWhenOneExists() throws Exception
-    {
-        // TODO
-    }
-
-    @Test
-    public void shouldBeAbleToMergeNodeWhenMultipleExist() throws Exception
+    public void mergeShouldNotCreateNodeWhenOneOrMoreMatchesExist() throws Exception
     {
         // TODO
     }
