@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -80,7 +81,7 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
 
         try
         {
-            NodeRepresentation node = super.getNode( nodeId );
+            NodeRepresentation node = super.getNode(nodeId);
             transaction.success();
             return node;
         }
@@ -91,16 +92,34 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public ListRepresentation mergeNode( String labelName, Map<String, Object> properties ) throws
-            PropertyValueException
+    public NodeRepresentation mergeNode( String labelName, Map<String, Object> properties ) throws
+            PropertyValueException, OperationFailureException
     {
         Transaction transaction = graph.beginTx();
 
         try
         {
-            ListRepresentation nodes = super.mergeNode( labelName, properties );
+            NodeRepresentation node = super.mergeNode(labelName, properties);
             transaction.success();
-            return nodes;
+            return node;
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
+    @Override
+    public NodeRepresentation mergeNode( String labelName, Map<String, Object> properties, AtomicBoolean created ) throws
+            PropertyValueException, OperationFailureException
+    {
+        Transaction transaction = graph.beginTx();
+
+        try
+        {
+            NodeRepresentation node = super.mergeNode( labelName, properties, created );
+            transaction.success();
+            return node;
         }
         finally
         {

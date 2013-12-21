@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
@@ -230,18 +231,27 @@ public class DatabaseActions
         return new NodeRepresentation( node( nodeId ) );
     }
 
+    // Merge a node into the graph, ignoring the flag to indicate new node creation
+    public NodeRepresentation mergeNode( String labelName, Map<String, Object> properties )
+            throws PropertyValueException, OperationFailureException
+    {
+        return mergeNode( labelName, properties, null );
+    }
+
     /**
-     * Attempts to find all existing nodes with the specified label and, if supplied, property
-     * key and value. If none are found, create a new one so as least one exists in the list
-     * returned.
+     * Merge a node into the graph, matching by label and, if supplied, property. If no such node exists,
+     * a new one will be created, otherwise the existing node will be returned. If multiple matches are
+     * found, an exception is thrown.
      *
-     * @param labelName name of label to match against
-     * @param properties zero or one properties in a Map
-     * @return ListRepresentation of *at least one* node
-     * @throws PropertyValueException
+     * @param labelName a label name to match
+     * @param properties a map of zero or one properties to match
+     * @param created a mutable boolean flag that indicates on exit whether a new node was created
+     * @return NodeRepresentation of the new of existing node
+     * @throws PropertyValueException if an illegal property type was supplied
+     * @throws OperationFailureException if multiple matches are found
      */
-    public ListRepresentation mergeNode( String labelName, Map<String, Object> properties )
-            throws PropertyValueException
+    public NodeRepresentation mergeNode( String labelName, Map<String, Object> properties, AtomicBoolean created )
+            throws PropertyValueException, OperationFailureException
     {
         Label label = label(labelName);
         Iterable<Node> nodes;
@@ -262,24 +272,29 @@ public class DatabaseActions
         }
 
         Iterator<Node> nodeIterator = nodes.iterator();
-        if ( !nodeIterator.hasNext() )
+        if ( nodeIterator.hasNext() )
+        {
+            Node node = nodeIterator.next();
+
+            if ( nodeIterator.hasNext() )
+                throw new OperationFailureException( "Multiple matching nodes found" );
+
+            if ( created != null )
+                created.set(false);
+
+            return new NodeRepresentation( node );
+        }
+        else
         {
             Node node = graphDb.createNode( label );
             propertySetter.setProperties( node, properties );
-            nodes = Arrays.asList( node );
+
+            if ( created != null )
+                created.set(true);
+
+            return new NodeRepresentation( node );
         }
 
-        IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
-                new IterableWrapper<NodeRepresentation, Node>( nodes )
-                {
-                    @Override
-                    protected NodeRepresentation underlyingObjectToObject( Node node )
-                    {
-                        return new NodeRepresentation( node );
-                    }
-                };
-
-        return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 
     public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException

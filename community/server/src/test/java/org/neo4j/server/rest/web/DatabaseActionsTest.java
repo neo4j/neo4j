@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -151,15 +152,169 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void mergeShouldCreateNodeWhenNoMatchesExist() throws Exception
+    public void mergeWithNoPropertiesWhenNoMatchExistsShouldCreateNode() throws Exception
     {
-        // TODO
+        String labelName = "Person";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        AtomicBoolean created = new AtomicBoolean();
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            NodeRepresentation nodeRepr = actions.mergeNode( labelName, properties, created );
+            Node nodeInDB = database.getGraph().getNodeById(nodeRepr.getId());
+
+            assertTrue(created.get());
+            assertNotNull(nodeInDB);
+            assertTrue(nodeInDB.hasLabel(label(labelName)));
+
+            tx.success();
+        }
     }
 
     @Test
-    public void mergeShouldNotCreateNodeWhenOneOrMoreMatchesExist() throws Exception
+    public void mergeWithNoPropertiesWhenMatchExistsShouldNotCreateNode() throws Exception
     {
-        // TODO
+        String labelName = "Person";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        AtomicBoolean created = new AtomicBoolean();
+
+        graphdbHelper.createNode( properties, label(labelName) );
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            NodeRepresentation nodeRepr = actions.mergeNode( labelName, properties, created );
+            Node nodeInDB = database.getGraph().getNodeById( nodeRepr.getId() );
+
+            assertFalse(created.get());
+            assertNotNull( nodeInDB );
+            assertTrue( nodeInDB.hasLabel( label(labelName) ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void mergeWithOnePropertyWhenNoMatchExistsShouldCreateNode() throws Exception
+    {
+        String labelName = "Person";
+        String key = "name";
+        Object value = "Alice";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put( key, value );
+        AtomicBoolean created = new AtomicBoolean();
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            NodeRepresentation nodeRepr = actions.mergeNode( labelName, properties, created );
+            Node nodeInDB = database.getGraph().getNodeById( nodeRepr.getId() );
+
+            assertTrue( created.get() );
+            assertNotNull( nodeInDB );
+            assertTrue( nodeInDB.hasLabel( label(labelName) ) );
+            assertEquals( nodeInDB.getProperty( key ), value );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void mergeWithOnePropertyWhenMatchExistsShouldNotCreateNode() throws Exception
+    {
+        String labelName = "Person";
+        String key = "name";
+        Object value = "Alice";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put( key, value );
+        AtomicBoolean created = new AtomicBoolean();
+
+        graphdbHelper.createNode( properties, label(labelName) );
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            NodeRepresentation nodeRepr = actions.mergeNode( labelName, properties, created );
+            Node nodeInDB = database.getGraph().getNodeById( nodeRepr.getId() );
+
+            assertFalse( created.get() );
+            assertNotNull( nodeInDB );
+            assertTrue( nodeInDB.hasLabel( label(labelName) ) );
+            assertEquals( nodeInDB.getProperty( key ), value );
+
+            tx.success();
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void mergeWithMultiplePropertiesShouldFail() throws Exception
+    {
+        String labelName = "Person";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put( "name", "Alice" );
+        properties.put( "age", 33 );
+        properties.put( "married", true );
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            actions.mergeNode( labelName, properties );
+
+            tx.success();
+        }
+    }
+
+    @Test(expected = OperationFailureException.class)
+    public void mergeWithMultipleMatchesShouldFail() throws Exception
+    {
+        String labelName = "Person";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put( "name", "Alice" );
+
+        graphdbHelper.createNode( properties, label(labelName) );
+        graphdbHelper.createNode( properties, label(labelName) );
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            actions.mergeNode( labelName, properties );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void mergeWhenMatchExistsShouldNotAffectOtherProperties() throws Exception
+    {
+        String labelName = "Person";
+        String key = "name";
+        Object value = "Alice";
+
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put( key, value );
+        AtomicBoolean created = new AtomicBoolean();
+
+        HashMap<String, Object> otherProperties = new HashMap<>();
+        otherProperties.put( key, value );
+        otherProperties.put( "age", 33 );
+        otherProperties.put( "married", true );
+        graphdbHelper.createNode( otherProperties, label(labelName) );
+
+        try (Transaction tx = database.getGraph().beginTx())
+        {
+            NodeRepresentation nodeRepr = actions.mergeNode( labelName, properties, created );
+            Node nodeInDB = database.getGraph().getNodeById( nodeRepr.getId() );
+
+            assertFalse( created.get() );
+            assertNotNull( nodeInDB );
+            assertTrue( nodeInDB.hasLabel( label(labelName) ) );
+            assertEquals( nodeInDB.getProperty( key ), value );
+            assertEquals( nodeInDB.getProperty( "age" ), 33 );
+            assertEquals( nodeInDB.getProperty( "married" ), true );
+
+            tx.success();
+        }
     }
 
     @Test
