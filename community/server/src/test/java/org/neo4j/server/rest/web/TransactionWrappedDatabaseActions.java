@@ -91,16 +91,16 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public NodeRepresentation mergeNode( String labelName, String key, Object value ) throws
+    public ListRepresentation mergeNode( String labelName, Map<String, Object> properties ) throws
             PropertyValueException
     {
         Transaction transaction = graph.beginTx();
 
         try
         {
-            NodeRepresentation nodeRepresentation = super.mergeNode( labelName, key, value );
+            ListRepresentation nodes = super.mergeNode( labelName, properties );
             transaction.success();
-            return nodeRepresentation;
+            return nodes;
         }
         finally
         {
