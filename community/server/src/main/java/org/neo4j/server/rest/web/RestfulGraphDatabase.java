@@ -566,22 +566,6 @@ public class RestfulGraphDatabase
         }
     }
 
-    @POST
-    @Path( PATH_ALL_NODES_LABELED )
-    public Response createNodeWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
-    {
-        // TODO
-        return null;
-    }
-
-    @DELETE
-    @Path( PATH_ALL_NODES_LABELED )
-    public Response deleteNodesWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
-    {
-        // TODO
-        return null;
-    }
-
     @GET
     @Path( PATH_LABELS )
     public Response getAllLabels( )
