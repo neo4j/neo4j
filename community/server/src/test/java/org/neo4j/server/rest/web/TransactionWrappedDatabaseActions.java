@@ -81,7 +81,7 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
 
         try
         {
-            NodeRepresentation node = super.getNode(nodeId);
+            NodeRepresentation node = super.getNode( nodeId );
             transaction.success();
             return node;
         }
