@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -230,21 +230,56 @@ public class DatabaseActions
         return new NodeRepresentation( node( nodeId ) );
     }
 
-    public NodeRepresentation mergeNode( String labelName, String key, Object value )
+    /**
+     * Attempts to find all existing nodes with the specified label and, if supplied, property
+     * key and value. If none are found, create a new one so as least one exists in the list
+     * returned.
+     *
+     * @param labelName name of label to match against
+     * @param properties zero or one properties in a Map
+     * @return ListRepresentation of *at least one* node
+     * @throws PropertyValueException
+     */
+    public ListRepresentation mergeNode( String labelName, Map<String, Object> properties )
             throws PropertyValueException
     {
         Label label = label(labelName);
-        Iterator<Node> nodeIterator = graphDb.findNodesByLabelAndProperty( label, key, value ).iterator();
-        if ( nodeIterator.hasNext() )
+        Iterable<Node> nodes;
+
+        if ( properties.isEmpty() )
         {
-            return new NodeRepresentation( nodeIterator.next() );
+            nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label );
+        }
+        else if ( properties.size() == 1 )
+        {
+            Map.Entry<String, Object> entry = Iterables.single(properties.entrySet());
+            nodes = graphDb.findNodesByLabelAndProperty( label, entry.getKey(), entry.getValue() );
         }
         else
         {
-            HashMap<String, Object> properties = new HashMap<>(1);
-            properties.put(key, value);
-            return createNode(properties, label);
+            throw new IllegalArgumentException( "Too many properties specified. Either specify one property to " +
+                    "merge by, or none at all." );
         }
+
+        Iterator<Node> nodeIterator = nodes.iterator();
+        if ( !nodeIterator.hasNext() )
+        {
+            Node node = graphDb.createNode( label );
+            propertySetter.setProperties( node, properties );
+            nodes = Arrays.asList( node );
+        }
+
+        IterableWrapper<NodeRepresentation, Node> nodeRepresentations =
+                new IterableWrapper<NodeRepresentation, Node>( nodes )
+                {
+                    @Override
+                    protected NodeRepresentation underlyingObjectToObject( Node node )
+                    {
+                        return new NodeRepresentation( node );
+                    }
+                };
+
+        return new ListRepresentation( RepresentationType.NODE, nodeRepresentations );
     }
 
     public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException

@@ -558,18 +558,7 @@ public class RestfulGraphDatabase
 
             Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
 
-            Iterator<Map.Entry<String, Object>> entryIterator = properties.entrySet().iterator();
-            if ( entryIterator.hasNext() )
-            {
-                Map.Entry<String, Object> entry = entryIterator.next();
-                if ( entryIterator.hasNext() )
-                    throw new BadInputException( "Only one property pair can be specified" );
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                return output.ok( actions.mergeNode( labelName, key, value ) );
-            }
-            else
-                throw new BadInputException( "No properties specified" );
+            return output.ok( actions.mergeNode( labelName, properties ) );
         }
         catch ( BadInputException e )
         {
