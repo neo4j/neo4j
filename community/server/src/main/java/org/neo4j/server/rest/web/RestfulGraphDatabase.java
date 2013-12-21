@@ -549,7 +549,7 @@ public class RestfulGraphDatabase
 
     @PUT
     @Path( PATH_ALL_NODES_LABELED )
-    public Response putNodeWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    public Response mergeNodeWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
     {
         try
         {
@@ -575,6 +575,22 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( e );
         }
+    }
+
+    @POST
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response createNodeWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    {
+        // TODO
+        return null;
+    }
+
+    @DELETE
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response deleteNodesWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    {
+        // TODO
+        return null;
     }
 
     @GET
