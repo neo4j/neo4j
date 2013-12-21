@@ -19,11 +19,7 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
@@ -226,6 +222,23 @@ public class DatabaseActions
             throws NodeNotFoundException
     {
         return new NodeRepresentation( node( nodeId ) );
+    }
+
+    public NodeRepresentation mergeNode( String labelName, String key, Object value )
+            throws PropertyValueException
+    {
+        Label label = label(labelName);
+        Iterator<Node> nodeIterator = graphDb.findNodesByLabelAndProperty( label, key, value ).iterator();
+        if ( nodeIterator.hasNext() )
+        {
+            return new NodeRepresentation( nodeIterator.next() );
+        }
+        else
+        {
+            HashMap<String, Object> properties = new HashMap<>(1);
+            properties.put(key, value);
+            return createNode(properties, label);
+        }
     }
 
     public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException

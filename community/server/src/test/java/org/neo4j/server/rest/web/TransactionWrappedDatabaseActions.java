@@ -91,6 +91,24 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
+    public NodeRepresentation mergeNode( String labelName, String key, Object value ) throws
+            PropertyValueException
+    {
+        Transaction transaction = graph.beginTx();
+
+        try
+        {
+            NodeRepresentation nodeRepresentation = super.mergeNode( labelName, key, value );
+            transaction.success();
+            return nodeRepresentation;
+        }
+        finally
+        {
+            transaction.finish();
+        }
+    }
+
+    @Override
     public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException
     {
         Transaction transaction = graph.beginTx();

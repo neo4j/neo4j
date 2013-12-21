@@ -151,6 +151,24 @@ public class DatabaseActionsTest
     }
 
     @Test
+    public void shouldBeAbleToMergeNodeWhenNoneExists() throws Exception
+    {
+        // TODO
+    }
+
+    @Test
+    public void shouldBeAbleToMergeNodeWhenOneExists() throws Exception
+    {
+        // TODO
+    }
+
+    @Test
+    public void shouldBeAbleToMergeNodeWhenMultipleExist() throws Exception
+    {
+        // TODO
+    }
+
+    @Test
     public void nodeInDatabaseShouldBeRetrievable() throws NodeNotFoundException
     {
         long nodeId = new GraphDbHelper( database ).createNode();

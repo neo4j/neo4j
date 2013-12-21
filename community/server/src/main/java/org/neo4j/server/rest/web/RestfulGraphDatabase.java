@@ -21,13 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -539,6 +533,36 @@ public class RestfulGraphDatabase
             Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
 
             return output.ok( actions.getNodesWithLabel( labelName, properties ) );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+    }
+
+    @PUT
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response putNodeWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    {
+        try
+        {
+            if ( labelName.isEmpty() )
+                throw new BadInputException( "Empty label name" );
+
+            Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
+
+            Iterator<Map.Entry<String, Object>> entryIterator = properties.entrySet().iterator();
+            if ( entryIterator.hasNext() )
+            {
+                Map.Entry<String, Object> entry = entryIterator.next();
+                if ( entryIterator.hasNext() )
+                    throw new BadInputException( "Only one property pair can be specified" );
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                return output.ok( actions.mergeNode( labelName, key, value ) );
+            }
+            else
+                throw new BadInputException( "No properties specified" );
         }
         catch ( BadInputException e )
         {
