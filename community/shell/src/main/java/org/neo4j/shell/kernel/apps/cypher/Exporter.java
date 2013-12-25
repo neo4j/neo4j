@@ -40,9 +40,6 @@ public class Exporter
     public void export( Output out ) throws RemoteException, ShellException
     {
         begin( out );
-        for (String indexStatement : exporter.exportIndexes()) {
-            out.println(indexStatement+";");
-        }
         exporter.export(asWriter(out));
         out.println(";");
         commit(out);

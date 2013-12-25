@@ -32,66 +32,111 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 
 public class SubGraphExporter
 {
     private final SubGraph graph;
 
-    public SubGraphExporter(SubGraph graph)
+    public SubGraphExporter( SubGraph graph )
     {
         this.graph = graph;
     }
 
     public void export( PrintWriter out )
     {
-        appendNodes(out);
-        appendRelationships(out);
+        appendIndexes( out );
+        appendConstraints( out );
+        appendNodes( out );
+        appendRelationships( out );
     }
 
-    public Collection<String> exportIndexes() {
-        Collection<String> result=new ArrayList<String>();
-        for (IndexDefinition index : graph.indexes()) {
-            StringBuilder keys=new StringBuilder();
-            for (String key : index.getPropertyKeys()) {
-                if (keys.length()>0) keys.append(", ");
-                keys.append(quote(key));
+    public Collection<String> exportIndexes()
+    {
+        final List<String> result = new ArrayList<>();
+        for ( IndexDefinition index : graph.getIndexes() )
+        {
+            if ( !index.isConstraintIndex() )
+            {
+                List<String> keys = IteratorUtil.asList( index.getPropertyKeys() );
+                if ( keys.size() > 1 )
+                {
+                    throw new RuntimeException( "Exporting compound indexes is not implented yet" );
+                }
+                result.add( "create index on :" + quote( index.getLabel().name() ) +
+                        "(" + quote( keys.get( 0 ) ) + ")" );
             }
-            result.add("create index on :" + quote(index.getLabel().name()) + "(" + keys + ")");
         }
+        Collections.sort( result );
         return result;
     }
 
-    public String quote(String id) {
-        return "`"+id+"`";
+    public Collection<String> exportConstraints()
+    {
+        final List<String> result = new ArrayList<>();
+        for ( ConstraintDefinition constraint : graph.getConstraints() )
+        {
+            if ( constraint.isConstraintType( ConstraintType.UNIQUENESS ) )
+            {
+                for ( String key : constraint.getPropertyKeys() )
+                {
+                    result.add( "create constraint on (n:" + quote( constraint.getLabel().name() ) + ") " +
+                            "assert n." + quote( key ) + " is unique" );
+                }
+            }
+            else
+            {
+                throw new RuntimeException( "Exporting constraints other than uniqueness is not implementd yet" );
+            }
+        }
+        Collections.sort( result );
+        return result;
     }
 
-    private boolean hasProperties(Node node) {
-        return node.getPropertyKeys().iterator().hasNext();
+    public String quote( String id )
+    {
+        return "`" + id + "`";
     }
 
-    private String labelString(Node node) {
+    private String labelString( Node node )
+    {
         Iterator<Label> labels = node.getLabels().iterator();
-        if (!labels.hasNext()) return "";
+        if ( !labels.hasNext() )
+        {
+            return "";
+        }
 
-        StringBuilder result=new StringBuilder();
-        while (labels.hasNext()) {
+        StringBuilder result = new StringBuilder();
+        while ( labels.hasNext() )
+        {
             Label next = labels.next();
-            result.append(":").append(quote(next.name()));
+            result.append( ":" ).append( quote( next.name() ) );
         }
         return result.toString();
     }
 
-    private String identifier(Node node) {
-        return "_"+node.getId();
+    private String identifier( Node node )
+    {
+        return "_" + node.getId();
     }
 
-    private void appendPropertySetters( PrintWriter out, Node node )
+    private void appendIndexes( PrintWriter out )
     {
-        for ( String prop : node.getPropertyKeys() )
+        for ( String line : exportIndexes() )
         {
-            out.println( "set "+identifier(node)+"." + quote(prop) + "=" + toString(node.getProperty(prop)) );
+            out.println( line );
+        }
+    }
+
+    private void appendConstraints( PrintWriter out )
+    {
+        for ( String line : exportConstraints() )
+        {
+            out.println( line );
         }
     }
 
@@ -109,12 +154,12 @@ public class SubGraphExporter
     private void appendRelationship( PrintWriter out, Relationship rel )
     {
         out.print( "create " );
-        out.print(identifier(rel.getStartNode()));
+        out.print( identifier( rel.getStartNode() ) );
         out.print( "-[:" );
-        out.print( quote(rel.getType().name()) );
+        out.print( quote( rel.getType().name() ) );
         formatProperties( out, rel );
         out.print( "]->" );
-        out.print(identifier(rel.getEndNode()));
+        out.print( identifier( rel.getEndNode() ) );
         out.println();
     }
 
@@ -129,23 +174,22 @@ public class SubGraphExporter
     private void appendNode( PrintWriter out, Node node )
     {
         out.print( "create (" );
-        out.print(identifier(node));
-        String labels = labelString(node);
-        if (!labels.isEmpty()) {
-            out.print(labels);
+        out.print( identifier( node ) );
+        String labels = labelString( node );
+        if ( !labels.isEmpty() )
+        {
+            out.print( labels );
         }
-        formatProperties(out, node);
+        formatProperties( out, node );
         out.println( ")" );
-    }
-
-    private boolean isReferenceNode( Node node )
-    {
-        return node.getId() == 0;
     }
 
     private void formatProperties( PrintWriter out, PropertyContainer pc )
     {
-        if (!pc.getPropertyKeys().iterator().hasNext()) return;
+        if ( !pc.getPropertyKeys().iterator().hasNext() )
+        {
+            return;
+        }
         out.print( " " );
         final String propertyString = formatProperties( pc );
         out.print( propertyString );
@@ -169,37 +213,57 @@ public class SubGraphExporter
         return "{" + result + "}";
     }
 
-    private String toString(Iterator<?> iterator) {
-        StringBuilder result=new StringBuilder();
-        while (iterator.hasNext()) {
-            if (result.length()>0) result.append(", ");
+    private String toString( Iterator<?> iterator )
+    {
+        StringBuilder result = new StringBuilder();
+        while ( iterator.hasNext() )
+        {
+            if ( result.length() > 0 )
+            {
+                result.append( ", " );
+            }
             Object value = iterator.next();
-            result.append(toString(value));
+            result.append( toString( value ) );
         }
-        return "["+result+"]";
+        return "[" + result + "]";
     }
 
-    private String arrayToString(Object value) {
-        StringBuilder result=new StringBuilder();
-        int length = Array.getLength(value);
-        for (int i=0;i<length;i++) {
-            if (i>0) result.append(", ");
-            result.append(toString(Array.get(value,i)));
+    private String arrayToString( Object value )
+    {
+        StringBuilder result = new StringBuilder();
+        int length = Array.getLength( value );
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( i > 0 )
+            {
+                result.append( ", " );
+            }
+            result.append( toString( Array.get( value, i ) ) );
         }
-        return "["+result+"]";
+        return "[" + result + "]";
     }
 
-    private String toString(Object value) {
-        if (value==null) return "null";
-        if (value instanceof String) return "\""+value+"\"";
-        if (value instanceof Iterator) {
-            return toString(((Iterator)value));
+    private String toString( Object value )
+    {
+        if ( value == null )
+        {
+            return "null";
         }
-        if (value instanceof Iterable) {
-            return toString(((Iterable)value).iterator());
+        if ( value instanceof String )
+        {
+            return "\"" + value + "\"";
         }
-        if (value.getClass().isArray()) {
-            return arrayToString(value);
+        if ( value instanceof Iterator )
+        {
+            return toString( ((Iterator) value) );
+        }
+        if ( value instanceof Iterable )
+        {
+            return toString( ((Iterable) value).iterator() );
+        }
+        if ( value.getClass().isArray() )
+        {
+            return arrayToString( value );
         }
         return value.toString();
     }

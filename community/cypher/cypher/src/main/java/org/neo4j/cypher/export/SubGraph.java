@@ -21,6 +21,7 @@ package org.neo4j.cypher.export;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 public interface SubGraph
@@ -31,5 +32,7 @@ public interface SubGraph
 
     boolean contains( Relationship relationship );
 
-    Iterable<IndexDefinition> indexes();
+    Iterable<IndexDefinition> getIndexes();
+
+    Iterable<ConstraintDefinition> getConstraints();
 }
