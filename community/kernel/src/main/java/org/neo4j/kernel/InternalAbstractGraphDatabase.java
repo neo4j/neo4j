@@ -888,10 +888,11 @@ public abstract class InternalAbstractGraphDatabase
     // This is here until we've moved all operations into the kernel, which handles this check on it's own.
     private void assertDatabaseRunning()
     {
-        if(life.getStatus() == LifecycleStatus.SHUTDOWN)
+        if( life.isRunning() )
         {
-            throw new DatabaseShutdownException();
+            return;
         }
+        throw new DatabaseShutdownException();
     }
 
     protected RemoteTxHook createTxHook()
