@@ -24,23 +24,22 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import Expression._
 
 object FunctionInvocation {
-  def apply(identifier: Identifier, distinct: Boolean, arguments: Seq[Expression], token: InputToken) : FunctionInvocation =
-      FunctionInvocation(identifier, distinct, arguments.toIndexedSeq, token)
   def apply(identifier: Identifier, argument: Expression, token: InputToken) : FunctionInvocation =
-      FunctionInvocation(identifier, false, IndexedSeq(argument), token)
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(argument), token)
   def apply(left: Expression, identifier: Identifier, right: Expression) : FunctionInvocation =
-      FunctionInvocation(identifier, false, IndexedSeq(left, right), identifier.token)
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(left, right), identifier.token)
   def apply(expression: Expression, identifier: Identifier) : FunctionInvocation =
-      FunctionInvocation(identifier, false, IndexedSeq(expression), identifier.token)
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression), identifier.token)
   def apply(identifier: Identifier, expression: Expression) : FunctionInvocation =
-    FunctionInvocation(identifier, false, IndexedSeq(expression), identifier.token)
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression), identifier.token)
 }
+
 case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression], token: InputToken) extends Expression {
   val name = identifier.name
   private val function = Function.lookup.get(name.toLowerCase)
 
   def semanticCheck(ctx: SemanticContext) = function match {
-    case None    => SemanticError(s"Unknown function '${name}'", token)
+    case None    => SemanticError(s"Unknown function '$name'", token)
     case Some(f) => f.semanticCheckHook(ctx, this)
   }
 
@@ -53,5 +52,4 @@ case class FunctionInvocation(identifier: Identifier, distinct: Boolean, argumen
     case None    => throw new ThisShouldNotHappenError("cleishm", "Unknown function should have failed semantic check")
     case Some(f) => f.toPredicate(this)
   }
-
 }

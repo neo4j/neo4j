@@ -2893,6 +2893,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(AllIdentifiers()))
   }
 
+  @Test def should_allow_whitespace_in_multiple_word_operators() {
+    test(
+      "OPTIONAL\t MATCH (n) WHERE n  IS   NOT\n /* possibly */ NULL    RETURN n",
+      Query.
+        optionalMatches(SingleNode("n")).
+        where(Not(IsNull(Identifier("n")))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
   val parser = CypherParser()
 
   private def test(query: String, expectedQuery: AbstractQuery) {
