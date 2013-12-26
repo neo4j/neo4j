@@ -154,7 +154,7 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciid
 |===
 |Upgrading
 |
-With Neo4j 2.0 several Cypher features in ersion 1.9 have been deprecated or removed.
+With Neo4j 2.0 several Cypher features in version 1.9 have been deprecated or removed.
 
 * +START+ is optional.
 * +MERGE+ will take +CREATE UNIQUE+'s role for the unique creation of patterns.
@@ -167,7 +167,7 @@ With Neo4j 2.0 several Cypher features in ersion 1.9 have been deprecated or rem
 * +CREATE a=\{property:’value’\}+ has been removed.
 * Use +REMOVE+ to remove properties.
 * Parameters for index-keys and nodes in patterns are no longer allowed.
-* To still use the older syntax, prepend you Cypher statement with `CYPHER 1.9`.
+* To still use the older syntax, prepend your Cypher statement with `CYPHER 1.9`.
 |===
 
 ++++
