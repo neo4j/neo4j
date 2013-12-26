@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -57,11 +58,9 @@ public class ReadOnlyDocTest
                 "target/read-only-db/location" )
                 .shutdown();
         // START SNIPPET: createReadOnlyInstance
-        Map<String, String> config = new HashMap<>();
-        config.put( "read_only", "true" );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 "target/read-only-db/location" )
-                .setConfig( config )
+                .setConfig( GraphDatabaseSettings.read_only, "true" )
                 .newGraphDatabase();
         // END SNIPPET: createReadOnlyInstance
     }
