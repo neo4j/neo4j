@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TargetDirectory;
 
 public class StartWithConfigurationDocTest
@@ -48,13 +49,11 @@ public class StartWithConfigurationDocTest
     public void loadFromHashmap()
     {
         // START SNIPPET: startDbWithMapConfig
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( "neostore.nodestore.db.mapped_memory", "10M" );
-        config.put( "string_block_size", "60" );
-        config.put( "array_block_size", "300" );
         GraphDatabaseService graphDb = new GraphDatabaseFactory()
             .newEmbeddedDatabaseBuilder( storeDir )
-            .setConfig( config )
+            .setConfig( GraphDatabaseSettings.nodestore_mapped_memory_size, "10M" )
+            .setConfig( GraphDatabaseSettings.string_block_size, "60" )
+            .setConfig( GraphDatabaseSettings.array_block_size, "300" )
             .newGraphDatabase();
         // END SNIPPET: startDbWithMapConfig
         assertNotNull( graphDb );
