@@ -36,48 +36,55 @@ define(
            tickLength : 5 * 60, 
            dateFormat : "HH:MM",
            findFirstTickFrom : (startTime) -> 
-             time = new Date(startTime * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(), 0,0,0).getTime() / 1000
+             timezoneOffset = new Date().getTimezoneOffset()
+             time = new Date((startTime+timezoneOffset*60) * 1000)
+             new Date(time.getFullYear(), time.getMonth(), time.getDate(), 0,timezoneOffset,0).getTime() / 1000
         }
         {  # 6-hour span
            maxSpan : 7 * 60 * 60, 
            tickLength : 60 * 60, 
            dateFormat : "HH:MM",
            findFirstTickFrom : (startTime) -> 
-             time = new Date(startTime * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(), 0,0,0).getTime() / 1000
+             timezoneOffset = new Date().getTimezoneOffset()
+             time = new Date((startTime+timezoneOffset*60) * 1000)
+             new Date(time.getFullYear(), time.getMonth(), time.getDate(),0,timezoneOffset,0).getTime() / 1000
+             
         }
         {  # 1-day span
            maxSpan : 25 * 60 * 60, 
            tickLength : 6 * 60 * 60, 
            dateFormat : "dddd HH:MM",
            findFirstTickFrom : (startTime) -> 
-             time = new Date(startTime * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(), 0,0,0).getTime() / 1000
+             timezoneOffset = new Date().getTimezoneOffset()
+             time = new Date((startTime+timezoneOffset*60) * 1000)
+             new Date(time.getFullYear(), time.getMonth(), time.getDate(),0,timezoneOffset,0).getTime() / 1000
         }
         {  # 1-week span
            maxSpan : 8 * 24 * 60 * 60, 
            tickLength : 2 * 24 * 60 * 60, 
            dateFormat : "dddd dd mmmm",
-           findFirstTickFrom : (startTime) -> 
-             time = new Date(startTime * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(), 0,0,0).getTime() / 1000
+           findFirstTickFrom : (startTime) ->
+             timezoneOffset = new Date().getTimezoneOffset()
+             time = new Date((startTime+timezoneOffset*60) * 1000)
+             new Date(time.getFullYear(), time.getMonth(), time.getDate(),0,timezoneOffset,0).getTime() / 1000
         }
         {  # 1-month span
            maxSpan : 32 * 24 * 60 * 60, 
            tickLength : 6 * 24 * 60 * 60, 
            dateFormat : "dd mmmm",
            findFirstTickFrom : (startTime) -> 
-             time = new Date(startTime * 1000)
-             new Date(time.getFullYear(), time.getMonth(), 0,0,0,1).getTime() / 1000
+             timezoneOffset = new Date().getTimezoneOffset()
+             time = new Date((startTime+timezoneOffset*60) * 1000)
+             new Date(time.getFullYear(), time.getMonth(), 0,0,timezoneOffset,1).getTime() / 1000
         }
         {  # 1-year span
            maxSpan : 370 * 24 * 60 * 60, 
            tickLength : 60 * 24 * 60 * 60, 
            dateFormat : "dd mmmm",
            findFirstTickFrom : (startTime) -> 
-             time = new Date(startTime * 1000)
-             new Date(time.getFullYear(), time.getMonth(), 0,0,0,1).getTime() / 1000
+             timezoneOffset = new Date().getTimezoneOffset()
+             time = new Date((startTime+timezoneOffset*60) * 1000)
+             new Date(time.getFullYear(), time.getMonth(), 0,0,timezoneOffset,1).getTime() / 1000
         }
       ]
 
@@ -99,7 +106,6 @@ define(
         while currentPosition <= stopTime
           if currentPosition >= startTime
             label = DateFormat.format((currentPosition + @timezoneOffset) * 1000, scale.dateFormat)
-
             ticks.push([currentPosition,label])
           currentPosition += scale.tickLength
       
