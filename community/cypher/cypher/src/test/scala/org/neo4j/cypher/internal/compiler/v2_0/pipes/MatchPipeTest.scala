@@ -7,7 +7,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.scalatest.Assertions
 
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
