@@ -20,8 +20,8 @@
 package org.neo4j.graphdb;
 
 /**
- * Thrown when attempting to modify the graph outside of a transaction.
- * 
+ * Thrown when attempting to access or modify the graph outside of a transaction.
+ *
  * @see Transaction
  */
 public class NotInTransactionException extends RuntimeException
