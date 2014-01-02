@@ -67,7 +67,7 @@ goto :main %1
   set javaPath=%javaPath:###"=%
   set javaPath=%javaPath:###=%
 
-  set binPath="\"%javaPath%\bin\java.exe\" %loggingProperties% -DworkingDir="%~dp0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename%  %serviceName%"
+  set binPath="\"%javaPath%\bin\java.exe\" %loggingProperties% -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename%  %serviceName%"
 
   sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName:"=%" start= %serviceStartType%
   sc start %serviceName%

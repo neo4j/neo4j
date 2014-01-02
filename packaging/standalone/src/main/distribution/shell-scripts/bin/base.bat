@@ -133,7 +133,7 @@ goto:eof
   goto :eof
 
 :console
-  "%javapath%\bin\java.exe" -DworkingDir="%~dp0.." -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
+  "%javapath%\bin\java.exe" -DworkingDir="%~dps0.." -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
   goto :eof
 
 :help
