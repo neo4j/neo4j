@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
  */
 public abstract class KernelExtensionFactoryContractTest
 {
-    private final Class<? extends KernelExtensionFactory<?>> extClass;
+    protected final Class<? extends KernelExtensionFactory<?>> extClass;
     private final String key;
     private final TargetDirectory target;
 
