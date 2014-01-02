@@ -36,6 +36,10 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
+/**
+ * @deprecated Use {@link DeferredConstraintVerificationUniqueLuceneIndexPopulator} instead.
+ */
+@Deprecated
 class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     static final int DEFAULT_BATCH_SIZE = 1024;
@@ -114,6 +118,12 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
                 startNewBatch();
             }
         }
+    }
+
+    @Override
+    public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+    {
+        // constraints are checked in add() so do nothing
     }
 
     @Override

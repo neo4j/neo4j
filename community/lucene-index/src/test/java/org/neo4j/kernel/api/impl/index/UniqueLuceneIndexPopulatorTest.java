@@ -41,7 +41,7 @@ import static org.neo4j.kernel.impl.api.index.IndexUpdaterSupport.updatePopulato
 public class UniqueLuceneIndexPopulatorTest
 {
     @Test
-    public void shouldAddUniqueEntries() throws Exception
+    public void shouldAddUniqueUniqueLuceneIndexPopulatorTestEntries() throws Exception
     {
         // given
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();

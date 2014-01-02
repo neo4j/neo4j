@@ -202,7 +202,7 @@ public class IndexPopulationJob implements Runnable
                     populator.add( update.getNodeId(), update.getValueAfter() );
                     populateFromQueueIfAvailable( update.getNodeId() );
                 }
-                catch ( Exception conflict )
+                catch ( IndexEntryConflictException | IOException conflict )
                 {
                     throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
                 }
@@ -210,6 +210,14 @@ public class IndexPopulationJob implements Runnable
             }
         });
         storeScan.run();
+        try
+        {
+            populator.verifyDeferredConstraints();
+        }
+        catch ( IndexEntryConflictException | IOException conflict )
+        {
+            throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
+        }
     }
 
     private void populateFromQueueIfAvailable( final long highestIndexedNodeId )

@@ -58,8 +58,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexPopulator(
-                    UniqueLuceneIndexPopulator.DEFAULT_BATCH_SIZE, documentStructure, standard(), writerStatus,
+//            return new UniqueLuceneIndexPopulator(
+//                    UniqueLuceneIndexPopulator.DEFAULT_BATCH_SIZE, documentStructure, standard(), writerStatus,
+//                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
+            return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                    documentStructure, standard(), writerStatus,
                     directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
         }
         else
