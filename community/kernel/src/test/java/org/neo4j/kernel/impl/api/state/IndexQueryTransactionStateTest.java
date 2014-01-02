@@ -25,13 +25,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
@@ -379,7 +379,7 @@ public class IndexQueryTransactionStateTest
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
-                mock( ConstraintIndexCreator.class ), mock(PersistenceManager.class) );
+                mock( ConstraintIndexCreator.class ) );
     }
 
     private void assertNoSuchNode( long node )
