@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.parboiled.Context
 import org.parboiled.scala._
+import org.parboiled.support.IndexRange
 
 trait Base extends Parser {
 
@@ -57,16 +58,19 @@ trait Base extends Parser {
   def WB = rule { !(WordCharacter) } suppressNode
   def WSCharacter = rule("whitespace") { anyOf(" \n\r\t\f") }
 
-  def keyword(string: String) : Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ WB)
-  def keyword(firstString: String, strings: String*) : Rule0 =
-      group(strings.foldLeft(keyword(firstString) ~ (_ : Rule0))((prev, s) => prev(WS ~ keyword(s)) ~ _)(EMPTY))
-  def operator(string: String) = group(string ~ !(OperatorCharacter))
+  def keyword(string: String): Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ WB)
+  def keyword(firstString: String, strings: String*): Rule0 =
+    group(strings.foldLeft(keyword(firstString)) {
+      (acc, s) => acc ~ WS ~ keyword(s)
+    })
+  def operator(string: String) = group(string ~ !OperatorCharacter)
 
-  def identifier = withContext((s: String, ctx: Context[Any]) => {
-    ast.Identifier(s, ContextToken(ctx))
-  })
+  def keywordIdentifier(firstString: String, strings: String*): Rule1[ast.Identifier] =
+    keyword(firstString, strings:_*) ~>> token ~~> (ast.Identifier((firstString +: strings).mkString(" "), _))
+  def operatorIdentifier(string: String): Rule1[ast.Identifier] =
+    operator(string) ~>> token ~~> (ast.Identifier(string, _))
 
-  def token[IndexRange, A] = withContext((_: IndexRange, ctx: Context[Any]) => ContextToken(ctx))
+  def token = withContext((_: IndexRange, ctx: Context[Any]) => ContextToken(ctx))
   def t[V, A](inner: ((V, InputToken) => A)) = withContext((v: V, ctx: Context[Any]) => inner(v, ContextToken(ctx)))
   def t[V1, V2, A](inner: ((V1, V2, InputToken) => A)) = withContext((v1: V1, v2: V2, ctx: Context[Any]) => inner(v1, v2, ContextToken(ctx)))
   def t[V1, V2, V3, A](inner: ((V1, V2, V3, InputToken) => A)) = withContext((v1: V1, v2: V2, v3: V3, ctx: Context[Any]) => inner(v1, v2, v3, ContextToken(ctx)))

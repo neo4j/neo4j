@@ -37,6 +37,12 @@ trait ParserTest[T, J] extends Assertions {
         actual => assert(actual === expected, s"'$text' was not parsed successfully")
       }
     }
+
+    def shouldMatch(expected: PartialFunction[J, Unit]) {
+      actuals foreach {
+        actual => assert(expected.isDefinedAt(actual), s"'$text' was not parsed successfully")
+      }
+    }
   }
 
   def parsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p ~ EOI, s), s)
