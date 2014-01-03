@@ -19,37 +19,48 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-trait SemanticCheckable {
-  def semanticCheck: SemanticCheck
-}
-
-case class SemanticCheckableOption[A <: SemanticCheckable](option: Option[A]) {
-  def semanticCheck = option.fold(SemanticCheckResult.success) { _.semanticCheck }
-}
-
-case class SemanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]) {
-  def semanticCheck = {
-    traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f then o.semanticCheck }
-  }
-}
-
-
 object SemanticCheckResult {
-  def success : SemanticCheck = SemanticCheckResult(_, Vector())
-  def error(state: SemanticState, error: SemanticError) : SemanticCheckResult = new SemanticCheckResult(state, Vector(error))
-  def error(state: SemanticState, error: Option[SemanticError]) : SemanticCheckResult = new SemanticCheckResult(state, error.toVector)
+  val success: SemanticCheck = SemanticCheckResult(_, Vector())
+  def error(state: SemanticState, error: SemanticError): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
+  def error(state: SemanticState, error: Option[SemanticError]): SemanticCheckResult = SemanticCheckResult(state, error.toVector)
 }
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
 
+trait SemanticChecking {
+  protected def when(pred: Boolean)(check: => SemanticCheck): SemanticCheck = state => {
+    if (pred)
+      check(state)
+    else
+      SemanticCheckResult.success(state)
+  }
 
-case class ChainableSemanticCheck(check: SemanticCheck) {
-  def then(next: SemanticCheck) : SemanticCheck = state => {
+  private val scopeState: SemanticCheck = state => SemanticCheckResult.success(state.newScope)
+  private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
+  protected def withScopedState(check: => SemanticCheck): SemanticCheck = scopeState then check then popStateScope
+}
+
+
+class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
+  def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
+    option.fold(SemanticCheckResult.success)(check)
+}
+
+class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) extends AnyVal {
+  def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {
+    (r1, o) =>
+      val r2 = check(o)(r1.state)
+      SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
+  }
+}
+
+class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
+  def then(next: SemanticCheck): SemanticCheck = state => {
     val r1 = check(state)
     val r2 = next(r1.state)
     SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
   }
 
-  def ifOkThen(next: SemanticCheck) : SemanticCheck = state => {
+  def ifOkThen(next: => SemanticCheck): SemanticCheck = state => {
     val r1 = check(state)
     if (r1.errors.nonEmpty)
       r1
@@ -59,15 +70,14 @@ case class ChainableSemanticCheck(check: SemanticCheck) {
 }
 
 
-trait SemanticChecking {
-  protected def when(pred: Boolean)(check: => SemanticCheck) : SemanticCheck = state => {
-    if (pred)
-      check(state)
-    else
-      SemanticCheckResult.success(state)
-  }
+trait SemanticCheckable {
+  def semanticCheck: SemanticCheck
+}
 
-  private def scopeState : SemanticCheck = state => SemanticCheckResult.success(state.newScope)
-  private def popStateScope : SemanticCheck = state => SemanticCheckResult.success(state.popScope)
-  protected def withScopedState(check: => SemanticCheck) : SemanticCheck = scopeState then check then popStateScope
+class SemanticCheckableOption[A <: SemanticCheckable](val option: Option[A]) extends AnyVal {
+  def semanticCheck: SemanticCheck = option.fold(SemanticCheckResult.success) { _.semanticCheck }
+}
+
+class SemanticCheckableTraversableOnce[A <: SemanticCheckable](val traversable: TraversableOnce[A]) extends AnyVal {
+  def semanticCheck: SemanticCheck = traversable.foldSemanticCheck { _.semanticCheck }
 }
