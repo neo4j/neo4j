@@ -27,6 +27,15 @@ package org.neo4j.helpers;
  */
 public abstract class Pair<T1, T2>
 {
+    @SuppressWarnings( "rawtypes" )
+    private static final Pair EMPTY = Pair.of( null, null );
+    
+    @SuppressWarnings( "unchecked" )
+    public static <T1, T2> Pair<T1, T2> empty()
+    {
+        return EMPTY;
+    }
+    
     /**
      * Create a new pair of objects.
      *
@@ -82,7 +91,10 @@ public abstract class Pair<T1, T2>
     @Override
     public boolean equals( Object obj )
     {
-        if ( this == obj ) return true;
+        if ( this == obj )
+        {
+            return true;
+        }
         if ( obj instanceof Pair )
         {
             @SuppressWarnings( "rawtypes" ) Pair that = (Pair) obj;

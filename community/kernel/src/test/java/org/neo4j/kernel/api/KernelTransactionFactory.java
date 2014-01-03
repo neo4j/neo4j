@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.api;
 
-import org.mockito.Mockito;
-
-import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 import static org.mockito.Mockito.mock;
@@ -34,8 +33,9 @@ public class KernelTransactionFactory
 {
     static KernelTransaction kernelTransaction()
     {
-        return new KernelTransactionImplementation( Mockito.mock( StatementOperationParts.class ),
-                Mockito.mock( LegacyKernelOperations.class ) , false, mock( SchemaWriteGuard.class ), null, null,
-                mock( AbstractTransactionManager.class ), null, null, null, null, null, mock( NeoStore.class ), null );
+        return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
+                mock( LegacyKernelOperations.class ) , false, mock( SchemaWriteGuard.class ), null, null,
+                mock( AbstractTransactionManager.class ), null, null, null, mock( PersistenceManager.class ),
+                null, mock( NeoStore.class ), null );
     }
 }

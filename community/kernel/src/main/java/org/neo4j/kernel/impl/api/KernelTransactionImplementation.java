@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.transaction.RollbackException;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
@@ -36,19 +36,20 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.TransactionalException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -179,8 +180,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertOpen();
         if ( currentStatement == null )
         {
-            currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),labelScanStore,
-                    this, lockHolder, legacyKernelOperations, operations );
+            currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
+                    labelScanStore, this, lockHolder, legacyKernelOperations, operations,
+                    persistenceManager.getResource() );
         }
         currentStatement.acquire();
         return currentStatement;

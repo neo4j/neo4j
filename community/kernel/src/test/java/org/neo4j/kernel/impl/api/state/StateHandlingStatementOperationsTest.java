@@ -27,11 +27,11 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.TxState.IdGeneration;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -194,7 +194,6 @@ public class StateHandlingStatementOperationsTest
     private StateHandlingStatementOperations newTxStateOps( StoreReadLayer delegate )
     {
         return new StateHandlingStatementOperations( delegate,
-                mock( LegacyPropertyTrackers.class ), mock( ConstraintIndexCreator.class ),
-                mock(PersistenceManager.class) );
+                mock( LegacyPropertyTrackers.class ), mock( ConstraintIndexCreator.class ) );
     }
 }

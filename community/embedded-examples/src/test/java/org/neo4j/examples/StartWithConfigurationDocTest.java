@@ -18,16 +18,14 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertNotNull;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertNotNull;
 
 public class StartWithConfigurationDocTest
 {
