@@ -20,11 +20,14 @@
 package org.neo4j.cypher.export;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +35,16 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+
 public class CypherResultSubGraph implements SubGraph
 {
 
-    private static final long REF_NODE_ID = 0L;
-    private final SortedMap<Long, Node> nodes = new TreeMap<Long, Node>();
-    private final SortedMap<Long, Relationship> relationships = new TreeMap<Long, Relationship>();
+    private final SortedMap<Long, Node> nodes = new TreeMap<>();
+    private final SortedMap<Long, Relationship> relationships = new TreeMap<>();
+    private final Collection<Label> labels = new HashSet<>();
+    private final Collection<IndexDefinition> indexes = new HashSet<>();
+    private final Collection<ConstraintDefinition> constraints = new HashSet<>();
 
     public void add( Node node )
     {
@@ -51,6 +58,7 @@ public class CypherResultSubGraph implements SubGraph
     void addNode( long id, Node data )
     {
         nodes.put( id, data );
+        labels.addAll( asCollection( data.getLabels() ) );
     }
 
     public void add( Relationship rel )
@@ -64,7 +72,7 @@ public class CypherResultSubGraph implements SubGraph
         }
     }
 
-    public static SubGraph from( ExecutionResult result, boolean addBetween )
+    public static SubGraph from( ExecutionResult result, GraphDatabaseService gds, boolean addBetween )
     {
         final CypherResultSubGraph graph = new CypherResultSubGraph();
         final List<String> columns = result.columns();
@@ -76,6 +84,20 @@ public class CypherResultSubGraph implements SubGraph
                 graph.addToGraph( value );
             }
         }
+        for ( IndexDefinition def : gds.schema().getIndexes() )
+        {
+            if ( graph.getLabels().contains( def.getLabel() ) )
+            {
+                graph.addIndex( def );
+            }
+        }
+        for ( ConstraintDefinition def : gds.schema().getConstraints() )
+        {
+            if ( graph.getLabels().contains( def.getLabel() ) )
+            {
+                graph.addConstraint( def );
+            }
+        }
         if ( addBetween )
         {
             graph.addRelationshipsBetweenNodes();
@@ -83,9 +105,19 @@ public class CypherResultSubGraph implements SubGraph
         return graph;
     }
 
+    private void addIndex( IndexDefinition def )
+    {
+        indexes.add( def );
+    }
+
+    private void addConstraint( ConstraintDefinition def )
+    {
+        constraints.add( def );
+    }
+
     private void addRelationshipsBetweenNodes()
     {
-        Set<Node> newNodes = new HashSet<Node>();
+        Set<Node> newNodes = new HashSet<>();
         for ( Node node : nodes.values() )
         {
             for ( Relationship relationship : node.getRelationships() )
@@ -140,6 +172,11 @@ public class CypherResultSubGraph implements SubGraph
         return relationships.values();
     }
 
+    public Collection<Label> getLabels()
+    {
+        return labels;
+    }
+
     void addRel( Long id, Relationship rel )
     {
         relationships.put( id, rel );
@@ -151,8 +188,15 @@ public class CypherResultSubGraph implements SubGraph
         return relationships.containsKey( relationship.getId() );
     }
 
-    @Override
-    public Iterable<IndexDefinition> indexes() {
-        return Collections.emptyList();
+    public Iterable<IndexDefinition> getIndexes()
+    {
+        return indexes;
     }
+
+    @Override
+    public Iterable<ConstraintDefinition> getConstraints()
+    {
+        return constraints;
+    }
+
 }

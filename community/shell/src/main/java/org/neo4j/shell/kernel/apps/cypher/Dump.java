@@ -91,7 +91,7 @@ public class Dump extends Start
     @Override
     protected void handleResult( Output out, ExecutionResult result, long startTime, Session session, AppCommandParser parser ) throws RemoteException, ShellException
     {
-        final SubGraph subGraph = CypherResultSubGraph.from(result, false);
+        final SubGraph subGraph = CypherResultSubGraph.from(result, getServer().getDb(), false);
         export( subGraph, out);
     }
 }

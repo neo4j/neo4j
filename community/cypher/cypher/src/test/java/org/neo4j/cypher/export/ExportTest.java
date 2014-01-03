@@ -34,6 +34,7 @@ import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -98,7 +99,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         final ExecutionResult result = result( "node", n );
-        final SubGraph graph = CypherResultSubGraph.from( result, false );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ")" + NL, doExportGraph( graph ) );
     }
 
@@ -107,7 +108,7 @@ public class ExportTest
     {
         Node n = gdb.createNode();
         final ExecutionResult result = result( "node", n );
-        final SubGraph graph = CypherResultSubGraph.from( result, false );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ")" + NL, doExportGraph( graph ) );
     }
 
@@ -118,7 +119,7 @@ public class ExportTest
         n.setProperty( "name", "Node1" );
         n.setProperty( "age", 42 );
         final ExecutionResult result = result( "node", n );
-        final SubGraph graph = CypherResultSubGraph.from( result, false );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`age`:42, `name`:\"Node1\"})" + NL, doExportGraph( graph ) );
     }
 
@@ -129,7 +130,7 @@ public class ExportTest
         n.setProperty( "name", new String[]{"a", "b"} );
         n.setProperty( "age", new int[]{1, 2} );
         final ExecutionResult result = result( "node", n );
-        final SubGraph graph = CypherResultSubGraph.from( result, false );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + " {`age`:[1, 2], `name`:[\"a\", \"b\"]})" + NL, doExportGraph( graph ) );
     }
 
@@ -140,7 +141,7 @@ public class ExportTest
         n.addLabel( DynamicLabel.label( "Foo" ) );
         n.addLabel( DynamicLabel.label( "Bar" ) );
         final ExecutionResult result = result( "node", n );
-        final SubGraph graph = CypherResultSubGraph.from( result, false );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
         assertEquals( "create (_" + n.getId() + ":`Foo`:`Bar`)" + NL, doExportGraph( graph ) );
     }
 
@@ -154,12 +155,58 @@ public class ExportTest
     }
 
     @Test
+    public void testExportUniquenessConstraint() throws Exception
+    {
+        gdb.schema().constraintFor( DynamicLabel.label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
+        final SubGraph graph = DatabaseSubGraph.from( gdb );
+        SubGraphExporter exporter = new SubGraphExporter( graph );
+        assertEquals( asList( "create constraint on (n:`Foo`) assert n.`bar` is unique" ), exporter.exportConstraints() );
+    }
+
+    @Test
+    public void testExportIndexesViaCypherResult() throws Exception
+    {
+        final Label label = DynamicLabel.label( "Foo" );
+        gdb.schema().indexFor( label ).on( "bar" ).create();
+        gdb.schema().indexFor( label ).on( "bar2" ).create();
+        commitAndStartNewTransactionAfterSchemaChanges();
+        Node n = gdb.createNode( label );
+        final ExecutionResult result = result( "node", n );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
+        assertEquals( "create index on :`Foo`(`bar2`)" + NL +
+                "create index on :`Foo`(`bar`)" + NL +
+                "create (_0:`Foo`)" + NL, doExportGraph( graph ) );
+    }
+
+    @Test
+    public void testExportConstraintsViaCypherResult() throws Exception
+    {
+        final Label label = DynamicLabel.label( "Foo" );
+        gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar" ).create();
+        gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar2" ).create();
+        commitAndStartNewTransactionAfterSchemaChanges();
+        Node n = gdb.createNode( label );
+        final ExecutionResult result = result( "node", n );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
+        assertEquals( "create constraint on (n:`Foo`) assert n.`bar2` is unique" + NL +
+                "create constraint on (n:`Foo`) assert n.`bar` is unique" + NL +
+                "create (_0:`Foo`)" + NL, doExportGraph( graph ) );
+    }
+
+    private void commitAndStartNewTransactionAfterSchemaChanges()
+    {
+        tx.success();
+        tx.close();
+        tx = gdb.beginTx();
+    }
+
+    @Test
     public void testFromRelCypherResult() throws Exception
     {
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
         final ExecutionResult result = result( "rel", rel );
-        final SubGraph graph = CypherResultSubGraph.from( result, true );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + NL +
                 "create _0-[:`REL`]->_0" + NL, doExportGraph( graph ) );
     }
@@ -172,7 +219,7 @@ public class ExportTest
         final Relationship rel = n1.createRelationshipTo( n2, DynamicRelationshipType.withName( "REL" ) );
         final Path path = new PathImpl.Builder( n1 ).push( rel ).build();
         final ExecutionResult result = result( "path", path );
-        final SubGraph graph = CypherResultSubGraph.from( result, true );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
         assertEquals( "create (_0)" + NL +
                 "create (_1)" + NL +
                 "create _0-[:`REL`]->_1" + NL, doExportGraph( graph ) );
@@ -183,7 +230,7 @@ public class ExportTest
     {
         ExecutionResult result = Mockito.mock( ExecutionResult.class );
         Mockito.when( result.columns() ).thenReturn( asList( column ) );
-        final Iterator<Map<String,Object>> inner = asList( singletonMap( column, value ) ).iterator();
+        final Iterator<Map<String, Object>> inner = asList( singletonMap( column, value ) ).iterator();
 
         ResourceIterator<Map<String, Object>> iterator = new ResourceIterator<Map<String, Object>>()
         {
