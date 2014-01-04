@@ -35,8 +35,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
 
 public class SubGraphExporter
 {
@@ -55,49 +55,63 @@ public class SubGraphExporter
         appendRelationships( out );
     }
 
-    public Collection<String> exportIndexes()
+    private Collection<String> exportIndexes()
     {
         final List<String> result = new ArrayList<>();
         for ( IndexDefinition index : graph.getIndexes() )
         {
             if ( !index.isConstraintIndex() )
             {
-                List<String> keys = IteratorUtil.asList( index.getPropertyKeys() );
-                if ( keys.size() > 1 )
+                Iterator<String> propertyKeys = index.getPropertyKeys().iterator();
+                if ( !propertyKeys.hasNext() )
                 {
-                    throw new RuntimeException( "Exporting compound indexes is not implented yet" );
+                    throw new ThisShouldNotHappenError( "Chris",
+                            "indexes should have at least one property key" );
                 }
-                result.add( "create index on :" + quote( index.getLabel().name() ) +
-                        "(" + quote( keys.get( 0 ) ) + ")" );
+                String key = quote( propertyKeys.next() );
+                if ( propertyKeys.hasNext() )
+                {
+                    throw new RuntimeException( "Exporting compound indexes is not implemented yet" );
+                }
+
+                String label = quote( index.getLabel().name() );
+                result.add( "create index on :" + label + "(" + key + ")" );
             }
         }
         Collections.sort( result );
         return result;
     }
 
-    public Collection<String> exportConstraints()
+    private Collection<String> exportConstraints()
     {
         final List<String> result = new ArrayList<>();
         for ( ConstraintDefinition constraint : graph.getConstraints() )
         {
-            if ( constraint.isConstraintType( ConstraintType.UNIQUENESS ) )
+            if ( !constraint.isConstraintType( ConstraintType.UNIQUENESS ) )
             {
-                for ( String key : constraint.getPropertyKeys() )
-                {
-                    result.add( "create constraint on (n:" + quote( constraint.getLabel().name() ) + ") " +
-                            "assert n." + quote( key ) + " is unique" );
-                }
+                throw new RuntimeException( "Exporting constraints other than uniqueness is not implemented yet" );
             }
-            else
+
+            Iterator<String> propertyKeys = constraint.getPropertyKeys().iterator();
+            if ( !propertyKeys.hasNext() )
             {
-                throw new RuntimeException( "Exporting constraints other than uniqueness is not implementd yet" );
+                throw new ThisShouldNotHappenError( "Chris",
+                        "constraints should have at least one property key" );
             }
+            String key = quote( propertyKeys.next() );
+            if ( propertyKeys.hasNext() )
+            {
+                throw new RuntimeException( "Exporting compound constraints is not implemented yet" );
+            }
+
+            String label = quote( constraint.getLabel().name() );
+            result.add( "create constraint on (n:" + label + ") assert n." + key + " is unique" );
         }
         Collections.sort( result );
         return result;
     }
 
-    public String quote( String id )
+    private String quote( String id )
     {
         return "`" + id + "`";
     }
