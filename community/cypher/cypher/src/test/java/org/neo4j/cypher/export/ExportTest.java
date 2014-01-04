@@ -81,6 +81,24 @@ public class ExportTest
         assertEquals( "create (_0 {`name`:\"Andres\"})" + NL, doExportGraph( gdb ) );
     }
 
+    @Test
+    public void testNodeWithFloatProperty() throws Exception
+    {
+        final float floatValue = 10.1f;
+        final String expected = "10.100000";
+        gdb.createNode().setProperty( "float", floatValue );
+        assertEquals( "create (_0 {`float`:" + expected + "})" + NL, doExportGraph( gdb ) );
+    }
+
+    @Test
+    public void testNodeWithDoubleProperty() throws Exception
+    {
+        final double doubleValue = 123456.123456;
+        final String expected = "123456.123456";
+        gdb.createNode().setProperty( "double", doubleValue );
+        assertEquals( "create (_0 {`double`:" + expected + "})" + NL, doExportGraph( gdb ) );
+    }
+
     private String doExportGraph( GraphDatabaseService db )
     {
         SubGraph graph = DatabaseSubGraph.from( db );
