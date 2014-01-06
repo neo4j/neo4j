@@ -21,10 +21,11 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -156,44 +157,54 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         return new IndexUpdater()
         {
+            List<Object> updatedPropertyValues = new ArrayList<>();
+
             @Override
             public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
             {
                 long nodeId = update.getNodeId();
-                Object propertyValue = update.getValueAfter();
-                Long previousEntry = null;
-                searcherManager.maybeRefresh();
-                IndexSearcher searcher = searcherManager.acquire();
-                try
+                switch ( update.getUpdateMode() )
                 {
-                    TopDocs docs = searcher.search( documentStructure.newQuery( propertyValue ), 1 );
-                    if ( docs.totalHits > 0 )
-                    {
-                        Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
-                        previousEntry = documentStructure.getNodeId( doc );
-                    }
-                }
-                finally
-                {
-                    searcherManager.release( searcher );
-                }
-                if ( previousEntry != null )
-                {
-                    if ( previousEntry != nodeId )
-                    {
-                        throw new PreexistingIndexEntryConflictException( propertyValue, previousEntry, nodeId );
-                    }
-                }
-                else
-                {
-                    writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
-                    entryCount++;
+                    case ADDED:
+                        entryCount++;
+                    case CHANGED:
+                        // We don't look at the "before" value, so adding and changing idempotently is done the same way.
+                        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                                documentStructure.newDocumentRepresentingProperty( nodeId,
+                                        update.getValueAfter() ) );
+                        updatedPropertyValues.add( update.getValueAfter() );
+                        break;
+                    case REMOVED:
+                        entryCount--;
+                        writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+                        break;
+                    default:
+                        throw new IllegalStateException( "Unknown update mode " + update.getUpdateMode() );
                 }
             }
 
             @Override
             public void close() throws IOException, IndexEntryConflictException
             {
+                searcherManager.maybeRefresh();
+                IndexSearcher searcher = searcherManager.acquire();
+                try
+                {
+                    for ( Object propertyValue : updatedPropertyValues )
+                    {
+                        TopDocs docs = searcher.search( documentStructure.newQuery( propertyValue ), 2 );
+                        if ( docs.totalHits > 1 )
+                        {
+                            long nodeId1 = getNodeId( searcher.getIndexReader(), docs, 0 );
+                            long nodeId2 = getNodeId( searcher.getIndexReader(), docs, 1 );
+                            throw new PreexistingIndexEntryConflictException( propertyValue, nodeId1, nodeId2 );
+                        }
+                    }
+                }
+                finally
+                {
+                    searcherManager.release( searcher );
+                }
             }
 
             @Override

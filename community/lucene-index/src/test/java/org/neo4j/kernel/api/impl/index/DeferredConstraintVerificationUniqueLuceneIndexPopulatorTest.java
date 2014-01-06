@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
+import java.util.Collections;
 
 import org.junit.Test;
 
@@ -39,6 +40,137 @@ import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
+    @Test
+    public void shouldVerifyThatThereAreNoDuplicates() throws Exception
+    {
+        // given
+        File indexDirectory = new File( "target/whatever" );
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
+        populator.create();
+
+        populator.add( 1, "value1" );
+        populator.add( 2, "value2" );
+        populator.add( 3, "value3" );
+
+        // when
+        populator.verifyDeferredConstraints();
+        populator.close( true );
+
+        // then
+        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+        assertEquals( asList( 2l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
+        assertEquals( asList( 3l ), getAllNodes( directoryFactory, indexDirectory, "value3" ) );
+    }
+
+    @Test
+    public void shouldUpdateEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
+    {
+        // given
+        File indexDirectory = new File( "target/whatever" );
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
+        populator.create();
+
+        populator.add( 1, "value1" );
+
+        // when
+        IndexUpdater updater = populator.newPopulatingUpdater();
+
+        updater.process( NodePropertyUpdate.change( 1, 1, "value1", new long[]{}, "value2", new long[]{} ) );
+
+        populator.close( true );
+
+        // then
+        assertEquals( Collections.EMPTY_LIST, getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
+    }
+
+    @Test
+    public void shouldUpdateEntryForNodeThatHasPropertyRemovedAndThenAddedAgain() throws Exception
+    {
+        // given
+        File indexDirectory = new File( "target/whatever" );
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
+        populator.create();
+
+        populator.add( 1, "value1" );
+
+        // when
+        IndexUpdater updater = populator.newPopulatingUpdater();
+
+        updater.process( NodePropertyUpdate.remove( 1, 1, "value1", new long[]{} ) );
+        updater.process( NodePropertyUpdate.add( 1, 1, "value1", new long[]{} ) );
+
+        populator.close( true );
+
+        // then
+        assertEquals( asList(1l), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+    }
+
+    @Test
+    public void shouldRemoveEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
+    {
+        // given
+        File indexDirectory = new File( "target/whatever" );
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
+        populator.create();
+
+        populator.add( 1, "value1" );
+
+        // when
+        IndexUpdater updater = populator.newPopulatingUpdater();
+
+        updater.process( NodePropertyUpdate.remove( 1, 1, "value1", new long[]{} ) );
+
+        populator.close( true );
+
+        // then
+        assertEquals( Collections.EMPTY_LIST, getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToHandleSwappingOfIndexValues() throws Exception
+    {
+        // given
+        File indexDirectory = new File( "target/whatever" );
+        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
+        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
+                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
+                documentLogic, standard(),
+                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
+        populator.create();
+
+        populator.add( 1, "value1" );
+        populator.add( 2, "value2" );
+
+        // when
+        IndexUpdater updater = populator.newPopulatingUpdater();
+
+        updater.process( NodePropertyUpdate.change( 1, 1, "value1", new long[]{}, "value2", new long[]{} ) );
+        updater.process( NodePropertyUpdate.change( 2, 1, "value2", new long[]{}, "value1", new long[]{} ) );
+
+        populator.close( true );
+
+        // then
+        assertEquals( asList( 2l ), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
+        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
+    }
+
     @Test
     public void shouldFailAtVerificationStageWithAlreadyIndexedStringValue() throws Exception
     {
@@ -104,33 +236,6 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     }
 
     @Test
-    public void shouldNotFailAtVerificationStageWhenThereAreNoDuplicates() throws Exception
-    {
-        // given
-
-        File indexDirectory = new File( "target/whatever" );
-        final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-        DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
-                DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                documentLogic, standard(),
-                new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
-        populator.create();
-
-        populator.add( 1, "value1" );
-        populator.add( 2, "value2" );
-        populator.add( 3, "value3" );
-
-        // when
-        populator.verifyDeferredConstraints();
-        populator.close( true );
-
-        // then
-        assertEquals( asList( 1l ), getAllNodes( directoryFactory, indexDirectory, "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( directoryFactory, indexDirectory, "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( directoryFactory, indexDirectory, "value3" ) );
-    }
-
-    @Test
     public void shouldRejectDuplicateEntryWhenUsingPopulatingUpdater() throws Exception
     {
         // given
@@ -150,6 +255,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         {
             IndexUpdater updater = populator.newPopulatingUpdater();
             updater.process( NodePropertyUpdate.add( 3, 1, "value1", new long[]{} ) );
+            updater.close();
 
             fail( "should have thrown exception" );
         }
@@ -208,7 +314,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 
         IndexUpdater updater = populator.newPopulatingUpdater();
         updater.process( NodePropertyUpdate.add( 1, 1, "value1", new long[]{} ) );
-        updater.process( NodePropertyUpdate.add( 1, 1, "value1", new long[]{} ) );
+        updater.process( NodePropertyUpdate.change( 1, 1, "value1", new long[]{}, "value1", new long[]{} ) );
         updater.close();
         populator.add( 2, "value2" );
         populator.add( 3, "value3" );
