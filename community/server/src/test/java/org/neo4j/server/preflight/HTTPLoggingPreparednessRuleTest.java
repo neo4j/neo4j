@@ -157,7 +157,7 @@ public class HTTPLoggingPreparednessRuleTest
             "    </rollingPolicy>\n" +
             "\n" +
             "    <encoder>\n" +
-            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
+            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC 2616 -->\n" +
             "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
             "    </encoder>\n" +
             "  </appender>\n" +
