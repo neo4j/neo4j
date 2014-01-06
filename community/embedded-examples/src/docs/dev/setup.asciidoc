@@ -178,7 +178,7 @@ classifier=test-sources
 tag=startDbWithConfig
 ----
 
-Or you could of course create you own +Map<String, String>+ programmatically and use that instead, like so:
+Configuration settings can also be applied programmatically, like so:
 
 [snippet,java]
 ----

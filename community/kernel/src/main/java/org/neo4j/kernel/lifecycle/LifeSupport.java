@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -38,9 +39,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class LifeSupport
         implements Lifecycle
 {
-    List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
-    LifecycleStatus status = LifecycleStatus.NONE;
-    List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private final List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
+    private volatile LifecycleStatus status = LifecycleStatus.NONE;
+    private final List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
     private final StringLogger log;
     
     public LifeSupport()
@@ -367,7 +368,7 @@ public class LifeSupport
         instances.clear();
     }
 
-    public synchronized LifecycleStatus getStatus()
+    public LifecycleStatus getStatus()
     {
         return status;
     }
@@ -449,6 +450,11 @@ public class LifeSupport
         }
 
         return newStatus;
+    }
+
+    public boolean isRunning()
+    {
+        return status == LifecycleStatus.STARTED;
     }
 
     private class LifecycleInstance

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -89,12 +89,21 @@ public interface ShellServer extends Remote
 	void shutdown() throws RemoteException;
 	
 	/**
-	 * Makes this server available for clients to connect to via RMI.
+	 * Makes this server available at {@code localhost} for clients to connect to via RMI.
 	 * @param port the RMI port.
 	 * @param name the RMI name.
 	 * @throws RemoteException RMI error.
 	 */
 	void makeRemotelyAvailable( int port, String name ) throws RemoteException;
+	
+	/**
+	 * Makes this server available at the specific {@code host} for clients to connect to via RMI.
+	 * @param host the host to make this server available at.
+	 * @param port the RMI port.
+	 * @param name the RMI name.
+	 * @throws RemoteException RMI error.
+	 */
+	void makeRemotelyAvailable( String host, int port, String name ) throws RemoteException;
 	
 	/**
 	 * @return all the available commands one can issue to this server.

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,6 +22,7 @@ package org.neo4j.cypher.export;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -61,7 +62,12 @@ public class DatabaseSubGraph implements SubGraph {
     }
 
     @Override
-    public Iterable<IndexDefinition> indexes() {
+    public Iterable<IndexDefinition> getIndexes() {
         return gdb.schema().getIndexes();
+    }
+
+    @Override
+    public Iterable<ConstraintDefinition> getConstraints() {
+        return gdb.schema().getConstraints();
     }
 }

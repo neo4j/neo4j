@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,13 +36,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -288,7 +288,7 @@ public class DiskLayerTest
                 indexingService );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
-                null, null, null );
+                null, null, null, null );
     }
 
     @After

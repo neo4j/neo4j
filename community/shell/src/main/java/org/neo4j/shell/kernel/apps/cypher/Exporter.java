@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -40,9 +40,6 @@ public class Exporter
     public void export( Output out ) throws RemoteException, ShellException
     {
         begin( out );
-        for (String indexStatement : exporter.exportIndexes()) {
-            out.println(indexStatement+";");
-        }
         exporter.export(asWriter(out));
         out.println(";");
         commit(out);

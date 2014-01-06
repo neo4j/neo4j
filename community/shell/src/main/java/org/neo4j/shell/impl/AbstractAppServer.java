@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -50,7 +50,7 @@ import org.neo4j.shell.TextUtil;
 public abstract class AbstractAppServer extends SimpleAppServer
 	implements AppShellServer
 {
-    private final Map<String, App> apps = new TreeMap<String, App>();
+    private final Map<String, App> apps = new TreeMap<>();
 
 	/**
 	 * Constructs a new server.
@@ -102,7 +102,9 @@ public abstract class AbstractAppServer extends SimpleAppServer
 	{
         Session session = getClientSession( clientId );
 		if ( line == null || line.trim().length() == 0 )
-			return new Response( getPrompt( session ), Continuation.INPUT_COMPLETE );
+        {
+            return new Response( getPrompt( session ), Continuation.INPUT_COMPLETE );
+        }
 
         try
         {
@@ -125,7 +127,7 @@ public abstract class AbstractAppServer extends SimpleAppServer
     protected String replaceAlias( String line, Session session )
     {
 	    boolean changed = true;
-	    Set<String> appNames = new HashSet<String>();
+	    Set<String> appNames = new HashSet<>();
 	    while ( changed )
 	    {
 	        changed = false;
@@ -177,7 +179,7 @@ public abstract class AbstractAppServer extends SimpleAppServer
 
     private static List<String> quote( List<String> candidates )
     {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for ( String candidate : candidates )
         {
             candidate = candidate.replaceAll( " ", "\\\\ " );

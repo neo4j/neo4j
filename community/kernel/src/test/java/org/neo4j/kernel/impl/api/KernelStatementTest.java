@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,11 +20,15 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class KernelStatementTest
 {
@@ -39,7 +43,7 @@ public class KernelStatementTest
         KernelStatement statement =
             new KernelStatement(
                 mock( KernelTransactionImplementation.class ),
-                mock( IndexReaderFactory.class ), scanStore, null, null, null, null );
+                mock( IndexReaderFactory.class ), scanStore, null, null, null, null, null );
 
         statement.acquire();
 

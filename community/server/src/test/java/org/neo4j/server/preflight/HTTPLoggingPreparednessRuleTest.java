@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -157,7 +157,7 @@ public class HTTPLoggingPreparednessRuleTest
             "    </rollingPolicy>\n" +
             "\n" +
             "    <encoder>\n" +
-            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC1616 -->\n" +
+            "      <!-- Note the deliberate misspelling of \"referer\" in accordance with RFC 2616 -->\n" +
             "      <pattern>%h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] \"%r\" %s %b \"%i{Referer}\" \"%i{User-Agent}\"</pattern>\n" +
             "    </encoder>\n" +
             "  </appender>\n" +

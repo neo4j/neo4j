@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -165,7 +165,7 @@ public class GlobalGraphOperations
      * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *
-     * @return all labels in the underlying store.
+     * @return all property keys in the underlying store.
      */
     public ResourceIterable<String> getAllPropertyKeys()
     {

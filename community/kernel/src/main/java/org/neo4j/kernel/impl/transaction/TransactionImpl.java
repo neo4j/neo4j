@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -38,6 +38,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
@@ -142,83 +143,36 @@ class TransactionImpl implements Transaction
         {
             throw new IllegalArgumentException( "Null xa resource" );
         }
-        if ( status == Status.STATUS_ACTIVE ||
-                status == Status.STATUS_PREPARING )
+        if ( status == Status.STATUS_ACTIVE || status == Status.STATUS_PREPARING )
         {
             try
             {
                 if ( resourceList.size() == 0 )
-                {
-                    if ( !globalStartRecordWritten )
-                    {
-                        txManager.writeStartRecord( globalId );
-                        globalStartRecordWritten = true;
-                    }
-                    //
-                    byte branchId[] = txManager.getBranchId( xaRes );
-                    Xid xid = new XidImpl( globalId, branchId );
-                    resourceList.add( new ResourceElement( xid, xaRes ) );
-                    xaRes.start( xid, XAResource.TMNOFLAGS );
-                    try
-                    {
-                        txManager.getTxLog().addBranch( globalId, branchId );
-                    }
-                    catch ( IOException e )
-                    {
-                        logger.error( "Error writing transaction log", e );
-                        txManager.setTmNotOk( e );
-                        throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
-                                + " error writing transaction log" ), e );
-                    }
-
-                    return true;
-                }
-                Xid sameRmXid = null;
-                for ( ResourceElement re : resourceList )
-                {
-                    if ( sameRmXid == null && re.getResource().isSameRM( xaRes ) )
-                    {
-                        sameRmXid = re.getXid();
-                    }
-                    if ( xaRes == re.getResource() )
-                    {
-                        if ( re.getStatus() == RS_SUSPENDED )
-                        {
-                            xaRes.start( re.getXid(), XAResource.TMRESUME );
-                        }
-                        else
-                        {
-                            // either enlisted or delisted
-                            // is TMJOIN correct then?
-                            xaRes.start( re.getXid(), XAResource.TMJOIN );
-                        }
-                        re.setStatus( RS_ENLISTED );
-                        return true;
-                    }
-                }
-                if ( sameRmXid != null ) // should we join?
-                {
-                    addResourceToList( sameRmXid, xaRes );
-                    xaRes.start( sameRmXid, XAResource.TMJOIN );
+                {   // This is the first enlisted resource
+                    ensureGlobalTxStartRecordWritten();
+                    registerAndStartResource( xaRes );
                 }
                 else
-                // new branch
-                {
-                    // ResourceElement re = resourceList.getFirst();
-                    byte branchId[] = txManager.getBranchId( xaRes );
-                    Xid xid = new XidImpl( globalId, branchId );
-                    addResourceToList( xid, xaRes );
-                    xaRes.start( xid, XAResource.TMNOFLAGS );
-                    try
-                    {
-                        txManager.getTxLog().addBranch( globalId, branchId );
+                {   // There are other enlisted resources. We have to check if any of them have the same Xid
+                    Pair<Xid,ResourceElement> similarResource = findAlreadyRegisteredSimilarResource( xaRes );
+                    if ( similarResource.other() != null )
+                    {   // This exact resource is already enlisted
+                        ResourceElement resource = similarResource.other();
+                        
+                        // TODO either enlisted or delisted. is TMJOIN correct then?
+                        xaRes.start( resource.getXid(), resource.getStatus() == RS_SUSPENDED ?
+                                XAResource.TMRESUME : XAResource.TMJOIN );
+                        resource.setStatus( RS_ENLISTED );
                     }
-                    catch ( IOException e )
+                    else if ( similarResource.first() != null )
+                    {   // A similar resource, but not the exact same instance is already registered
+                        Xid xid = similarResource.first();
+                        addResourceToList( xid, xaRes );
+                        xaRes.start( xid, XAResource.TMJOIN );
+                    }
+                    else
                     {
-                        logger.error( "Error writing transaction log", e );
-                        txManager.setTmNotOk( e );
-                        throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
-                                + " error writing transaction log" ), e );
+                        registerAndStartResource( xaRes );
                     }
                 }
                 return true;
@@ -234,11 +188,56 @@ class TransactionImpl implements Transaction
                 status == Status.STATUS_ROLLEDBACK ||
                 status == Status.STATUS_MARKED_ROLLBACK )
         {
-            throw new RollbackException( "Tx status is: "
-                    + txManager.getTxStatusAsString( status ) );
+            throw new RollbackException( "Tx status is: " + txManager.getTxStatusAsString( status ) );
         }
-        throw new IllegalStateException( "Tx status is: "
-                + txManager.getTxStatusAsString( status ) );
+        throw new IllegalStateException( "Tx status is: " + txManager.getTxStatusAsString( status ) );
+    }
+
+    private Pair<Xid, ResourceElement> findAlreadyRegisteredSimilarResource( XAResource xaRes ) throws XAException
+    {
+        Xid sameXid = null;
+        ResourceElement sameResource = null;
+        for ( ResourceElement re : resourceList )
+        {
+            if ( sameXid == null && re.getResource().isSameRM( xaRes ) )
+            {
+                sameXid = re.getXid();
+            }
+            if ( xaRes == re.getResource() )
+            {
+                sameResource = re;
+            }
+        }
+        return sameXid == null && sameResource == null ?
+                Pair.<Xid,ResourceElement>empty() : Pair.of( sameXid, sameResource );
+    }
+
+    private void registerAndStartResource( XAResource xaRes ) throws XAException, SystemException
+    {
+        byte branchId[] = txManager.getBranchId( xaRes );
+        Xid xid = new XidImpl( globalId, branchId );
+        addResourceToList( xid, xaRes );
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        try
+        {
+            txManager.getTxLog().addBranch( globalId, branchId );
+        }
+        catch ( IOException e )
+        {
+            logger.error( "Error writing transaction log", e );
+            txManager.setTmNotOk( e );
+            throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
+                    + " error writing transaction log" ), e );
+        }
+    }
+
+    private void ensureGlobalTxStartRecordWritten() throws SystemException
+    {
+        if ( !globalStartRecordWritten )
+        {
+            txManager.writeStartRecord( globalId );
+            globalStartRecordWritten = true;
+        }
     }
 
     private void addResourceToList( Xid xid, XAResource xaRes )

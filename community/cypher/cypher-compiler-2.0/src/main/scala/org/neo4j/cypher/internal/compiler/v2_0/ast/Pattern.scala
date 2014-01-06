@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -43,11 +43,8 @@ import Pattern._
 
 case class Pattern(patternParts: Seq[PatternPart], token: InputToken) extends AstNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    semanticCheckPatternParts(_.declareIdentifiers(ctx)) then
-    semanticCheckPatternParts(_.semanticCheck(ctx))
-
-  private def semanticCheckPatternParts(check: PatternPart => SemanticCheck) =
-    patternParts.foldLeft(SemanticCheckResult.success) { (f, p) => f then check(p) }
+    patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) then
+    patternParts.foldSemanticCheck(_.semanticCheck(ctx))
 
   def toLegacyPatterns: Seq[commands.Pattern] = patternParts.flatMap(_.toLegacyPatterns)
   def toLegacyNamedPaths: Seq[commands.NamedPath] = patternParts.flatMap(_.toLegacyNamedPath)

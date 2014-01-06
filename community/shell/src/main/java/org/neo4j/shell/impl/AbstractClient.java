@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,14 +45,15 @@ import org.neo4j.shell.Welcome;
  */
 public abstract class AbstractClient implements ShellClient
 {
-
-    private static final Set<String> EXIT_COMMANDS = new HashSet<String>(
+    public static final String WARN_UNTERMINATED_INPUT =
+            "Warning: Exiting with unterminated multi-line input.";
+    private static final Set<String> EXIT_COMMANDS = new HashSet<>(
         Arrays.asList( "exit", "quit", null ) );
 
     private Console console;
     private long timeConnection;
     private volatile boolean end;
-    private final Collection<String> multiLine = new ArrayList<String>();
+    private final Collection<String> multiLine = new ArrayList<>();
     private Serializable id;
     private String prompt;
 
@@ -141,9 +142,15 @@ public abstract class AbstractClient implements ShellClient
     
     private String fullLine( String line )
     {
-        if ( multiLine.isEmpty() ) return line;
+        if ( multiLine.isEmpty() )
+        {
+            return line;
+        }
         StringBuilder result = new StringBuilder();
-        for ( String oneLine : multiLine ) result.append( result.length() > 0 ? "\n" : "" ).append( oneLine );
+        for ( String oneLine : multiLine )
+        {
+            result.append( result.length() > 0 ? "\n" : "" ).append( oneLine );
+        }
         return result.append( "\n" + line ).toString();
     }
 
@@ -161,7 +168,9 @@ public abstract class AbstractClient implements ShellClient
     public String getPrompt()
     {
         if ( !multiLine.isEmpty() )
+        {
             return "> ";
+        }
         return prompt;
     }
 
@@ -217,11 +226,6 @@ public abstract class AbstractClient implements ShellClient
         return console.readLine( prompt );
     }
 
-    static String[] getExitCommands()
-    {
-        return EXIT_COMMANDS.toArray( new String[ EXIT_COMMANDS.size() ] );
-    }
-    
     protected void updateTimeForMostRecentConnection()
     {
         this.timeConnection = System.currentTimeMillis();
@@ -234,6 +238,17 @@ public abstract class AbstractClient implements ShellClient
     
     public void shutdown()
     {
+        if ( !multiLine.isEmpty() )
+        {
+            try
+            {
+                getOutput().println( WARN_UNTERMINATED_INPUT );
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
     
     @Override
@@ -250,7 +265,7 @@ public abstract class AbstractClient implements ShellClient
     	}
     	catch ( NoSuchObjectException e )
     	{
-    		System.out.println( "Couldn't unexport:" + remote );
+    		System.out.println( "Couldn't unexport: " + remote );
     	}
     }
     

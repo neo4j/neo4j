@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -95,8 +95,13 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     @Override
     public void makeRemotelyAvailable( int port, String name ) throws RemoteException
     {
-        RmiLocation location = RmiLocation.location( "localhost", port, name );
-        location.bind( this );
+        makeRemotelyAvailable( "localhost", port, name );
+    }
+    
+    @Override
+    public void makeRemotelyAvailable( String host, int port, String name ) throws RemoteException
+    {
+        RmiLocation.location( host, port, name ).bind( this );
     }
 
     @Override

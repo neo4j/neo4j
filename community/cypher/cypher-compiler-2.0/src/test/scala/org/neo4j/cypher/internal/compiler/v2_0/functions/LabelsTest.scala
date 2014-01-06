@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,8 +31,7 @@ class LabelsTest extends Assertions {
     val nodeIdentifier = ast.Identifier("n", DummyToken(11, 12))
     val labelsInvocation = ast.FunctionInvocation(
       ast.Identifier("labels", DummyToken(6, 9)),
-      false,
-      Seq(nodeIdentifier),
+      nodeIdentifier,
       DummyToken(5,14)
     )
 
@@ -47,8 +46,7 @@ class LabelsTest extends Assertions {
     val nonNodeIdentifier = ast.Identifier("n", DummyToken(11, 12))
     val labelsInvocation = ast.FunctionInvocation(
       ast.Identifier("labels", DummyToken(6, 9)),
-      false,
-      Seq(nonNodeIdentifier),
+      nonNodeIdentifier,
       DummyToken(5,14)
     )
 

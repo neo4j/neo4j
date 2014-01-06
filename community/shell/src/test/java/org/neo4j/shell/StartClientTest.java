@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,10 @@
 package org.neo4j.shell;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,9 +31,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
+import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class StartClientTest
@@ -88,6 +93,51 @@ public class StartClientTest
             assertThat( (String) db.getGraphDatabaseService().getNodeById( 0 ).getProperty( "foo" ),
                     equalTo( "bar" ) );
             tx.success();
+        }
+    }
+
+    @Test
+    public void mustWarnWhenRunningScriptWithUnterminatedMultilineCommands()
+    {
+        // Given an empty database and the unterminated-cypher-query.txt file.
+        String script = getClass().getResource( "/unterminated-cypher-query.txt" ).getFile();
+
+        // When running the script with -file
+        String output = runAndCaptureOutput( new String[]{ "-file", script } );
+
+        // Then we should get a warning
+        assertThat( output, containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) );
+    }
+
+    @Test
+    public void mustNotAboutExitingWithUnterminatedCommandWhenItIsNothingButComments()
+    {
+        // Given an empty database and the unterminated-comment.txt file.
+        String script = getClass().getResource( "/unterminated-comment.txt" ).getFile();
+
+        // When running the script with -file
+        String output = runAndCaptureOutput( new String[]{ "-file", script } );
+
+        // Then we should get a warning
+        assertThat( output, not( containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) ) );
+    }
+
+    private String runAndCaptureOutput( String[] arguments )
+    {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream( buf );
+        PrintStream oldOut = System.out;
+        System.setOut( out );
+
+        try
+        {
+            StartClient.main( arguments );
+            out.close();
+            return buf.toString();
+        }
+        finally
+        {
+            System.setOut( oldOut );
         }
     }
 }

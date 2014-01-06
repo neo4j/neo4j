@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,7 +46,7 @@ public class LockingStatementOperationsTest
     private final SchemaWriteOperations schemaWriteOps;
     private final LockHolder locks = mock( LockHolder.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null );
+    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null, null );
 
     public LockingStatementOperationsTest()
     {

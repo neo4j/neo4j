@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -2891,6 +2891,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
         matches(RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)).
         tail(Query.updates(MapPropertySetAction(Identifier("r"), LiteralMap(Map("id"->Literal(42))))).returns()).
         returns(AllIdentifiers()))
+  }
+
+  @Test def should_allow_whitespace_in_multiple_word_operators() {
+    test(
+      "OPTIONAL\t MATCH (n) WHERE n  IS   NOT\n /* possibly */ NULL    RETURN n",
+      Query.
+        optionalMatches(SingleNode("n")).
+        where(Not(IsNull(Identifier("n")))).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
   }
 
   val parser = CypherParser()

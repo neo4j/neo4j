@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -40,7 +40,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
   def init() {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null)
+    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null, null)
   }
 
   @Test def should_mark_transaction_successful_if_successful() {

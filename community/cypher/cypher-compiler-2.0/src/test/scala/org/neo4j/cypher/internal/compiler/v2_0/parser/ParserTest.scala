@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,6 +35,12 @@ trait ParserTest[T, J] extends Assertions {
     def shouldGive(expected: J) {
       actuals foreach {
         actual => assert(actual === expected, s"'$text' was not parsed successfully")
+      }
+    }
+
+    def shouldMatch(expected: PartialFunction[J, Unit]) {
+      actuals foreach {
+        actual => assert(expected.isDefinedAt(actual), s"'$text' was not parsed successfully")
       }
     }
   }

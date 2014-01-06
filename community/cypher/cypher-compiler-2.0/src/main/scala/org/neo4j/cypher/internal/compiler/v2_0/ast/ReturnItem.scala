@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -30,12 +30,11 @@ sealed trait ReturnItems extends AstNode with SemanticCheckable {
 case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends ReturnItems {
   def semanticCheck = items.semanticCheck
 
-  def declareIdentifiers(currentState: SemanticState) = {
-    items.foldLeft(SemanticCheckResult.success)((sc, item) => item.alias match {
-      case Some(identifier) => sc then identifier.declare(item.expression.types(currentState))
-      case None => sc
+  def declareIdentifiers(currentState: SemanticState) =
+    items.foldSemanticCheck(item => item.alias match {
+      case Some(identifier) => identifier.declare(item.expression.types(currentState))
+      case None             => SemanticCheckResult.success
     })
-  }
 
   def toCommands = items.map(_.toCommand)
 }

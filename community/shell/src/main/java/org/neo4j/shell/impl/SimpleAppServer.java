@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -52,7 +52,7 @@ public abstract class SimpleAppServer implements ShellServer
 	 */
 	public static final int DEFAULT_PORT = 1337;
 	
-	private final Map<Serializable, Session> clientSessions = new ConcurrentHashMap<Serializable, Session>();
+	private final Map<Serializable, Session> clientSessions = new ConcurrentHashMap<>();
 	
 	private final AtomicInteger nextClientId = new AtomicInteger();
 	
@@ -88,7 +88,9 @@ public abstract class SimpleAppServer implements ShellServer
     {
 	    Serializable clientId = newClientId();
 	    if ( clientSessions.containsKey( clientId ) )
-	        throw new IllegalStateException( "Client " + clientId + " already initialized" );
+        {
+            throw new IllegalStateException( "Client " + clientId + " already initialized" );
+        }
 	    Session session = newSession( clientId, initialSession );
         clientSessions.put( clientId, session );
 		try
@@ -121,12 +123,14 @@ public abstract class SimpleAppServer implements ShellServer
 	    Session session = new Session( id );
 	    initialPopulateSession( session );
 	    for ( Map.Entry<String, Serializable> entry : initialSession.entrySet() )
-	        session.set( entry.getKey(), entry.getValue() );
+        {
+            session.set( entry.getKey(), entry.getValue() );
+        }
 	    return session;
     }
 
     protected void initialPopulateSession( Session session ) throws ShellException
-    {
+    {   // No initial session by default
     }
 
     /**
@@ -151,7 +155,9 @@ public abstract class SimpleAppServer implements ShellServer
     {
         Session session = clientSessions.get( clientID );
         if ( session == null )
+        {
             throw new IllegalStateException( "Client " + clientID + " not initialized" );
+        }
         return session;
     }
     
@@ -161,7 +167,9 @@ public abstract class SimpleAppServer implements ShellServer
         // TODO how about clients not properly leaving?
         
         if ( clientSessions.remove( clientID ) == null )
+        {
             throw new IllegalStateException( "Client " + clientID + " not initialized" );
+        }
     }
 
     @Override
@@ -178,10 +186,23 @@ public abstract class SimpleAppServer implements ShellServer
     public synchronized void makeRemotelyAvailable( int port, String name )
 		throws RemoteException
 	{
-	    if ( remoteEndPoint == null )
-	        remoteEndPoint = new RemotelyAvailableServer( this );
-	    remoteEndPoint.makeRemotelyAvailable( port, name );
+	    remoteEndPoint().makeRemotelyAvailable( port, name );
 	}
+	
+	@Override
+	public synchronized void makeRemotelyAvailable( String host, int port, String name ) throws RemoteException
+	{
+        remoteEndPoint().makeRemotelyAvailable( host, port, name );
+	}
+
+    private ShellServer remoteEndPoint() throws RemoteException
+    {
+        if ( remoteEndPoint == null )
+        {
+            remoteEndPoint = new RemotelyAvailableServer( this );
+        }
+        return remoteEndPoint;
+    }
 	
 	@Override
     public String[] getAllAvailableCommands()
@@ -190,7 +211,6 @@ public abstract class SimpleAppServer implements ShellServer
 	}
 
 	public TabCompletion tabComplete( String partOfLine, Session session )
-	        throws ShellException, RemoteException
 	{
 	    return new TabCompletion( Collections.<String>emptyList(), 0 );
 	}

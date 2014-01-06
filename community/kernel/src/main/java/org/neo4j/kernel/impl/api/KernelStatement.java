@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 
 public class KernelStatement implements TxState.Holder, Statement
 {
@@ -41,6 +42,8 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
+    protected final NeoStoreTransaction neoStoreTransaction;
+    
     private LabelScanReader labelScanReader;
     private int referenceCount;
     private final OperationsFacade facade;
@@ -49,14 +52,16 @@ public class KernelStatement implements TxState.Holder, Statement
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
                             LabelScanStore labelScanStore,
                             TxState.Holder txStateHolder, LockHolder lockHolder, LegacyKernelOperations
-                            legacyKernelOperations, StatementOperationParts operations )
+                            legacyKernelOperations, StatementOperationParts operations,
+                            NeoStoreTransaction neoStoreTransaction )
     {
         this.transaction = transaction;
         this.lockHolder = lockHolder;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
-        this.facade = new OperationsFacade( this, legacyKernelOperations, operations);
+        this.neoStoreTransaction = neoStoreTransaction;
+        this.facade = new OperationsFacade( this, legacyKernelOperations, operations );
     }
 
     @Override

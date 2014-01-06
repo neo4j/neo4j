@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -39,23 +39,22 @@ import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -81,16 +80,14 @@ public class StateHandlingStatementOperations implements
     private final StoreReadLayer storeLayer;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final PersistenceManager persistenceManager;
 
     public StateHandlingStatementOperations(
             StoreReadLayer storeLayer, LegacyPropertyTrackers propertyTrackers,
-            ConstraintIndexCreator constraintIndexCreator, PersistenceManager writeTransactionProxy )
+            ConstraintIndexCreator constraintIndexCreator )
     {
         this.storeLayer = storeLayer;
         this.legacyPropertyTrackers = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
-        this.persistenceManager = writeTransactionProxy;
     }
 
     @Override
@@ -518,12 +515,12 @@ public class StateHandlingStatementOperations implements
         if ( !existingProperty.isDefined() )
         {
             legacyPropertyTrackers.nodeAddStoreProperty( nodeId, property );
-            persistenceManager.nodeAddProperty( nodeId, property.propertyKeyId(), property.value() );
+            state.neoStoreTransaction.nodeAddProperty( nodeId, property.propertyKeyId(), property.value() );
         }
         else
         {
             legacyPropertyTrackers.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty, property );
-            persistenceManager.nodeChangeProperty( nodeId, property.propertyKeyId(), property.value() );
+            state.neoStoreTransaction.nodeChangeProperty( nodeId, property.propertyKeyId(), property.value() );
         }
         state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
         return existingProperty;
@@ -537,13 +534,13 @@ public class StateHandlingStatementOperations implements
         if ( !existingProperty.isDefined() )
         {
             legacyPropertyTrackers.relationshipAddStoreProperty( relationshipId, property );
-            persistenceManager.relAddProperty( relationshipId, property.propertyKeyId(), property.value() );
+            state.neoStoreTransaction.relAddProperty( relationshipId, property.propertyKeyId(), property.value() );
         }
         else
         {
             legacyPropertyTrackers.relationshipChangeStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty, property );
-            persistenceManager.relChangeProperty( relationshipId, property.propertyKeyId(), property.value() );
+            state.neoStoreTransaction.relChangeProperty( relationshipId, property.propertyKeyId(), property.value() );
         }
         state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
         return existingProperty;
@@ -555,11 +552,11 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = graphGetProperty( state, property.propertyKeyId() );
         if ( !existingProperty.isDefined() )
         {
-            persistenceManager.graphAddProperty( property.propertyKeyId(), property.value() );
+            state.neoStoreTransaction.graphAddProperty( property.propertyKeyId(), property.value() );
         }
         else
         {
-            persistenceManager.graphChangeProperty( property.propertyKeyId(), property.value() );
+            state.neoStoreTransaction.graphChangeProperty( property.propertyKeyId(), property.value() );
         }
         state.txState().graphDoReplaceProperty( existingProperty, property );
         return existingProperty;
@@ -573,7 +570,7 @@ public class StateHandlingStatementOperations implements
         if ( existingProperty.isDefined() )
         {
             legacyPropertyTrackers.nodeRemoveStoreProperty( nodeId, (DefinedProperty) existingProperty );
-            persistenceManager.nodeRemoveProperty( nodeId, propertyKeyId );
+            state.neoStoreTransaction.nodeRemoveProperty( nodeId, propertyKeyId );
         }
         state.txState().nodeDoRemoveProperty( nodeId, existingProperty );
         return existingProperty;
@@ -588,7 +585,7 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.relationshipRemoveStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty );
-            persistenceManager.relRemoveProperty( relationshipId, propertyKeyId );
+            state.neoStoreTransaction.relRemoveProperty( relationshipId, propertyKeyId );
         }
         state.txState().relationshipDoRemoveProperty( relationshipId, existingProperty );
         return existingProperty;
@@ -600,7 +597,7 @@ public class StateHandlingStatementOperations implements
         Property existingProperty = graphGetProperty( state, propertyKeyId );
         if ( existingProperty.isDefined() )
         {
-            persistenceManager.graphRemoveProperty( propertyKeyId );
+            state.neoStoreTransaction.graphRemoveProperty( propertyKeyId );
         }
         state.txState().graphDoRemoveProperty( existingProperty );
         return existingProperty;

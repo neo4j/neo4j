@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -35,12 +35,15 @@ import static org.neo4j.helpers.Settings.setting;
 /**
  * Settings for the shell extension
  */
-@Description("Settings for the remote shell extension")
+@Description( "Settings for the remote shell extension" )
 public class ShellSettings
 {
     @Description("Enable a remote shell server which shell clients can log in to")
     public static final Setting<Boolean> remote_shell_enabled = setting( "remote_shell_enabled", BOOLEAN, FALSE );
 
+    public static final Setting<String> remote_shell_host = setting( "remote_shell_host", STRING, "localhost",
+            illegalValueMessage( "must be a valid name", matches( ANY ) ) );
+    
     public static final Setting<Integer> remote_shell_port = setting( "remote_shell_port", INTEGER, "1337", port );
 
     public static final Setting<Boolean> remote_shell_read_only = setting( "remote_shell_read_only", BOOLEAN, FALSE );

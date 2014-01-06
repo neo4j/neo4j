@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,8 +20,8 @@
 package org.neo4j.graphdb;
 
 /**
- * Thrown when attempting to modify the graph outside of a transaction.
- * 
+ * Thrown when attempting to access or modify the graph outside of a transaction.
+ *
  * @see Transaction
  */
 public class NotInTransactionException extends RuntimeException

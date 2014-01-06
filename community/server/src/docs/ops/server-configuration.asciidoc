@@ -174,7 +174,7 @@ and still have Neo4j respect the base URI of that externally visible proxy.
 Ordinarily Neo4j uses the `HOST` header of the HTTP request to construct URIs in its responses. Where a proxy is involved
 however, this is often undesirable. Instead Neo4j, uses the
 `X-Forwarded-Host` and `X-Forwarded-Proto` headers provided by proxies to parameterize the URIs in the responses from
-the databases's REST API. From the outside it looks as if the proxy generated that payload. If an `X-Forwarded-Host`
+the database's REST API. From the outside it looks as if the proxy generated that payload. If an `X-Forwarded-Host`
 header value contains more than one address (`X-Forwarded-Host` allows comma-and-space separated lists of addresses),
 Neo4j picks the first, which represents the client request.
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,7 +45,7 @@ object Expression {
 
   implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
     def semanticCheck(ctx: SemanticContext) : SemanticCheck =
-      traversable.foldLeft(SemanticCheckResult.success) { (f, o) => f then o.semanticCheck(ctx) }
+      traversable.foldSemanticCheck { _.semanticCheck(ctx) }
   }
 
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
@@ -53,9 +53,7 @@ object Expression {
       (state: SemanticState) => traversable.map { _.types(state) } reduce { _ mergeDown _ }
 
     def constrainType(possibleType: CypherType, possibleTypes: CypherType*) : SemanticCheck =
-      traversable.foldLeft(SemanticCheckResult.success) {
-        (f, e) => f then e.constrainType(possibleType, possibleTypes:_*)
-      }
+      traversable.foldSemanticCheck { _.constrainType(possibleType, possibleTypes:_*) }
   }
 }
 

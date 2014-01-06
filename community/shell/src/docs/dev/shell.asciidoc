@@ -360,14 +360,11 @@ all open transactions.
 
 As a simple way of exporting a database or a subset of it, the +dump+ command converts the graph of a Cypher result or the whole database into a single Cypher +create+ statement.
 
-[NOTE]
-Constraint export is not yet supported.
-
 Examples:
 
 * +dump+ dumps the whole database as single cypher create statement
 * `dump START n=node({self}) MATCH p=(n)-[r:KNOWS*]->(m) RETURN n,r,m;` dumps the transitive friendship graph of the current node.
-* `neo4j-shell -path db1 -c dump START n=node:node_auto_index(name='Mattias') MATCH p=(n)-[r:KNOWS]->(m) RETURN p; | neo4j-shell -path db2`
+* `neo4j-shell -path db1 -c 'dump MATCH p=(n:Person {name:"Mattias"})-[r:KNOWS]->(m) RETURN p;' | neo4j-shell -path db2 -file -`
   imports the subgraph of the first database (db1) into the second (db2)
 
 ==== Example Dump Scripts ====

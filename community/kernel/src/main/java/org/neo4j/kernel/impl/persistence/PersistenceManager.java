@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -33,7 +33,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.persistence.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -206,46 +206,46 @@ public class PersistenceManager
         getResource().createRelationshipTypeToken( id, name );
     }
 
-    private NeoStoreTransaction getResource()
+    public NeoStoreTransaction getResource()
     {
         Transaction tx = this.getCurrentTransaction();
-        if ( tx == null )
-        {
-            throw new NotInTransactionException();
-        }
         NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con == null )
         {
-            try
-            {
-                XaConnection xaConnection = persistenceSource.getXaDataSource().getXaConnection();
-                XAResource xaResource = xaConnection.getXaResource();
-                if ( !tx.enlistResource( xaResource ) )
-                {
-                    throw new ResourceAcquisitionFailedException(
-                        "Unable to enlist '" + xaResource + "' in " + "transaction" );
-                }
-                con = persistenceSource.createTransaction( xaConnection );
-
-                TransactionState state = transactionManager.getTransactionState();
-                tx.registerSynchronization( new TxCommitHook( tx, state ) );
-
-                registerTransactionEventHookIfNeeded( tx );
-
-                txConnectionMap.put( tx, con );
-            }
-            catch ( RollbackException re )
-            {
-                String msg = "The transaction is marked for rollback only.";
-                throw new ResourceAcquisitionFailedException( msg, re );
-            }
-            catch ( SystemException se )
-            {
-                String msg = "TM encountered an unexpected error condition.";
-                throw new ResourceAcquisitionFailedException( msg, se );
-            }
+            txConnectionMap.put( tx, con = createResource( tx ) );
         }
         return con;
+    }
+
+    private NeoStoreTransaction createResource( Transaction tx )
+    {
+        try
+        {
+            XaConnection xaConnection = persistenceSource.getXaDataSource().getXaConnection();
+            XAResource xaResource = xaConnection.getXaResource();
+            if ( !tx.enlistResource( xaResource ) )
+            {
+                throw new ResourceAcquisitionFailedException(
+                    "Unable to enlist '" + xaResource + "' in " + "transaction" );
+            }
+            NeoStoreTransaction con = persistenceSource.createTransaction( xaConnection );
+
+            TransactionState state = transactionManager.getTransactionState();
+            tx.registerSynchronization( new TxCommitHook( tx, state ) );
+
+            registerTransactionEventHookIfNeeded( tx );
+            return con;
+        }
+        catch ( RollbackException re )
+        {
+            String msg = "The transaction is marked for rollback only.";
+            throw new ResourceAcquisitionFailedException( msg, re );
+        }
+        catch ( SystemException se )
+        {
+            String msg = "TM encountered an unexpected error condition.";
+            throw new ResourceAcquisitionFailedException( msg, se );
+        }
     }
 
     private void registerTransactionEventHookIfNeeded( Transaction tx )
@@ -258,12 +258,17 @@ public class PersistenceManager
         }
     }
 
-    private Transaction getCurrentTransaction()
+    public Transaction getCurrentTransaction()
         throws NotInTransactionException
     {
         try
         {
-            return transactionManager.getTransaction();
+            Transaction tx = transactionManager.getTransaction();
+            if ( tx == null )
+            {
+                throw new NotInTransactionException();
+            }
+            return tx;
         }
         catch ( SystemException se )
         {
@@ -329,10 +334,6 @@ public class PersistenceManager
     void delistResourcesForTransaction() throws NotInTransactionException
     {
         Transaction tx = this.getCurrentTransaction();
-        if ( tx == null )
-        {
-            throw new NotInTransactionException();
-        }
         NeoStoreTransaction con = txConnectionMap.get( tx );
         if ( con != null )
         {

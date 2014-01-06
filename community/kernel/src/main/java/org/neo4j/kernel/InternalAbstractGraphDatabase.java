@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -888,10 +888,11 @@ public abstract class InternalAbstractGraphDatabase
     // This is here until we've moved all operations into the kernel, which handles this check on it's own.
     private void assertDatabaseRunning()
     {
-        if(life.getStatus() == LifecycleStatus.SHUTDOWN)
+        if( life.isRunning() )
         {
-            throw new DatabaseShutdownException();
+            return;
         }
+        throw new DatabaseShutdownException();
     }
 
     protected RemoteTxHook createTxHook()

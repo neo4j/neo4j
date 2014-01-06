@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -37,6 +37,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 public class ShellBootstrap implements Serializable
 {
     private final boolean enable;
+    private String host;
     private final int port;
     private final String name;
     private final boolean read_only;
@@ -44,6 +45,7 @@ public class ShellBootstrap implements Serializable
     ShellBootstrap( Config config )
     {
         this.enable = config.get( ShellSettings.remote_shell_enabled );
+        this.host = config.get( ShellSettings.remote_shell_host );
         this.port = config.get( ShellSettings.remote_shell_port );
         this.name = config.get( ShellSettings.remote_shell_name );
         this.read_only = config.get( ShellSettings.remote_shell_read_only );
@@ -119,7 +121,7 @@ public class ShellBootstrap implements Serializable
 
     public GraphDatabaseShellServer enable( GraphDatabaseShellServer server ) throws RemoteException
     {
-        server.makeRemotelyAvailable( port, name );
+        server.makeRemotelyAvailable( host, port, name );
         return server;
     }
 }

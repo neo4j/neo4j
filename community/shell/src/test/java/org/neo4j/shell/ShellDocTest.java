@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -185,7 +185,7 @@ public class ShellDocTest
         doc.add( "create index on :Person(name);", "", "create an index" );
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
         doc.add( "dump", "begin" +
-                NL +"create index on :`Person`(`name`);" +
+                NL +"create index on :`Person`(`name`)" +
                 NL +"create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
                 NL +"create _0-[:`KNOWS`]->_0" +
                 NL +";" +

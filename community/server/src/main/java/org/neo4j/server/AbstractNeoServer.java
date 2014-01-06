@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -106,7 +106,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
 
-    private RoundRobinJobScheduler rrdDbScheduler = new RoundRobinJobScheduler();
+    private RoundRobinJobScheduler rrdDbScheduler;
     private RrdDbWrapper rrdDbWrapper;
 
     private TransactionFacade transactionFacade;
@@ -158,8 +158,9 @@ public abstract class AbstractNeoServer implements NeoServer
                 databaseActions = createDatabaseActions();
 
                 // TODO: RrdDb is not needed once we remove the old webadmin
+                rrdDbScheduler = new RoundRobinJobScheduler();
                 rrdDbWrapper = new RrdFactory( configurator.configuration() )
-                        .createRrdDbAndSampler( database, new RoundRobinJobScheduler() );
+                        .createRrdDbAndSampler( database, rrdDbScheduler );
     
                 transactionFacade = createTransactionalActions();
     
