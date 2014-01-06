@@ -26,24 +26,46 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands
 sealed trait Query extends Statement
 
 case class SingleQuery(clauses: Seq[Clause], token: InputToken) extends Query {
+  assert(clauses.nonEmpty)
+
   def semanticCheck: SemanticCheck = checkOrder(clauses) then checkClauses
 
-  private def checkOrder(clauses: Seq[Clause]): SemanticCheck = clauses match {
-    case Seq() => Seq()
-    case _     => (clauses.take(2) match {
-      case Seq(_: With, _: Start)                => Seq()
-      case Seq(clause, start: Start)             => Seq(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.token, start.token))
-      case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional => Seq(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.token, match1.token))
-      case Seq(clause: Return, _)                => Seq(SemanticError(s"${clause.name} can only be used at the end of the query", clause.token))
-      case Seq(_: UpdateClause, _: UpdateClause) => Seq()
-      case Seq(_: UpdateClause, _: With)         => Seq()
-      case Seq(_: UpdateClause, _: Return)       => Seq()
-      case Seq(update: UpdateClause, clause)     => Seq(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.token, update.token))
-      case Seq(_: UpdateClause)                  => Seq()
-      case Seq(_: Return)                        => Seq()
-      case Seq(clause)                           => Seq(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.token))
-      case _                                     => Seq()
-    }) then checkOrder(clauses.tail)
+  private def checkOrder(clauses: Seq[Clause]): SemanticCheck = s => {
+    val (lastPair, errors) = clauses.sliding(2).foldLeft(Seq.empty[Clause], Vector.empty[SemanticError]) {
+      case ((_, errors), pair) =>
+        val optError = pair match {
+          case Seq(_: With, _: Start) =>
+            None
+          case Seq(clause, start: Start) =>
+            Some(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.token, start.token))
+          case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
+            Some(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.token, match1.token))
+          case Seq(clause: Return, _) =>
+            Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.token))
+          case Seq(_: UpdateClause, _: UpdateClause) =>
+            None
+          case Seq(_: UpdateClause, _: With) =>
+            None
+          case Seq(_: UpdateClause, _: Return) =>
+            None
+          case Seq(update: UpdateClause, clause) =>
+            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.token, update.token))
+          case _ =>
+            None
+        }
+        (pair, optError.fold(errors)(errors :+ _))
+    }
+
+    val lastError = lastPair.last match {
+      case _: UpdateClause =>
+        None
+      case _: Return =>
+        None
+      case clause =>
+        Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.token))
+    }
+
+    SemanticCheckResult(s, errors ++ lastError)
   }
 
   private def checkClauses: SemanticCheck = s => {
@@ -92,27 +114,27 @@ case class SingleQuery(clauses: Seq[Clause], token: InputToken) extends Query {
     }._1.get
 
   private def groupClauses(clauses: Seq[Clause]): IndexedSeq[IndexedSeq[Clause]] = {
-    def split = Vector(clauses.head) +: groupClauses(clauses.tail)
+    val (groups, last) = clauses.sliding(2).foldLeft((Vector.empty[Vector[Clause]], Vector(clauses.head))) {
+      case ((groups, last), pair) =>
+        def split   = (groups :+ last, pair.tail.toVector)
+        def combine = (groups, last ++ pair.tail)
 
-    def group = {
-      val tailGroups = groupClauses(clauses.tail)
-      (clauses.head +: tailGroups.head) +: tailGroups.tail
+        pair match {
+          case Seq(clause)                           => (groups, last)
+          case Seq(_: With, _: Return)               => combine
+          case Seq(_: ClosingClause, _)              => split
+          case Seq(_, _: ClosingClause)              => combine
+          case Seq(_: UpdateClause, _: Create)       => split
+          case Seq(_: UpdateClause, _: CreateUnique) => split
+          case Seq(_: UpdateClause, _: Merge)        => split
+          case Seq(_: UpdateClause, _: UpdateClause) => combine
+          case Seq(_: UpdateClause, _)               => split
+          case Seq(_, _: UpdateClause)               => split
+          case Seq(_: Match, _)                      => split
+          case Seq(_, _)                             => combine
+        }
     }
-
-    clauses.take(2) match {
-      case Seq(clause)                           => Vector(Vector(clause))
-      case Seq(_: With, _: Return)               => group
-      case Seq(_: ClosingClause, _)              => split
-      case Seq(_, _: ClosingClause)              => group
-      case Seq(_: UpdateClause, _: Create)       => split
-      case Seq(_: UpdateClause, _: CreateUnique) => split
-      case Seq(_: UpdateClause, _: Merge)        => split
-      case Seq(_: UpdateClause, _: UpdateClause) => group
-      case Seq(_: UpdateClause, _)               => split
-      case Seq(_, _: UpdateClause)               => split
-      case Seq(_: Match, _)                      => split
-      case Seq(_, _)                             => group
-    }
+    groups :+ last
   }
 }
 
