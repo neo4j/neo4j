@@ -27,7 +27,7 @@ We recommend that you install the Java JDK 7 from the http://www.oracle.com/tech
 [[windows-installer]]
 === Windows Installer ===
 
-1. Download the version that you want from http://neo4j.org/download.
+1. Download the version that you want from http://www.neo4j.org/download.
    * Select the appropriate version and architecture for your platform.
 2. Double-click the downloaded installer file.
 3. Follow the prompts.
@@ -38,7 +38,7 @@ Newer versions of Windows come with a SmartScreen feature that may prevent the i
 
 [[windows-console]]
 === Windows Console Application ===
-1. Download the latest release from http://neo4j.org/download.
+1. Download the latest release from http://www.neo4j.org/download.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
@@ -47,7 +47,7 @@ Newer versions of Windows come with a SmartScreen feature that may prevent the i
 
 === As a Windows service ===
 
-1. Download the latest release from http://neo4j.org/download.
+1. Download the latest release from http://www.neo4j.org/download.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
@@ -86,7 +86,7 @@ For Debian packages, see the instructions at  http://debian.neo4j.org.
 [[unix-console]]
 === Unix Console Application ===
 
-1. Download the latest release from http://neo4j.org/download.
+1. Download the latest release from http://www.neo4j.org/download.
    * Select the appropriate tar.gz distribution for your platform.
 2. Extract the contents of the archive, using: `tar -cf <filename>`
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
