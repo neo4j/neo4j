@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Queue;
 
 import org.junit.Test;
-
 import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -42,20 +41,20 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 
@@ -225,6 +224,7 @@ public class TestMasterCommittingAtSlave
         log = new FakeStringLogger();
         Config config = new Config( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication ) );
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler( new TestLogger() );
         MasterTxIdGenerator result = new MasterTxIdGenerator( MasterTxIdGenerator.from( config, slavePriority ),
                 log, new Slaves()
         {
@@ -233,10 +233,13 @@ public class TestMasterCommittingAtSlave
             {
                 return slaves;
             }
-        } );
+        }, new CommitPusher( scheduler ) );
         // Life
         try
         {
+            scheduler.init();
+            scheduler.start();
+
             result.init();
             result.start();
         }

@@ -21,27 +21,19 @@ package org.neo4j.kernel.ha.transaction;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 
 import javax.transaction.xa.XAException;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
-import org.neo4j.com.Response;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
@@ -131,12 +123,14 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     private final StringLogger log;
     private final Configuration config;
     private final Slaves slaves;
+    private final CommitPusher pusher;
 
-    public MasterTxIdGenerator( Configuration config, StringLogger log, Slaves slaves )
+    public MasterTxIdGenerator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
     {
         this.config = config;
         this.log = log;
         this.slaves = slaves;
+        this.pusher = pusher;
     }
 
     @Override
@@ -156,12 +150,6 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     public void stop() throws Throwable
     {
         this.slaveCommitters.shutdown();
-
-        for ( ExecutorService pullUpdateWorker : pullUpdateWorkers )
-        {
-            pullUpdateWorker.shutdownNow();
-            pullUpdateWorker.awaitTermination( 30, TimeUnit.SECONDS );
-        }
     }
 
     @Override
@@ -187,9 +175,10 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         {
             return;
         }
-        Collection<Future<Void>> committers = new HashSet<Future<Void>>();
+        Collection<Future<Void>> committers = new HashSet<>();
         try
         {
+            // TODO: Move this logic into {@link CommitPusher}
             // Commit at the configured amount of slaves in parallel.
             int successfulReplications = 0;
             Iterator<Slave> slaveList = filter( replicationStrategy.prioritize( slaves.getSlaves() ).iterator(),
@@ -205,8 +194,8 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
 
             // Wait for them and perhaps spawn new ones for failing committers until we're done
             // or until we have no more slaves to try out.
-            Collection<Future<Void>> toAdd = new ArrayList<Future<Void>>();
-            Collection<Future<Void>> toRemove = new ArrayList<Future<Void>>();
+            Collection<Future<Void>> toAdd = new ArrayList<>();
+            Collection<Future<Void>> toRemove = new ArrayList<>();
             while ( !committers.isEmpty() && successfulReplications < replicationFactor )
             {
                 toAdd.clear();
@@ -344,6 +333,14 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                 notified = false;
             }
         }
+
+        @Override
+        public String toString()
+        {
+            return "CompletionNotifier{id=" + System.identityHashCode( this ) +
+                    ",notified=" + notified +
+                    '}';
+        }
     }
 
     private Callable<Void> slaveCommitter( final XaDataSource dataSource,
@@ -356,7 +353,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             {
                 try
                 {
-                    commitAtSlave( dataSource, slave, txId );
+                    pusher.queuePush( dataSource, slave, txId );
                     return null;
                 }
                 finally
@@ -365,97 +362,6 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                 }
             }
         };
-    }
-
-    private Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<Integer, BlockingQueue<PullUpdateFuture>>(  );
-    private List<ExecutorService> pullUpdateWorkers = new ArrayList<ExecutorService>(  );
-
-    private void commitAtSlave( final XaDataSource dataSource, Slave slave, final long txId )
-    {
-        PullUpdateFuture pullRequest = new PullUpdateFuture(slave, txId);
-
-        synchronized ( pullUpdateQueues )
-        {
-            BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
-            if (queue == null)
-            {
-                // Create queue and worker
-                queue = new ArrayBlockingQueue<PullUpdateFuture>( 100 );
-                pullUpdateQueues.put(slave.getServerId(), queue);
-
-                final ExecutorService executorService = Executors.newSingleThreadExecutor(new NamedThreadFactory( "pull-worker" ));
-                pullUpdateWorkers.add( executorService );
-                final BlockingQueue<PullUpdateFuture> finalQueue = queue;
-                executorService.submit( new Runnable()
-                {
-                    List<PullUpdateFuture> currentPulls = new ArrayList<PullUpdateFuture>();
-
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            while (true)
-                            {
-                                // Poll queue and call pullUpdate
-                                currentPulls.clear();
-                                currentPulls.add( finalQueue.take() );
-
-                                PullUpdateFuture pullRequest;
-                                while ( (pullRequest = finalQueue.poll()) != null )
-                                {
-                                    currentPulls.add( pullRequest );
-                                }
-
-                                try
-                                {
-                                    PullUpdateFuture pullUpdateFuture = currentPulls.get( 0 );
-                                    Response<Void> response = pullUpdateFuture.getSlave().pullUpdates( dataSource.getName(), pullUpdateFuture.getTxId() );
-                                    response.close();
-
-                                    // Notify the futures
-                                    for ( PullUpdateFuture currentPull : currentPulls )
-                                    {
-                                        currentPull.done();
-                                    }
-                                }
-                                catch ( Exception e )
-                                {
-                                    // Notify the futures
-                                    for ( PullUpdateFuture currentPull : currentPulls )
-                                    {
-                                        currentPull.setException( e );
-                                    }
-                                }
-                            }
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            // Quit
-                        }
-                    }
-                } );
-            }
-
-            queue.offer( pullRequest );
-        }
-
-        // Wait for pull request to finish
-        try
-        {
-            pullRequest.get();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( ExecutionException e )
-        {
-            if (e.getCause() instanceof RuntimeException)
-                throw ((RuntimeException)e.getCause());
-            else
-                throw new RuntimeException( e.getCause() );
-        }
     }
 
     public int getCurrentMasterId()
@@ -467,49 +373,5 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     public int getMyId()
     {
         return config.getServerId();
-    }
-
-    private static class PullUpdateFuture
-        extends FutureTask<Object>
-    {
-        private Slave slave;
-        private long txId;
-
-        public PullUpdateFuture( Slave slave, long txId )
-        {
-            super( new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    return null;
-                }
-            });
-            this.slave = slave;
-            this.txId = txId;
-        }
-
-        @Override
-        public void done()
-        {
-            super.set( null );
-            super.done();
-        }
-
-        @Override
-        public void setException( Throwable t )
-        {
-            super.setException( t );
-        }
-
-        public Slave getSlave()
-        {
-            return slave;
-        }
-
-        private long getTxId()
-        {
-            return txId;
-        }
     }
 }

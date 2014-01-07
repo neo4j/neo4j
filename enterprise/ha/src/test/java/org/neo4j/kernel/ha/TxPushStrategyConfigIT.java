@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -40,8 +39,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -71,7 +69,8 @@ public class TxPushStrategyConfigIT
         startCluster( 5, 2, "round_robin" );
 
         createTransactionOnMaster();
-        assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 1 ), lastTx( FOURTH_SLAVE, 1 ) );
+        assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 2 ), lastTx( THIRD_SLAVE, 1 ),
+                lastTx( FOURTH_SLAVE, 1 ) );
 
         createTransactionOnMaster();
         assertLastTransactions( lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 3 ), lastTx( FOURTH_SLAVE, 1 ) );
