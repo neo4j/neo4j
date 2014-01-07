@@ -322,7 +322,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         if ( tx != null )
         {
             throw logAndReturn( "TM error tx begin", new NotSupportedException(
-                    "Nested transactions not supported" ) );
+                    "Nested transactions not supported. Thread: " + Thread.currentThread() ) );
         }
         tx = new TransactionImpl( xidGlobalIdFactory.newInstance(), this, forceMode, stateFactory, log );
         txThreadMap.set( tx );
@@ -375,7 +375,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
-            throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
+            throw logAndReturn( "TM error tx commit",
+                    new IllegalStateException( "Not in transaction. Thread: " + Thread.currentThread() ) );
         }
 
         boolean successful = false;
@@ -632,7 +633,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
-            throw logAndReturn( "TM error tx commit", new IllegalStateException( "Not in transaction" ) );
+            throw logAndReturn( "TM error tx commit",
+                    new IllegalStateException( "Not in transaction. Thread: " + Thread.currentThread() ) );
         }
 
         try
@@ -755,7 +757,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         TransactionImpl tx = txThreadMap.get();
         if ( tx == null )
         {
-            throw new IllegalStateException( "Not in transaction" );
+            throw new IllegalStateException( "Not in transaction. Thread: " + Thread.currentThread() );
         }
         tx.setRollbackOnly();
     }

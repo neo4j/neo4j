@@ -25,7 +25,6 @@ import java.util.List;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
