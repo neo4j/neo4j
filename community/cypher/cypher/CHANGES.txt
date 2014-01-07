@@ -3,6 +3,7 @@
 o Fixes bug around MERGE inside a FOREACH inside a FOREACH
 o Makes it possible to write MERGE queries with no already known parts
 o Fixes problem with compiling queries with NOT expressions in them
+o Fixes #1735 - Indexes and AND predicates produce wrong results
 
 2.0.0-RC1
 ---------
