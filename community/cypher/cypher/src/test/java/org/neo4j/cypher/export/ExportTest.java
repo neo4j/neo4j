@@ -214,18 +214,14 @@ public class ExportTest
     public void testExportIndex() throws Exception
     {
         gdb.schema().indexFor( DynamicLabel.label( "Foo" ) ).on( "bar" ).create();
-        final SubGraph graph = DatabaseSubGraph.from( gdb );
-        SubGraphExporter exporter = new SubGraphExporter( graph );
-        assertEquals( asList( "create index on :`Foo`(`bar`)" ), exporter.exportIndexes() );
+        assertEquals( "create index on :`Foo`(`bar`)" + NL , doExportGraph( gdb ) );
     }
 
     @Test
     public void testExportUniquenessConstraint() throws Exception
     {
         gdb.schema().constraintFor( DynamicLabel.label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
-        final SubGraph graph = DatabaseSubGraph.from( gdb );
-        SubGraphExporter exporter = new SubGraphExporter( graph );
-        assertEquals( asList( "create constraint on (n:`Foo`) assert n.`bar` is unique" ), exporter.exportConstraints() );
+        assertEquals( "create constraint on (n:`Foo`) assert n.`bar` is unique" + NL, doExportGraph( gdb ) );
     }
 
     @Test

@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,6 +27,7 @@ import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.ServerStartupException;
@@ -37,6 +35,8 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.test.TargetDirectory;
+
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class StartupTimeoutFunctionalTest
 {
@@ -75,7 +75,7 @@ public class StartupTimeoutFunctionalTest
     public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
     {
         Configurator configurator = buildProperties();
-        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 10 );
+        configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 20 );
         server = new EnterpriseNeoServer( configurator )
         {
             @Override
@@ -91,7 +91,7 @@ public class StartupTimeoutFunctionalTest
         }
         catch ( ServerStartupException e )
         {
-            fail( "Should not have been interrupted." );
+            fail( "Should not have been interrupted.", e );
         }
     }
 
@@ -108,7 +108,7 @@ public class StartupTimeoutFunctionalTest
         }
         catch ( ServerStartupException e )
         {
-            fail( "Should not have been interrupted." );
+            fail( "Should not have been interrupted.", e );
         }
     }
 
@@ -167,5 +167,15 @@ public class StartupTimeoutFunctionalTest
         serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
 
         return new PropertyFileConfigurator( new File( serverPropertiesFilename ) );
+    }
+
+    private void fail( String message )
+    {
+        throw new AssertionError( message );
+    }
+
+    private void fail( String message, Throwable cause )
+    {
+        throw new AssertionError( message, cause );
     }
 }

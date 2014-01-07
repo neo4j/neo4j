@@ -167,7 +167,7 @@ public class SchemaAcceptanceTest
     }
 
     @Test
-    public void shouldThrowConstraintViolationIfAskedToCreateCompoundIdex() throws Exception
+    public void shouldThrowConstraintViolationIfAskedToCreateCompoundIndex() throws Exception
     {
         // WHEN
         Transaction tx = db.beginTx();
@@ -183,6 +183,30 @@ public class SchemaAcceptanceTest
         catch ( UnsupportedOperationException e )
         {
             assertThat( e.getMessage(), containsString( "Compound indexes" ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    @Test
+    public void shouldThrowConstraintViolationIfAskedToCreateCompoundConstraint() throws Exception
+    {
+        // WHEN
+        Transaction tx = db.beginTx();
+        try
+        {
+            Schema schema = db.schema();
+            schema.constraintFor( label )
+                    .assertPropertyIsUnique( "my_property_key" )
+                    .assertPropertyIsUnique( "other_property" ).create();
+            tx.success();
+            fail( "Should not be able to create constraint on multiple propertyKey keys" );
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            assertThat( e.getMessage(), containsString( "can only create one unique constraint" ) );
         }
         finally
         {
