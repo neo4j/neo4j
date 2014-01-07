@@ -253,6 +253,10 @@ public class SubGraphExporter
         {
             return "\"" + ((String) value).replaceAll( "\"", "\\\\\"" ) + "\"";
         }
+        if ( value instanceof Float || value instanceof Double )
+        {
+            return String.format( "%f", value );
+        }
         if ( value instanceof Iterator )
         {
             return toString( ((Iterator) value) );
