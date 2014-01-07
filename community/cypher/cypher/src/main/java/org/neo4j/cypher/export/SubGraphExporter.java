@@ -251,7 +251,7 @@ public class SubGraphExporter
         }
         if ( value instanceof String )
         {
-            return "\"" + value + "\"";
+            return "\"" + ((String) value).replaceAll( "\"", "\\\\\"" ) + "\"";
         }
         if ( value instanceof Iterator )
         {

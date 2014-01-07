@@ -51,6 +51,12 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
+    public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+    {
+        // no constraints to verify so do nothing
+    }
+
+    @Override
     public IndexUpdater newPopulatingUpdater() throws IOException
     {
         return new IndexUpdater()

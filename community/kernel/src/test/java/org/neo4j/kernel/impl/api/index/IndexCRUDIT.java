@@ -203,6 +203,11 @@ public class IndexCRUDIT
         }
 
         @Override
+        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        {
+        }
+
+        @Override
         public IndexUpdater newPopulatingUpdater() throws IOException
         {
             return newUpdater( IndexUpdateMode.ONLINE );

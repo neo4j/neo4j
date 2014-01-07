@@ -440,6 +440,12 @@ public class SchemaIndexHaIT
         }
 
         @Override
+        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        {
+            delegate.verifyDeferredConstraints();
+        }
+
+        @Override
         public IndexUpdater newPopulatingUpdater() throws IOException
         {
             return delegate.newPopulatingUpdater();

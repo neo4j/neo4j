@@ -118,6 +118,11 @@ class InMemoryIndex
         }
 
         @Override
+        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        {
+        }
+
+        @Override
         public IndexUpdater newPopulatingUpdater() throws IOException
         {
             return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE, true );
