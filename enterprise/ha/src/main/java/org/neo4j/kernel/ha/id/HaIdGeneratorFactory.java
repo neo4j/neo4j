@@ -29,6 +29,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -43,12 +44,15 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
     private final DelegateInvocationHandler<Master> master;
     private final StringLogger logger;
+    private final RequestContextFactory requestContextFactory;
     private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
-    public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, Logging logging )
+    public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, Logging logging,
+            RequestContextFactory requestContextFactory )
     {
         this.master = master;
         this.logger = logging.getMessagesLog( getClass() );
+        this.requestContextFactory = requestContextFactory;
     }
 
     @Override
@@ -67,7 +71,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType, highId );
             break;
         case SLAVE:
-            initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), logger );
+            initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), logger, requestContextFactory );
             break;
         default:
             throw new IllegalStateException( globalState.name() );
@@ -139,7 +143,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         {
             long highId = delegate.getHighId();
             delegate.close();
-            delegate = new SlaveIdGenerator( idType, highId, master, logger );
+            delegate = new SlaveIdGenerator( idType, highId, master, logger, requestContextFactory );
             logger.debug( "Instantiated slave delegate " + delegate + " of type " + idType + " with highid " + highId );
             state = IdGeneratorState.SLAVE;
         }
@@ -259,13 +263,16 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private final Master master;
         private final IdType idType;
         private final StringLogger logger;
+        private final RequestContextFactory requestContextFactory;
 
-        SlaveIdGenerator( IdType idType, long highId, Master master, StringLogger logger )
+        SlaveIdGenerator( IdType idType, long highId, Master master, StringLogger logger,
+                RequestContextFactory requestContextFactory )
         {
             this.idType = idType;
             this.highestIdInUse = highId;
             this.master = master;
             this.logger = logger;
+            this.requestContextFactory = requestContextFactory;
         }
 
         @Override
@@ -297,16 +304,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
                 // If we don't have anymore grabbed ids from master, grab a bunch
-                Response<IdAllocation> response = master.allocateIds( idType );
-                try
+                try ( Response<IdAllocation> response =
+                        master.allocateIds( requestContextFactory.newRequestContext(), idType ) )
                 {
                     IdAllocation allocation = response.response();
                     logger.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
                     nextId = storeLocally( allocation );
-                }
-                finally
-                {
-                    response.close();
                 }
             }
             return nextId;

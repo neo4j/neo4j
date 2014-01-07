@@ -21,7 +21,7 @@ package org.neo4j.com;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
-public class Response<T>
+public class Response<T> implements AutoCloseable
 {
     private final T response;
     private final StoreId storeId;
@@ -52,6 +52,7 @@ public class Response<T>
         return transactions;
     }
 
+    @Override
     public void close()
     {
         try

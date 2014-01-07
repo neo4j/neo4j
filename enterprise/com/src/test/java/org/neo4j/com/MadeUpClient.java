@@ -85,7 +85,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
 
     private RequestContext getRequestContext()
     {
-        return new RequestContext( EMPTY.getSessionId(), EMPTY.machineId(), EMPTY.getEventIdentifier(),
+        return new RequestContext( EMPTY.getEpoch(), EMPTY.machineId(), EMPTY.getEventIdentifier(),
                 new RequestContext.Tx[] { lastAppliedTx( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME, 1 ) }, EMPTY.getMasterId(),
                 EMPTY.getChecksum() );
     }

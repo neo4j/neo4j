@@ -37,9 +37,9 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.HaRequestType18;
+import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -100,9 +100,9 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<IdAllocation> allocateIds( final IdType idType )
+    public Response<IdAllocation> allocateIds( RequestContext context, final IdType idType )
     {
-        return sendRequest( HaRequestType18.ALLOCATE_IDS, RequestContext.EMPTY, new Serializer()
+        return sendRequest( HaRequestType18.ALLOCATE_IDS, context, new Serializer()
                 {
                     @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -310,22 +310,22 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Pair<Integer, Long>> getMasterIdForCommittedTx( final long txId, StoreId storeId )
+    public Response<HandshakeResult> handshake( final long txId, StoreId storeId )
     {
-        return sendRequest( HaRequestType18.GET_MASTER_ID_FOR_TX, RequestContext.EMPTY, new Serializer()
+        return sendRequest( HaRequestType18.HANDSHAKE, RequestContext.EMPTY, new Serializer()
                 {
                     @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         buffer.writeLong( txId );
                     }
-                }, new Deserializer<Pair<Integer, Long>>()
+                }, new Deserializer<HandshakeResult>()
                 {
                     @Override
-                    public Pair<Integer, Long> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+                    public HandshakeResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                             IOException
                     {
-                        return Pair.of( buffer.readInt(), buffer.readLong() );
+                        return new HandshakeResult( buffer.readInt(), buffer.readLong(), -1 );
                     }
                 }, storeId
         );
@@ -341,7 +341,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
 
     private RequestContext stripFromTransactions( RequestContext context )
     {
-        return new RequestContext( context.getSessionId(), context.machineId(), context.getEventIdentifier(),
+        return new RequestContext( context.getEpoch(), context.machineId(), context.getEventIdentifier(),
                 new RequestContext.Tx[0], context.getMasterId(), context.getChecksum() );
     }
 

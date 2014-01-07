@@ -47,7 +47,7 @@ import static org.neo4j.com.Protocol.readBoolean;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
-public enum HaRequestType20 implements RequestType<Master>
+public enum HaRequestType201 implements RequestType<Master>
 {
     // ====
     ALLOCATE_IDS( new TargetCaller<Master, IdAllocation>()
@@ -208,8 +208,10 @@ public enum HaRequestType20 implements RequestType<Master>
         {
             result.writeInt( responseObject.txAuthor() );
             result.writeLong( responseObject.txChecksum() );
+            result.writeLong( responseObject.epoch() );
         }
-    } ),
+    }
+    ),
 
     // ====
     COPY_STORE( new TargetCaller<Master, Void>()
@@ -405,7 +407,7 @@ public enum HaRequestType20 implements RequestType<Master>
     @SuppressWarnings( "rawtypes" )
     final ObjectSerializer serializer;
 
-    private <T> HaRequestType20( TargetCaller caller, ObjectSerializer<T> serializer )
+    private <T> HaRequestType201( TargetCaller caller, ObjectSerializer<T> serializer )
     {
         this.caller = caller;
         this.serializer = serializer;
