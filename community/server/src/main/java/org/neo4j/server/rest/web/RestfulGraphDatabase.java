@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -58,6 +59,7 @@ import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.repr.Representation;
@@ -543,6 +545,35 @@ public class RestfulGraphDatabase
         catch ( BadInputException e )
         {
             return output.badRequest( e );
+        }
+    }
+
+    @PUT
+    @Path( PATH_ALL_NODES_LABELED )
+    public Response mergeNodeWithLabelAndProperty( @PathParam("label") String labelName, @Context UriInfo uriInfo )
+    {
+        try
+        {
+            if ( labelName.isEmpty() )
+                throw new BadInputException( "Empty label name" );
+
+            Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
+
+            AtomicBoolean created = new AtomicBoolean();
+            NodeRepresentation node = actions.mergeNode( labelName, properties, created );
+
+            if ( created.get() )
+                return output.created( node );
+            else
+                return output.ok( node );
+        }
+        catch ( BadInputException e )
+        {
+            return output.badRequest( e );
+        }
+        catch ( OperationFailureException e )
+        {
+            return output.conflict( e );
         }
     }
 

@@ -21,9 +21,11 @@ package org.neo4j.server.rest.web;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
@@ -226,6 +228,72 @@ public class DatabaseActions
             throws NodeNotFoundException
     {
         return new NodeRepresentation( node( nodeId ) );
+    }
+
+    // Merge a node into the graph, ignoring the flag to indicate new node creation
+    public NodeRepresentation mergeNode( String labelName, Map<String, Object> properties )
+            throws PropertyValueException, OperationFailureException
+    {
+        return mergeNode( labelName, properties, null );
+    }
+
+    /**
+     * Merge a node into the graph, matching by label and, if supplied, property. If no such node exists,
+     * a new one will be created, otherwise the existing node will be returned. If multiple matches are
+     * found, an exception is thrown.
+     *
+     * @param labelName a label name to match
+     * @param properties a map of zero or one properties to match
+     * @param created a mutable boolean flag that indicates on exit whether a new node was created
+     * @return NodeRepresentation of the new of existing node
+     * @throws PropertyValueException if an illegal property type was supplied
+     * @throws OperationFailureException if multiple matches are found
+     */
+    public NodeRepresentation mergeNode( String labelName, Map<String, Object> properties, AtomicBoolean created )
+            throws PropertyValueException, OperationFailureException
+    {
+        Label label = label(labelName);
+        Iterable<Node> nodes;
+
+        if ( properties.isEmpty() )
+        {
+            nodes = GlobalGraphOperations.at( graphDb ).getAllNodesWithLabel( label );
+        }
+        else if ( properties.size() == 1 )
+        {
+            Map.Entry<String, Object> entry = Iterables.single(properties.entrySet());
+            nodes = graphDb.findNodesByLabelAndProperty( label, entry.getKey(), entry.getValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Too many properties specified. Either specify one property to " +
+                    "merge by, or none at all." );
+        }
+
+        Iterator<Node> nodeIterator = nodes.iterator();
+        if ( nodeIterator.hasNext() )
+        {
+            Node node = nodeIterator.next();
+
+            if ( nodeIterator.hasNext() )
+                throw new OperationFailureException( "Multiple matching nodes found" );
+
+            if ( created != null )
+                created.set(false);
+
+            return new NodeRepresentation( node );
+        }
+        else
+        {
+            Node node = graphDb.createNode( label );
+            propertySetter.setProperties( node, properties );
+
+            if ( created != null )
+                created.set(true);
+
+            return new NodeRepresentation( node );
+        }
+
     }
 
     public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException
