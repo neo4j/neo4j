@@ -59,6 +59,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         try
         {
             populator.add( 2, "value1" );
+            populator.verifyDeferredConstraints();
             populator.close( true );
 
             fail( "expected exception" );

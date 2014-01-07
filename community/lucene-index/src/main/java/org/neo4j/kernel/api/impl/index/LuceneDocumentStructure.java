@@ -23,26 +23,26 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.NumericUtils;
 
 import org.neo4j.index.impl.lucene.LuceneUtil;
+import org.neo4j.kernel.api.index.ArrayEncoder;
+
+import static java.lang.String.format;
 
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
-import static org.neo4j.kernel.api.index.ArrayEncoder.encode;
-
-class LuceneDocumentStructure
+public class LuceneDocumentStructure
 {
-    private static final String NODE_ID_KEY = "id";
-    private static final String STRING_PROPERTY_FIELD_IDENTIFIER = "string";
-    private static final String ARRAY_PROPERTY_FIELD_IDENTIFIER = "array";
-    private static final String BOOL_PROPERTY_FIELD_IDENTIFIER = "bool";
-    private static final String NUMBER_PROPERTY_FIELD_IDENTIFIER = "number";
+    static final String NODE_ID_KEY = "id";
 
     Document newDocument( long nodeId )
     {
@@ -50,51 +50,189 @@ class LuceneDocumentStructure
         document.add( field( NODE_ID_KEY, "" + nodeId, YES ) );
         return document;
     }
-    
-    Document newDocumentRepresentingProperty( long nodeId, Object value )
+
+    public boolean isPropertyTerm( Term term )
+    {
+        for ( ValueEncoding encoding : ValueEncoding.values() )
+        {
+            if ( encoding.canDecode( term ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    enum ValueEncoding
+    {
+        Number
+        {
+            @Override
+            String key()
+            {
+                return "number";
+            }
+
+            @Override
+            boolean canEncode( Object value )
+            {
+                return value instanceof Number;
+            }
+
+            @Override
+            Fieldable encodeField( Object value )
+            {
+                String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
+                return field( key(), encodedString );
+            }
+
+            @Override
+            Query encodeQuery( Object value )
+            {
+                String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
+                return new TermQuery( new Term( key(), encodedString ) );
+            }
+
+            @Override
+            Object decode( Term term )
+            {
+                return NumericUtils.prefixCodedToDouble( term.text() );
+            }
+        },
+        Array
+        {
+            @Override
+            String key()
+            {
+                return "array";
+            }
+
+            @Override
+            boolean canEncode( Object value )
+            {
+                return value.getClass().isArray();
+            }
+
+            @Override
+            Fieldable encodeField( Object value )
+            {
+                return field( key(), ArrayEncoder.encode( value ) );
+            }
+
+            @Override
+            Query encodeQuery( Object value )
+            {
+                return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
+            }
+
+            @Override
+            Object decode( Term term )
+            {
+                return ArrayEncoder.decode( term.text() );
+            }
+        },
+        Bool
+        {
+            @Override
+            String key()
+            {
+                return "bool";
+            }
+
+            @Override
+            boolean canEncode( Object value )
+            {
+                return value instanceof Boolean;
+            }
+
+            @Override
+            Fieldable encodeField( Object value )
+            {
+                return field( key(), value.toString() );
+            }
+
+            @Override
+            Query encodeQuery( Object value )
+            {
+                return new TermQuery( new Term( key(), value.toString() ) );
+            }
+
+            @Override
+            Object decode( Term term )
+            {
+                return Boolean.valueOf( term.text() );
+            }
+        },
+        String
+        {
+            @Override
+            String key()
+            {
+                return "string";
+            }
+
+            @Override
+            boolean canEncode( Object value )
+            {
+                // Any other type can be safely serialised as a string
+                return true;
+            }
+
+            @Override
+            Fieldable encodeField( Object value )
+            {
+                return field( key(), value.toString() );
+            }
+
+            @Override
+            Query encodeQuery( Object value )
+            {
+                return new TermQuery( new Term( key(), value.toString() ) );
+            }
+
+            @Override
+            Object decode( Term term )
+            {
+                return term.text();
+            }
+        };
+
+        abstract String key();
+
+        abstract boolean canEncode( Object value );
+        abstract Fieldable encodeField( Object value );
+        abstract Query encodeQuery( Object value );
+
+        boolean canDecode( Term term )
+        {
+            return key().equals( term.field() );
+        }
+
+        abstract Object decode( Term term );
+    }
+
+    public Document newDocumentRepresentingProperty( long nodeId, Object value )
     {
         Document document = newDocument( nodeId );
-        
-        if ( value instanceof Number )
+
+        for ( ValueEncoding encoding : ValueEncoding.values() )
         {
-            NumericField numberField = new NumericField( NUMBER_PROPERTY_FIELD_IDENTIFIER, NO, true );
-            numberField.setDoubleValue( ((Number) value).doubleValue() );
-            document.add( numberField );
-        }
-        else if ( value instanceof Boolean )
-        {
-            document.add( field( BOOL_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
-        }
-        else if ( value.getClass().isArray() )
-        {
-            document.add( field( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) );
-        }
-        else
-        {
-            document.add( field( STRING_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
+            if ( encoding.canEncode( value ) )
+            {
+                document.add( encoding.encodeField( value ) );
+                break;
+            }
         }
 
         return document;
     }
-    
-    Fieldable newField( String key, long value )
-    {
-        NumericField numberField = new NumericField( key, NO, true );
-        numberField.setLongValue( value );
-        return numberField;
-    }
-    
-    Query newQuery( String key, long value )
-    {
-        return LuceneUtil.rangeQuery( key, value, value, true, true );
-    }
 
-    private Field field( String fieldIdentifier, String value )
+    private static Field field( String fieldIdentifier, String value )
     {
         return field( fieldIdentifier, value, NO );
     }
-    
-    private Field field( String fieldIdentifier, String value, Field.Store store )
+
+    private static Field field( String fieldIdentifier, String value, Field.Store store )
     {
         Field result = new Field( fieldIdentifier, value, store, NOT_ANALYZED );
         result.setOmitNorms( true );
@@ -104,24 +242,14 @@ class LuceneDocumentStructure
 
     public Query newQuery( Object value )
     {
-        if ( value instanceof Number )
+        for ( ValueEncoding encoding : ValueEncoding.values() )
         {
-            Number number = (Number) value;
-            return LuceneUtil.rangeQuery( NUMBER_PROPERTY_FIELD_IDENTIFIER, number.doubleValue(),
-                    number.doubleValue(), true, true );
+            if ( encoding.canEncode( value ) )
+            {
+                return encoding.encodeQuery( value );
+            }
         }
-        else if ( value instanceof Boolean )
-        {
-            return new TermQuery( new Term( BOOL_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
-        }
-        else if ( value.getClass().isArray() )
-        {
-            return new TermQuery( new Term( ARRAY_PROPERTY_FIELD_IDENTIFIER, encode( value ) ) );
-        }
-        else
-        {
-            return new TermQuery( new Term( STRING_PROPERTY_FIELD_IDENTIFIER, value.toString() ) );
-        }
+        throw new IllegalArgumentException( format( "Unable to create newQuery for %s", value ) );
     }
 
     public Term newQueryForChangeOrRemove( long nodeId )
@@ -132,5 +260,18 @@ class LuceneDocumentStructure
     public long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
+    }
+
+    public Object propertyValue( Term term )
+    {
+        for ( ValueEncoding encoding : ValueEncoding.values() )
+        {
+            if ( encoding.canDecode( term ) )
+            {
+                return encoding.decode( term );
+            }
+        }
+
+        throw new IllegalArgumentException( format( "Unexpected field: %s", term.field() ) );
     }
 }

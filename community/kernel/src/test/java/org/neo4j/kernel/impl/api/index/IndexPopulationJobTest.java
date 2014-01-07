@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -65,8 +66,16 @@ import static java.lang.String.format;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
@@ -93,6 +102,7 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator ).create();
         verify( populator ).add( nodeId, value );
+        verify( populator ).verifyDeferredConstraints();
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
@@ -133,6 +143,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).add( node1, value );
         verify( populator ).add( node4, value );
+        verify( populator ).verifyDeferredConstraints();
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
@@ -205,7 +216,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        assertThat(index.getState(), equalTo(InternalIndexState.FAILED));
+        assertThat( index.getState(), equalTo( InternalIndexState.FAILED ) );
     }
 
     @Test
@@ -296,8 +307,8 @@ public class IndexPopulationJobTest
         // Given
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
         IndexPopulationJob job =
-            newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
-                    new FlippableIndexProxy(), newStoreView(), new TestLogger() );
+                newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
+                        new FlippableIndexProxy(), newStoreView(), new TestLogger() );
 
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
@@ -329,6 +340,26 @@ public class IndexPopulationJobTest
 
         // Then
         verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
+    }
+
+    @Test
+    public void shouldFailIfDeferredConstraintViolated() throws Exception
+    {
+        createNode( map( name, "irrelephant" ), FIRST );
+        TestLogger logger = new TestLogger();
+        FlippableIndexProxy index = mock( FlippableIndexProxy.class );
+        NeoStoreIndexStoreView store = newStoreView();
+
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger );
+
+        IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
+        doThrow( failure ).when( populator ).verifyDeferredConstraints();
+
+        // When
+        job.run();
+
+        // Then
+        verify( populator ).markAsFailed( Matchers.contains( "duplicate value" ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>
@@ -445,7 +476,7 @@ public class IndexPopulationJobTest
         {
             if ( nodeId == 2 )
             {
-                job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[] { label } ) );
+                job.update( remove( nodeToDelete, propertyKeyId, valueToDelete, new long[]{label} ) );
             }
             added.put( nodeId, propertyValue );
         }
@@ -463,7 +494,7 @@ public class IndexPopulationJobTest
                         case ADDED:
                         case CHANGED:
                             added.put( update.getNodeId(), update.getValueAfter() );
-                        break;
+                            break;
                         case REMOVED:
                             removed.put( update.getNodeId(), update.getValueBefore() );
                             break;

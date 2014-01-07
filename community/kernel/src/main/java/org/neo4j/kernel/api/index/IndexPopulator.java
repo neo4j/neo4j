@@ -43,11 +43,18 @@ public interface IndexPopulator
      * Called when initially populating an index over existing data. Guaranteed to be
      * called by the same thread every time. All data coming in here is guaranteed to not
      * have been added to this index previously, so no checks needs to be performed before applying it.
+     * Implementations may verify constraints at this time, or defer them until the first verification
+     * of {@link #verifyDeferredConstraints()}.
      *
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to index.
      */
     void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException;
+
+    /**
+     * Verify constraints for all entries added so far.
+     */
+    void verifyDeferredConstraints() throws IndexEntryConflictException, IOException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -109,6 +116,11 @@ public interface IndexPopulator
 
         @Override
         public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+        {
+        }
+
+        @Override
+        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
         {
         }
 

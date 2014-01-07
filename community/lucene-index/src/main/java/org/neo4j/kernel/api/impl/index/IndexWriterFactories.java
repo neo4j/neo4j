@@ -41,6 +41,7 @@ public class IndexWriterFactories
                 IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
                 writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
                 writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
+                writerConfig.setTermIndexInterval( 14 );
                 return new IndexWriter( directory, writerConfig );
             }
         };

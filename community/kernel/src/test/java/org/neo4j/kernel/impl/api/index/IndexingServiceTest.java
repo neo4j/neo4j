@@ -178,11 +178,12 @@ public class IndexingServiceTest
         // this is invoked from indexAllNodes(),
         // empty because the id we added (2) is bigger than the one we indexed (1)
         order.verify( populator ).newPopulatingUpdater();
-        order.verify(updater).close();
+        order.verify( updater ).close();
+        order.verify( populator ).verifyDeferredConstraints();
 
         order.verify( populator ).newPopulatingUpdater();
-        order.verify(updater).process( add( 2, "value2" ) );
-        order.verify(updater).close();
+        order.verify( updater ).process( add( 2, "value2" ) );
+        order.verify( updater ).close();
 
         order.verify( populator ).close( true );
         verifyNoMoreInteractions(updater);
