@@ -124,6 +124,53 @@ public class ExportTest
     }
 
     @Test
+    public void testEscapingOfNodeStringPropertyValue() throws Exception
+    {
+        Node n = gdb.createNode();
+        n.setProperty( "name", "Brutus \"Brutal\" Howell" );
+        final ExecutionResult result = result( "node", n );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
+        assertEquals( "create (_" + n.getId() + " {`name`:\"Brutus \\\"Brutal\\\" Howell\"})" + NL,
+                doExportGraph( graph ) );
+    }
+
+    @Test
+    public void testEscapingOfNodeStringArrayPropertyValue() throws Exception
+    {
+        Node n = gdb.createNode();
+        n.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
+        final ExecutionResult result = result( "node", n );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
+        assertEquals( "create (_" + n.getId() + " {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]})" + NL,
+                doExportGraph( graph ) );
+    }
+
+    @Test
+    public void testEscapingOfRelationshipStringPropertyValue() throws Exception
+    {
+        Node n = gdb.createNode();
+        final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
+        rel.setProperty( "name", "Brutus \"Brutal\" Howell" );
+        final ExecutionResult result = result( "rel", rel );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
+        assertEquals( "create (_0)" + NL +
+                "create _0-[:`REL` {`name`:\"Brutus \\\"Brutal\\\" Howell\"}]->_0" + NL, doExportGraph( graph ) );
+    }
+
+    @Test
+    public void testEscapingOfRelationshipStringArrayPropertyValue() throws Exception
+    {
+        Node n = gdb.createNode();
+        final Relationship rel = n.createRelationshipTo( n, DynamicRelationshipType.withName( "REL" ) );
+        rel.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
+        final ExecutionResult result = result( "rel", rel );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, true );
+        assertEquals( "create (_0)" + NL +
+                "create _0-[:`REL` {`name`:[\"Brutus \\\"Brutal\\\" Howell\", \"Dr.\"]}]->_0" + NL,
+                doExportGraph( graph ) );
+    }
+
+    @Test
     public void testSingleNodeWithArrayProperties() throws Exception
     {
         Node n = gdb.createNode();
