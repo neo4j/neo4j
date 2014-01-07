@@ -29,6 +29,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -43,12 +44,15 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory localFactory = new DefaultIdGeneratorFactory();
     private final DelegateInvocationHandler<Master> master;
     private final StringLogger logger;
+    private final RequestContextFactory requestContextFactory;
     private IdGeneratorState globalState = IdGeneratorState.PENDING;
 
-    public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, Logging logging )
+    public HaIdGeneratorFactory( DelegateInvocationHandler<Master> master, Logging logging,
+            RequestContextFactory requestContextFactory )
     {
         this.master = master;
         this.logger = logging.getMessagesLog( getClass() );
+        this.requestContextFactory = requestContextFactory;
     }
 
     @Override
@@ -67,7 +71,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             initialIdGenerator = localFactory.open( fs, fileName, grabSize, idType, highId );
             break;
         case SLAVE:
-            initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), logger );
+            initialIdGenerator = new SlaveIdGenerator( idType, highId, master.cement(), logger, requestContextFactory );
             break;
         default:
             throw new IllegalStateException( globalState.name() );
@@ -139,7 +143,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         {
             long highId = delegate.getHighId();
             delegate.close();
-            delegate = new SlaveIdGenerator( idType, highId, master, logger );
+            delegate = new SlaveIdGenerator( idType, highId, master, logger, requestContextFactory );
             logger.debug( "Instantiated slave delegate " + delegate + " of type " + idType + " with highid " + highId );
             state = IdGeneratorState.SLAVE;
         }
@@ -167,21 +171,25 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             state = IdGeneratorState.MASTER;
         }
 
+        @Override
         public String toString()
         {
             return delegate.toString();
         }
 
+        @Override
         public final boolean equals( Object other )
         {
             return delegate.equals( other );
         }
 
+        @Override
         public final int hashCode()
         {
             return delegate.hashCode();
         }
 
+        @Override
         public long nextId()
         {
             if ( state == IdGeneratorState.PENDING )
@@ -193,6 +201,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             return result;
         }
 
+        @Override
         public IdRange nextIdBatch( int size )
         {
             if ( state == IdGeneratorState.PENDING )
@@ -203,36 +212,43 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             return delegate.nextIdBatch( size );
         }
 
+        @Override
         public void setHighId( long id )
         {
             delegate.setHighId( id );
         }
 
+        @Override
         public long getHighId()
         {
             return delegate.getHighId();
         }
 
+        @Override
         public void freeId( long id )
         {
             delegate.freeId( id );
         }
 
+        @Override
         public void close()
         {
             delegate.close();
         }
 
+        @Override
         public long getNumberOfIdsInUse()
         {
             return delegate.getNumberOfIdsInUse();
         }
 
+        @Override
         public long getDefragCount()
         {
             return delegate.getDefragCount();
         }
 
+        @Override
         public void delete()
         {
             delegate.delete();
@@ -247,13 +263,16 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private final Master master;
         private final IdType idType;
         private final StringLogger logger;
+        private final RequestContextFactory requestContextFactory;
 
-        SlaveIdGenerator( IdType idType, long highId, Master master, StringLogger logger )
+        SlaveIdGenerator( IdType idType, long highId, Master master, StringLogger logger,
+                RequestContextFactory requestContextFactory )
         {
             this.idType = idType;
             this.highestIdInUse = highId;
             this.master = master;
             this.logger = logger;
+            this.requestContextFactory = requestContextFactory;
         }
 
         @Override
@@ -261,27 +280,32 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         {
         }
 
+        @Override
         public void freeId( long id )
         {
         }
 
+        @Override
         public long getHighId()
         {
             return highestIdInUse;
         }
 
+        @Override
         public long getNumberOfIdsInUse()
         {
             return highestIdInUse - defragCount;
         }
 
+        @Override
         public synchronized long nextId()
         {
             long nextId = nextLocalId();
             if ( nextId == VALUE_REPRESENTING_NULL )
             {
                 // If we don't have anymore grabbed ids from master, grab a bunch
-                Response<IdAllocation> response = master.allocateIds( idType );
+                Response<IdAllocation> response =
+                        master.allocateIds( requestContextFactory.newRequestContext(), idType );
                 try
                 {
                     IdAllocation allocation = response.response();
@@ -296,6 +320,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             return nextId;
         }
 
+        @Override
         public IdRange nextIdBatch( int size )
         {
             throw new UnsupportedOperationException( "Should never be called" );
@@ -314,11 +339,13 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             return this.idQueue.next();
         }
 
+        @Override
         public void setHighId( long id )
         {
             this.highestIdInUse = Math.max( this.highestIdInUse, id );
         }
 
+        @Override
         public long getDefragCount()
         {
             return this.defragCount;

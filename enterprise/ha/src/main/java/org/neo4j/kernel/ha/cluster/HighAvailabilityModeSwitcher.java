@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -64,11 +59,13 @@ import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.ha.com.slave.MasterClient18;
+import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
@@ -77,6 +74,7 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -92,6 +90,11 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -138,6 +141,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Logging logging;
+    private final RequestContextFactory requestContextFactory;
+    private MasterClientResolver masterClientResolver;
+
     private ScheduledExecutorService scheduledExecutorService;
     private volatile URI me;
 
@@ -145,7 +151,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          DelegateInvocationHandler<Master> delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
-                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging)
+                                         HaIdGeneratorFactory idGeneratorFactory, Config config, Logging logging,
+                                         RequestContextFactory requestContextFactory )
     {
         this.bindingNotifier = bindingNotifier;
         this.masterDelegateHandler = delegateHandler;
@@ -154,6 +161,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
         this.logging = logging;
+        this.requestContextFactory = requestContextFactory;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.life = new LifeSupport();
         this.stateHandler = stateHandler;
@@ -348,6 +356,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToSlave()
     {
+        this.masterClientResolver = new MasterClientResolver( logging,
+                config.get( HaSettings.read_timeout ).intValue(),
+                config.get( HaSettings.lock_read_timeout ).intValue(),
+                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
+                config.get( HaSettings.com_chunk_size ).intValue() );
+        
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max wait time.
         final AtomicLong wait = new AtomicLong();
         scheduledExecutorService.schedule( new Runnable()
@@ -356,7 +370,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             public void run()
             {
                 if (life.getStatus() == LifecycleStatus.STARTED)
-                 {
+                {
                     return; // Already switched - this can happen if a second master becomes available while waiting
                 }
 
@@ -416,12 +430,12 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         }, wait.get(), TimeUnit.SECONDS);
     }
 
-    private boolean startHaCommunication( HaXaDataSourceManager xaDataSourceManager, NeoStoreXaDataSource nioneoDataSource, URI masterUri )
+    private boolean startHaCommunication( HaXaDataSourceManager xaDataSourceManager,
+            NeoStoreXaDataSource nioneoDataSource, URI masterUri )
     {
         try
         {
-            MasterClient18 master = new MasterClient18( masterUri, logging,
-                    nioneoDataSource.getStoreId(), config );
+            MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), life );
 
             Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
                     new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
@@ -429,7 +443,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
             SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging );
             assignMaster( master );
-            life.add( master );
             life.add( slaveImpl );
             life.add( server );
             life.start();
@@ -487,9 +500,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         LifeSupport checkConsistencyLife = new LifeSupport();
         try
         {
-            MasterClient18 checkConsistencyMaster = new MasterClient18( masterUri,
-                    logging, nioneoDataSource.getStoreId(), config );
-            checkConsistencyLife.add( checkConsistencyMaster );
+            MasterClient checkConsistencyMaster = newMasterClient( masterUri, nioneoDataSource.getStoreId(),
+                    checkConsistencyLife );
             checkConsistencyLife.start();
             console.log( "Checking store consistency with master" );
             checkDataConsistencyWithMaster( checkConsistencyMaster, nioneoDataSource );
@@ -592,10 +604,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             // Remove the current store - neostore file is missing, nothing we can really do
             stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
-            MasterClient18 copyMaster =
-                    new MasterClient18( masterUri, logging, null, config );
+            MasterClient copyMaster = newMasterClient( masterUri, null, life );
 
-            life.add( copyMaster );
             life.start();
 
             // This will move the copied db to the graphdb location
@@ -609,6 +619,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             life.stop();
         }
+    }
+
+    private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
+    {
+        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(), storeId, life );
     }
 
     private void startServicesAgain() throws Throwable
@@ -627,7 +642,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         List<Class> services = new ArrayList<Class>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
         Collections.reverse( services );
         for ( Class<Lifecycle> serviceClass : services )
+        {
             graphDb.getDependencyResolver().resolveDependency( serviceClass ).stop();
+        }
         
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
@@ -662,12 +679,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     + myLastCommittedTx + ".", e );
         }
 
-        Response<Pair<Integer, Long>> response = null;
-        Pair<Integer, Long> mastersMaster;
+        HandshakeResult handshake;
+        Response<HandshakeResult> response = null;
         try
         {
-            response = master.getMasterIdForCommittedTx( myLastCommittedTx, nioneoDataSource.getStoreId() );
-            mastersMaster = response.response();
+            response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() );
+            handshake = response.response();
+            requestContextFactory.setEpoch( handshake.epoch() );
         }
         catch ( RuntimeException e )
         {
@@ -694,13 +712,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             }
         }
 
-        if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
-                && !myMaster.equals( mastersMaster ) )
+        if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER &&
+                (myMaster.first() != handshake.txAuthor() || myMaster.other() != handshake.txChecksum()) )
         {
             String msg = "Branched data, I (machineId:" + config.get( ClusterSettings.server_id ) + ") think machineId for" +
                     " txId (" +
                     myLastCommittedTx + ") is " + myMaster + ", but master (machineId:" +
-                    getServerId( availableMasterId ) + ") says that it's " + mastersMaster;
+                    getServerId( availableMasterId ) + ") says that it's " + handshake;
             throw new BranchedDataException( msg );
         }
         msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +

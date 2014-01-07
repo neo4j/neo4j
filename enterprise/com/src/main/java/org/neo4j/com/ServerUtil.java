@@ -454,7 +454,7 @@ public class ServerUtil
             throw new RuntimeException( "Apparently " + context +
                     " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
         }
-        return new RequestContext( context.getSessionId(), context.machineId(),
+        return new RequestContext( context.getEpoch(), context.machineId(),
                 context.getEventIdentifier(), new Tx[]{txForDs}, context.getMasterId(),
                 context.getChecksum() );
     }
@@ -473,6 +473,7 @@ public class ServerUtil
         {   // Do nothing
         }
 
+        @Override
         public void done()
         {   // Do nothing
         }
@@ -567,8 +568,12 @@ public class ServerUtil
     public static String getHostString(InetSocketAddress socketAddress )
     {
         if (socketAddress.isUnresolved())
+        {
             return socketAddress.getHostName();
+        }
         else
+        {
             return socketAddress.getAddress().getHostAddress();
+        }
     }
 }

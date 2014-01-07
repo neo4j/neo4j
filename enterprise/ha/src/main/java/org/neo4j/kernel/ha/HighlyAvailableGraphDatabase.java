@@ -28,7 +28,6 @@ import java.util.Map;
 
 import javax.transaction.Transaction;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -102,6 +101,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
+
+import ch.qos.logback.classic.LoggerContext;
 
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
@@ -460,12 +461,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging );
+        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
+                requestContextFactory );
         highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                         clusterMemberAvailability, memberStateMachine, this,
                         (HaIdGeneratorFactory) idGeneratorFactory, config,
-                        logging );
+                        logging, requestContextFactory );
+        
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
          * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover

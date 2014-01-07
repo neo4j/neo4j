@@ -313,7 +313,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     protected void writeContext( RequestType<T> type, RequestContext context, ChannelBuffer targetBuffer )
     {
-        targetBuffer.writeLong( context.getSessionId() );
+        targetBuffer.writeLong( context.getEpoch() );
         targetBuffer.writeInt( context.machineId() );
         targetBuffer.writeInt( context.getEventIdentifier() );
         Tx[] txs = context.lastAppliedTransactions();

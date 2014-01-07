@@ -17,17 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.com.slave;
-
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
+package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -38,16 +35,15 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.StoreWriter;
-import org.neo4j.com.TargetCaller;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.com.HaRequestType18;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -55,24 +51,29 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
+
 /**
- * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
+ * The {@link Master} a slave should use to communicate with its master. It
  * serializes requests and sends them to the master, more specifically
- * {@link org.neo4j.kernel.ha.com.master.MasterServer} (which delegates to {@link org.neo4j.kernel.ha.com.master.MasterImpl}
+ * {@link MasterServer} (which delegates to {@link MasterImpl}
  * on the master side.
  */
-public class MasterClient18 extends Client<Master> implements MasterClient
+public class MasterClient196 extends Client<Master> implements MasterClient
 {
     /* Version 1 first version
      * Version 2 since 2012-01-24
      * Version 3 since 2012-02-16
-     * Version 4 since 2012-07-05 */
-    public static final byte PROTOCOL_VERSION = 4;
+     * Version 4 since 2012-07-05
+     * Version 7 since 2014-01-10
+     */
+    public static final byte PROTOCOL_VERSION = 7;
 
     private final long lockReadTimeout;
-    private Config config;
 
-    public MasterClient18( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+    public MasterClient196( String hostNameOrIp, int port, Logging logging, StoreId storeId,
                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
@@ -81,25 +82,24 @@ public class MasterClient18 extends Client<Master> implements MasterClient
         this.lockReadTimeout = lockReadTimeout;
     }
 
-    public MasterClient18( URI masterUri, Logging logging, StoreId storeId, Config config )
+    public MasterClient196( URI masterUri, Logging logging, StoreId storeId, Config config )
     {
         this( masterUri.getHost(), masterUri.getPort(), logging, storeId,
                 config.get( HaSettings.read_timeout ),
                 config.get( HaSettings.lock_read_timeout ),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() );
-        this.config = config;
     }
 
     @Override
     protected long getReadTimeout( RequestType<Master> type, long readTimeout )
     {
-        HaRequestType18 specificType = (HaRequestType18) type;
+        HaRequestType196 specificType = (HaRequestType196) type;
         if ( specificType.isLock() )
         {
             return lockReadTimeout;
         }
-        if ( specificType == HaRequestType18.COPY_STORE )
+        if ( specificType == HaRequestType196.COPY_STORE )
         {
             return readTimeout * 2;
         }
@@ -109,21 +109,23 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     @Override
     protected boolean shouldCheckStoreId( RequestType<Master> type )
     {
-        return type != HaRequestType18.COPY_STORE;
+        return type != HaRequestType196.COPY_STORE;
     }
 
     @Override
     public Response<IdAllocation> allocateIds( RequestContext context, final IdType idType )
     {
-        return sendRequest( HaRequestType18.ALLOCATE_IDS, context, new Serializer()
+        return sendRequest( HaRequestType196.ALLOCATE_IDS, context, new Serializer()
                 {
+                    @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         buffer.writeByte( idType.ordinal() );
                     }
                 }, new Deserializer<IdAllocation>()
                 {
-                    public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+                    @Override
+                    public IdAllocation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                     {
                         return readIdAllocation( buffer );
                     }
@@ -134,40 +136,41 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, final String name )
     {
-        return sendRequest( HaRequestType18.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
-                {
-                    public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
-                    {
-                        writeString( buffer, name );
-                    }
-                }, new Deserializer<Integer>()
-                {
-                    @SuppressWarnings("boxing")
-                    public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-                    {
-                        return buffer.readInt();
-                    }
-                }
-        );
+        return sendRequest( HaRequestType196.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
+        {
+            @Override
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            {
+                writeString( buffer, name );
+            }
+        }, new Deserializer<Integer>()
+        {
+            @Override
+            @SuppressWarnings("boxing")
+            public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            {
+                return buffer.readInt();
+            }
+        } );
     }
 
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {
-        return sendRequest( HaRequestType18.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( HaRequestType196.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_NODE_WRITE_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_NODE_WRITE_LOCK, context,
                 new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_NODE_READ_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_NODE_READ_LOCK, context,
                 new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
@@ -175,7 +178,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
                                                               long... relationships )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
@@ -183,35 +186,35 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
                                                              long... relationships )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireGraphWriteLock( RequestContext context )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_GRAPH_WRITE_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_GRAPH_WRITE_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireGraphReadLock( RequestContext context )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_GRAPH_READ_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_GRAPH_READ_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_INDEX_READ_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_INDEX_READ_LOCK, context,
                 new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key )
     {
-        return sendRequest( HaRequestType18.ACQUIRE_INDEX_WRITE_LOCK, context,
+        return sendRequest( HaRequestType196.ACQUIRE_INDEX_WRITE_LOCK, context,
                 new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
     }
 
@@ -219,8 +222,9 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
                                                            final String resource, final TxExtractor txGetter )
     {
-        return sendRequest( HaRequestType18.COMMIT, context, new Serializer()
+        return sendRequest( HaRequestType196.COMMIT, context, new Serializer()
                 {
+                    @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         writeString( buffer, resource );
@@ -230,6 +234,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                     }
                 }, new Deserializer<Long>()
                 {
+                    @Override
                     @SuppressWarnings("boxing")
                     public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
                     {
@@ -244,8 +249,9 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     {
         try
         {
-            return sendRequest( HaRequestType18.FINISH, context, new Serializer()
+            return sendRequest( HaRequestType196.FINISH, context, new Serializer()
             {
+                @Override
                 public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                 {
                     buffer.writeByte( success ? 1 : 0 );
@@ -281,14 +287,15 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
-        return sendRequest( HaRequestType18.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( HaRequestType196.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
     @Override
     public Response<HandshakeResult> handshake( final long txId, StoreId storeId )
     {
-        return sendRequest( HaRequestType18.HANDSHAKE, RequestContext.EMPTY, new Serializer()
+        return sendRequest( HaRequestType196.HANDSHAKE, RequestContext.EMPTY, new Serializer()
                 {
+                    @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
                     {
                         buffer.writeLong( txId );
@@ -299,7 +306,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                     public HandshakeResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                             IOException
                     {
-                        return new HandshakeResult( buffer.readInt(), buffer.readLong(), -1 );
+                        return new HandshakeResult( buffer.readInt(), buffer.readLong(), buffer.readLong() );
                     }
                 }, storeId
         );
@@ -309,7 +316,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public Response<Void> copyStore( RequestContext context, final StoreWriter writer )
     {
         context = stripFromTransactions( context );
-        return sendRequest( HaRequestType18.COPY_STORE, context, EMPTY_SERIALIZER,
+        return sendRequest( HaRequestType196.COPY_STORE, context, EMPTY_SERIALIZER,
                 new Protocol.FileStreamsDeserializer( writer ) );
     }
 
@@ -324,8 +331,9 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                                             final String ds, final long startTxId, final long endTxId )
     {
         context = stripFromTransactions( context );
-        return sendRequest( HaRequestType18.COPY_TRANSACTIONS, context, new Serializer()
+        return sendRequest( HaRequestType196.COPY_TRANSACTIONS, context, new Serializer()
         {
+            @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
                     throws IOException
             {
@@ -340,7 +348,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public Response<Void> pushTransaction( RequestContext context, final String resourceName, final long tx )
     {
         context = stripFromTransactions( context );
-        return sendRequest( HaRequestType18.PUSH_TRANSACTION, context, new Serializer()
+        return sendRequest( HaRequestType196.PUSH_TRANSACTION, context, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -376,6 +384,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
             this.entities = entities;
         }
 
+        @Override
         public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
         {
             buffer.writeInt( entities.length );
@@ -405,20 +414,25 @@ public class MasterClient18 extends Client<Master> implements MasterClient
         }
     }
 
-    public static abstract class AquireLockCall implements TargetCaller<Master, LockResult>
+    protected static class AcquireIndexEntryLockSerializer implements Serializer
     {
-        @Override
-        public Response<LockResult> call( Master master, RequestContext context,
-                                          ChannelBuffer input, ChannelBuffer target )
+        private final long labelId;
+        private final long propertyKeyId;
+        private final String value;
+
+        AcquireIndexEntryLockSerializer( long labelId, long propertyKeyId, String value )
         {
-            long[] ids = new long[input.readInt()];
-            for ( int i = 0; i < ids.length; i++ )
-            {
-                ids[i] = input.readLong();
-            }
-            return lock( master, context, ids );
+            this.labelId = labelId;
+            this.propertyKeyId = propertyKeyId;
+            this.value = value;
         }
 
-        protected abstract Response<LockResult> lock( Master master, RequestContext context, long... ids );
+        @Override
+        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+        {
+            buffer.writeLong( labelId );
+            buffer.writeLong( propertyKeyId );
+            writeString( buffer, value );
+        }
     }
 }
