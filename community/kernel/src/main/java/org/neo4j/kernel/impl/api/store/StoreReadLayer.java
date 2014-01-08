@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -32,10 +31,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -94,8 +94,9 @@ public interface StoreReadLayer
 
     Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state );
 
-    long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
-                                                    throws IndexNotFoundKernelException, IndexBrokenKernelException;
+    PrimitiveLongIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
+                                                        Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException;
 
     PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId );
 

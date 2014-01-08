@@ -47,18 +47,6 @@ public class LuceneDocumentStructure
         return document;
     }
 
-    public boolean isPropertyTerm( Term term )
-    {
-        for ( ValueEncoding encoding : ValueEncoding.values() )
-        {
-            if ( encoding.canDecode( term ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     enum ValueEncoding
     {
         Number
@@ -88,12 +76,6 @@ public class LuceneDocumentStructure
                 String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
                 return new TermQuery( new Term( key(), encodedString ) );
             }
-
-            @Override
-            Object decode( Term term )
-            {
-                return NumericUtils.prefixCodedToDouble( term.text() );
-            }
         },
         Array
         {
@@ -120,12 +102,6 @@ public class LuceneDocumentStructure
             {
                 return new TermQuery( new Term( key(), ArrayEncoder.encode( value ) ) );
             }
-
-            @Override
-            Object decode( Term term )
-            {
-                return ArrayEncoder.decode( term.text() );
-            }
         },
         Bool
         {
@@ -151,12 +127,6 @@ public class LuceneDocumentStructure
             Query encodeQuery( Object value )
             {
                 return new TermQuery( new Term( key(), value.toString() ) );
-            }
-
-            @Override
-            Object decode( Term term )
-            {
-                return Boolean.valueOf( term.text() );
             }
         },
         String
@@ -185,12 +155,6 @@ public class LuceneDocumentStructure
             {
                 return new TermQuery( new Term( key(), value.toString() ) );
             }
-
-            @Override
-            Object decode( Term term )
-            {
-                return term.text();
-            }
         };
 
         abstract String key();
@@ -198,13 +162,6 @@ public class LuceneDocumentStructure
         abstract boolean canEncode( Object value );
         abstract Fieldable encodeField( Object value );
         abstract Query encodeQuery( Object value );
-
-        boolean canDecode( Term term )
-        {
-            return key().equals( term.field() );
-        }
-
-        abstract Object decode( Term term );
     }
 
     public Document newDocumentRepresentingProperty( long nodeId, Object value )
@@ -256,18 +213,5 @@ public class LuceneDocumentStructure
     public long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
-    }
-
-    public Object propertyValue( Term term )
-    {
-        for ( ValueEncoding encoding : ValueEncoding.values() )
-        {
-            if ( encoding.canDecode( term ) )
-            {
-                return encoding.decode( term );
-            }
-        }
-
-        throw new IllegalArgumentException( format( "Unexpected field: %s", term.field() ) );
     }
 }

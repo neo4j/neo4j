@@ -25,13 +25,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
+import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
@@ -48,7 +52,9 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
@@ -59,10 +65,6 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
         // Given
-        int labelId = 2, propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
@@ -81,12 +83,7 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeRemovedNodeFromUniqueIndexQuery() throws Exception
     {
         // Given
-        int labelId = 2;
-        int propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( 1l );
+        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( asPrimitiveIterator( 1l ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
         when( oldTxState.hasChanges() ).thenReturn( true );
 
@@ -103,10 +100,6 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodesWithMissingLabelFromIndexQuery() throws Exception
     {
         // Given
-        int labelId = 2, propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
@@ -126,12 +119,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeChangedNodeWithMissingLabelFromUniqueIndexQuery() throws Exception
     {
         // Given
-        int labelId = 2;
-        int propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
+                emptyPrimitiveLongIterator() );
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
                 new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
@@ -148,10 +137,6 @@ public class IndexQueryTransactionStateTest
     public void shouldIncludeCreatedNodesWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        int labelId = 2, propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
         when( store.nodeGetProperty( eq( state ), anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property
@@ -169,20 +154,14 @@ public class IndexQueryTransactionStateTest
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
-
     }
 
     @Test
     public void shouldIncludeUniqueCreatedNodeWithCorrectLabelAndProperty() throws Exception
     {
         // Given
-        int labelId = 2;
-        int propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-
-        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
+                emptyPrimitiveLongIterator() );
         when( store.nodeGetProperty( eq( state ), anyLong(), eq( propertyKeyId ) ) ).thenReturn( Property
                 .noNodeProperty( 1, propertyKeyId ) );
         when( store.nodeGetAllProperties( eq( state ), anyLong() ) ).thenReturn( IteratorUtil
@@ -199,17 +178,12 @@ public class IndexQueryTransactionStateTest
 
         // Then
         assertThat( result, equalTo( 1l ) );
-
     }
 
     @Test
     public void shouldIncludeExistingNodesWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        int labelId = 2, propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
@@ -226,20 +200,14 @@ public class IndexQueryTransactionStateTest
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 1l, 2l, 3l ) ) );
-
     }
 
     @Test
     public void shouldIncludeExistingUniqueNodeWithCorrectPropertyAfterAddingLabel() throws Exception
     {
         // Given
-        int labelId = 2;
-        int propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-
-        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
+                emptyPrimitiveLongIterator() );
         when( store.nodeHasLabel( state, 2l, labelId ) ).thenReturn( false );
 
         DefinedProperty stringProperty = Property.stringProperty( propertyKeyId, value );
@@ -260,10 +228,6 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeExistingNodesWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
-        int labelId = 2, propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
@@ -286,12 +250,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeExistingUniqueNodeWithCorrectPropertyAfterRemovingLabel() throws Exception
     {
         // Given
-        int labelId = 2;
-        int propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( 1l );
+        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
+                asPrimitiveIterator( 1l ) );
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
 
         DefinedProperty stringProperty = Property.stringProperty( propertyKeyId, value );
@@ -312,10 +272,6 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeNodesWithRemovedProperty() throws Exception
     {
         // Given
-        int labelId = 2, propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
@@ -336,12 +292,8 @@ public class IndexQueryTransactionStateTest
     public void shouldExcludeUniqueNodeWithRemovedProperty() throws Exception
     {
         // Given
-        int labelId = 2;
-        int propertyKeyId = 3;
-        String value = "My Value";
-
-        IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
-        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
+                asPrimitiveIterator( 1l ) );
 
         when( store.nodeHasLabel( state, 1l, labelId ) ).thenReturn( true );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
@@ -356,30 +308,42 @@ public class IndexQueryTransactionStateTest
     }
 
     // exists
+    int labelId = 2;
+    int propertyKeyId = 3;
+    String value = "My Value";
+    IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
 
     private StoreReadLayer store;
     private OldTxStateBridge oldTxState;
-    private StateHandlingStatementOperations txContext;
+    private EntityOperations txContext;
     private KernelStatement state;
 
     @Before
     public void before() throws Exception
     {
-        int labelId1 = 10, labelId2 = 12;
-        store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
-                .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
-                .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
         oldTxState = mock( OldTxStateBridge.class );
 
         TxState txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
-        txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
+
+        int labelId1 = 10, labelId2 = 12;
+        store = mock( StoreReadLayer.class );
+        when( store.indexGetState( state, indexDescriptor )).thenReturn( InternalIndexState.ONLINE );
+        when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
+                .<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
+                .<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.constraintsGetForLabel( state, labelId ) ).thenReturn( Collections.<UniquenessConstraint>emptyIterator() );
+
+        StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
+                store,
+                mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ) );
+        txContext = new ConstraintEnforcingEntityOperations(
+                stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }
 
     private void assertNoSuchNode( long node )

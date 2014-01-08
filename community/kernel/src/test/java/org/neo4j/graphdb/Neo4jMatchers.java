@@ -624,4 +624,15 @@ public class Neo4jMatchers
             return beansAPI.schema().getIndexState( indexDef );
         }
     }
+
+    public static ConstraintDefinition createConstraint( GraphDatabaseService db, Label label, String propertyKey )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            ConstraintDefinition constraint =
+                    db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.success();
+            return constraint;
+        }
+    }
 }

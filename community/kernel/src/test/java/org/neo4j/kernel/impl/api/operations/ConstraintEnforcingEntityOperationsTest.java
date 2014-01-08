@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LockHolder;
 import org.neo4j.kernel.impl.api.ReleasableLock;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
@@ -49,12 +52,12 @@ public class ConstraintEnforcingEntityOperationsTest
     @Before
     public void given_ConstraintEnforcingEntityOperations_with_OnlineIndex() throws Exception
     {
-        this.readOps = Mockito.mock( EntityReadOperations.class );
-        this.schemaOps = Mockito.mock( SchemaReadOperations.class );
-        this.state = Mockito.mock( KernelStatement.class );
-        Mockito.when( schemaOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
-        this.locks = Mockito.mock( LockHolder.class );
-        Mockito.when( state.locks() ).thenReturn( locks );
+        this.readOps = mock( EntityReadOperations.class );
+        this.schemaOps = mock( SchemaReadOperations.class );
+        this.state = mock( KernelStatement.class );
+        when( schemaOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
+        this.locks = mock( LockHolder.class );
+        when( state.locks() ).thenReturn( locks );
 
         this.ops = new ConstraintEnforcingEntityOperations( null, readOps, schemaOps );
     }
@@ -64,36 +67,36 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        Mockito.when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
+        when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
         LockAnswer readLocks = new LockAnswer(), writeLocks = new LockAnswer();
-        Mockito.when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
-        Mockito.when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
+        when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
+        when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
 
         // when
         long nodeId = ops.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // then
-        Assert.assertEquals( expectedNodeId, nodeId );
-        Assert.assertEquals( 1, readLocks.held() );
-        Assert.assertEquals( 0, writeLocks.held() );
+        assertEquals( expectedNodeId, nodeId );
+        assertEquals( 1, readLocks.held() );
+        assertEquals( 0, writeLocks.held() );
     }
 
     @Test
     public void shouldHoldIndexWriteLockIfNodeDoesNotExist() throws Exception
     {
         // given
-        Mockito.when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
+        when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
         LockAnswer readLocks = new LockAnswer(), writeLocks = new LockAnswer();
-        Mockito.when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
-        Mockito.when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
+        when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
+        when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
 
         // when
         long nodeId = ops.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // then
-        Assert.assertEquals( NO_SUCH_NODE, nodeId );
-        Assert.assertEquals( 0, readLocks.held() );
-        Assert.assertEquals( 1, writeLocks.held() );
+        assertEquals( NO_SUCH_NODE, nodeId );
+        assertEquals( 0, readLocks.held() );
+        assertEquals( 1, writeLocks.held() );
     }
 
     @Test
@@ -101,20 +104,20 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         long expectedNodeId = 15;
-        Mockito.when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) )
+        when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) )
                 .thenReturn( NO_SUCH_NODE )
                 .thenReturn( expectedNodeId );
         LockAnswer readLocks = new LockAnswer(), writeLocks = new LockAnswer();
-        Mockito.when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
-        Mockito.when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
+        when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
+        when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
 
         // when
         long nodeId = ops.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // then
-        Assert.assertEquals( expectedNodeId, nodeId );
-        Assert.assertEquals( 1, readLocks.held() );
-        Assert.assertEquals( 0, writeLocks.held() );
+        assertEquals( expectedNodeId, nodeId );
+        assertEquals( 1, readLocks.held() );
+        assertEquals( 0, writeLocks.held() );
     }
 
 
@@ -165,7 +168,7 @@ public class ConstraintEnforcingEntityOperationsTest
 
         public int held()
         {
-            Assert.assertEquals( "locking must be balanced", acquired, txBound + released );
+            assertEquals( "locking must be balanced", acquired, txBound + released );
             return txBound;
         }
     }

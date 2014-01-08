@@ -35,6 +35,7 @@ public abstract class IndexProviderCompatibilityTestSuite
     public static abstract class Compatibility
     {
         protected final SchemaIndexProvider indexProvider;
+        protected IndexDescriptor descriptor = new IndexDescriptor( 1, 2 );
 
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite )
         {

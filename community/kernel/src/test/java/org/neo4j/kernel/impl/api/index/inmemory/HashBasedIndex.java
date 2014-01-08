@@ -86,6 +86,15 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
+    void iterateAll( IndexEntryIterator iterator ) throws Exception
+    {
+        for ( Map.Entry<Object, Set<Long>> entry : data.entrySet() )
+        {
+            iterator.visitEntry( entry.getKey(), entry.getValue() );
+        }
+    }
+
+    @Override
     public long maxCount()
     {
         return ids().size();

@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -88,6 +89,7 @@ import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class IndexPopulationJobTest
 {
+
     @Test
     public void shouldPopulateIndexWithOneNode() throws Exception
     {
@@ -102,7 +104,7 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator ).create();
         verify( populator ).add( nodeId, value );
-        verify( populator ).verifyDeferredConstraints();
+        verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
@@ -143,7 +145,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).add( node1, value );
         verify( populator ).add( node4, value );
-        verify( populator ).verifyDeferredConstraints();
+        verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).close( true );
 
         verifyNoMoreInteractions( populator );
@@ -266,9 +268,8 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-        NeoStoreIndexStoreView store = newStoreView();
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
 
         // When
         job.run();
@@ -287,9 +288,8 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-        NeoStoreIndexStoreView store = newStoreView();
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
         doThrow( failure ).when( populator ).create();
@@ -308,7 +308,7 @@ public class IndexPopulationJobTest
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
         IndexPopulationJob job =
                 newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
-                        new FlippableIndexProxy(), newStoreView(), new TestLogger() );
+                        new FlippableIndexProxy(), indexStoreView, new TestLogger() );
 
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
@@ -327,9 +327,8 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-        NeoStoreIndexStoreView store = newStoreView();
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
 
         String failureMessage = "not successful";
         IllegalStateException failure = new IllegalStateException( failureMessage );
@@ -348,12 +347,11 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         TestLogger logger = new TestLogger();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
-        NeoStoreIndexStoreView store = newStoreView();
 
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, store, logger );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger );
 
         IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
-        doThrow( failure ).when( populator ).verifyDeferredConstraints();
+        doThrow( failure ).when( populator ).verifyDeferredConstraints( indexStoreView );
 
         // When
         job.run();
@@ -410,7 +408,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater()
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return new IndexUpdater()
             {
@@ -482,7 +480,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater()
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return new IndexUpdater()
             {
@@ -521,9 +519,11 @@ public class IndexPopulationJobTest
 
     private final Label FIRST = DynamicLabel.label( "FIRST" );
     private final Label SECOND = DynamicLabel.label( "SECOND" );
+    private final String name = "name";
+    private final String age = "age";
 
-    private final String name = "name", age = "age";
     private ThreadToStatementContextBridge ctxProvider;
+    private NeoStoreIndexStoreView indexStoreView;
     private IndexPopulator populator;
     private KernelSchemaStateStore stateHolder;
 
@@ -536,6 +536,7 @@ public class IndexPopulationJobTest
         ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         populator = mock( IndexPopulator.class );
         stateHolder = new KernelSchemaStateStore();
+        indexStoreView = newStoreView();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -557,7 +558,7 @@ public class IndexPopulationJobTest
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,
                                                       FlippableIndexProxy flipper )
     {
-        return newIndexPopulationJob( label, propertyKey, populator, flipper, newStoreView(),
+        return newIndexPopulationJob( label, propertyKey, populator, flipper, indexStoreView,
                 StringLogger.DEV_NULL );
     }
 

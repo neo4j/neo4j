@@ -24,5 +24,5 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 
 public interface CacheLoader<T>
 {
-    T load( KernelStatement state, long id ) throws EntityNotFoundException;
+    T load( long id ) throws EntityNotFoundException;
 }

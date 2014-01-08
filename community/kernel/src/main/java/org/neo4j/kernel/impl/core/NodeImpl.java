@@ -675,7 +675,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 if ( labels == null )
                 {
-                    labels = loader.load( state, getId() );
+                    labels = loader.load( getId() );
                 }
             }
         }

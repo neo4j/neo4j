@@ -23,7 +23,6 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -52,28 +51,28 @@ public abstract class Primitive implements SizeOfObject
 
     public abstract long getId();
 
-    public Iterator<DefinedProperty> getProperties( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> loader,
-            CacheUpdateListener updateListener )
+    public Iterator<DefinedProperty> getProperties( CacheLoader<Iterator<DefinedProperty>> loader,
+                                                    CacheUpdateListener updateListener )
     {
-        return ensurePropertiesLoaded( state, loader, updateListener );
+        return ensurePropertiesLoaded( loader, updateListener );
     }
 
-    public Property getProperty( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> loader,
-            CacheUpdateListener updateListener, int key )
+    public Property getProperty( CacheLoader<Iterator<DefinedProperty>> loader,
+                                 CacheUpdateListener updateListener, int key )
     {
-        ensurePropertiesLoaded( state, loader, updateListener );
+        ensurePropertiesLoaded( loader, updateListener );
         return getCachedProperty( key );
     }
 
-    public PrimitiveLongIterator getPropertyKeys( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> cacheLoader,
-            CacheUpdateListener updateListener )
+    public PrimitiveLongIterator getPropertyKeys( CacheLoader<Iterator<DefinedProperty>> cacheLoader,
+                                                  CacheUpdateListener updateListener )
     {
-        ensurePropertiesLoaded( state, cacheLoader, updateListener );
+        ensurePropertiesLoaded( cacheLoader, updateListener );
         return getCachedPropertyKeys();
     }
 
-    private Iterator<DefinedProperty> ensurePropertiesLoaded( KernelStatement state, CacheLoader<Iterator<DefinedProperty>> loader,
-            CacheUpdateListener updateListener )
+    private Iterator<DefinedProperty> ensurePropertiesLoaded( CacheLoader<Iterator<DefinedProperty>> loader,
+                                                              CacheUpdateListener updateListener )
     {
         if ( !hasLoadedProperties() )
         {
@@ -83,7 +82,7 @@ public abstract class Primitive implements SizeOfObject
                 {
                     try
                     {
-                        Iterator<DefinedProperty> loadedProperties = loader.load( state, getId() );
+                        Iterator<DefinedProperty> loadedProperties = loader.load( getId() );
                         setProperties( loadedProperties );
                         updateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
                     }

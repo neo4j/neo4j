@@ -27,9 +27,13 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.EntityType;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -169,6 +173,30 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             }
         }
         return updates;
+    }
+
+    @Override
+    public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException
+    {
+        NodeRecord node = nodeStore.forceGetRecord( nodeId );
+        if ( !node.inUse() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
+        }
+        long firstPropertyId = node.getCommittedNextProp();
+        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
+        }
+        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
+        {
+            PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( propertyKeyId );
+            if ( propertyBlock != null )
+            {
+                return propertyBlock.newPropertyData( propertyStore );
+            }
+        }
+        throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
     }
 
     private Object valueOf( PropertyBlock property )

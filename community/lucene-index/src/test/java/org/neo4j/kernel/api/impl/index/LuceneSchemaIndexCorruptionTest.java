@@ -23,18 +23,21 @@ import java.io.File;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class LuceneSchemaIndexCorruptionTest
 {
-
     @Test
     public void shouldMarkIndexAsFailedIfIndexIsCorrupt() throws Exception
     {
@@ -45,7 +48,8 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken." ));
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) ) );
+                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+        );
 
         // When
         InternalIndexState initialState = p.getInitialState( 1l );
@@ -53,5 +57,4 @@ public class LuceneSchemaIndexCorruptionTest
         // Then
         assertThat( initialState, equalTo(InternalIndexState.FAILED) );
     }
-
 }

@@ -20,27 +20,27 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUpdater.Lookup
 {
-    @Override
-    protected void add( long nodeId, Object propertyValue, boolean applyIdempotently )
-            throws IndexEntryConflictException, IOException
+    private final int propertyKeyId;
+
+    public UniqueInMemoryIndex( int propertyKeyId )
     {
-        PrimitiveLongIterator nodes = lookup( propertyValue );
-        if ( nodes.hasNext() )
-        {
-            throw new PreexistingIndexEntryConflictException( propertyValue, nodes.next(), nodeId );
-        }
-        super.add( nodeId, propertyValue, applyIdempotently );
+        this.propertyKeyId = propertyKeyId;
     }
 
     @Override
@@ -88,5 +88,42 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
     {
         PrimitiveLongIterator nodes = lookup( value );
         return nodes.hasNext() ? nodes.next() : null;
+    }
+
+    @Override
+    public void verifyDeferredConstraints( final PropertyAccessor accessor ) throws Exception
+    {
+        indexData.iterateAll( new InMemoryIndexImplementation.IndexEntryIterator()
+        {
+            @Override
+            public void visitEntry( Object key, Set<Long> nodeIds ) throws Exception
+            {
+                List<Entry> entries = new ArrayList<>();
+                for (long nodeId : nodeIds )
+                {
+                    Property property = accessor.getProperty( nodeId, propertyKeyId );
+                    Object value = property.value();
+                    for ( Entry current : entries )
+                    {
+                        if (current.property.valueEquals( value ))
+                        {
+                            throw new PreexistingIndexEntryConflictException( value, current.nodeId, nodeId );
+                        }
+                    }
+                    entries.add( new Entry( nodeId, property) );
+                }
+            }
+        } );
+    }
+
+    private static class Entry {
+        long nodeId;
+        Property property;
+
+        private Entry( long nodeId, Property property )
+        {
+            this.nodeId = nodeId;
+            this.property = property;
+        }
     }
 }

@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Test;
-
-import static junit.framework.TestCase.assertEquals;
-
-public class ArrayEncoderTest
+public class InMemoryIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
 {
-    @Test
-    public void shouldEncodeArrays() throws Exception
+    public InMemoryIndexConstraintProviderApprovalTest( TestValue value )
     {
-        assertEquals( "D1.0|2.0|3.0|", ArrayEncoder.encode( new int[]{1, 2, 3} ) );
-        assertEquals( "Ztrue|false|", ArrayEncoder.encode( new boolean[]{true, false} ) );
-        assertEquals( "LYWxp|YXJl|eW91|b2s=|", ArrayEncoder.encode( new String[]{"ali", "are", "you", "ok"} ) );
+        super( value );
     }
 }

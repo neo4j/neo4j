@@ -200,7 +200,8 @@ public class LockManagerImpl implements LockManager
             RWLock lock = resourceLockMap.get( resource );
             if ( lock == null )
             {
-                resourceLockMap.put( resource, lock = new RWLock( resource, ragManager ) );
+                lock = new RWLock( resource, ragManager );
+                resourceLockMap.put( resource, lock );
             }
             lock.mark();
             return lock;

@@ -54,6 +54,7 @@ import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -350,11 +351,14 @@ public class BatchInserterImpl implements BatchInserter
         for ( int i = 0; i < labelIds.length; i++ )
         {
             IndexRule rule = rules[i];
-            labelIds[i] = rule.getLabel();
-            propertyKeyIds[i] = rule.getPropertyKey();
+            int labelId = rule.getLabel();
+            int propertyKeyId = rule.getPropertyKey();
+            labelIds[i] = labelId;
+            propertyKeyIds[i] = propertyKeyId;
 
+            IndexDescriptor descriptor = new IndexDescriptor( labelId, propertyKeyId );
             populators[i] = schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator(
-                    rule.getId(), new IndexConfiguration( rule.isConstraintIndex() ) );
+                    rule.getId(), descriptor, new IndexConfiguration( rule.isConstraintIndex() ) );
             populators[i].create();
         }
 

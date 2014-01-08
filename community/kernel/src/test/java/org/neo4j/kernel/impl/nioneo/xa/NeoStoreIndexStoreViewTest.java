@@ -40,10 +40,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -54,6 +57,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
@@ -141,6 +145,13 @@ public class NeoStoreIndexStoreViewTest
         order.verify( locks ).acquireNodeLock( 1, LockService.LockType.READ_LOCK );
         order.verify( lock1 ).release();
         order.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldReadProperties() throws PropertyNotFoundException, EntityNotFoundException
+    {
+        Property property = storeView.getProperty( alistair.getId(), propertyKeyId );
+        assertTrue( property.valueEquals( "Alistair" ) );
     }
 
     Map<Long, Lock> lockMocks = new HashMap<>();

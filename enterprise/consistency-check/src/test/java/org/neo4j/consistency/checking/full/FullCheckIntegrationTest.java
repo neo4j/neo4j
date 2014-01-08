@@ -43,6 +43,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -366,8 +367,9 @@ public class FullCheckIntegrationTest
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();
+            IndexDescriptor descriptor = new IndexDescriptor( rule.getLabel(), rule.getPropertyKey() );
             IndexPopulator populator =
-                storeAccess.indexes().getPopulator( rule.getId(), new IndexConfiguration( false ) );
+                storeAccess.indexes().getPopulator( rule.getId(), descriptor, new IndexConfiguration( false ) );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 

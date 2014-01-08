@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -56,9 +57,9 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
     {
-        InMemoryIndex index = config.isUnique() ? new UniqueInMemoryIndex() : new InMemoryIndex();
+        InMemoryIndex index = config.isUnique() ? new UniqueInMemoryIndex( descriptor.getPropertyKeyId() ) : new InMemoryIndex();
         indexes.put( indexId, index );
         return index.getPopulator();
     }

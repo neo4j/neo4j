@@ -343,6 +343,8 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, "A String" );
         assertCanCreateAndFind( db, LABEL1, property, true );
         assertCanCreateAndFind( db, LABEL1, property, false );
+        assertCanCreateAndFind( db, LABEL1, property, (byte) 56 );
+        assertCanCreateAndFind( db, LABEL1, property, 'z' );
         assertCanCreateAndFind( db, LABEL1, property, (short)12 );
         assertCanCreateAndFind( db, LABEL1, property, 12 );
         assertCanCreateAndFind( db, LABEL1, property, 12l );
@@ -352,11 +354,20 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, new String[]{"A String"} );
         assertCanCreateAndFind( db, LABEL1, property, new boolean[]{true} );
         assertCanCreateAndFind( db, LABEL1, property, new Boolean[]{false} );
+        assertCanCreateAndFind( db, LABEL1, property, new byte[]{56} );
+        assertCanCreateAndFind( db, LABEL1, property, new Byte[]{57} );
+        assertCanCreateAndFind( db, LABEL1, property, new char[]{'a'} );
+        assertCanCreateAndFind( db, LABEL1, property, new Character[]{'b'} );
         assertCanCreateAndFind( db, LABEL1, property, new short[]{12} );
-        assertCanCreateAndFind( db, LABEL1, property, new int[]{12} );
-        assertCanCreateAndFind( db, LABEL1, property, new long[]{12l} );
-        assertCanCreateAndFind( db, LABEL1, property, new float[]{(float)12.} );
-        assertCanCreateAndFind( db, LABEL1, property, new double[]{12.} );
+        assertCanCreateAndFind( db, LABEL1, property, new Short[]{13} );
+        assertCanCreateAndFind( db, LABEL1, property, new int[]{14} );
+        assertCanCreateAndFind( db, LABEL1, property, new Integer[]{15} );
+        assertCanCreateAndFind( db, LABEL1, property, new long[]{16l} );
+        assertCanCreateAndFind( db, LABEL1, property, new Long[]{17l} );
+        assertCanCreateAndFind( db, LABEL1, property, new float[]{(float)18.} );
+        assertCanCreateAndFind( db, LABEL1, property, new Float[]{(float)19.} );
+        assertCanCreateAndFind( db, LABEL1, property, new double[]{20.} );
+        assertCanCreateAndFind( db, LABEL1, property, new Double[]{21.} );
     }
 
     @Test
@@ -391,6 +402,7 @@ public class IndexingAcceptanceTest
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
     {
         Node created = createNode( db, map( propertyKey, value ), label );
+
         try ( Transaction tx = db.beginTx() )
         {
             Node found = single( db.findNodesByLabelAndProperty( label, propertyKey, value ) );

@@ -212,9 +212,9 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
         try
         {
-            populator.verifyDeferredConstraints();
+            populator.verifyDeferredConstraints( storeView );
         }
-        catch ( IndexEntryConflictException | IOException conflict )
+        catch ( Exception conflict )
         {
             throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
         }
@@ -225,7 +225,7 @@ public class IndexPopulationJob implements Runnable
     {
         if ( !queue.isEmpty() )
         {
-            try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( storeView ) )
             {
                 for ( NodePropertyUpdate update : queue )
                 {

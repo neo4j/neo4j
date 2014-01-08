@@ -46,10 +46,12 @@ import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -440,15 +442,15 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws Exception
         {
-            delegate.verifyDeferredConstraints();
+            delegate.verifyDeferredConstraints( propertyAccessor );
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater() throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
         {
-            return delegate.newPopulatingUpdater();
+            return delegate.newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
@@ -482,9 +484,9 @@ public class SchemaIndexHaIT
         }
         
         @Override
-        public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
+        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
         {
-            return new ControlledIndexPopulator( delegate.getPopulator( indexId, config ), latch );
+            return new ControlledIndexPopulator( delegate.getPopulator( indexId, descriptor, config ), latch );
         }
 
         @Override

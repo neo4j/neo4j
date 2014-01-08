@@ -31,8 +31,6 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -41,10 +39,10 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -436,15 +434,11 @@ public class DiskLayer
         return loadAllPropertiesOf( neoStore.asRecord() );
     }
 
-    
-    public long nodeGetUniqueFromIndexLookup( KernelStatement state, long indexId, Object value )
+
+    public PrimitiveLongIterator nodeGetUniqueFromIndexLookup( KernelStatement state, long indexId, Object value )
             throws IndexNotFoundKernelException
     {
-        try ( IndexReader reader = state.getFreshIndexReader( indexId ) )
-        {
-            PrimitiveLongIterator iterator = reader.lookup( value );
-            return IteratorUtil.single( iterator, StatementConstants.NO_SUCH_NODE );
-        }
+        return state.getFreshIndexReader( indexId ).lookup( value );
     }
 
     public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, long index, Object value )

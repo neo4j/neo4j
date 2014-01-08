@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.Arrays;
+
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 
@@ -31,9 +33,39 @@ public abstract class IndexEntryConflictException extends Exception
 
     protected static String quote( Object propertyValue )
     {
-        if (propertyValue instanceof String)
+        if ( propertyValue instanceof String )
         {
             return format( "'%s'", propertyValue );
+        }
+        else if ( propertyValue.getClass().isArray() )
+        {
+            Class<?> type = propertyValue.getClass().getComponentType();
+            if ( type == Boolean.TYPE )
+            {
+                return Arrays.toString( (boolean[]) propertyValue );
+            } else if ( type == Byte.TYPE )
+            {
+                return Arrays.toString( (byte[]) propertyValue );
+            } else if ( type == Short.TYPE )
+            {
+                return Arrays.toString( (short[]) propertyValue );
+            } else if ( type == Character.TYPE )
+            {
+                return Arrays.toString( (char[]) propertyValue );
+            } else if ( type == Integer.TYPE )
+            {
+                return Arrays.toString( (int[]) propertyValue );
+            } else if ( type == Long.TYPE )
+            {
+                return Arrays.toString( (long[]) propertyValue );
+            } else if ( type == Float.TYPE )
+            {
+                return Arrays.toString( (float[]) propertyValue );
+            } else if ( type == Double.TYPE )
+            {
+                return Arrays.toString( (double[]) propertyValue );
+            }
+            return Arrays.toString( (Object[]) propertyValue );
         }
         return valueOf( propertyValue );
     }

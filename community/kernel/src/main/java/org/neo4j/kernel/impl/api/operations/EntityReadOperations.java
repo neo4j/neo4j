@@ -50,7 +50,7 @@ public interface EntityReadOperations
             throws IndexNotFoundKernelException;
 
     /**
-     * Returns a matching node id if found, NO_SUCH_NODE otherwise.
+     * Returns an iterable with the matched node.
      *
      * @throws IndexNotFoundKernelException if no such index found.
      * @throws IndexBrokenKernelException   if we found an index that was corrupt or otherwise in a failed state.
