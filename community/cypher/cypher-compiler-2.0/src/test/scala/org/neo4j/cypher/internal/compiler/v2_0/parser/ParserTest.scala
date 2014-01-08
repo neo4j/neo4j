@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 import org.scalatest.Assertions
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
-import org.neo4j.cypher.internal.compiler.v2_0.InvalidInputErrorFormatter
+import org.neo4j.cypher.internal.compiler.v2_0.{BufferPosition, InvalidInputErrorFormatter}
 
 trait ParserTest[T, J] extends Assertions {
 
@@ -61,9 +61,13 @@ trait ParserTest[T, J] extends Assertions {
 
   private def convertResult(r: ParsingResult[T], input: String) = r.result match {
     case Some(t) => new ResultCheck(Seq(convert(t)), input)
-    case None    => fail(s"'${input}' failed with " + r.parseErrors.map {
-      case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-      case error                           => error.getClass.getSimpleName
+    case None    => fail(s"'$input' failed with: " + r.parseErrors.map {
+      case error: InvalidInputError =>
+        val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+        val message = new InvalidInputErrorFormatter().format(error)
+        s"$message ($position)"
+      case error                    =>
+        error.getClass.getSimpleName
     }.mkString(","))
   }
 }

@@ -21,8 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.junit.Test
+import org.parboiled.scala._
 
-class BaseRulesTest extends ParserTest[ast.Identifier, ast.Identifier] with Base {
+class BaseRulesTest extends ParserTest[Any, Any] with Base {
+
+  @Test def testWhitespaceHandling() {
+    implicit val parserToTest: Rule1[Boolean] = "a" ~ WS ~ "b" ~ push(true)
+
+    parsing("a b") shouldGive true
+    parsing("a　b") shouldGive true
+  }
 
   @Test def testKeywordIdentifierWhitespaceHandling() {
     implicit val parserToTest = keywordIdentifier("IS", "NOT", "NULL")
@@ -30,10 +38,11 @@ class BaseRulesTest extends ParserTest[ast.Identifier, ast.Identifier] with Base
     parsing("IS NOT NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
     parsing("IS  NOT NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
     parsing("IS NOT  NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
+    parsing("IS NOT　NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
     parsing("IS NOT\nNULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
     parsing("IS\t\tNOT\nNULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
     parsing("IS /* comment */ NOT NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
   }
 
-  def convert(astNode: ast.Identifier): ast.Identifier = astNode
+  def convert(result: Any): Any = result
 }

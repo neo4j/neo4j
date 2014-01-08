@@ -26,44 +26,33 @@ import org.parboiled.support.IndexRange
 
 trait Base extends Parser {
 
-  def IdentifierCharacter = rule("an identifier character") { (Letter | ch('_') | Digit | ch('\'')) memoMismatches } suppressSubnodes
+  def OpChar = rule("an operator char") { anyOf("|^&<>=?!:+-*/%~") }
 
-  def OperatorCharacter = rule("an operator char") { anyOf("|^&<>=!:+-*/%~") }
-
-  def LegacyPropertyOperator = rule("") { group(anyOf("?!") ~ !OperatorCharacter) }
-
-  def WordCharacter = rule { (Letter | ch('_') | Digit) memoMismatches }
-
-  def Decimal = rule { (optional(Integer) ~ "." ~ Digits) memoMismatches }
-  def Integer = rule { (optional("-") ~ UnsignedInteger) memoMismatches }
-  def UnsignedInteger = rule { (("1" - "9") ~ Digits | Digit) memoMismatches }
+  def Decimal = rule { (optional(Integer) ~ "." ~ Digits).memoMismatches }
+  def Integer = rule { (optional("-") ~ UnsignedInteger).memoMismatches }
+  def UnsignedInteger = rule { (("1" - "9") ~ Digits | Digit).memoMismatches }
   def Digits = rule { oneOrMore(Digit) }
   def Digit = rule { "0" - "9" }
   def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "Z" }
-
-  def Letter = rule { (AscLetter) memoMismatches } // TODO: unicode
-  def AscLetter = rule { "a" - "z" | "A" - "Z" }
 
   def CommaSep = rule("','") { WS ~ ch(',') ~ WS }
 
   def WS = rule("whitespace") {
     zeroOrMore(
-        (oneOrMore(WSCharacter) memoMismatches)
+        (oneOrMore(WSChar) memoMismatches)
       | (ch('/').label("comment") ~ (
-          ch('*') ~ zeroOrMore(!("*/") ~ ANY) ~ "*/"
+          ch('*') ~ zeroOrMore(!"*/" ~ ANY) ~ "*/"
         | ch('/') ~ zeroOrMore(!anyOf("\n\r") ~ ANY) ~ ("\r\n" | ch('\r') | ch('\n') | EOI)
       ) memoMismatches)
     )
-  } suppressNode
-  def WB = rule { !(WordCharacter) } suppressNode
-  def WSCharacter = rule("whitespace") { anyOf(" \n\r\t\f") }
+  }.suppressNode
 
-  def keyword(string: String): Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ WB)
+  def keyword(string: String): Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ !IdentifierPart)
   def keyword(firstString: String, strings: String*): Rule0 =
     group(strings.foldLeft(keyword(firstString)) {
       (acc, s) => acc ~ WS ~ keyword(s)
     })
-  def operator(string: String) = group(string ~ !OperatorCharacter)
+  def operator(string: String) = group(string ~ !OpChar)
 
   def keywordIdentifier(firstString: String, strings: String*): Rule1[ast.Identifier] =
     keyword(firstString, strings:_*) ~>> token ~~> (ast.Identifier((firstString +: strings).mkString(" "), _))

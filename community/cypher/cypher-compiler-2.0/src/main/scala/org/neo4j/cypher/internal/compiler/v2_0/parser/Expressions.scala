@@ -147,7 +147,7 @@ trait Expressions extends Parser
 
   private def PropertyLookup : ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
     operator(".") ~~ (
-        (group(Identifier ~~ LegacyPropertyOperator ~> ((s:String) => s)) ~>> token ~~> ast.LegacyProperty.make)
+        (group(Identifier ~~ group(anyOf("?!") ~ !OpChar) ~> ((s:String) => s)) ~>> token ~~> ast.LegacyProperty.make)
       | (Identifier ~>> token ~~> ast.Property)
     )
   }

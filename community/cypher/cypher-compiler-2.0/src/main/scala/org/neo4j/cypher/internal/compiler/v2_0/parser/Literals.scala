@@ -31,10 +31,10 @@ trait Literals extends Parser
   def Identifier : Rule1[ast.Identifier] = rule("an identifier") (
       IdentifierString ~>> token ~~> ast.Identifier
     | EscapedIdentifier
-  ) memoMismatches
+  ).memoMismatches
 
   private def IdentifierString : Rule1[String] = rule("an identifier") {
-    group((Letter | ch('_')) ~ zeroOrMore(IdentifierCharacter)) ~> (_.toString) ~ !(IdentifierCharacter)
+    group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
   }
 
   def EscapedIdentifier : Rule1[ast.Identifier] = rule("an identifier") {
@@ -42,13 +42,13 @@ trait Literals extends Parser
   }
 
   private def EscapedIdentifierString : Rule1[String] = rule("an identifier") {
-    ((oneOrMore(
+    (oneOrMore(
       ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
-    ) memoMismatches) ~~> (_.reduce(_ + '`' + _)))
+    ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
   def Operator : Rule1[ast.Identifier] = rule {
-    oneOrMore(OperatorCharacter) ~> t(ast.Identifier(_, _)) ~ !(OperatorCharacter)
+    oneOrMore(OpChar) ~> t(ast.Identifier) ~ !OpChar
   }
 
   def MapLiteral : Rule1[ast.MapExpression] = rule {
@@ -64,7 +64,7 @@ trait Literals extends Parser
   def NumberLiteral : Rule1[ast.Number] = rule("a number") (
       Decimal ~> t((s, t) => ast.Double(s.toDouble, t))
     | Integer ~> t((s, t) => ast.SignedInteger(s.toLong, t))
-  ) memoMismatches
+  ).memoMismatches
 
   def UnsignedIntegerLiteral : Rule1[ast.UnsignedInteger] = rule("an unsigned integer") {
     UnsignedInteger ~> t((s, t) => ast.UnsignedInteger(s.toLong, t))
@@ -80,11 +80,11 @@ trait Literals extends Parser
   )
 
   def NodeLabels : Rule1[Seq[ast.Identifier]] = rule("node labels") {
-    (oneOrMore(NodeLabel, separator = WS) memoMismatches) suppressSubnodes
+    (oneOrMore(NodeLabel, separator = WS) memoMismatches).suppressSubnodes
   }
 
   def NodeLabel : Rule1[ast.Identifier] = rule {
-    ((operator(":") ~~ Identifier) memoMismatches) suppressSubnodes
+    ((operator(":") ~~ Identifier) memoMismatches).suppressSubnodes
   }
 
   def StringLiteral : Rule1[ast.StringLiteral] = rule("\"...string...\"") {
