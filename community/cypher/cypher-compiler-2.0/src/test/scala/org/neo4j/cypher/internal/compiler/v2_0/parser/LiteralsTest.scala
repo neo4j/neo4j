@@ -53,5 +53,25 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     assertFails("1bcd")
   }
 
+  @Test
+  def testCanParseNumbers() {
+    implicit val parserToTest = NumberLiteral
+
+    parsing("123") shouldMatch { case ast.SignedIntegerLiteral("123", _) => }
+    parsing("-23") shouldMatch { case ast.SignedIntegerLiteral("-23", _) => }
+    parsing("-0") shouldMatch { case ast.SignedIntegerLiteral("-0", _) => }
+
+    parsing("1.23") shouldMatch { case ast.DoubleLiteral("1.23", _) => }
+    parsing("13434.23399") shouldMatch { case ast.DoubleLiteral("13434.23399", _) => }
+    parsing(".3454") shouldMatch { case ast.DoubleLiteral(".3454", _) => }
+    parsing("-0.0") shouldMatch { case ast.DoubleLiteral("-0.0", _) => }
+    parsing("-54366.4") shouldMatch { case ast.DoubleLiteral("-54366.4", _) => }
+    parsing("-0.3454") shouldMatch { case ast.DoubleLiteral("-0.3454", _) => }
+
+    parsing("1E23") shouldMatch { case ast.DoubleLiteral("1E23", _) => }
+    parsing("1.34E99") shouldMatch { case ast.DoubleLiteral("1.34E99", _) => }
+    parsing("9E-443") shouldMatch { case ast.DoubleLiteral("9E-443", _) => }
+  }
+
   def convert(result: Any): Any = result
 }

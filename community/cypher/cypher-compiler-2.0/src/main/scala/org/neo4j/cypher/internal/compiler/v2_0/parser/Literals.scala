@@ -61,13 +61,22 @@ trait Literals extends Parser
     ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~>> token ~~> ast.Parameter
   }
 
-  def NumberLiteral : Rule1[ast.Number] = rule("a number") (
-      Decimal ~> t((s, t) => ast.Double(s.toDouble, t))
-    | Integer ~> t((s, t) => ast.SignedInteger(s.toLong, t))
+  def NumberLiteral : Rule1[ast.Literal] = rule("a number") (
+      DoubleLiteral
+    | SignedIntegerLiteral
   ).memoMismatches
 
-  def UnsignedIntegerLiteral : Rule1[ast.UnsignedInteger] = rule("an unsigned integer") {
-    UnsignedInteger ~> t((s, t) => ast.UnsignedInteger(s.toLong, t))
+  def DoubleLiteral: Rule1[ast.DoubleLiteral] = rule("a floating point number") (
+      Exponent ~> t((s, t) => ast.DoubleLiteral(s, t))
+    | Decimal ~> t((s, t) => ast.DoubleLiteral(s, t))
+  )
+
+  def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") {
+    Integer ~> t((s, t) => ast.SignedIntegerLiteral(s, t))
+  }
+
+  def UnsignedIntegerLiteral : Rule1[ast.UnsignedIntegerLiteral] = rule("an unsigned integer") {
+    UnsignedInteger ~> t((s, t) => ast.UnsignedIntegerLiteral(s, t))
   }
 
   def RangeLiteral : Rule1[ast.Range] = rule (

@@ -31,6 +31,7 @@ trait Base extends Parser {
   def Decimal = rule { (optional(Integer) ~ "." ~ Digits).memoMismatches }
   def Integer = rule { (optional("-") ~ UnsignedInteger).memoMismatches }
   def UnsignedInteger = rule { (("1" - "9") ~ Digits | Digit).memoMismatches }
+  def Exponent = rule { ((Decimal | Integer) ~ "E" ~ Integer).memoMismatches }
   def Digits = rule { oneOrMore(Digit) }
   def Digit = rule { "0" - "9" }
   def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "Z" }
@@ -42,7 +43,7 @@ trait Base extends Parser {
         (oneOrMore(WSChar) memoMismatches)
       | (ch('/').label("comment") ~ (
           ch('*') ~ zeroOrMore(!"*/" ~ ANY) ~ "*/"
-        | ch('/') ~ zeroOrMore(!anyOf("\n\r") ~ ANY) ~ ("\r\n" | ch('\r') | ch('\n') | EOI)
+        | ch('/') ~ zeroOrMore(!anyOf("\n\r") ~ ANY) ~ (optional(ch('\r')) ~ ch('\n') | EOI)
       ) memoMismatches)
     )
   }.suppressNode

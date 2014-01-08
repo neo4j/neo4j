@@ -34,8 +34,8 @@ class CollectionSliceTest extends Assertions {
   @Test
   def shouldReturnCollectionTypesOfExpression() {
     val slice = CollectionSlice(dummyCollection,
-      Some(SignedInteger(1, DummyToken(5,6))),
-      Some(SignedInteger(2, DummyToken(7,8))),
+      Some(SignedIntegerLiteral("1", DummyToken(5,6))),
+      Some(SignedIntegerLiteral("2", DummyToken(7,8))),
       DummyToken(4, 8))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -56,7 +56,7 @@ class CollectionSliceTest extends Assertions {
 
   @Test
   def shouldRaiseErrorIfStartingFromFraction() {
-    val to = Double(1.3, DummyToken(5,6))
+    val to = DoubleLiteral("1.3", DummyToken(5,6))
     val slice = CollectionSlice(dummyCollection,
       None,
       Some(to),

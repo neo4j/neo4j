@@ -40,7 +40,7 @@ trait StartPoints extends Parser
 
   private def NodeIdLookup : ReductionRule2[ast.Identifier, Int, ast.StartItem] = rule {
     "(" ~~ (
-        LiteralIds ~>> (_.end) ~~> rt(ast.NodeByIds(_: ast.Identifier, _: Seq[ast.UnsignedInteger], _))
+        LiteralIds ~>> (_.end) ~~> rt(ast.NodeByIds(_: ast.Identifier, _: Seq[ast.UnsignedIntegerLiteral], _))
       | Parameter ~>> (_.end) ~~> rt(ast.NodeByParameter(_: ast.Identifier, _: ast.Parameter, _))
       | "*" ~>> (_.end) ~~> rt(ast.AllNodes(_: ast.Identifier, _))
     ) ~~ ")"
@@ -60,7 +60,7 @@ trait StartPoints extends Parser
 
   private def RelationshipIdLookup : ReductionRule2[ast.Identifier, Int, ast.StartItem] = rule {
     "(" ~~ (
-        LiteralIds ~>> (_.end) ~~> rt(ast.RelationshipByIds(_: ast.Identifier, _: Seq[ast.UnsignedInteger], _))
+        LiteralIds ~>> (_.end) ~~> rt(ast.RelationshipByIds(_: ast.Identifier, _: Seq[ast.UnsignedIntegerLiteral], _))
       | Parameter ~>> (_.end) ~~> rt(ast.RelationshipByParameter(_: ast.Identifier, _: ast.Parameter, _))
       | "*" ~>> (_.end) ~~> rt(ast.AllRelationships(_: ast.Identifier, _))
     ) ~~ ")"
@@ -82,7 +82,7 @@ trait StartPoints extends Parser
     ":" ~~ Identifier ~~ "(" ~~ (StringLiteral | Parameter) ~~ ")"
   }
 
-  private def LiteralIds : Rule1[Seq[ast.UnsignedInteger]] = rule("an unsigned integer") {
+  private def LiteralIds : Rule1[Seq[ast.UnsignedIntegerLiteral]] = rule("an unsigned integer") {
     oneOrMore(UnsignedIntegerLiteral, separator = CommaSep)
   }
 }
