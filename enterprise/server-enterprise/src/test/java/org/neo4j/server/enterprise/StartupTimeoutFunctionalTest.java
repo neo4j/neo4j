@@ -36,6 +36,8 @@ import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.fail;
+
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class StartupTimeoutFunctionalTest
@@ -68,7 +70,6 @@ public class StartupTimeoutFunctionalTest
         {
             // ok!
         }
-
     }
 
     @Test
@@ -85,14 +86,7 @@ public class StartupTimeoutFunctionalTest
             }
         };
 
-        try
-        {
-            server.start();
-        }
-        catch ( ServerStartupException e )
-        {
-            fail( "Should not have been interrupted.", e );
-        }
+        server.start();
     }
 
     @Test
@@ -102,19 +96,12 @@ public class StartupTimeoutFunctionalTest
         configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 0 );
         server = createSlowServer( configurator );
 
-        try
-        {
-            server.start();
-        }
-        catch ( ServerStartupException e )
-        {
-            fail( "Should not have been interrupted.", e );
-        }
+        server.start();
     }
 
     private EnterpriseNeoServer createSlowServer( Configurator configurator )
     {
-        EnterpriseNeoServer server = new EnterpriseNeoServer( configurator )
+        return new EnterpriseNeoServer( configurator )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -142,7 +129,6 @@ public class StartupTimeoutFunctionalTest
                 return Arrays.asList( slowModule );
             }
         };
-        return server;
     }
 
     private Configurator buildProperties() throws IOException
@@ -167,15 +153,5 @@ public class StartupTimeoutFunctionalTest
         serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
 
         return new PropertyFileConfigurator( new File( serverPropertiesFilename ) );
-    }
-
-    private void fail( String message )
-    {
-        throw new AssertionError( message );
-    }
-
-    private void fail( String message, Throwable cause )
-    {
-        throw new AssertionError( message, cause );
     }
 }
