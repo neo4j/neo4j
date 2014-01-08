@@ -33,17 +33,24 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class RequestContextFactory
 {
-    private final long startupTime;
+    private long epoch;
     private final int serverId;
     private final XaDataSourceManager xaDsm;
     private final DependencyResolver resolver;
+    private AbstractTransactionManager txManager;
 
     public RequestContextFactory( int serverId, XaDataSourceManager xaDsm, DependencyResolver resolver )
     {
         this.resolver = resolver;
-        this.startupTime = System.currentTimeMillis();
+        this.epoch = -1;
         this.serverId = serverId;
         this.xaDsm = xaDsm;
+    }
+    
+    public void setEpoch( long epoch )
+    {
+        this.epoch = epoch;
+        this.txManager = resolver.resolveDependency( AbstractTransactionManager.class );
     }
 
     public RequestContext newRequestContext( int eventIdentifier )
@@ -65,7 +72,7 @@ public class RequestContextFactory
                 txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
             }
             assert master != null : "master should not be null, since we should have found " + NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
-            return new RequestContext( startupTime, serverId, eventIdentifier, txs, master.first(), master.other() );
+            return new RequestContext( epoch, serverId, eventIdentifier, txs, master.first(), master.other() );
         }
         catch ( IOException e )
         {
@@ -117,13 +124,11 @@ public class RequestContextFactory
 
     public RequestContext newRequestContext( XaDataSource dataSource )
     {
-        return newRequestContext( dataSource, startupTime, serverId,
-                resolver.resolveDependency( AbstractTransactionManager.class ).getEventIdentifier() );
+        return newRequestContext( dataSource, epoch, serverId, txManager.getEventIdentifier() );
     }
 
     public RequestContext newRequestContext()
     {
-        return newRequestContext( startupTime, serverId,
-                resolver.resolveDependency( AbstractTransactionManager.class ).getEventIdentifier() );
+        return newRequestContext( epoch, serverId, txManager.getEventIdentifier() );
     }
 }

@@ -22,16 +22,12 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.NumericUtils;
 
-import org.neo4j.index.impl.lucene.LuceneUtil;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
 import static java.lang.String.format;

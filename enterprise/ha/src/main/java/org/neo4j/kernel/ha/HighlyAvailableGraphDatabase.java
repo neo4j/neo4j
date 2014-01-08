@@ -396,10 +396,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging );
+        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging, requestContextFactory );
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
-                config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors );
+                config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors, requestContextFactory );
 
         /*
          * We always need the mode switcher and we need it to restart on switchover.

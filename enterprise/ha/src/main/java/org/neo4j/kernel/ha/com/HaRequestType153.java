@@ -19,17 +19,11 @@
  */
 package org.neo4j.kernel.ha.com;
 
-import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
-import static org.neo4j.com.Protocol.LONG_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_SERIALIZER;
-import static org.neo4j.com.Protocol.readBoolean;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
-
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.BlockLogReader;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;
@@ -38,13 +32,20 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.ha.com.slave.MasterClient153.AquireLockCall;
+import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.slave.MasterClient153.AquireLockCall;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
+
+import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readBoolean;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public enum HaRequestType153 implements RequestType<Master>
 {
@@ -56,10 +57,11 @@ public enum HaRequestType153 implements RequestType<Master>
                 ChannelBuffer target )
         {
             IdType idType = IdType.values()[input.readByte()];
-            return master.allocateIds( idType );
+            return master.allocateIds( context, idType );
         }
     }, new ObjectSerializer<IdAllocation>()
     {
+        @Override
         public void write( IdAllocation idAllocation, ChannelBuffer result ) throws IOException
         {
             IdRange idRange = idAllocation.getIdRange();
@@ -181,6 +183,7 @@ public enum HaRequestType153 implements RequestType<Master>
     // ====
     FINISH( new TargetCaller<Master, Void>()
     {
+        @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
@@ -189,21 +192,21 @@ public enum HaRequestType153 implements RequestType<Master>
     }, VOID_SERIALIZER, true ),
 
     // ====
-    GET_MASTER_ID_FOR_TX( new TargetCaller<Master, Pair<Integer, Long>>()
+    HANDSHAKE( new TargetCaller<Master, HandshakeResult>()
     {
         @Override
-        public Response<Pair<Integer, Long>> call( Master master, RequestContext context, ChannelBuffer input,
+        public Response<HandshakeResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.getMasterIdForCommittedTx( input.readLong(), null );
+            return master.handshake( input.readLong(), null );
         }
-    }, new ObjectSerializer<Pair<Integer, Long>>()
+    }, new ObjectSerializer<HandshakeResult>()
     {
         @Override
-        public void write( Pair<Integer, Long> responseObject, ChannelBuffer result ) throws IOException
+        public void write( HandshakeResult responseObject, ChannelBuffer result ) throws IOException
         {
-            result.writeInt( responseObject.first() );
-            result.writeLong( responseObject.other() );
+            result.writeInt( responseObject.txAuthor() );
+            result.writeLong( responseObject.txChecksum() );
         }
     }, false ),
 
@@ -222,6 +225,7 @@ public enum HaRequestType153 implements RequestType<Master>
     // ====
     COPY_TRANSACTIONS( new TargetCaller<Master, Void>()
     {
+        @Override
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 final ChannelBuffer target )
         {

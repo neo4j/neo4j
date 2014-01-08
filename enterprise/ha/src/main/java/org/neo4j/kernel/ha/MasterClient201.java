@@ -61,17 +61,20 @@ import static org.neo4j.com.Protocol.writeString;
  * {@link MasterServer} (which delegates to {@link MasterImpl}
  * on the master side.
  */
-public class MasterClient20 extends Client<Master> implements MasterClient
+public class MasterClient201 extends Client<Master> implements MasterClient
 {
     /* Version 1 first version
      * Version 2 since 2012-01-24
      * Version 3 since 2012-02-16
-     * Version 4 since 2012-07-05 */
-    public static final byte PROTOCOL_VERSION = 5;
+     * Version 4 since 2012-07-05
+     * Version 5 since ?
+     * Version 6 since 2014-01-07
+     */
+    public static final byte PROTOCOL_VERSION = 6;
 
     private final long lockReadTimeout;
 
-    public MasterClient20( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+    public MasterClient201( String hostNameOrIp, int port, Logging logging, StoreId storeId,
                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
@@ -80,7 +83,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
         this.lockReadTimeout = lockReadTimeout;
     }
 
-    public MasterClient20( URI masterUri, Logging logging, StoreId storeId, Config config )
+    public MasterClient201( URI masterUri, Logging logging, StoreId storeId, Config config )
     {
         this( masterUri.getHost(), masterUri.getPort(), logging, storeId,
                 config.get( HaSettings.read_timeout ),
@@ -92,12 +95,12 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     protected long getReadTimeout( RequestType<Master> type, long readTimeout )
     {
-        HaRequestType20 specificType = (HaRequestType20) type;
+        HaRequestType201 specificType = (HaRequestType201) type;
         if ( specificType.isLock() )
         {
             return lockReadTimeout;
         }
-        if ( specificType == HaRequestType20.COPY_STORE )
+        if ( specificType == HaRequestType201.COPY_STORE )
         {
             return readTimeout * 2;
         }
@@ -107,13 +110,13 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     protected boolean shouldCheckStoreId( RequestType<Master> type )
     {
-        return type != HaRequestType20.COPY_STORE;
+        return type != HaRequestType201.COPY_STORE;
     }
 
     @Override
     public Response<IdAllocation> allocateIds( RequestContext context, final IdType idType )
     {
-        return sendRequest( HaRequestType20.ALLOCATE_IDS, context, new Serializer()
+        return sendRequest( HaRequestType201.ALLOCATE_IDS, context, new Serializer()
                 {
                     @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -134,7 +137,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, final String name )
     {
-        return sendRequest( HaRequestType20.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
+        return sendRequest( HaRequestType201.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -155,7 +158,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     public Response<Integer> createPropertyKey( RequestContext context, final String name )
     {
-        return sendRequest( HaRequestType20.CREATE_PROPERTY_KEY, context, new Serializer()
+        return sendRequest( HaRequestType201.CREATE_PROPERTY_KEY, context, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -176,7 +179,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     public Response<Integer> createLabel( RequestContext context, final String name )
     {
-        return sendRequest( HaRequestType20.CREATE_LABEL, context, new Serializer()
+        return sendRequest( HaRequestType201.CREATE_LABEL, context, new Serializer()
                 {
                     @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -197,20 +200,20 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> initializeTx( RequestContext context )
     {
-        return sendRequest( HaRequestType20.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( HaRequestType201.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_NODE_WRITE_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_NODE_WRITE_LOCK, context,
                 new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_NODE_READ_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_NODE_READ_LOCK, context,
                 new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
     }
 
@@ -218,7 +221,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
                                                               long... relationships )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
@@ -226,49 +229,49 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
                                                              long... relationships )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireGraphWriteLock( RequestContext context )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_GRAPH_WRITE_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_GRAPH_WRITE_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireGraphReadLock( RequestContext context )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_GRAPH_READ_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_GRAPH_READ_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_INDEX_READ_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_INDEX_READ_LOCK, context,
                 new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_INDEX_WRITE_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_INDEX_WRITE_LOCK, context,
                 new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireSchemaReadLock( RequestContext context )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_SCHEMA_READ_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_SCHEMA_READ_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
 
     @Override
     public Response<LockResult> acquireSchemaWriteLock( RequestContext context )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_SCHEMA_WRITE_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_SCHEMA_WRITE_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
 
@@ -276,7 +279,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
                                                             String propertyValue )
     {
-        return sendRequest( HaRequestType20.ACQUIRE_INDEX_ENTRY_WRITE_LOCK, context,
+        return sendRequest( HaRequestType201.ACQUIRE_INDEX_ENTRY_WRITE_LOCK, context,
                             new AcquireIndexEntryLockSerializer( labelId, propertyKeyId, propertyValue ),
                             LOCK_RESULT_DESERIALIZER );
     }
@@ -285,7 +288,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
                                                            final String resource, final TxExtractor txGetter )
     {
-        return sendRequest( HaRequestType20.COMMIT, context, new Serializer()
+        return sendRequest( HaRequestType201.COMMIT, context, new Serializer()
                 {
                     @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -312,7 +315,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     {
         try
         {
-            return sendRequest( HaRequestType20.FINISH, context, new Serializer()
+            return sendRequest( HaRequestType201.FINISH, context, new Serializer()
             {
                 @Override
                 public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -350,13 +353,13 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
-        return sendRequest( HaRequestType20.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+        return sendRequest( HaRequestType201.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
     @Override
     public Response<HandshakeResult> handshake( final long txId, StoreId storeId )
     {
-        return sendRequest( HaRequestType20.HANDSHAKE, RequestContext.EMPTY, new Serializer()
+        return sendRequest( HaRequestType201.HANDSHAKE, RequestContext.EMPTY, new Serializer()
                 {
                     @Override
                     public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
@@ -369,7 +372,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
                     public HandshakeResult read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
                             IOException
                     {
-                        return new HandshakeResult( buffer.readInt(), buffer.readLong(), -1 );
+                        return new HandshakeResult( buffer.readInt(), buffer.readLong(), buffer.readLong() );
                     }
                 }, storeId
         );
@@ -379,7 +382,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     public Response<Void> copyStore( RequestContext context, final StoreWriter writer )
     {
         context = stripFromTransactions( context );
-        return sendRequest( HaRequestType20.COPY_STORE, context, EMPTY_SERIALIZER,
+        return sendRequest( HaRequestType201.COPY_STORE, context, EMPTY_SERIALIZER,
                 new Protocol.FileStreamsDeserializer( writer ) );
     }
 
@@ -394,7 +397,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
                                             final String ds, final long startTxId, final long endTxId )
     {
         context = stripFromTransactions( context );
-        return sendRequest( HaRequestType20.COPY_TRANSACTIONS, context, new Serializer()
+        return sendRequest( HaRequestType201.COPY_TRANSACTIONS, context, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
@@ -411,7 +414,7 @@ public class MasterClient20 extends Client<Master> implements MasterClient
     public Response<Void> pushTransaction( RequestContext context, final String resourceName, final long tx )
     {
         context = stripFromTransactions( context );
-        return sendRequest( HaRequestType20.PUSH_TRANSACTION, context, new Serializer()
+        return sendRequest( HaRequestType201.PUSH_TRANSACTION, context, new Serializer()
         {
             @Override
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException

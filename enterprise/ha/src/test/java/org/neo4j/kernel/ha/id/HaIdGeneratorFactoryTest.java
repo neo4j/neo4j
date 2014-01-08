@@ -23,11 +23,12 @@ import java.io.File;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -35,6 +36,8 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,10 +50,9 @@ public class HaIdGeneratorFactoryTest
     {
         // GIVEN
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 123, 0 );
-        Response<IdAllocation> toReturn = mock( Response.class );
-        when(toReturn.response()).thenReturn( firstResult );
-        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
+        Response<IdAllocation> response = response( firstResult );
+        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        
         // WHEN
         IdGenerator gen = switchToSlave();
 
@@ -59,20 +61,18 @@ public class HaIdGeneratorFactoryTest
         {
             assertEquals(i, gen.nextId());
         }
-        verify( master, times(1) ).allocateIds( IdType.NODE );
+        verify( master, times( 1 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
     }
 
     @Test
     public void slaveIdGeneratorShouldAskForMoreWhenRangeIsOver() throws Exception
     {
-
         // GIVEN
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 42 + 123, 0 );
         IdAllocation secondResult = new IdAllocation( new IdRange( new long[]{}, 1042, 223 ), 1042 + 223, 0 );
-        Response<IdAllocation> toReturn = mock( Response.class );
-        when(toReturn.response()).thenReturn( firstResult, secondResult );
-        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
-
+        Response<IdAllocation> response = response( firstResult, secondResult );
+        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        
         // WHEN
         IdGenerator gen = switchToSlave();
 
@@ -83,7 +83,7 @@ public class HaIdGeneratorFactoryTest
         {
             assertEquals(i, gen.nextId());
         }
-        verify( master, times(1) ).allocateIds( IdType.NODE );
+        verify( master, times( 1 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
 
         startAt = secondResult.getIdRange().getRangeStart();
         forThatMany = secondResult.getIdRange().getRangeLength();
@@ -92,7 +92,7 @@ public class HaIdGeneratorFactoryTest
             assertEquals(i, gen.nextId());
         }
 
-        verify( master, times(2) ).allocateIds( IdType.NODE );
+        verify( master, times( 2 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
     }
 
     @Test
@@ -101,9 +101,8 @@ public class HaIdGeneratorFactoryTest
         // GIVEN
         long[] defragIds = {42, 27172828, 314159};
         IdAllocation firstResult = new IdAllocation( new IdRange( defragIds, 0, 0 ), 0, defragIds.length );
-        Response<IdAllocation> toReturn = mock( Response.class );
-        when(toReturn.response()).thenReturn( firstResult );
-        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
+        Response<IdAllocation> response = response( firstResult );
+        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -121,9 +120,8 @@ public class HaIdGeneratorFactoryTest
         // GIVEN
         long[] defragIds = {42, 27172828, 314159};
         IdAllocation firstResult = new IdAllocation( new IdRange( defragIds, 0, 10 ), 100, defragIds.length );
-        Response<IdAllocation> toReturn = mock( Response.class );
-        when(toReturn.response()).thenReturn( firstResult );
-        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
+        Response<IdAllocation> response = response( firstResult );
+        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -139,12 +137,11 @@ public class HaIdGeneratorFactoryTest
     public void slaveShouldNeverAllowReducingHighId() throws Exception
     {
         // GIVEN
-        final int highIdFromAllocation =  123;
-        IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, highIdFromAllocation ),
+        final int highIdFromAllocation = 123;
+        IdAllocation firstResult = new IdAllocation( new IdRange( new long[] {}, 42, highIdFromAllocation ),
                 highIdFromAllocation, 0 );
-        Response<IdAllocation> toReturn = mock( Response.class );
-        when(toReturn.response()).thenReturn( firstResult );
-        when(master.allocateIds( Matchers.<IdType>any() ) ).thenReturn( toReturn );
+        Response<IdAllocation> response = response( firstResult );
+        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -167,13 +164,22 @@ public class HaIdGeneratorFactoryTest
         master = mock( Master.class );
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
         fs = new EphemeralFileSystemAbstraction();
-        fac  = new HaIdGeneratorFactory( masterDelegate, new DevNullLoggingService() );
+        fac  = new HaIdGeneratorFactory( masterDelegate, new DevNullLoggingService(),
+                mock( RequestContextFactory.class ) );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    private Response<IdAllocation> response( IdAllocation firstValue, IdAllocation... additionalValues )
+    {
+        Response<IdAllocation> response = mock( Response.class );
+        when( response.response() ).thenReturn( firstValue, additionalValues );
+        return response;
     }
 
     private IdGenerator switchToSlave()
     {
         fac.switchToSlave();
-        IdGenerator gen = fac.open( fs, new File("someFile"), 10, IdType.NODE, 1 );
+        IdGenerator gen = fac.open( fs, new File( "someFile" ), 10, IdType.NODE, 1 );
         masterDelegate.setDelegate( master );
         return gen;
     }

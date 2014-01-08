@@ -29,7 +29,6 @@ import java.util.Arrays;
  */
 public final class RequestContext
 {
-
     public static class Tx
     {
         private final String dataSourceName;
@@ -68,21 +67,21 @@ public final class RequestContext
     private final Tx[] lastAppliedTransactions;
     private final int eventIdentifier;
     private final int hashCode;
-    private final long sessionId;
+    private final long epoch;
     private final int masterId;
     private final long checksum;
 
-    public RequestContext( long sessionId, int machineId, int eventIdentifier,
+    public RequestContext( long epoch, int machineId, int eventIdentifier,
             Tx[] lastAppliedTransactions, int masterId, long checksum )
     {
-        this.sessionId = sessionId;
+        this.epoch = epoch;
         this.machineId = machineId;
         this.eventIdentifier = eventIdentifier;
         this.lastAppliedTransactions = lastAppliedTransactions;
         this.masterId = masterId;
         this.checksum = checksum;
 
-        long hash = sessionId;
+        long hash = epoch;
         hash = ( 31 * hash ) ^ eventIdentifier;
         hash = ( 31 * hash ) ^ machineId;
         this.hashCode = (int) ( ( hash >>> 32 ) ^ hash );
@@ -103,9 +102,9 @@ public final class RequestContext
         return eventIdentifier;
     }
 
-    public long getSessionId()
+    public long getEpoch()
     {
-        return sessionId;
+        return epoch;
     }
 
     public int getMasterId()
@@ -121,7 +120,7 @@ public final class RequestContext
     @Override
     public String toString()
     {
-        return "RequestContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
+        return "RequestContext[session: " + epoch + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
                + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
     }
 
@@ -133,7 +132,7 @@ public final class RequestContext
             return false;
         }
         RequestContext o = (RequestContext) obj;
-        return o.eventIdentifier == eventIdentifier && o.machineId == machineId && o.sessionId == sessionId;
+        return o.eventIdentifier == eventIdentifier && o.machineId == machineId && o.epoch == epoch;
     }
 
     @Override
@@ -146,7 +145,7 @@ public final class RequestContext
 
     public static RequestContext anonymous( Tx[] lastAppliedTransactions )
     {
-        return new RequestContext( EMPTY.sessionId, EMPTY.machineId, EMPTY.eventIdentifier,
+        return new RequestContext( EMPTY.epoch, EMPTY.machineId, EMPTY.eventIdentifier,
                 lastAppliedTransactions, EMPTY.masterId, EMPTY.checksum );
     }
 }
