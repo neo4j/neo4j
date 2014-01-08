@@ -20,12 +20,12 @@
 package org.neo4j.com;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +44,7 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -124,32 +125,74 @@ public class ServerUtil
         return appliedTransactions;
     }
 
-    public static RequestContext rotateLogsAndStreamStoreFiles( String storeDir, XaDataSourceManager dsManager, KernelPanicEventGenerator kernelPanicEventGenerator, StringLogger logger,
-                                                                boolean includeLogicalLogs, StoreWriter writer )
+    public static RequestContext rotateLogsAndStreamStoreFiles( String storeDir,
+                                                                XaDataSourceManager dsManager,
+                                                                KernelPanicEventGenerator kernelPanicEventGenerator,
+                                                                StringLogger logger,
+                                                                boolean includeLogicalLogs,
+                                                                StoreWriter writer,
+                                                                FileSystemAbstraction fs )
     {
         File baseDir = getBaseDir( storeDir );
         RequestContext context = RequestContext.anonymous( rotateLogs( dsManager, kernelPanicEventGenerator, logger ) );
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            try ( ResourceIterator<File> files = ds.listStoreFiles( includeLogicalLogs ) )
+            copyStoreFiles( writer, fs, baseDir, temporaryBuffer, ds );
+            if ( includeLogicalLogs )
             {
-                while ( files.hasNext() )
-                {
-                    File storeFile = files.next();
-                    try ( FileInputStream stream = new FileInputStream( storeFile ) )
-                    {
-                        writer.write( relativePath( baseDir, storeFile ), stream.getChannel(), temporaryBuffer,
-                                storeFile.length() > 0 );
-                    }
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new ServerFailureException( e );
+                copyLogicalLogs( writer, fs, baseDir, temporaryBuffer, ds );
             }
         }
         return context;
+    }
+
+    private static void copyLogicalLogs( StoreWriter writer, FileSystemAbstraction fs, File baseDir,
+                                         ByteBuffer temporaryBuffer, XaDataSource ds )
+    {
+        try ( ResourceIterator<File> files = ds.listLogicalLogs() )
+        {
+            while ( files.hasNext() )
+            {
+                File storeFile = files.next();
+                try {
+                    copyFile( writer, fs, baseDir, temporaryBuffer, storeFile );
+                } catch(FileNotFoundException ignored) {
+                    // swallow this - log pruning may have happened since we got list of files to copy
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new ServerFailureException( e );
+        }
+    }
+
+    private static void copyStoreFiles( StoreWriter writer, FileSystemAbstraction fs, File baseDir,
+                                        ByteBuffer temporaryBuffer, XaDataSource ds )
+    {
+        try ( ResourceIterator<File> files = ds.listStoreFiles() )
+        {
+            while ( files.hasNext() )
+            {
+                File storeFile = files.next();
+                copyFile( writer, fs, baseDir, temporaryBuffer, storeFile );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new ServerFailureException( e );
+        }
+    }
+
+    private static void copyFile( StoreWriter writer, FileSystemAbstraction fs, File baseDir,
+                                  ByteBuffer temporaryBuffer, File storeFile ) throws IOException
+    {
+        try ( FileChannel fileChannel = fs.open( storeFile, "r" ) )
+        {
+            writer.write( relativePath( baseDir, storeFile ), fileChannel, temporaryBuffer,
+                    storeFile.length() > 0 );
+        }
     }
 
     /**

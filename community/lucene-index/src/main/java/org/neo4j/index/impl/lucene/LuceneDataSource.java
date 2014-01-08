@@ -74,6 +74,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionInterceptorProviders;
@@ -922,6 +923,18 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 }
             }
         };
+    }
+
+    @Override
+    public ResourceIterator<File> listStoreFiles() throws IOException
+    {
+        return listStoreFiles( false );
+    }
+
+    @Override
+    public ResourceIterator<File> listLogicalLogs() throws IOException
+    {
+        return IteratorUtil.emptyIterator();
     }
 
     private void makeSureAllIndexesAreInstantiated()

@@ -35,6 +35,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -202,7 +203,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
                 kernelPanicEventGenerator,
                 logging.getMessagesLog( MasterImpl.class ),
                 true,
-                writer );
+                writer,
+                new DefaultFileSystemAbstraction());
     }
 
     @Override
