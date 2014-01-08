@@ -22,9 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -32,6 +30,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -40,10 +39,11 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
+
 class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private SearcherManager searcherManager;
-    private long entryCount = 0;
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
                                                               LuceneIndexWriterFactory indexWriterFactory,
@@ -53,7 +53,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
     }
-
 
     @Override
     public void create() throws IOException
@@ -77,7 +76,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
     {
         writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, propertyValue ) );
-        entryCount++;
     }
 
     @Override
@@ -86,70 +84,28 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         searcherManager.maybeRefresh();
         try ( IndexSearcher searcher = searcherManager.acquire() )
         {
-            if ( duplicateEntriesExist( searcher ) )
+            IndexReader indexReader = searcher.getIndexReader();
+
+            TermEnum terms = indexReader.terms();
+            while ( terms.next() )
             {
-                IndexReader indexReader = searcher.getIndexReader();
-                TermEnum terms = indexReader.terms();
+                Term term = terms.term();
 
-                while ( terms.next() )
+                if ( !NODE_ID_KEY.equals( term.field() ) && terms.docFreq() > 1 )
                 {
-                    Term term = terms.term();
-                    if ( documentStructure.isPropertyTerm( term ) )
-                    {
-                        if ( indexReader.docFreq( term ) > 1 )
-                        {
-                            Object propertyValue = documentStructure.propertyValue( term );
+                    TopDocs duplicateEntries = searcher.search( new TermQuery( term ), 2 );
 
-                            TopDocs duplicateEntries = searcher.search( documentStructure.newQuery( propertyValue ),
-                                    2 );
-                            long nodeId1 = getNodeId( indexReader, duplicateEntries, 0 );
-                            long nodeId2 = getNodeId( indexReader, duplicateEntries, 1 );
-                            throw new PreexistingIndexEntryConflictException( propertyValue, nodeId1, nodeId2 );
-                        }
+                    // docFreq may include deleted documents, so we are not yet certain that this term is a duplicate
+                    if ( duplicateEntries.totalHits > 1 )
+                    {
+                        long nodeId1 = getNodeId( indexReader, duplicateEntries, 0 );
+                        long nodeId2 = getNodeId( indexReader, duplicateEntries, 1 );
+                        Object propertyValue = documentStructure.propertyValue( term );
+                        throw new PreexistingIndexEntryConflictException( propertyValue, nodeId1, nodeId2 );
                     }
                 }
             }
         }
-    }
-
-    private long getNodeId( IndexReader indexReader, TopDocs duplicateEntries, int index ) throws IOException
-    {
-        return documentStructure.getNodeId( indexReader.document( duplicateEntries.scoreDocs[index].doc ) );
-    }
-
-    private boolean duplicateEntriesExist( IndexSearcher searcher ) throws IOException
-    {
-        IndexReader indexReader = searcher.getIndexReader();
-        long actualTermCount = actualEntryCount( indexReader );
-        return actualTermCount != entryCount;
-    }
-
-    private long actualEntryCount( IndexReader reader ) throws IOException
-    {
-        TermEnum terms = reader.terms();
-
-        Map<String, Integer> counters = new HashMap<>();
-        for ( LuceneDocumentStructure.ValueEncoding encoding : LuceneDocumentStructure.ValueEncoding.values() )
-        {
-            counters.put( encoding.key(), 0 );
-        }
-
-        while ( terms.next() )
-        {
-            Term term = terms.term();
-            String field = term.field();
-            if ( counters.containsKey( field ) )
-            {
-                counters.put( field, counters.get( field ) + 1 );
-            }
-        }
-
-        long actualTermCount = 0;
-        for ( Integer counter : counters.values() )
-        {
-            actualTermCount += counter;
-        }
-        return actualTermCount;
     }
 
     @Override
@@ -166,7 +122,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                 switch ( update.getUpdateMode() )
                 {
                     case ADDED:
-                        entryCount++;
                     case CHANGED:
                         // We don't look at the "before" value, so adding and changing idempotently is done the same way.
                         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
@@ -175,7 +130,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                         updatedPropertyValues.add( update.getValueAfter() );
                         break;
                     case REMOVED:
-                        entryCount--;
                         writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
                         break;
                     default:
@@ -215,4 +169,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         };
     }
 
+    private long getNodeId( IndexReader indexReader, TopDocs duplicateEntries, int index ) throws IOException
+    {
+        return documentStructure.getNodeId( indexReader.document( duplicateEntries.scoreDocs[index].doc ) );
+    }
 }
