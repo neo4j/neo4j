@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -39,6 +41,7 @@ import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
@@ -82,7 +85,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_indexes() throws PropertyValueException
+    public void get_indexes_for_label() throws PropertyValueException
     {
         data.get();
         
@@ -102,6 +105,45 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
         Map<String, Object> serialized = serializedList.get( 0 );
         assertEquals( labelName, serialized.get( "label" ) );
         assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
+    }
+
+
+
+    /**
+     * Get all indexes.
+     */
+    @SuppressWarnings( "unchecked" )
+    @Documented
+    @Test
+    @GraphDescription.Graph( nodes = {} )
+    public void get_indexes() throws PropertyValueException
+    {
+        data.get();
+
+        String labelName1 = "user", propertyKey1 = "name1";
+        String labelName2 = "prog", propertyKey2 = "name2";
+        createIndex( labelName1, propertyKey1 );
+        createIndex( labelName2, propertyKey2 );
+
+        String result = gen.get().noGraph().expectedStatus( 200 ).get( getSchemaIndexUri() ).entity();
+
+        List<Map<String, Object>> serializedList = jsonToList( result );
+
+        assertEquals( 2, serializedList.size() );
+
+        Set<String> labelNames = new HashSet<>();
+        Set<List<String>> propertyKeys = new HashSet<>();
+
+        Map<String, Object> serialized1 = serializedList.get( 0 );
+        labelNames.add( (String) serialized1.get( "label" ) );
+        propertyKeys.add( (List<String>) serialized1.get( "property_keys" ) );
+
+        Map<String, Object> serialized2 = serializedList.get( 1 );
+        labelNames.add( (String) serialized2.get( "label" ) );
+        propertyKeys.add( (List<String>) serialized2.get( "property_keys" ) );
+
+        assertEquals( asSet( labelName1, labelName2 ), labelNames );
+        assertEquals( asSet( asList( propertyKey1 ), asList( propertyKey2 ) ), propertyKeys );
     }
 
     /**

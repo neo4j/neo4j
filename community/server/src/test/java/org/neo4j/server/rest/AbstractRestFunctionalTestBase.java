@@ -44,6 +44,12 @@ import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
+import static org.neo4j.server.rest.web.Surface.PATH_NODES;
+import static org.neo4j.server.rest.web.Surface.PATH_NODE_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIPS;
+import static org.neo4j.server.rest.web.Surface.PATH_RELATIONSHIP_INDEX;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
+import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
@@ -158,31 +164,22 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     protected String getNodeUri( long node )
     {
-        return getDataUri() + "node/" + node;
+        return getDataUri() + PATH_NODES + "/" + node;
     }
 
-    protected String getRelationshipUri( Relationship node )
+    protected String getRelationshipUri( Relationship relationship )
     {
-        return getDataUri() + "relationship/" + node.getId();
+        return getDataUri() + PATH_RELATIONSHIPS + "/" + relationship.getId();
     }
-    protected String getNodeIndexUri( String indexName, String key, String value )
-    {
-        return postNodeIndexUri( indexName ) + "/" + key + "/" + value;
-    }
-    
+
     protected String postNodeIndexUri( String indexName )
     {
-        return getDataUri() + "index/node/" + indexName;
+        return getDataUri() + PATH_NODE_INDEX + "/" + indexName;
     }
     
     protected String postRelationshipIndexUri( String indexName )
     {
-        return getDataUri() + "index/relationship/" + indexName;
-    }
-
-    protected String getRelationshipIndexUri( String indexName, String key, String value )
-    {
-        return getDataUri() + "index/relationship/" + indexName + "/" + key + "/" + value;
+        return getDataUri() + PATH_RELATIONSHIP_INDEX + "/" + indexName;
     }
 
     protected Node getNode( String name )
@@ -258,33 +255,38 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return format( "%slabel/%s/nodes?%s=%s", getDataUri(), label, property, encode( createJsonFrom( value ), "UTF-8" ) );
     }
 
+    public String getSchemaIndexUri()
+    {
+        return getDataUri() + PATH_SCHEMA_INDEX;
+    }
+
     public String getSchemaIndexLabelUri( String label )
     {
-        return getDataUri() + "schema/index/" + label;
+        return getDataUri() + PATH_SCHEMA_INDEX + "/" + label;
     }
 
     public String getSchemaIndexLabelPropertyUri( String label, String property )
     {
-        return getDataUri() + "schema/index/" + label + "/" + property;
+        return getDataUri() + PATH_SCHEMA_INDEX + "/" + label + "/" + property;
     }
 
     public String getSchemaConstraintUri()
     {
-        return getDataUri() + "schema/constraint/";
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT;
     }
 
     public String getSchemaConstraintLabelUri( String label )
     {
-        return getDataUri() + "schema/constraint/" + label;
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label;
     }
 
     public String getSchemaConstraintLabelUniquenessUri( String label )
     {
-        return getDataUri() + "schema/constraint/" + label + "/uniqueness/";
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/";
     }
 
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
-        return getDataUri() + "schema/constraint/" + label + "/uniqueness/" + property;
+        return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
     }
 }
