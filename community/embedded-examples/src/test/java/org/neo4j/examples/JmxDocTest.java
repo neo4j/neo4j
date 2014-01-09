@@ -19,8 +19,6 @@
 
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Date;
 
 import javax.management.ObjectName;
@@ -28,8 +26,10 @@ import javax.management.ObjectName;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.JmxUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class JmxDocTest
 {
@@ -41,7 +41,6 @@ public class JmxDocTest
         {
             Date startTime = getStartTimeFromManagementBean( graphDbService );
             Date now = new Date();
-            System.out.println( startTime + " " + now );
             assertTrue( startTime.before( now ) || startTime.equals( now ) );
         }
         finally
@@ -50,12 +49,28 @@ public class JmxDocTest
         }
     }
 
+    @Test
+    public void properErrorOnNonStandardGraphDatabase()
+    {
+        GraphDatabaseService graphDbService = mock(GraphDatabaseService.class);
+        try
+        {
+            getStartTimeFromManagementBean( graphDbService );
+            fail("Expected error");
+        }
+        catch(IllegalArgumentException e)
+        {
+            assertEquals("Can only resolve object names for embedded Neo4j database " +
+                    "instances, eg. instances created by GraphDatabaseFactory or HighlyAvailableGraphDatabaseFactory.",
+                    e.getMessage());
+        }
+    }
+
     // START SNIPPET: getStartTime
     private static Date getStartTimeFromManagementBean(
             GraphDatabaseService graphDbService )
     {
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) graphDbService;
-        ObjectName objectName = JmxUtils.getObjectName( graphDb, "Kernel" );
+        ObjectName objectName = JmxUtils.getObjectName( graphDbService, "Kernel" );
         Date date = JmxUtils.getAttribute( objectName, "KernelStartTime" );
         return date;
     }
