@@ -125,12 +125,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            lockHolder.releaseLocks();
+            release();
             close();
         }
         catch ( ReleaseLocksFailedKernelException e )
         {
-            throw new TransactionFailureException( new RuntimeException(e.getMessage(), e) );
+            throw new TransactionFailureException( new RuntimeException( e.getMessage(), e ) );
         }
         finally
         {
@@ -155,7 +155,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             {
                 try
                 {
-                    lockHolder.releaseLocks();
+                    release();
                 }
                 catch ( ReleaseLocksFailedKernelException e )
                 {
@@ -170,6 +170,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             closing = false;
         }
     }
+    
+    public void release() throws ReleaseLocksFailedKernelException
+    {
+        lockHolder.releaseLocks();
+    }
+    
+    private void ensureWriteTransaction()
+    {
+        persistenceManager.getResource().forWriting();
+    }
 
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
     private KernelStatement currentStatement;
@@ -182,7 +192,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
                     labelScanStore, this, lockHolder, legacyKernelOperations, operations,
-                    persistenceManager.getResource() );
+                    // Just use forReading since read/write has been decided prior to this
+                    persistenceManager.getResource().forReading() );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -197,12 +208,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         assertDatabaseWritable();
+        ensureWriteTransaction();
         transactionType = transactionType.upgradeToDataTransaction();
     }
 
     public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
     {
         doUpgradeToSchemaTransaction();
+        ensureWriteTransaction();
         transactionType = transactionType.upgradeToSchemaTransaction();
     }
 

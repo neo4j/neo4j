@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 
 public class KernelStatement implements TxState.Holder, Statement
 {
@@ -42,7 +42,7 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
-    protected final NeoStoreTransaction neoStoreTransaction;
+    protected NeoStoreTransaction neoStoreTransaction;
     
     private LabelScanReader labelScanReader;
     private int referenceCount;

@@ -65,7 +65,7 @@ import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
  * relationships on commit instead of on prepare.
  */
 @ForeignBreakpoints( {
-        @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.nioneo.xa.WriteTransaction",
+        @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction",
                 method = "doPrepare", on = BreakPoint.Event.EXIT ) } )
 @RunWith( SubProcessTestRunner.class )
 public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning

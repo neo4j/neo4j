@@ -121,6 +121,7 @@ public class LuceneXaConnection extends XaConnectionHelpImpl implements IndexXaC
         getLuceneTx().delete( index );
     }
     
+    @Override
     public void createIndex( Class<? extends PropertyContainer> entityType,
             String name, Map<String, String> config )
     {

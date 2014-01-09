@@ -31,7 +31,7 @@ package org.neo4j.kernel.api;
  * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
  * type of isolation requirements.
  *
- * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.WriteTransaction}, please see its'
+ * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction}, please see its'
  * javadoc for details.
  */
 public interface KernelTransaction

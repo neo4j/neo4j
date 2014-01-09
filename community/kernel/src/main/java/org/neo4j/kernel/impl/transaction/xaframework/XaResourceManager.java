@@ -36,7 +36,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.nioneo.xa.WriteTransaction;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -45,10 +45,19 @@ import org.neo4j.kernel.impl.util.StringLogger;
 // make package access?
 public class XaResourceManager
 {
-    private final ArrayMap<XAResource,Xid> xaResourceMap =
-            new ArrayMap<>();
-    private final ArrayMap<Xid,XidStatus> xidMap =
-            new ArrayMap<>();
+    private static class ResourceTransaction
+    {
+        private Xid xid;
+        private final XaTransaction xaTx;
+
+        ResourceTransaction( XaTransaction xaTx )
+        {
+            this.xaTx = xaTx;
+        }
+    }
+    
+    private final ArrayMap<XAResource,ResourceTransaction> xaResourceMap = new ArrayMap<>();
+    private final ArrayMap<Xid,XidStatus> xidMap = new ArrayMap<>();
     private int recoveredTxCount = 0;
     private final Map<Integer, TransactionInfo> recoveredTransactions = new HashMap<>();
 
@@ -79,10 +88,34 @@ public class XaResourceManager
         this.msgLog = log.getStringLogger();
     }
 
+    /**
+     * Creates a transaction that can be used for read operations, but is not yet
+     * {@link #start(XAResource, Xid) started} and hasn't got an identifier associated with it.
+     * A call to {@link #start(XAResource, Xid)} after a call to this method will start the transaction
+     * created here. Otherwise if there's no {@link #createTransaction(XAResource)} call prior to a
+     * {@link #start(XAResource, Xid)} call the transaction will be created there instead.
+     * 
+     * @param xaResource the {@link XAResource} to create the transaction for.
+     * @return the created transaction.
+     * @throws XAException if the {@code resource} was already associated with another transaction.
+     */
+    synchronized XaTransaction createTransaction( XAResource xaResource )
+            throws XAException
+    {
+        if ( xaResourceMap.get( xaResource ) != null )
+        {
+            throw new XAException( "Resource[" + xaResource + "] already enlisted or suspended" );
+        }
+        
+        XaTransaction xaTx = tf.create( dataSource.getLastCommittedTxId(), transactionManager.getTransactionState() );
+        xaResourceMap.put( xaResource, new ResourceTransaction( xaTx ) );
+        return xaTx;
+    }
+    
     synchronized XaTransaction getXaTransaction( XAResource xaRes )
             throws XAException
     {
-        XidStatus status = xidMap.get( xaResourceMap.get( xaRes ) );
+        XidStatus status = xidMap.get( xaResourceMap.get( xaRes ).xid );
         if ( status == null )
         {
             throw new XAException( "Resource[" + xaRes + "] not enlisted" );
@@ -93,17 +126,21 @@ public class XaResourceManager
     synchronized void start( XAResource xaResource, Xid xid )
             throws XAException
     {
-        if ( xaResourceMap.get( xaResource ) != null )
+        ResourceTransaction tx = xaResourceMap.get( xaResource );
+        if ( tx == null )
         {
-            throw new XAException( "Resource[" + xaResource
-                    + "] already enlisted or suspended" );
+            // Why allow creating the transaction here? See javadoc about createTransaction.
+            createTransaction( xaResource );
+            tx = xaResourceMap.get( xaResource );
         }
-        xaResourceMap.put( xaResource, xid );
-        if ( xidMap.get( xid ) == null )
+        
+        if ( xidMap.get( xid ) == null ) // TODO why are we allowing this?
         {
-            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId(), dataSource.getLastCommittedTxId() );
-            XaTransaction xaTx = tf.create( identifier, dataSource.getLastCommittedTxId(), transactionManager.getTransactionState() );
-            xidMap.put( xid, new XidStatus( xaTx ) );
+            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId(),
+                    dataSource.getLastCommittedTxId() );
+            tx.xaTx.setIdentifier( identifier );
+            xidMap.put( xid, new XidStatus( tx.xaTx ) );
+            tx.xid = xid;
         }
     }
 
@@ -145,13 +182,15 @@ public class XaResourceManager
             throw new XAException( "Resource[" + xaResource
                     + "] already enlisted" );
         }
-        xaResourceMap.put( xaResource, xid );
+        
+        ResourceTransaction tx = new ResourceTransaction( null /* TODO hmm */ );
+        tx.xid = xid;
+        xaResourceMap.put( xaResource, tx );
     }
 
     synchronized void end( XAResource xaResource, Xid xid ) throws XAException
     {
-        Xid xidEntry = xaResourceMap.remove( xaResource );
-        if ( xidEntry == null )
+        if ( xaResourceMap.remove( xaResource ) == null )
         {
             throw new XAException( "Resource[" + xaResource + "] not enlisted" );
         }
@@ -173,23 +212,23 @@ public class XaResourceManager
 
     synchronized void fail( XAResource xaResource, Xid xid ) throws XAException
     {
-        if ( xidMap.get( xid ) == null )
+        XidStatus xidStatus = xidMap.get( xid );
+        if ( xidStatus == null )
         {
             throw new XAException( "Unknown xid[" + xid + "]" );
         }
-        Xid xidEntry = xaResourceMap.remove( xaResource );
-        if ( xidEntry == null )
+        if ( xaResourceMap.remove( xaResource ) == null )
         {
             throw new XAException( "Resource[" + xaResource + "] not enlisted" );
         }
-        XidStatus status = xidMap.get( xid );
-        status.getTransactionStatus().markAsRollback();
+        xidStatus.getTransactionStatus().markAsRollback();
     }
 
     synchronized void validate( XAResource xaResource ) throws XAException
     {
-        XidStatus status = xidMap.get( xaResourceMap.get( xaResource ) );
-        if ( status == null )
+        ResourceTransaction tx = xaResourceMap.get( xaResource );
+        XidStatus status = null;
+        if ( tx == null || (status = xidMap.get( tx.xid )) == null )
         {
             throw new XAException( "Resource[" + xaResource + "] not enlisted" );
         }
@@ -450,7 +489,9 @@ public class XaResourceManager
         commitKernelTx( xaTransaction );
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )
+        {
             txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+        }
         return xaTransaction;
     }
 
@@ -587,9 +628,11 @@ public class XaResourceManager
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
+        {
             // START record has not been applied,
             // so we don't have a transaction
             return null;
+        }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
 
@@ -816,13 +859,13 @@ public class XaResourceManager
 
     private void commitKernelTx( XaTransaction xaTransaction ) throws XAException
     {
-        if ( !(xaTransaction instanceof WriteTransaction) )
+        if ( !(xaTransaction instanceof NeoStoreTransaction) )
         {
             return;
         }
         try
         {
-            ((WriteTransaction)xaTransaction).kernelTransaction().commit();
+            ((NeoStoreTransaction)xaTransaction).kernelTransaction().commit();
         }
         catch ( TransactionFailureException e )
         {
@@ -833,13 +876,13 @@ public class XaResourceManager
     private void rollbackKernelTx( XaTransaction xaTransaction ) throws XAException
     {
         // Hack until the WriteTx/KernelTx structure is sorted out
-        if ( !(xaTransaction instanceof WriteTransaction) )
+        if ( !(xaTransaction instanceof NeoStoreTransaction) )
         {
             return;
         }
         try
         {
-            ((WriteTransaction)xaTransaction).kernelTransaction().rollback();
+            ((NeoStoreTransaction)xaTransaction).kernelTransaction().rollback();
         }
         catch ( TransactionFailureException e )
         {

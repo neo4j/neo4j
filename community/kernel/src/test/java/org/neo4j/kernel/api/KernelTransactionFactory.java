@@ -25,17 +25,21 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class KernelTransactionFactory
 {
     static KernelTransaction kernelTransaction()
     {
+        PersistenceManager pm = mock( PersistenceManager.class );
+        when( pm.getResource() ).thenReturn( mock( ResourceHolder.class ) );
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
                 mock( LegacyKernelOperations.class ) , false, mock( SchemaWriteGuard.class ), null, null,
-                mock( AbstractTransactionManager.class ), null, null, null, mock( PersistenceManager.class ),
+                mock( AbstractTransactionManager.class ), null, null, null, pm,
                 null, mock( NeoStore.class ), null );
     }
 }

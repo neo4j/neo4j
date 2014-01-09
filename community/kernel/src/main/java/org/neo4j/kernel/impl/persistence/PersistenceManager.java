@@ -32,6 +32,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -40,7 +41,8 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.persistence.NeoStoreTransaction.PropertyReceiver;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -64,9 +66,7 @@ public class PersistenceManager
     private final PersistenceSource persistenceSource;
     private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
-
-    private final ArrayMap<Transaction,NeoStoreTransaction> txConnectionMap = new ArrayMap<>( (byte) 5, true, true );
-
+    private final ArrayMap<Transaction,ResourceHolder> resourceMap = new ArrayMap<>( (byte) 5, true, true );
     private final TxEventSyncHookFactory syncHookFactory;
 
     public PersistenceManager( StringLogger msgLog, AbstractTransactionManager transactionManager,
@@ -79,182 +79,198 @@ public class PersistenceManager
         this.syncHookFactory = syncHookFactory;
     }
 
-    public KernelTransaction currentKernelTransaction()
-    {
-        return getResource().kernelTransaction();
-    }
-
-    public void ensureKernelIsEnlisted()
-    {
-        getResource();
-    }
-
     public NodeRecord loadLightNode( long id )
     {
-        return getResource().nodeLoadLight( id );
+        return getResource().forReading().nodeLoadLight( id );
     }
 
     public long getRelationshipChainPosition( long nodeId )
     {
-        return getResource().getRelationshipChainPosition( nodeId );
+        return getResource().forReading().getRelationshipChainPosition( nodeId );
     }
 
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position )
     {
-        return getResource().getMoreRelationships( nodeId, position );
+        return getResource().forReading().getMoreRelationships( nodeId, position );
     }
 
     public void loadNodeProperties( long nodeId, boolean light, PropertyReceiver receiver )
     {
-        getResource().nodeLoadProperties( nodeId, light, receiver );
+        getResource().forReading().nodeLoadProperties( nodeId, light, receiver );
     }
 
     public void loadRelProperties( long relId, boolean light, PropertyReceiver receiver )
     {
-        getResource().relLoadProperties( relId, light, receiver );
+        getResource().forReading().relLoadProperties( relId, light, receiver );
     }
 
     public RelationshipRecord loadLightRelationship( long id )
     {
-        return getResource().relLoadLight( id );
+        return getResource().forReading().relLoadLight( id );
     }
 
     public ArrayMap<Integer,DefinedProperty> nodeDelete( long nodeId )
     {
-        return getResource().nodeDelete( nodeId );
+        return getResource().forWriting().nodeDelete( nodeId );
     }
 
     public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
-        return getResource().nodeAddProperty( nodeId, propertyKey, value );
+        return getResource().forWriting().nodeAddProperty( nodeId, propertyKey, value );
     }
 
     public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
-        return getResource().nodeChangeProperty( nodeId, propertyKey, value );
+        return getResource().forWriting().nodeChangeProperty( nodeId, propertyKey, value );
     }
 
     public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
-        getResource().nodeRemoveProperty( nodeId, propertyKey );
+        getResource().forWriting().nodeRemoveProperty( nodeId, propertyKey );
     }
 
     public void nodeCreate( long id )
     {
-        getResource().nodeCreate( id );
+        getResource().forWriting().nodeCreate( id );
     }
 
     public void relationshipCreate( long id, int typeId, long startNodeId,
         long endNodeId )
     {
-        getResource().relationshipCreate( id, typeId, startNodeId, endNodeId );
+        getResource().forWriting().relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
     public ArrayMap<Integer,DefinedProperty> relDelete( long relId )
     {
-        return getResource().relDelete( relId );
+        return getResource().forWriting().relDelete( relId );
     }
 
     public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
-        return getResource().relAddProperty( relId, propertyKey, value );
+        return getResource().forWriting().relAddProperty( relId, propertyKey, value );
     }
 
     public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
-        return getResource().relChangeProperty( relId, propertyKey, value );
+        return getResource().forWriting().relChangeProperty( relId, propertyKey, value );
     }
 
     public void relRemoveProperty( long relId, int propertyKey )
     {
-        getResource().relRemoveProperty( relId, propertyKey );
+        getResource().forWriting().relRemoveProperty( relId, propertyKey );
     }
 
     public DefinedProperty graphAddProperty( int propertyKey, Object value )
     {
-        return getResource().graphAddProperty( propertyKey, value );
+        return getResource().forWriting().graphAddProperty( propertyKey, value );
     }
 
     public DefinedProperty graphChangeProperty( int propertyKey, Object value )
     {
-        return getResource().graphChangeProperty( propertyKey, value );
+        return getResource().forWriting().graphChangeProperty( propertyKey, value );
     }
 
     public void graphRemoveProperty( int propertyKey )
     {
-        getResource().graphRemoveProperty( propertyKey );
+        getResource().forWriting().graphRemoveProperty( propertyKey );
     }
 
     public void graphLoadProperties( boolean light, PropertyReceiver receiver )
     {
-        getResource().graphLoadProperties( light, receiver );
+        getResource().forReading().graphLoadProperties( light, receiver );
     }
 
     public void createPropertyKeyToken( String key, int id )
     {
-        getResource().createPropertyKeyToken( key, id );
+        getResource().forWriting().createPropertyKeyToken( key, id );
     }
 
     public void createLabelId( String name, int id )
     {
-        getResource().createLabelToken( name, id );
+        getResource().forWriting().createLabelToken( name, id );
     }
 
     public void createRelationshipType( int id, String name )
     {
-        getResource().createRelationshipTypeToken( id, name );
+        getResource().forWriting().createRelationshipTypeToken( id, name );
     }
 
-    public NeoStoreTransaction getResource()
+    public void dropSchemaRule( SchemaRule rule )
+    {
+        getResource().forWriting().dropSchemaRule( rule );
+    }
+
+    public void setConstraintIndexOwner( IndexRule constraintIndex, long constraintId )
+    {
+        getResource().forWriting().setConstraintIndexOwner( constraintIndex, constraintId );
+    }
+
+    public void createSchemaRule( SchemaRule rule )
+    {
+        getResource().forWriting().createSchemaRule( rule );
+    }
+
+    public void addLabelToNode( int labelId, long nodeId )
+    {
+        getResource().forWriting().addLabelToNode( labelId, nodeId );
+    }
+
+    public void removeLabelFromNode( int labelId, long nodeId )
+    {
+        getResource().forWriting().removeLabelFromNode( labelId, nodeId );
+    }
+
+    public PrimitiveLongIterator getLabelsForNode( long nodeId )
+    {
+        return getResource().forReading().getLabelsForNode( nodeId );
+    }
+    
+    public KernelTransaction currentKernelTransactionForReading()
+    {
+        return getResource().forReading().kernelTransaction();
+    }
+
+    public KernelTransaction currentKernelTransactionForWriting()
+    {
+        return getResource().forWriting().kernelTransaction();
+    }
+    
+    public void ensureKernelIsEnlisted()
+    {
+        getResource();
+    }
+    
+    public ResourceHolder getResource()
     {
         Transaction tx = this.getCurrentTransaction();
-        NeoStoreTransaction con = txConnectionMap.get( tx );
-        if ( con == null )
+        ResourceHolder resource = resourceMap.get( tx );
+        if ( resource == null )
         {
-            txConnectionMap.put( tx, con = createResource( tx ) );
+            resourceMap.put( tx, resource = createResource( tx ) );
         }
-        return con;
+        return resource;
     }
 
-    private NeoStoreTransaction createResource( Transaction tx )
+    private ResourceHolder createResource( Transaction tx )
     {
         try
         {
             XaConnection xaConnection = persistenceSource.getXaDataSource().getXaConnection();
-            XAResource xaResource = xaConnection.getXaResource();
-            if ( !tx.enlistResource( xaResource ) )
-            {
-                throw new ResourceAcquisitionFailedException(
-                    "Unable to enlist '" + xaResource + "' in " + "transaction" );
-            }
-            NeoStoreTransaction con = persistenceSource.createTransaction( xaConnection );
+            NeoStoreTransaction resource = persistenceSource.createTransaction( xaConnection );
+            ResourceHolder result = new ResourceHolder( syncHookFactory, tx, xaConnection, resource );
 
             TransactionState state = transactionManager.getTransactionState();
-            tx.registerSynchronization( new TxCommitHook( tx, state ) );
-
-            registerTransactionEventHookIfNeeded( tx );
-            return con;
+            tx.registerSynchronization( new ResourceCleanupHook( tx, state, result ) );
+            return result;
         }
-        catch ( RollbackException re )
+        catch ( RollbackException e )
         {
-            String msg = "The transaction is marked for rollback only.";
-            throw new ResourceAcquisitionFailedException( msg, re );
+            throw new ResourceAcquisitionFailedException( e );
         }
-        catch ( SystemException se )
+        catch ( SystemException e )
         {
-            String msg = "TM encountered an unexpected error condition.";
-            throw new ResourceAcquisitionFailedException( msg, se );
-        }
-    }
-
-    private void registerTransactionEventHookIfNeeded( Transaction tx )
-            throws SystemException, RollbackException
-    {
-        TransactionEventsSyncHook hook = syncHookFactory.create();
-        if ( hook != null )
-        {
-            tx.registerSynchronization( hook );
+            throw new ResourceAcquisitionFailedException( e );
         }
     }
 
@@ -276,26 +292,18 @@ public class PersistenceManager
                 + "for current thread", se );
         }
     }
-
-    public void dropSchemaRule( SchemaRule rule )
-    {
-        getResource().dropSchemaRule( rule );
-    }
-
-    public void setConstraintIndexOwner( IndexRule constraintIndex, long constraintId )
-    {
-        getResource().setConstraintIndexOwner( constraintIndex, constraintId );
-    }
-
-    private class TxCommitHook implements Synchronization
+    
+    private class ResourceCleanupHook implements Synchronization
     {
         private final Transaction tx;
         private final TransactionState state;
+        private final ResourceHolder resourceHolder;
 
-        TxCommitHook( Transaction tx, TransactionState state )
+        ResourceCleanupHook( Transaction tx, TransactionState state, ResourceHolder resourceHolder )
         {
             this.tx = tx;
             this.state = state;
+            this.resourceHolder = resourceHolder;
         }
 
         @Override
@@ -310,12 +318,19 @@ public class PersistenceManager
             {
                 state.rollback();
             }
+            try
+            {
+                resourceHolder.resource.kernelTransaction().release();
+            }
+            catch ( ReleaseLocksFailedKernelException e )
+            {
+                msgLog.error( "Error releasing resources for " + tx, e );            }
         }
 
         @Override
         public void beforeCompletion()
         {
-            delistResourcesForTransaction();
+            resourceHolder.delist();
         }
 
         private void releaseConnections( Transaction tx )
@@ -331,52 +346,93 @@ public class PersistenceManager
         }
     }
 
-    void delistResourcesForTransaction() throws NotInTransactionException
-    {
-        Transaction tx = this.getCurrentTransaction();
-        NeoStoreTransaction con = txConnectionMap.get( tx );
-        if ( con != null )
-        {
-            try
-            {
-                con.delistResource(tx, XAResource.TMSUCCESS);
-            }
-            catch ( SystemException e )
-            {
-                throw new TransactionFailureException(
-                    "Failed to delist resource '" + con +
-                    "' from current transaction.", e );
-            }
-        }
-    }
-
     void releaseResourceConnectionsForTransaction( Transaction tx )
         throws NotInTransactionException
     {
-        NeoStoreTransaction con = txConnectionMap.remove( tx );
-        if ( con != null )
+        ResourceHolder resource = resourceMap.remove( tx );
+        if ( resource != null )
         {
-            con.destroy();
+            resource.destroy();
         }
     }
-
-    public void createSchemaRule( SchemaRule rule )
+    
+    public static class ResourceHolder
     {
-        getResource().createSchemaRule( rule );
-    }
+        private final TxEventSyncHookFactory syncHookFactory;
+        private final Transaction tx;
+        private final XaConnection connection;
+        private final NeoStoreTransaction resource;
+        private boolean enlisted;
+        
+        ResourceHolder( TxEventSyncHookFactory syncHookFactory,
+                Transaction tx, XaConnection connection, NeoStoreTransaction resource )
+        {
+            this.syncHookFactory = syncHookFactory;
+            this.tx = tx;
+            this.connection = connection;
+            this.resource = resource;
+        }
+        
+        public NeoStoreTransaction forReading()
+        {
+            return resource;
+        }
+        
+        public NeoStoreTransaction forWriting()
+        {
+            if ( !enlisted )
+            {
+                enlist();
+                enlisted = true;
+            }
+            return resource;
+        }
+        
+        private void enlist()
+        {
+            try
+            {
+                XAResource xaResource = connection.getXaResource();
+                if ( !tx.enlistResource( xaResource ) )
+                {
+                    throw new ResourceAcquisitionFailedException( xaResource );
+                }
+                
+                TransactionEventsSyncHook hook = syncHookFactory.create();
+                if ( hook != null )
+                {
+                    tx.registerSynchronization( hook );
+                }
+            }
+            catch ( RollbackException re )
+            {
+                throw new ResourceAcquisitionFailedException( re );
+            }
+            catch ( SystemException se )
+            {
+                throw new ResourceAcquisitionFailedException( se );
+            }
+        }
 
-    public void addLabelToNode( int labelId, long nodeId )
-    {
-        getResource().addLabelToNode( labelId, nodeId );
-    }
-
-    public void removeLabelFromNode( int labelId, long nodeId )
-    {
-        getResource().removeLabelFromNode( labelId, nodeId );
-    }
-
-    public PrimitiveLongIterator getLabelsForNode( long nodeId )
-    {
-        return getResource().getLabelsForNode( nodeId );
+        public void delist()
+        {
+            if ( enlisted )
+            {
+                try
+                {
+                    connection.delistResource( tx, XAResource.TMSUCCESS );
+                }
+                catch ( SystemException e )
+                {
+                    throw new TransactionFailureException(
+                            "Failed to delist resource '" + resource + "' from current transaction.", e );
+                }
+            }
+        }
+        
+        void destroy()
+        {
+            connection.destroy();
+        }
     }
 }

@@ -443,7 +443,6 @@ public class StateHandlingStatementOperations implements
     public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-
         if ( state.hasTxStateWithChanges() )
         {
             TxState txState = state.txState();

@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -54,10 +55,10 @@ class LuceneTransaction extends XaTransaction
     private final Map<IndexIdentifier,CommandList> commandMap =
             new HashMap<IndexIdentifier,CommandList>();
 
-    LuceneTransaction( int identifier, XaLogicalLog xaLog, TransactionState state,
+    LuceneTransaction( XaLogicalLog xaLog, TransactionState state,
         LuceneDataSource luceneDs )
     {
-        super( identifier, xaLog, state );
+        super( xaLog, state );
         this.dataSource = luceneDs;
     }
 
@@ -179,8 +180,14 @@ class LuceneTransaction extends XaTransaction
         }
         else if ( c1 != null && c2 != null )
         {
-            if (c1.isEmpty()) return c2;
-            if (c2.isEmpty()) return c1;
+            if (c1.isEmpty())
+            {
+                return c2;
+            }
+            if (c2.isEmpty())
+            {
+                return c1;
+            }
             Collection<Long> result = new HashSet<Long>( c1.size()+c2.size(), 1 );
             result.addAll( c1 );
             result.addAll( c2 );
@@ -294,7 +301,9 @@ class LuceneTransaction extends XaTransaction
                 finally
                 {
                     if ( context != null )
+                    {
                         context.close();
+                    }
                 }
             }
 

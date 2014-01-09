@@ -43,8 +43,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -66,11 +68,11 @@ public class WriteTransactionCommandOrderingTest
     {
         // Given
         List<String> nonRecoveredRecording = new ArrayList<>();
-        WriteTransaction nonRecoveredTx = newWriteTransaction();
+        NeoStoreTransaction nonRecoveredTx = newWriteTransaction();
         injectAllPossibleCommands( nonRecoveredTx );
 
         List<String> recoveredRecording = new ArrayList<>();
-        WriteTransaction recoveredTx = newWriteTransaction();
+        NeoStoreTransaction recoveredTx = newWriteTransaction();
         recoveredTx.setRecovered();
         injectAllPossibleCommands( recoveredTx );
 
@@ -88,7 +90,7 @@ public class WriteTransactionCommandOrderingTest
         assertThat(new HashSet<>( recoveredRecording ).size(), is( 9 )); // we have included all possible commands
     }
 
-    private void injectAllPossibleCommands( WriteTransaction tx )
+    private void injectAllPossibleCommands( NeoStoreTransaction tx )
     {
         tx.injectCommand( new Command.NodeCommand( nodeStore, inUseNode(), inUseNode() ) ); // update
         tx.injectCommand( new Command.NodeCommand( nodeStore, inUseNode(), missingNode() ) ); // delete
@@ -161,8 +163,8 @@ public class WriteTransactionCommandOrderingTest
         return record;
     }
 
-    private WriteTransaction newWriteTransaction() {
-        WriteTransaction tx = new WriteTransaction( 0, 0l, mock( XaLogicalLog.class ), TransactionState.NO_STATE,
+    private NeoStoreTransaction newWriteTransaction() {
+        NeoStoreTransaction tx = new NeoStoreTransaction( 0l, mock( XaLogicalLog.class ), TransactionState.NO_STATE,
                 store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class ),
                 WriteTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
                 mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ) );

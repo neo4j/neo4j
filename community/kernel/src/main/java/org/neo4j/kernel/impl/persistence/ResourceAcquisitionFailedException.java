@@ -19,19 +19,27 @@
  */
 package org.neo4j.kernel.impl.persistence;
 
+import javax.transaction.RollbackException;
+import javax.transaction.xa.XAResource;
+
 /**
  * Thrown if the {@link ResourceBroker} is unable to acquire a resource for a
  * certain set of parameters.
  */
 class ResourceAcquisitionFailedException extends RuntimeException
 {
-    ResourceAcquisitionFailedException( String s )
+    ResourceAcquisitionFailedException( XAResource resource )
     {
-        super( s );
+        super( "Unable to enlist '" + resource + "' in " + "transaction" );
+    }
+    
+    ResourceAcquisitionFailedException( RollbackException cause )
+    {
+        super( "The transaction is marked for rollback only.", cause );
     }
 
-    ResourceAcquisitionFailedException( String s, Throwable cause )
+    ResourceAcquisitionFailedException( Throwable cause )
     {
-        super( s, cause );
+        super( "TM encountered an unexpected error condition.", cause );
     }
 }

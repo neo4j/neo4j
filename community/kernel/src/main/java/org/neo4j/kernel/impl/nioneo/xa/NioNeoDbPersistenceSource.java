@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -46,13 +45,7 @@ public class NioNeoDbPersistenceSource extends LifecycleAdapter implements Persi
     @Override
     public NeoStoreTransaction createTransaction( XaConnection connection )
     {
-        NeoStoreTransaction result = ((NeoStoreXaConnection) connection).getWriteTransaction();
-        
-        // This is not a very good solution. The XaConnection is only used when
-        // delisting/releasing the nioneo xa resource. Maybe it should be stored
-        // outside the ResourceConnection interface?
-        result.setXaConnection( connection );
-        return result;
+        return ((NeoStoreXaConnection) connection).createTransaction();
     }
 
     @Override

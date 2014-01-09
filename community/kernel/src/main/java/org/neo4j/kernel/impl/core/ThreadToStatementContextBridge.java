@@ -50,7 +50,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     private KernelTransaction transaction()
     {
         checkIfShutdown();
-        KernelTransaction transaction = persistenceManager.currentKernelTransaction();
+        KernelTransaction transaction = persistenceManager.currentKernelTransactionForReading();
         if ( transaction == null )
         {
             throw new NotInTransactionException();

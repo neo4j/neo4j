@@ -23,10 +23,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -34,10 +34,11 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -199,7 +200,7 @@ public class KernelSchemaStateFlushingTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction txc = persistenceManager.currentKernelTransaction();
+            KernelTransaction txc = persistenceManager.currentKernelTransactionForWriting();
             String result;
             try
             {
