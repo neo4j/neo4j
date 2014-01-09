@@ -29,21 +29,18 @@ import org.codehaus.jackson.JsonNode;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.util.RFC1123;
-import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 /**

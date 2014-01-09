@@ -20,16 +20,17 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public abstract class FlipFailedKernelException extends KernelException
 {
     public FlipFailedKernelException( Throwable cause, String message, Object... parameters )
     {
-        super( cause, message, parameters );
+        super( Status.Schema.IndexCreationFailure, cause, message, parameters );
     }
 
     public FlipFailedKernelException( String message, Object... parameters )
     {
-        super( message, parameters );
+        super( Status.Schema.IndexCreationFailure, message, parameters );
     }
 }

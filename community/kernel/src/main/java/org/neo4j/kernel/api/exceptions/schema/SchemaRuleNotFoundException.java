@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 import static java.lang.String.format;
 
 public class SchemaRuleNotFoundException extends SchemaKernelException
 {
     public SchemaRuleNotFoundException( String message )
     {
-        super( message );
+        super( Status.Schema.NoSuchSchemaRule, message );
     }
 
     public SchemaRuleNotFoundException( String message, Throwable cause )
     {
-        super( message, cause );
+        super( Status.Schema.NoSuchSchemaRule, message, cause );
     }
 
     public SchemaRuleNotFoundException( long labelId, long propertyKeyId, String message )

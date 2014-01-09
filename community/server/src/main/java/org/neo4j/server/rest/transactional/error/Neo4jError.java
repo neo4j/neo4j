@@ -21,6 +21,9 @@ package org.neo4j.server.rest.transactional.error;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collection;
+
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * This is an initial move towards unified errors - it should not live here in the server, but should probably
@@ -60,7 +63,14 @@ public class Neo4jError
 
     public boolean shouldSerializeStackTrace()
     {
-        return status.code().includeStackTrace();
+        switch(status.code().classification())
+        {
+            case ClientError:
+                return false;
+            default:
+                return true;
+
+        }
     }
 
     public String getStackTraceAsString()
@@ -69,5 +79,21 @@ public class Neo4jError
         PrintWriter printWriter = new PrintWriter( stringWriter );
         cause.printStackTrace( printWriter );
         return stringWriter.toString();
+    }
+
+    public static boolean shouldRollBackOn( Collection<Neo4jError> errors )
+    {
+        if ( errors.isEmpty() )
+        {
+            return false;
+        }
+        for ( Neo4jError error : errors )
+        {
+            if ( error.status().code().classification().rollbackTransaction() )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

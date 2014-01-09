@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -236,7 +237,7 @@ public class TransactorTest
     {
         protected SpecificKernelException()
         {
-            super( "very specific" );
+            super( Status.General.UnknownFailure, "very specific" );
         }
     }
 }

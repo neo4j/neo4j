@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -34,7 +35,7 @@ public class AddIndexFailureException extends SchemaKernelException
 
     public AddIndexFailureException( int labelId, int propertyKey, KernelException cause )
     {
-        super( format( MESSAGE, new IndexDescriptor( labelId, propertyKey ), cause.getMessage() ), cause );
+        super( Status.Schema.IndexCreationFailure, format( MESSAGE, new IndexDescriptor( labelId, propertyKey ), cause.getMessage() ), cause );
         this.labelId = labelId;
         this.propertyKey = propertyKey;
     }

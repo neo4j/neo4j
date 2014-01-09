@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional.error;
+package org.neo4j.kernel.api.exception;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Test;
+import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class StatusTest
 {

@@ -20,16 +20,14 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.junit.Test;
-
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.neo4j.server.rest.transactional.error.Status.Request.InvalidFormat;
-import static org.neo4j.server.rest.transactional.error.Status.Statement.InvalidSyntax;
+import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
+import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoStackTraces;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 /**
  * TransactionLifecycleExceptions are internal exceptions that may be thrown
  * due to server transaction lifecycle transitions that map directly on a

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 public class InvalidTransactionId extends TransactionLifecycleException
 {
     public InvalidTransactionId()

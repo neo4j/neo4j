@@ -23,6 +23,6 @@ public class PropertyKeyIdNotFoundKernelException extends KernelException
 {
     public PropertyKeyIdNotFoundKernelException( int propertyKeyId, Exception cause )
     {
-        super( cause, "Property key id '%s' not found", propertyKeyId );
+        super( Status.Schema.NoSuchPropertyKey, cause, "Property key id '%s' not found", propertyKeyId );
     }
 }

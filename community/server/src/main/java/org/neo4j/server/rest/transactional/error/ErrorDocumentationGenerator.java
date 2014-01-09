@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 /**
  * Generates Asciidoc for {@link Status}.
  *

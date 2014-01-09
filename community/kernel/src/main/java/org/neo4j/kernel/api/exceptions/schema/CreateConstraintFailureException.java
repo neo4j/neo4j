@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class CreateConstraintFailureException extends SchemaKernelException
 {
@@ -29,7 +30,8 @@ public class CreateConstraintFailureException extends SchemaKernelException
 
     public CreateConstraintFailureException( UniquenessConstraint constraint, Throwable cause )
     {
-        super( cause, "Unable to create constraint %s: %s", constraint, cause.getMessage() );
+        super( Status.Schema.ConstraintCreationFailure, cause, "Unable to create constraint %s: %s", constraint,
+                cause.getMessage() );
         this.constraint = constraint;
     }
 
