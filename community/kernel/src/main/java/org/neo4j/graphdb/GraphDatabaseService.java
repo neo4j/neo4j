@@ -44,7 +44,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
  * nodes}, {@link #getNodeById(long) get nodes given an id} and ultimately {@link #shutdown()
  * shutdown Neo4j}.
  * <p/>
- * Please note that all operations that write to the graph must be invoked in a
+ * Please note that all operations on the graph must be invoked in a
  * {@link Transaction transactional context}. Failure to do so will result in a
  * {@link NotInTransactionException} being thrown.
  */
@@ -100,27 +100,27 @@ public interface GraphDatabaseService
      * Returns all nodes having the label, and the wanted property value.
      * If an online index is found, it will be used to look up the requested
      * nodes.
-     * <p>
+     * <p/>
      * If no indexes exist for the label/property combination, the database will
      * scan all labeled nodes looking for the property value.
-     *
+     * <p/>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
      * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
-     *
+     * <p/>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
-     *
+     * <p/>
      * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
-     *
+     * <p/>
      * Please ensure that the returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
-     *   
+     *
      * @param label consider nodes with this label
-     * @param key required property key
+     * @param key   required property key
      * @param value required property value
      * @return an iterable containing all matching nodes. See { @link ResourceIterable } for responsibilities.
      */
     ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value );
-    
+
     /**
      * Returns all relationship types currently in the underlying store.
      * Relationship types are added to the underlying store the first time they
@@ -154,19 +154,19 @@ public interface GraphDatabaseService
 
     /**
      * Starts a new {@link Transaction transaction} and associates it with the current thread.
-     * <p>
+     * <p/>
      * <em>All database operations must be wrapped in a transaction.</em>
-     * <p>
+     * <p/>
      * If you attempt to access the graph outside of a transaction, those operations will throw
      * {@link NotInTransactionException}.
-     * <p>
+     * <p/>
      * Please ensure that any returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *
      * @return a new transaction instance
      */
     Transaction beginTx();
-    
+
     /**
      * Registers {@code handler} as a handler for transaction events which
      * are generated from different places in the lifecycle of each
@@ -182,7 +182,7 @@ public interface GraphDatabaseService
      * @return the handler passed in as the argument.
      */
     <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler );
-    
+
     /**
      * Unregisters {@code handler} from the list of transaction event handlers.
      * If {@code handler} hasn't been registered with
@@ -200,7 +200,7 @@ public interface GraphDatabaseService
      *                               to calling this method.
      */
     <T> TransactionEventHandler<T> unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
-    
+
     /**
      * Registers {@code handler} as a handler for kernel events which
      * are generated from different places in the lifecycle of the kernel.
@@ -233,7 +233,7 @@ public interface GraphDatabaseService
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,
      * for example constraints and indexing on {@link Label labels}.
-     * 
+     *
      * @return the {@link Schema schema manager} for this database.
      */
     Schema schema();
