@@ -19,13 +19,15 @@
  */
 package org.neo4j.shell;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.getProperty;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.TargetDirectory.forTest;
+import java.lang.reflect.Field;
 
 import org.junit.Test;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static java.lang.Runtime.getRuntime;
+import static java.lang.System.getProperty;
+import static org.junit.Assert.*;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRmiPublication
 {
@@ -68,7 +70,10 @@ public class TestRmiPublication
                         Thread.sleep( 100 );
                     }
                 }
-                throw new RuntimeException( "Process didn't exit on its own" );
+
+                tempHackToGetThreadDump(process);
+
+                throw new RuntimeException( "Process didn't exit on its own." );
             }
             finally
             {
@@ -78,6 +83,34 @@ public class TestRmiPublication
         finally
         {
             process.destroy();
+        }
+    }
+
+    private void tempHackToGetThreadDump( Process process )
+    {
+        try
+        {
+            Field pidField = process.getClass().getDeclaredField( "pid" );
+            pidField.setAccessible( true );
+            int pid = (int)pidField.get( process );
+
+            ProcessBuilder processBuilder = new ProcessBuilder( "/bin/sh", "-c", "kill -3 " + pid );
+            processBuilder.redirectErrorStream( true );
+            Process dumpProc = processBuilder.start();
+            ProcessStreamHandler streamHandler = new ProcessStreamHandler(dumpProc, false);
+            streamHandler.launch();
+            try
+            {
+                process.waitFor();
+            }
+            finally
+            {
+                streamHandler.cancel();
+            }
+        }
+        catch( Throwable e )
+        {
+            e.printStackTrace();
         }
     }
 }
