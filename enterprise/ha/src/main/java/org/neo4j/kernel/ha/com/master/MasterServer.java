@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,8 +34,8 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.ha.com.HaRequestType18;
-import org.neo4j.kernel.ha.com.slave.MasterClient18;
+import org.neo4j.kernel.ha.HaRequestType196;
+import org.neo4j.kernel.ha.MasterClient196;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
@@ -50,16 +49,16 @@ public class MasterServer extends Server<Master, Void>
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
-                         TxChecksumVerifier txVerifier ) throws IOException
+                         TxChecksumVerifier txVerifier )
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient18.PROTOCOL_VERSION, txVerifier,
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient196.PROTOCOL_VERSION, txVerifier,
                 Clock.REAL_CLOCK );
     }
 
     @Override
     protected RequestType<Master> getRequestContext( byte id )
     {
-        return HaRequestType18.values()[id];
+        return HaRequestType196.values()[id];
     }
 
     @Override

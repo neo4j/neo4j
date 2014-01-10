@@ -35,6 +35,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -126,6 +127,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final SPI spi;
     private final StringLogger msgLog;
     private final Config config;
+    private final long epoch;
 
     private Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<RequestContext,
             MasterTransaction>();
@@ -137,6 +139,12 @@ public class MasterImpl extends LifecycleAdapter implements Master
         this.spi = spi;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.config = config;
+        this.epoch = generateEpoch();
+    }
+
+    private long generateEpoch()
+    {
+        return (((long)config.get( ClusterSettings.server_id )) << 48) | System.currentTimeMillis();
     }
 
     @Override
@@ -163,6 +171,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             throw new TransactionFailureException( "Database is currently not available" );
         }
+        assertCorrectEpoch( context );
 
         boolean beganTx = false;
         try
@@ -190,9 +199,30 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
+    /**
+     * Basically for all public methods call this assertion to verify that the caller meant to call this
+     * master. The epoch is the one handed out from {@link #handshake(long, StoreId)}.
+     * Exceptions to the above are:
+     * o {@link #handshake(long, StoreId)}
+     * o {@link #copyStore(RequestContext, StoreWriter)}
+     * o {@link #copyTransactions(RequestContext, String, long, long)}
+     * o {@link #pullUpdates(RequestContext)}
+     * 
+     * all other methods must have this.
+     * @param context the request context containing the epoch the request thinks it's for.
+     */
+    private void assertCorrectEpoch( RequestContext context )
+    {
+        if ( this.epoch != context.getEpoch() )
+        {
+            throw new InvalidEpochException( epoch, context.getEpoch() );
+        }
+    }
+
     private Response<LockResult> acquireLock( RequestContext context,
                                               LockGrabber lockGrabber, Object... entities )
     {
+        assertCorrectEpoch( context );
         resumeTransaction( context );
 
         try
@@ -288,33 +318,39 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
+    @Override
     public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
     {
         return acquireLock( context, READ_LOCK_GRABBER, nodesById( nodes ) );
     }
 
+    @Override
     public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, nodesById( nodes ) );
     }
 
+    @Override
     public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
                                                              long... relationships )
     {
         return acquireLock( context, READ_LOCK_GRABBER, relationshipsById( relationships ) );
     }
 
+    @Override
     public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
                                                               long... relationships )
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById( relationships ) );
     }
 
+    @Override
     public Response<LockResult> acquireGraphReadLock( RequestContext context )
     {
         return acquireLock( context, READ_LOCK_GRABBER, spi.graphProperties() );
     }
 
+    @Override
     public Response<LockResult> acquireGraphWriteLock( RequestContext context )
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, spi.graphProperties() );
@@ -340,21 +376,26 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return result;
     }
 
-    public Response<IdAllocation> allocateIds( IdType idType )
+    @Override
+    public Response<IdAllocation> allocateIds( RequestContext context, IdType idType )
     {
+        assertCorrectEpoch( context );
         IdAllocation result = spi.allocateIds( idType );
         return ServerUtil.packResponseWithoutTransactionStream( spi.storeId(), result );
     }
 
+    @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context, String resource,
                                                            TxExtractor txGetter )
     {
+        assertCorrectEpoch( context );
         resumeTransaction( context );
         try
         {
             final long txId = spi.applyPreparedTransaction( resource, txGetter.extract() );
             Predicate<Long> upUntilThisTx = new Predicate<Long>()
             {
+                @Override
                 public boolean accept( Long item )
                 {
                     return item < txId;
@@ -375,6 +416,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Void> finishTransaction( RequestContext context, boolean success )
     {
+        assertCorrectEpoch( context );
         try
         {
             resumeTransaction( context );
@@ -402,20 +444,24 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Integer> createRelationshipType( RequestContext context, String name )
     {
+        assertCorrectEpoch( context );
         return packResponse( context, spi.createRelationshipType( name ) );
     }
 
+    @Override
     public Response<Void> pullUpdates( RequestContext context )
     {
         return packResponse( context, null );
     }
 
-    public Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId storeId )
+    @Override
+    public Response<HandshakeResult> handshake( long txId, StoreId storeId )
     {
         try
         {
             Pair<Integer, Long> masterId = spi.getMasterIdForCommittedTx( txId );
-            return ServerUtil.packResponseWithoutTransactionStream( spi.storeId(), masterId );
+            return ServerUtil.packResponseWithoutTransactionStream( spi.storeId(),
+                    new HandshakeResult( masterId.first(), masterId.other(), epoch ) );
         }
         catch ( IOException e )
         {
@@ -423,6 +469,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
+    @Override
     public Response<Void> copyStore( RequestContext context, StoreWriter writer )
     {
         context = spi.rotateLogsAndStreamStoreFiles( writer );
@@ -444,6 +491,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private static LockGrabber READ_LOCK_GRABBER = new LockGrabber()
     {
+        @Override
         public void grab( LockManager lockManager, TransactionState state, Object entity )
         {
             state.acquireReadLock( entity );
@@ -452,6 +500,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private static LockGrabber WRITE_LOCK_GRABBER = new LockGrabber()
     {
+        @Override
         public void grab( LockManager lockManager, TransactionState state, Object entity )
         {
             state.acquireWriteLock( entity );
@@ -474,6 +523,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
     {
+        assertCorrectEpoch( context );
         spi.pushTransaction( resourceName, context.getEventIdentifier(), tx, context.machineId() );
         return new Response<Void>( null, spi.storeId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }

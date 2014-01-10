@@ -26,18 +26,24 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.junit.Test;
+
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
 import static junit.framework.Assert.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MasterImplTest
 {
@@ -47,9 +53,7 @@ public class MasterImplTest
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
         Logging logging = new DevNullLoggingService();
-        Map<String, String> params = new HashMap<String, String>();
-        params.put( HaSettings.lock_read_timeout.name(), "20s" );
-        Config config = new Config( params, HaSettings.class );
+        Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( false );
 
@@ -74,20 +78,20 @@ public class MasterImplTest
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
         Logging logging = new DevNullLoggingService();
-        Map<String, String> params = new HashMap<String, String>();
-        params.put( HaSettings.lock_read_timeout.name(), "20s" );
-        Config config = new Config( params, HaSettings.class );
+        Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.beginTx() ).thenReturn( mock( Transaction.class ) );
+        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
 
         MasterImpl instance = new MasterImpl( spi, logging, config );
         instance.start();
+        HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
 
         // When
         try
         {
-            instance.initializeTx( new RequestContext( 0, 1, 2, new RequestContext.Tx[0], 1, 0 ) );
+            instance.initializeTx( new RequestContext( handshake.epoch(), 1, 2, new RequestContext.Tx[0], 1, 0 ) );
         }
         catch ( Exception e )
         {
@@ -101,18 +105,20 @@ public class MasterImplTest
     {
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
-        Config config = new Config( new HashMap<String, String>(), HaSettings.class );
+        Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.beginTx() ).thenThrow( new SystemException("Nope") );
+        when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
 
         MasterImpl instance = new MasterImpl( spi, new DevNullLoggingService(), config );
         instance.start();
+        HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
 
         // When
         try
         {
-            instance.initializeTx( new RequestContext( 0, 1, 2, new RequestContext.Tx[0], 1, 0 ) );
+            instance.initializeTx( new RequestContext( handshake.epoch(), 1, 2, new RequestContext.Tx[0], 1, 0 ) );
             fail("Should have failed.");
         }
         catch ( Exception e )
@@ -121,6 +127,13 @@ public class MasterImplTest
             assertThat(e.getCause(), instanceOf( SystemException.class ));
             assertThat(e.getCause().getMessage(), equalTo( "Nope" ));
         }
+    }
 
+    private Config config( int lockReadTimeout )
+    {
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( HaSettings.lock_read_timeout.name(), lockReadTimeout + "s" );
+        params.put( ClusterSettings.server_id.name(), "1" );
+        return new Config( params, HaSettings.class );
     }
 }

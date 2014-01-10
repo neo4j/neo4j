@@ -23,7 +23,6 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
@@ -35,7 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
  */
 public interface Master
 {
-    Response<IdAllocation> allocateIds( IdType idType );
+    Response<IdAllocation> allocateIds( RequestContext context, IdType idType );
 
     Response<Integer> createRelationshipType( RequestContext context, String name );
 
@@ -68,7 +67,7 @@ public interface Master
      * @param myStoreId clients store id.
      * @return the master id for a given txId, also a checksum for that tx.
      */
-    Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId );
+    Response<HandshakeResult> handshake( long txId, StoreId myStoreId );
 
     Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
 

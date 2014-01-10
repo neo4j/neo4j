@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.com;
+package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -35,7 +35,7 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.slave.MasterClient153.AquireLockCall;
+import org.neo4j.kernel.ha.com.slave.MasterClient18.AquireLockCall;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -47,7 +47,7 @@ import static org.neo4j.com.Protocol.readBoolean;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
-public enum HaRequestType153 implements RequestType<Master>
+public enum HaRequestType196 implements RequestType<Master>
 {
     // ====
     ALLOCATE_IDS( new TargetCaller<Master, IdAllocation>()
@@ -75,7 +75,8 @@ public enum HaRequestType153 implements RequestType<Master>
             result.writeLong( idAllocation.getHighestIdInUse() );
             result.writeLong( idAllocation.getDefragCount() );
         }
-    }, false ),
+    }
+    ),
 
     // ====
     CREATE_RELATIONSHIP_TYPE( new TargetCaller<Master, Integer>()
@@ -86,17 +87,17 @@ public enum HaRequestType153 implements RequestType<Master>
         {
             return master.createRelationshipType( context, readString( input ) );
         }
-    }, INTEGER_SERIALIZER, true ),
+    }, INTEGER_SERIALIZER ),
 
     // ====
     ACQUIRE_NODE_WRITE_LOCK( new AquireLockCall()
     {
         @Override
-        protected Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireNodeWriteLock( context, ids );
         }
-    }, LOCK_SERIALIZER, true )
+    }, LOCK_SERIALIZER )
     {
         @Override
         public boolean isLock()
@@ -109,11 +110,11 @@ public enum HaRequestType153 implements RequestType<Master>
     ACQUIRE_NODE_READ_LOCK( new AquireLockCall()
     {
         @Override
-        protected Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireNodeReadLock( context, ids );
         }
-    }, LOCK_SERIALIZER, true )
+    }, LOCK_SERIALIZER )
     {
         @Override
         public boolean isLock()
@@ -126,11 +127,11 @@ public enum HaRequestType153 implements RequestType<Master>
     ACQUIRE_RELATIONSHIP_WRITE_LOCK( new AquireLockCall()
     {
         @Override
-        protected Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireRelationshipWriteLock( context, ids );
         }
-    }, LOCK_SERIALIZER, true )
+    }, LOCK_SERIALIZER )
     {
         @Override
         public boolean isLock()
@@ -143,11 +144,11 @@ public enum HaRequestType153 implements RequestType<Master>
     ACQUIRE_RELATIONSHIP_READ_LOCK( new AquireLockCall()
     {
         @Override
-        protected Response<LockResult> lock( Master master, RequestContext context, long... ids )
+        public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
             return master.acquireRelationshipReadLock( context, ids );
         }
-    }, LOCK_SERIALIZER, true )
+    }, LOCK_SERIALIZER )
     {
         @Override
         public boolean isLock()
@@ -167,7 +168,7 @@ public enum HaRequestType153 implements RequestType<Master>
             final ReadableByteChannel reader = new BlockLogReader( input );
             return master.commitSingleResourceTransaction( context, resource, TxExtractor.create( reader ) );
         }
-    }, LONG_SERIALIZER, true ),
+    }, LONG_SERIALIZER ),
 
     // ====
     PULL_UPDATES( new TargetCaller<Master, Void>()
@@ -178,7 +179,7 @@ public enum HaRequestType153 implements RequestType<Master>
         {
             return master.pullUpdates( context );
         }
-    }, VOID_SERIALIZER, true ),
+    }, VOID_SERIALIZER ),
 
     // ====
     FINISH( new TargetCaller<Master, Void>()
@@ -189,7 +190,7 @@ public enum HaRequestType153 implements RequestType<Master>
         {
             return master.finishTransaction( context, readBoolean( input ) );
         }
-    }, VOID_SERIALIZER, true ),
+    }, VOID_SERIALIZER ),
 
     // ====
     HANDSHAKE( new TargetCaller<Master, HandshakeResult>()
@@ -207,8 +208,10 @@ public enum HaRequestType153 implements RequestType<Master>
         {
             result.writeInt( responseObject.txAuthor() );
             result.writeLong( responseObject.txChecksum() );
+            result.writeLong( responseObject.epoch() );
         }
-    }, false ),
+    }
+    ),
 
     // ====
     COPY_STORE( new TargetCaller<Master, Void>()
@@ -220,7 +223,7 @@ public enum HaRequestType153 implements RequestType<Master>
             return master.copyStore( context, new ToNetworkStoreWriter( target ) );
         }
 
-    }, VOID_SERIALIZER, true ),
+    }, VOID_SERIALIZER ),
 
     // ====
     COPY_TRANSACTIONS( new TargetCaller<Master, Void>()
@@ -232,7 +235,7 @@ public enum HaRequestType153 implements RequestType<Master>
             return master.copyTransactions( context, readString( input ), input.readLong(), input.readLong() );
         }
 
-    }, VOID_SERIALIZER, true ),
+    }, VOID_SERIALIZER ),
 
     // ====
     INITIALIZE_TX( new TargetCaller<Master, Void>()
@@ -243,7 +246,43 @@ public enum HaRequestType153 implements RequestType<Master>
         {
             return master.initializeTx( context );
         }
-    }, VOID_SERIALIZER, true ),
+    }, VOID_SERIALIZER ),
+
+    // ====
+    ACQUIRE_GRAPH_WRITE_LOCK( new TargetCaller<Master, LockResult>()
+    {
+        @Override
+        public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
+                ChannelBuffer target )
+        {
+            return master.acquireGraphWriteLock( context );
+        }
+    }, LOCK_SERIALIZER )
+    {
+        @Override
+        public boolean isLock()
+        {
+            return true;
+        }
+    },
+
+    // ====
+    ACQUIRE_GRAPH_READ_LOCK( new TargetCaller<Master, LockResult>()
+    {
+        @Override
+        public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
+                ChannelBuffer target )
+        {
+            return master.acquireGraphReadLock( context );
+        }
+    }, LOCK_SERIALIZER )
+    {
+        @Override
+        public boolean isLock()
+        {
+            return true;
+        }
+    },
 
     // ====
     ACQUIRE_INDEX_READ_LOCK( new TargetCaller<Master, LockResult>()
@@ -255,7 +294,7 @@ public enum HaRequestType153 implements RequestType<Master>
             return master.acquireIndexReadLock( context, readString( input ), readString( input ) );
         }
 
-    }, LOCK_SERIALIZER, true )
+    }, LOCK_SERIALIZER )
     {
         @Override
         public boolean isLock()
@@ -274,26 +313,36 @@ public enum HaRequestType153 implements RequestType<Master>
             return master.acquireIndexWriteLock( context, readString( input ), readString( input ) );
         }
 
-    }, LOCK_SERIALIZER, true )
+    }, LOCK_SERIALIZER )
     {
         @Override
         public boolean isLock()
         {
             return true;
         }
-    };
+    },
+
+    // ====
+    PUSH_TRANSACTION( new TargetCaller<Master, Void>()
+    {
+        @Override
+        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
+                ChannelBuffer target )
+        {
+            return master.pushTransaction( context, readString( input ), input.readLong() );
+        }
+    }, VOID_SERIALIZER );
+
 
     @SuppressWarnings( "rawtypes" )
     final TargetCaller caller;
     @SuppressWarnings( "rawtypes" )
     final ObjectSerializer serializer;
-    private final boolean includesSlaveContext;
 
-    private <T> HaRequestType153( TargetCaller caller, ObjectSerializer<T> serializer, boolean includesSlaveContext )
+    private <T> HaRequestType196( TargetCaller caller, ObjectSerializer<T> serializer )
     {
         this.caller = caller;
         this.serializer = serializer;
-        this.includesSlaveContext = includesSlaveContext;
     }
 
     @Override
@@ -312,11 +361,6 @@ public enum HaRequestType153 implements RequestType<Master>
     public byte id()
     {
         return (byte) ordinal();
-    }
-
-    public boolean includesSlaveContext()
-    {
-        return this.includesSlaveContext;
     }
 
     public boolean isLock()
