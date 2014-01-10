@@ -34,6 +34,11 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.scalatest.junit.JUnitSuite
 
+object CypherParserTest {
+  val cypherParser = CypherParser()
+}
+import CypherParserTest._
+
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
     test(
@@ -2837,7 +2842,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test
   def compileQueryIntegrationTest() {
-    val q = parser.parseToQuery("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[commands.Query]
+    val q = cypherParser.parseToQuery("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[commands.Query]
     assert(q.tail.nonEmpty, "wasn't compacted enough")
     val compacted = q.compact
 
@@ -2855,7 +2860,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test
   def compileQueryIntegrationTest2() {
-    val q = parser.parseToQuery("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[commands.Query]
+    val q = cypherParser.parseToQuery("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[commands.Query]
     val compacted = q.compact
     var lastQ = compacted
 
@@ -2903,10 +2908,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
-  val parser = CypherParser()
-
   private def test(query: String, expectedQuery: AbstractQuery) {
-    val ast = parser.parseToQuery(query)
+    val ast = cypherParser.parseToQuery(query)
     try {
       assertThat(query, ast, equalTo(expectedQuery))
     } catch {

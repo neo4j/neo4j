@@ -364,6 +364,20 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldWarnOnOverSizedInteger() {
+    test(
+      "RETURN 1766384027365849394756747201203756",
+      "integer is too large (line 1, column 8)"
+    )
+  }
+
+  @Test def shouldWarnOnOverSizedDouble() {
+    test(
+      "RETURN 1.34E999",
+      "floating point number is too large (line 1, column 8)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)

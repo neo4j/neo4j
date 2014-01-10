@@ -17,17 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_0.parser.matchers
 
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import org.parboiled.matchers.CustomMatcher
+import org.parboiled.MatcherContext
 
-case class Skip(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(LongType())
+abstract class ScalaCharMatcher(label: String) extends CustomMatcher(label) {
 
-  def toCommand = expression match {
-    case integer: UnsignedIntegerLiteral => commandexpressions.Literal(integer.value.toInt)
-    case _ => expression.toCommand
-  }
+  protected def matchChar(c: Char): Boolean
+
+  def `match`[V](context: MatcherContext[V]): Boolean =
+    if (matchChar(context.getCurrentChar)) {
+      context.advanceIndex(1)
+      context.createNode()
+      true
+    } else {
+      false
+    }
+
+  def isSingleCharMatcher: Boolean = true
+
+  def canMatchEmpty: Boolean = false
+
+  def isStarterChar(c: Char): Boolean = matchChar(c)
+
+  def getStarterChar: Char = 'a'
 }

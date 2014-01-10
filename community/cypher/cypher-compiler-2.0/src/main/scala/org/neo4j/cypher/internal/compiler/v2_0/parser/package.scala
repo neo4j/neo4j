@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import parser.matchers._
+import org.parboiled.scala._
 
-case class Skip(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(LongType())
-
-  def toCommand = expression match {
-    case integer: UnsignedIntegerLiteral => commandexpressions.Literal(integer.value.toInt)
-    case _ => expression.toCommand
-  }
+package object parser {
+  lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
+  lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
+  lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
 }

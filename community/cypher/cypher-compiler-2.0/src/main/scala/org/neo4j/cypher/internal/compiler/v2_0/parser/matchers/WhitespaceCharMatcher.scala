@@ -17,17 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_0.parser.matchers
 
-import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
-
-case class Skip(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(LongType())
-
-  def toCommand = expression match {
-    case integer: UnsignedIntegerLiteral => commandexpressions.Literal(integer.value.toInt)
-    case _ => expression.toCommand
-  }
+class WhitespaceCharMatcher extends ScalaCharMatcher("whitespace") {
+  protected def matchChar(c: Char): Boolean = c.isWhitespace
 }

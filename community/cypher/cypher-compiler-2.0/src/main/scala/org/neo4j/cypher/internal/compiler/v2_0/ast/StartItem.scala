@@ -34,7 +34,7 @@ sealed trait NodeStartItem extends StartItem {
   def semanticCheck = identifier.declare(NodeType())
 }
 
-case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedInteger], token: InputToken) extends NodeStartItem {
+case class NodeByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral], token: InputToken) extends NodeStartItem {
   def toCommand = commands.NodeById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
 }
 
@@ -62,7 +62,7 @@ sealed trait RelationshipStartItem extends StartItem {
   def semanticCheck = identifier.declare(RelationshipType())
 }
 
-case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedInteger], token: InputToken) extends RelationshipStartItem {
+case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral], token: InputToken) extends RelationshipStartItem {
   def toCommand = commands.RelationshipById(identifier.name, commandexpressions.Literal(ids.map(_.value)))
 }
 

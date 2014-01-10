@@ -27,7 +27,7 @@ case class Limit(expression: Expression, token: InputToken) extends AstNode with
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(LongType())
 
   def toCommand = expression match {
-    case integer: UnsignedInteger => commandexpressions.Literal(integer.value.toInt)
-    case _                        => expression.toCommand
+    case integer: UnsignedIntegerLiteral => commandexpressions.Literal(integer.value.toInt)
+    case _                               => expression.toCommand
   }
 }
