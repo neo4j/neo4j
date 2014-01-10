@@ -19,7 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Iterator;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -28,6 +35,7 @@ import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public class DefaultLegacyKernelOperations implements LegacyKernelOperations
 {
@@ -66,6 +74,69 @@ public class DefaultLegacyKernelOperations implements LegacyKernelOperations
         catch ( NotFoundException e )
         {
             throw new EntityNotFoundException( EntityType.NODE, endNodeId, e );
+        }
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int relType )
+    {
+        return relsToPrimitiveIterator( nodeManager.getNodeForProxy( nodeId, null )
+                .getRelationships( nodeManager, direction, relIdToGDSType( statement, relType ) ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int[] relTypes )
+    {
+        return relsToPrimitiveIterator( nodeManager.getNodeForProxy( nodeId, null )
+                .getRelationships( nodeManager, direction, relIdsToGDSRels(statement, relTypes) ) );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction )
+    {
+        return relsToPrimitiveIterator( nodeManager.getNodeForProxy( nodeId, null )
+                .getRelationships( nodeManager, direction ) );
+    }
+
+    private PrimitiveLongIterator relsToPrimitiveIterator( Iterable<Relationship> relationships )
+    {
+        final Iterator<Relationship> rels = relationships.iterator();
+        return new PrimitiveLongIterator()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return rels.hasNext();
+            }
+
+            @Override
+            public long next()
+            {
+                return rels.next().getId();
+            }
+        };
+    }
+
+    private RelationshipType[] relIdsToGDSRels( KernelStatement statement, int[] relTypes )
+    {
+        RelationshipType[] out = new RelationshipType[relTypes.length];
+        for(int i=0;i<relTypes.length;i++)
+        {
+            out[i] = relIdToGDSType( statement, relTypes[i] );
+        }
+        return out;
+    }
+
+    private RelationshipType relIdToGDSType( KernelStatement statement, int relType )
+    {
+        try
+        {
+            return DynamicRelationshipType.withName(statement.readOperations().relationshipTypeGetName( relType ));
+        }
+        catch ( RelationshipTypeIdNotFoundKernelException e )
+        {
+            throw new ThisShouldNotHappenError( "Jake", "Mapping from a known reltype id to a reltype name " +
+                    "should not fail." );
         }
     }
 }
