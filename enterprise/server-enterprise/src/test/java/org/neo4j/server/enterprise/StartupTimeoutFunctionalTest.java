@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -38,10 +39,11 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.fail;
 
-import static org.neo4j.test.TargetDirectory.forTest;
-
 public class StartupTimeoutFunctionalTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory target = TargetDirectory.cleanTestDirForTest( getClass() );
+
     public EnterpriseNeoServer server;
 
     @After
@@ -133,21 +135,19 @@ public class StartupTimeoutFunctionalTest
 
     private Configurator buildProperties() throws IOException
     {
-        TargetDirectory target = forTest( StartupTimeoutFunctionalTest.class );
-        target.cleanup();
-
-        target.directory( "conf" );
+        //noinspection ResultOfMethodCallIgnored
+        new File( target.directory(), "conf" ).mkdir();
 
         Properties databaseProperties = new Properties();
-        String databasePropertiesFileName = target.file( "conf/neo4j.properties" ).getAbsolutePath();
+        String databasePropertiesFileName = new File( target.directory(), "conf/neo4j.properties" ).getAbsolutePath();
         databaseProperties.setProperty( ClusterSettings.server_id.name(), "1" );
         databaseProperties.setProperty( ClusterSettings.initial_hosts.name(), ":5001,:5002,:5003" );
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Properties serverProperties = new Properties();
-        String serverPropertiesFilename = target.file( "conf/neo4j-server.properties" ).getAbsolutePath();
+        String serverPropertiesFilename = new File( target.directory(), "conf/neo4j-server.properties" ).getAbsolutePath();
         serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY,
-                target.directory( "data/graph.db", true ).getAbsolutePath() );
+                new File( target.directory(), "data/graph.db" ).getAbsolutePath() );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
         serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
