@@ -298,6 +298,34 @@ public class ExecutionResultSerializerTest
     }
 
     @Test
+    public void shouldSerializeNestedEntities() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, StringLogger.DEV_NULL );
+
+        Node a = node( 1, properties( property( "foo", 12 ) ) );
+        Node b = node( 2, properties( property( "bar", false ) ) );
+        Relationship r = relationship( 1, properties( property( "baz", "quux" ) ), a, "FRAZZLE", b );
+        ExecutionResult executionResult = mockExecutionResult( map(
+                "nested", map(
+                "node", a,
+                "edge", r,
+                "path", path( a, link(r, b) )
+        ) ) );
+
+        // when
+        serializer.statementResult( executionResult, false );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+        assertEquals( "{\"results\":[{\"columns\":[\"nested\"]," +
+                      "\"data\":[{\"row\":[{\"node\":{\"foo\":12},\"edge\":{\"baz\":\"quux\"},\"path\":[{\"foo\":12},{\"baz\":\"quux\"},{\"bar\":false}]}]}]}]," +
+                      "\"errors\":[]}", result );
+    }
+
+    @Test
     public void shouldSerializePathAsListOfMapsOfProperties() throws Exception
     {
         // given

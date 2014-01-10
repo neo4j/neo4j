@@ -32,6 +32,7 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.PlanDescription;
 import org.neo4j.cypher.javacompat.ProfilerStatistics;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.DatabaseRule;
@@ -128,6 +129,29 @@ public class CypherResultRepresentationTest
         assertThat( (String) two.get( 0 ), is( "wait for it..." ) );
         Map foo = (Map) two.get( 1 );
         assertThat( (String) foo.get( "three" ), is( "GO!" ) );
+    }
+
+    @Test
+    public void shouldRenderNestedEntities() throws Exception
+    {
+        try ( Transaction ignored = database.getGraphDatabaseService().beginTx() )
+        {
+            ExecutionEngine executionEngine = new ExecutionEngine( database.getGraphDatabaseService() );
+            executionEngine.execute( "CREATE (n {name: 'Sally'}), (m {age: 42}), n-[r:FOO {drunk: false}]->m" );
+            ExecutionResult result = executionEngine.execute( "MATCH p=n-[r]->m RETURN n, r, p, {node: n, edge: r, " +
+                    "path: p}" );
+            CypherResultRepresentation representation = new CypherResultRepresentation( result, false, false );
+
+            // When
+            Map<String, Object> serialized = serializeToStringThenParseAsToMap( representation );
+
+            // Then
+            Object firstRow = ((List) serialized.get( "data" )).get( 0 );
+            Map nested = (Map) ((List) firstRow).get( 3 );
+            assertThat( nested.get( "node" ), is( equalTo( ((List) firstRow).get( 0 ) ) ) );
+            assertThat( nested.get( "edge" ), is( equalTo( ((List) firstRow).get( 1 ) ) ) );
+            assertThat( nested.get( "path" ), is( equalTo( ((List) firstRow).get( 2 ) ) ) );
+        }
     }
 
     private static ResourceIterator<Map<String, Object>> emptyIterator()
