@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
@@ -269,7 +270,7 @@ public class SubGraphExporter
         }
         if ( value instanceof Float || value instanceof Double )
         {
-            return String.format( "%f", value );
+            return String.format( Locale.ENGLISH, "%f", value );
         }
         if ( value instanceof Iterator )
         {
