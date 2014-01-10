@@ -39,8 +39,6 @@ public interface LegacyKernelOperations
     long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 
-    PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int relType );
-
     PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int[] relTypes );
 
     PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction );

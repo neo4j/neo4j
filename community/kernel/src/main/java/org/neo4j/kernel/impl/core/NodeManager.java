@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -92,6 +93,8 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     private GraphPropertiesImpl graphProperties;
 
+    private final CleanupService cleanupService;
+
     private final AutoLoadingCache.Loader<NodeImpl> nodeLoader = new AutoLoadingCache.Loader<NodeImpl>()
     {
         @Override
@@ -105,7 +108,6 @@ public class NodeManager implements Lifecycle, EntityFactory
             return new NodeImpl( id );
         }
     };
-
     private final AutoLoadingCache.Loader<RelationshipImpl> relLoader = new AutoLoadingCache.Loader<RelationshipImpl>()
     {
         @Override
@@ -130,7 +132,8 @@ public class NodeManager implements Lifecycle, EntityFactory
                         PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                         NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                         Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
-                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider )
+                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider,
+                        CleanupService cleanupService )
     {
         this.logger = logger;
         this.graphDbService = graphDb;
@@ -145,6 +148,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
         this.cacheProvider = cacheProvider;
         this.statementCtxProvider = statementCtxProvider;
+        this.cleanupService = cleanupService;
         this.nodeCache = new AutoLoadingCache<>( nodeCache, nodeLoader );
         this.relCache = new AutoLoadingCache<>( relCache, relLoader );
         this.xaDsm = xaDsm;
@@ -208,7 +212,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         long id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, true );
-        NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider );
+        NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider, cleanupService );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
         boolean success = false;
@@ -232,7 +236,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     @Override
     public NodeProxy newNodeProxyById( long id )
     {
-        return new NodeProxy( id, nodeLookup, statementCtxProvider );
+        return new NodeProxy( id, nodeLookup, statementCtxProvider, cleanupService );
     }
 
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
@@ -293,7 +297,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         transactionManager.assertInTransaction();
         NodeImpl node = getLightNode( nodeId );
-        return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) : null;
+        return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider, cleanupService ) : null;
     }
 
     public Node getNodeById( long nodeId ) throws NotFoundException
@@ -417,7 +421,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         if ( lock != null )
         {
-            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) );
+            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup, statementCtxProvider, cleanupService ) );
         }
         NodeImpl node = getLightNode( nodeId );
         if ( node == null )

@@ -170,13 +170,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction, int relType )
-    {
-        statement.assertOpen();
-        return legacyKernelOperations.relationshipsGetFromNode( statement, nodeId, direction, relType );
-    }
-
-    @Override
     public PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction, int[] relTypes )
     {
         statement.assertOpen();

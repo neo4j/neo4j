@@ -298,54 +298,15 @@ public class NodeImpl extends ArrayBasedPrimitive
         return src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
     }
 
-    public Iterable<Relationship> getRelationships( NodeManager nodeManager )
-    {
-        return getAllRelationships( nodeManager, DirectionWrapper.BOTH );
-    }
-
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
     {
         return getAllRelationships( nodeManager, wrap( dir ) );
-    }
-
-    public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type )
-    {
-        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, type );
-    }
-
-    public Iterable<Relationship> getRelationships( NodeManager nodeManager,
-                                                    RelationshipType... types )
-    {
-        return getAllRelationshipsOfType( nodeManager, DirectionWrapper.BOTH, types );
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager,
                                                     Direction direction, RelationshipType... types )
     {
         return getAllRelationshipsOfType( nodeManager, wrap( direction ), types );
-    }
-
-    public Relationship getSingleRelationship( NodeManager nodeManager, RelationshipType type,
-                                               Direction dir )
-    {
-        Iterator<Relationship> rels = getAllRelationshipsOfType( nodeManager, wrap( dir ),
-                new RelationshipType[]{type} ).iterator();
-
-        if ( !rels.hasNext() )
-        {
-            return null;
-        }
-        Relationship rel = rels.next();
-        while ( rels.hasNext() )
-        {
-            Relationship other = rels.next();
-            if ( !other.equals( rel ) )
-            {
-                throw new NotFoundException( "More than one relationship[" +
-                        type + ", " + dir + "] found for " + this );
-            }
-        }
-        return rel;
     }
 
     public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
@@ -616,32 +577,6 @@ public class NodeImpl extends ArrayBasedPrimitive
         array[array.length - 1] = addRels;
         sort( array );
         relationships = array;
-    }
-
-    public boolean hasRelationship( NodeManager nodeManager )
-    {
-        return getRelationships( nodeManager ).iterator().hasNext();
-    }
-
-    public boolean hasRelationship( NodeManager nodeManager, RelationshipType... types )
-    {
-        return getRelationships( nodeManager, types ).iterator().hasNext();
-    }
-
-    public boolean hasRelationship( NodeManager nodeManager, Direction direction,
-                                    RelationshipType... types )
-    {
-        return getRelationships( nodeManager, direction, types ).iterator().hasNext();
-    }
-
-    public boolean hasRelationship( NodeManager nodeManager, Direction dir )
-    {
-        return getRelationships( nodeManager, dir ).iterator().hasNext();
-    }
-
-    public boolean hasRelationship( NodeManager nodeManager, RelationshipType type, Direction dir )
-    {
-        return getRelationships( nodeManager, type, dir ).iterator().hasNext();
     }
 
     protected void commitRelationshipMaps(

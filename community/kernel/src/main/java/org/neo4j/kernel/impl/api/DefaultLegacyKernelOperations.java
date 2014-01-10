@@ -78,13 +78,6 @@ public class DefaultLegacyKernelOperations implements LegacyKernelOperations
     }
 
     @Override
-    public PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int relType )
-    {
-        return relsToPrimitiveIterator( nodeManager.getNodeForProxy( nodeId, null )
-                .getRelationships( nodeManager, direction, relIdToGDSType( statement, relType ) ) );
-    }
-
-    @Override
     public PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int[] relTypes )
     {
         return relsToPrimitiveIterator( nodeManager.getNodeForProxy( nodeId, null )

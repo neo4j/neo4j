@@ -34,6 +34,8 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 /**
  * Tests a specific case of cache poisoning that involves the relationship chain of a node, the index the node has on it
  * and a deleted relationship.
@@ -171,7 +173,7 @@ public class TestConcurrentModificationOfRelationshipChains
 
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         Transaction transaction = db.beginTx();
-        Iterable<Relationship> relationships = node1.getRelationships();
+        Iterable<Relationship> relationships = toList( node1.getRelationships() );
         transaction.finish();
         return Triplet.of( relationships, node1.getId(), firstFromSecondBatch );
     }
