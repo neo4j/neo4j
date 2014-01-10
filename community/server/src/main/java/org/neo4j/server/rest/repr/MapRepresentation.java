@@ -25,6 +25,10 @@ import static java.lang.reflect.Array.get;
 import static java.lang.reflect.Array.getLength;
 import static java.util.Arrays.asList;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
+
 public class MapRepresentation extends MappingRepresentation
 {
 
@@ -54,6 +58,11 @@ public class MapRepresentation extends MappingRepresentation
             {
                 serializer.putString( key.toString(), (String) val );
             }
+            else if (val instanceof Path )
+            {
+                PathRepresentation<Path> representation = new PathRepresentation<>( (Path) val );
+                serializer.putMapping( key.toString(), representation );
+            }
             else if ( val instanceof Iterable )
             {
                 serializer.putList( key.toString(), ObjectToRepresentationConverter.getListRepresentation( (Iterable)
@@ -74,12 +83,16 @@ public class MapRepresentation extends MappingRepresentation
 
                 serializer.putList( key.toString(), ObjectToRepresentationConverter.getListRepresentation( asList(objects) ) );
             }
+            else if (val instanceof Node || val instanceof Relationship )
+            {
+                Representation representation = ObjectToRepresentationConverter.getSingleRepresentation( val );
+                serializer.putMapping( key.toString(), (MappingRepresentation) representation );
+            }
             else
             {
                 throw new IllegalArgumentException( "Unsupported value type: " + val.getClass() );
             }
         }
-
     }
 
     private Object[] toArray( Object val )
