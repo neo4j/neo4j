@@ -24,33 +24,25 @@ import org.neo4j.kernel.api.TokenNameLookup;
 /** A super class of checked exceptions coming from the {@link org.neo4j.kernel.api.KernelAPI Kernel API}. */
 public abstract class KernelException extends Exception
 {
-    protected KernelException( Throwable cause, String message, Object... parameters )
+    private final Status statusCode;
+
+    protected KernelException( Status statusCode, Throwable cause, String message, Object... parameters )
     {
-        this( message, parameters );
+        super( String.format( message, parameters ) );;
+        this.statusCode = statusCode;
         initCause( cause );
     }
-    
-    protected KernelException( String message, Object... parameters )
+
+    protected KernelException( Status statusCode, String message, Object... parameters )
     {
-        super( String.format( message, parameters ) );
+        super( String.format( message, parameters ) );;
+        this.statusCode = statusCode;
     }
 
-    @Deprecated
-    public KernelException( String message, Throwable cause )
+    /** The Neo4j status code associated with this exception type. */
+    public Status status()
     {
-        super( message, cause );
-    }
-
-    @Deprecated
-    public KernelException( String message )
-    {
-        super( message );
-    }
-
-    @Deprecated
-    public KernelException( Throwable cause )
-    {
-        super( cause );
+        return statusCode;
     }
 
     public String getUserMessage( TokenNameLookup tokenNameLookup )

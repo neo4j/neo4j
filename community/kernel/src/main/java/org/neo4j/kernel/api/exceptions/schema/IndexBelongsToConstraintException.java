@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -31,7 +32,7 @@ public class IndexBelongsToConstraintException extends SchemaKernelException
 
     public IndexBelongsToConstraintException( IndexDescriptor index )
     {
-        super( format( "Index belongs to constraint: %s", index ) );
+        super( Status.Schema.IndexBelongsToConstraint, format( "Index belongs to constraint: %s", index ) );
         this.index = index;
     }
 

@@ -21,13 +21,8 @@ package org.neo4j.kernel.api.exceptions;
 
 public class PropertyKeyNotFoundException extends KernelException
 {
-    public PropertyKeyNotFoundException( String propertyKey )
-    {
-        super( "Property key '" + propertyKey + "' not found" );
-    }
-    
     public PropertyKeyNotFoundException( String propertyKey, Exception cause )
     {
-        super( "Property key '" + propertyKey + "' not found", cause );
+        super( Status.Schema.NoSuchPropertyKey, cause, "Property key '" + propertyKey + "' not found" );
     }
 }

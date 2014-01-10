@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -32,7 +33,7 @@ public class DropIndexFailureException extends SchemaKernelException
 
     public DropIndexFailureException( IndexDescriptor indexDescriptor, SchemaKernelException cause )
     {
-        super( format( message, indexDescriptor, cause.getMessage() ), cause );
+        super( Status.Schema.IndexDropFailure, format( message, indexDescriptor, cause.getMessage() ), cause );
         this.indexDescriptor = indexDescriptor;
     }
 

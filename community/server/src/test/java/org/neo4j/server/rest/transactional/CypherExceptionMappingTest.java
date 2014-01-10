@@ -20,18 +20,19 @@
 package org.neo4j.server.rest.transactional;
 
 import org.junit.Test;
-
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.cypher.InternalException;
 import org.neo4j.cypher.ParameterNotFoundException;
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.server.rest.transactional.error.Status;
+import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.server.rest.transactional.error.Status.Statement.ExecutionFailure;
-import static org.neo4j.server.rest.transactional.error.Status.Statement.InvalidSyntax;
-import static org.neo4j.server.rest.transactional.error.Status.Statement.ParameterMissing;
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.api.exceptions.Status.Schema.ConstraintViolation;
+import static org.neo4j.kernel.api.exceptions.Status.Statement.ExecutionFailure;
+import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
+import static org.neo4j.kernel.api.exceptions.Status.Statement.ParameterMissing;
 
 public class CypherExceptionMappingTest
 {
@@ -58,6 +59,13 @@ public class CypherExceptionMappingTest
     {
         assertEquals( ExecutionFailure, map( new CypherException( "message", null ) {} ));
     }
+
+    @Test
+    public void shouldMap_CypherExecutionException_caused_by_ConstraintViolation_to_CONSTRAINT_VIOLATION() throws Exception
+    {
+        assertEquals( ConstraintViolation, map( new CypherExecutionException( "message", new UniqueConstraintViolationKernelException(1, 2, "value", 12))));
+    }
+
 
     private Status map( CypherException cypherException )
     {

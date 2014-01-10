@@ -24,17 +24,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.junit.Test;
-
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.Status;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 

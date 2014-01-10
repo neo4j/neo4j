@@ -23,6 +23,6 @@ public class ReleaseLocksFailedKernelException extends KernelException
 {
     public ReleaseLocksFailedKernelException( String msg, Exception releaseException )
     {
-        super(releaseException, msg);
+        super(Status.Transaction.ReleaseLocksFailed, releaseException, msg);
     }
 }

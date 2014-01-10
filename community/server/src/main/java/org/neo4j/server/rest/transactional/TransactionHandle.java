@@ -29,10 +29,10 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
@@ -169,7 +169,7 @@ public class TransactionHandle
     {
         executeStatements( statements, output, errors );
 
-        if ( Status.Code.shouldRollBackOn( errors ) )
+        if ( Neo4jError.shouldRollBackOn( errors ) )
         {
             rollback( errors );
         }

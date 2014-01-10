@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 public class IndexPopulationFailedKernelException extends KernelException
@@ -29,13 +30,14 @@ public class IndexPopulationFailedKernelException extends KernelException
     public IndexPopulationFailedKernelException( IndexDescriptor descriptor, String indexUserDescription,
                                                  Throwable cause )
     {
-        super( cause, FORMAT_MESSAGE, indexUserDescription, descriptor.getLabelId(), descriptor.getPropertyKeyId() );
+        super( Status.Schema.IndexCreationFailure, cause, FORMAT_MESSAGE, indexUserDescription,
+                descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 
     public IndexPopulationFailedKernelException( IndexDescriptor descriptor, String indexUserDescription,
                                                  String message )
     {
-        super( FORMAT_MESSAGE + ", due to " + message,
+        super( Status.Schema.IndexCreationFailure, FORMAT_MESSAGE + ", due to " + message,
                indexUserDescription, descriptor.getLabelId(), descriptor.getPropertyKeyId() );
     }
 }

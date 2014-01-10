@@ -26,21 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.repr.util.RFC1123;
-import org.neo4j.server.rest.transactional.error.Status;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;

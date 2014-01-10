@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Signals that some constraint has been violated in a {@link org.neo4j.kernel.api.KernelAPI kernel interaction},
@@ -27,19 +28,19 @@ import org.neo4j.kernel.api.exceptions.KernelException;
  */
 public abstract class SchemaKernelException extends KernelException
 {
-    protected SchemaKernelException( Throwable cause, String message, Object... parameters )
+    protected SchemaKernelException( Status statusCode, Throwable cause, String message, Object... parameters )
     {
-        super( cause, message, parameters );
+        super( statusCode, cause, message, parameters );
     }
 
-    public SchemaKernelException( String message, Throwable cause )
+    public SchemaKernelException( Status statusCode, String message, Throwable cause )
     {
-        super( message, cause );
+        super( statusCode, cause, message );
     }
 
-    public SchemaKernelException( String message )
+    public SchemaKernelException( Status statusCode, String message )
     {
-        super( message );
+        super( statusCode, message );
     }
 
 }

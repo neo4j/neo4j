@@ -22,10 +22,11 @@ package org.neo4j.kernel.api.exceptions.schema;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.TokenNameLookup;
 
 /**
  * Constraint verification happens when a new constraint is created, and the database verifies that existing
@@ -72,14 +73,15 @@ public class ConstraintVerificationFailedKernelException extends KernelException
 
     public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Set<Evidence> evidence )
     {
-        super( "Existing data does not satisfy %s.", constraint );
+        super( Status.Schema.ConstraintVerificationFailure, "Existing data does not satisfy %s.", constraint );
         this.constraint = constraint;
         this.evidence = evidence;
     }
 
     public ConstraintVerificationFailedKernelException( UniquenessConstraint constraint, Throwable failure )
     {
-        super( failure, "Failed to verify constraint %s: %s", constraint, failure.getMessage() );
+        super( Status.Schema.ConstraintVerificationFailure, failure, "Failed to verify constraint %s: %s", constraint,
+                failure.getMessage() );
         this.constraint = constraint;
         this.evidence = null;
     }

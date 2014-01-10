@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.lang.String.format;
@@ -31,7 +32,7 @@ public class NoSuchIndexException extends SchemaKernelException
 
     public NoSuchIndexException( IndexDescriptor descriptor )
     {
-        super( format( message, descriptor ) );
+        super( Status.Schema.NoSuchIndex, format( message, descriptor ) );
         this.descriptor = descriptor;
     }
 

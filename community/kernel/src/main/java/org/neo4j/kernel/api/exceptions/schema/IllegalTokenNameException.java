@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 public class IllegalTokenNameException extends SchemaKernelException
 {
     public IllegalTokenNameException( String tokenName )
     {
-        super( String.format( "%s is not a valid token name. Only non-null, non-empty strings are allowed.",
+        super( Status.Schema.IllegalTokenName,
+                String.format( "%s is not a valid token name. Only non-null, non-empty strings are allowed.",
                 tokenName != null ? "'" + tokenName + "'" : "Null" ) );
     }
 }

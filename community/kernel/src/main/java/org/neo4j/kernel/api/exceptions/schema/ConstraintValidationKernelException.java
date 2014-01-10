@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * Constraint validation is the process of finding applicable constraints and verifying that
@@ -34,11 +35,11 @@ public abstract class ConstraintValidationKernelException extends KernelExceptio
 {
     protected ConstraintValidationKernelException( String message, Object... parameters )
     {
-        super( message, parameters );
+        super( Status.Schema.ConstraintViolation, message, parameters );
     }
 
     protected ConstraintValidationKernelException( Throwable cause, String message, Object... parameters )
     {
-        super( cause, message, parameters );
+        super( Status.Schema.ConstraintViolation, cause, message, parameters );
     }
 }

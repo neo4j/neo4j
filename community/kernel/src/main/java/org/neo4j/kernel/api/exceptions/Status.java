@@ -17,28 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional.error;
+package org.neo4j.kernel.api.exceptions;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
-import static org.neo4j.server.rest.transactional.error.Status.Classification.ClientError;
-import static org.neo4j.server.rest.transactional.error.Status.Classification.DatabaseError;
-import static org.neo4j.server.rest.transactional.error.Status.Classification.TransientError;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientError;
 
-/*
- * Put in place as an enum to enforce all error codes remaining collected in one location.
- * Note: These codes will be exposed to the user through our API, although for now they will
- * remain undocumented. There is a discussion to be had about these codes and how we should
- * categorize and pick them.
+/**
+ * This is the codification of all available surface-api status codes. If you are throwing an error to a user through
+ * one of the key APIs, you should opt for using or adding an error code here.
  *
- * The categories below are an initial proposal, we should have a real discussion about this before
- * anything is documented.
+ * Each {@link Status} has an associated category, represented by the inner enums in this class.
+ * Each {@link Status} also has an associated {@link Classification} which defines meta-data about the code, such
+ * as if the error was caused by a user or the database (and later on if the code denotes an error or merely a warning).
+ *
+ * This class is not part of the public Neo4j API, and backwards compatibility for using it as a Java class is not
+ * guaranteed. Instead, the automatically generated documentation derived from this class and available in the Neo4j
+ * manual should be considered a user-level API.
+ *
+ * Currently, only the transactional http endpoint is dedicated to using these status codes.
  */
 public interface Status
 {
+    /*
+     * A note on naming: Since these are public status codes and users will base error handling on them, please take
+     * care to place them in correct categories and assign them correct classifications. Also make sure you are not
+     * introducing duplicates.
+     *
+     * If you are unsure, contact Jake or Tobias before making modifications.
+     */
+
     enum Network implements Status
     {
         // transient
@@ -62,7 +75,7 @@ public interface Status
         // client
         Invalid( ClientError, "The client provided an invalid request." ),
         InvalidFormat( ClientError, "The client provided a request that was missing required fields, or had values " +
-                                    "that are not allowed." );
+                "that are not allowed." );
         private final Code code;
 
         @Override
@@ -79,14 +92,20 @@ public interface Status
 
     enum Transaction implements Status
     {
-        // database
         UnknownId( ClientError, "The request referred to a transaction that does not exist."),
         ConcurrentRequest( ClientError, "There were concurrent requests accessing the same transaction, which is not " +
-                                        "allowed." ),
-        // client
+                "allowed." ),
         CouldNotBegin( DatabaseError,    "The database was unable to start the transaction." ),
         CouldNotRollback( DatabaseError, "The database was unable to roll back the transaction." ),
-        CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." );
+        CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." ),
+
+        InvalidType( ClientError, "The transaction is of the wrong type to service the request. For instance, a " +
+                "transaction that has had schema modifications performed in it cannot be used to subsequently " +
+                "perform data operations, and vice versa." ),
+
+        ReleaseLocksFailed( DatabaseError, "The transaction was unable to release one or more of its locks." ),
+
+        ;
         private final Code code;
 
         @Override
@@ -106,17 +125,19 @@ public interface Status
         // client
         InvalidSyntax( ClientError, "The statement contains invalid or unsupported syntax." ),
         InvalidSemantics( ClientError, "The statement is syntactically valid, but expresses something that the " +
-                                       "database cannot do." ),
+                "database cannot do." ),
         ParameterMissing( ClientError, "The statement is referring to a parameter that was not provided in the " +
-                                       "request." ),
+                "request." ),
         ConstraintViolation( ClientError, "A constraint imposed by the statement is violated by the data in the " +
-                                          "database." ),
+                "database." ),
         EntityNotFound( ClientError,      "The statement is directly referring to an entity that does not exist." ),
+        NoSuchProperty( ClientError, "The statement is referring to a property that does not exist." ),
         InvalidType( ClientError,         "The statement is attempting to perform operations on values with types that " +
-                                          "are not supported by the operation." ),
+                "are not supported by the operation." ),
         ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
         // database
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
+
         ;
         private final Code code;
 
@@ -138,8 +159,35 @@ public interface Status
         ConstraintViolation( ClientError, "A constraint imposed by the database was violated." ),
         NoSuchIndex( ClientError, "The request (directly or indirectly) referred to an index that does not exist." ),
         NoSuchConstraint( ClientError, "The request (directly or indirectly) referred to a constraint that does " +
-                                       "not exist." ),
+                "not exist." ),
+        IndexCreationFailure( DatabaseError, "Failed to create an index."),
+        ConstraintAlreadyExists( ClientError, "Unable to perform operation because it would clash with a pre-existing" +
+                " constraint." ),
+        IndexAlreadyExists( ClientError, "Unable to perform operation because it would clash with a pre-existing " +
+                "index." ),
+        IndexDropFailure( DatabaseError, "The database failed to drop a requested index." ),
+
+        ConstraintVerificationFailure( ClientError, "Unable to create constraint because data that exists in the " +
+        "database violates it." ),
+        ConstraintCreationFailure( DatabaseError, "Creating a requested constraint failed." ),
+        ConstraintDropFailure( DatabaseError, "The database failed to drop a requested constraint." ),
+
+        IllegalTokenName( ClientError, "A token name, such as a label, relationship type or property key, used is " +
+                "not valid. Tokens cannot be empty strings and cannot be null." ),
+
+        IndexBelongsToConstraint(
+            ClientError, "A requested operation can not be performed on the specified index because the index is " +
+            "part of a constraint. If you want to drop the index, for instance, you must drop the constraint." ),
+
+        NoSuchLabel( DatabaseError, "The request accessed a label that did not exist." ),
+        NoSuchPropertyKey( DatabaseError, "The request accessed a property that does not exist." ),
+        NoSuchRelationshipType( DatabaseError, "The request accessed a relationship type that does not exist." ),
+        NoSuchSchemaRule( DatabaseError, "The request referred to a schema rule that does not exist." ),
+
+        LabelLimitReached( ClientError, "The maximum number of labels supported has been reached, no more labels can be created." ),
+
         ;
+
         private final Code code;
 
         @Override
@@ -156,10 +204,15 @@ public interface Status
 
     enum General implements Status
     {
+        ReadOnly( ClientError, "This is a read only database, writing or modifying the database is not allowed." ),
         // database
         FailedIndex( DatabaseError, "The request (directly or indirectly) referred to an index that is in a failed " +
-                                    "state. The index needs to be dropped and recreated manually." ),
-        UnknownFailure( DatabaseError, "An unknown failure occurred." );
+        "state. The index needs to be dropped and recreated manually." ),
+        UnknownFailure( DatabaseError, "An unknown failure occurred." ),
+
+        CorruptSchemaRule( DatabaseError, "A malformed schema rule was encountered. Please contact your support representative." ),
+
+        ;
 
         private final Code code;
 
@@ -226,25 +279,9 @@ public interface Status
             return description;
         }
 
-        public final boolean includeStackTrace()
+        public Classification classification()
         {
-            return classification.includeStackTrace;
-        }
-
-        public static boolean shouldRollBackOn( Collection<Neo4jError> errors )
-        {
-            if ( errors.isEmpty() )
-            {
-                return false;
-            }
-            for ( Neo4jError error : errors )
-            {
-                if ( error.status().code().classification.rollbackTransaction )
-                {
-                    return true;
-                }
-            }
-            return false;
+            return classification;
         }
 
         @Override
@@ -290,35 +327,28 @@ public interface Status
     public enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( StackTraceStrategy.SWALLOW, TransactionEffect.NONE,
-            "The Client sent a bad request - changing the request might yield a successful outcome." ),
+        ClientError( TransactionEffect.NONE,
+                "The Client sent a bad request - changing the request might yield a successful outcome." ),
         /** The database failed to service the request. */
-        DatabaseError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.ROLLBACK,
-            "The database failed to service the request. " ),
+        DatabaseError( TransactionEffect.ROLLBACK,
+                "The database failed to service the request. " ),
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( StackTraceStrategy.SEND_TO_CLIENT, TransactionEffect.NONE,
-            "The database cannot service the request right now, retrying later might yield a successful outcome. " ),;
-
-        private enum StackTraceStrategy
-        {
-            SWALLOW, SEND_TO_CLIENT,
-        }
+        TransientError( TransactionEffect.NONE,
+                "The database cannot service the request right now, retrying later might yield a successful outcome. "),
+        ;
 
         private enum TransactionEffect
         {
             ROLLBACK, NONE,
         }
 
-        final boolean includeStackTrace;
-        final boolean rollbackTransaction; // TODO: make use of this!!!
+        final boolean rollbackTransaction;
 
         private final String description;
 
-        private Classification( StackTraceStrategy stackTraceStrategy, TransactionEffect transactionEffect,
-                                String description )
+        private Classification( TransactionEffect transactionEffect, String description )
         {
             this.description = description;
-            this.includeStackTrace = stackTraceStrategy == StackTraceStrategy.SEND_TO_CLIENT;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
@@ -333,4 +363,3 @@ public interface Status
         }
     }
 }
-
