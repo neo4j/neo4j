@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, Predicate => CommandPredicate}
@@ -40,17 +39,10 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
 
   def toCommand: CommandExpression = expression match {
     case Some(e) =>
-      val legacyAlternatives = alternatives.map {
-        a => (a._1.toCommand, a._2.toCommand)
-      }
+      val legacyAlternatives = alternatives.map { a => (a._1.toCommand, a._2.toCommand) }
       commandexpressions.SimpleCase(e.toCommand, legacyAlternatives, default.map(_.toCommand))
     case None =>
-      val predicateAlternatives = alternatives.map { a =>
-        a._1.toCommand match {
-          case predicate: CommandPredicate => (predicate, a._2.toCommand)
-          case _ => throw new SyntaxException(s"Argument to WHEN is not a predicate (${a._1.token.startPosition})")
-        }
-      }
+      val predicateAlternatives = alternatives.map { a => (a._1.toPredicate, a._2.toCommand) }
       commandexpressions.GenericCase(predicateAlternatives, default.map(_.toCommand))
   }
 }

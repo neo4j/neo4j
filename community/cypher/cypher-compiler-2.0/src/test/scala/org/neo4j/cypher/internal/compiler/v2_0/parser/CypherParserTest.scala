@@ -2756,6 +2756,27 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def genericCaseCoercesInWhen() {
+    test(
+      """
+        |MATCH (a)
+        |RETURN
+        |  CASE
+        |    WHEN (a)-[:LOVES]->() THEN 1
+        |    ELSE 0
+        |  END AS result
+      """.stripMargin,
+      Query.
+        matches(SingleNode("a")).
+        returns(
+          ReturnItem(GenericCase(
+            Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED49"), "  UNNAMED37", Seq("LOVES"), Direction.OUTGOING, Map.empty)))), Literal(1))),
+            Some(Literal(0))
+          ), "result", true)
+        )
+    )
+  }
+
   @Test def shouldGroupCreateAndCreateUpdate() {
     test(
       """START me=node(0) MATCH p1 = me-[*2]-friendOfFriend CREATE p2 = me-[:MARRIED_TO]->(wife {name:"Gunhild"}) CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend RETURN p1,p2,p3""", {
