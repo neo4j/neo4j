@@ -30,7 +30,7 @@ case class CypherParser() extends Parser
   with Statement
   with Expressions {
 
-  def SingleStatement : Rule1[ast.Statement] = rule {
+  val SingleStatement: Rule1[ast.Statement] = rule {
     WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
   }
 
@@ -50,7 +50,7 @@ case class CypherParser() extends Parser
             }
           }
           val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          throw new SyntaxException(s"${message} (${position})", text, error.getStartIndex)
+          throw new SyntaxException(s"$message ($position)", text, error.getStartIndex)
         }
       }
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
