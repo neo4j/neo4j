@@ -40,6 +40,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -407,5 +408,18 @@ public class CacheLayer implements StoreReadLayer
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName )
     {
         return diskLayer.relationshipTypeGetOrCreateForName( relationshipTypeName );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        return persistenceCache.nodeGetRelationships( nodeId, direction );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction,
+                                                        int[] relTypes ) throws EntityNotFoundException
+    {
+        return persistenceCache.nodeGetRelationships( nodeId, direction, relTypes );
     }
 }

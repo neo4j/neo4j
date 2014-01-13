@@ -22,21 +22,21 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Set;
 
 import org.junit.Test;
-
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
@@ -99,5 +99,22 @@ public class CacheLayerTest
         // When & Then
         assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( mockedState(), labelId, propertyId ) ),
                 equalTo( constraints ) );
+    }
+
+    @Test
+    public void shouldLoadRelationshipsFromCache() throws Exception
+    {
+        // GIVEN
+        long nodeId = 3;
+        int[] relTypes = new int[] {1,2};
+        PrimitiveLongIterator rels = IteratorUtil.asPrimitiveIterator(1l,2l,3l);
+        when( persistenceCache.nodeGetRelationships( eq( nodeId ), eq( Direction.BOTH ), eq(relTypes) ) )
+                .thenReturn( rels );
+
+        // WHEN
+        PrimitiveLongIterator recievedRels = context.nodeListRelationships( mockedState(), nodeId, Direction.BOTH, relTypes );
+
+        // THEN
+        assertEquals(rels, recievedRels);
     }
 }

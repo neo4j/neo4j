@@ -156,9 +156,9 @@ public class TestTraversal extends AbstractNeo4jTestCase
         {
             this.assertLevelsOfNodes( traverser, new String[][] {
                     new String[] { "1" },
-                    new String[] { "2", "3", "4" },
-                    new String[] { "5", "6", "7", "8", "9" },
-                    new String[] { "10", "11", "12", "13", "14" }
+                    new String[] { "3", "4", "2" },
+                    new String[] { "7", "8", "9", "6", "5" },
+                    new String[] { "14", "12", "13", "11", "10" }
             } );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
@@ -222,9 +222,9 @@ public class TestTraversal extends AbstractNeo4jTestCase
         {
             this.assertLevelsOfNodes( traverser, new String[][] {
                 new String[] { "1" },
-                new String[] { "2", "3", "4" },
+                new String[] { "4", "2", "3" },
                 new String[] { "5", "6", "7" },
-                new String[] { "10", "11", "12", "13" },
+                new String[] { "11", "10", "13", "12" },
             } );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
@@ -294,13 +294,13 @@ public class TestTraversal extends AbstractNeo4jTestCase
             MyRelTypes.TEST, Direction.OUTGOING );
         try
         {
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "10" );
-            this.assertNextNodeId( traverser, "11" );
-            this.assertNextNodeId( traverser, "12" );
-            this.assertNextNodeId( traverser, "13" );
+            assertNextNodeId( traverser, "2" );
+            assertNextNodeId( traverser, "6" );
+            assertNextNodeId( traverser, "5" );
+            assertNextNodeId( traverser, "11" );
+            assertNextNodeId( traverser, "10" );
+            assertNextNodeId( traverser, "13" );
+            assertNextNodeId( traverser, "12" );
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
         }
@@ -412,11 +412,11 @@ public class TestTraversal extends AbstractNeo4jTestCase
         try
         {
             this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "3" );
             this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "5" );
+            this.assertNextNodeId( traverser, "3" );
+            this.assertNextNodeId( traverser, "2" );
             this.assertNextNodeId( traverser, "6" );
+            this.assertNextNodeId( traverser, "5" );
 
             assertTrue( "Too many nodes returned from traversal", traverser
                 .iterator().hasNext() == false );
@@ -512,20 +512,15 @@ public class TestTraversal extends AbstractNeo4jTestCase
 
         try
         {
-            this.assertNextNodeId( traverser, "1" );
-            this.assertNextNodeId( traverser, "2" );
-            this.assertNextNodeId( traverser, "3" );
-            this.assertNextNodeId( traverser, "4" );
-            this.assertNextNodeId( traverser, "5" );
-            this.assertNextNodeId( traverser, "6" );
-            this.assertNextNodeId( traverser, "7" );
+            assertNextNodeId( traverser, "1" );
+            assertNextNodeId( traverser, "2" );
+            assertNextNodeId( traverser, "3" );
+            assertNextNodeId( traverser, "4" );
+            assertNextNodeId( traverser, "5" );
+            assertNextNodeId( traverser, "6" );
+            assertNextNodeId( traverser, "7" );
 
-            assertTrue( "Too many nodes returned from traversal", traverser
-                .iterator().hasNext() == false );
-        }
-        catch ( java.util.NoSuchElementException nsee )
-        {
-            fail( "Too few nodes returned from traversal" );
+            assertTrue( "Too many nodes returned from traversal", !traverser.iterator().hasNext() );
         }
         finally
         {
@@ -573,7 +568,7 @@ public class TestTraversal extends AbstractNeo4jTestCase
         {
             this.assertLevelsOfNodes( traverser, new String[][] {
                 new String[] { "1" },
-                new String[] { "2", "3", "4" },
+                new String[] { "2", "4", "3" },
                 new String[] { "5" },
             } );
 
@@ -626,11 +621,10 @@ public class TestTraversal extends AbstractNeo4jTestCase
                 new String[] { "1" },
                 new String[] { "2", "3", "4" },
                 new String[] { "5", "6", "7", "8", "9" },
-                new String[] { "10", "11", "12", "13" }
+                new String[] { "11", "10", "13", "12" }
             } );
 
-            assertTrue( "Too many nodes returned from traversal", traverser
-                .iterator().hasNext() == false );
+            assertTrue( "Too many nodes returned from traversal", !traverser.iterator().hasNext() );
         }
         catch ( java.util.NoSuchElementException nsee )
         {

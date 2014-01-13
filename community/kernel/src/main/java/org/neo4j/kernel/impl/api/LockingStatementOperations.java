@@ -197,6 +197,14 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        state.locks().acquireNodeWriteLock( startNodeId );
+        state.locks().acquireNodeWriteLock( endNodeId );
+        return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
+    }
+
+    @Override
     public void relationshipDelete( KernelStatement state, long relationshipId )
     {
         state.locks().acquireRelationshipWriteLock( relationshipId );

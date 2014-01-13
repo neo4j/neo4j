@@ -158,11 +158,6 @@ public class RelIdArray implements SizeOfObject
 
     public RelIdArray addAll( RelIdArray source )
     {
-//        if ( source == null )
-//        {
-//            return this;
-//        }
-
         if ( !accepts( source ) )
         {
             return upgradeIfNeeded( source ).addAll( source );
@@ -242,8 +237,6 @@ public class RelIdArray implements SizeOfObject
     {
         return new RelIdArray( type );
     }
-
-    public static final IdBlock EMPTY_BLOCK = new LowIdBlock();
 
     public static enum DirectionWrapper
     {

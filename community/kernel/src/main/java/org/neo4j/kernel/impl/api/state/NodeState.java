@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public final class NodeState extends PropertyContainerState
 {
     private DiffSets<Integer> labelDiffSets;
+    private RelationshipsAddedToNode relationshipChanges;
 
     public NodeState( long id )
     {
@@ -37,5 +40,37 @@ public final class NodeState extends PropertyContainerState
             labelDiffSets = new DiffSets<>();
         }
         return labelDiffSets;
+    }
+
+    public void addRelationship( long relId, int typeId, Direction direction )
+    {
+        if( !hasRelationshipChanges() )
+        {
+            relationshipChanges = new RelationshipsAddedToNode();
+        }
+        relationshipChanges.addRelationship(relId, typeId, direction);
+    }
+
+    public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels )
+    {
+        if(hasRelationshipChanges())
+        {
+            return relationshipChanges.augmentRelationships( direction, rels );
+        }
+        return rels;
+    }
+
+    public PrimitiveLongIterator augmentRelationships( Direction direction, int[] types, PrimitiveLongIterator rels )
+    {
+        if(hasRelationshipChanges())
+        {
+            return relationshipChanges.augmentRelationships( direction, types, rels );
+        }
+        return rels;
+    }
+
+    private boolean hasRelationshipChanges()
+    {
+        return relationshipChanges != null;
     }
 }

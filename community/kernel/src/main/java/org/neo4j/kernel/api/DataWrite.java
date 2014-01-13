@@ -31,7 +31,7 @@ interface DataWrite
 
     void nodeDelete( long nodeId );
 
-    long relationshipCreate( long relationshipTypeId, long startNodeId, long endNodeId )
+    long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 
     void relationshipDelete( long relationshipId );

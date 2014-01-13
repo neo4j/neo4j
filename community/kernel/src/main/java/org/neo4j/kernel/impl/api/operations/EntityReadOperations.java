@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -108,4 +109,8 @@ public interface EntityReadOperations
     PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state );
 
     Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state );
+
+    PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int[] relTypes ) throws EntityNotFoundException;
+
+    PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
 }

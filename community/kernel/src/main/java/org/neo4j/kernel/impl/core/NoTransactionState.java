@@ -60,14 +60,14 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void setFirstIds( long nodeId, long firstRel, long firstProp )
-    {
-    }
-
-    @Override
     public ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         return null;
+    }
+
+    @Override
+    public void setFirstIds( long nodeId, long firstRel, long firstProp )
+    {
     }
 
     @Override
@@ -89,12 +89,6 @@ public class NoTransactionState implements TransactionState
     @Override
     public void rollback()
     {
-    }
-
-    @Override
-    public boolean hasLocks()
-    {
-        return false;
     }
 
     @Override

@@ -21,11 +21,20 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.hamcrest.Matcher;
+import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.core.AllOf.allOf;
@@ -35,8 +44,11 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
-public class EntityIT extends KernelIntegrationTest
+public class RelationshipIT extends KernelIntegrationTest
 {
+    @Rule
+    public OtherThreadRule<Object> otherThread = new OtherThreadRule<>( 10, TimeUnit.SECONDS );
+
     @Test
     public void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception
     {
@@ -98,6 +110,108 @@ public class EntityIT extends KernelIntegrationTest
             assertRels( statement.relationshipsGetFromNode( refNode, OUTGOING, new int[]{relType1, relType2} ),
                     fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef);
         }
+    }
+
+    @Test
+    public void shouldInterleaveModifiedRelationshipsWithExistingOnes() throws Exception
+    {
+        // given
+        long refNode, fromRefToOther1, fromRefToOther2;
+        int relType1, relType2;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
+            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
+
+            refNode = statement.nodeCreate();
+            long otherNode = statement.nodeCreate();
+            fromRefToOther1 = statement.relationshipCreate( relType1, refNode, otherNode );
+            fromRefToOther2 = statement.relationshipCreate( relType2, refNode, otherNode );
+            commit();
+        }
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            // When
+            statement.relationshipDelete( fromRefToOther1 );
+            long localTxRel = statement.relationshipCreate( relType1, refNode, statement.nodeCreate() );
+
+            // Then
+            assertRels( statement.relationshipsGetFromNode( refNode, BOTH ), fromRefToOther2, localTxRel);
+            assertRelsInSeparateTx( refNode, BOTH, fromRefToOther1, fromRefToOther2);
+        }
+    }
+
+    @Test
+    public void shouldAllowIteratingAndDeletingRelsAtTheSameTime() throws Exception
+    {
+        // given
+        long refNode, fromRefToOther1, fromRefToOther2;
+        int relType1, relType2;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
+            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
+
+            refNode = statement.nodeCreate();
+            long otherNode = statement.nodeCreate();
+            fromRefToOther1 = statement.relationshipCreate( relType1, refNode, otherNode );
+            fromRefToOther2 = statement.relationshipCreate( relType2, refNode, otherNode );
+            commit();
+        }
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            // When
+            statement.relationshipDelete( fromRefToOther1 );
+            long localTxRel = statement.relationshipCreate( relType1, refNode, statement.nodeCreate() );
+
+            // Then
+            assertRels( statement.relationshipsGetFromNode( refNode, BOTH ), fromRefToOther2, localTxRel);
+            assertRelsInSeparateTx( refNode, BOTH, fromRefToOther1, fromRefToOther2);
+        }
+    }
+
+    @Test
+    public void shouldReturnRelsWhenAskingForRelsWhereOnlySomeTypesExistInCurrentRel() throws Exception
+    {
+        // given
+        long refNode, theRel;
+        int relType1, relType2;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            relType1 = statement.relationshipTypeGetOrCreateForName( "Type1" );
+            relType2 = statement.relationshipTypeGetOrCreateForName( "Type2" );
+
+            refNode = statement.nodeCreate();
+            long otherNode = statement.nodeCreate();
+            theRel = statement.relationshipCreate( relType1, refNode, otherNode );
+
+            assertRels( statement.relationshipsGetFromNode( refNode, Direction.OUTGOING, relType2, relType1 ), theRel );
+
+            commit();
+        }
+    }
+
+    private void assertRelsInSeparateTx( final long refNode, final Direction both, final long ... longs ) throws
+            InterruptedException, ExecutionException, TimeoutException
+    {
+        assertTrue( otherThread.execute( new OtherThreadExecutor.WorkerCommand<Object, Boolean>()
+        {
+            @Override
+            public Boolean doWork( Object state ) throws Exception
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    ReadOperations stmt = statementContextProvider.instance().readOperations();
+                    assertRels( stmt.relationshipsGetFromNode( refNode, both ), longs );
+                }
+                return true;
+            }
+        } ).get( 10, TimeUnit.SECONDS ) );
     }
 
     private void assertRels( PrimitiveLongIterator it, long ... rels )

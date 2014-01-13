@@ -56,7 +56,6 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -71,25 +70,28 @@ public class NodeProxy implements Node
 {
     public interface NodeLookup
     {
-        NodeImpl lookup( long nodeId );
-
+        // This interface is the last remnant of the direct connection between the Core API NodeProxy and NodeImpl
+        // It used to contain lookup mechanisms for nodes, but now only serves as a confusing dependency mechanism for
+        // accessing the underlying GDB and Node Manager. This interface should preferrably go away when we have time to
+        // dig through the usages of these methods.
         GraphDatabaseService getGraphDatabase();
 
         NodeManager getNodeManager();
 
-        NodeImpl lookup( long nodeId, LockType lock );
     }
 
     private final NodeLookup nodeLookup;
+    private final RelationshipProxy.RelationshipLookups relLookup;
     private final ThreadToStatementContextBridge statementContextProvider;
     private final CleanupService cleanupService;
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeLookup nodeLookup, ThreadToStatementContextBridge statementContextProvider,
-               CleanupService cleanupService )
+    NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
+               ThreadToStatementContextBridge statementContextProvider, CleanupService cleanupService )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
+        this.relLookup = relLookup;
         this.statementContextProvider = statementContextProvider;
         this.cleanupService = cleanupService;
     }
@@ -133,7 +135,15 @@ public class NodeProxy implements Node
     public ResourceIterable<Relationship> getRelationships( Direction dir )
     {
         Statement statement = statementContextProvider.instance();
-        return map2rels( statement, statement.readOperations().relationshipsGetFromNode( nodeId, dir ) );
+        try
+        {
+            return map2rels( statement, statement.readOperations().relationshipsGetFromNode( nodeId, dir ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            statement.close();
+            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+        }
     }
 
     @Override
@@ -152,8 +162,16 @@ public class NodeProxy implements Node
     public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType ... types )
     {
         Statement statement = statementContextProvider.instance();
-        return map2rels( statement, statement.readOperations().relationshipsGetFromNode( nodeId, direction,
-                relTypeIds( types, statement ) ) );
+        try
+        {
+            return map2rels( statement, statement.readOperations().relationshipsGetFromNode( nodeId, direction,
+                    relTypeIds( types, statement ) ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            statement.close();
+            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+        }
     }
 
     @Override
@@ -193,8 +211,7 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public Relationship getSingleRelationship( RelationshipType type,
-                                               Direction dir )
+    public Relationship getSingleRelationship( RelationshipType type, Direction dir )
     {
         try(ResourceIterator<Relationship> rels = getRelationships(dir, type).iterator())
         {
@@ -431,7 +448,7 @@ public class NodeProxy implements Node
         //}
         try ( Statement statement = statementContextProvider.instance() )
         {
-            long relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
+            int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             return nodeLookup.getNodeManager().newRelationshipProxyById(
                     statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
         }
@@ -615,7 +632,7 @@ public class NodeProxy implements Node
             @Override
             public Relationship apply( long id )
             {
-                return nodeLookup.getGraphDatabase().getRelationshipById( id );
+                return new RelationshipProxy( id, relLookup, statementContextProvider );
             }
         }, input ), statement ) );
     }
