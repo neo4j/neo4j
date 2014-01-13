@@ -57,7 +57,7 @@ public class Profile extends Start
 
         if ( isComplete( query ) )
         {
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
+            ExecutionEngine engine =  getEngine();
             try
             {
                 ExecutionResult result = engine.profile( query, getParameters( session ) );

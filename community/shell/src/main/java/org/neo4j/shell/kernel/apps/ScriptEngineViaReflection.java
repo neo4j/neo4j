@@ -77,12 +77,13 @@ public class ScriptEngineViaReflection
     }
 
     public void addDefaultContext( Object scriptEngine, Session session, Output out )
-            throws Exception, ShellException
+            throws Exception
     {
-        addToContext( scriptEngine,
+        NodeOrRelationship current = getCurrent(server, session);
+        addToContext(scriptEngine,
                 "db", server.getDb(),
                 "out", out,
-                "current", session.getCurrent() == null ? null : getCurrent( server, session ).asPropertyContainer() );
+                "current", session.getCurrent() == null || current == null ? null : current.asPropertyContainer());
     }
     
     public Object compile( Object scriptEngine, String code ) throws Exception

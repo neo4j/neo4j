@@ -29,15 +29,10 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.shell.App;
-import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Continuation;
-import org.neo4j.shell.Output;
-import org.neo4j.shell.OutputAsWriter;
-import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
+import org.neo4j.shell.*;
 import org.neo4j.shell.kernel.apps.NodeOrRelationship;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 
@@ -68,7 +63,7 @@ public class Start extends TransactionProvidingApp
             try
             {
                 final long startTime = System.currentTimeMillis();
-                ExecutionResult result = getEngine().execute( trimQuery( query ), getParameters( session ) );
+                ExecutionResult result = executeQuery(query, getParameters(session));
                 handleResult( out, result, startTime, session, parser );
             }
             catch ( CypherException e )
@@ -83,19 +78,23 @@ public class Start extends TransactionProvidingApp
         }
     }
 
-    protected String trimQuery( String query )
-    {
-        return query.substring( 0, query.lastIndexOf( ";" ) );
+    protected ExecutionResult executeQuery(String query, Map<String, Object> parameters) throws ShellException {
+        return getEngine().execute( query , parameters);
     }
 
     protected void handleResult( Output out, ExecutionResult result, long startTime, Session session,
             AppCommandParser parser ) throws RemoteException, ShellException
     {
-        printResult( out, result, startTime );
+        boolean silent = session.get(Variables.SILENT_KEY) != null;
+        printResult( out, result, startTime,  silent);
     }
 
-    private void printResult( Output out, ExecutionResult result, long startTime ) throws RemoteException
+    private void printResult(Output out, ExecutionResult result, long startTime, boolean silent) throws RemoteException
     {
+        if ( silent ) {
+            IteratorUtil.count(result);
+            return;
+        }
         result.toString( new PrintWriter( new OutputAsWriter( out ) ) );
         out.println( (now() - startTime) + " ms" );
     }
@@ -112,7 +111,8 @@ public class Start extends TransactionProvidingApp
         try
         {
             NodeOrRelationship self = getCurrent( session );
-            session.set( "self", self.isNode() ? self.asNode() : self.asRelationship() );
+            if (self != null)
+                session.set( "self", self.isNode() ? self.asNode() : self.asRelationship() );
         }
         catch ( ShellException e )
         { // OK, current didn't exist

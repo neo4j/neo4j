@@ -31,6 +31,7 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.TabCompletion;
 import org.neo4j.shell.Welcome;
+import org.neo4j.shell.Variables;
 
 /**
  * A common implementation of a {@link ShellServer}.
@@ -106,7 +107,7 @@ public abstract class SimpleAppServer implements ShellServer
 
     private boolean noWelcome( Map<String, Serializable> initialSession )
     {
-        final Serializable quiet = initialSession.get( "quiet" );
+        final Serializable quiet = initialSession.get(Variables.QUIET_KEY );
         if ( quiet == null )
         {
             return false;

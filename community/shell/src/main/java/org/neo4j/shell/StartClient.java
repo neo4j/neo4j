@@ -80,6 +80,11 @@ public class StartClient
     public static final String ARG_PID = "pid";
 
     /**
+     * If cypher (import) statements run by the shell shouldn't generate any result output
+     */
+    public static final String ARG_SILENT = "silent";
+
+    /**
      * Commands (a line can contain more than one command, with && in between)
      * to execute when the shell client has been connected.
      */
@@ -310,7 +315,7 @@ public class StartClient
 
     private static boolean isCommandLine( Args args )
     {
-        return args.get( ARG_COMMAND, null ) != null ||
+        return args.get( ARG_COMMAND, null ) != null || args.get( ARG_FILE_STDIN, null ) != null ||
                args.get( ARG_FILE, null ) != null;
     }
 
@@ -392,9 +397,14 @@ public class StartClient
                 session.put( key, entry.getValue() );
             }
         }
+        if ( args.get(ARG_SILENT,null,"true") != null ) {
+            session.put( Variables.SILENT_KEY, "true");
+            session.put( Variables.QUIET_KEY, "true");
+        }
         if ( isCommandLine( args ) )
         {
-            session.put( "quiet", true );
+            session.put( Variables.PROMPT_KEY, "" );
+            session.put( Variables.QUIET_KEY, true );
         }
         return session;
     }
@@ -465,7 +475,7 @@ public class StartClient
                         padArg( ARG_COMMAND, longestArgLength ) + "Command line to execute. After executing it the " +
                         "shell exits\n" +
                         padArg( ARG_FILE, longestArgLength ) + "File containing commands to execute, or '-' to read " +
-                        "from stdin. After executing it the shell exits\n" +
+                        "from stdin. After executing it the shell exits. Use -silent to suppress Cypher result output.\n" +
                         padArg( ARG_READONLY, longestArgLength ) + "Connect in readonly mode (only for connecting " +
                         "with -" + ARG_PATH + ")\n" +
                         padArg( ARG_PATH, longestArgLength ) + "Points to a neo4j db path so that a local server can " +

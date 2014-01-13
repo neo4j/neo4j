@@ -98,18 +98,16 @@ public abstract class TransactionProvidingApp extends AbstractApp
         GraphDatabaseShellServer server, Session session ) throws ShellException
     {
         String currentThing = session.getCurrent();
-        NodeOrRelationship result;
         /*                           Note: Artifact of removing the ref node, revisit and clean up */
         if ( currentThing == null || currentThing.equals( "(?)" )  )
         {
-            throw new ShellException( "Not currently standing on any entity." );
+            return null;
         }
         else
         {
             TypedId typedId = new TypedId( currentThing );
-            result = getThingById( server, typedId );
+            return getThingById( server, typedId );
         }
-        return result;
     }
 
     protected NodeOrRelationship getCurrent( Session session )
@@ -329,7 +327,8 @@ public abstract class TransactionProvidingApp extends AbstractApp
         List<TypedId> wd = readCurrentWorkingDir( session );
         try
         {
-            wd.add( getCurrent( session ).getTypedId() );
+            NodeOrRelationship current = getCurrent(session);
+            if (current != null) wd.add(current.getTypedId());
         }
         catch ( ShellException e )
         {   // OK not found then
@@ -343,6 +342,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
             throws ShellException
     {
         NodeOrRelationship current = getCurrent( server, session );
+        if (current == null) return "(?)";
         return current.isNode() ? "(me)" : "<me>";
     }
 
@@ -361,6 +361,8 @@ public abstract class TransactionProvidingApp extends AbstractApp
         Session session, NodeOrRelationship thing, boolean checkForMe )
         throws ShellException
     {
+        if (thing == null) return getDisplayNameForNonExistent();
+
         if ( thing.isNode() )
         {
             return getDisplayName( server, session, thing.asNode(),

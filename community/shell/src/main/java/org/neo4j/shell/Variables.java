@@ -35,6 +35,16 @@ public class Variables
      * The session key for the prompt key, just like in Bash.
      */
     public static final String PROMPT_KEY = "PS1";
+
+    /**
+     * No Welcome message if set.
+     */
+    public static final String QUIET_KEY = "quiet";
+
+    /**
+     * No Welcome message if set.
+     */
+    public static final String SILENT_KEY = "silent";
     /**
      * The session key for whether or not to print stack traces for exceptions.
      */
