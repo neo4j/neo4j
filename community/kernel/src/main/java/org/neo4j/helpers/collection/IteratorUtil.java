@@ -1264,4 +1264,26 @@ public abstract class IteratorUtil
             }
         };
     }
+
+
+
+    public static PrimitiveLongIterator primitiveLongIterator(final long ... values)
+    {
+        return new PrimitiveLongIterator()
+        {
+            private int cursor = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return cursor < values.length;
+            }
+
+            @Override
+            public long next()
+            {
+                return values[cursor++];
+            }
+        };
+    }
 }

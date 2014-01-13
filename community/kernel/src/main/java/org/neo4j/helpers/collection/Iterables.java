@@ -192,6 +192,15 @@ public final class Iterables
         return collection;
     }
 
+    private static List<Long> addAll( ArrayList<Long> collection, PrimitiveLongIterator iterator )
+    {
+        while(iterator.hasNext())
+        {
+            collection.add( iterator.next() );
+        }
+        return collection;
+    }
+
     public static long count( Iterable<?> iterable )
     {
         long c = 0;
@@ -591,6 +600,11 @@ public final class Iterables
         return addAll( new ArrayList<T>(), iterable );
     }
 
+    public static List<Long> toList( PrimitiveLongIterator iterator )
+    {
+        return addAll( new ArrayList<Long>(), iterator );
+    }
+
     public static Object[] toArray( Iterable<Object> iterable )
     {
         return toArray( Object.class, iterable );
@@ -616,6 +630,18 @@ public final class Iterables
             public ResourceIterator<T> iterator()
             {
                 return asResourceIterator( labels.iterator() );
+            }
+        };
+    }
+
+    public static <T> ResourceIterable<T> asResourceIterable( final ResourceIterator<T> it )
+    {
+        return new ResourceIterable<T>()
+        {
+            @Override
+            public ResourceIterator<T> iterator()
+            {
+                return it;
             }
         };
     }

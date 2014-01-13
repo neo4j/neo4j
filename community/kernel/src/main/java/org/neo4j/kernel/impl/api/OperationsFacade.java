@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -166,6 +167,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
         return dataRead().nodeGetProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction, int[] relTypes )
+    {
+        statement.assertOpen();
+        return legacyKernelOperations.relationshipsGetFromNode( statement, nodeId, direction, relTypes );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction )
+    {
+        statement.assertOpen();
+        return legacyKernelOperations.relationshipsGetFromNode( statement, nodeId, direction );
     }
 
     @Override

@@ -658,14 +658,14 @@ public abstract class InternalAbstractGraphDatabase
             return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                     createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
-                    statementContextProvider );
+                    statementContextProvider, cleanupService );
         }
 
         return new NodeManager(
                 logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                 createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
-                statementContextProvider );
+                statementContextProvider, cleanupService );
     }
 
     private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
@@ -675,7 +675,8 @@ public abstract class InternalAbstractGraphDatabase
         {
             return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
+                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider,
+                    cleanupService )
             {
                 @Override
                 public Node getNodeByIdOrNull( final long nodeId )
@@ -724,7 +725,7 @@ public abstract class InternalAbstractGraphDatabase
 
         return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
+                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider, cleanupService )
         {
             @Override
             public Node getNodeByIdOrNull( final long nodeId )
