@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.Math.max;
+
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
@@ -230,7 +231,9 @@ public class XaLogicalLog implements LogLoader
                 logVersionChanged = true;
             }
             if ( logVersionChanged )
+            {
                 xaTf.setVersion( logVersion );
+            }
 
             long lastTxId = xaTf.getLastCommittedTx();
             LogIoUtils.writeLogHeader( sharedBuffer, logVersion, lastTxId );
@@ -469,8 +472,9 @@ public class XaLogicalLog implements LogLoader
         // re-create the transaction
         Xid xid = entry.getXid();
         xidIdentMap.put( identifier, entry );
-        XaTransaction xaTx = xaTf.create( identifier, entry.getLastCommittedTxWhenTransactionStarted(),
+        XaTransaction xaTx = xaTf.create( entry.getLastCommittedTxWhenTransactionStarted(),
                 stateFactory.create( null ) );
+        xaTx.setIdentifier( identifier );
         xaTx.setRecovered();
         recoveredTxMap.put( identifier, xaTx );
         xaRm.injectStart( xid, xaTx );
@@ -1531,7 +1535,7 @@ public class XaLogicalLog implements LogLoader
     @Override
     public File getFileName( long version )
     {
-        return new File( fileName.getPath() + ".v" + version);
+        return getHistoryFileName( fileName, version );
     }
 
     public File getBaseFileName()
@@ -1549,6 +1553,11 @@ public class XaLogicalLog implements LogLoader
         return Pattern.compile( baseFileName + "\\.v\\d+" );
     }
 
+    public static File getHistoryFileName( File baseFile, long version )
+    {
+        return new File( baseFile.getPath() + ".v" + version );
+    }
+    
     public static long getHistoryLogVersion( File historyLogFile )
     {   // Get version based on the name
         String name = historyLogFile.getName();

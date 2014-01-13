@@ -163,9 +163,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     {
         private final java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
 
-        public DummyTransaction( int identifier, XaLogicalLog log, TransactionState state )
+        public DummyTransaction( XaLogicalLog log, TransactionState state )
         {
-            super( identifier, log, state );
+            super( log, state );
             setCommitTxId( 0 );
         }
 
@@ -174,11 +174,6 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             commandList.add( command );
         }
-
-//        public XaCommand[] getCommands()
-//        {
-//            return commandList.toArray( new XaCommand[commandList.size()] );
-//        }
 
         @Override
         public void doPrepare()
@@ -206,9 +201,9 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private static class DummyTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state )
+        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state )
         {
-            return new DummyTransaction( identifier, getLogicalLog(), state );
+            return new DummyTransaction( getLogicalLog(), state );
         }
 
         @Override
@@ -360,7 +355,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             return xaResource;
         }
-
+        
         public void doStuff1() throws XAException
         {
             validate();

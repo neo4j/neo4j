@@ -30,6 +30,7 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -100,7 +101,7 @@ public class LuceneLabelScanStoreChaosIT
         return new RestartAction()
         {
             @Override
-            public void run( File storeDirectory )
+            public void run( FileSystemAbstraction fs, File storeDirectory )
             {
                 try
                 {
@@ -125,7 +126,7 @@ public class LuceneLabelScanStoreChaosIT
         return new RestartAction()
         {
             @Override
-            public void run( File storeDirectory )
+            public void run( FileSystemAbstraction fs, File storeDirectory )
             {
                 try
                 {

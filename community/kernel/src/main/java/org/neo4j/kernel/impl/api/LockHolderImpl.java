@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.Direction;
@@ -184,7 +185,6 @@ public class LockHolderImpl implements LockHolder
         }
     }
 
-
     @Override
     public void releaseLocks() throws ReleaseLocksFailedKernelException
     {
@@ -212,6 +212,7 @@ public class LockHolderImpl implements LockHolder
             throw new ReleaseLocksFailedKernelException( "Unable to release locks: " + releaseFailures + ".",
                     releaseException );
         }
+        locks.clear();
     }
 
     private final class LockReleaseCallback

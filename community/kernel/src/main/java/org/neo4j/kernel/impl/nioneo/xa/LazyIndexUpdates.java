@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command.Mode;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
-import org.neo4j.kernel.impl.nioneo.xa.WriteTransaction.LabelChangeSummary;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.LabelChangeSummary;
 
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
@@ -188,7 +188,7 @@ class LazyIndexUpdates implements IndexUpdates
     private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        WriteTransaction.loadProperties( propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver );
+        NeoStoreTransaction.loadProperties( propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver );
         return receiver;
     }
 }

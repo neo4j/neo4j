@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 /**
- * Validates data integrity during the prepare phase of {@link WriteTransaction}.
+ * Validates data integrity during the prepare phase of {@link NeoStoreTransaction}.
  */
 public class IntegrityValidator
 {

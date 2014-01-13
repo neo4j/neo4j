@@ -399,9 +399,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
     private class LuceneTransactionFactory extends XaTransactionFactory
     {
         @Override
-        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
+        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
-            return createTransaction( identifier, this.getLogicalLog(), state );
+            return createTransaction( this.getLogicalLog(), state );
         }
 
         @Override
@@ -641,9 +641,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return searcher;
     }
 
-    XaTransaction createTransaction( int identifier, XaLogicalLog logicalLog, TransactionState state )
+    XaTransaction createTransaction( XaLogicalLog logicalLog, TransactionState state )
     {
-        return new LuceneTransaction( identifier, logicalLog, state, this );
+        return new LuceneTransaction( logicalLog, state, this );
     }
 
     void invalidateIndexSearcher( IndexIdentifier identifier )

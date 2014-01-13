@@ -37,7 +37,7 @@ public abstract class XaTransactionFactory
      * @param state the transaction state for this transaction.
      * @return A new xa transaction
      */
-    public abstract XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted,
+    public abstract XaTransaction create( long lastCommittedTxWhenTransactionStarted,
                                           TransactionState state );
 
     public abstract void flushAll();

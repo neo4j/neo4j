@@ -19,12 +19,6 @@
  */
 package org.neo4j.test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,7 +34,6 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
@@ -48,6 +41,18 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -67,16 +72,17 @@ public class LogTestUtils
     {
         @Override
         public void file( File file )
-        {
+        {   // Do nothing
         }
 
         @Override
         public void done( File file )
-        {
+        {   // Do nothing
         }
     }
 
-    public static final LogHook<Pair<Byte, List<byte[]>>> EVERYTHING_BUT_DONE_RECORDS = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
+    public static final LogHook<Pair<Byte, List<byte[]>>> EVERYTHING_BUT_DONE_RECORDS =
+            new LogHookAdapter<Pair<Byte,List<byte[]>>>()
     {
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
@@ -96,7 +102,7 @@ public class LogTestUtils
     
     public static final LogHook<Pair<Byte, List<byte[]>>> PRINT_DANGLING = new LogHook<Pair<Byte,List<byte[]>>>()
     {
-        private final Map<ByteArray,List<Xid>> xids = new HashMap<ByteArray,List<Xid>>();
+        private final Map<ByteArray,List<Xid>> xids = new HashMap<>();
         
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
@@ -107,7 +113,7 @@ public class LogTestUtils
                 List<Xid> list = xids.get( key );
                 if ( list == null )
                 {
-                    list = new ArrayList<Xid>();
+                    list = new ArrayList<>();
                     xids.put( key, list );
                 }
                 Xid xid = new XidImpl( item.other().get( 0 ), item.other().get( 1 ) );
@@ -117,7 +123,9 @@ public class LogTestUtils
             {
                 List<Xid> removed = xids.remove( new ByteArray( item.other().get( 0 ) ) );
                 if ( removed == null )
+                {
                     throw new IllegalArgumentException( "Not found" );
+                }
             }
             return true;
         }
@@ -133,7 +141,9 @@ public class LogTestUtils
         public void done( File file )
         {
             for ( List<Xid> xid : xids.values() )
+            {
                 System.out.println( "dangling " + xid );
+            }
         }
     };
     
@@ -144,38 +154,12 @@ public class LogTestUtils
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
         {
-            System.out.println( stringify( item.first() ) + ": " + stringify( item.other() ) );
+            System.out.println( stringifyTxLogType( item.first().byteValue() ) + ": " +
+                    stringifyTxLogBody( item.other() ) );
             recordCount++;
             return true;
         }
         
-        private String stringify( List<byte[]> list )
-        {
-            if ( list.size() == 2 )
-                return new XidImpl( list.get( 0 ), list.get( 1 ) ).toString();
-            else if ( list.size() == 1 )
-                return stripFromBranch( new XidImpl( list.get( 0 ), new byte[0] ).toString() );
-            throw new RuntimeException( list.toString() );
-        }
-
-        private String stripFromBranch( String xidToString )
-        {
-            int index = xidToString.lastIndexOf( ", BranchId" );
-            return xidToString.substring( 0, index );
-        }
-
-        private String stringify( Byte recordType )
-        {
-            switch ( recordType.byteValue() )
-            {
-            case TxLog.TX_START: return "TX_START";
-            case TxLog.BRANCH_ADD: return "BRANCH_ADD";
-            case TxLog.MARK_COMMIT: return "MARK_COMMIT";
-            case TxLog.TX_DONE: return "TX_DONE";
-            default: return "Unknown " + recordType;
-            }
-        }
-
         @Override
         public void file( File file )
         {
@@ -189,6 +173,37 @@ public class LogTestUtils
             System.out.println( "===> Read " + recordCount + " records from " + file );
         }
     };
+    
+    private static String stringifyTxLogType( byte recordType )
+    {
+        switch ( recordType )
+        {
+        case TxLog.TX_START: return "TX_START";
+        case TxLog.BRANCH_ADD: return "BRANCH_ADD";
+        case TxLog.MARK_COMMIT: return "MARK_COMMIT";
+        case TxLog.TX_DONE: return "TX_DONE";
+        default: return "Unknown " + recordType;
+        }
+    }
+    
+    private static String stringifyTxLogBody( List<byte[]> list )
+    {
+        if ( list.size() == 2 )
+        {
+            return new XidImpl( list.get( 0 ), list.get( 1 ) ).toString();
+        }
+        else if ( list.size() == 1 )
+        {
+            return stripFromBranch( new XidImpl( list.get( 0 ), new byte[0] ).toString() );
+        }
+        throw new RuntimeException( list.toString() );
+    }
+    
+    private static String stripFromBranch( String xidToString )
+    {
+        int index = xidToString.lastIndexOf( ", BranchId" );
+        return xidToString.substring( 0, index );
+    }
     
     private static class ByteArray
     {
@@ -212,6 +227,23 @@ public class LogTestUtils
         }
     }
     
+    public static class CountingLogHook<RECORD> extends LogHookAdapter<RECORD>
+    {
+        private int count;
+
+        @Override
+        public boolean accept( RECORD item )
+        {
+            count++;
+            return true;
+        }
+        
+        public int getCount()
+        {
+            return count;
+        }
+    }
+    
     public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
             LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
     {
@@ -221,8 +253,10 @@ public class LogTestUtils
     public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
             LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
     {
-        for ( File file : oneOrTwo( new File( storeDir, "tm_tx_log" ) ) )
+        for ( File file : oneOrTwo( fileSystem, new File( storeDir, "tm_tx_log" ) ) )
+        {
             filterTxLog( fileSystem, file, filter, startPosition );
+        }
     }
     
     public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
@@ -250,19 +284,36 @@ public class LogTestUtils
             {
                 byte type = buffer.get();
                 List<byte[]> xids = null;
-                if ( type == TxLog.TX_START ) xids = readXids( buffer, 1 );
-                else if ( type == TxLog.BRANCH_ADD ) xids = readXids( buffer, 2 );
-                else if ( type == TxLog.MARK_COMMIT ) xids = readXids( buffer, 1 );
-                else if ( type == TxLog.TX_DONE ) xids = readXids( buffer, 1 );
-                else throw new IllegalArgumentException( "Unknown type:" + type + ", position:" + (in.position()-buffer.remaining()) );
-                
+                if ( type == TxLog.TX_START )
+                {
+                    xids = readXids( buffer, 1 );
+                }
+                else if ( type == TxLog.BRANCH_ADD )
+                {
+                    xids = readXids( buffer, 2 );
+                }
+                else if ( type == TxLog.MARK_COMMIT )
+                {
+                    xids = readXids( buffer, 1 );
+                }
+                else if ( type == TxLog.TX_DONE )
+                {
+                    xids = readXids( buffer, 1 );
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unknown type:" + type + ", position:" +
+                            (in.position()-buffer.remaining()) );
+                }
                 if ( filter.accept( Pair.of( type, xids ) ) )
                 {
                     outBuffer.put( type );
                     writeXids( xids, outBuffer );
                 }
                 else
+                {
                     changed = true;
+                }
             }
         }
         finally
@@ -274,24 +325,27 @@ public class LogTestUtils
         }
         
         if ( changed )
+        {
             replace( tempFile, file );
+        }
         else
+        {
             tempFile.delete();
+        }
     }
 
     public static void assertLogContains( FileSystemAbstraction fileSystem, String logPath,
             LogEntry ... expectedEntries ) throws IOException
     {
-        FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
-
-        try {
+        try ( FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" ) )
+        {
             // Always a header
             LogIoUtils.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            List<LogEntry> entries = new ArrayList<LogEntry>(  );
+            List<LogEntry> entries = new ArrayList<>(  );
             CommandFactory cmdFactory = new CommandFactory();
             LogEntry entry;
             while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
@@ -315,8 +369,6 @@ public class LogTestUtils
 
             // And assert log does not contain more entries
             assertThat( "The log contained more entries than we expected!", entries.size(), is( expectedEntries.length ) );
-        } finally {
-            fileChannel.close();
         }
     }
 
@@ -330,14 +382,30 @@ public class LogTestUtils
     public static File[] filterNeostoreLogicalLog( FileSystemAbstraction fileSystem,
             String storeDir, LogHook<LogEntry> filter ) throws IOException
     {
-        File[] logFiles = oneOrTwo( new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ) );
-        for ( File file : logFiles )
+        List<File> files = new ArrayList<>( asList(
+                oneOrTwo( fileSystem, new File( storeDir, LOGICAL_LOG_DEFAULT_NAME ) ) ) );
+        gatherHistoricalLogicalLogFiles( fileSystem, storeDir, files );
+        for ( File file : files )
         {
             File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );
             replace( filteredLog, file );
         }
 
-        return logFiles;
+        return files.toArray( new File[files.size()] );
+    }
+
+    private static void gatherHistoricalLogicalLogFiles( FileSystemAbstraction fileSystem, String storeDir,
+            List<File> files )
+    {
+        long highestVersion = getHighestHistoryLogVersion( fileSystem, new File( storeDir ), LOGICAL_LOG_DEFAULT_NAME );
+        for ( long version = 0; version <= highestVersion; version++ )
+        {
+            File versionFile = getHistoryFileName( new File( storeDir, LOGICAL_LOG_DEFAULT_NAME ), version );
+            if ( fileSystem.fileExists( versionFile ) )
+            {
+                files.add( versionFile );
+            }
+        }
     }
 
     public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file, LogHook<LogEntry> filter )
@@ -345,13 +413,12 @@ public class LogTestUtils
     {
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
-        FileChannel in = fileSystem.open( file, "r" );;
+        FileChannel in = fileSystem.open( file, "r" );
         FileChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
         CommandFactory cf = new CommandFactory();
-        boolean changed = false;
         try
         {
             LogEntry entry = null;
@@ -359,7 +426,6 @@ public class LogTestUtils
             {
                 if ( !filter.accept( entry ) )
                 {
-                    changed = true;
                     continue;
                 }
                 writeLogEntry( entry, outBuffer );
@@ -390,7 +456,10 @@ public class LogTestUtils
     {
         try
         {
-            if ( channel != null ) channel.close();
+            if ( channel != null )
+            {
+                channel.close();
+            }
         }
         catch ( IOException e )
         {   // OK
@@ -399,16 +468,28 @@ public class LogTestUtils
 
     private static void writeXids( List<byte[]> xids, LogBuffer outBuffer ) throws IOException
     {
-        for ( byte[] xid : xids ) outBuffer.put( (byte)xid.length );
-        for ( byte[] xid : xids ) outBuffer.put( xid );
+        for ( byte[] xid : xids )
+        {
+            outBuffer.put( (byte)xid.length );
+        }
+        for ( byte[] xid : xids )
+        {
+            outBuffer.put( xid );
+        }
     }
 
     private static List<byte[]> readXids( ByteBuffer buffer, int count )
     {
         byte[] counts = new byte[count];
-        for ( int i = 0; i < count; i++ ) counts[i] = buffer.get();
-        List<byte[]> xids = new ArrayList<byte[]>();
-        for ( int i = 0; i < count; i++ ) xids.add( readXid( buffer, counts[i] ) );
+        for ( int i = 0; i < count; i++ )
+        {
+            counts[i] = buffer.get();
+        }
+        List<byte[]> xids = new ArrayList<>();
+        for ( int i = 0; i < count; i++ )
+        {
+            xids.add( readXid( buffer, counts[i] ) );
+        }
         return xids;
     }
 
@@ -419,15 +500,19 @@ public class LogTestUtils
         return bytes;
     }
 
-    private static File[] oneOrTwo( File file )
+    private static File[] oneOrTwo( FileSystemAbstraction fileSystem, File file )
     {
-        List<File> files = new ArrayList<File>();
-        File one = new File( file.getAbsolutePath() + ".1" );
-        if ( one.exists() ) files.add( one );
-        File two = new File( file.getAbsolutePath() + ".2" );
-        if ( two.exists() ) files.add( two );
-        if ( files.isEmpty() )
-            throw new IllegalStateException( "Couldn't find any active tm log" );
+        List<File> files = new ArrayList<>();
+        File one = new File( file.getPath() + ".1" );
+        if ( fileSystem.fileExists( one ) )
+        {
+            files.add( one );
+        }
+        File two = new File( file.getPath() + ".2" );
+        if ( fileSystem.fileExists( two ) )
+        {
+            files.add( two );
+        }
         return files.toArray( new File[files.size()] );
     }
 
@@ -436,33 +521,36 @@ public class LogTestUtils
     {
         char active = '1';
         File activeLog = new File( logBaseFileName.getPath() + ".active" );
-        FileChannel af = fileSystem.open( activeLog, "r" );
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
-        af.read( buffer );
-        buffer.flip();
-        File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
-        FileChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
-        activeCopy.write( buffer );
-        activeCopy.close();
-        af.close();
+        File activeLogBackup;
+        try ( FileChannel af = fileSystem.open( activeLog, "r" ) )
+        {
+            af.read( buffer );
+            buffer.flip();
+            activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
+            try ( FileChannel activeCopy = fileSystem.open( activeLogBackup, "rw" ) )
+            {
+                activeCopy.write( buffer );
+            }
+        }
         buffer.flip();
         active = buffer.asCharBuffer().get();
         buffer.clear();
         File currentLog = new File( logBaseFileName.getPath() + "." + active );
-        FileChannel source = fileSystem.open( currentLog, "r" );
         File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
-        FileChannel dest = fileSystem.open( currentLogBackup, "rw" );
-        int read = -1;
-        do
+        try ( FileChannel source = fileSystem.open( currentLog, "r" );
+              FileChannel dest = fileSystem.open( currentLogBackup, "rw" ) )
         {
-            read = source.read( buffer );
-            buffer.flip();
-            dest.write( buffer );
-            buffer.clear();
+            int read = -1;
+            do
+            {
+                read = source.read( buffer );
+                buffer.flip();
+                dest.write( buffer );
+                buffer.clear();
+            }
+            while ( read == 1024 );
         }
-        while ( read == 1024 );
-        source.close();
-        dest.close();
         return new NonCleanLogCopy(
                 new FileBackup( activeLog, activeLogBackup, fileSystem ),
                 new FileBackup( currentLog, currentLogBackup, fileSystem ) );
@@ -499,7 +587,9 @@ public class LogTestUtils
         public void reinstate() throws IOException
         {
             for ( FileBackup backup : backups )
+            {
                 backup.restore();
+            }
         }
     }
 }

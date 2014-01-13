@@ -225,7 +225,7 @@ public class XaLogicalLogTest
         private long currentVersion = 0;
         
         @Override
-        public XaTransaction create( int identifier, long lastCommittedTxWhenTransactionStarted, TransactionState state)
+        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
             return mock( XaTransaction.class );
         }

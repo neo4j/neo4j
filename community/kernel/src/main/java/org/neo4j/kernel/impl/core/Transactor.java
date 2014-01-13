@@ -60,7 +60,7 @@ public class Transactor
         try
         {
             beginTransaction();
-            KernelTransaction tx = persistenceManager.currentKernelTransaction();
+            KernelTransaction tx = persistenceManager.currentKernelTransactionForWriting();
             boolean success = false;
             try
             {

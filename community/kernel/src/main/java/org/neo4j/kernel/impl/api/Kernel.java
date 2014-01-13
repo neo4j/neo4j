@@ -85,7 +85,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  * at the same time it should remain independent and runnable without a transaction manager.
  *
  * The heart of this work is in the relationship between {@link KernelTransaction},
- * {@link org.neo4j.kernel.impl.nioneo.xa.WriteTransaction} and
+ * {@link org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction} and
  * {@link org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager}. The latter should become a wrapper around
  * KernelTransactions, exposing them as JTA-capable transactions. The Write transaction should be hidden from the outside,
  * an implementation detail living inside the kernel.

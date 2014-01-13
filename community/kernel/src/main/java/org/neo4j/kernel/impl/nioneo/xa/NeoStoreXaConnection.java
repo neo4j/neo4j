@@ -60,23 +60,37 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             neoStore.getStorageFileName(), xaRm, branchId );
     }
 
+    @Override
     public XAResource getXaResource()
     {
         return this.xaResource;
     }
     
-    public WriteTransaction getWriteTransaction()
+    @Override
+    public NeoStoreTransaction getTransaction()
+    {
+        try
+        {
+            return (NeoStoreTransaction) super.getTransaction();
+        }
+        catch ( XAException e )
+        {
+            throw new TransactionFailureException( "Unable to create transaction.", e );
+        }
+    }
+    
+    @Override
+    public NeoStoreTransaction createTransaction()
     {
         // Is only called once per write transaction so no need
         // to cache the transaction here.
         try
         {
-            return (WriteTransaction) getTransaction();
+            return (NeoStoreTransaction) super.createTransaction();
         }
         catch ( XAException e )
         {
-            throw new TransactionFailureException( 
-                "Unable to get transaction.", e );
+            throw new TransactionFailureException( "Unable to create transaction.", e );
         }
     }
 
@@ -91,6 +105,7 @@ public class NeoStoreXaConnection extends XaConnectionHelpImpl
             this.identifier = identifier;
         }
 
+        @Override
         public boolean isSameRM( XAResource xares )
         {
             if ( xares instanceof NeoStoreXaResource )

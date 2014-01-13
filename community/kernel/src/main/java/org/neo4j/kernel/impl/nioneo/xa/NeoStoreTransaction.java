@@ -32,8 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
+
 import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -83,9 +82,7 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
-import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -123,7 +120,7 @@ import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
  * having to contend with the JTA compliance layers. In short, it would encapsulate the logical log/storage logic better
  * and thus make it easier to change.
  */
-public class WriteTransaction extends XaTransaction implements NeoStoreTransaction
+public class NeoStoreTransaction extends XaTransaction
 {
     private final RecordChanges<Long, NodeRecord, Void> nodeRecords =
             new RecordChanges<>( new RecordChanges.Loader<Long, NodeRecord, Void>()
@@ -272,8 +269,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private boolean committed = false;
     private boolean prepared = false;
 
-    private XaConnection xaConnection;
-
     private final long lastCommittedTxWhenTransactionStarted;
     private final TransactionState state;
     private final CacheAccessBackDoor cacheAccess;
@@ -295,13 +290,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
      *                                              constraints are checked.
      * @param kernelTransaction is the vanilla sauce to the WriteTransaction apple pie.
      */
-    WriteTransaction( int identifier, long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
+    NeoStoreTransaction( long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
                       TransactionState state, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
                       IndexingService indexingService, LabelScanStore labelScanStore,
                       IntegrityValidator integrityValidator, KernelTransactionImplementation kernelTransaction,
                       LockService locks )
     {
-        super( identifier, log, state );
+        super( log, state );
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.neoStore = neoStore;
         this.state = state;
@@ -313,7 +308,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         this.locks = locks;
     }
 
-    @Override
+    /**
+     * This is a smell, a result of the kernel refactorings. Right now, both NeoStoreTransaction and KernelTransaction
+     * are "publicly" consumable, and one owns the other. In the future, they should be merged such that
+     * KernelTransaction rules supreme, and has internal components to manage the responsibilities currently handled by
+     * WriteTransaction and ReadTransaction.
+     */
     public KernelTransactionImplementation kernelTransaction()
     {
         return kernelTransaction;
@@ -349,7 +349,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     @Override
     protected void doPrepare() throws XAException
     {
-
         if ( committed )
         {
             throw new XAException( "Cannot prepare committed transaction["
@@ -973,13 +972,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
-    public boolean delistResource( Transaction tx, int tmsuccess )
-            throws SystemException
-    {
-        return xaConnection.delistResource( tx, tmsuccess );
-    }
-
     private void updateFirstRelationships()
     {
         for ( RecordChange<Long, NodeRecord, Void> change : nodeRecords.changes() )
@@ -1124,7 +1116,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return neoStore.getPropertyStore();
     }
 
-    @Override
+    /**
+     * Tries to load the light node with the given id, returns true on success.
+     *
+     * @param id The id of the node to load.
+     * @return True iff the node record can be found.
+     */
     public NodeRecord nodeLoadLight( long nodeId )
     {
         try
@@ -1137,7 +1134,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
+    /**
+     * Tries to load the light relationship with the given id, returns the
+     * record on success.
+     *
+     * @param id The id of the relationship to load.
+     * @return The light RelationshipRecord if it was found, null otherwise.
+     */
     public RelationshipRecord relLoadLight( long id )
     {
         try
@@ -1150,7 +1153,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
+    /**
+     * Deletes a node by its id, returning its properties which are now removed.
+     *
+     * @param nodeId The id of the node to delete.
+     * @return The properties of the node that were removed during the delete.
+     */
     public ArrayMap<Integer, DefinedProperty> nodeDelete( long nodeId )
     {
         NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forChangingData();
@@ -1164,7 +1172,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return getAndDeletePropertyChain( nodeRecord );
     }
 
-    @Override
+    /**
+     * Deletes a relationship by its id, returning its properties which are now
+     * removed. It is assumed that the nodes it connects have already been
+     * deleted in this
+     * transaction.
+     *
+     * @param relId The id of the relationship to delete.
+     * @return The properties of the relationship that were removed during the
+     *         delete.
+     */
     public ArrayMap<Integer, DefinedProperty> relDelete( long id )
     {
         RelationshipRecord record = relRecords.getOrLoad( id, null ).forChangingLinkage();
@@ -1312,13 +1329,20 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         state.acquireWriteLock( lockableRel );
     }
 
-    @Override
     public long getRelationshipChainPosition( long nodeId )
     {
         return nodeRecords.getOrLoad( nodeId, null ).getBefore().getNextRel();
     }
 
-    @Override
+    /*
+     * List<Iterable<RelationshipRecord>> is a list with three items:
+     * 0: outgoing relationships
+     * 1: incoming relationships
+     * 2: loop relationships
+     *
+     * Long is the relationship chain position as it stands after this
+     * batch of relationships has been loaded.
+     */
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships( long nodeId,
                                                                                                  long position )
     {
@@ -1339,7 +1363,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
+    /**
+     * Removes the given property identified by its index from the relationship
+     * with the given id.
+     *
+     * @param relId The id of the relationship that is to have the property
+     *            removed.
+     * @param propertyKey The index key of the property.
+     */
     public void relRemoveProperty( long relId, int propertyKey )
     {
         RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getOrLoad( relId, null );
@@ -1353,7 +1384,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         removeProperty( relRecord, rel, propertyKey );
     }
 
-    @Override
+    /**
+     * Loads the complete property chain for the given relationship and returns
+     * it as a map from property index id to property data.
+     *
+     * @param relId The id of the relationship whose properties to load.
+     * @param light If the properties should be loaded light or not.
+     * @param receiver receiver of loaded properties.
+     */
     public void relLoadProperties( long relId, boolean light, PropertyReceiver receiver )
     {
         RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getIfLoaded( relId );
@@ -1377,7 +1415,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         loadProperties( getPropertyStore(), relRecord.getNextProp(), receiver );
     }
 
-    @Override
+    /**
+     * Loads the complete property chain for the given node and returns it as a
+     * map from property index id to property data.
+     *
+     * @param nodeId The id of the node whose properties to load.
+     * @param light If the properties should be loaded light or not.
+     * @param receiver receiver of loaded properties.
+     */
     public void nodeLoadProperties( long nodeId, boolean light, PropertyReceiver receiver )
     {
         RecordChange<Long, NodeRecord, Void> node = nodeRecords.getIfLoaded( nodeId );
@@ -1401,7 +1446,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         loadProperties( getPropertyStore(), nodeRecord.getNextProp(), receiver );
     }
 
-    @Override
+    /**
+     * Removes the given property identified by indexKeyId of the node with the
+     * given id.
+     *
+     * @param nodeId The id of the node that is to have the property removed.
+     * @param propertyKey The index key of the property.
+     */
     public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
         RecordChange<Long, NodeRecord, Void> node = nodeRecords.getOrLoad( nodeId, null );
@@ -1502,7 +1553,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         assert assertPropertyChain( primitive );
     }
 
-    @Override
+    /**
+     * Changes an existing property's value of the given relationship, with the
+     * given index to the passed value
+     *
+     * @param relId The id of the relationship which holds the property to
+     *            change.
+     * @param propertyKey The index of the key of the property to change.
+     * @param value The new value of the property.
+     * @return The changed property, as a PropertyData object.
+     */
     public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
         RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getOrLoad( relId, null );
@@ -1514,7 +1574,15 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return primitiveChangeProperty( rel, propertyKey, value );
     }
 
-    @Override
+    /**
+     * Changes an existing property of the given node, with the given index to
+     * the passed value
+     *
+     * @param nodeId The id of the node which holds the property to change.
+     * @param propertyKey The index of the key of the property to change.
+     * @param value The new value of the property.
+     * @return The changed property, as a PropertyData object.
+     */
     public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
         RecordChange<Long, NodeRecord, Void> node = nodeRecords.getOrLoad( nodeId, null ); //getNodeRecord( nodeId );
@@ -1610,7 +1678,15 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return Property.property( propertyKey, value );
     }
 
-    @Override
+    /**
+     * Adds a property to the given relationship, with the given index and
+     * value.
+     *
+     * @param relId The id of the relationship to which to add the property.
+     * @param propertyKey The index of the key of the property to add.
+     * @param value The value of the property.
+     * @return The added property, as a PropertyData object.
+     */
     public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
         RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getOrLoad( relId, null );
@@ -1622,8 +1698,15 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         return addPropertyToPrimitive( rel, propertyKey, value );
     }
-
-    @Override
+    
+    /**
+     * Adds a property to the given node, with the given index and value.
+     *
+     * @param nodeId The id of the node to which to add the property.
+     * @param propertyKey The index of the key of the property to add.
+     * @param value The value of the property.
+     * @return The added property, as a PropertyData object.
+     */
     public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
         RecordChange<Long, NodeRecord, Void> node = nodeRecords.getOrLoad( nodeId, null );
@@ -1690,7 +1773,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         assert assertPropertyChain( primitive );
     }
 
-    @Override
+    /**
+     * Creates a relationship with the given id, from the nodes identified by id
+     * and of type typeId
+     *
+     * @param id The id of the relationship to create.
+     * @param typeId The id of the relationship type this relationship will
+     *            have.
+     * @param startNodeId The id of the start node.
+     * @param endNodeId The id of the end node.
+     */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId )
     {
         NodeRecord firstNode = nodeRecords.getOrLoad( firstNodeId, null ).forChangingLinkage();
@@ -1750,7 +1842,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
+    /**
+     * Creates a node for the given id
+     *
+     * @param id The id of the node to create.
+     */
     public void nodeCreate( long nodeId )
     {
         NodeRecord nodeRecord = nodeRecords.create( nodeId, null ).forChangingData();
@@ -1758,7 +1854,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         nodeRecord.setCreated();
     }
 
-    @Override
+    /**
+     * Creates a property index entry out of the given id and string.
+     *
+     * @param key The key of the property index, as a string.
+     * @param id The property index record id.
+     */
     public void createPropertyKeyToken( String key, int id )
     {
         PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
@@ -1772,7 +1873,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         addPropertyKeyTokenRecord( record );
     }
 
-    @Override
+    /**
+     * Creates a property index entry out of the given id and string.
+     *
+     * @param name The key of the property index, as a string.
+     * @param id The property index record id.
+     */
     public void createLabelToken( String name, int id )
     {
         LabelTokenRecord record = new LabelTokenRecord( id );
@@ -1786,7 +1892,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         addLabelIdRecord( record );
     }
 
-    @Override
+    /**
+     * Creates a new RelationshipType record with the given id that has the
+     * given name.
+     *
+     * @param id The id of the new relationship type record.
+     * @param name The name of the relationship type.
+     */
     public void createRelationshipTypeToken( int id, String name )
     {
         RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
@@ -1979,18 +2091,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
-    public void destroy()
-    {
-        xaConnection.destroy();
-    }
-
-    @Override
-    public void setXaConnection( XaConnection connection )
-    {
-        this.xaConnection = connection;
-    }
-
     private boolean assertPropertyChain( PrimitiveRecord primitive )
     {
         List<PropertyRecord> toCheck = new LinkedList<>();
@@ -2064,7 +2164,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return neoStoreRecord.getOrLoad( 0L, null );
     }
 
-    @Override
+    /**
+     * Adds a property to the graph, with the given index and value.
+     *
+     * @param propertyKey The index of the key of the property to add.
+     * @param value The value of the property.
+     * @return The added property, as a PropertyData object.
+     */
     public DefinedProperty graphAddProperty( int propertyKey, Object value )
     {
         PropertyBlock block = new PropertyBlock();
@@ -2080,27 +2186,44 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return Property.property( propertyKey, value );
     }
 
-    @Override
+    /**
+     * Changes an existing property of the graph, with the given index to
+     * the passed value
+     *
+     * @param propertyKey The index of the key of the property to change.
+     * @param value The new value of the property.
+     * @return The changed property, as a PropertyData object.
+     */
     public DefinedProperty graphChangeProperty( int propertyKey, Object value )
     {
         return primitiveChangeProperty( getOrLoadNeoStoreRecord(), propertyKey, value );
     }
 
-    @Override
+    /**
+     * Removes the given property identified by indexKeyId of the graph with the
+     * given id.
+     *
+     * @param propertyKey The index key of the property.
+     */
     public void graphRemoveProperty( int propertyKey )
     {
         RecordChange<Long, NeoStoreRecord, Void> recordChange = getOrLoadNeoStoreRecord();
         removeProperty( recordChange.forReadingLinkage(), recordChange, propertyKey );
     }
 
-    @Override
+    /**
+     * Loads the complete property chain for the graph and returns it as a
+     * map from property index id to property data.
+     *
+     * @param light If the properties should be loaded light or not.
+     * @param receiver receiver of loaded properties.
+     */
     public void graphLoadProperties( boolean light, PropertyReceiver records )
     {
         loadProperties( getPropertyStore(),
                 getOrLoadNeoStoreRecord().forReadingLinkage().getNextProp(), records );
     }
 
-    @Override
     public void createSchemaRule( SchemaRule schemaRule )
     {
         for(DynamicRecord change : schemaRuleChanges.create( schemaRule.getId(), schemaRule ).forChangingData())
@@ -2110,7 +2233,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
     public void dropSchemaRule( SchemaRule rule )
     {
         RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change =
@@ -2122,21 +2244,18 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    @Override
     public void addLabelToNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).add( labelId, getNodeStore() );
     }
 
-    @Override
     public void removeLabelFromNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).remove( labelId, getNodeStore() );
     }
 
-    @Override
     public PrimitiveLongIterator getLabelsForNode( long nodeId )
     {
         // Don't consider changes in this transaction
@@ -2144,7 +2263,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return asPrimitiveIterator( parseLabelsField( node ).get( getNodeStore() ) );
     }
 
-    @Override
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
         RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change =
@@ -2246,5 +2364,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             loadPropertyChain( chain, propertyStore, receiver );
         }
+    }
+    
+    public interface PropertyReceiver
+    {
+        void receive( DefinedProperty property, long propertyRecordId );
     }
 }

@@ -164,23 +164,21 @@ public abstract class XaTransaction
      */
     protected abstract void doCommit() throws XAException;
 
-    private final int identifier;
+    private int identifier = -1;
     private final XaLogicalLog log;
     private final TransactionState state;
     private boolean isRecovered = false;
     private boolean committed = false;
     private boolean rolledback = false;
     private boolean prepared = false;
-    
     private long commitTxId = -1;
-
-    public XaTransaction( int identifier, XaLogicalLog log, TransactionState state )
+    
+    public XaTransaction( XaLogicalLog log, TransactionState state )
     {
         if ( log == null )
         {
             throw new IllegalArgumentException( "LogicalLog is null" );
         }
-        this.identifier = identifier;
         this.log = log;
         this.state = state;
     }
@@ -204,6 +202,12 @@ public abstract class XaTransaction
     {
         return isRecovered;
     }
+    
+    public final void setIdentifier( int identifier )
+    {
+        assert this.identifier == -1;
+        this.identifier = identifier;
+    }
 
     /**
      * Returns the "internal" identifier for this transaction. See
@@ -213,6 +217,7 @@ public abstract class XaTransaction
      */
     public final int getIdentifier()
     {
+        assert identifier != -1;
         return identifier;
     }
 
@@ -242,7 +247,7 @@ public abstract class XaTransaction
         doAddCommand( command );
         try
         {
-            log.writeCommand( command, identifier );
+            log.writeCommand( command, getIdentifier() );
         }
         catch ( IOException e )
         {
