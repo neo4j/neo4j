@@ -209,5 +209,6 @@ object NullPlanDescription extends PlanDescription {
 
   def andThen(inner: PlanDescription): PlanDescription = inner
 
-  def andThenWrap(pipe: Pipe, name: String, inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription = ???
+  def andThenWrap(pipe: Pipe, name: String, inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription =
+    new PlanDescriptionImpl(pipe, name, Seq(inner), args)
 }

@@ -136,6 +136,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
       ) === producer.v )
   }
 
+  @Test
+  def allows_optional_match_to_start_a_query() {
+    //GIVEN
+    val result: ExecutionResult = engine.profile("optional match (n) return n")
+
+    //WHEN THEN
+    assertRows(1)(result)("NullableMatch")
+  }
+
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
     assert(expectedRows === parentCd(result, names).getProfilerStatistics.getRows)
   }
