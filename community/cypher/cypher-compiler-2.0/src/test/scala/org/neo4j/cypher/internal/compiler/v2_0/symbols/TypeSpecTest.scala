@@ -71,21 +71,21 @@ class TypeSpecTest extends Assertions {
   @Test
   def shouldUnion() {
     assertEquals(CTNumber | CTDouble | CTInteger | CTString,
-      T <:< CTNumber | T <:< CTString)
+      CTNumber.covariant | CTString.covariant)
     assertEquals(CTNumber | CTDouble | CTInteger | CTBoolean,
-      T <:< CTNumber | CTBoolean)
+      CTNumber.covariant | CTBoolean)
 
     assertEquals(CTNumber | CTDouble | CTInteger | CTCollection(CTString),
-      T <:< CTNumber union T <:< CTCollection(CTString))
+      CTNumber.covariant union CTCollection(CTString).covariant)
     assertEquals(CTCollection(CTNumber) | CTCollection(CTString),
-      CTCollection(CTNumber) union (T <:< CTCollection(CTString)))
+      CTCollection(CTNumber) union (CTCollection(CTString).covariant))
   }
 
   @Test
   def shouldIntersect() {
-    assertEquals(CTInteger.invariant, TypeSpec.all =:= CTInteger)
-    assertEquals(CTInteger.invariant, CTNumber.covariant =:= CTInteger)
-    assertEquals(TypeSpec.none, CTNumber.covariant =:= CTString)
+    assertEquals(CTInteger.invariant, TypeSpec.all & CTInteger)
+    assertEquals(CTInteger.invariant, CTNumber.covariant & CTInteger)
+    assertEquals(TypeSpec.none, CTNumber.covariant & CTString)
 
     assertEquals(CTNumber.invariant, (CTNumber | CTInteger) & (CTAny | CTNumber))
     assertEquals(CTNumber.invariant, CTNumber.contravariant & CTNumber.covariant)
@@ -94,14 +94,14 @@ class TypeSpecTest extends Assertions {
     assertEquals(CTCollection(CTAny) | CTCollection(CTCollection(CTAny)),
       CTCollection(CTCollection(CTAny)).contravariant intersect CTCollection(CTAny).covariant)
 
-    assertEquals(T <:< CTNumber,
-      (T <:< CTNumber | T <:< CTCollection(CTAny)) intersect (T <:< CTNumber | T <:< CTString))
+    assertEquals(CTNumber.covariant,
+      (CTNumber.covariant | CTCollection(CTAny).covariant) intersect (CTNumber.covariant | CTString.covariant))
   }
 
   @Test
   def shouldConstrain() {
-    assertEquals(CTInteger.invariant, T <:< CTInteger)
-    assertEquals(CTNumber | CTDouble | CTInteger, T <:< CTNumber)
+    assertEquals(CTInteger.invariant, CTInteger.covariant)
+    assertEquals(CTNumber | CTDouble | CTInteger, CTNumber.covariant)
 
     assertEquals(CTInteger.invariant, CTInteger constrain CTNumber)
     assertEquals(CTInteger.invariant, CTNumber.covariant constrain CTInteger)
@@ -135,47 +135,38 @@ class TypeSpecTest extends Assertions {
     assertEquals(TypeSpec.none,
       CTNumber.covariant constrain CTString)
 
-    assertEquals(TypeSpec.none, (T <:< CTString) constrain (T <:< CTNumber))
+    assertEquals(TypeSpec.none, CTString.covariant constrain CTNumber)
   }
 
   @Test
   def unionTwoBranches() {
     assertEquals(CTNumber | CTInteger | CTDouble | CTString,
-      T <:< CTNumber | T <:< CTString)
+      CTNumber.covariant | CTString.covariant)
   }
 
   @Test
   def constrainToSuperTypeOfSome() {
     assertEquals(CTInteger.invariant,
-      (CTInteger | CTString) <:< CTNumber)
+      (CTInteger | CTString) constrain CTNumber)
     assertEquals(CTNumber | CTInteger,
       CTInteger.contravariant constrain CTNumber)
     assertEquals(CTNumber.invariant,
       CTNumber.contravariant constrain CTNumber)
     assertEquals(CTAny | CTNumber,
-      CTNumber.contravariant constrain CTInteger.contravariant)
-    assertEquals(CTAny | CTNumber,
-      CTNumber.contravariant constrain CTNumber.contravariant)
-    assertEquals(CTAny | CTNumber | CTInteger,
-      CTInteger.contravariant constrain CTNumber.contravariant)
-
-    assertEquals(CTInteger.contravariant,
-      CTInteger.contravariant constrain CTString.contravariant)
-    assertEquals(CTInteger.contravariant,
-      CTInteger.contravariant constrain (CTString.contravariant | CTNumber.contravariant))
+      CTNumber.contravariant constrain CTAny)
   }
 
   @Test
-  def constrainToAllTypes() {
-    assertEquals(T, T constrain T)
-    assertEquals(T <:< CTNumber, T <:< CTNumber constrain T)
+  def constrainToAny() {
+    assertEquals(TypeSpec.all, TypeSpec.all constrain CTAny)
+    assertEquals(CTNumber.covariant, CTNumber.covariant constrain CTAny)
   }
 
   @Test
   def constrainToSubTypeOfSome() {
-    val constrainedToNumberOrCollectionT = T <:< CTNumber | T <:< CTCollection(CTAny)
-    val constrainedToCollectionOfNumber = T <:< CTCollection(CTNumber)
-    assertEquals(constrainedToCollectionOfNumber, constrainedToNumberOrCollectionT constrain constrainedToCollectionOfNumber)
+    val constrainedToNumberOrCollectionT = CTNumber.covariant | CTCollection(CTAny).covariant
+    assertEquals(CTCollection(CTNumber) | CTCollection(CTDouble) | CTCollection(CTInteger),
+      constrainedToNumberOrCollectionT constrain CTCollection(CTNumber))
   }
 
   @Test
@@ -183,7 +174,7 @@ class TypeSpecTest extends Assertions {
     assertEquals(TypeSpec.none,
       CTNumber.contravariant constrain CTInteger)
     assertEquals(TypeSpec.none,
-      CTNumber.contravariant <:< CTString)
+      CTNumber.contravariant constrain CTString)
   }
 
   @Test
@@ -328,67 +319,67 @@ class TypeSpecTest extends Assertions {
 
   @Test
   def shouldIdentifyCoercions() {
-    assertEquals(CTBoolean.invariant, (T <:< CTDouble).coercions)
-    assertEquals(CTBoolean | CTDouble, (T <:< CTInteger).coercions)
+    assertEquals(CTBoolean.invariant, CTDouble.covariant.coercions)
+    assertEquals(CTBoolean | CTDouble, CTInteger.covariant.coercions)
     assertEquals(CTBoolean | CTDouble, (CTDouble | CTInteger).coercions)
     assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant.coercions)
     assertEquals(CTBoolean.invariant, TypeSpec.exact(CTCollection(CTPath)).coercions)
     assertEquals(CTBoolean | CTDouble, TypeSpec.all.coercions)
-    assertEquals(CTBoolean.invariant, (T <:< CTCollection(CTAny)).coercions)
+    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant.coercions)
   }
 
   @Test
   def shouldIntersectWithCoercions() {
-    assertEquals(CTInteger.invariant, TypeSpec.all =%= CTInteger)
-    assertEquals(CTDouble.invariant, CTInteger =%= CTDouble)
-    assertEquals(TypeSpec.none, CTNumber =%= CTDouble)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant =%= CTBoolean)
-    assertEquals(CTBoolean.invariant, CTNumber.covariant =%= CTBoolean)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant =%= CTBoolean)
-    assertEquals(TypeSpec.none, CTInteger =%= CTString)
+    assertEquals(CTInteger.invariant, TypeSpec.all intersectOrCoerce CTInteger)
+    assertEquals(CTDouble.invariant, CTInteger intersectOrCoerce CTDouble)
+    assertEquals(TypeSpec.none, CTNumber intersectOrCoerce CTDouble)
+    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant intersectOrCoerce CTBoolean)
+    assertEquals(CTBoolean.invariant, CTNumber.covariant intersectOrCoerce CTBoolean)
+    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant intersectOrCoerce CTBoolean)
+    assertEquals(TypeSpec.none, CTInteger intersectOrCoerce CTString)
   }
 
   @Test
   def shouldConstrainWithCoercions() {
-    assertEquals(CTInteger.invariant, T <%< CTInteger)
-    assertEquals(CTDouble.invariant, CTInteger <%< CTDouble)
-    assertEquals(TypeSpec.none, CTNumber <%< CTDouble)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainWithCoercion CTBoolean)
-    assertEquals(CTBoolean.invariant, CTNumber.covariant constrainWithCoercion CTBoolean)
-    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainWithCoercion CTBoolean)
-    assertEquals(TypeSpec.none, CTInteger <%< CTString)
+    assertEquals(CTInteger.invariant, TypeSpec.all constrainOrCoerce CTInteger)
+    assertEquals(CTDouble.invariant, CTInteger constrainOrCoerce CTDouble)
+    assertEquals(TypeSpec.none, CTNumber constrainOrCoerce CTDouble)
+    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainOrCoerce CTBoolean)
+    assertEquals(CTBoolean.invariant, CTNumber.covariant constrainOrCoerce CTBoolean)
+    assertEquals(CTBoolean.invariant, CTCollection(CTAny).covariant constrainOrCoerce CTBoolean)
+    assertEquals(TypeSpec.none, CTInteger constrainOrCoerce CTString)
   }
 
   @Test
   def equalTypeSpecsShouldEqual() {
     assertEquals(CTString.invariant, CTString.invariant)
 
-    assertEquals(T <:< CTString, CTString.invariant)
-    assertEquals(CTString.invariant, T <:< CTString)
+    assertEquals(CTString.covariant, CTString.invariant)
+    assertEquals(CTString.invariant, CTString.covariant)
 
     assertEquals(CTNumber | CTInteger | CTDouble, CTDouble | CTInteger | CTNumber)
-    assertEquals(CTNumber | CTInteger | CTDouble, T <:< CTNumber)
-    assertEquals(T <:< CTNumber, CTNumber | CTInteger | CTDouble)
+    assertEquals(CTNumber | CTInteger | CTDouble, CTNumber.covariant)
+    assertEquals(CTNumber.covariant, CTNumber | CTInteger | CTDouble)
 
-    assertEquals(T <:< CTNumber, T <:< CTNumber | T <:< CTInteger)
-    assertNotEquals(T <:< CTNumber, T <:< CTNumber | T <:< CTString)
+    assertEquals(CTNumber.covariant, CTNumber.covariant | CTInteger.covariant)
+    assertNotEquals(CTNumber.covariant, CTNumber.covariant | CTString.covariant)
 
-    assertEquals(T, T)
-    assertEquals(T, T <:< CTAny)
-    assertEquals(T <:< CTCollection(CTAny), T <:< CTCollection(CTAny))
-    assertEquals(T <:< CTCollection(CTAny), T <:< CTCollection(CTAny))
+    assertEquals(TypeSpec.all, TypeSpec.all)
+    assertEquals(TypeSpec.all, CTAny.covariant)
+    assertEquals(CTCollection(CTAny).covariant, CTCollection(CTAny).covariant)
+    assertEquals(CTCollection(CTAny).covariant, CTCollection(CTAny).covariant)
 
-    assertEquals(T, T | (T <:< CTString))
-    assertEquals(T, T | T)
+    assertEquals(TypeSpec.all, TypeSpec.all | CTString.covariant)
+    assertEquals(TypeSpec.all, TypeSpec.all | TypeSpec.all)
   }
 
   @Test
   def differentTypeSpecsShouldNotEqual() {
-    assertNotEquals(T <:< CTNumber, T)
-    assertNotEquals(T, T <:< CTNumber)
+    assertNotEquals(CTNumber.covariant, TypeSpec.all)
+    assertNotEquals(TypeSpec.all, CTNumber.covariant)
 
-    assertNotEquals(T <:< CTNumber, T <:< CTCollection(CTAny))
-    assertNotEquals(T <:< CTCollection(CTAny), T <:< CTNumber)
+    assertNotEquals(CTNumber.covariant, CTCollection(CTAny).covariant)
+    assertNotEquals(CTCollection(CTAny).covariant, CTNumber.covariant)
 
     assertNotEquals(TypeSpec.all, CTNumber.invariant)
     assertNotEquals(CTNumber.invariant, TypeSpec.all)
@@ -445,9 +436,9 @@ class TypeSpecTest extends Assertions {
   def shouldFormatToStringForIndefiniteSizedSet() {
     assertEquals("T", TypeSpec.all.mkString(", "))
     assertEquals("Collection<T>", CTCollection(CTAny).covariant.mkString(", "))
-    assertEquals("Boolean, Collection<T>", (T <:< CTCollection(CTAny) | CTBoolean).mkString(", "))
+    assertEquals("Boolean, Collection<T>", (CTCollection(CTAny).covariant | CTBoolean).mkString(", "))
     assertEquals("Boolean, Collection<String>, Collection<Collection<T>>",
-      ((T <:< CTCollection(CTCollection(CTAny))) | CTBoolean | CTCollection(CTString)).mkString(", "))
+      ((CTCollection(CTCollection(CTAny)).covariant) | CTBoolean | CTCollection(CTString)).mkString(", "))
   }
 
   @Test
@@ -456,13 +447,13 @@ class TypeSpecTest extends Assertions {
     assertEquals("String", CTString.invariant.mkString(", "))
     assertEquals("Double, Integer, Number", CTNumber.covariant.mkString(", "))
     assertEquals("Boolean, Double, Integer, Number",
-      (T <:< CTNumber | T <:< CTBoolean).mkString(", "))
+      (CTNumber.covariant | CTBoolean.covariant).mkString(", "))
     assertEquals("Any, Number", CTNumber.contravariant.mkString(", "))
     assertEquals("Boolean, String, Collection<Boolean>, Collection<String>",
-      (T <:< CTBoolean | T <:< CTString | T <:< CTCollection(CTBoolean) | T <:< CTCollection(CTString)).mkString(", "))
+      (CTBoolean.covariant | CTString.covariant | CTCollection(CTBoolean).covariant | CTCollection(CTString).covariant).mkString(", "))
     assertEquals("Boolean, String, Collection<Boolean>, Collection<Collection<String>>",
-      (T <:< CTBoolean | T <:< CTString | T <:< CTCollection(CTBoolean) | T <:< CTCollection(CTCollection(CTString))).mkString(", "))
-    assertEquals("Any, Collection<Any>", (T >:> CTCollection(CTAny)).mkString(", "))
+      (CTBoolean.covariant | CTString.covariant | CTCollection(CTBoolean).covariant | CTCollection(CTCollection(CTString)).covariant).mkString(", "))
+    assertEquals("Any, Collection<Any>", CTCollection(CTAny).contravariant.mkString(", "))
   }
 
   @Test
@@ -472,7 +463,7 @@ class TypeSpecTest extends Assertions {
     assertEquals(Seq(CTDouble, CTInteger, CTNumber),
       CTNumber.covariant.iterator.toSeq)
     assertEquals(Seq(CTBoolean, CTDouble, CTInteger, CTNumber),
-      (T <:< CTNumber | T <:< CTBoolean).iterator.toSeq)
+      (CTNumber.covariant | CTBoolean.covariant).iterator.toSeq)
     assertEquals(Seq(CTAny, CTNumber),
       CTNumber.contravariant.iterator.toSeq)
     assertEquals(Seq(CTBoolean, CTString, CTCollection(CTBoolean), CTCollection(CTString)),

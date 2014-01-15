@@ -31,7 +31,7 @@ case class Symbol(identifiers: Set[ast.Identifier], types: TypeSpec) {
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
   lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
-  lazy val actual: TypeSpec = expected.fold(specified)(specified intersectWithCoercion)
+  lazy val actual: TypeSpec = expected.fold(specified)(specified intersectOrCoerce)
   lazy val wasCoerced = actualUnCoerced != actual
 
   def expect(types: TypeSpec) = copy(expected = Some(types))

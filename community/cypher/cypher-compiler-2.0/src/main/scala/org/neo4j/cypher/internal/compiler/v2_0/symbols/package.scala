@@ -32,7 +32,5 @@ package object symbols {
   val CTPath = PathType.instance
   def CTCollection(inner: CypherType) = CollectionType(inner)
 
-  def T = TypeSpec.all
-
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant
 }

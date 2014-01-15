@@ -35,7 +35,7 @@ case object Add extends Function {
     }
 
   private def semanticCheckUnary(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    invocation.arguments.expectType(T <:< CTInteger | T <:< CTDouble) then
+    invocation.arguments.expectType(CTInteger.covariant | CTDouble.covariant) then
     invocation.specifyType(invocation.arguments(0).types)
 
   private def semanticCheckInfix(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck = {
@@ -54,8 +54,8 @@ case object Add extends Function {
     // "a" + 1 => "a1"
     // "a" + 1.1 => "a1.1"
     val stringTypes =
-      if (lhsTypes.containsAny(T <:< CTString))
-        T <:< CTString | T <:< CTInteger | T <:< CTDouble
+      if (lhsTypes containsAny CTString.covariant)
+        CTString.covariant | CTInteger.covariant | CTDouble.covariant
       else
         TypeSpec.none
 
@@ -66,14 +66,14 @@ case object Add extends Function {
     // 1.1 + 1 => 2.1
     // 1.1 + 1.1 => 2.2
     val numberTypes =
-      if (lhsTypes.containsAny(T <:< CTInteger | T <:< CTDouble))
-        T <:< CTString | T <:< CTInteger | T <:< CTDouble
+      if (lhsTypes containsAny (CTInteger.covariant | CTDouble.covariant))
+        CTString.covariant | CTInteger.covariant | CTDouble.covariant
       else
         TypeSpec.none
 
     // [a] + [b] => [a, b]
     // [a] + b => [a, b]
-    val collectionTypes = (lhsTypes <:< CTCollection(CTAny)) | (lhsTypes <:< CTCollection(CTAny)).unwrapCollections
+    val collectionTypes = (lhsTypes constrain CTCollection(CTAny)) | (lhsTypes constrain CTCollection(CTAny)).unwrapCollections
 
     // a + [b] => [a, b]
     val rhsCollectionTypes = lhsTypes.wrapInCollection
@@ -97,15 +97,15 @@ case object Add extends Function {
     // 1 + "b" => "1b"
     // 1.1 + "b" => "1.1b"
     val stringTypes: TypeSpec =
-      when(T <:< CTString, T <:< CTInteger | T <:< CTDouble | T <:< CTString)(CTString)
+      when(CTString.covariant, CTInteger.covariant | CTDouble.covariant | CTString.covariant)(CTString)
 
     // 1 + 1 => 2
     // 1 + 1.1 => 2.1
     // 1.1 + 1 => 2.1
     // 1.1 + 1.1 => 2.2
     val numberTypes: TypeSpec =
-      when(T <:< CTInteger, T <:< CTInteger)(CTInteger) |
-      when(T <:< CTDouble, T <:< CTDouble | T <:< CTInteger)(CTDouble)
+      when(CTInteger.covariant, CTInteger.covariant)(CTInteger) |
+      when(CTDouble.covariant, CTDouble.covariant | CTInteger.covariant)(CTDouble)
 
     // [a] + [b] => [a, b]
     // [a] + b => [a, b]
@@ -117,8 +117,8 @@ case object Add extends Function {
       val rhsCollectionInnerTypes = rhsCollectionTypes.unwrapCollections
 
       (lhsCollectionTypes intersect rhsCollectionTypes) |
-      (rhsTypes intersectWithCoercion lhsCollectionInnerTypes).wrapInCollection |
-      (lhsTypes intersectWithCoercion rhsCollectionInnerTypes).wrapInCollection
+      (rhsTypes intersectOrCoerce lhsCollectionInnerTypes).wrapInCollection |
+      (lhsTypes intersectOrCoerce rhsCollectionInnerTypes).wrapInCollection
     }
 
     stringTypes | numberTypes | collectionTypes

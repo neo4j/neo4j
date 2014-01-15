@@ -78,7 +78,7 @@ class SemanticStateTest extends Assertions {
     }
 
     SemanticState.clean.implicitIdentifier(identifier1, CTNode | CTRelationship) then
-    ((_: SemanticState).implicitIdentifier(identifier2, T <:< CTAny)) match {
+    ((_: SemanticState).implicitIdentifier(identifier2, CTAny.covariant)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
@@ -86,7 +86,7 @@ class SemanticStateTest extends Assertions {
     }
 
     SemanticState.clean.implicitIdentifier(identifier1, CTNode) then
-    ((_: SemanticState).implicitIdentifier(identifier2, T <:< CTMap)) match {
+    ((_: SemanticState).implicitIdentifier(identifier2, CTMap.covariant)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
@@ -129,13 +129,13 @@ class SemanticStateTest extends Assertions {
     val expression = DummyExpression(CTInteger | CTString | CTMap, DummyToken(0,1))
     val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
 
-    state.expectType(expression, T <:< CTNumber) match {
+    state.expectType(expression, CTNumber.covariant) match {
       case (s, typ) =>
         assertEquals(CTInteger: TypeSpec, typ)
         assertEquals(typ, s.expressionType(expression).actual)
     }
 
-    state.expectType(expression, T <:< CTNode | T <:< CTNumber) match {
+    state.expectType(expression, CTNode.covariant | CTNumber.covariant) match {
       case (s, typ) =>
         assertEquals(CTInteger: TypeSpec, typ)
         assertEquals(typ, s.expressionType(expression).actual)
@@ -159,7 +159,7 @@ class SemanticStateTest extends Assertions {
   @Test
   def shouldExtendSymbolInParent() {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTNode).right.get
-    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), T <:< CTAny).right.get
+    val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo", DummyToken(0, 1)), CTAny.covariant).right.get
     assertEquals(CTNode: TypeSpec, s2.symbolTypes("foo"))
   }
 

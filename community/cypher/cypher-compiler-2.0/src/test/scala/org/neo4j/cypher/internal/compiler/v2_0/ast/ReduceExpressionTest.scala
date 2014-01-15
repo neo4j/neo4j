@@ -58,7 +58,7 @@ class ReduceExpressionTest extends Assertions {
 
   @Test
   def shouldReturnMinimalTypeOfAccumulatorAndReduceFunction() {
-    val initType = (T <:< CTString | T <:< CTDouble)
+    val initType = CTString.covariant | CTDouble.covariant
     val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new Expression {

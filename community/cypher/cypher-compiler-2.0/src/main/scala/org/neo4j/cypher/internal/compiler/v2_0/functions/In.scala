@@ -28,7 +28,7 @@ case object In extends PredicateFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(0).expectType(T <:< CTAny) then
+      invocation.arguments(0).expectType(CTAny.covariant) then
       invocation.arguments(1).expectType(invocation.arguments(0).types(_).wrapInCollection)
     } then invocation.specifyType(CTBoolean)
 

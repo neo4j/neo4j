@@ -33,7 +33,7 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
     alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then
     default.semanticCheck(ctx) then
     when (expression.isEmpty) {
-      alternatives.map(_._1).expectType(T <:< CTBoolean)
+      alternatives.map(_._1).expectType(CTBoolean.covariant)
     } then this.specifyType(possibleTypes)
   }
 

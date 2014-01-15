@@ -28,7 +28,7 @@ case object Last extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments(0).expectType(T <:< CTCollection(CTAny)) then
+      invocation.arguments(0).expectType(CTCollection(CTAny).covariant) then
       invocation.specifyType(possibleInnerTypes(invocation.arguments(0)))
     }
 

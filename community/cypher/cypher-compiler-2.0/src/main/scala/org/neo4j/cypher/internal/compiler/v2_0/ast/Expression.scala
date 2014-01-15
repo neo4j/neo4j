@@ -105,7 +105,7 @@ case class Identifier(name: String, token: InputToken) extends Expression {
   // check the identifier is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
-    case Left(error) => SemanticCheckResult.error(declare(T <:< CTAny)(s).right.get, error)
+    case Left(error) => SemanticCheckResult.error(declare(CTAny.covariant)(s).right.get, error)
   }
 
   // double-dispatch helpers
@@ -122,13 +122,13 @@ case class Identifier(name: String, token: InputToken) extends Expression {
 }
 
 case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = T <:< CTAny
+  protected def possibleTypes = CTAny.covariant
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }
 
 case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = T <:< CTAny
+  protected def possibleTypes = CTAny.covariant
 
   def toCommand = commandexpressions.Literal(null)
 }
@@ -150,11 +150,11 @@ case class CountStar(token: InputToken) extends Expression with SimpleTypedExpre
 case class Property(map: Expression, identifier: Identifier, token: InputToken)
   extends Expression with SimpleTypedExpression {
 
-  protected def possibleTypes = T <:< CTAny
+  protected def possibleTypes = CTAny.covariant
 
   override def semanticCheck(ctx: SemanticContext) =
     map.semanticCheck(ctx) then
-    map.expectType(T <:< CTMap) then
+    map.expectType(CTMap.covariant) then
     super.semanticCheck(ctx)
 
   def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
@@ -190,7 +190,7 @@ case class PatternExpression(pattern: RelationshipsPattern) extends Expression w
 case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with PredicateExpression {
   override def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
-    expression.expectType(T <:< CTNode) then
+    expression.expectType(CTNode.covariant) then
     super.semanticCheck(ctx)
 
   private def toPredicate(l: Identifier): commands.Predicate =
@@ -229,14 +229,14 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
 
   override def semanticCheck(ctx: SemanticContext) =
     collection.semanticCheck(ctx) then
-    collection.expectType(T <:< CTCollection(CTAny)) then
+    collection.expectType(CTCollection(CTAny).covariant) then
     when(from.isEmpty && to.isEmpty) {
       SemanticError("The start or end (or both) is required for a collection slice", token)
     } then
     from.semanticCheck(ctx) then
-    from.expectType(T <:< CTInteger) then
+    from.expectType(CTInteger.covariant) then
     to.semanticCheck(ctx) then
-    to.expectType(T <:< CTInteger) then
+    to.expectType(CTInteger.covariant) then
     specifyType(collection.types)
 
   def toCommand = commandexpressions.CollectionSliceExpression(collection.toCommand, from.map(_.toCommand), to.map(_.toCommand))
@@ -247,9 +247,9 @@ case class CollectionIndex(collection: Expression, idx: Expression, token: Input
 
   override def semanticCheck(ctx: SemanticContext) =
     collection.semanticCheck(ctx) then
-    collection.expectType(T <:< CTCollection(CTAny)) then
+    collection.expectType(CTCollection(CTAny).covariant) then
     idx.semanticCheck(ctx) then
-    idx.expectType(T <:< CTInteger) then
+    idx.expectType(CTInteger.covariant) then
     specifyType(collection.types(_).unwrapCollections)
 
   def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)

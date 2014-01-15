@@ -60,14 +60,12 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   def union(that: TypeSpec): TypeSpec = TypeSpec(ranges ++ that.ranges)
   def |(that: TypeSpec): TypeSpec = union(that)
 
-  def =:=(that: CypherType): TypeSpec = intersect(that.invariant)
   def intersect(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
     r => that.ranges.flatMap(r intersect)
   })
   def &(that: TypeSpec): TypeSpec = intersect(that)
 
-  def =%=(that: CypherType): TypeSpec = intersectWithCoercion(that.invariant)
-  def intersectWithCoercion(that: TypeSpec): TypeSpec = {
+  def intersectOrCoerce(that: TypeSpec): TypeSpec = {
     val intersection = intersect(that)
     if (intersection.nonEmpty)
       intersection
@@ -75,13 +73,9 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       coercions intersect that
   }
 
-  def <:<(that: CypherType): TypeSpec = constrain(that.invariant)
-  def constrain(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
-    r => that.ranges.flatMap(r constrain _.lower)
-  })
+  def constrain(that: CypherType): TypeSpec = TypeSpec(ranges.flatMap(_ constrain that))
 
-  def <%<(that: CypherType): TypeSpec = constrainWithCoercion(that.invariant)
-  def constrainWithCoercion(that: TypeSpec): TypeSpec = {
+  def constrainOrCoerce(that: CypherType): TypeSpec = {
     val constrained = constrain(that)
     if (constrained.nonEmpty)
       constrained
@@ -89,7 +83,6 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       coercions constrain that
   }
 
-  def >:>(that: CypherType): TypeSpec = mergeUp(that.invariant)
   def mergeUp(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
     r => that.ranges.flatMap(r mergeUp)
   })
