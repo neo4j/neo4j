@@ -33,15 +33,15 @@ class PowTest extends FunctionTestBase("^") {
 
   @Test
   def shouldHandleAllSpecializations() {
-    testValidTypes(CTLong, CTLong)(CTLong)
-    testValidTypes(CTLong, CTDouble)(CTDouble)
-    testValidTypes(CTDouble, CTLong)(CTDouble)
+    testValidTypes(CTInteger, CTInteger)(CTInteger)
+    testValidTypes(CTInteger, CTDouble)(CTDouble)
+    testValidTypes(CTDouble, CTInteger)(CTDouble)
     testValidTypes(CTDouble, CTDouble)(CTDouble)
   }
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTLong, CTDouble | CTLong)(CTDouble | CTLong)
+    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble | CTInteger)
   }
 
   @Test
@@ -53,10 +53,10 @@ class PowTest extends FunctionTestBase("^") {
   @Test
   def shouldFailTypeCheckWhenAddingIncompatible() {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double, Integer or Long but was Boolean"
+      "Type mismatch: expected Double or Integer but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Double, Integer or Long but was Boolean"
+      "Type mismatch: expected Double or Integer but was Boolean"
     )
   }
 }

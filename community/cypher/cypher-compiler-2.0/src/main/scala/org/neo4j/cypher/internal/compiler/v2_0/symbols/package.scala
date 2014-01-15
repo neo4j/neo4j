@@ -26,7 +26,6 @@ package object symbols {
   val CTNumber = NumberType.instance
   val CTDouble = DoubleType.instance
   val CTInteger = IntegerType.instance
-  val CTLong = LongType.instance
   val CTMap = MapType.instance
   val CTNode = NodeType.instance
   val CTRelationship = RelationshipType.instance

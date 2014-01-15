@@ -126,18 +126,18 @@ class SemanticStateTest extends Assertions {
 
   @Test
   def shouldExpectTypeForExpression() {
-    val expression = DummyExpression(CTInteger | CTLong | CTString | CTMap, DummyToken(0,1))
+    val expression = DummyExpression(CTInteger | CTString | CTMap, DummyToken(0,1))
     val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
 
     state.expectType(expression, T <:< CTNumber) match {
       case (s, typ) =>
-        assertEquals(CTInteger | CTLong, typ)
+        assertEquals(CTInteger: TypeSpec, typ)
         assertEquals(typ, s.expressionType(expression).actual)
     }
 
     state.expectType(expression, T <:< CTNode | T <:< CTNumber) match {
       case (s, typ) =>
-        assertEquals(CTInteger | CTLong, typ)
+        assertEquals(CTInteger: TypeSpec, typ)
         assertEquals(typ, s.expressionType(expression).actual)
     }
   }

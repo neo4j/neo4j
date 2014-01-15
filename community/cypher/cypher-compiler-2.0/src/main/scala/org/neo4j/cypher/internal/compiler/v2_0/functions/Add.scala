@@ -35,7 +35,7 @@ case object Add extends Function {
     }
 
   private def semanticCheckUnary(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    invocation.arguments.expectType(T <:< CTInteger | T <:< CTLong | T <:< CTDouble) then
+    invocation.arguments.expectType(T <:< CTInteger | T <:< CTDouble) then
     invocation.specifyType(invocation.arguments(0).types)
 
   private def semanticCheckInfix(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck = {
@@ -55,7 +55,7 @@ case object Add extends Function {
     // "a" + 1.1 => "a1.1"
     val stringTypes =
       if (lhsTypes.containsAny(T <:< CTString))
-        T <:< CTString | T <:< CTInteger | T <:< CTLong | T <:< CTDouble
+        T <:< CTString | T <:< CTInteger | T <:< CTDouble
       else
         TypeSpec.none
 
@@ -66,8 +66,8 @@ case object Add extends Function {
     // 1.1 + 1 => 2.1
     // 1.1 + 1.1 => 2.2
     val numberTypes =
-      if (lhsTypes.containsAny(T <:< CTInteger | T <:< CTLong | T <:< CTDouble))
-        T <:< CTString | T <:< CTInteger | T <:< CTLong | T <:< CTDouble
+      if (lhsTypes.containsAny(T <:< CTInteger | T <:< CTDouble))
+        T <:< CTString | T <:< CTInteger | T <:< CTDouble
       else
         TypeSpec.none
 
@@ -87,7 +87,7 @@ case object Add extends Function {
 
     def when(fst: TypeSpec, snd: TypeSpec)(result: CypherType): TypeSpec =
       if (lhsTypes.containsAny(fst) && rhsTypes.containsAny(snd) || lhsTypes.containsAny(snd) && rhsTypes.containsAny(fst))
-        result
+        result.invariant
       else
         TypeSpec.none
 
@@ -97,7 +97,7 @@ case object Add extends Function {
     // 1 + "b" => "1b"
     // 1.1 + "b" => "1.1b"
     val stringTypes: TypeSpec =
-      when(T <:< CTString, T <:< CTInteger | T <:< CTLong | T <:< CTDouble | T <:< CTString)(CTString)
+      when(T <:< CTString, T <:< CTInteger | T <:< CTDouble | T <:< CTString)(CTString)
 
     // 1 + 1 => 2
     // 1 + 1.1 => 2.1
@@ -105,15 +105,14 @@ case object Add extends Function {
     // 1.1 + 1.1 => 2.2
     val numberTypes: TypeSpec =
       when(T <:< CTInteger, T <:< CTInteger)(CTInteger) |
-      when(T <:< CTLong, T <:< CTInteger | T <:< CTLong)(CTLong) |
-      when(T <:< CTDouble, T <:< CTDouble | T <:< CTInteger | T <:< CTLong)(CTDouble)
+      when(T <:< CTDouble, T <:< CTDouble | T <:< CTInteger)(CTDouble)
 
     // [a] + [b] => [a, b]
     // [a] + b => [a, b]
     // a + [b] => [a, b]
     val collectionTypes = {
-      val lhsCollectionTypes = lhsTypes <:< CTCollection(CTAny)
-      val rhsCollectionTypes = rhsTypes <:< CTCollection(CTAny)
+      val lhsCollectionTypes = lhsTypes constrain CTCollection(CTAny)
+      val rhsCollectionTypes = rhsTypes constrain CTCollection(CTAny)
       val lhsCollectionInnerTypes = lhsCollectionTypes.unwrapCollections
       val rhsCollectionInnerTypes = rhsCollectionTypes.unwrapCollections
 

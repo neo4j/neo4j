@@ -41,18 +41,17 @@ class AddTest extends FunctionTestBase("+") {
 
   @Test
   def shouldHandleAllSpecializations() {
-    testValidTypes(CTLong)(CTLong)
     testValidTypes(CTInteger)(CTInteger)
     testValidTypes(CTDouble)(CTDouble)
 
     testValidTypes(CTString, CTString)(CTString)
-    testValidTypes(CTString, CTLong)(CTString)
+    testValidTypes(CTString, CTInteger)(CTString)
     testValidTypes(CTString, CTDouble)(CTString)
-    testValidTypes(CTLong, CTString)(CTString)
-    testValidTypes(CTLong, CTLong)(CTLong)
-    testValidTypes(CTLong, CTDouble)(CTDouble)
+    testValidTypes(CTInteger, CTString)(CTString)
+    testValidTypes(CTInteger, CTInteger)(CTInteger)
+    testValidTypes(CTInteger, CTDouble)(CTDouble)
     testValidTypes(CTDouble, CTString)(CTString)
-    testValidTypes(CTDouble, CTLong)(CTDouble)
+    testValidTypes(CTDouble, CTInteger)(CTDouble)
     testValidTypes(CTDouble, CTDouble)(CTDouble)
 
     testValidTypes(CTCollection(CTNode), CTCollection(CTNode))(CTCollection(CTNode))
@@ -67,15 +66,15 @@ class AddTest extends FunctionTestBase("+") {
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTString, CTLong)(CTDouble | CTString)
+    testValidTypes(CTDouble | CTString, CTInteger)(CTDouble | CTString)
     testValidTypes(CTDouble | CTCollection(CTDouble), CTDouble)(CTDouble | CTCollection(CTDouble))
     testValidTypes(CTDouble, CTDouble | CTCollection(CTDouble))(CTDouble | CTCollection(CTDouble))
   }
 
   @Test
   def shouldHandleCoercions() {
-    testValidTypes(CTCollection(CTDouble), CTLong)(CTCollection(CTDouble))
-    testValidTypes(CTDouble | CTCollection(CTDouble), CTLong)(CTDouble | CTCollection(CTDouble))
+    testValidTypes(CTCollection(CTDouble), CTInteger)(CTCollection(CTDouble))
+    testValidTypes(CTDouble | CTCollection(CTDouble), CTInteger)(CTDouble | CTCollection(CTDouble))
   }
 
   @Test
@@ -87,11 +86,11 @@ class AddTest extends FunctionTestBase("+") {
   @Test
   def shouldFailTypeCheckForIncompatibleArguments() {
     testInvalidApplication(CTBoolean)(
-      "Type mismatch: expected Double, Integer or Long but was Boolean"
+      "Type mismatch: expected Double or Integer but was Boolean"
     )
 
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double, Integer, Long, String or Collection<Integer> but was Boolean"
+      "Type mismatch: expected Double, Integer, String or Collection<Integer> but was Boolean"
     )
     testInvalidApplication(CTCollection(CTInteger), CTString)(
       "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was String"

@@ -27,7 +27,7 @@ case object Sign extends Function with SimpleTypedFunction {
   def name = "sign"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTLong), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
     Signature(argumentTypes = Vector(CTDouble), outputType = CTInteger)
   )
 

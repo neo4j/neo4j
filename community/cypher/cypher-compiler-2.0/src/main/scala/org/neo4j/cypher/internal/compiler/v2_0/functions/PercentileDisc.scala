@@ -28,7 +28,6 @@ case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction 
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTLong, CTDouble), outputType = CTLong),
     Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
   )
 

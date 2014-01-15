@@ -28,9 +28,7 @@ case object Substring extends Function with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString),
-    Signature(argumentTypes = Vector(CTString, CTInteger, CTInteger), outputType = CTString),
-    Signature(argumentTypes = Vector(CTString, CTLong), outputType = CTString),
-    Signature(argumentTypes = Vector(CTString, CTLong, CTLong), outputType = CTString)
+    Signature(argumentTypes = Vector(CTString, CTInteger, CTInteger), outputType = CTString)
   )
 
   def toCommand(invocation: ast.FunctionInvocation) = {

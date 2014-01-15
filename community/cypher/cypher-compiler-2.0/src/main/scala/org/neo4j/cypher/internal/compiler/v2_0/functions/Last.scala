@@ -33,7 +33,7 @@ case object Last extends Function {
     }
 
   private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator = s =>
-    (expression.types(s) <:< CTCollection(CTAny)).unwrapCollections
+    (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.CollectionIndex(

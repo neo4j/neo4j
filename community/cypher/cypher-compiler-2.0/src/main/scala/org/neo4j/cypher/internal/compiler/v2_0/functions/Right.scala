@@ -27,8 +27,7 @@ case object Right extends Function with SimpleTypedFunction {
   def name = "right"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString),
-    Signature(argumentTypes = Vector(CTString, CTLong), outputType = CTString)
+    Signature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString)
   )
 
   def toCommand(invocation: ast.FunctionInvocation) = {

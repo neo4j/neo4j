@@ -38,8 +38,8 @@ class XorTest extends FunctionTestBase("XOR") {
 
   @Test
   def shouldCoerceArguments() {
-    testValidTypes(CTLong, CTBoolean)(CTBoolean)
-    testValidTypes(CTBoolean, CTLong)(CTBoolean)
+    testValidTypes(CTInteger, CTBoolean)(CTBoolean)
+    testValidTypes(CTBoolean, CTInteger)(CTBoolean)
   }
 
   @Test

@@ -30,7 +30,6 @@ object TypeSpec {
     CTBoolean,
     CTDouble,
     CTInteger,
-    CTLong,
     CTMap,
     CTNode,
     CTNumber,
@@ -67,7 +66,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   })
   def &(that: TypeSpec): TypeSpec = intersect(that)
 
-  def =%=(that: CypherType): TypeSpec = intersectWithCoercion(TypeSpec.exact(that))
+  def =%=(that: CypherType): TypeSpec = intersectWithCoercion(that.invariant)
   def intersectWithCoercion(that: TypeSpec): TypeSpec = {
     val intersection = intersect(that)
     if (intersection.nonEmpty)
@@ -81,7 +80,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
     r => that.ranges.flatMap(r constrain _.lower)
   })
 
-  def <%<(that: CypherType): TypeSpec = constrainWithCoercion(TypeSpec.exact(that))
+  def <%<(that: CypherType): TypeSpec = constrainWithCoercion(that.invariant)
   def constrainWithCoercion(that: TypeSpec): TypeSpec = {
     val constrained = constrain(that)
     if (constrained.nonEmpty)

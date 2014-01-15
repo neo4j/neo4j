@@ -27,7 +27,6 @@ case object GreaterThan extends PredicateFunction with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTLong, CTLong), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )

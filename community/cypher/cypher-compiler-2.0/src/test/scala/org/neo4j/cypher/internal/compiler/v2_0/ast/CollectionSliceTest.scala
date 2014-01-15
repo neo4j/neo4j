@@ -63,6 +63,6 @@ class CollectionSliceTest extends Assertions {
       DummyToken(4, 8))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer or Long but was Double", to.token)), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", to.token)), result.errors)
   }
 }

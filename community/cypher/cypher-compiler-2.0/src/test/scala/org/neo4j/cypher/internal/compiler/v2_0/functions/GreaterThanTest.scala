@@ -27,13 +27,8 @@ class GreaterThanTest extends FunctionTestBase(">") {
 
   @Test
   def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTLong)("Insufficient parameters for function '>'")
-    testInvalidApplication(CTLong, CTLong, CTLong)("Too many parameters for function '>'")
-  }
-
-  @Test
-  def shouldSupportComparingLongs() {
-    testValidTypes(CTLong, CTLong)(CTBoolean)
+    testInvalidApplication(CTInteger)("Insufficient parameters for function '>'")
+    testInvalidApplication(CTInteger, CTInteger, CTInteger)("Too many parameters for function '>'")
   }
 
   @Test
@@ -53,7 +48,7 @@ class GreaterThanTest extends FunctionTestBase(">") {
 
   @Test
   def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTNode, CTLong)("Type mismatch: expected Double, Integer, Long or String but was Node")
-    testInvalidApplication(CTLong, CTNode)("Type mismatch: expected Long but was Node")
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Double, Integer or String but was Node")
+    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
   }
 }

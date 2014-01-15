@@ -142,7 +142,7 @@ case class False(token: InputToken) extends Expression with PredicateExpression 
 }
 
 case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = CTLong
+  protected def possibleTypes = CTInteger
 
   def toCommand = commandexpressions.CountStar()
 }
@@ -234,9 +234,9 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
       SemanticError("The start or end (or both) is required for a collection slice", token)
     } then
     from.semanticCheck(ctx) then
-    from.expectType(T <:< CTInteger | T <:< CTLong) then
+    from.expectType(T <:< CTInteger) then
     to.semanticCheck(ctx) then
-    to.expectType(T <:< CTInteger | T <:< CTLong) then
+    to.expectType(T <:< CTInteger) then
     specifyType(collection.types)
 
   def toCommand = commandexpressions.CollectionSliceExpression(collection.toCommand, from.map(_.toCommand), to.map(_.toCommand))
@@ -249,7 +249,7 @@ case class CollectionIndex(collection: Expression, idx: Expression, token: Input
     collection.semanticCheck(ctx) then
     collection.expectType(T <:< CTCollection(CTAny)) then
     idx.semanticCheck(ctx) then
-    idx.expectType(T <:< CTInteger | T <:< CTLong) then
+    idx.expectType(T <:< CTInteger) then
     specifyType(collection.types(_).unwrapCollections)
 
   def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)

@@ -28,7 +28,6 @@ case object Min extends AggregatingFunction with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTLong), outputType = CTLong),
     Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
   )
 

@@ -38,6 +38,6 @@ class LabelsTest extends FunctionTestBase("labels") {
 
   @Test
   def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTLong)("Type mismatch: expected Node but was Long")
+    testInvalidApplication(CTInteger)("Type mismatch: expected Node but was Integer")
   }
 }

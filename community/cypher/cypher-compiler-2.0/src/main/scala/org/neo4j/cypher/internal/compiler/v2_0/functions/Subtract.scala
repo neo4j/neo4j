@@ -28,13 +28,9 @@ case object Subtract extends Function with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTLong), outputType = CTLong),
     Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble),
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTLong), outputType = CTLong),
-    Signature(argumentTypes = Vector(CTLong, CTLong), outputType = CTLong),
     Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
-    Signature(argumentTypes = Vector(CTLong, CTDouble), outputType = CTDouble),
     Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
   )
 

@@ -49,6 +49,6 @@ class CollectionIndexTest extends Assertions {
       DummyToken(4, 8))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer or Long but was Double", index.idx.token)), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", index.idx.token)), result.errors)
   }
 }

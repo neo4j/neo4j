@@ -27,7 +27,7 @@ case object Timestamp extends Function with SimpleTypedFunction {
   def name = "timestamp"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(), outputType = CTLong)
+    Signature(argumentTypes = Vector(), outputType = CTInteger)
   )
 
   def toCommand(invocation: ast.FunctionInvocation) =

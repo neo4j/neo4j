@@ -28,9 +28,7 @@ case object Range extends Function with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTCollection(CTInteger)),
-    Signature(argumentTypes = Vector(CTInteger, CTInteger, CTInteger), outputType = CTCollection(CTInteger)),
-    Signature(argumentTypes = Vector(CTLong, CTLong), outputType = CTCollection(CTLong)),
-    Signature(argumentTypes = Vector(CTLong, CTLong, CTLong), outputType = CTCollection(CTLong))
+    Signature(argumentTypes = Vector(CTInteger, CTInteger, CTInteger), outputType = CTCollection(CTInteger))
   )
 
   def toCommand(invocation: ast.FunctionInvocation) = {

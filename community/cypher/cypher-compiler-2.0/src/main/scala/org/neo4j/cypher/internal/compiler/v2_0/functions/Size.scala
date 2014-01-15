@@ -27,7 +27,7 @@ case object Size extends Function with SimpleTypedFunction {
   def name = "size"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTCollection(CTAny)), outputType = CTLong)
+    Signature(argumentTypes = Vector(CTCollection(CTAny)), outputType = CTInteger)
   )
 
   def toCommand(invocation: ast.FunctionInvocation) =

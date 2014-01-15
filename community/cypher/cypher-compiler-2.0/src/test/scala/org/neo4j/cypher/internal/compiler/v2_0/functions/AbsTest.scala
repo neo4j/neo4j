@@ -44,6 +44,6 @@ class AbsTest extends FunctionTestBase("abs") {
 
   @Test
   def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTNode)("Type mismatch: expected Double, Integer or Long but was Node")
+    testInvalidApplication(CTNode)("Type mismatch: expected Double or Integer but was Node")
   }
 }

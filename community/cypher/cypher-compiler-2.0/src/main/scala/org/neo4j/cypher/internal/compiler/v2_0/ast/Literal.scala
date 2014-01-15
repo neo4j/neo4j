@@ -33,7 +33,7 @@ trait Literal extends Expression {
 sealed abstract class IntegerLiteral(stringVal: String) extends Literal with SimpleTypedExpression {
   lazy val value = stringVal.toLong
 
-  protected def possibleTypes = CTLong
+  protected def possibleTypes = CTInteger
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     when(!(try {

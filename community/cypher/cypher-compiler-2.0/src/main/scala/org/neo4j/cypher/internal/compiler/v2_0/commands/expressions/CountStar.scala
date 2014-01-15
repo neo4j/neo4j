@@ -30,7 +30,7 @@ case class CountStar() extends AggregationExpression {
 
   def arguments = Nil
 
-  def calculateType(symbols: SymbolTable): CypherType = CTLong
+  def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   def symbolTableDependencies = Set()
 }

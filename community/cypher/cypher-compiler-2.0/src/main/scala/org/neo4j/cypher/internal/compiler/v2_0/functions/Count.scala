@@ -27,7 +27,7 @@ case object Count extends AggregatingFunction with SimpleTypedFunction {
   def name = "count"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTAny), outputType = CTLong)
+    Signature(argumentTypes = Vector(CTAny), outputType = CTInteger)
   )
 
   def toCommand(invocation: ast.FunctionInvocation) = {

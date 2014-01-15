@@ -27,8 +27,8 @@ case object Id extends Function with SimpleTypedFunction {
   def name = "id"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTNode), outputType = CTLong),
-    Signature(argumentTypes = Vector(CTRelationship), outputType = CTLong)
+    Signature(argumentTypes = Vector(CTNode), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTRelationship), outputType = CTInteger)
   )
 
   def toCommand(invocation: ast.FunctionInvocation) =

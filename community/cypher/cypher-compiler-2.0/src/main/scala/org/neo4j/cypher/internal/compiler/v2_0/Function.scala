@@ -164,12 +164,12 @@ trait SimpleTypedFunction { self: Function =>
       case (accumulator@(Seq(), _), _) =>
         accumulator
       case ((possibilities, r1), arg)  =>
-        val argTypes = possibilities.foldLeft(TypeSpec.none) { (ts, sig) => ts | (T <:< sig.argumentTypes.head) }
+        val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
         val r2 = arg.expectType(argTypes)(r1.state)
 
         val actualTypes = arg.types(r2.state)
         val remainingPossibilities = possibilities.filter {
-          sig => actualTypes containsAny (T <:< sig.argumentTypes.head)
+          sig => actualTypes containsAny sig.argumentTypes.head.covariant
         } map {
           sig => sig.copy(argumentTypes = sig.argumentTypes.tail)
         }
@@ -177,8 +177,8 @@ trait SimpleTypedFunction { self: Function =>
     }
 
     val outputType = remainingSignatures match {
-      case Seq() => T <:< CTAny
-      case _     => remainingSignatures.foldLeft(TypeSpec.none) { _ | _.outputType }
+      case Seq() => TypeSpec.all
+      case _     => remainingSignatures.foldLeft(TypeSpec.none) { _ | _.outputType.invariant }
     }
     invocation.specifyType(outputType)(result.state) match {
       case Left(err)    => SemanticCheckResult(result.state, result.errors :+ err)
