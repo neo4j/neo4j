@@ -49,14 +49,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def cantUseTYPEOnNodes() {
     test(
       "start r=node(0) return type(r)",
-      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 29)"
+      "Type mismatch: expected Relationship but was Node (line 1, column 29)"
     )
   }
 
   @Test def cantUseLENGTHOnNodes() {
     test(
       "start n=node(0) return length(n)",
-      "Type mismatch: n already defined with conflicting type Node (expected Collection<Any>, Path or String) (line 1, column 31)"
+      "Type mismatch: expected Path, String or Collection<T> but was Node (line 1, column 31)"
     )
   }
 
@@ -176,7 +176,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
   @Test def shouldFailTypeCheckWhenDeleting() {
     test(
       "start a=node(0) delete 1 + 1",
-      "Type mismatch: expected Node, Relationship or Path but was Long (line 1, column 26)"
+      "Type mismatch: expected Node, Path or Relationship but was Long (line 1, column 26)"
     )
   }
 
@@ -378,16 +378,22 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions 
     )
   }
 
+  @Test def shouldGiveTypeErrorForActionsOnMixedCollection() {
+    test(
+      "RETURN (['a', 1][0]).prop",
+      "Type mismatch: expected Map, Node or Relationship but was Any (line 1, column 19)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
       result.toList
       fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
-      case x: CypherException => {
+      case x: CypherException =>
         val actual = x.getMessage.lines.next().trim
         assertThat(actual, equalTo(message))
-      }
     }
   }
 }

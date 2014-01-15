@@ -56,6 +56,10 @@ abstract class CypherType {
     else if (other.isAssignableFrom(this)) Some(this)
     else None
 
+  lazy val covariant: TypeSpec = TypeSpec.all constrain this
+  lazy val invariant: TypeSpec = TypeSpec.exact(this)
+  lazy val contravariant: TypeSpec = TypeSpec.all mergeUp this
+
   def rewrite(f: CypherType => CypherType) = f(this)
 }
 

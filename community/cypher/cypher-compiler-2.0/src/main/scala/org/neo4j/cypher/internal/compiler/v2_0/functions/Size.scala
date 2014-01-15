@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Size extends Function {
   def name = "size"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) then
-      invocation.arguments.constrainType(CTCollectionAny) then
+      invocation.arguments.expectType(T <:< CTCollection(CTAny)) then
       invocation.specifyType(CTLong)
 
   def toCommand(invocation: ast.FunctionInvocation) =

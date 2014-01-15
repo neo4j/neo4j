@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 case class Skip(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(CTLong)
+  def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.expectType(T <:< CTInteger | T <:< CTLong)
 
   def toCommand = expression match {
     case integer: UnsignedIntegerLiteral => commandexpressions.Literal(integer.value.toInt)

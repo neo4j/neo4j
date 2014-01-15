@@ -303,7 +303,7 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(CTMap)
+      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(T <:< CTMap)
   }
 
   def legacyName: String
@@ -341,8 +341,11 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
 
 case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
   override def declareIdentifiers(ctx: SemanticContext) = ((ctx match {
-    case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(CTNode)
-    case _                          => identifier.implicitDeclaration(CTNode)
+    case SemanticContext.Expression =>
+      identifier.ensureDefined() then
+      identifier.expectType(T <:< CTNode)
+    case _                          =>
+      identifier.implicitDeclaration(CTNode)
   }): SemanticCheck) then super.declareIdentifiers(ctx)
 
   val legacyName = identifier.name
@@ -393,7 +396,7 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.constrainType(CTMap)
+      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(T <:< CTMap)
   }
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
@@ -464,7 +467,7 @@ case class NamedRelationshipPattern(
 
     ((ctx match {
       case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
-      case SemanticContext.Expression => identifier.ensureDefined() then identifier.constrainType(possibleType)
+      case SemanticContext.Expression => identifier.ensureDefined() then identifier.expectType(T <:< possibleType)
       case _                          => identifier.declare(possibleType)
     }): SemanticCheck) then super.declareIdentifiers(ctx)
   }

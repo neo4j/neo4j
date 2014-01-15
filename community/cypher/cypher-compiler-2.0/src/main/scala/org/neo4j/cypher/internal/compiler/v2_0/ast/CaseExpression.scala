@@ -30,18 +30,18 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
     val possibleTypes: TypeGenerator = (alternatives.map(_._2) ++ default).mergeUpTypes
 
     expression.semanticCheck(ctx) then
-      alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then
-      default.semanticCheck(ctx) then
-      when (expression.isEmpty) {
-        alternatives.map(_._1).constrainType(CTBoolean)
-      } then this.specifyType(possibleTypes)
+    alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then
+    default.semanticCheck(ctx) then
+    when (expression.isEmpty) {
+      alternatives.map(_._1).expectType(T <:< CTBoolean)
+    } then this.specifyType(possibleTypes)
   }
 
   def toCommand: CommandExpression = expression match {
     case Some(e) =>
       val legacyAlternatives = alternatives.map { a => (a._1.toCommand, a._2.toCommand) }
       commandexpressions.SimpleCase(e.toCommand, legacyAlternatives, default.map(_.toCommand))
-    case None =>
+    case None    =>
       val predicateAlternatives = alternatives.map { a => (a._1.toPredicate, a._2.toCommand) }
       commandexpressions.GenericCase(predicateAlternatives, default.map(_.toCommand))
   }

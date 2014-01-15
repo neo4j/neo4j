@@ -28,12 +28,12 @@ case object Head extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments(0).constrainType(CTCollectionAny) then
+      invocation.arguments(0).expectType(T <:< CTCollection(CTAny)) then
       invocation.specifyType(possibleInnerTypes(invocation.arguments(0)))
     }
 
-  private def possibleInnerTypes(expression: ast.Expression): TypeGenerator =
-    expression.types(_).collect { case c: CollectionType => c.innerType }
+  private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator =
+    expression.types(_).unwrapCollections
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.CollectionIndex(

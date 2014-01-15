@@ -28,7 +28,7 @@ case object Acos extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(CTNumber) then
+    invocation.arguments.expectType(T <:< CTNumber) then
     invocation.specifyType(CTDouble)
 
   def toCommand(invocation: ast.FunctionInvocation) =

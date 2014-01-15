@@ -28,7 +28,7 @@ import scala.collection.immutable.SortedSet
 
 class CollectionSliceTest extends Assertions {
   val dummyCollection = DummyExpression(
-    TypeSet(CTCollection(CTNode), CTNode, CTCollection(CTString)),
+    CTCollection(CTNode) | CTNode | CTCollection(CTString),
     DummyToken(2,3))
 
   @Test
@@ -40,7 +40,7 @@ class CollectionSliceTest extends Assertions {
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CTCollection(CTNode), CTCollection(CTString)), slice.types(result.state))
+    assertEquals(CTCollection(CTNode) | CTCollection(CTString), slice.types(result.state))
   }
 
   @Test
@@ -63,6 +63,6 @@ class CollectionSliceTest extends Assertions {
       DummyToken(4, 8))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer or Long but was Double", to.token, SortedSet(to.token))), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer or Long but was Double", to.token)), result.errors)
   }
 }

@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 case object In extends PredicateFunction {
   def name = "IN"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(1).constrainType(CTCollectionAny)
+      invocation.arguments(1).expectType(T <:< CTCollection(CTAny))
     } then invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {

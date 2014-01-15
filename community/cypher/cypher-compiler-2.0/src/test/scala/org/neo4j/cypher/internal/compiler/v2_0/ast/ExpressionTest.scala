@@ -26,29 +26,41 @@ import org.scalatest.Assertions
 
 class ExpressionTest extends Assertions {
 
-  @Test
-  def shouldReturnEmptyTypeSetIfTypesRequestedButNotEvaluated() {
-    val expression = new Expression() {
-      val token = DummyToken(0, 1)
-      def semanticCheck(ctx: Expression.SemanticContext) = ???
-      def toCommand = ???
-    }
+  val expression = new Expression() {
+    val token = DummyToken(0, 1)
+    def semanticCheck(ctx: Expression.SemanticContext) = ???
+    def toCommand = ???
+  }
 
-    assert(expression.types(SemanticState.clean) === TypeSet.empty)
+  @Test
+  def shouldReturnCalculatedType() {
+    assert(expression.types(SemanticState.clean) === TypeSpec.all)
+  }
+
+  @Test
+  def shouldReturnTypeSetOfAllIfTypesRequestedButNotEvaluated() {
+    assert(expression.types(SemanticState.clean) === TypeSpec.all)
   }
 
   @Test
   def shouldReturnSpecifiedAndConstrainedTypes() {
-    val expression = new Expression() {
-      val token = DummyToken(0, 1)
-      def semanticCheck(ctx: Expression.SemanticContext) = ???
-      def toCommand = ???
-    }
     val state = (
-      expression.specifyType(CTNode, CTInteger) then
-      expression.constrainType(CTNumber)
-      )(SemanticState.clean).state
+      expression.specifyType(CTNode | CTInteger) then
+      expression.expectType(T <:< CTNumber)
+    )(SemanticState.clean).state
 
-    assert(expression.types(state) === TypeSet(CTInteger))
+    assert(expression.types(state) === CTInteger.invariant)
+  }
+
+  @Test
+  def shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType() {
+    val result = (
+      expression.specifyType(CTNode | CTInteger) then
+      expression.expectType(T <:< CTString)
+    )(SemanticState.clean)
+
+    assert(result.errors.size === 1)
+    assert(result.errors.head.token === expression.token)
+    assert(expression.types(result.state).isEmpty)
   }
 }

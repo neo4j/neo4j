@@ -28,7 +28,7 @@ import org.scalatest.Assertions
 class FilterExpressionTest extends Assertions {
 
   val dummyExpression = DummyExpression(
-    possibleTypes = TypeSet(CTCollection(CTNode), CTBoolean, CTCollection(CTString)),
+    possibleTypes = CTCollection(CTNode) | CTBoolean | CTCollection(CTString),
     token = DummyToken(2, 3))
 
   @Test
@@ -40,7 +40,7 @@ class FilterExpressionTest extends Assertions {
       token = DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CTCollection(CTNode), CTCollection(CTString)), filter.types(result.state))
+    assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
   }
 
   @Test

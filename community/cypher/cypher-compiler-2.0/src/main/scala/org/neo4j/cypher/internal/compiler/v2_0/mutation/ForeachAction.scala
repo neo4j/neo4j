@@ -52,7 +52,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
   def identifiers = Nil
 
   def addInnerIdentifier(symbols: SymbolTable): SymbolTable = {
-    val t = collection.evaluateType(CTCollectionAny, symbols).legacyIteratedType
+    val t = collection.evaluateType(CTCollection(CTAny), symbols).legacyIteratedType
 
     val innerSymbols: SymbolTable = symbols.add(id, t)
     innerSymbols

@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Reduce extends Function {
   def name = "reduce"
 
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     semanticCheck(ctx, invocation)
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     SemanticError(s"${name}(...) requires '| expression' (an accumulation expression)", invocation.token)
 
   def toCommand(invocation: ast.FunctionInvocation) = ???

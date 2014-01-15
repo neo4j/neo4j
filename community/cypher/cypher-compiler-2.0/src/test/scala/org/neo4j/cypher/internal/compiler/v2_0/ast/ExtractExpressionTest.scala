@@ -28,12 +28,12 @@ import org.scalatest.Assertions
 class ExtractExpressionTest extends Assertions {
 
   val dummyExpression = DummyExpression(
-    TypeSet(CTCollection(CTNode), CTBoolean, CTCollection(CTString)),
+    CTCollection(CTNode) | CTBoolean | CTCollection(CTString),
     DummyToken(2,3))
 
   val extractExpression = new Expression with SimpleTypedExpression {
     def token: InputToken = DummyToken(2,3)
-    protected def possibleTypes: TypeSet = Set(CTNode, CTNumber)
+    protected def possibleTypes: TypeSpec = CTNode | CTNumber
 
     def toCommand = ???
   }
@@ -43,7 +43,7 @@ class ExtractExpressionTest extends Assertions {
     val extract = ExtractExpression(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CTCollection(CTNode), CTCollection(CTNumber)), extract.types(result.state))
+    assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), extract.types(result.state))
   }
 
   @Test

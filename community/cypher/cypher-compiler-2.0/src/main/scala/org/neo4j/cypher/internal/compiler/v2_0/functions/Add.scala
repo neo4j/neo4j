@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Add extends Function {
   def name = "+"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
     when(invocation.arguments.length == 1) {
-      invocation.arguments.constrainType(CTNumber)
+      invocation.arguments.expectType(T <:< CTNumber)
       invocation.specifyType(CTNumber)
     } then when(invocation.arguments.length == 2) {
-      invocation.arguments.constrainType(CTString, CTNumber, CTCollectionAny) then
+      invocation.arguments.expectType(T <:< CTString | T <:< CTNumber | T <:< CTCollection(CTAny)) then
       invocation.specifyType(invocation.arguments.mergeUpTypes)
     }
 

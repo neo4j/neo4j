@@ -28,7 +28,7 @@ case object EndNode extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(CTRelationship) then
+    invocation.arguments.expectType(T <:< CTRelationship) then
     invocation.specifyType(CTNode)
 
   def toCommand(invocation: ast.FunctionInvocation) =

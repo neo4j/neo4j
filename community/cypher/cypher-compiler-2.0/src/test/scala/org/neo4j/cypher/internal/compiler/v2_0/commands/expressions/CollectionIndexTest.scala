@@ -58,7 +58,7 @@ class CollectionIndexTest extends Assertions {
   @Test def typeWhenCollectionIsAnyTypeIsCollectionOfCTAny {
     val collection = new FakeExpression(CTAny)
     val symbols = new SymbolTable()
-    val result = CollectionIndex(collection, Literal(2)).evaluateType(CTCollectionAny, symbols)
+    val result = CollectionIndex(collection, Literal(2)).evaluateType(CTCollection(CTAny), symbols)
 
     assert(result === CTAny)
   }

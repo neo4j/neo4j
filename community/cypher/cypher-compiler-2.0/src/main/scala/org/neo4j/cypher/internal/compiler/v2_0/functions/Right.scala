@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Right extends Function {
   def name = "right"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(0).constrainType(CTString) then
-      invocation.arguments(1).constrainType(CTLong)
+      invocation.arguments(0).expectType(T <:< CTString) then
+      invocation.arguments(1).expectType(T <:< CTInteger | T <:< CTLong)
     } then invocation.specifyType(CTString)
 
   def toCommand(invocation: ast.FunctionInvocation) = {

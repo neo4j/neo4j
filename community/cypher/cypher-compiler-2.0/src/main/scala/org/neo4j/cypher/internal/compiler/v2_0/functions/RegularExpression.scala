@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 case object RegularExpression extends PredicateFunction {
   def name = "=~"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 2) then
-    invocation.arguments.constrainType(CTString) then
+    invocation.arguments.expectType(T <:< CTString) then
     invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = {

@@ -29,15 +29,13 @@ class ReduceExpressionTest extends Assertions {
 
   @Test
   def shouldEvaluateReduceExpressionWithTypedIdentifiers() {
-    val accumulatorType = TypeSet(CTString)
-    val collectionType = CTCollection(CTInteger)
     val error = SemanticError("dummy error", DummyToken(10,11))
 
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
+        assert(s.symbolTypes("x") === CTString.invariant)
+        assert(s.symbolTypes("y") === CTInteger.invariant)
         (this.specifyType(CTString) then error)(s)
       }
 
@@ -46,9 +44,9 @@ class ReduceExpressionTest extends Assertions {
 
     val filter = ReduceExpression(
       accumulator = Identifier("x", DummyToken(2,3)),
-      init = DummyExpression(accumulatorType, DummyToken(4, 5)),
+      init = DummyExpression(CTString, DummyToken(4, 5)),
       id = Identifier("y", DummyToken(6, 7)),
-      collection = DummyExpression(TypeSet(collectionType), DummyToken(8,9)),
+      collection = DummyExpression(CTCollection(CTInteger), DummyToken(8,9)),
       expression = reduceExpression,
       token = DummyToken(0, 12))
 
@@ -60,14 +58,14 @@ class ReduceExpressionTest extends Assertions {
 
   @Test
   def shouldReturnMinimalTypeOfAccumulatorAndReduceFunction() {
-    val accumulatorType = TypeSet(CTString, CTNumber)
+    val initType = (T <:< CTString | T <:< CTDouble)
     val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
+        assert(s.symbolTypes("x") === (CTString | CTDouble))
+        assert(s.symbolTypes("y") === collectionType.innerType.invariant)
         (this.specifyType(CTDouble) then SemanticCheckResult.success)(s)
       }
 
@@ -76,27 +74,27 @@ class ReduceExpressionTest extends Assertions {
 
     val filter = ReduceExpression(
       accumulator = Identifier("x", DummyToken(2,3)),
-      init = DummyExpression(accumulatorType, DummyToken(4, 5)),
+      init = DummyExpression(initType, DummyToken(4, 5)),
       id = Identifier("y", DummyToken(6, 7)),
-      collection = DummyExpression(TypeSet(collectionType), DummyToken(8,9)),
+      collection = DummyExpression(collectionType, DummyToken(8,9)),
       expression = reduceExpression,
       token = DummyToken(0, 12))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(filter.types(result.state) === TypeSet(CTNumber))
+    assert(filter.types(result.state) === (CTAny | CTDouble))
   }
 
   @Test
   def shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator() {
-    val accumulatorType = TypeSet(CTString, CTNumber)
+    val accumulatorType = CTString | CTNumber
     val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new Expression {
       def token = DummyToken(10,12)
       def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === TypeSet(collectionType.innerType))
+        assert(s.symbolTypes("y") === collectionType.innerType.invariant)
         (this.specifyType(CTNode) then SemanticCheckResult.success)(s)
       }
 
@@ -107,13 +105,13 @@ class ReduceExpressionTest extends Assertions {
       accumulator = Identifier("x", DummyToken(2,3)),
       init = DummyExpression(accumulatorType, DummyToken(4, 5)),
       id = Identifier("y", DummyToken(6, 7)),
-      collection = DummyExpression(TypeSet(collectionType), DummyToken(8,9)),
+      collection = DummyExpression(collectionType, DummyToken(8,9)),
       expression = reduceExpression,
       token = DummyToken(0, 12))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Type mismatch: expected String or Number but was Node")
+    assert(result.errors.head.msg === "Type mismatch: expected Number or String but was Node")
     assert(result.errors.head.token === reduceExpression.token)
   }
 

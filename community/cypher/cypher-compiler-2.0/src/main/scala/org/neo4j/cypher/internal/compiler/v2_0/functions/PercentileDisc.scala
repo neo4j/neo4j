@@ -28,8 +28,8 @@ case object PercentileDisc extends AggregatingFunction {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments.constrainType(CTNumber) then
-      invocation.specifyType(invocation.arguments(0).types)
+      invocation.arguments.expectType(T <:< CTNumber) then
+      invocation.specifyType(CTDouble)
     }
 
   def toCommand(invocation: ast.FunctionInvocation) = {

@@ -32,14 +32,15 @@ sealed trait SetItem extends AstNode with SemanticCheckable {
 case class SetPropertyItem(property: Property, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck =
     property.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.constrainType(CTBoolean, CTNumber, CTString, CTCollectionAny)
+    expression.semanticCheck(Expression.SemanticContext.Simple)
 
   def toLegacyUpdateAction = mutation.PropertySetAction(property.toCommand, expression.toCommand)
 }
 
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Simple) then expression.constrainType(CTNode)
+  def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.expectType(T <:< CTNode)
 
   def toLegacyUpdateAction =
     commands.LabelAction(expression.toCommand, commands.LabelSetOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
@@ -48,9 +49,9 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
 case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.constrainType(CTNode, CTRelationship) then
+    identifier.expectType(T <:< CTNode | T <:< CTRelationship) then
     expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.constrainType(CTMap)
+    expression.expectType(T <:< CTMap)
 
   def toLegacyUpdateAction = mutation.MapPropertySetAction(commandexpressions.Identifier(identifier.name), expression.toCommand)
 }

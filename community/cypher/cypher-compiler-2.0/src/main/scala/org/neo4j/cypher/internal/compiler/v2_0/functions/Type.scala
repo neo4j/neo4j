@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Type extends Function {
   def name = "type"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(CTRelationship) then
+    invocation.arguments.expectType(T <:< CTRelationship) then
     invocation.specifyType(CTString)
 
   def toCommand(invocation: ast.FunctionInvocation) =

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
 case object Not extends PredicateFunction {
   def name = "NOT"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) then
-    invocation.arguments.constrainType(CTBoolean) then
+    invocation.arguments.expectType(T <:< CTBoolean) then
     invocation.specifyType(CTBoolean)
 
   protected def internalToPredicate(invocation: FunctionInvocation) = commands.Not(invocation.arguments(0).toPredicate)

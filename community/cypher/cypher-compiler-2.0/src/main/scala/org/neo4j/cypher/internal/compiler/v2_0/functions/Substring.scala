@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 case object Substring extends Function {
   def name = "substring"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 2) then checkMaxArgs(invocation, 3) then when(invocation.arguments.length >= 2) {
-      invocation.arguments(0).constrainType(CTString) then
-        invocation.arguments(1).constrainType(CTLong)
+      invocation.arguments(0).expectType(T <:< CTString) then
+      invocation.arguments(1).expectType(T <:< CTInteger | T <:< CTLong)
     } then when(invocation.arguments.length == 3) {
-      invocation.arguments(2).constrainType(CTLong)
+      invocation.arguments(2).expectType(T <:< CTInteger | T <:< CTLong)
     } then invocation.specifyType(CTString)
 
   def toCommand(invocation: ast.FunctionInvocation) = {
