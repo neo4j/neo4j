@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.symbols
 object LongType {
   val instance = new LongType() {
     val parentType = CTNumber
+    override lazy val coercibleTo: Set[CypherType] = Set(CTBoolean, CTDouble)
     override val toString = "Long"
   }
 }

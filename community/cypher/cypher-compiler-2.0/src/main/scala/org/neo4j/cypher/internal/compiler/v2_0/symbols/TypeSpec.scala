@@ -67,10 +67,28 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   })
   def &(that: TypeSpec): TypeSpec = intersect(that)
 
+  def =%=(that: CypherType): TypeSpec = intersectWithCoercion(TypeSpec.exact(that))
+  def intersectWithCoercion(that: TypeSpec): TypeSpec = {
+    val intersection = intersect(that)
+    if (intersection.nonEmpty)
+      intersection
+    else
+      coercions intersect that
+  }
+
   def <:<(that: CypherType): TypeSpec = constrain(that.invariant)
   def constrain(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
     r => that.ranges.flatMap(r constrain _.lower)
   })
+
+  def <%<(that: CypherType): TypeSpec = constrainWithCoercion(TypeSpec.exact(that))
+  def constrainWithCoercion(that: TypeSpec): TypeSpec = {
+    val constrained = constrain(that)
+    if (constrained.nonEmpty)
+      constrained
+    else
+      coercions constrain that
+  }
 
   def >:>(that: CypherType): TypeSpec = mergeUp(that.invariant)
   def mergeUp(that: TypeSpec): TypeSpec = TypeSpec(ranges.flatMap {
@@ -79,6 +97,14 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
 
   def wrapInCollection: TypeSpec = TypeSpec(ranges.map(_.reparent(CTCollection)))
   def unwrapCollections: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: CollectionType => c.innerType }))
+
+  def coercions: TypeSpec = {
+    val simpleCoercions = TypeSpec.simpleTypes.filter(this contains).flatMap(_.coercibleTo)
+    if (this containsAny CTCollection(CTAny).covariant)
+      TypeSpec.exact(simpleCoercions ++ CTCollection(CTAny).coercibleTo)
+    else
+      TypeSpec.exact(simpleCoercions)
+  }
 
   def isEmpty: Boolean = ranges.isEmpty
   def nonEmpty: Boolean = !isEmpty

@@ -28,6 +28,8 @@ object CollectionType {
     val parentType = CTAny
     override val legacyIteratedType = innerType
 
+    override lazy val coercibleTo: Set[CypherType] = Set(CTBoolean)
+
     override def parents = innerType.parents.map(copy) ++ super.parents
 
     override val toString = s"Collection<$innerType>"
