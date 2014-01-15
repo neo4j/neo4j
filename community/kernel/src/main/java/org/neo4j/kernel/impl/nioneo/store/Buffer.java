@@ -121,6 +121,19 @@ public class Buffer
         buf.put( b );
         return this;
     }
+    
+    /**
+     * Puts a <CODE>short</CODE> into the underlying buffer.
+     * 
+     * @param s
+     *            The <CODE>short</CODE> that will be written
+     * @return This buffer
+     */
+    public Buffer putShort( short s )
+    {
+        buf.putShort( s );
+        return this;
+    }
 
     /**
      * Puts a <CODE>int</CODE> into the underlying buffer.
@@ -171,6 +184,11 @@ public class Buffer
     public long getUnsignedInt()
     {
         return buf.getInt()&0xFFFFFFFFL;
+    }
+    
+    public short getShort()
+    {
+        return buf.getShort();
     }
 
     /**

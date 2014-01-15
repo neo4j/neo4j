@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -47,10 +48,9 @@ import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
@@ -559,5 +559,35 @@ public class NodeProxy implements Node
         {
             throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist." );
         }
+    }
+    
+    @Override
+    public int getDegree()
+    {
+        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager() );
+    }
+
+    @Override
+    public int getDegree( RelationshipType type )
+    {
+        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager(), type );
+    }
+
+    @Override
+    public int getDegree( Direction direction )
+    {
+        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager(), direction );
+    }
+
+    @Override
+    public int getDegree( RelationshipType type, Direction direction )
+    {
+        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager(), type, direction );
+    }
+
+    @Override
+    public Iterable<RelationshipType> getRelationshipTypes()
+    {
+        return nodeLookup.lookup( nodeId ).getRelationshipTypes( nodeLookup.getNodeManager() );
     }
 }

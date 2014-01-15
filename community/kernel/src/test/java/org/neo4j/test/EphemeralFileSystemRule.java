@@ -53,6 +53,12 @@ public class EphemeralFileSystemRule extends ExternalResource
         }
         return fs;
     }
+    
+    public void clear()
+    {
+        fs.shutdown();
+        fs = new EphemeralFileSystemAbstraction();
+    }
 
     public static Runnable shutdownDb( final GraphDatabaseService db )
     {

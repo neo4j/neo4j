@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
@@ -27,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
@@ -36,9 +38,85 @@ import static java.util.Arrays.sort;
 
 class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {
+    static NodeRecordCheck forSparseNodes()
+    {
+        return new NodeRecordCheck( RelationshipField.NEXT_REL, LabelsField.LABELS );
+    }
+
+    static NodeRecordCheck forDenseNodes()
+    {
+        return new NodeRecordCheck( RelationshipGroupField.NEXT_GROUP, LabelsField.LABELS );
+    }
+
+    @SafeVarargs
+    private NodeRecordCheck( RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
+    {
+        super( fields );
+    }
+
     NodeRecordCheck()
     {
         super( RelationshipField.NEXT_REL, LabelsField.LABELS );
+    }
+
+    private enum RelationshipGroupField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
+            ComparativeRecordChecker<NodeRecord, RelationshipGroupRecord, ConsistencyReport.NodeConsistencyReport>
+    {
+        NEXT_GROUP
+        {
+            @Override
+            public void checkConsistency( NodeRecord node, CheckerEngine<NodeRecord, NodeConsistencyReport> engine,
+                    RecordAccess records )
+            {
+                if ( !Record.NO_NEXT_RELATIONSHIP.is( node.getNextRel() ) )
+                {
+                    engine.comparativeCheck( records.relationshipGroup( node.getNextRel() ), this );
+                }
+            }
+
+            @Override
+            public long valueFrom( NodeRecord node )
+            {
+                return node.getNextRel();
+            }
+
+            @Override
+            public void checkChange( NodeRecord oldRecord, NodeRecord newRecord,
+                    CheckerEngine<NodeRecord, NodeConsistencyReport> engine, DiffRecordAccess records )
+            {
+                if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
+                {
+                    if ( oldRecord.isDense() == newRecord.isDense() )
+                    {
+                        // TODO we can do this check if/when relationship group records gets prev pointers,
+                        // until then the previous group is actually unchanged when adding a new in front.
+//                        if ( !Record.NO_NEXT_RELATIONSHIP.is( valueFrom( oldRecord ) )
+//                                && records.changedRelationshipGroup( valueFrom( oldRecord ) ) == null )
+//                        {
+//                            engine.report().relationshipGroupNotUpdated();
+//                        }
+                    }
+                    else
+                    {
+                        // TODO the node just got upgraded to dense in this transaction
+                    }
+                }
+            }
+
+            @Override
+            public void checkReference( NodeRecord record, RelationshipGroupRecord group,
+                    CheckerEngine<NodeRecord, NodeConsistencyReport> engine, RecordAccess records )
+            {
+                if ( !group.inUse() )
+                {
+                    engine.report().relationshipGroupNotInUse( group );
+                }
+                else
+                {
+                    // TODO add more checks
+                }
+            }
+        }
     }
 
     private enum RelationshipField implements RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>,
@@ -86,10 +164,12 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                         }
                         for ( NodeField field : fields )
                         {
-                            if ( !Record.NO_NEXT_RELATIONSHIP.is( field.prev( relationship ) ) )
+                            if ( !field.isFirst( relationship ) )
                             {
                                 field.notFirstInChain( engine.report(), relationship );
                             }
+                            // TODO we should check that the number of relationships in the chain match
+                            // the value in the "prev" field.
                         }
                     }
                 }

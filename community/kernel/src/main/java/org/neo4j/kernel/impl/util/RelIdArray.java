@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 
 import static java.lang.System.arraycopy;
 
@@ -248,65 +249,113 @@ public class RelIdArray implements SizeOfObject
     public static enum DirectionWrapper
     {
         OUTGOING( Direction.OUTGOING )
-                {
-                    @Override
-                    RelIdIterator iterator( RelIdArray ids )
-                    {
-                        return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_OUTGOING );
-                    }
+        {
+            @Override
+            IdBlock getBlock( RelIdArray ids )
+            {
+                return ids.outBlock;
+            }
 
-                    @Override
-                    IdBlock getBlock( RelIdArray ids )
-                    {
-                        return ids.outBlock;
-                    }
+            @Override
+            void setBlock( RelIdArray ids, IdBlock block )
+            {
+                ids.outBlock = block;
+            }
+            
+            @Override
+            public long getNextRel( RelationshipGroupRecord group )
+            {
+                return group.getFirstOut();
+            }
+            
+            @Override
+            public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
+            {
+                group.setFirstOut( firstNextRel );
+            }
 
-                    @Override
-                    void setBlock( RelIdArray ids, IdBlock block )
-                    {
-                        ids.outBlock = block;
-                    }
-                },
+            @Override
+            public DirectionWrapper[] allDirections()
+            {
+                return DIRECTIONS_FOR_OUTGOING;
+            }
+        },
         INCOMING( Direction.INCOMING )
-                {
-                    @Override
-                    RelIdIterator iterator( RelIdArray ids )
-                    {
-                        return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_INCOMING );
-                    }
+        {
+            @Override
+            RelIdIterator iterator( RelIdArray ids )
+            {
+                return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_INCOMING );
+            }
 
-                    @Override
-                    IdBlock getBlock( RelIdArray ids )
-                    {
-                        return ids.inBlock;
-                    }
+            @Override
+            IdBlock getBlock( RelIdArray ids )
+            {
+                return ids.inBlock;
+            }
 
-                    @Override
-                    void setBlock( RelIdArray ids, IdBlock block )
-                    {
-                        ids.inBlock = block;
-                    }
-                },
+            @Override
+            void setBlock( RelIdArray ids, IdBlock block )
+            {
+                ids.inBlock = block;
+            }
+            
+            @Override
+            public long getNextRel( RelationshipGroupRecord group )
+            {
+                return group.getFirstIn();
+            }
+            
+            @Override
+            public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
+            {
+                group.setFirstIn( firstNextRel );
+            }
+
+            @Override
+            public DirectionWrapper[] allDirections()
+            {
+                return DIRECTIONS_FOR_INCOMING;
+            }
+        },
         BOTH( Direction.BOTH )
-                {
-                    @Override
-                    RelIdIterator iterator( RelIdArray ids )
-                    {
-                        return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_BOTH );
-                    }
+        {
+            @Override
+            RelIdIterator iterator( RelIdArray ids )
+            {
+                return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_BOTH );
+            }
 
-                    @Override
-                    IdBlock getBlock( RelIdArray ids )
-                    {
-                        return ids.getLastLoopBlock();
-                    }
+            @Override
+            IdBlock getBlock( RelIdArray ids )
+            {
+                return ids.getLastLoopBlock();
+            }
 
-                    @Override
-                    void setBlock( RelIdArray ids, IdBlock block )
-                    {
-                        ids.setLastLoopBlock( block );
-                    }
-                };
+            @Override
+            void setBlock( RelIdArray ids, IdBlock block )
+            {
+                ids.setLastLoopBlock( block );
+            }
+            
+            @Override
+            public long getNextRel( RelationshipGroupRecord group )
+            {
+                return group.getFirstLoop();
+            }
+            
+            @Override
+            public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
+            {
+                group.setFirstLoop( firstNextRel );
+            }
+
+            @Override
+            public DirectionWrapper[] allDirections()
+            {
+                return DIRECTIONS_FOR_BOTH;
+            }
+        };
 
         private final Direction direction;
 
@@ -315,7 +364,10 @@ public class RelIdArray implements SizeOfObject
             this.direction = direction;
         }
 
-        abstract RelIdIterator iterator( RelIdArray ids );
+        RelIdIterator iterator( RelIdArray ids )
+        {
+            return new RelIdIteratorImpl( ids, allDirections() );
+        }
 
         /*
          * Only used during add
@@ -331,6 +383,12 @@ public class RelIdArray implements SizeOfObject
         {
             return this.direction;
         }
+
+        public abstract long getNextRel( RelationshipGroupRecord group );
+
+        public abstract void setNextRel( RelationshipGroupRecord group, long firstNextRel );
+        
+        public abstract DirectionWrapper[] allDirections();
     }
 
     public static DirectionWrapper wrap( Direction direction )
@@ -623,16 +681,18 @@ public class RelIdArray implements SizeOfObject
     {
         private IdBlock block;
         private int relativePosition;
+        private int length;
 
         public IteratorState( IdBlock block, int relativePosition )
         {
             this.block = block;
             this.relativePosition = relativePosition;
+            this.length = block.length();
         }
 
         boolean hasNext()
         {
-            return relativePosition < block.length();
+            return relativePosition < length;
         }
 
         /*
@@ -640,20 +700,20 @@ public class RelIdArray implements SizeOfObject
          */
         long next()
         {
-            long id = block.get( relativePosition++ );
-            return id;
+            return block.get( relativePosition++ );
         }
 
         public void update( IdBlock block )
         {
             this.block = block;
+            this.length = block.length();
         }
     }
 
     public static class RelIdIteratorImpl implements RelIdIterator
     {
         private final DirectionWrapper[] directions;
-        private int directionPosition = -1;
+        private byte directionPosition = -1;
         private DirectionWrapper currentDirection;
         private IteratorState currentState;
         private final IteratorState[] states;
@@ -874,5 +934,19 @@ public class RelIdArray implements SizeOfObject
     {
         return (outBlock != null && outBlock instanceof HighIdBlock) ||
                 (inBlock != null && inBlock instanceof HighIdBlock);
+    }
+
+    public int length( DirectionWrapper dir )
+    {
+        int result = 0;
+        for ( DirectionWrapper direction : dir.allDirections() )
+        {
+            IdBlock block = direction.getBlock( this );
+            if ( block != null )
+            {
+                result += block.length();
+            }
+        }
+        return result;
     }
 }

@@ -113,7 +113,7 @@ public class NodeStoreTest
 
         // -- a record with the msb carrying a negative value
         long nodeId = 0, labels = 0x8000000001L;
-        NodeRecord record = new NodeRecord( nodeId, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( nodeId, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
         record.setInUse( true );
         record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
         nodeStore.updateRecord( record );
@@ -135,7 +135,7 @@ public class NodeStoreTest
     public void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords() throws Exception
     {
         // GIVEN
-        NodeRecord record = new NodeRecord( 0, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
 
         // WHEN
         record.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
@@ -148,7 +148,7 @@ public class NodeStoreTest
     public void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords() throws Exception
     {
         // GIVEN
-        NodeRecord record = new NodeRecord( 0, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
 
         // WHEN
         DynamicRecord dynamicRecord = new DynamicRecord( 1 );

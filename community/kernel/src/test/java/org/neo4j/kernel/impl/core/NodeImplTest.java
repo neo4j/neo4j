@@ -32,10 +32,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
-import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -65,13 +68,15 @@ public class NodeImplTest
         RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
         when( relLookup.getNodeManager() ).thenReturn( nodeManager );
 
+        when( nodeManager.getRelationshipChainPosition( nodeImpl ) ).thenReturn( new SingleChainPosition( 0 ) );
         when( nodeManager.getRelationshipTypeById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE ) )
                 .thenReturn( loves );
         when( relLookup.lookupRelationship( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
                 .thenReturn( new RelationshipImpl( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, 1, 2,
                         TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE, false ) );
-        when( nodeManager.getMoreRelationships( nodeImpl ) ).thenReturn( tripletWithValues(
-                TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID
+        when( nodeManager.getMoreRelationships( eq( nodeImpl ), any( DirectionWrapper.class ), any( RelationshipType[].class ) ) )
+                .thenReturn( tripletWithValues( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID,
+                        TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID
         ) ).thenReturn( noMoreRelationshipsTriplet() );
         when( nodeManager.getTransactionState() ).thenReturn( txState );
         when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) ).thenReturn(
@@ -100,6 +105,7 @@ public class NodeImplTest
         RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
         when( relLookup.getNodeManager() ).thenReturn( nodeManager );
 
+        when( nodeManager.getRelationshipChainPosition( nodeImpl ) ).thenReturn( new SingleChainPosition( 0 ) );
         when( nodeManager.getRelationshipTypeById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE ) )
                 .thenReturn( loves );
         when( relLookup.lookupRelationship( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
@@ -110,7 +116,7 @@ public class NodeImplTest
                 .thenReturn( new RelationshipImpl( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, 1, 2,
                         TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE, false ) );
 
-        when( nodeManager.getMoreRelationships( nodeImpl ) ).thenReturn( tripletWithValues(
+        when( nodeManager.getMoreRelationships( eq( nodeImpl ), any( DirectionWrapper.class ), any( RelationshipType[].class ) ) ).thenReturn( tripletWithValues(
                 TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1
         ) ).thenReturn( noMoreRelationshipsTriplet() );
         when( nodeManager.getTransactionState() ).thenReturn( txState );
@@ -133,9 +139,10 @@ public class NodeImplTest
         }
     }
 
-    private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> noMoreRelationshipsTriplet()
+    private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition> noMoreRelationshipsTriplet()
     {
-        return Triplet.of( new ArrayMap<Integer, RelIdArray>(), Collections.<RelationshipImpl>emptyList(), 0l );
+        return Triplet.of( new ArrayMap<Integer, RelIdArray>(), Collections.<RelationshipImpl>emptyList(),
+                (RelationshipLoadingPosition) new SingleChainPosition( 0l ) );
     }
 
     @Test
@@ -152,6 +159,7 @@ public class NodeImplTest
         RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
         when( relLookup.getNodeManager() ).thenReturn( nodeManager );
 
+        when( nodeManager.getRelationshipChainPosition( nodeImpl ) ).thenReturn( new SingleChainPosition( 0 ) );
         when( nodeManager.getRelationshipTypeById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE ) )
                 .thenReturn( loves );
         when( relLookup.lookupRelationship( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
@@ -162,7 +170,7 @@ public class NodeImplTest
                 .thenReturn( new RelationshipImpl( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, 1, 2,
                         TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE, false ) );
 
-        when( nodeManager.getMoreRelationships( nodeImpl ) ).thenReturn( tripletWithValues(
+        when( nodeManager.getMoreRelationships( eq( nodeImpl ), any( DirectionWrapper.class ), any( RelationshipType[].class ) ) ).thenReturn( tripletWithValues(
                 TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID,
                 TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1
         ) ).thenReturn( noMoreRelationshipsTriplet() );
@@ -188,16 +196,15 @@ public class NodeImplTest
     }
 
     private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,
-            Long> tripletWithValues( long... ids )
+            RelationshipLoadingPosition> tripletWithValues( long... ids )
     {
-
         final RelIdArray relIdArray = createRelIdArrayWithValues( ids );
 
         ArrayMap<Integer, RelIdArray> arrayMap = new ArrayMap<Integer, RelIdArray>();
         arrayMap.put( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE, relIdArray );
 
-        return Triplet.of( arrayMap,
-                Collections.<RelationshipImpl>emptyList(), 0l );
+        return Triplet.of( arrayMap, Collections.<RelationshipImpl>emptyList(),
+                (RelationshipLoadingPosition) new SingleChainPosition( 0l ) );
     }
 
 
@@ -207,7 +214,6 @@ public class NodeImplTest
         for ( long id : ids )
         {
             relIdArray.add( id, RelIdArray.DirectionWrapper.OUTGOING );
-
         }
 
         return relIdArray;

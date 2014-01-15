@@ -157,12 +157,13 @@ public abstract class AbstractStore extends CommonAbstractStore
 
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" ) ) )
+        File idFile = new File( getStorageFileName().getPath() + ".id" );
+        if ( fileSystemAbstraction.fileExists( idFile ) )
         {
-            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ) );
-            assert success;
+            boolean success = fileSystemAbstraction.deleteFile( idFile );
+            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
         }
-        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ) );
+        createIdGenerator( idFile );
         openIdGenerator();
         FileChannel fileChannel = getFileChannel();
         long highId = 1;

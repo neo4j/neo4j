@@ -87,7 +87,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     public void shouldReportOwningNodeRecordNotInUse() throws Exception
     {
         // given
-        NodeRecord nodeRecord = notInUse( new NodeRecord( 12l, -1, -1 ) );
+        NodeRecord nodeRecord = notInUse( new NodeRecord( 12l, false, -1, -1 ) );
         add( nodeRecord );
 
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) );
@@ -112,7 +112,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         Collection<DynamicRecord> fakePointedToRecords =
             allocateFromNumbers( new long[] {nodeId}, iterator( inUse( new DynamicRecord( 1 ) ) ), RECORD_ALLOCATOR );
 
-        NodeRecord nodeRecord = inUse( new NodeRecord( nodeId, -1, -1 ) );
+        NodeRecord nodeRecord = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
         nodeRecord.setLabelField( dynamicPointer( fakePointedToRecords ), fakePointedToRecords );
         add( nodeRecord );
 

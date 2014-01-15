@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
 import java.util.Collection;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -128,7 +129,7 @@ public class TransactionWriter
     public void create( NodeRecord node ) throws IOException
     {
         node.setCreated();
-        update( new NodeRecord( node.getId(), NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ), node );
+        update( new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ), node );
     }
 
     public void update( NodeRecord before, NodeRecord node ) throws IOException
@@ -140,7 +141,7 @@ public class TransactionWriter
     public void delete( NodeRecord node ) throws IOException
     {
         node.setInUse( false );
-        add( node, new NodeRecord( node.getId(), NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
+        add( node, new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ) );
     }
 
     public void create( RelationshipRecord relationship ) throws IOException
@@ -184,9 +185,13 @@ public class TransactionWriter
         property.setCreated();
         PropertyRecord before = new PropertyRecord( property.getLongId() );
         if ( property.isNodeSet() )
+        {
             before.setNodeId( property.getNodeId() );
+        }
         if ( property.isRelSet() )
+        {
             before.setRelId( property.getRelId() );
+        }
         update( before, property );
     }
 

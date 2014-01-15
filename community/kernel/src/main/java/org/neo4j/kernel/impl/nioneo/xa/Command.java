@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -50,6 +55,8 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
@@ -59,12 +66,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-import static java.util.Collections.unmodifiableCollection;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -356,7 +357,8 @@ public abstract class Command extends XaCommand
     private static final byte NEOSTORE_COMMAND = (byte) 6;
     private static final byte SCHEMA_RULE_COMMAND = (byte) 7;
     private static final byte LABEL_KEY_COMMAND = (byte) 8;
-
+    private static final byte REL_GROUP_COMMAND = (byte) 9;
+    
     abstract void removeFromCache( CacheAccessBackDoor cacheAccess );
 
     static class NodeCommand extends Command
@@ -437,6 +439,7 @@ public abstract class Command extends XaCommand
             buffer.put( inUse );
             if ( record.inUse() )
             {
+                buffer.put( record.isDense() ? (byte)1 : (byte)0 );
                 buffer.putLong( record.getNextRel() ).putLong( record.getNextProp() );
                 
                 // labels
@@ -494,11 +497,12 @@ public abstract class Command extends XaCommand
             NodeRecord record;
             if ( inUse )
             {
-                if ( !readAndFlip( byteChannel, buffer, 8*3 ) )
+                if ( !readAndFlip( byteChannel, buffer, 8*3+1 ) )
                 {
                     return null;
                 }
-                record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
+                boolean dense = buffer.get() == 1;
+                record = new NodeRecord( id, dense, buffer.getLong(), buffer.getLong() );
                 
                 // labels
                 long labelField = buffer.getLong();
@@ -508,7 +512,7 @@ public abstract class Command extends XaCommand
             }
             else
             {
-                record = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(),
+                record = new NodeRecord( id, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
                         Record.NO_NEXT_PROPERTY.intValue() );
             }
 
@@ -614,6 +618,7 @@ public abstract class Command extends XaCommand
                         .putLong( record.getSecondPrevRel() )
                         .putLong( record.getSecondNextRel() )
                         .putLong( record.getNextProp() )
+                        .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) )
                         ;
             }
         }
@@ -642,7 +647,7 @@ public abstract class Command extends XaCommand
             RelationshipRecord record;
             if ( inUse )
             {
-                if ( !readAndFlip( byteChannel, buffer, 60 ) )
+                if ( !readAndFlip( byteChannel, buffer, 61 ) )
                 {
                     return null;
                 }
@@ -654,6 +659,9 @@ public abstract class Command extends XaCommand
                 record.setSecondPrevRel( buffer.getLong() );
                 record.setSecondNextRel( buffer.getLong() );
                 record.setNextProp( buffer.getLong() );
+                byte extraByte = buffer.get();
+                record.setFirstInFirstChain( (extraByte&0x1) > 0 );
+                record.setFirstInSecondChain( (extraByte&0x2) > 0 );
             }
             else
             {
@@ -662,6 +670,93 @@ public abstract class Command extends XaCommand
             }
             return new RelationshipCommand( neoStore == null ? null : neoStore.getRelationshipStore(),
                 record );
+        }
+    }
+    
+    static class RelationshipGroupCommand extends Command
+    {
+        private final RelationshipGroupStore store;
+        private final RelationshipGroupRecord record;
+
+        RelationshipGroupCommand( RelationshipGroupStore store, RelationshipGroupRecord record )
+        {
+            super( record.getId(), Mode.fromRecordState( record ) );
+            this.store = store;
+            this.record = record;
+        }
+
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void execute()
+        {
+            if ( isRecovered() )
+            {
+                store.updateRecord( record, true );
+            }
+            else
+            {
+                store.updateRecord( record );
+            }
+        }
+        
+        @Override
+        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        {
+        }    
+
+        @Override
+        public String toString()
+        {
+            return record.toString();
+        }
+
+        @Override
+        public void writeToFile( LogBuffer buffer ) throws IOException
+        {
+            buffer.put( REL_GROUP_COMMAND );
+            buffer.putLong( record.getId() );
+            buffer.put( (byte) (record.inUse() ? Record.IN_USE.intValue() : Record.NOT_IN_USE.intValue()) );
+            buffer.putShort( (short) record.getType() );
+            buffer.putLong( record.getNext() );
+            buffer.putLong( record.getFirstOut() );
+            buffer.putLong( record.getFirstIn() );
+            buffer.putLong( record.getFirstLoop() );
+        }
+        
+        public static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+        {
+            buffer.clear();
+            buffer.limit( 43 );
+            if ( byteChannel.read( buffer ) != buffer.limit() )
+            {
+                return null;
+            }
+            buffer.flip();
+            long id = buffer.getLong();
+            byte inUseByte = buffer.get();
+            boolean inUse = inUseByte == Record.IN_USE.byteValue();
+            if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
+            {
+                throw new IOException( "Illegal in use flag: " + inUseByte );
+            }
+            int type = buffer.getShort();
+            RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
+            record.setInUse( inUse );
+            record.setNext( buffer.getLong() );
+            record.setFirstOut( buffer.getLong() );
+            record.setFirstIn( buffer.getLong() );
+            record.setFirstLoop( buffer.getLong() );
+            return new RelationshipGroupCommand( neoStore != null ? neoStore.getRelationshipGroupStore() : null, record );
+        }
+
+        public RelationshipGroupRecord getAfter()
+        {
+            return record;
         }
     }
     
@@ -1466,6 +1561,8 @@ public abstract class Command extends XaCommand
                 return NeoStoreCommand.readFromFile( neoStore, byteChannel, buffer );
             case SCHEMA_RULE_COMMAND:
                 return SchemaRuleCommand.readFromFile( neoStore, indexes, byteChannel, buffer );
+            case REL_GROUP_COMMAND:
+                return RelationshipGroupCommand.readFromFile( neoStore, byteChannel, buffer );
             case NONE: return null;
             default:
                 throw new IOException( "Unknown command type[" + commandType + "]" );

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
@@ -177,6 +178,7 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     private final Map<Long, Delta<DynamicRecord>> nodeDynamicLabels = new HashMap<>();
     private final Map<Long, Delta<DynamicRecord>> labelNames = new HashMap<>();
     private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<>();
+    private final Map<Long, Delta<RelationshipGroupRecord>> relationshipGroups = new HashMap<>();
     private Delta<NeoStoreRecord> graph;
 
     private static class Delta<R extends AbstractBaseRecord>
@@ -375,6 +377,10 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
         {
             this.graph = new Delta<>( (NeoStoreRecord) record );
         }
+        else if ( record instanceof RelationshipGroupRecord )
+        {
+            add( relationshipGroups, (RelationshipGroupRecord) record );
+        }
         else
         {
             throw new IllegalArgumentException( "Invalid record type" );
@@ -488,6 +494,12 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     }
 
     @Override
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    {
+        return reference( relationshipGroups, id, Version.LATEST );
+    }
+
+    @Override
     public RecordReference<NodeRecord> previousNode( long id )
     {
         return reference( nodes, id, Version.PREV );
@@ -545,5 +557,11 @@ public class RecordAccessStub implements RecordAccess, DiffRecordAccess
     public RecordReference<NeoStoreRecord> previousGraph()
     {
         return reference( singletonMap( -1L, graph ), -1, Version.PREV );
+    }
+
+    @Override
+    public RelationshipGroupRecord changedRelationshipGroup( long id )
+    {
+        return record( relationshipGroups, id, Version.NEW );
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.consistency.report.InconsistencyMessageLogger.LINE_SEPARATOR;
 import static org.neo4j.consistency.report.InconsistencyMessageLogger.TAB;
 
@@ -53,8 +54,16 @@ public class MessageConsistencyLoggerTest
 
         // then
         assertTextEquals( "ERROR: sample message",
-                          "NeoStoreRecord[used=true,nextProp=-1]",
+                          neoStoreRecord( true, -1 ),
                           "Inconsistent with: 1 2" );
+    }
+
+    private String neoStoreRecord( boolean used, long nextProp )
+    {
+        NeoStoreRecord record = new NeoStoreRecord();
+        record.setInUse( used );
+        record.setNextProp( nextProp );
+        return record.toString();
     }
 
     @Test
@@ -65,7 +74,7 @@ public class MessageConsistencyLoggerTest
 
         // then
         assertTextEquals( "ERROR: multiple line message",
-                "NeoStoreRecord[used=true,nextProp=-1]",
+                neoStoreRecord( true, -1 ),
                 "Inconsistent with: 1 2" );
     }
 
@@ -77,7 +86,7 @@ public class MessageConsistencyLoggerTest
 
         // then
         assertTextEquals( "WARNING: sample message",
-                          "NeoStoreRecord[used=true,nextProp=-1]",
+                          neoStoreRecord( true, -1 ),
                           "Inconsistent with: 1 2" );
     }
 
@@ -89,8 +98,8 @@ public class MessageConsistencyLoggerTest
 
         // then
         assertTextEquals( "ERROR: sample message",
-                          "- NeoStoreRecord[used=true,nextProp=-1]",
-                          "+ NeoStoreRecord[used=true,nextProp=-1]",
+                          "- " + neoStoreRecord( true, -1 ),
+                          "+ " + neoStoreRecord( true, -1 ),
                           "Inconsistent with: 1 2" );
     }
 
@@ -102,8 +111,8 @@ public class MessageConsistencyLoggerTest
 
         // then
         assertTextEquals( "WARNING: sample message",
-                          "- NeoStoreRecord[used=true,nextProp=-1]",
-                          "+ NeoStoreRecord[used=true,nextProp=-1]",
+                "- " + neoStoreRecord( true, -1 ),
+                "+ " + neoStoreRecord( true, -1 ),
                           "Inconsistent with: 1 2" );
     }
 

@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 @SuppressWarnings( "boxing" )
 public enum RelationshipChainField
 {
-    FIRST_NEXT( Record.NO_NEXT_RELATIONSHIP )
+    FIRST_NEXT
     {
         @Override
         public long relOf( RelationshipRecord rel )
@@ -33,8 +33,13 @@ public enum RelationshipChainField
             return rel.getFirstNextRel();
         }
 
+        @Override
+        public boolean endOfChain( RelationshipRecord rel )
+        {
+            return rel.getFirstNextRel() == Record.NO_NEXT_RELATIONSHIP.intValue();
+        }
     },
-    FIRST_PREV( Record.NO_PREV_RELATIONSHIP )
+    FIRST_PREV
     {
         @Override
         public long relOf( RelationshipRecord rel )
@@ -42,8 +47,13 @@ public enum RelationshipChainField
             return rel.getFirstPrevRel();
         }
 
+        @Override
+        public boolean endOfChain( RelationshipRecord rel )
+        {
+            return rel.isFirstInFirstChain();
+        }
     },
-    SECOND_NEXT( Record.NO_NEXT_RELATIONSHIP )
+    SECOND_NEXT
     {
         @Override
         public long relOf( RelationshipRecord rel )
@@ -51,8 +61,13 @@ public enum RelationshipChainField
             return rel.getSecondNextRel();
         }
 
+        @Override
+        public boolean endOfChain( RelationshipRecord rel )
+        {
+            return rel.getSecondNextRel() == Record.NO_NEXT_RELATIONSHIP.intValue();
+        }
     },
-    SECOND_PREV( Record.NO_PREV_RELATIONSHIP )
+    SECOND_PREV
     {
         @Override
         public long relOf( RelationshipRecord rel )
@@ -60,14 +75,14 @@ public enum RelationshipChainField
             return rel.getSecondPrevRel();
         }
 
+        @Override
+        public boolean endOfChain( RelationshipRecord rel )
+        {
+            return rel.isFirstInSecondChain();
+        }
     };
 
-    public final long none;
-
-    RelationshipChainField( Record none )
-    {
-        this.none = none.intValue();
-    }
-
     public abstract long relOf( RelationshipRecord rel );
+
+    public abstract boolean endOfChain( RelationshipRecord rel );
 }

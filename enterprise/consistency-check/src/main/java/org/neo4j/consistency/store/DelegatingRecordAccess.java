@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
@@ -179,5 +180,17 @@ public class DelegatingRecordAccess implements DiffRecordAccess
     public RecordReference<NeoStoreRecord> graph()
     {
         return delegate.graph();
+    }
+
+    @Override
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    {
+        return delegate.relationshipGroup( id );
+    }
+
+    @Override
+    public RelationshipGroupRecord changedRelationshipGroup( long id )
+    {
+        return delegate.changedRelationshipGroup( id );
     }
 }

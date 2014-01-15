@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -56,6 +57,12 @@ public class DirectRecordAccess implements DiffRecordAccess
     public RecordReference<RelationshipRecord> relationship( long id )
     {
         return referenceTo( access.getRelationshipStore(), id );
+    }
+
+    @Override
+    public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+    {
+        return referenceTo( access.getRelationshipGroupStore(), id );
     }
 
     @Override
@@ -185,6 +192,12 @@ public class DirectRecordAccess implements DiffRecordAccess
 
     @Override
     public DynamicRecord changedArray( long id )
+    {
+        return null;
+    }
+
+    @Override
+    public RelationshipGroupRecord changedRelationshipGroup( long id )
     {
         return null;
     }

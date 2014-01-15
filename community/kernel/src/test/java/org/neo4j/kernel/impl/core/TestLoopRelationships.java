@@ -266,6 +266,14 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         }
     }
 
+    private String print( Relationship[] relationships )
+    {
+        StringBuilder b = new StringBuilder();
+        for ( Relationship rel : relationships )
+            b.append( rel.getStartNode() + "--" + rel + "->" + rel.getEndNode() );
+        return b.toString();
+    }
+
     private static Iterable<boolean[]> permutations( final int size )
     {
         final int max = 1 << size;

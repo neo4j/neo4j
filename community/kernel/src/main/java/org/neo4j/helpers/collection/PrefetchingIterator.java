@@ -45,20 +45,17 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
 	 * @return {@code true} if there was a next item to return in the next
 	 * call to {@link #next()}.
 	 */
-	public boolean hasNext()
+	@Override
+    public boolean hasNext()
 	{
 		if ( hasFetchedNext )
 		{
-		    return getPrefetchedNextOrNull() != null;
+		    return nextObject != null;
 		}
 
-		T nextOrNull = fetchNextOrNull();
+		nextObject = fetchNextOrNull();
         hasFetchedNext = true;
-		if ( nextOrNull != null )
-		{
-			setPrefetchedNext( nextOrNull );
-		}
-		return nextOrNull != null;
+		return nextObject != null;
 	}
 
 	/**
@@ -68,31 +65,23 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
 	 * @return the next item in the iteration, or throws
 	 * {@link NoSuchElementException} if there's no more items to return.
 	 */
-	public T next()
+	@Override
+    public T next()
 	{
 		if ( !hasNext() )
 		{
 			throw new NoSuchElementException();
 		}
-		T result = getPrefetchedNextOrNull();
-		setPrefetchedNext( null );
+		T result = nextObject;
+		nextObject = null;
 		hasFetchedNext = false;
 		return result;
 	}
 
 	protected abstract T fetchNextOrNull();
 
-	protected void setPrefetchedNext( T nextOrNull )
-	{
-		this.nextObject = nextOrNull;
-	}
-
-	protected T getPrefetchedNextOrNull()
-	{
-		return nextObject;
-	}
-
-	public void remove()
+	@Override
+    public void remove()
 	{
 		throw new UnsupportedOperationException();
 	}

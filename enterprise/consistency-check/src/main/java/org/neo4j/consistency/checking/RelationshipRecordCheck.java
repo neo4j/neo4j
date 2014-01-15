@@ -87,7 +87,7 @@ class RelationshipRecordCheck
             RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
             ComparativeRecordChecker<RelationshipRecord, RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>
     {
-        SOURCE_PREV( NodeField.SOURCE, Record.NO_PREV_RELATIONSHIP )
+        SOURCE_PREV( NodeField.SOURCE )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -119,8 +119,14 @@ class RelationshipRecordCheck
             {
                 report.sourcePrevNotUpdated();
             }
+
+            @Override
+            boolean endOfChain( RelationshipRecord record )
+            {
+                return NODE.isFirst( record );
+            }
         },
-        SOURCE_NEXT( NodeField.SOURCE, Record.NO_NEXT_RELATIONSHIP )
+        SOURCE_NEXT( NodeField.SOURCE )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -152,8 +158,14 @@ class RelationshipRecordCheck
             {
                 report.sourceNextNotUpdated();
             }
+
+            @Override
+            boolean endOfChain( RelationshipRecord record )
+            {
+                return NODE.next( record ) == Record.NO_NEXT_RELATIONSHIP.intValue();
+            }
         },
-        TARGET_PREV( NodeField.TARGET, Record.NO_PREV_RELATIONSHIP )
+        TARGET_PREV( NodeField.TARGET )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -185,8 +197,14 @@ class RelationshipRecordCheck
             {
                 report.targetPrevNotUpdated();
             }
+
+            @Override
+            boolean endOfChain( RelationshipRecord record )
+            {
+                return NODE.isFirst( record );
+            }
         },
-        TARGET_NEXT( NodeField.TARGET, Record.NO_NEXT_RELATIONSHIP )
+        TARGET_NEXT( NodeField.TARGET )
         {
             @Override
             public long valueFrom( RelationshipRecord relationship )
@@ -218,14 +236,19 @@ class RelationshipRecordCheck
             {
                 report.targetNextNotUpdated();
             }
-        };
-        private final NodeField NODE;
-        private final Record NONE;
 
-        private RelationshipField( NodeField node, Record none )
+            @Override
+            boolean endOfChain( RelationshipRecord record )
+            {
+                return NODE.next( record ) == Record.NO_NEXT_RELATIONSHIP.intValue();
+            }
+        };
+
+        protected final NodeField NODE;
+
+        private RelationshipField( NodeField node )
         {
             this.NODE = node;
-            this.NONE = none;
         }
 
         @Override
@@ -233,7 +256,7 @@ class RelationshipRecordCheck
                                       CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
                                       RecordAccess records )
         {
-            if ( !NONE.is( valueFrom( relationship ) ) )
+            if ( !endOfChain( relationship ) )
             {
                 engine.comparativeCheck( records.relationship( valueFrom( relationship ) ), this );
             }
@@ -265,13 +288,15 @@ class RelationshipRecordCheck
         {
             if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
             {
-                if ( !NONE.is( valueFrom( oldRecord ) )
+                if ( !endOfChain( oldRecord )
                      && records.changedRelationship( valueFrom( oldRecord ) ) == null )
                 {
                     notUpdated( engine.report() );
                 }
             }
         }
+
+        abstract boolean endOfChain( RelationshipRecord record );
 
         abstract void notUpdated( ConsistencyReport.RelationshipConsistencyReport report );
 

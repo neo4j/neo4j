@@ -19,16 +19,14 @@
  */
 package org.neo4j.consistency.repair;
 
-import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
-import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;
-
-import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
+import static org.neo4j.consistency.repair.RelationshipChainDirection.NEXT;
+import static org.neo4j.consistency.repair.RelationshipChainDirection.PREV;
+
 public class RelationshipChainExplorer
 {
-    public static final int none = Record.NO_NEXT_RELATIONSHIP.intValue();
     private final RecordStore<RelationshipRecord> recordStore;
 
     public RelationshipChainExplorer( RecordStore<RelationshipRecord> recordStore )
@@ -75,11 +73,12 @@ public class RelationshipChainExplorer
         RecordSet<RelationshipRecord> chain = new RecordSet<RelationshipRecord>();
         chain.add( record );
         RelationshipRecord currentRecord = record;
-        long nextRelId;
-        while ( currentRecord.inUse() &&
-                (nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord )) != none ) {
+        long nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
+        while ( currentRecord.inUse() && !direction.fieldFor( nodeId, currentRecord ).endOfChain( currentRecord ) )
+        {
             currentRecord = recordStore.forceGetRecord( nextRelId );
             chain.add( currentRecord );
+            nextRelId = direction.fieldFor( nodeId, currentRecord ).relOf( currentRecord );
         }
         return chain;
     }

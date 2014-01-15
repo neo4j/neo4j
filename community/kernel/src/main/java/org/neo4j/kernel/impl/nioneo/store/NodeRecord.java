@@ -26,6 +26,7 @@ import java.util.List;
 import org.neo4j.helpers.Predicate;
 
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -36,11 +37,14 @@ public class NodeRecord extends PrimitiveRecord
     private long labels;
     private Collection<DynamicRecord> dynamicLabelRecords = emptyList();
     private boolean isLight = true;
+    private final boolean committedDense;
+    private boolean dense;
 
-    public NodeRecord( long id, long nextRel, long nextProp )
+    public NodeRecord( long id, boolean dense, long nextRel, long nextProp )
     {
         super( id, nextProp );
         this.committedNextRel = this.nextRel = nextRel;
+        this.committedDense = this.dense = dense;
     }
 
     public long getNextRel()
@@ -95,13 +99,28 @@ public class NodeRecord extends PrimitiveRecord
     {
         return filter( RECORD_IN_USE, dynamicLabelRecords );
     }
+    
+    public boolean isDense()
+    {
+        return dense;
+    }
+    
+    public boolean isCommittedDense()
+    {
+        return committedDense;
+    }
+
+    public void setDense( boolean dense )
+    {
+        this.dense = dense;
+    }
 
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder( "Node[" ).append( getId() )
                 .append( ",used=" ).append( inUse() )
-                .append( ",rel=" ).append( nextRel )
+                .append( "," + (dense ? "group" : "rel") + "=" ).append( nextRel )
                 .append( ",prop=" ).append( getNextProp() )
                 .append( ",labels=" ).append( parseLabelsField( this ) )
                 .append( "," ).append( isLight ? "light" : "heavy" );
@@ -121,7 +140,7 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public NodeRecord clone()
     {
-        NodeRecord clone = new NodeRecord( getId(), getCommittedNextRel(), getCommittedNextProp() );
+        NodeRecord clone = new NodeRecord( getId(), committedDense, getCommittedNextRel(), getCommittedNextProp() );
         clone.setNextProp( getNextProp() );
         clone.nextRel = nextRel;
         clone.labels = labels;

@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -274,7 +275,7 @@ public class ConsistencyReporterTest
             }
             if ( type == NodeRecord.class )
             {
-                return new NodeRecord( 0, 1, 2 );
+                return new NodeRecord( 0, false, 1, 2 );
             }
             if ( type == RelationshipRecord.class )
             {
@@ -323,6 +324,10 @@ public class ConsistencyReporterTest
             if ( type == IndexRule.class )
             {
                 return IndexRule.indexRule( 1, 2, 3, new SchemaIndexProvider.Descriptor( "provider", "version" ) );
+            }
+            if ( type == RelationshipGroupRecord.class )
+            {
+                return new RelationshipGroupRecord( 0, 1 );
             }
             if ( type == long.class )
             {

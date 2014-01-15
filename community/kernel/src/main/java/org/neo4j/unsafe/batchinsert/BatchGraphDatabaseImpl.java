@@ -547,13 +547,42 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
                 return false;
             }
             return this.getId() == ((Node) o).getId();
-
         }
 
         @Override
         public int hashCode()
         {
             return (int) (id ^ (id >>> 32));
+        }
+
+        @Override
+        public Iterable<RelationshipType> getRelationshipTypes()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDegree()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDegree( RelationshipType type )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDegree( Direction direction )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDegree( RelationshipType type, Direction direction )
+        {
+            throw new UnsupportedOperationException();
         }
     }
 

@@ -62,7 +62,7 @@ public class TransactionWriterTest
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         TransactionWriter writer = new TransactionWriter( buffer, 1, -1 );
 
-        NodeRecord node = new NodeRecord( 0, -1, -1 );
+        NodeRecord node = new NodeRecord( 0, false, -1, -1 );
         node.setLabelField( 0, Collections.<DynamicRecord>emptyList() );
         RelationshipRecord relationship = new RelationshipRecord( 0, 1, 1, 6 );
 
@@ -113,7 +113,7 @@ public class TransactionWriterTest
     private <T extends AbstractBaseRecord> Matcher<T> matchesRecord( final T record )
     {
         final Comparison comparison = comparison( record.getClass() );
-        return new TypeSafeMatcher<T>( (Class) record.getClass() )
+        return new TypeSafeMatcher<T>( record.getClass() )
         {
             @Override
             public boolean matchesSafely( T item )

@@ -65,7 +65,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportBrokenSchemaRecordChain() throws Exception
     {
-        verifyInconsistencyReported( RecordType.SCHEMA, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.SCHEMA, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -87,7 +87,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportDuplicateConstraintReferences() throws Exception
     {
-        verifyInconsistencyReported( RecordType.SCHEMA, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.SCHEMA, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -95,7 +95,7 @@ public class IncrementalCheckIntegrationTest
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
-                int labelId = (int) next.label();
+                int labelId = next.label();
                 int propertyKeyId = next.propertyKey();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
@@ -127,7 +127,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportInvalidConstraintBackReferences() throws Exception
     {
-        verifyInconsistencyReported( RecordType.SCHEMA, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.SCHEMA, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -135,7 +135,7 @@ public class IncrementalCheckIntegrationTest
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
-                int labelId = (int) next.label();
+                int labelId = next.label();
                 int propertyKeyId = next.propertyKey();
 
                 DynamicRecord record1 = new DynamicRecord( ruleId1 );
@@ -171,7 +171,7 @@ public class IncrementalCheckIntegrationTest
     @Ignore("Support for checking NeoStore needs to be added")
     public void shouldReportNeoStoreInconsistencies() throws Exception
     {
-        verifyInconsistencyReported( RecordType.NEO_STORE, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.NEO_STORE, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -181,7 +181,7 @@ public class IncrementalCheckIntegrationTest
                 record.setNextProp( next.property() );
                 tx.update( record );
                 // We get exceptions when only the above happens in a transaction...
-                tx.create( new NodeRecord( next.node(), -1, -1 ) );
+                tx.create( new NodeRecord( next.node(), false, -1, -1 ) );
             }
         } );
     }
@@ -189,13 +189,13 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportNodeInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.NODE, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.NODE, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new NodeRecord( next.node(), next.relationship(), -1 ) );
+                tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
             }
         } );
     }
@@ -203,7 +203,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportRelationshipInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.RELATIONSHIP, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.RELATIONSHIP, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -218,7 +218,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportPropertyInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.PROPERTY, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.PROPERTY, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -240,7 +240,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportStringPropertyInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.STRING_PROPERTY, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.STRING_PROPERTY, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -260,7 +260,7 @@ public class IncrementalCheckIntegrationTest
                 PropertyRecord property = new PropertyRecord( next.property() );
                 property.addPropertyBlock( block );
 
-                NodeRecord node = new NodeRecord( next.node(), -1, property.getId() );
+                NodeRecord node = new NodeRecord( next.node(), false, -1, property.getId() );
                 property.setNodeId( node.getId() );
                 tx.create( node );
 
@@ -272,7 +272,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportArrayPropertyInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.ARRAY_PROPERTY, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.ARRAY_PROPERTY, 1, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -292,7 +292,7 @@ public class IncrementalCheckIntegrationTest
                 PropertyRecord property = new PropertyRecord( next.property() );
                 property.addPropertyBlock( block );
 
-                NodeRecord node = new NodeRecord( next.node(), -1, property.getId() );
+                NodeRecord node = new NodeRecord( next.node(), false, -1, property.getId() );
                 property.setNodeId( node.getId() );
                 tx.create( node );
 
@@ -378,7 +378,7 @@ public class IncrementalCheckIntegrationTest
         }
     };
 
-    private void verifyInconsistencyReported( RecordType recordType,
+    private void verifyInconsistencyReported( RecordType recordType, int expectedCount,
                                               GraphStoreFixture.Transaction inconsistentTransaction )
             throws IOException
     {
@@ -392,6 +392,7 @@ public class IncrementalCheckIntegrationTest
         catch ( ConsistencyCheckingError expected )
         {
             int count = expected.getInconsistencyCountForRecordType( recordType );
+            assertEquals( "Unexpected number of inconsistencies", expectedCount, count );
             int total = expected.getTotalInconsistencyCount();
             String summary = expected.getMessage().replace( "\n", "\n\t" );
             assertTrue( "Expected failures for " + recordType + ", got " + summary, count > 0 );

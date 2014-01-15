@@ -19,10 +19,11 @@
  */
 package org.neo4j.consistency.repair;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+
+import static org.junit.Assert.assertEquals;
 
 public class RecordSetTest
 {
@@ -30,8 +31,8 @@ public class RecordSetTest
     public void toStringShouldPlaceEachRecordOnItsOwnLine() throws Exception
     {
         // given
-        NodeRecord record1 = new NodeRecord( 1, 1, 1 );
-        NodeRecord record2 = new NodeRecord( 2, 2, 2 );
+        NodeRecord record1 = new NodeRecord( 1, false, 1, 1 );
+        NodeRecord record2 = new NodeRecord( 2, false, 2, 2 );
         RecordSet<NodeRecord> set = new RecordSet<NodeRecord>();
         set.add( record1 );
         set.add( record2 );

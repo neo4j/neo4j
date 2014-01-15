@@ -66,8 +66,8 @@ public class NodeCommandTest
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, 1, 2 );
-        NodeRecord after = new NodeRecord( 12, 2, 1 );
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
 
         // When
         assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
@@ -77,8 +77,8 @@ public class NodeCommandTest
     public void shouldSerializeCreatedRecord() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, 1, 2 );
-        NodeRecord after = new NodeRecord( 12, 2, 1 );
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setCreated();
         after.setInUse( true );
 
@@ -90,9 +90,9 @@ public class NodeCommandTest
     public void shouldSerializeUpdatedRecord() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, 1, 2 );
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
-        NodeRecord after = new NodeRecord( 12, 2, 1 );
+        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
 
         // When
@@ -103,10 +103,10 @@ public class NodeCommandTest
     public void shouldSerializeInlineLabels() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, 1, 2 );
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
 
-        NodeRecord after = new NodeRecord( 12, 2, 1 );
+        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
         nodeLabels.add( 1337, nodeStore );
@@ -119,10 +119,10 @@ public class NodeCommandTest
     public void shouldSerializeDynamicRecordLabels() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, 1, 2 );
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
 
-        NodeRecord after = new NodeRecord( 12, 2, 1 );
+        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
@@ -138,12 +138,12 @@ public class NodeCommandTest
     public void shouldSerializeDynamicRecordsRemoved() throws Exception
     {
         // Given
-        NodeRecord before = new NodeRecord( 12, 1, 2 );
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
         List<DynamicRecord> beforeDyn = asList( dynamicRecord( 0, true, true, -1l, LONG.intValue(), new byte[]{1,2,3,4,5,6,7,8}));
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
 
-        NodeRecord after = new NodeRecord( 12, 2, 1 );
+        NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         List<DynamicRecord> dynamicRecords = asList( dynamicRecord( 0, false, true, -1l, LONG.intValue(), new byte[]{1,2,3,4,5,6,7,8}));
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );

@@ -87,7 +87,7 @@ public class SlaveStoreWriter
                 tempStore, LOGICAL_LOG_DEFAULT_NAME );
         if ( highestLogVersion > -1 )
         {
-            NeoStore.setVersion( fileSystem, tempStore, highestLogVersion + 1 );
+            NeoStore.setVersion( fileSystem, new File( tempStore, NeoStore.DEFAULT_NAME ), highestLogVersion + 1 );
         }
 
         GraphDatabaseAPI copiedDb = (GraphDatabaseAPI) new GraphDatabaseFactory()

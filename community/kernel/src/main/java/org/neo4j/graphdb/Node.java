@@ -273,6 +273,56 @@ public interface Node extends PropertyContainer
      * @return the newly created relationship
      */
     Relationship createRelationshipTo( Node otherNode, RelationshipType type );
+    
+    /**
+     * Returns relationship types which this node has one more relationships
+     * for. If this node doesn't have any relationships an empty {@link Iterable}
+     * will be returned.
+     * @return relationship types which this node has one more relationships for.
+     */
+    public Iterable<RelationshipType> getRelationshipTypes();
+
+    /**
+     * Returns the number of relationships connected to this node regardless of
+     * direction or type. This operation is always O(1).
+     * @return the number of relationships connected to this node.
+     */
+    public int getDegree();
+
+    /**
+     * Returns the number of relationships of a given {@code type} connected to this node.
+     * If the degree of this node is less than (TODO) dense node threshold this method
+     * will have to load all relationships, if not already loaded, to be able to give
+     * the answer. If the number of relationships connected to this node is greater than
+     * or equal to the (TODO) dense node threshold this lookup will be O(1).
+     *
+     * @return the number of relationships of a given {@code type} connected to this node.
+     */
+    public int getDegree( RelationshipType type );
+
+    /**
+     * Returns the number of relationships of a given {@code direction} connected to this node.
+     * If the degree of this node is less than (TODO) dense node threshold this method
+     * will have to load all relationships, if not already loaded, to be able to give
+     * the answer. If the number of relationships connected to this is node greater than
+     * or equal to the (TODO) dense node threshold this lookup will be O(1).
+     *
+     * @return the number of relationships of a given {@code direction} for this node.
+     */
+    public int getDegree( Direction direction );
+
+    /**
+     * Returns the number of relationships of a given {@code type} and {@code direction}
+     * connected to this node. If the degree of this node is less than (TODO) dense node
+     * threshold this method will have to load all relationships, if not already loaded,
+     * to be able to give the answer. If the number of relationships connected to this
+     * node is greater than or equal to the (TODO) dense node threshold this lookup will
+     * be O(1).
+     *
+     * @return the number of relationships of a given {@code type} and {@code direction}
+     * for this node.
+     */
+    public int getDegree( RelationshipType type, Direction direction );
 
     /**
      * Instantiates a traverser that will start at this node and traverse

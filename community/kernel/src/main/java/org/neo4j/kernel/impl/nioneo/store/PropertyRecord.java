@@ -37,7 +37,6 @@ public class PropertyRecord extends Abstract64BitRecord
     private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>( 4 );
     private long entityId = -1;
     private Boolean nodeIdSet;
-    private boolean isChanged;
     private final List<DynamicRecord> deletedRecords = new LinkedList<>();
 
     public PropertyRecord( long id )
@@ -177,7 +176,10 @@ public class PropertyRecord extends Abstract64BitRecord
         StringBuilder buf = new StringBuilder();
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
-        if ( entityId != -1 ) buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
+        if ( entityId != -1 )
+        {
+            buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
+        }
         for ( PropertyBlock block : blockRecords )
         {
             buf.append( ',' ).append( block );
@@ -189,15 +191,9 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "]" );
         return buf.toString();
     }
-
-    public boolean isChanged()
-    {
-        return isChanged;
-    }
-
+    
     public void setChanged( PrimitiveRecord primitive )
     {
-        isChanged = true;
         primitive.setIdTo( this );
     }
 
@@ -220,11 +216,14 @@ public class PropertyRecord extends Abstract64BitRecord
         result.prevProp = prevProp;
         result.entityId = entityId;
         result.nodeIdSet = nodeIdSet;
-        result.isChanged = isChanged;
         for ( PropertyBlock block : blockRecords )
+        {
             result.blockRecords.add( block.clone() );
+        }
         for ( DynamicRecord deletedRecord : deletedRecords )
+        {
             result.deletedRecords.add( deletedRecord.clone() );
+        }
         return result;
     }
 }

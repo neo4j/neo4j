@@ -1105,23 +1105,23 @@ public class TestBatchInsert
         labelScanStore.assertRecivedUpdate( node4, 0, 1 );
         labelScanStore.assertRecivedUpdate( node5, 0, 2 );
     }
-    
+
     @Test
     public void shouldSkipStoreScanIfNoLabelsAdded() throws Exception
     {
         // GIVEN
         UpdateTrackingLabelScanStore labelScanStore = new UpdateTrackingLabelScanStore();
         BatchInserter inserter = newBatchInserterWithLabelScanStore( new ControlledLabelScanStore( labelScanStore ) );
-        
+
         // WHEN
         inserter.createNode( null );
         inserter.createNode( null );
         inserter.shutdown();
-        
+
         // THEN
         assertEquals( 0, labelScanStore.writersCreated );
     }
-    
+
     @Test
     public void propertiesCanBeReSetUsingBatchInserter()
     {
@@ -1136,15 +1136,15 @@ public class TestBatchInsert
         batchInserter.setNodeProperty( 1, "name", "NewOne" );
         batchInserter.removeNodeProperty( 1, "count" );
         batchInserter.removeNodeProperty( 1, "something" );
-        
+
         // WHEN setting new properties
         batchInserter.setNodeProperty( 1, "name", "YetAnotherOne" );
         batchInserter.setNodeProperty( 1, "additional", "something" );
-        
+
         // THEN there should be no problems doing so
         assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( 1 ).get( "name" ) );
         assertEquals( "something", batchInserter.getNodeProperties( 1 ).get( "additional" ) );
-        
+
         batchInserter.shutdown();
     }
 
@@ -1154,14 +1154,14 @@ public class TestBatchInsert
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
         long id = batchInserter.createNode( new HashMap<String, Object>() );
-        
+
         // WHEN
         batchInserter.setNodeProperty( id, "test", "looooooooooong test" );
         batchInserter.setNodeProperty( id, "test", "small test" );
-        
+
         // THEN
         assertEquals( "small test", batchInserter.getNodeProperties( id ).get( "test" ) );
-        
+
         batchInserter.shutdown();
     }
 
@@ -1176,10 +1176,10 @@ public class TestBatchInsert
         props.put( "tags", new String[] { "one", "two" } );
         long id = batchInserter.createNode( props );
         batchInserter.setNodeProperty( id, "name", "NewOne" );
-        
+
         // WHEN
         batchInserter.setNodeProperty( id, "count", "something" );
-        
+
         // THEN
         assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
         batchInserter.shutdown();

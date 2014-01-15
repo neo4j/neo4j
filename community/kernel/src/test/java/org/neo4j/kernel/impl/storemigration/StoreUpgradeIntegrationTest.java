@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -35,7 +36,10 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
@@ -51,7 +55,7 @@ public class StoreUpgradeIntegrationTest
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, workingDirectory, LEGACY_VERSION ) );
 
-        HashMap<String, String> params = new HashMap<String, String>();
+        HashMap<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
 
         GraphDatabaseService database = new GraphDatabaseFactory()
@@ -71,7 +75,7 @@ public class StoreUpgradeIntegrationTest
         StoreUpgraderTestIT.truncateAllFiles( fileSystem, workingDirectory );
         // Now everything has lost the version info
 
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
 
         try
@@ -97,7 +101,7 @@ public class StoreUpgradeIntegrationTest
                 "neostore.propertystore.db.index.keys" ),
                 "StringPropertyStore " + LEGACY_VERSION );
 
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
 
         try

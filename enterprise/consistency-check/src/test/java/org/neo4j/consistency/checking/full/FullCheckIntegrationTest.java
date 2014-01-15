@@ -176,7 +176,7 @@ public class FullCheckIntegrationTest
                 record.setNextProp( next.property() );
                 tx.update( record );
                 // We get exceptions when only the above happens in a transaction...
-                tx.create( new NodeRecord( next.node(), -1, -1 ) );
+                tx.create( new NodeRecord( next.node(), false, -1, -1 ) );
             }
         } );
 
@@ -197,7 +197,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.create( new NodeRecord( next.node(), next.relationship(), -1 ) );
+                tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
             }
         } );
 
@@ -218,7 +218,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null );
                 tx.create( nodeRecord );
             }
@@ -241,7 +241,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( nodeRecord.getLongId(),
                         new long[]{42l} ),
@@ -290,8 +290,8 @@ public class FullCheckIntegrationTest
                 PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
                 allocateFromNumbers( Arrays.copyOf( data, 11 ), iterator( record1 ), allocator );
 
-                NodeRecord before = inUse( new NodeRecord( data[0], -1, -1 ) );
-                NodeRecord after = inUse( new NodeRecord( data[0], -1, -1 ) );
+                NodeRecord before = inUse( new NodeRecord( data[0], false, -1, -1 ) );
+                NodeRecord after = inUse( new NodeRecord( data[0], false, -1, -1 ) );
                 before.setLabelField( dynamicPointer( asList( record1 ) ), chain );
                 after.setLabelField( dynamicPointer( asList( record1 ) ), asList( record1, record2 ) );
                 tx.update( before, after );
@@ -343,7 +343,7 @@ public class FullCheckIntegrationTest
         // given
         for ( Long indexedNodeId : indexedNodes )
         {
-            fixture.directStoreAccess().nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, -1, -1 ) );
+            fixture.directStoreAccess().nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, false, -1, -1 ) );
         }
 
         // when
@@ -377,7 +377,7 @@ public class FullCheckIntegrationTest
 
         for ( Long indexedNodeId : indexedNodes )
         {
-            storeAccess.nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, -1, -1 ) );
+            storeAccess.nativeStores().getNodeStore().forceUpdateRecord( new NodeRecord( indexedNodeId, false, -1, -1 ) );
         }
 
         // when
@@ -400,7 +400,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NodeRecord node = new NodeRecord( 42, -1, -1 );
+                NodeRecord node = new NodeRecord( 42, false, -1, -1 );
                 node.setInUse( true );
                 List<DynamicRecord> dynamicRecords;
                 dynamicRecords = pair.first();
@@ -443,7 +443,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NodeRecord node = new NodeRecord( 42, -1, -1 );
+                NodeRecord node = new NodeRecord( 42, false, -1, -1 );
                 node.setInUse( true );
                 node.setLabelField( inlinedLabelsLongRepresentation( 1, 2 ), Collections.<DynamicRecord>emptySet() );
                 tx.create( node );
@@ -527,8 +527,8 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ))[0];
-                NodeRecord before = inUse( new NodeRecord( nodeId, -1, -1 ) );
-                NodeRecord after = inUse( new NodeRecord( nodeId, -1, -1 ) );
+                NodeRecord before = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
+                NodeRecord after = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
                 DynamicRecord record1 = chain.get( 0 ).clone();
                 DynamicRecord record2 = chain.get( 1 ).clone();
                 DynamicRecord record3 = chain.get( 2 ).clone();
@@ -573,7 +573,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record1 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 DynamicRecord record2 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
@@ -602,7 +602,7 @@ public class FullCheckIntegrationTest
             {
                 tx.nodeLabel( 42, "Label" );
 
-                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = allocateFromNumbers(
                         prependNodeId( nodeRecord.getLongId(), new long[]{42l, 42l} ),
@@ -632,7 +632,7 @@ public class FullCheckIntegrationTest
             {
                 tx.nodeLabel( 42, "Label" );
 
-                NodeRecord nodeRecord = new NodeRecord( next.node(), -1, -1 );
+                NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( next.node(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );

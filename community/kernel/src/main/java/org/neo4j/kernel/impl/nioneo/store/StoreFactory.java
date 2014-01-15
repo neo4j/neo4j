@@ -51,6 +51,7 @@ public class StoreFactory
         public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
         public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
         public static final Setting<Integer> label_block_size = GraphDatabaseSettings.label_block_size;
+        public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
     }
 
     private final Config config;
@@ -80,6 +81,7 @@ public class StoreFactory
     public static final String LABEL_TOKEN_STORE_NAME = ".labeltokenstore.db";
     public static final String LABEL_TOKEN_NAMES_STORE_NAME = LABEL_TOKEN_STORE_NAME + NAMES_PART;
     public static final String SCHEMA_STORE_NAME = ".schemastore.db";
+    public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook )
@@ -136,7 +138,8 @@ public class StoreFactory
                 newRelationshipStore(new File( fileName.getPath() + RELATIONSHIP_STORE_NAME)),
                 newNodeStore(new File( fileName.getPath() + NODE_STORE_NAME)),
                 // We don't need any particular upgrade when we add the schema store
-                newSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME)));
+                newSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME)),
+                newRelationshipGroupStore(new File( fileName.getPath() + RELATIONSHIP_GROUP_STORE_NAME)));
     }
 
     private void tryToUpgradeStores( File fileName )
@@ -148,6 +151,12 @@ public class StoreFactory
                 idGeneratorFactory, fileSystemAbstraction ).attemptUpgrade( fileName );
     }
 
+    private RelationshipGroupStore newRelationshipGroupStore( File fileName )
+    {
+        return new RelationshipGroupStore( fileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger );
+    }
+    
     public SchemaStore newSchemaStore( File file )
     {
         return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, windowPoolFactory,
@@ -229,6 +238,8 @@ public class StoreFactory
         createRelationshipTypeStore(new File( fileName.getPath() + RELATIONSHIP_TYPE_TOKEN_STORE_NAME ));
         createLabelTokenStore( new File( fileName.getPath() + LABEL_TOKEN_STORE_NAME ) );
         createSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME));
+        createRelationshipGroupStore( new File( fileName.getPath() + RELATIONSHIP_GROUP_STORE_NAME ),
+                config.get( Configuration.dense_node_threshold ) );
 
         NeoStore neoStore = newNeoStore( fileName );
         /*
@@ -416,8 +427,22 @@ public class StoreFactory
         idGenerator.close();
     }
 
-
-    public void createEmptyStore( File fileName, String typeAndVersionDescriptor)
+    public void createRelationshipGroupStore( File fileName, int denseNodeThreshold )
+    {
+        ByteBuffer firstRecord = ByteBuffer.allocate( RelationshipGroupStore.RECORD_SIZE ).putInt( denseNodeThreshold );
+        firstRecord.flip();
+        firstRecord.limit( firstRecord.capacity() );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( RelationshipGroupStore.TYPE_DESCRIPTOR ),
+                firstRecord, IdType.RELATIONSHIP_GROUP );
+    }
+    
+    public void createEmptyStore( File fileName, String typeAndVersionDescriptor )
+    {
+        createEmptyStore( fileName, typeAndVersionDescriptor, null, null );
+    }
+    
+    public void createEmptyStore( File fileName, String typeAndVersionDescriptor, ByteBuffer firstRecordData,
+            IdType idType )
     {
         // sanity checks
         if ( fileName == null )
@@ -435,7 +460,15 @@ public class StoreFactory
         {
             FileChannel channel = fileSystemAbstraction.create(fileName);
             int endHeaderSize = UTF8.encode(typeAndVersionDescriptor).length;
+            if ( firstRecordData != null )
+            {
+                endHeaderSize += firstRecordData.limit();
+            }
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
+            if ( firstRecordData != null )
+            {
+                buffer.put( firstRecordData );
+            }
             buffer.put( UTF8.encode( typeAndVersionDescriptor ) ).flip();
             channel.write( buffer );
             channel.force( false );
@@ -447,6 +480,13 @@ public class StoreFactory
                     + fileName, e );
         }
         idGeneratorFactory.create( fileSystemAbstraction, new File( fileName.getPath() + ".id"), 0 );
+        if ( firstRecordData != null )
+        {
+            IdGenerator idGenerator = idGeneratorFactory.open( fileSystemAbstraction,
+                    new File( fileName.getPath() + ".id" ), 1, idType, 1 );
+            idGenerator.nextId(); // reserve first for blockSize
+            idGenerator.close();
+        }
     }
 
     public String buildTypeDescriptorAndVersion( String typeDescriptor )

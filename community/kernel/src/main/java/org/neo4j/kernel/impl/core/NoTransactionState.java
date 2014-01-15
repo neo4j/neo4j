@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -49,13 +49,13 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public ArrayMap<Integer, Collection<Long>> getCowRelationshipRemoveMap( NodeImpl node )
+    public ArrayMap<Integer, SetAndDirectionCounter> getCowRelationshipRemoveMap( NodeImpl node )
     {
         return null;
     }
 
     @Override
-    public Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type )
+    public SetAndDirectionCounter getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type )
     {
         throw new NotInTransactionException();
     }
