@@ -145,12 +145,12 @@ public class WriteTransactionCommandOrderingTest
 
     private static NodeRecord missingNode()
     {
-        return new NodeRecord(-1, -1, -1);
+        return new NodeRecord(-1, false, -1, -1);
     }
 
     private static NodeRecord createdNode()
     {
-        NodeRecord record = new NodeRecord( 2, -1, -1 );
+        NodeRecord record = new NodeRecord( 2, false, -1, -1 );
         record.setInUse( true );
         record.setCreated();
         return record;
@@ -158,7 +158,7 @@ public class WriteTransactionCommandOrderingTest
 
     private static NodeRecord inUseNode()
     {
-        NodeRecord record = new NodeRecord( 1, -1, -1 );
+        NodeRecord record = new NodeRecord( 1, false, -1, -1 );
         record.setInUse( true );
         return record;
     }
@@ -242,7 +242,7 @@ public class WriteTransactionCommandOrderingTest
 
         @Override
         public NodeRecord getRecord(long id) {
-            NodeRecord record = new NodeRecord(id, -1, -1);
+            NodeRecord record = new NodeRecord(id, false, -1, -1);
             record.setInUse(true);
             return record;
         }

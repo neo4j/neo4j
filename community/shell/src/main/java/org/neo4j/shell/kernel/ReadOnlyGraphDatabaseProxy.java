@@ -390,6 +390,37 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         {
             readOnly();
         }
+
+        @Override
+        public Iterable<RelationshipType> getRelationshipTypes()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public int getDegree()
+        {
+            return actual.getDegree();
+        }
+
+        @Override
+        public int getDegree( RelationshipType type )
+        {
+            return actual.getDegree( type );
+        }
+
+        @Override
+        public int getDegree( Direction direction )
+        {
+            return actual.getDegree( direction );
+        }
+
+        @Override
+        public int getDegree( RelationshipType type, Direction direction )
+        {
+            return actual.getDegree( type, direction );
+        }
     }
 
     private class ReadOnlyRelationshipProxy implements Relationship

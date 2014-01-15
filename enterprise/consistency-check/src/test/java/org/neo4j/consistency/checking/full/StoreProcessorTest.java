@@ -44,7 +44,7 @@ public class StoreProcessorTest
         StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE, mock( ConsistencyReport.Reporter.class ) );
         RecordStore recordStore = mock( RecordStore.class );
         when( recordStore.getHighId() ).thenReturn( 3L );
-        when( recordStore.forceGetRecord( any( Long.class ) ) ).thenReturn( new NodeRecord( 0, 0, 0 ) );
+        when( recordStore.forceGetRecord( any( Long.class ) ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
 
         // when
         processor.applyFiltered( recordStore );
@@ -64,15 +64,15 @@ public class StoreProcessorTest
         final StoreProcessor processor = new StoreProcessor( CheckDecorator.NONE, mock( ConsistencyReport.Reporter.class ) );
         RecordStore recordStore = mock( RecordStore.class );
         when( recordStore.getHighId() ).thenReturn( 4L );
-        when( recordStore.forceGetRecord( 0L ) ).thenReturn( new NodeRecord( 0, 0, 0 ) );
-        when( recordStore.forceGetRecord( 1L ) ).thenReturn( new NodeRecord( 0, 0, 0 ) );
+        when( recordStore.forceGetRecord( 0L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
+        when( recordStore.forceGetRecord( 1L ) ).thenReturn( new NodeRecord( 0, false, 0, 0 ) );
         when( recordStore.forceGetRecord( 2L ) ).thenAnswer( new Answer<NodeRecord>()
         {
             @Override
             public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
             {
                 processor.stopScanning();
-                return new NodeRecord( 0, 0, 0 );
+                return new NodeRecord( 0, false, 0, 0 );
             }
         } );
 

@@ -338,7 +338,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             return;
         }
-        
+
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final IndexPopulator[] populators = new IndexPopulator[rules.length];
         // the store is uncontended at this point, so creating a local LockService is safe.
@@ -722,7 +722,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private long internalCreateNode( long nodeId, Map<String, Object> properties, Label... labels )
     {
-        NodeRecord nodeRecord = new NodeRecord( nodeId, Record.NO_NEXT_RELATIONSHIP.intValue(),
+        NodeRecord nodeRecord = new NodeRecord( nodeId, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
                                                 Record.NO_NEXT_PROPERTY.intValue() );
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
@@ -836,6 +836,13 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipRecord record = new RelationshipRecord( id, node1, node2, typeId );
         record.setInUse( true );
         record.setCreated();
+
+        // TODO Until batch inserter adheres to the new store format for dense nodes just reset these fields
+        record.setFirstPrevRel( Record.NO_PREV_RELATIONSHIP.intValue() );
+        record.setSecondPrevRel( Record.NO_PREV_RELATIONSHIP.intValue() );
+        record.setFirstInFirstChain( false );
+        record.setFirstInSecondChain( false );
+
         connectRelationship( firstNode, secondNode, record );
         getNodeStore().updateRecord( firstNode );
         getNodeStore().updateRecord( secondNode );

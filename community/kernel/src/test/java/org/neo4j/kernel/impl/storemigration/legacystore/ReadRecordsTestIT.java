@@ -42,7 +42,7 @@ public class ReadRecordsTestIT
         File storeDir = unzip( getClass(), "exampledb.zip" );
         LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs,
                 new File( storeDir, "neostore.nodestore.db" ) );
-        assertEquals( 1002, nodeStoreReader.getMaxId() );
+        assertEquals( 1003, nodeStoreReader.getMaxId() );
         Iterator<NodeRecord> records = nodeStoreReader.readNodeStore();
         int nodeCount = 0;
         for ( NodeRecord record : loop( records ) )

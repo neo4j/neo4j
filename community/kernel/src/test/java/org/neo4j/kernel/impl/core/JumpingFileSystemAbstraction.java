@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -67,7 +68,8 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
                 fileName.getName().equals( "neostore.relationshipstore.db" ) ||
                 fileName.getName().equals( "neostore.propertystore.db" ) ||
                 fileName.getName().equals( "neostore.propertystore.db.strings" ) ||
-                fileName.getName().equals( "neostore.propertystore.db.arrays" ) )
+                fileName.getName().equals( "neostore.propertystore.db.arrays" ) ||
+                fileName.getName().equals( "neostore.relationshipgroupstore.db" ) )
         {        
             return new JumpingFileChannel( channel, recordSizeFor( fileName ) );
         }
@@ -203,11 +205,16 @@ public class JumpingFileSystemAbstraction extends LifecycleAdapter implements Fi
         }
         else if ( fileName.getName().endsWith( "nodestore.db.labels" ) )
         {
-            return Integer.parseInt( GraphDatabaseSettings.label_block_size.getDefaultValue() );
+            return Integer.parseInt( GraphDatabaseSettings.label_block_size.getDefaultValue() ) +
+                    AbstractDynamicStore.BLOCK_HEADER_SIZE;
         }
         else if ( fileName.getName().endsWith( "schemastore.db" ) )
         {
-            return SchemaStore.getRecordSize( SchemaStore.BLOCK_SIZE );
+            return AbstractDynamicStore.getRecordSize( SchemaStore.BLOCK_SIZE );
+        }
+        else if ( fileName.getName().endsWith( "relationshipgroupstore.db" ) )
+        {
+            return AbstractDynamicStore.getRecordSize( RelationshipGroupStore.RECORD_SIZE );
         }
         throw new IllegalArgumentException( fileName.getPath() );
     }

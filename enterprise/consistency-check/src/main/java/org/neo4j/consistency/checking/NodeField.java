@@ -51,6 +51,12 @@ enum NodeField implements
         }
 
         @Override
+        public boolean isFirst( RelationshipRecord relationship )
+        {
+            return relationship.isFirstInFirstChain();
+        }
+
+        @Override
         void illegalNode( ConsistencyReport.RelationshipConsistencyReport report )
         {
             report.illegalSourceNode();
@@ -104,6 +110,12 @@ enum NodeField implements
         public long next( RelationshipRecord relationship )
         {
             return relationship.getSecondNextRel();
+        }
+
+        @Override
+        public boolean isFirst( RelationshipRecord relationship )
+        {
+            return relationship.isFirstInSecondChain();
         }
 
         @Override
@@ -171,6 +183,13 @@ enum NodeField implements
 
     public abstract long next( RelationshipRecord relationship );
 
+    public abstract boolean isFirst( RelationshipRecord relationship );
+
+    public boolean hasRelationship( NodeRecord node )
+    {
+        return node.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue();
+    }
+
     @Override
     public void checkConsistency( RelationshipRecord relationship,
                                   CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
@@ -197,7 +216,7 @@ enum NodeField implements
         }
         else
         {
-            if ( Record.NO_PREV_RELATIONSHIP.is( prev( relationship ) ) )
+            if ( isFirst( relationship ) )
             {
                 if ( node.getNextRel() != relationship.getId() )
                 {
@@ -206,7 +225,7 @@ enum NodeField implements
             }
             else
             {
-                if ( Record.NO_NEXT_RELATIONSHIP.is( node.getNextRel() ) )
+                if ( !hasRelationship( node ) )
                 {
                     noChain( engine.report(), node );
                 }
@@ -219,7 +238,7 @@ enum NodeField implements
                              CheckerEngine<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> engine,
                              DiffRecordAccess records )
     {
-        if ( Record.NO_PREV_RELATIONSHIP.is( prev( oldRecord ) ) )
+        if ( isFirst( oldRecord ) )
         {
             if ( !newRecord.inUse()
                  || valueFrom( oldRecord ) != valueFrom( newRecord )

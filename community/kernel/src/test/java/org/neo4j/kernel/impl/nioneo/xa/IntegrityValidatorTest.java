@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import javax.transaction.xa.XAException;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -31,8 +32,11 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import static junit.framework.Assert.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 public class IntegrityValidatorTest
@@ -71,7 +75,7 @@ public class IntegrityValidatorTest
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes );
 
-        NodeRecord record = new NodeRecord( 1l, 1l, -1l );
+        NodeRecord record = new NodeRecord( 1l, false, 1l, -1l );
         record.setInUse( false );
 
         // When

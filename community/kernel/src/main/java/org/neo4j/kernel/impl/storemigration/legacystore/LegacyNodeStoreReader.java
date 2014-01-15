@@ -24,10 +24,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -40,7 +42,7 @@ import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readI
 public class LegacyNodeStoreReader implements Closeable
 {
     public static final String FROM_VERSION = "NodeStore " + LegacyStore.LEGACY_VERSION;
-    public static final int RECORD_SIZE = 9;
+    public static final int RECORD_SIZE = 14;
 
     private final FileChannel fileChannel;
     private final long maxId;
@@ -57,7 +59,7 @@ public class LegacyNodeStoreReader implements Closeable
         return maxId;
     }
 
-    public Iterator<NodeRecord> readNodeStore() throws IOException
+    public Iterator<NodeRecord> readNodeStore()
     {
         return new PrefetchingIterator<NodeRecord>()
         {
@@ -80,19 +82,22 @@ public class LegacyNodeStoreReader implements Closeable
                         long relModifier = (inUseByte & 0xEL) << 31;
                         long nextProp = LegacyStore.getUnsignedInt( buffer );
                         long propModifier = (inUseByte & 0xF0L) << 28;
-                        nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ), longFromIntAndMod( nextProp, propModifier ) );
+                        long lsbLabels = LegacyStore.getUnsignedInt( buffer );
+                        long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
+                        long labels = lsbLabels | (hsbLabels << 32);
+                        nodeRecord = new NodeRecord( id, false, longFromIntAndMod( nextRel, relModifier ),
+                                longFromIntAndMod( nextProp, propModifier ) );
+                        nodeRecord.setLabelField( labels, Collections.<DynamicRecord>emptyList() ); // no need to load 'em heavy
                     }
-                    else nodeRecord = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+                    else
+                    {
+                        nodeRecord = new NodeRecord( id, false,
+                                Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+                    }
                     nodeRecord.setInUse( inUse );
                     id++;
                 }
                 return nodeRecord;
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
             }
         };
     }

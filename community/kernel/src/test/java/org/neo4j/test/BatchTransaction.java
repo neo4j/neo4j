@@ -110,8 +110,9 @@ public class BatchTransaction
         return total;
     }
     
-    public void printProgress( boolean value )
+    public BatchTransaction printProgress( boolean value )
     {
         printProgress = value;
+        return this;
     }
 }

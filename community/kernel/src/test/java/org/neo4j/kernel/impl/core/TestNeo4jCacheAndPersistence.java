@@ -26,10 +26,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import javax.transaction.TransactionManager;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -46,6 +48,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
@@ -402,6 +408,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node2.delete();
     }
     
+    @Ignore( "Can't depend on this behaviour since the introduction of dense nodes, at least the implementation of it currently" )
     @Test
     public void testRelationshipCachingIterator()
     {
@@ -442,84 +449,52 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         String storePath = getStorePath( "neo2" );
         deleteFileOrDirectory( storePath );
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( config ).newGraphDatabase();
-        Transaction tx = graphDb.beginTx();
-        Node node1 = graphDb.createNode();
-        Node node2 = graphDb.createNode();
-        node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        node2.createRelationshipTo( node1, MyRelTypes.TEST2 );
-        node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
-        tx.success();
-        tx.finish();
-        tx = graphDb.beginTx();
-        Set<Relationship> rels = new HashSet<Relationship>();
-        RelationshipType types[] = new RelationshipType[] { 
-            MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
-        clearCache();
         
-        for ( Relationship rel : node1.getRelationships( types ) )
+        Node node1, node2;
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            assertTrue( rels.add( rel ) );
+            node1 = graphDb.createNode();
+            node2 = graphDb.createNode();
+            node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            node2.createRelationshipTo( node1, MyRelTypes.TEST2 );
+            node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
+            tx.success();
         }
-        assertEquals( 3, rels.size() );
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node1.getRelationships() )
-        {
-            assertTrue( rels.add( rel ) );
-        }
-        assertEquals( 3, rels.size() );
-
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node2.getRelationships( types ) )
-        {
-            assertTrue( rels.add( rel ) );
-        }
-        assertEquals( 3, rels.size() );
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node2.getRelationships() )
-        {
-            assertTrue( rels.add( rel ) );
-        }
-        assertEquals( 3, rels.size() );
-
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node1.getRelationships( Direction.OUTGOING ) )
-        {
-            assertTrue( rels.add( rel ) );
-        }
-        assertEquals( 2, rels.size() );
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node1.getRelationships( Direction.INCOMING ) )
-        {
-            assertTrue( rels.add( rel ) );
-        }
-        assertEquals( 1, rels.size() );    
         
-
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node2.getRelationships( Direction.OUTGOING ) )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            assertTrue( rels.add( rel ) );
+            RelationshipType types[] = new RelationshipType[] { 
+                MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
+            
+            clearCache();
+            assertEquals( 3, count( node1.getRelationships( types ) ) );
+            
+            clearCache();
+            assertEquals( 3, count( node1.getRelationships() ) );
+            
+            clearCache();
+            assertEquals( 3, count( node2.getRelationships( types ) ) );
+            
+            clearCache();
+            assertEquals( 3, count( node2.getRelationships() ) );
+    
+            clearCache();
+            assertEquals( 2, count( node1.getRelationships( OUTGOING ) ) );
+            
+            clearCache();
+            assertEquals( 1, count( node1.getRelationships( INCOMING ) ) );
+    
+            clearCache();
+            assertEquals( 1, count( node2.getRelationships( OUTGOING ) ) );
+            
+            clearCache();
+            assertEquals( 2, count( node2.getRelationships( INCOMING ) ) );
+            
+            tx.success();
         }
-        assertEquals( 1, rels.size() );
-        rels.clear();
-        clearCache();
-        for ( Relationship rel : node2.getRelationships( Direction.INCOMING ) )
-        {
-            assertTrue( rels.add( rel ) );
-        }
-        assertEquals( 2, rels.size() );
-        
-        tx.success();
-        tx.finish();
         graphDb.shutdown();
     }
-
+    
     @Test
     public void testAnotherLowGrabSize()
     {

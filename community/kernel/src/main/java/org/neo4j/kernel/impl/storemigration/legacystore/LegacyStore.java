@@ -33,14 +33,18 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.setStoreVersion;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 /**
  * Reader for a database in an older store format version.
@@ -52,13 +56,12 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDe
  */
 public class LegacyStore implements Closeable
 {
-    public static final String LEGACY_VERSION = "v0.A.0";
+    public static final String LEGACY_VERSION = "v0.A.1";
 
     private final File storageFileName;
-    private final Collection<Closeable> allStoreReaders = new ArrayList<Closeable>();
+    private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private LegacyNodeStoreReader nodeStoreReader;
-    private LegacyPropertyIndexStoreReader propertyIndexReader;
-    private LegacyPropertyStoreReader propertyStoreReader;
+    private LegacyRelationshipStoreReader relStoreReader;
 
     private final FileSystemAbstraction fs;
 
@@ -86,8 +89,7 @@ public class LegacyStore implements Closeable
     protected void initStorage() throws IOException
     {
         allStoreReaders.add( nodeStoreReader = new LegacyNodeStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.NODE_STORE_NAME ) ) );
-        allStoreReaders.add( propertyIndexReader = new LegacyPropertyIndexStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
-        allStoreReaders.add( propertyStoreReader = new LegacyPropertyStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.PROPERTY_STORE_NAME ) ) );
+        allStoreReaders.add( relStoreReader = new LegacyRelationshipStoreReader( fs, new File( getStorageFileName().getPath() + StoreFactory.RELATIONSHIP_STORE_NAME ) ) );
     }
 
     public File getStorageFileName()
@@ -95,7 +97,7 @@ public class LegacyStore implements Closeable
         return storageFileName;
     }
 
-    public static long getUnsignedInt(ByteBuffer buf)
+    public static long getUnsignedInt( ByteBuffer buf )
     {
         return buf.getInt()&0xFFFFFFFFL;
     }
@@ -122,6 +124,11 @@ public class LegacyStore implements Closeable
 
         setStoreVersionTrailer( targetStoreFileName, versionTrailer );
 
+        copyIdFile( targetBaseStorageFileName, storeNamePart );
+    }
+
+    private void copyIdFile( File targetBaseStorageFileName, String storeNamePart ) throws IOException
+    {
         fs.copyFile(
                 new File( storageFileName + storeNamePart + ".id" ),
                 new File( targetBaseStorageFileName + storeNamePart + ".id" ) );
@@ -129,22 +136,26 @@ public class LegacyStore implements Closeable
 
     private void setStoreVersionTrailer( File targetStoreFileName, String versionTrailer ) throws IOException
     {
-        FileChannel fileChannel = fs.open( targetStoreFileName, "rw" );
-        try
+        byte[] trailer = UTF8.encode( versionTrailer );
+        long fileSize = 0;
+        try ( FileChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
         {
-            byte[] trailer = UTF8.encode( versionTrailer );
+            fileSize = fileChannel.size();
             fileChannel.position( fileChannel.size()-trailer.length );
             fileChannel.write( ByteBuffer.wrap( trailer ) );
         }
-        finally
+        catch ( IllegalArgumentException e )
         {
-            fileChannel.close();
+            throw new IllegalArgumentException( "size:" + fileSize + ", trailer:" + trailer.length +
+                    " for " + targetStoreFileName );
         }
     }
 
     public void copyNeoStore( NeoStore neoStore ) throws IOException
     {
         copyStore( neoStore.getStorageFileName(), "", neoStore.getTypeAndVersionDescriptor() );
+        setStoreVersion( fs, neoStore.getStorageFileName(),
+                versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
     }
 
     public void copyRelationshipStore( NeoStore neoStore ) throws IOException
@@ -183,6 +194,18 @@ public class LegacyStore implements Closeable
                 buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
     }
 
+    public void copyLabelTokenStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.LABEL_TOKEN_STORE_NAME,
+                buildTypeDescriptorAndVersion( LabelTokenStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyLabelTokenNameStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME,
+                buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
+    }
+
     public void copyDynamicStringPropertyStore( NeoStore neoStore ) throws IOException
     {
         copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_STRINGS_STORE_NAME,
@@ -195,19 +218,49 @@ public class LegacyStore implements Closeable
                 buildTypeDescriptorAndVersion( DynamicArrayStore.TYPE_DESCRIPTOR ) );
     }
 
+    public void copySchemaStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.SCHEMA_STORE_NAME,
+                buildTypeDescriptorAndVersion( DynamicArrayStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyNodeLabelStore( NeoStore neoStore ) throws IOException
+    {
+        copyStore( neoStore.getStorageFileName(), StoreFactory.NODE_LABELS_STORE_NAME,
+                buildTypeDescriptorAndVersion( SchemaStore.TYPE_DESCRIPTOR ) );
+    }
+
+    public void copyNodeStoreIdFile( NeoStore neoStore ) throws IOException
+    {
+        copyIdFile( neoStore.getStorageFileName(), StoreFactory.NODE_STORE_NAME );
+    }
+
+    public void copyRelationshipStoreIdFile( NeoStore neoStore ) throws IOException
+    {
+        copyIdFile( neoStore.getStorageFileName(), StoreFactory.RELATIONSHIP_STORE_NAME );
+    }
+
     public LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
     }
 
-    public LegacyPropertyIndexStoreReader getPropertyIndexReader()
+    public LegacyRelationshipStoreReader getRelStoreReader()
     {
-        return propertyIndexReader;
+        return relStoreReader;
     }
 
-    public LegacyPropertyStoreReader getPropertyStoreReader()
+    static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, long atPosition, int nrOfBytes )
     {
-        return propertyStoreReader;
+        try
+        {
+            fileChannel.position( atPosition );
+            readIntoBuffer( fileChannel, buffer, nrOfBytes );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, int nrOfBytes )

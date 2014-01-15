@@ -161,6 +161,7 @@ public class TestRelIdArray
 
         // and adding one more id of the first "high bits" kind
         ids.add( 1, OUTGOING );
+        iterator.updateSource( ids, OUTGOING );
 
         // THEN
         assertEquals( "Should see the added id after depleting two IdBlocks", asSet( 1L ), deplete( iterator ) );
@@ -180,7 +181,9 @@ public class TestRelIdArray
     {
         HashSet<Long> set = new HashSet<>();
         while ( iterator.hasNext() )
+        {
             set.add( iterator.next() );
+        }
         return set;
     }
     

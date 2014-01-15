@@ -286,7 +286,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     public void ensureHeavy( DynamicRecord record )
     {
         if ( !record.isLight() )
+        {
             return;
+        }
         if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
         {
             record.setData( NO_DATA );
@@ -354,8 +356,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             readData = false;
             if ( load != RecordLoad.FORCE )
+            {
                 throw new InvalidRecordException( "Next block set[" + nextBlock
                 + "] current block illegal size[" + nrOfBytes + "/" + dataSize + "]" );
+            }
         }
         record.setInUse( inUse );
         record.setStartRecord( isStartRecord );
@@ -423,6 +427,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return forceGetRecord( id );
     }
 
+    @Override
     public Collection<DynamicRecord> getRecords( long startBlockId )
     {
         return getRecords( startBlockId, RecordLoad.NORMAL );
@@ -468,14 +473,20 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         int totalLength = 0;
         for ( DynamicRecord record : records )
+        {
             totalLength += record.getLength();
+        }
         
         if ( target.length < totalLength )
+        {
             target = new byte[totalLength];
+        }
         
         ByteBuffer buffer = ByteBuffer.wrap( target, 0, totalLength );
         for ( DynamicRecord record : records )
+        {
             buffer.put( record.getData() );
+        }
         buffer.position( 0 );
         return buffer;
     }
@@ -518,12 +529,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
-        if ( fileSystemAbstraction.fileExists( new File( getStorageFileName().getPath() + ".id" )) )
+        File idFile = new File( getStorageFileName().getPath() + ".id" );
+        if ( fileSystemAbstraction.fileExists( idFile) )
         {
-            boolean success = fileSystemAbstraction.deleteFile( new File( getStorageFileName().getPath() + ".id" ));
-            assert success;
+            boolean success = fileSystemAbstraction.deleteFile( idFile );
+            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
         }
-        createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
+        createIdGenerator( idFile);
         openIdGenerator();
         setHighId( 1 ); // reserved first block containing blockSize
         FileChannel fileChannel = getFileChannel();

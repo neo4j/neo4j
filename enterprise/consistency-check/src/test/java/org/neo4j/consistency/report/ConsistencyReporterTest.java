@@ -274,7 +274,7 @@ public class ConsistencyReporterTest
             }
             if ( type == NodeRecord.class )
             {
-                return new NodeRecord( 0, 1, 2 );
+                return new NodeRecord( 0, false, 1, 2 );
             }
             if ( type == RelationshipRecord.class )
             {

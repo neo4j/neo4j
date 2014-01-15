@@ -53,6 +53,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
     public static final String TYPE_DESCRIPTOR = "PropertyStore";
+    public static final String FILE_NAME = ".propertystore.db";
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
     + 4/*next*/

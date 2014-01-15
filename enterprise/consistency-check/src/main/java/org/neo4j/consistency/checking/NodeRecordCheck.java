@@ -86,10 +86,12 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                         }
                         for ( NodeField field : fields )
                         {
-                            if ( !Record.NO_NEXT_RELATIONSHIP.is( field.prev( relationship ) ) )
+                            if ( !field.isFirst( relationship ) )
                             {
                                 field.notFirstInChain( engine.report(), relationship );
                             }
+                            // TODO we should check that the number of relationships in the chain match
+                            // the value in the "prev" field.
                         }
                     }
                 }

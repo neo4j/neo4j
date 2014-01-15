@@ -31,13 +31,16 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -58,12 +61,13 @@ public class RelationshipIteratorIssuesTest
         
         // -- a node that says it cannot load any more relationships
         NodeImpl node = mock( NodeImpl.class );
-        when( node.getMoreRelationships( nodeManager ) ).thenReturn( LoadStatus.NOTHING );
+        when( node.getMoreRelationships( eq( nodeManager ), any( DirectionWrapper.class ),
+                any( RelationshipType[].class )) ).thenReturn( LoadStatus.NOTHING );
         
         // -- a type iterator that at this point contains one relationship (0)
         ControlledRelIdIterator typeIterator = new ControlledRelIdIterator( 0L );
         RelationshipIterator iterator = new RelationshipIterator( new RelIdIterator[] { typeIterator },
-                node, OUTGOING, nodeManager, false, false );
+                node, OUTGOING, new RelationshipType[0], nodeManager, false, false );
         // -- go forth one step in the iterator
         iterator.next();
         

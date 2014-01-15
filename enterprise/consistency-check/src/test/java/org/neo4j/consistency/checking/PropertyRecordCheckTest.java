@@ -232,8 +232,8 @@ public class PropertyRecordCheckTest
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );
         newProperty.setPrevProp( 11 );
         newProperty.setNextProp( 12 );
-        newProperty.setNodeId( addChange( inUse( new NodeRecord( 100, NONE, 1 ) ),
-                                          inUse( new NodeRecord( 100, NONE, 11 ) ) ).getId() );
+        newProperty.setNodeId( addChange( inUse( new NodeRecord( 100, false, NONE, 1 ) ),
+                                          inUse( new NodeRecord( 100, false, NONE, 11 ) ) ).getId() );
 
         PropertyRecord oldPrev = inUse( new PropertyRecord( 1 ) );
         addChange( oldPrev, notInUse( new PropertyRecord( 1 ) ) );
@@ -259,7 +259,7 @@ public class PropertyRecordCheckTest
         // given
         PropertyRecord oldProperty = notInUse( new PropertyRecord( 42 ) );
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );
-        newProperty.setNodeId( add( notInUse( new NodeRecord( 10, 0, 0 ) ) ).getId() );
+        newProperty.setNodeId( add( notInUse( new NodeRecord( 10, false, 0, 0 ) ) ).getId() );
         newProperty.setPrevProp( 1 );
         newProperty.setNextProp( 2 );
         PropertyRecord prev = add( notInUse( new PropertyRecord( 1 ) ) );
@@ -286,7 +286,7 @@ public class PropertyRecordCheckTest
         nextProperty.setPrevProp( 42 );
         newProperty.setNextProp( nextProperty.getId() );
 
-        newProperty.setNodeId( add( inUse( new NodeRecord( 100, NONE, newProperty.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 100, false, NONE, newProperty.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -306,8 +306,8 @@ public class PropertyRecordCheckTest
         prevProperty.setNextProp( 42 );
         newProperty.setPrevProp( prevProperty.getId() );
 
-        newProperty.setNodeId( addChange( inUse( new NodeRecord( 100, NONE, oldProperty.getId() ) ),
-                                          inUse( new NodeRecord( 100, NONE, prevProperty.getId() ) ) ).getId() );
+        newProperty.setNodeId( addChange( inUse( new NodeRecord( 100, false, NONE, oldProperty.getId() ) ),
+                                          inUse( new NodeRecord( 100, false, NONE, prevProperty.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -331,7 +331,7 @@ public class PropertyRecordCheckTest
         newProperty.setNextProp( newNext.getId() );
         newNext.setPrevProp( newProperty.getId() );
 
-        newProperty.setNodeId( add( inUse( new NodeRecord( 100, NONE, newProperty.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 100, false, NONE, newProperty.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -355,8 +355,8 @@ public class PropertyRecordCheckTest
         newProperty.setPrevProp( newPrev.getId() );
         newPrev.setNextProp( newProperty.getId() );
 
-        newProperty.setNodeId( addChange( inUse( new NodeRecord( 100, NONE, oldPrev.getId() ) ),
-                                          inUse( new NodeRecord( 100, NONE, newPrev.getId() ) ) ).getId() );
+        newProperty.setNodeId( addChange( inUse( new NodeRecord( 100, false, NONE, oldPrev.getId() ) ),
+                                          inUse( new NodeRecord( 100, false, NONE, newPrev.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -378,7 +378,7 @@ public class PropertyRecordCheckTest
         addChange( notInUse( new PropertyRecord( 2 ) ),
                    inUse( new PropertyRecord( 2 ) ) ).setNextProp( 42 );
 
-        newProperty.setNodeId( add( inUse( new NodeRecord( 100, NONE, 1 ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 100, false, NONE, 1 ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -399,7 +399,7 @@ public class PropertyRecordCheckTest
         addChange( notInUse( new PropertyRecord( 2 ) ),
                    inUse( new PropertyRecord( 2 ) ) ).setPrevProp( 42 );
 
-        newProperty.setNodeId( add( inUse( new NodeRecord( 100, NONE, newProperty.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 100, false, NONE, newProperty.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -419,7 +419,7 @@ public class PropertyRecordCheckTest
         oldProperty.addPropertyBlock( block );
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );
 
-        newProperty.setNodeId( add( inUse( new NodeRecord( 100, NONE, newProperty.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 100, false, NONE, newProperty.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -439,7 +439,7 @@ public class PropertyRecordCheckTest
         oldProperty.addPropertyBlock( block );
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );
 
-        newProperty.setNodeId( add( inUse( new NodeRecord( 100, NONE, newProperty.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 100, false, NONE, newProperty.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -456,7 +456,7 @@ public class PropertyRecordCheckTest
         PropertyRecord oldProperty = inUse( new PropertyRecord( 42 ) );
         PropertyRecord newProperty = notInUse( new PropertyRecord( 42 ) );
         newProperty.setNodeId( 10 );
-        add( inUse( new NodeRecord( 10, NONE, NONE ) ) );
+        add( inUse( new NodeRecord( 10, false, NONE, NONE ) ) );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -476,7 +476,7 @@ public class PropertyRecordCheckTest
         PropertyRecord b = add( inUse( new PropertyRecord( 2 ) ) );
         a.setNextProp( b.getId() );
         b.setPrevProp( a.getId() );
-        newProperty.setNodeId( add( inUse( new NodeRecord( 10, NONE, a.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 10, false, NONE, a.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -567,7 +567,7 @@ public class PropertyRecordCheckTest
         // given
         PropertyRecord oldProperty = notInUse( new PropertyRecord( 42 ) );
         PropertyRecord newProperty = inUse( new PropertyRecord( 42 ) );
-        newProperty.setNodeId( add( inUse( new NodeRecord( 1, NONE, NONE ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 1, false, NONE, NONE ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );
@@ -587,7 +587,7 @@ public class PropertyRecordCheckTest
         PropertyRecord b = add( inUse( new PropertyRecord( 2 ) ) );
         a.setNextProp( b.getId() );
         b.setPrevProp( a.getId() );
-        newProperty.setNodeId( add( inUse( new NodeRecord( 1, NONE, a.getId() ) ) ).getId() );
+        newProperty.setNodeId( add( inUse( new NodeRecord( 1, false, NONE, a.getId() ) ) ).getId() );
 
         // when
         ConsistencyReport.PropertyConsistencyReport report = checkChange( oldProperty, newProperty );

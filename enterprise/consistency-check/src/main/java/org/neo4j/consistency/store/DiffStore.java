@@ -87,15 +87,24 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
             getNodeStore().markDirty( record.getSecondNode() );
             markProperty( record.getNextProp(), -1, record.getId() );
             markRelationship( record.getFirstNextRel() );
-            markRelationship( record.getFirstPrevRel() );
+            if ( !record.isFirstInFirstChain() )
+            {
+                markRelationship( record.getFirstPrevRel() );
+            }
             markRelationship( record.getSecondNextRel() );
-            markRelationship( record.getSecondPrevRel() );
+            if ( !record.isFirstInSecondChain() )
+            {
+                markRelationship( record.getSecondPrevRel() );
+            }
         }
     }
 
     private void markRelationship( long rel )
     {
-        if ( !Record.NO_NEXT_RELATIONSHIP.is( rel ) ) getRelationshipStore().markDirty( rel );
+        if ( !Record.NO_NEXT_RELATIONSHIP.is( rel ) )
+        {
+            getRelationshipStore().markDirty( rel );
+        }
     }
 
     private void markProperty( long prop, long nodeId, long relId )
@@ -133,7 +142,9 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     private void updateDynamic( PropertyRecord record )
     {
         for ( PropertyBlock block : record.getPropertyBlocks() )
+        {
             updateDynamic( block.getValueRecords() );
+        }
         updateDynamic( record.getDeletedRecords() );
     }
 
@@ -145,7 +156,9 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
                     ? getStringStore() : getArrayStore();
             store.forceUpdateRecord( record );
             if ( !Record.NO_NEXT_BLOCK.is( record.getNextBlock() ) )
+            {
                 getBlockStore(record.getType()).markDirty( record.getNextBlock() );
+            }
         }
     }
 
@@ -183,9 +196,11 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     {
         store.forceUpdateRecord( record );
         for ( DynamicRecord key : record.getNameRecords() )
+        {
             nameStore.forceUpdateRecord( key );
+        }
     }
-    
+
     @Override
     public void visitNeoStore( NeoStoreRecord record )
     {

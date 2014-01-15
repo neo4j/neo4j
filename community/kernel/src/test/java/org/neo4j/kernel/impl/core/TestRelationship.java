@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,7 +35,11 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -45,9 +48,9 @@ import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
-    private String key1 = "key1";
-    private String key2 = "key2";
-    private String key3 = "key3";
+    private final String key1 = "key1";
+    private final String key2 = "key2";
+    private final String key3 = "key3";
 
     @Test
     public void testSimple()
@@ -246,7 +249,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     private void countRelationships( int expectedCount, Iterable<Relationship> rels )
     {
         int count = 0;
-        for ( Relationship ignored : rels )
+        for ( @SuppressWarnings( "unused" ) Relationship ignored : rels )
         {
             count++;
         }
@@ -360,7 +363,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "Null argument should result in exception." );
         }
         catch ( IllegalArgumentException e )
-        {
+        {   // OK
         }
         Integer int1 = new Integer( 1 );
         Integer int2 = new Integer( 2 );
@@ -407,7 +410,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             }
         }
         catch ( NotFoundException e )
-        {
+        {   // OK
         }
         try
         {
@@ -415,7 +418,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "Remove null property should throw exception." );
         }
         catch ( IllegalArgumentException e )
-        {
+        {   // OK
         }
 
         rel1.setProperty( key1, int1 );
@@ -428,7 +431,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "Null argument should result in exception." );
         }
         catch ( IllegalArgumentException e )
-        {
+        {   // OK
         }
 
         // test remove property
@@ -476,7 +479,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "Null argument should result in exception." );
         }
         catch ( IllegalArgumentException e )
-        {
+        {   // OK
         }
         catch ( NotFoundException e )
         {
@@ -540,7 +543,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "get non existing property din't throw exception" );
         }
         catch ( NotFoundException e )
-        {
+        {   // OK
         }
         try
         {
@@ -548,7 +551,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
             fail( "get of null key din't throw exception" );
         }
         catch ( IllegalArgumentException e )
-        {
+        {   // OK
         }
         assertTrue( !rel1.hasProperty( key1 ) );
         assertTrue( !rel1.hasProperty( null ) );
@@ -675,6 +678,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( rel.isType( MyRelTypes.TEST ) );
         assertTrue( rel.isType( new RelationshipType()
         {
+            @Override
             public String name()
             {
                 return MyRelTypes.TEST.name();
@@ -724,10 +728,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void makeSureLazyLoadingRelationshipsWorksEvenIfOtherIteratorAlsoLoadsInTheSameIteration() throws IOException
+    public void makeSureLazyLoadingRelationshipsWorksEvenIfOtherIteratorAlsoLoadsInTheSameIteration()
     {
-        int num_edges = 100;
-        Node hub;
+        int numEdges = 100;
 
         /* create 256 nodes */
         GraphDatabaseService graphDB = getGraphDb();
@@ -739,28 +742,34 @@ public class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
 
         /* create random outgoing relationships from node 5 */
-        hub = nodes[4];
+        Node hub = nodes[4];
         int nextID = 7;
 
-        DynamicRelationshipType outtie = DynamicRelationshipType.withName( "outtie" );
-        DynamicRelationshipType innie = DynamicRelationshipType.withName( "innie" );
-        for ( int k = 0; k < num_edges; k += 1 )
+        RelationshipType outtie = withName( "outtie" );
+        RelationshipType innie = withName( "innie" );
+        for ( int k = 0; k < numEdges; k++ )
         {
             Node neighbor = nodes[nextID];
             nextID += 7;
             nextID &= 255;
-            if ( nextID == 0 ) nextID = 1;
+            if ( nextID == 0 )
+            {
+                nextID = 1;
+            }
             hub.createRelationshipTo( neighbor, outtie );
         }
         newTransaction();
 
         /* create random incoming relationships to node 5 */
-        for ( int k = 0; k < num_edges; k += 1 )
+        for ( int k = 0; k < numEdges; k += 1 )
         {
             Node neighbor = nodes[nextID];
             nextID += 7;
             nextID &= 255;
-            if ( nextID == 0 ) nextID = 1;
+            if ( nextID == 0 )
+            {
+                nextID = 1;
+            }
             neighbor.createRelationshipTo( hub, innie );
         }
         commit();
@@ -770,8 +779,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         hub = graphDB.getNodeById( hub.getId() );
 
         int count = 0;
-        for ( @SuppressWarnings( "unused" )
-        Relationship r1 : hub.getRelationships() )
+        for ( @SuppressWarnings( "unused" ) Relationship r1 : hub.getRelationships() )
         {
             count += count( hub.getRelationships() );
         }
@@ -832,7 +840,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
             for ( Relationship rel : node.getRelationships( types[1] ) )
             {
                 rel.delete();
-                if ( ++delCount == count/2 ) newTransaction();
+                if ( ++delCount == count/2 )
+                {
+                    newTransaction();
+                }
             }
         }
         assertEquals( 1, loopCount );

@@ -445,6 +445,36 @@ public class LockHolderImpl implements LockHolder
         {
             throw unsupportedOperation();
         }
+        
+        @Override
+        public Iterable<RelationshipType> getRelationshipTypes()
+        {
+            throw unsupportedOperation();
+        }
+        
+        @Override
+        public int getDegree()
+        {
+            throw unsupportedOperation();
+        }
+        
+        @Override
+        public int getDegree( RelationshipType type )
+        {
+            throw unsupportedOperation();
+        }
+        
+        @Override
+        public int getDegree( Direction direction )
+        {
+            throw unsupportedOperation();
+        }
+        
+        @Override
+        public int getDegree( RelationshipType type, Direction direction )
+        {
+            throw unsupportedOperation();
+        }
 
         @Override
         public boolean equals( Object o )

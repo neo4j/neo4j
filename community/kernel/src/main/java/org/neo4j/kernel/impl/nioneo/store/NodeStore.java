@@ -65,8 +65,8 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public static final String TYPE_DESCRIPTOR = "NodeStore";
 
-    // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)
-    public static final int RECORD_SIZE = 14;
+    // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
+    public static final int RECORD_SIZE = 15;
 
     private DynamicArrayStore dynamicLabelStore;
 
@@ -143,7 +143,8 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
         catch ( InvalidRecordException e )
         {
-            return new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() ); // inUse=false by default
+            return new NodeRecord( id, false,
+                    Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() ); // inUse=false by default
         }
 
         try
@@ -207,7 +208,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
         catch ( InvalidRecordException e )
         {
-            // ok id to high
+            // OK, id too high
             return null;
         }
 
@@ -252,10 +253,12 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         long propModifier = (inUseByte & 0xF0L) << 28;
 
         long lsbLabels = buffer.getUnsignedInt();
-        long hsbLabels = buffer.get() & 0xFF; // so that a negative bye won't fill the "extended" bits with ones.
+        long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
         long labels = lsbLabels | (hsbLabels << 32);
+        byte extra = buffer.get();
+        boolean dense = (extra & 0x1) > 0;
 
-        NodeRecord nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ),
+        NodeRecord nodeRecord = new NodeRecord( id, dense, longFromIntAndMod( nextRel, relModifier ),
                 longFromIntAndMod( nextProp, propModifier ) );
         nodeRecord.setInUse( inUse );
         nodeRecord.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
@@ -281,6 +284,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             // [xxxx,    ] higher bits for prop id
             short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
             inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
+            
             buffer.put( (byte) inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
 
             // lsb of labels
@@ -288,6 +292,9 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             buffer.putInt( (int) labelField );
             // msb of labels
             buffer.put( (byte) ((labelField&0xFF00000000L) >> 32) );
+            
+            byte extra = record.isDense() ? (byte)1 : (byte)0;
+            buffer.put( extra );
         }
         else
         {

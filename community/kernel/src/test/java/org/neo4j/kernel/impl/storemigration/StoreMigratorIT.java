@@ -41,7 +41,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -66,6 +65,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
 
 public class StoreMigratorIT
@@ -73,20 +74,12 @@ public class StoreMigratorIT
     @Test
     public void shouldMigrate() throws IOException
     {
-        // GIVEN
-        LegacyStore legacyStore = new LegacyStore( fs,
-                new File( MigrationTestUtils.findOldFormatStoreDirectory(), NeoStore.DEFAULT_NAME ) );
-        NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
-
         // WHEN
-        new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
-        legacyStore.close();
+        new StoreMigrator( monitor ).migrate( new LegacyStore( fs,
+                new File( MigrationTestUtils.findOldFormatStoreDirectory(), NeoStore.DEFAULT_NAME ) ),
+                storeFactory.createNeoStore( storeFileName ) );
 
         // THEN
-        neoStore = storeFactory.newNeoStore( storeFileName );
-        verifyNeoStore( neoStore );
-        neoStore.close();
-
         assertEquals( 100, monitor.events.size() );
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
@@ -99,8 +92,13 @@ public class StoreMigratorIT
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
 
-        // CLEANUP
         database.shutdown();
+
+        NeoStore neoStore = storeFactory.newNeoStore( storeFileName );
+        verifyNeoStore( neoStore );
+        neoStore.close();
+
+        // CLEANUP
     }
 
     @Test
@@ -109,13 +107,11 @@ public class StoreMigratorIT
         // GIVEN
         // a store that contains two nodes with property "name" of which there are two key tokens
         // that should be merged in the store migration
-        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "propkeydupdb.zip" );
-        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
-        NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
-
         // WHEN
-        new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
-        legacyStore.close();
+        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "propkeydupdb.zip" );
+        new StoreMigrator( monitor ).migrate( new LegacyStore( fs,
+                new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) ),
+                storeFactory.createNeoStore( storeFileName ) );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -189,11 +185,11 @@ public class StoreMigratorIT
 
     private void verifyNeoStore( NeoStore neoStore )
     {
-        assertEquals( 1317392957120l, neoStore.getCreationTime() );
+        assertEquals( 1317392957120L, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 1l, neoStore.getVersion() );
-        assertEquals( CommonAbstractStore.ALL_STORES_VERSION, NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1004l, neoStore.getLastCommittedTx() );
+        assertEquals( 3l, neoStore.getVersion() );
+        assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
+        assertEquals( 1007l, neoStore.getLastCommittedTx() );
     }
 
     private static class DatabaseContentVerifier

@@ -177,4 +177,14 @@ class PausingNode(n: Node, afterGetRelationship: Node => Unit) extends Node {
   def hasLabel(label: Label) = ???
 
   def getLabels = ???
+
+  def getRelationshipTypes = ???
+
+  def getDegree:Int = ???
+
+  def getDegree( direction:Direction ):Int = ???
+
+  def getDegree( relType:RelationshipType ):Int = ???
+
+  def getDegree( relType:RelationshipType, direction:Direction ):Int = ???
 }

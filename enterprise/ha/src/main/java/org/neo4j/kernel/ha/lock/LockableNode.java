@@ -247,4 +247,34 @@ public class LockableNode implements Node
     {
         throw lockableNodeException();
     }
+
+    @Override
+    public Iterable<RelationshipType> getRelationshipTypes()
+    {
+        throw lockableNodeException();
+    }
+
+    @Override
+    public int getDegree()
+    {
+        throw lockableNodeException();
+    }
+
+    @Override
+    public int getDegree( RelationshipType type )
+    {
+        throw lockableNodeException();
+    }
+
+    @Override
+    public int getDegree( Direction direction )
+    {
+        throw lockableNodeException();
+    }
+
+    @Override
+    public int getDegree( RelationshipType type, Direction direction )
+    {
+        throw lockableNodeException();
+    }
 }

@@ -19,14 +19,21 @@
  */
 package org.neo4j.kernel.impl;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -35,6 +42,7 @@ import org.junit.ClassRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -43,12 +51,12 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
 {
-
     @Retention( RetentionPolicy.RUNTIME )
     @Target( ElementType.TYPE )
     @Inherited
@@ -160,7 +168,10 @@ public abstract class AbstractNeo4jTestCase
     {
         try
         {
-            if ( threadLocalGraphDb.get() != null ) threadLocalGraphDb.get().shutdown();
+            if ( threadLocalGraphDb.get() != null )
+            {
+                threadLocalGraphDb.get().shutdown();
+            }
         }
         finally
         {
@@ -281,5 +292,47 @@ public abstract class AbstractNeo4jTestCase
     {
         XaDataSourceManager dsMgr = graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
         return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
+    }
+
+    public static File unzip( Class<?> testClass, String resource ) throws IOException
+    {
+        File dir = TargetDirectory.forTest( testClass ).graphDbDir( true );
+        try ( InputStream source = testClass.getResourceAsStream( resource ) )
+        {
+            if ( source == null )
+            {
+                throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
+            }
+            ZipInputStream zipStream = new ZipInputStream( source );
+            ZipEntry entry = null;
+            byte[] scratch = new byte[8096];
+            while ( (entry = zipStream.getNextEntry()) != null )
+            {
+                if ( entry.isDirectory() )
+                {
+                    new File( dir, entry.getName() ).mkdirs();
+                }
+                else
+                {
+                    OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( dir, entry.getName() ) ) );
+                    try
+                    {
+                        long toCopy = entry.getSize();
+                        while ( toCopy > 0 )
+                        {
+                            int read = zipStream.read( scratch );
+                            file.write( scratch, 0, read );
+                            toCopy -= read;
+                        }
+                    }
+                    finally
+                    {
+                        file.close();
+                    }
+                }
+                zipStream.closeEntry();
+            }
+        }
+        return dir;
     }
 }

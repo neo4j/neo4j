@@ -150,14 +150,20 @@ public class FileUtils
     public static void moveFile( File toMove, File target ) throws IOException
     {
         if ( !toMove.exists() )
-            throw new NotFoundException( "Source file[" + toMove.getName()
+        {
+            throw new NotFoundException( "Source file[" + toMove.getAbsolutePath()
                     + "] not found" );
+        }
         if ( target.exists() )
-            throw new NotFoundException( "Target file[" + target.getName()
+        {
+            throw new NotFoundException( "Target file[" + target.getAbsolutePath()
                     + "] already exists" );
+        }
         
         if ( toMove.renameTo( target ) )
+        {
             return;
+        }
         
         if ( toMove.isDirectory() )
         {
@@ -313,9 +319,13 @@ public class FileUtils
         finally
         {
             if ( input != null )
+            {
                 input.close();
+            }
             if ( output != null )
+            {
                 output.close();
+            }
         }
     }
 

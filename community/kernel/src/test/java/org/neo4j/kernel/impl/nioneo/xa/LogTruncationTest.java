@@ -25,6 +25,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -32,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
@@ -47,8 +48,8 @@ public class LogTruncationTest
     {
         // TODO: add support for other commands and permutations as well...
         assertHandlesLogTruncation( new Command.NodeCommand( null,
-                                                             new NodeRecord( 12l, 13l, 13l ),
-                                                             new NodeRecord( 0,0,0 ) ) );
+                                                             new NodeRecord( 12l, false, 13l, 13l ),
+                                                             new NodeRecord( 0,false, 0,0 ) ) );
         assertHandlesLogTruncation( new Command.LabelTokenCommand( null, new LabelTokenRecord( 1 )) );
 
         assertHandlesLogTruncation( new Command.NeoStoreCommand( null, new NeoStoreRecord() ) );
@@ -125,6 +126,7 @@ public class LogTruncationTest
             return this;
         }
 
+        @Override
         public LogBuffer put( byte b ) throws IOException
         {
             ensureArrayCapacityPlus( 1 );
@@ -132,36 +134,42 @@ public class LogTruncationTest
             return this;
         }
 
+        @Override
         public LogBuffer putShort( short s ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putShort( s );
             return flipAndPut();
         }
 
+        @Override
         public LogBuffer putInt( int i ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putInt( i );
             return flipAndPut();
         }
 
+        @Override
         public LogBuffer putLong( long l ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putLong( l );
             return flipAndPut();
         }
 
+        @Override
         public LogBuffer putFloat( float f ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putFloat( f );
             return flipAndPut();
         }
 
+        @Override
         public LogBuffer putDouble( double d ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putDouble( d );
             return flipAndPut();
         }
 
+        @Override
         public LogBuffer put( byte[] bytes ) throws IOException
         {
             ensureArrayCapacityPlus( bytes.length );
@@ -170,6 +178,7 @@ public class LogTruncationTest
             return this;
         }
 
+        @Override
         public LogBuffer put( char[] chars ) throws IOException
         {
             ensureConversionBufferCapacity( chars.length*2 );
@@ -194,29 +203,35 @@ public class LogTruncationTest
         {
         }
 
+        @Override
         public void force() throws IOException
         {
         }
 
+        @Override
         public long getFileChannelPosition() throws IOException
         {
             return this.readIndex;
         }
 
+        @Override
         public FileChannel getFileChannel()
         {
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public boolean isOpen()
         {
             return true;
         }
 
+        @Override
         public void close() throws IOException
         {
         }
 
+        @Override
         public int read( ByteBuffer dst ) throws IOException
         {
             if ( readIndex >= writeIndex )

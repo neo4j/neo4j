@@ -33,18 +33,19 @@ public enum StoreFile
 {
     NEO_STORE( "NeoStore", "" ),
     NODE_STORE( "NodeStore", StoreFactory.NODE_STORE_NAME ),
-    NODE_LABEL_STORE( "NodeLabelStore", StoreFactory.NODE_LABELS_STORE_NAME, false ),
+    NODE_LABEL_STORE( "ArrayPropertyStore", StoreFactory.NODE_LABELS_STORE_NAME ),
     PROPERTY_STORE( "PropertyStore", StoreFactory.PROPERTY_STORE_NAME ),
     PROPERTY_ARRAY_STORE( "ArrayPropertyStore", StoreFactory.PROPERTY_ARRAYS_STORE_NAME ),
     PROPERTY_STRING_STORE( "StringPropertyStore", StoreFactory.PROPERTY_STRINGS_STORE_NAME ),
-    PROPERTY_INDEX_STORE( "PropertyIndexStore", StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ),
-    PROPERTY_INDEX_KEYS_STORE( "StringPropertyStore", StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
+    PROPERTY_KEY_TOKEN_STORE( "PropertyIndexStore", StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME ),
+    PROPERTY_KEY_TOKEN_NAMES_STORE( "StringPropertyStore", StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
     RELATIONSHIP_STORE( "RelationshipStore", StoreFactory.RELATIONSHIP_STORE_NAME ),
-    RELATIONSHIP_TYPE_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
-    RELATIONSHIP_TYPE_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
-    LABEL_NAME_STORE( "LabelNameStore", StoreFactory.LABEL_TOKEN_STORE_NAME, false ),
-    LABEL_NAME_NAMES_STORE( "StringPropertyStore", StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME, false ),
-    SCHEMA_STORE( "SchemaStore", StoreFactory.SCHEMA_STORE_NAME, false );
+    RELATIONSHIP_TYPE_TOKEN_STORE( "RelationshipTypeStore", StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME ),
+    RELATIONSHIP_TYPE_TOKEN_NAMES_STORE( "StringPropertyStore", StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
+    LABEL_TOKEN_STORE( "LabelTokenStore", StoreFactory.LABEL_TOKEN_STORE_NAME ),
+    LABEL_TOKEN_NAMES_STORE( "StringPropertyStore", StoreFactory.LABEL_TOKEN_NAMES_STORE_NAME ),
+    SCHEMA_STORE( "SchemaStore", StoreFactory.SCHEMA_STORE_NAME ),
+    RELATIONSHIP_GROUP_STORE( "RelationshipGroupStore", StoreFactory.RELATIONSHIP_GROUP_STORE_NAME, false );
     
     private final String typeDescriptor;
     private final String storeFileNamePart;

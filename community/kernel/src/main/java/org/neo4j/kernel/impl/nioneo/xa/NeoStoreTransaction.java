@@ -28,9 +28,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.transaction.xa.XAException;
@@ -50,6 +52,9 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.DenseNodeChainPosition;
+import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
+import org.neo4j.kernel.impl.core.SingleChainPosition;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -71,6 +76,8 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
@@ -80,6 +87,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -128,7 +136,7 @@ public class NeoStoreTransaction extends XaTransaction
                 @Override
                 public NodeRecord newUnused( Long key, Void additionalData )
                 {
-                    return new NodeRecord( key, Record.NO_NEXT_RELATIONSHIP.intValue(),
+                    return new NodeRecord( key, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
                                            Record.NO_NEXT_PROPERTY.intValue() );
                 }
 
@@ -218,49 +226,78 @@ public class NeoStoreTransaction extends XaTransaction
                     throw new UnsupportedOperationException("Unexpected call to clone on a relationshipRecord");
                 }
             }, false );
-
-    private final RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges = new RecordChanges<>(new RecordChanges.Loader<Long, Collection<DynamicRecord>, SchemaRule>() {
-        @Override
-        public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
-        {
-            return getSchemaStore().allocateFrom(additionalData);
-        }
-
-        @Override
-        public Collection<DynamicRecord> load(Long key, SchemaRule additionalData)
-        {
-            return getSchemaStore().getRecords( key );
-        }
-
-        @Override
-        public void ensureHeavy(Collection<DynamicRecord> dynamicRecords)
-        {
-            SchemaStore schemaStore = getSchemaStore();
-            for ( DynamicRecord record : dynamicRecords)
+    private final RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords =
+            new RecordChanges<>( new RecordChanges.Loader<Long, RelationshipGroupRecord, Integer>()
             {
-                schemaStore.ensureHeavy(record);
-            }
-        }
+                @Override
+                public RelationshipGroupRecord newUnused( Long key, Integer type )
+                {
+                    return new RelationshipGroupRecord( key, type );
+                }
 
-        @Override
-        public Collection<DynamicRecord> clone(Collection<DynamicRecord> dynamicRecords) {
-            Collection<DynamicRecord> list = new ArrayList<>( dynamicRecords.size() );
-            for ( DynamicRecord record : dynamicRecords)
+                @Override
+                public RelationshipGroupRecord load( Long key, Integer type )
+                {
+                    return neoStore.getRelationshipGroupStore().getRecord( key );
+                }
+
+                @Override
+                public void ensureHeavy( RelationshipGroupRecord record )
+                {   // Not needed
+                }
+
+                @Override
+                public RelationshipGroupRecord clone( RelationshipGroupRecord record )
+                {
+                    throw new UnsupportedOperationException();
+                }
+            }, false );
+    private final RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges =
+            new RecordChanges<>(new RecordChanges.Loader<Long, Collection<DynamicRecord>, SchemaRule>()
             {
-                list.add( record.clone() );
+            @Override
+            public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
+            {
+                return getSchemaStore().allocateFrom(additionalData);
             }
-            return list;
-        }
-    }, true);
+    
+            @Override
+            public Collection<DynamicRecord> load(Long key, SchemaRule additionalData)
+            {
+                return getSchemaStore().getRecords( key );
+            }
+    
+            @Override
+            public void ensureHeavy(Collection<DynamicRecord> dynamicRecords)
+            {
+                SchemaStore schemaStore = getSchemaStore();
+                for ( DynamicRecord record : dynamicRecords)
+                {
+                    schemaStore.ensureHeavy(record);
+                }
+            }
+    
+            @Override
+            public Collection<DynamicRecord> clone(Collection<DynamicRecord> dynamicRecords) {
+                Collection<DynamicRecord> list = new ArrayList<>( dynamicRecords.size() );
+                for ( DynamicRecord record : dynamicRecords)
+                {
+                    list.add( record.clone() );
+                }
+                return list;
+            }
+        }, true);
     private Map<Integer, RelationshipTypeTokenRecord> relationshipTypeTokenRecords;
     private Map<Integer, LabelTokenRecord> labelTokenRecords;
     private Map<Integer, PropertyKeyTokenRecord> propertyKeyTokenRecords;
+    private final Map<Long, Map<Integer, RelationshipGroupRecord>> relGroupCache = new HashMap<>();
     private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
 
     private final Map<Long, Command.NodeCommand> nodeCommands = new TreeMap<>();
     private final ArrayList<Command.PropertyCommand> propCommands = new ArrayList<>();
     private final ArrayList<Command.RelationshipCommand> relCommands = new ArrayList<>();
     private final ArrayList<Command.SchemaRuleCommand> schemaRuleCommands = new ArrayList<>();
+    private final ArrayList<Command.RelationshipGroupCommand> relGroupCommands = new ArrayList<>();
     private ArrayList<Command.RelationshipTypeTokenCommand> relationshipTypeTokenCommands;
     private ArrayList<Command.LabelTokenCommand> labelTokenCommands;
     private ArrayList<Command.PropertyKeyTokenCommand> propertyKeyTokenCommands;
@@ -278,6 +315,7 @@ public class NeoStoreTransaction extends XaTransaction
     private final IntegrityValidator integrityValidator;
     private final KernelTransactionImplementation kernelTransaction;
     private final LockService locks;
+    private Collection<NodeRecord> upgradedDenseNodes;
 
     /**
      * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
@@ -370,7 +408,8 @@ public class NeoStoreTransaction extends XaTransaction
                            schemaRuleChanges.changeSize() +
                            (propertyKeyTokenRecords != null ? propertyKeyTokenRecords.size() : 0) +
                            (relationshipTypeTokenRecords != null ? relationshipTypeTokenRecords.size() : 0) +
-                           (labelTokenRecords != null ? labelTokenRecords.size() : 0);
+                           (labelTokenRecords != null ? labelTokenRecords.size() : 0) +
+                           relGroupRecords.changeSize();
         List<Command> commands = new ArrayList<>( noOfCommands );
         if ( relationshipTypeTokenRecords != null )
         {
@@ -404,6 +443,13 @@ public class NeoStoreTransaction extends XaTransaction
                     neoStore.getNodeStore(), change.getBefore(), record );
             nodeCommands.put( record.getId(), command );
             commands.add( command );
+        }
+        if ( upgradedDenseNodes != null )
+        {
+            for ( NodeRecord node : upgradedDenseNodes )
+            {
+                removeNodeFromCache( node.getId() );
+            }
         }
         for ( RecordChange<Long, RelationshipRecord, Void> record : relRecords.changes() )
         {
@@ -451,6 +497,14 @@ public class NeoStoreTransaction extends XaTransaction
                     change.getAdditionalData(),
                     -1 );
             schemaRuleCommands.add( command );
+            commands.add( command );
+        }
+        for ( RecordChange<Long, RelationshipGroupRecord, Integer> change : relGroupRecords.changes() )
+        {
+            Command.RelationshipGroupCommand command =
+                    new Command.RelationshipGroupCommand( neoStore.getRelationshipGroupStore(),
+                            change.forReadingData() );
+            relGroupCommands.add( command );
             commands.add( command );
         }
         assert commands.size() == noOfCommands : "Expected " + noOfCommands
@@ -519,6 +573,10 @@ public class NeoStoreTransaction extends XaTransaction
         else if ( xaCommand instanceof Command.SchemaRuleCommand )
         {
             schemaRuleCommands.add( (Command.SchemaRuleCommand) xaCommand );
+        }
+        else if ( xaCommand instanceof Command.RelationshipGroupCommand )
+        {
+            relGroupCommands.add( (RelationshipGroupCommand) xaCommand );
         }
         else
         {
@@ -664,6 +722,14 @@ public class NeoStoreTransaction extends XaTransaction
                     }
                 }
             }
+            for ( RecordChange<Long, RelationshipGroupRecord, Integer> change : relGroupRecords.changes() )
+            {
+                RelationshipGroupRecord record = change.forReadingData();
+                if ( freeIds && record.isCreated() )
+                {
+                    getRelationshipGroupStore().freeId( record.getId() );
+                }
+            }
         }
         finally
         {
@@ -801,9 +867,9 @@ public class NeoStoreTransaction extends XaTransaction
             // primitives
             java.util.Collections.sort( relCommands, sorter );
             java.util.Collections.sort( propCommands, sorter );
-            executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
-            executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
-            executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
+            executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values(), relGroupCommands );
+            executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values(), relGroupCommands );
+            executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values(), relGroupCommands );
 
             // property change set for index updates
             Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
@@ -1069,6 +1135,8 @@ public class NeoStoreTransaction extends XaTransaction
         schemaRuleChanges.clear();
         relationshipTypeTokenRecords = null;
         propertyKeyTokenRecords = null;
+        relGroupRecords.clear();
+        relGroupCache.clear();
         neoStoreRecord = null;
 
         nodeCommands.clear();
@@ -1078,6 +1146,7 @@ public class NeoStoreTransaction extends XaTransaction
         schemaRuleCommands.clear();
         relationshipTypeTokenCommands = null;
         labelTokenCommands = null;
+        relGroupCommands.clear();
         neoStoreCommand = null;
     }
 
@@ -1111,6 +1180,11 @@ public class NeoStoreTransaction extends XaTransaction
         return neoStore.getRelationshipStore();
     }
 
+    private RelationshipGroupStore getRelationshipGroupStore()
+    {
+        return neoStore.getRelationshipGroupStore();
+    }
+    
     private PropertyStore getPropertyStore()
     {
         return neoStore.getPropertyStore();
@@ -1192,7 +1266,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         ArrayMap<Integer, DefinedProperty> propertyMap = getAndDeletePropertyChain( record );
         disconnectRelationship( record );
-        updateNodes( record );
+        updateNodesForDeletedRelationship( record );
         record.setInUse( false );
         return propertyMap;
     }
@@ -1230,98 +1304,43 @@ public class NeoStoreTransaction extends XaTransaction
         }
         return result;
     }
+    
+    private void disconnect( RelationshipRecord rel, RelationshipConnection pointer )
+    {
+        long otherRelId = pointer.otherSide().get( rel );
+        if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            return;
+        }
+
+        Relationship lockableRel = new LockableRelationship( otherRelId );
+        getWriteLock( lockableRel );
+        RelationshipRecord otherRel = relRecords.getOrLoad( otherRelId, null ).forChangingLinkage();
+        boolean changed = false;
+        long newId = pointer.get( rel );
+        boolean newIsFirst = pointer.isFirstInChain( rel );
+        if ( otherRel.getFirstNode() == pointer.compareNode( rel ) )
+        {
+            pointer.start().set( otherRel, newId, newIsFirst );
+            changed = true;
+        }
+        if ( otherRel.getSecondNode() == pointer.compareNode( rel ) )
+        {
+            pointer.end().set( otherRel, newId, newIsFirst );
+            changed = true;
+        }
+        if ( !changed )
+        {
+            throw new InvalidRecordException( otherRel + " don't match " + rel );
+        }
+    }
 
     private void disconnectRelationship( RelationshipRecord rel )
     {
-        // update first node prev
-        if ( rel.getFirstPrevRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            Relationship lockableRel = new LockableRelationship( rel.getFirstPrevRel() );
-            getWriteLock( lockableRel );
-            RelationshipRecord prevRel = relRecords.getOrLoad( rel.getFirstPrevRel(), null ).forChangingLinkage();
-            boolean changed = false;
-            if ( prevRel.getFirstNode() == rel.getFirstNode() )
-            {
-                prevRel.setFirstNextRel( rel.getFirstNextRel() );
-                changed = true;
-            }
-            if ( prevRel.getSecondNode() == rel.getFirstNode() )
-            {
-                prevRel.setSecondNextRel( rel.getFirstNextRel() );
-                changed = true;
-            }
-            if ( !changed )
-            {
-                throw new InvalidRecordException(
-                        prevRel + " don't match " + rel );
-            }
-        }
-        // update first node next
-        if ( rel.getFirstNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            Relationship lockableRel = new LockableRelationship( rel.getFirstNextRel() );
-            getWriteLock( lockableRel );
-            RelationshipRecord nextRel = relRecords.getOrLoad( rel.getFirstNextRel(), null ).forChangingLinkage();
-            boolean changed = false;
-            if ( nextRel.getFirstNode() == rel.getFirstNode() )
-            {
-                nextRel.setFirstPrevRel( rel.getFirstPrevRel() );
-                changed = true;
-            }
-            if ( nextRel.getSecondNode() == rel.getFirstNode() )
-            {
-                nextRel.setSecondPrevRel( rel.getFirstPrevRel() );
-                changed = true;
-            }
-            if ( !changed )
-            {
-                throw new InvalidRecordException( nextRel + " don't match " + rel );
-            }
-        }
-        // update second node prev
-        if ( rel.getSecondPrevRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            Relationship lockableRel = new LockableRelationship( rel.getSecondPrevRel() );
-            getWriteLock( lockableRel );
-            RelationshipRecord prevRel = relRecords.getOrLoad( rel.getSecondPrevRel(), null ).forChangingLinkage();
-            boolean changed = false;
-            if ( prevRel.getFirstNode() == rel.getSecondNode() )
-            {
-                prevRel.setFirstNextRel( rel.getSecondNextRel() );
-                changed = true;
-            }
-            if ( prevRel.getSecondNode() == rel.getSecondNode() )
-            {
-                prevRel.setSecondNextRel( rel.getSecondNextRel() );
-                changed = true;
-            }
-            if ( !changed )
-            {
-                throw new InvalidRecordException( prevRel + " don't match " + rel );
-            }
-        }
-        // update second node next
-        if ( rel.getSecondNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            Relationship lockableRel = new LockableRelationship( rel.getSecondNextRel() );
-            getWriteLock( lockableRel );
-            RelationshipRecord nextRel = relRecords.getOrLoad( rel.getSecondNextRel(), null ).forChangingLinkage();
-            boolean changed = false;
-            if ( nextRel.getFirstNode() == rel.getSecondNode() )
-            {
-                nextRel.setFirstPrevRel( rel.getSecondPrevRel() );
-                changed = true;
-            }
-            if ( nextRel.getSecondNode() == rel.getSecondNode() )
-            {
-                nextRel.setSecondPrevRel( rel.getSecondPrevRel() );
-                changed = true;
-            }
-            if ( !changed )
-            {
-                throw new InvalidRecordException( nextRel + " don't match " + rel );
-            }
-        }
+        disconnect( rel, RelationshipConnection.START_NEXT );
+        disconnect( rel, RelationshipConnection.START_PREV );
+        disconnect( rel, RelationshipConnection.END_NEXT );
+        disconnect( rel, RelationshipConnection.END_PREV );
     }
 
     private void getWriteLock( Relationship lockableRel )
@@ -1329,40 +1348,219 @@ public class NeoStoreTransaction extends XaTransaction
         state.acquireWriteLock( lockableRel );
     }
 
-    public long getRelationshipChainPosition( long nodeId )
-    {
-        return nodeRecords.getOrLoad( nodeId, null ).getBefore().getNextRel();
-    }
-
     /*
      * List<Iterable<RelationshipRecord>> is a list with three items:
      * 0: outgoing relationships
      * 1: incoming relationships
      * 2: loop relationships
-     *
-     * Long is the relationship chain position as it stands after this
-     * batch of relationships has been loaded.
      */
-    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships( long nodeId,
-                                                                                                 long position )
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
+            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
+            RelationshipType[] types )
     {
-        return getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
+        return getMoreRelationships( nodeId, position, getRelGrabSize(), direction, types, getRelationshipStore() );
+    }
+    
+    private boolean decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId )
+    {
+        if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
+        {
+            return true;
+        }
+        boolean firstInChain = relIsFirstInChain( nodeId, rel );
+        if ( !firstInChain )
+        {
+            getWriteLock( new LockableRelationship( firstRelId ) );
+        }
+        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
+        if ( nodeId == firstRel.getFirstNode() )
+        {
+            firstRel.setFirstPrevRel( firstInChain ?
+                    relCount( nodeId, rel )-1 : relCount( nodeId, firstRel )-1 );
+            firstRel.setFirstInFirstChain( true );
+        }
+        if ( nodeId == firstRel.getSecondNode() )
+        {
+            firstRel.setSecondPrevRel( firstInChain ?
+                    relCount( nodeId, rel )-1 : relCount( nodeId, firstRel )-1 );
+            firstRel.setFirstInSecondChain( true );
+        }
+        return false;
+    }
+    
+    private boolean relIsFirstInChain( long nodeId, RelationshipRecord rel )
+    {
+        return (nodeId == rel.getFirstNode() && rel.isFirstInFirstChain()) ||
+               (nodeId == rel.getSecondNode() && rel.isFirstInSecondChain());
+    }
+    
+    private int relCount( long nodeId, RelationshipRecord rel )
+    {
+        return (int) (nodeId == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
+    }
+    
+    private DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
+    {
+        boolean isOut = rel.getFirstNode() == startNode.getId();
+        boolean isIn = rel.getSecondNode() == startNode.getId();
+        assert isOut|isIn;
+        if ( isOut&isIn )
+        {
+            return DirectionWrapper.BOTH;
+        }
+        return isOut ? DirectionWrapper.OUTGOING : DirectionWrapper.INCOMING;
+    }
+    
+    private boolean groupIsEmpty( RelationshipGroupRecord group )
+    {
+        return group.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
+               group.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
+               group.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue();
+    }
+    
+    private void deleteGroup( RecordChange<Long,NodeRecord,Void> nodeChange, RelationshipGroupRecord group )
+    {
+        long previous = group.getPrev();
+        long next = group.getNext();
+        if ( previous == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {   // This is the first one, just point the node to the next group
+            nodeChange.forChangingLinkage().setNextRel( next );
+        }
+        else
+        {   // There are others before it, point the previous to the next group
+            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null ).forChangingLinkage();
+            previousRecord.setNext( next );
+        }
+
+        if ( next != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {   // There are groups after this one, point that next group to the previous of the group to be deleted
+            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null ).forChangingLinkage();
+            nextRecord.setPrev( previous );
+        }
+        group.setInUse( false );
     }
 
-    private void updateNodes( RelationshipRecord rel )
+    private void updateNodesForDeletedRelationship( RelationshipRecord rel )
     {
-        if ( rel.getFirstPrevRel() == Record.NO_PREV_RELATIONSHIP.intValue() )
+        RecordChange<Long, NodeRecord, Void> startNodeChange = nodeRecords.getOrLoad( rel.getFirstNode(), null );
+        RecordChange<Long, NodeRecord, Void> endNodeChange = nodeRecords.getOrLoad( rel.getSecondNode(), null );
+        
+        NodeRecord startNode = nodeRecords.getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
+        NodeRecord endNode = nodeRecords.getOrLoad( rel.getSecondNode(), null ).forReadingLinkage();
+        boolean loop = startNode.getId() == endNode.getId();
+        
+        if ( !startNode.isDense() )
         {
-            NodeRecord firstNode = nodeRecords.getOrLoad( rel.getFirstNode(), null ).forChangingLinkage();
-            firstNode.setNextRel( rel.getFirstNextRel() );
+            if ( rel.isFirstInFirstChain() )
+            {
+                startNode = startNodeChange.forChangingLinkage();
+                startNode.setNextRel( rel.getFirstNextRel() );
+            }
+            decrementTotalRelationshipCount( startNode.getId(), rel, startNode.getNextRel() );
         }
-        if ( rel.getSecondPrevRel() == Record.NO_PREV_RELATIONSHIP.intValue() )
+        else
         {
-            NodeRecord secondNode = nodeRecords.getOrLoad( rel.getSecondNode(), null ).forChangingLinkage();
-            secondNode.setNextRel( rel.getSecondNextRel() );
+            RecordChange<Long, RelationshipGroupRecord, Integer> groupChange =
+                    getRelationshipGroup( startNode, rel.getType() );
+            assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
+            RelationshipGroupRecord group = groupChange.forReadingData();
+            DirectionWrapper dir = wrapDirection( rel, startNode );
+            if ( rel.isFirstInFirstChain() )
+            {
+                group = groupChange.forChangingData();
+                dir.setNextRel( group, rel.getFirstNextRel() );
+                if ( groupIsEmpty( group ) )
+                {
+                    deleteGroup( startNodeChange, group );
+                }
+            }
+            decrementTotalRelationshipCount( startNode.getId(), rel, dir.getNextRel( group ) );
         }
+
+        if ( !endNode.isDense() )
+        {
+            if ( rel.isFirstInSecondChain() )
+            {
+                endNode = endNodeChange.forChangingLinkage();
+                endNode.setNextRel( rel.getSecondNextRel() );
+            }
+            if ( !loop )
+            {
+                decrementTotalRelationshipCount( endNode.getId(), rel, endNode.getNextRel() );
+            }
+        }
+        else
+        {
+            RecordChange<Long, RelationshipGroupRecord, Integer> groupChange =
+                    getRelationshipGroup( endNode, rel.getType() );
+            DirectionWrapper dir = wrapDirection( rel, endNode );
+            assert groupChange != null || loop : "Group has been deleted";
+            if ( groupChange != null )
+            {
+                RelationshipGroupRecord group = groupChange.forReadingData();
+                if ( rel.isFirstInSecondChain() )
+                {
+                    group = groupChange.forChangingData();
+                    dir.setNextRel( group, rel.getSecondNextRel() );
+                    if ( groupIsEmpty( group ) )
+                    {
+                        deleteGroup( endNodeChange, group );
+                    }
+                }
+            } // Else this is a loop-rel and the group was deleted when dealing with the start node
+            if ( !loop )
+            {
+                decrementTotalRelationshipCount( endNode.getId(), rel, dir.getNextRel( groupChange.forChangingData() ) );
+            }
+        }        
     }
 
+    RecordChange<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
+    {
+        long groupId = node.getNextRel();
+        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
+        Set<Integer> allTypes = new HashSet<>();
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RecordChange<Long, RelationshipGroupRecord, Integer> change = relGroupRecords.getOrLoad( groupId, type );
+            RelationshipGroupRecord record = change.forReadingData();
+            record.setPrev( previousGroupId ); // not persistent so not a "change"
+            allTypes.add( record.getType() );
+            if ( record.getType() == type )
+            {
+                return change;
+            }
+            previousGroupId = groupId;
+            groupId = record.getNext();
+        }
+        return null;
+    }
+
+    private RecordChange<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
+            NodeRecord node, int type )
+    {
+        RecordChange<Long, RelationshipGroupRecord, Integer> change = getRelationshipGroup( node, type );
+        if ( change == null )
+        {
+            assert node.isDense();
+            long id = neoStore.getRelationshipGroupStore().nextId();
+            long firstGroupId = node.getNextRel();
+            change = relGroupRecords.create( id, type );
+            RelationshipGroupRecord record = change.forChangingData();
+            record.setInUse( true );
+            record.setCreated();
+            if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {   // There are others, make way for this new group
+                RelationshipGroupRecord previousFirstRecord =
+                        relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
+                record.setNext( previousFirstRecord.getId() );
+                previousFirstRecord.setPrev( id );
+            }
+            node.setNextRel( id );
+        }
+        return change;
+    }
+    
     /**
      * Removes the given property identified by its index from the relationship
      * with the given id.
@@ -1785,6 +1983,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId )
     {
+        // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
         NodeRecord firstNode = nodeRecords.getOrLoad( firstNodeId, null ).forChangingLinkage();
         if ( !firstNode.inUse() )
         {
@@ -1797,50 +1996,167 @@ public class NeoStoreTransaction extends XaTransaction
             throw new IllegalStateException( "Second node[" + secondNodeId +
                                              "] is deleted and cannot be used to create a relationship" );
         }
+        convertNodeToDenseIfNecessary( firstNode );
+        convertNodeToDenseIfNecessary( secondNode );
         RelationshipRecord record = relRecords.create( id, null ).forChangingLinkage();
         record.setLinks( firstNodeId, secondNodeId, type );
         record.setInUse( true );
         record.setCreated();
         connectRelationship( firstNode, secondNode, record );
     }
+    
+    private void convertNodeToDenseIfNecessary( NodeRecord node )
+    {
+        if ( node.isDense() )
+        {
+            return;
+        }
+        long relId = node.getNextRel();
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RecordChange<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
+            RelationshipRecord rel = relChange.forReadingLinkage();
+            if ( relCount( node.getId(), rel ) >= neoStore.getDenseNodeThreshold() )
+            {
+                convertNodeToDenseNode( node, relChange.forChangingLinkage() );
+            }
+        }
+    }
+
+    private void convertNodeToDenseNode( NodeRecord node, RelationshipRecord firstRel )
+    {
+        firstRel = relRecords.getOrLoad( firstRel.getId(), null ).forChangingLinkage();
+        node.setDense( true );
+        node.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
+        long relId = firstRel.getId();
+        RelationshipRecord relRecord = firstRel;
+        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            getWriteLock( new LockableRelationship( relId ) );
+            relId = relChain( relRecord, node.getId() ).get( relRecord );
+            connectRelationshipToDenseNode( node, relRecord );
+            if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                break;
+            }
+            relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
+        }
+        if ( upgradedDenseNodes == null )
+        {
+            upgradedDenseNodes = new ArrayList<>();
+        }
+        upgradedDenseNodes.add( node );
+    }
 
     private void connectRelationship( NodeRecord firstNode,
                                       NodeRecord secondNode, RelationshipRecord rel )
     {
-        assert firstNode.getNextRel() != rel.getId();
-        assert secondNode.getNextRel() != rel.getId();
-        rel.setFirstNextRel( firstNode.getNextRel() );
-        rel.setSecondNextRel( secondNode.getNextRel() );
-        connect( firstNode, rel );
-        connect( secondNode, rel );
-        firstNode.setNextRel( rel.getId() );
-        secondNode.setNextRel( rel.getId() );
+        // Assertion interpreted: if node is a normal node and we're trying to create a
+        // relationship that we already have as first rel for that node --> error
+        assert firstNode.getNextRel() != rel.getId() || firstNode.isDense();
+        assert secondNode.getNextRel() != rel.getId() || secondNode.isDense();
+
+        if ( !firstNode.isDense() )
+        {
+            rel.setFirstNextRel( firstNode.getNextRel() );
+        }
+        if ( !secondNode.isDense() )
+        {
+            rel.setSecondNextRel( secondNode.getNextRel() );
+        }
+
+        if ( !firstNode.isDense() )
+        {
+            connect( firstNode, rel );
+        }
+        else
+        {
+            connectRelationshipToDenseNode( firstNode, rel );
+        }
+
+        if ( !secondNode.isDense() )
+        {
+            if ( firstNode.getId() != secondNode.getId() )
+            {
+                connect( secondNode, rel );
+            }
+            else
+            {
+                rel.setFirstInFirstChain( true );
+                rel.setSecondPrevRel( rel.getFirstPrevRel() );
+            }
+        }
+        else if ( firstNode.getId() != secondNode.getId() )
+        {
+            connectRelationshipToDenseNode( secondNode, rel );
+        }
+
+        if ( !firstNode.isDense() )
+        {
+            firstNode.setNextRel( rel.getId() );
+        }
+        if ( !secondNode.isDense() )
+        {
+            secondNode.setNextRel( rel.getId() );
+        }
+    }
+    
+    private void connectRelationshipToDenseNode( NodeRecord node, RelationshipRecord rel )
+    {
+        RelationshipGroupRecord group = getOrCreateRelationshipGroup( node, rel.getType() ).forChangingData();
+        DirectionWrapper dir = wrapDirection( rel, node );
+        long nextRel = dir.getNextRel( group );
+        setCorrectNextRel( node, rel, nextRel );
+        connect( node.getId(), nextRel, rel );
+        dir.setNextRel( group, rel.getId() );
     }
 
     private void connect( NodeRecord node, RelationshipRecord rel )
     {
-        if ( node.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        connect( node.getId(), node.getNextRel(), rel );
+    }
+
+    private void connect( long nodeId, long firstRelId, RelationshipRecord rel )
+    {
+        long newCount = 1;
+        if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            Relationship lockableRel = new LockableRelationship( node.getNextRel() );
+            Relationship lockableRel = new LockableRelationship( firstRelId );
             getWriteLock( lockableRel );
-            RelationshipRecord nextRel = relRecords.getOrLoad( node.getNextRel(), null ).forChangingLinkage();
+            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
             boolean changed = false;
-            if ( nextRel.getFirstNode() == node.getId() )
+            if ( firstRel.getFirstNode() == nodeId )
             {
-                nextRel.setFirstPrevRel( rel.getId() );
+                newCount = firstRel.getFirstPrevRel()+1;
+                firstRel.setFirstPrevRel( rel.getId() );
+                firstRel.setFirstInFirstChain( false );
                 changed = true;
             }
-            if ( nextRel.getSecondNode() == node.getId() )
+            if ( firstRel.getSecondNode() == nodeId )
             {
-                nextRel.setSecondPrevRel( rel.getId() );
+                newCount = firstRel.getSecondPrevRel()+1;
+                firstRel.setSecondPrevRel( rel.getId() );
+                firstRel.setFirstInSecondChain( false );
                 changed = true;
             }
             if ( !changed )
             {
-                throw new InvalidRecordException( node + " dont match " + nextRel );
+                throw new InvalidRecordException( nodeId + " doesn't match " + firstRel );
             }
         }
-    }
+
+        // Set the relationship count
+        if ( rel.getFirstNode() == nodeId )
+        {
+            rel.setFirstPrevRel( newCount );
+            rel.setFirstInFirstChain( true );
+        }
+        if ( rel.getSecondNode() == nodeId )
+        {
+            rel.setSecondPrevRel( newCount );
+            rel.setFirstInSecondChain( true );
+        }
+    }    
 
     /**
      * Creates a node for the given id
@@ -2274,8 +2590,9 @@ public class NeoStoreTransaction extends XaTransaction
         records.addAll( getSchemaStore().allocateFrom( indexRule ) );
     }
 
-    private Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
-            long nodeId, long position, int grabSize, RelationshipStore relStore )
+    private static Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition>
+            getMoreRelationships( long nodeId, RelationshipLoadingPosition originalPosition, int grabSize,
+                    DirectionWrapper direction, RelationshipType[] types, RelationshipStore relStore )
     {
         // initialCapacity=grabSize saves the lists the trouble of resizing
         List<RelationshipRecord> out = new ArrayList<>();
@@ -2284,14 +2601,15 @@ public class NeoStoreTransaction extends XaTransaction
         Map<DirectionWrapper, Iterable<RelationshipRecord>> result = new EnumMap<>( DirectionWrapper.class );
         result.put( DirectionWrapper.OUTGOING, out );
         result.put( DirectionWrapper.INCOMING, in );
-        for ( int i = 0; i < grabSize &&
-                position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
+        RelationshipLoadingPosition loadPosition = originalPosition.clone();
+        long position = loadPosition.position( direction, types );
+        for ( int i = 0; i < grabSize && position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
             RelationshipRecord relRecord = relStore.getChainRecord( position );
             if ( relRecord == null )
             {
                 // return what we got so far
-                return Pair.of( result, position );
+                return Pair.of( result, loadPosition );
             }
             long firstNode = relRecord.getFirstNode();
             long secondNode = relRecord.getSecondNode();
@@ -2322,13 +2640,14 @@ public class NeoStoreTransaction extends XaTransaction
                 i--;
             }
 
+            long next = 0;
             if ( firstNode == nodeId )
             {
-                position = relRecord.getFirstNextRel();
+                next = relRecord.getFirstNextRel();
             }
             else if ( secondNode == nodeId )
             {
-                position = relRecord.getSecondNextRel();
+                next = relRecord.getSecondNextRel();
             }
             else
             {
@@ -2336,8 +2655,9 @@ public class NeoStoreTransaction extends XaTransaction
                         "] is neither firstNode[" + firstNode +
                         "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
             }
+            position = loadPosition.nextPosition( next, direction, types );
         }
-        return Pair.of( result, position );
+        return Pair.of( result, loadPosition );
     }
 
     private static void loadPropertyChain( Collection<PropertyRecord> chain, PropertyStore propertyStore,
@@ -2362,6 +2682,175 @@ public class NeoStoreTransaction extends XaTransaction
         if ( chain != null )
         {
             loadPropertyChain( chain, propertyStore, receiver );
+        }
+    }
+    
+    static Map<Integer, RelationshipGroupRecord> loadRelationshipGroups( long firstGroup, RelationshipGroupStore store )
+    {
+        long groupId = firstGroup;
+        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
+        Map<Integer, RelationshipGroupRecord> result = new HashMap<>();
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RelationshipGroupRecord record = store.getRecord( groupId );
+            record.setPrev( previousGroupId );
+            result.put( record.getType(), record );
+            previousGroupId = groupId;
+            groupId = record.getNext();
+        }
+        return result;
+    }
+    
+    private Map<Integer, RelationshipGroupRecord> loadRelationshipGroups( NodeRecord node )
+    {
+        assert node.isDense();
+        return loadRelationshipGroups( node.getNextRel(), getRelationshipGroupStore() );
+    }
+
+    public int getRelationshipCount( long id, int type, DirectionWrapper direction )
+    {
+        NodeRecord node = getNodeStore().getRecord( id );
+        long nextRel = node.getNextRel();
+        if ( nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            return 0;
+        }
+        if ( !node.isDense() )
+        {
+            assert type == -1;
+            assert direction == DirectionWrapper.BOTH;
+            return getRelationshipCount( node, nextRel );
+        }
+        
+        Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( node );
+        if ( type == -1 && direction == DirectionWrapper.BOTH )
+        {   // Count for all types/directions
+            int count = 0;
+            for ( RelationshipGroupRecord group : groups.values() )
+            {
+                count += getRelationshipCount( node, group.getFirstOut() );
+                count += getRelationshipCount( node, group.getFirstIn() );
+                count += getRelationshipCount( node, group.getFirstLoop() );
+            }
+            return count;
+        }
+        else if ( type == -1 )
+        {   // Count for all types with a given direction
+            int count = 0;
+            for ( RelationshipGroupRecord group : groups.values() )
+            {
+                count += getRelationshipCount( node, group, direction );
+            }
+            return count;
+        }
+        else if ( direction == DirectionWrapper.BOTH )
+        {   // Count for a type
+            RelationshipGroupRecord group = groups.get( type );
+            if ( group == null )
+            {
+                return 0;
+            }
+            int count = 0;
+            count += getRelationshipCount( node, group.getFirstOut() );
+            count += getRelationshipCount( node, group.getFirstIn() );
+            count += getRelationshipCount( node, group.getFirstLoop() );
+            return count;
+        }
+        else
+        {   // Count for one type and direction
+            RelationshipGroupRecord group = groups.get( type );
+            if ( group == null )
+            {
+                return 0;
+            }
+            return getRelationshipCount( node, group, direction );
+        }
+    }
+
+    private int getRelationshipCount( NodeRecord node, RelationshipGroupRecord group, DirectionWrapper direction )
+    {
+        if ( direction == DirectionWrapper.BOTH )
+        {
+            return getRelationshipCount( node, DirectionWrapper.OUTGOING.getNextRel( group ) ) +
+                    getRelationshipCount( node, DirectionWrapper.INCOMING.getNextRel( group ) ) +
+                    getRelationshipCount( node, DirectionWrapper.BOTH.getNextRel( group ) );
+        }
+        
+        return getRelationshipCount( node, direction.getNextRel( group ) ) +
+                getRelationshipCount( node, DirectionWrapper.BOTH.getNextRel( group ) );
+    }
+    
+    private int getRelationshipCount( NodeRecord node, long relId )
+    {   // Relationship count is in a PREV field of the first record in a chain
+        if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            return 0;
+        }
+        RelationshipRecord rel = getRelationshipStore().getRecord( relId );
+        return (int) (node.getId() == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
+    }
+
+    public Integer[] getRelationshipTypes( long id )
+    {
+        Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( getNodeStore().getRecord( id ) );
+        Integer[] types = new Integer[groups.size()];
+        int i = 0;
+        for ( Integer type : groups.keySet() )
+        {
+            types[i++] = type;
+        }
+        return types;
+    }
+
+    public RelationshipLoadingPosition.Definition getRelationshipChainPosition( long id )
+    {
+        RecordChange<Long, NodeRecord, Void> nodeChange = nodeRecords.getIfLoaded( id );
+        if ( nodeChange != null && nodeChange.isCreated() )
+        {
+            return RelationshipLoadingPosition.EMPTY_DEFINITION;
+        }
+        
+        NodeRecord node = getNodeStore().getRecord( id );
+        if ( node.isDense() )
+        {
+            long firstGroup = node.getNextRel();
+            if ( firstGroup == Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                return RelationshipLoadingPosition.EMPTY_DEFINITION;
+            }
+            Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( firstGroup,
+                    neoStore.getRelationshipGroupStore() );
+            return new DenseNodeChainPosition.Definition( groups );
+        }
+        
+        long firstRel = node.getNextRel();
+        return firstRel == Record.NO_NEXT_RELATIONSHIP.intValue() ?
+                RelationshipLoadingPosition.EMPTY_DEFINITION :
+                new SingleChainPosition( firstRel );
+    }
+    
+    private static RelationshipConnection relChain( RelationshipRecord rel, long nodeId )
+    {
+        if ( rel.getFirstNode() == nodeId )
+        {
+            return RelationshipConnection.START_NEXT;
+        }
+        if ( rel.getSecondNode() == nodeId )
+        {
+            return RelationshipConnection.END_NEXT;
+        }
+        throw new RuntimeException( nodeId + " neither start not end node in " + rel );
+    }
+    
+    private void setCorrectNextRel( NodeRecord node, RelationshipRecord rel, long nextRel )
+    {
+        if ( node.getId() == rel.getFirstNode() )
+        {
+            rel.setFirstNextRel( nextRel );
+        }
+        if ( node.getId() == rel.getSecondNode() )
+        {
+            rel.setSecondNextRel( nextRel );
         }
     }
     

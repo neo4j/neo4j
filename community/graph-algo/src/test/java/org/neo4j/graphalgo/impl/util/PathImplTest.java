@@ -264,6 +264,36 @@ public class PathImplTest
         {
             return null;
         }
+
+        @Override
+        public Iterable<RelationshipType> getRelationshipTypes()
+        {
+            return null;
+        }
+
+        @Override
+        public int getDegree()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getDegree( RelationshipType type )
+        {
+            return 0;
+        }
+
+        @Override
+        public int getDegree( Direction direction )
+        {
+            return 0;
+        }
+
+        @Override
+        public int getDegree( RelationshipType type, Direction direction )
+        {
+            return 0;
+        }
     }
 
     class MockRelationship extends MockPropertyContainer implements Relationship

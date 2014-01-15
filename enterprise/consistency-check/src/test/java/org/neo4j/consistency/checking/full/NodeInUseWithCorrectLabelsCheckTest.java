@@ -55,7 +55,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
-        NodeRecord node = notInUse( new NodeRecord( nodeId, 0, 0 ) );
+        NodeRecord node = notInUse( new NodeRecord( nodeId, false, 0, 0 ) );
 
         // when
         checker( new long[]{} ).checkReference( null, node, engineFor( report ), null );
@@ -72,7 +72,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         int labelId1 = 7;
         int labelId2 = 9;
 
-        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, 0, 0 ), labelId1 ) );
+        NodeRecord node = inUse( withInlineLabels( new NodeRecord( nodeId, false, 0, 0 ), labelId1 ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -94,7 +94,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         long missingLabelId = 7;
 
         RecordAccessStub recordAccess = new RecordAccessStub();
-        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, 0, 0 ), presentLabelIds ) );
+        NodeRecord node = inUse( withDynamicLabels( recordAccess, new NodeRecord( nodeId, false, 0, 0 ), presentLabelIds ) );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
@@ -115,7 +115,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
         int nodeId = 42;
         int labelId = 7;
 
-        NodeRecord node = withInlineLabels( inUse( new NodeRecord( nodeId, 0, 0 ) ), labelId );
+        NodeRecord node = withInlineLabels( inUse( new NodeRecord( nodeId, false, 0, 0 ) ), labelId );
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );

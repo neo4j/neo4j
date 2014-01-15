@@ -100,6 +100,7 @@ public class BigJumpingStoreIT
                 use_memory_mapped_buffers.name(), "false",
                 "neostore.nodestore.db.mapped_memory", "0M",
                 "neostore.relationshipstore.db.mapped_memory", "0M",
+                "neostore.relationshipgroupstore.db.mapped_memory", "0M",
                 "neostore.propertystore.db.mapped_memory", "0M",
                 "neostore.propertystore.db.strings.mapped_memory", "0M",
                 "neostore.propertystore.db.arrays.mapped_memory", "0M" );
@@ -138,7 +139,7 @@ public class BigJumpingStoreIT
         {
             Node node1 = nodes.get( i / 100 );
             Node node2 = nodes.get( i + 1 );
-            node1.createRelationshipTo( node2, TYPE );
+            Relationship rel = node1.createRelationshipTo( node2, TYPE );
         }
 
         tx.success();

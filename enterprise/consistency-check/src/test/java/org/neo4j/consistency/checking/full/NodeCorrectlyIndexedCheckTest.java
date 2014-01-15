@@ -35,12 +35,13 @@ import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 
@@ -52,7 +53,6 @@ import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
@@ -157,7 +157,7 @@ public class NodeCorrectlyIndexedCheckTest
 
     private NodeRecord nodeWithLabels( long... labelIds )
     {
-        NodeRecord nodeRecord = new NodeRecord( 0, 0, 0 );
+        NodeRecord nodeRecord = new NodeRecord( 0, false, 0, 0 );
         NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds, null );
         return nodeRecord;
     }

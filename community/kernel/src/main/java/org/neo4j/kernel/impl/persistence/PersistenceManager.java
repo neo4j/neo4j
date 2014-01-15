@@ -29,11 +29,13 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
@@ -83,15 +85,15 @@ public class PersistenceManager
         return getResource().forReading().nodeLoadLight( id );
     }
 
-    public long getRelationshipChainPosition( long nodeId )
+    public RelationshipLoadingPosition.Definition getRelationshipChainPosition( long nodeId )
     {
         return getResource().forReading().getRelationshipChainPosition( nodeId );
     }
 
-    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
-            long nodeId, long position )
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> getMoreRelationships(
+            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction, RelationshipType[] types )
     {
-        return getResource().forReading().getMoreRelationships( nodeId, position );
+        return getResource().forReading().getMoreRelationships( nodeId, position, direction, types );
     }
 
     public void loadNodeProperties( long nodeId, boolean light, PropertyReceiver receiver )
@@ -225,6 +227,16 @@ public class PersistenceManager
         return getResource().forReading().getLabelsForNode( nodeId );
     }
     
+    public int getRelationshipCount( long id, int type, DirectionWrapper direction )
+    {
+        return getResource().forReading().getRelationshipCount( id, type, direction );
+    }
+
+    public Integer[] getRelationshipTypes( long id )
+    {
+        return getResource().forReading().getRelationshipTypes( id );
+    }
+
     public KernelTransaction currentKernelTransactionForReading()
     {
         return getResource().forReading().kernelTransaction();

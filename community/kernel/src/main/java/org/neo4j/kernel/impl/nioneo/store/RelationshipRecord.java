@@ -24,14 +24,15 @@ public class RelationshipRecord extends PrimitiveRecord
     private long firstNode;
     private long secondNode;
     private int type;
-    private long firstPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
+    private long firstPrevRel = 1;
     private long firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
+    private long secondPrevRel = 1;
     private long secondNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private boolean firstInFirstChain = true;
+    private boolean firstInSecondChain = true;
 
     public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
-        // TODO take firstProp in here
         this( id );
         this.firstNode = firstNode;
         this.secondNode = secondNode;
@@ -42,14 +43,14 @@ public class RelationshipRecord extends PrimitiveRecord
     {
         super( id, Record.NO_NEXT_PROPERTY.intValue() );
     }
-    
+
     public void setLinks( long firstNode, long secondNode, int type )
     {
         this.firstNode = firstNode;
         this.secondNode = secondNode;
         this.type = type;
     }
-    
+
     public long getFirstNode()
     {
         return firstNode;
@@ -105,14 +106,37 @@ public class RelationshipRecord extends PrimitiveRecord
         this.secondNextRel = secondNextRel;
     }
 
+    public boolean isFirstInFirstChain()
+    {
+        return firstInFirstChain;
+    }
+
+    public void setFirstInFirstChain( boolean firstInFirstChain )
+    {
+        this.firstInFirstChain = firstInFirstChain;
+    }
+
+    public boolean isFirstInSecondChain()
+    {
+        return firstInSecondChain;
+    }
+
+    public void setFirstInSecondChain( boolean firstInSecondChain )
+    {
+        this.firstInSecondChain = firstInSecondChain;
+    }
+
     @Override
     public String toString()
     {
         return new StringBuilder( "Relationship[" ).append( getId() ).append( ",used=" ).append( inUse() ).append(
                 ",source=" ).append( firstNode ).append( ",target=" ).append( secondNode ).append( ",type=" ).append(
                 type ).append( ",sPrev=" ).append( firstPrevRel ).append( ",sNext=" ).append( firstNextRel ).append(
-                ",tPrev=" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" ).append(
-                getNextProp() ).append( "]" ).toString();
+                ",tPrev=" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" )
+                .append( getNextProp() )
+                .append( firstInFirstChain ? ",sFirst" : "" )
+                .append( firstInSecondChain ? ",tFirst" : "" )
+                .append( "]" ).toString();
     }
 
     @Override

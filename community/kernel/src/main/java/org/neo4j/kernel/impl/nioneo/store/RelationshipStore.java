@@ -44,8 +44,8 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     // record header size
     // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
     // first_prev_rel_id(int)+first_next_rel_id+second_prev_rel_id(int)+
-    // second_next_rel_id+next_prop_id(int)
-    public static final int RECORD_SIZE = 33;
+    // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
+    public static final int RECORD_SIZE = 34;
 
     public RelationshipStore(File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
                              WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
@@ -169,14 +169,14 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     {
         PersistenceWindow window = acquireWindow( record.getId(),
                 OperationType.WRITE );
-            try
-            {
-                updateRecord( record, window, true );
-            }
-            finally
-            {
-                releaseWindow( window );
-            }
+        try
+        {
+            updateRecord( record, window, true );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
     }
 
     private void updateRecord( RelationshipRecord record,
@@ -220,10 +220,17 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
             // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
             int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
+            
+            // [    ,   x] 1:st in start node chain, 0x1
+            // [    ,  x ] 1:st in end node chain,   0x2
+            long firstInStartNodeChain = record.isFirstInFirstChain() ? 0x1 : 0;
+            long firstInEndNodeChain = record.isFirstInSecondChain() ? 0x2 : 0;
+            byte extraByte = (byte) (firstInEndNodeChain | firstInStartNodeChain);
 
             buffer.put( (byte)inUseUnsignedByte ).putInt( (int) firstNode ).putInt( (int) secondNode )
                 .putInt( typeInt ).putInt( (int) firstPrevRel ).putInt( (int) firstNextRel )
-                .putInt( (int) secondPrevRel ).putInt( (int) secondNextRel ).putInt( (int) nextProp );
+                .putInt( (int) secondPrevRel ).putInt( (int) secondNextRel ).putInt( (int) nextProp )
+                .put( extraByte );
         }
         else
         {
@@ -295,27 +302,15 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
         long nextProp = buffer.getUnsignedInt();
         long nextPropMod = (inUseByte & 0xF0L) << 28;
+        
+        byte extraByte = buffer.get();
+
+        record.setFirstInFirstChain( (extraByte & 0x1) != 0 );
+        record.setFirstInSecondChain( (extraByte & 0x2) != 0 );
 
         record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
         return record;
     }
-
-//    private RelationshipRecord getFullRecord( long id, PersistenceWindow window )
-//    {
-//        Buffer buffer = window.getOffsettedBuffer( id );
-//        byte inUse = buffer.get();
-//        boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) ==
-//            Record.IN_USE.byteValue());
-//        RelationshipRecord record = new RelationshipRecord( id,
-//            buffer.getInt(), buffer.getInt(), buffer.getInt() );
-//        record.setInUse( inUseFlag );
-//        record.setFirstPrevRel( buffer.getInt() );
-//        record.setFirstNextRel( buffer.getInt() );
-//        record.setSecondPrevRel( buffer.getInt() );
-//        record.setSecondNextRel( buffer.getInt() );
-//        record.setNextProp( buffer.getInt() );
-//        return record;
-//    }
 
     public RelationshipRecord getChainRecord( long relId )
     {
@@ -347,5 +342,4 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         list.add( getWindowPoolStats() );
         return list;
     }
-
 }

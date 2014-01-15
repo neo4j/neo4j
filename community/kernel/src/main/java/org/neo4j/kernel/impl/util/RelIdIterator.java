@@ -27,6 +27,7 @@ public interface RelIdIterator
 
     RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction );
 
+    // TODO remove
     boolean hasNext();
 
     /**

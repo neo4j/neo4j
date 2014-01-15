@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
@@ -57,9 +57,9 @@ public interface TransactionState
 
     RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type );
 
-    ArrayMap<Integer, Collection<Long>> getCowRelationshipRemoveMap( NodeImpl node );
+    ArrayMap<Integer, SetAndDirectionCounter> getCowRelationshipRemoveMap( NodeImpl node );
 
-    Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type );
+    SetAndDirectionCounter getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type );
 
     void setFirstIds( long nodeId, long firstRel, long firstProp );
 

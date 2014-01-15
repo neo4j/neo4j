@@ -68,7 +68,7 @@ public class TestGrowingFileMemoryMapping
         // when
         for ( int i = 0; i < 2 * NUMBER_OF_RECORDS; i++ )
         {
-            NodeRecord record = new NodeRecord( nodeStore.nextId(), 0, 0 );
+            NodeRecord record = new NodeRecord( nodeStore.nextId(), false, 0, 0 );
             record.setInUse( true );
             nodeStore.updateRecord( record );
         }

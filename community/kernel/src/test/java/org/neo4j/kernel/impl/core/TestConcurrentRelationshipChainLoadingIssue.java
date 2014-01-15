@@ -26,16 +26,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.util.MultipleCauseException;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
@@ -46,6 +44,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
@@ -57,20 +56,26 @@ import static org.neo4j.helpers.collection.IteratorUtil.count;
 public class TestConcurrentRelationshipChainLoadingIssue
 {
     private final int relCount = 2;
-    public final @Rule
-    ImpermanentDatabaseRule graphDb = new ImpermanentDatabaseRule()
-    {
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( cache_type, "weak" );
-            builder.setConfig( relationship_grab_size, "" + (relCount/2) );
-        }
-    };
     
     @Test
     public void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
     {
-        GraphDatabaseAPI db = graphDb.getGraphDatabaseAPI();
+        tryToTriggerRelationshipLoadingStoppingMidWay( 50 );
+    }
+    
+    @Test
+    public void tryToTriggerRelationshipLoadingStoppingMidWayForDenseNodeRepresentation() throws Throwable
+    {
+        tryToTriggerRelationshipLoadingStoppingMidWay( 1 );
+    }
+    
+    private void tryToTriggerRelationshipLoadingStoppingMidWay( int denseNodeThreshold ) throws Throwable
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( cache_type, "weak" )
+                .setConfig( relationship_grab_size, "" + relCount/2 )
+                .setConfig( dense_node_threshold, "" + denseNodeThreshold )
+                .newGraphDatabase();
         Node node = createNodeWithRelationships( db );
 
         checkStateToHelpDiagnoseFlakeyTest( db, node );
@@ -78,7 +83,9 @@ public class TestConcurrentRelationshipChainLoadingIssue
         long end = currentTimeMillis()+SECONDS.toMillis( 5 );
         int iterations = 0;
         while ( currentTimeMillis() < end )
+        {
             tryOnce( db, node, iterations++ );
+        }
     }
 
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )
@@ -143,9 +150,11 @@ public class TestConcurrentRelationshipChainLoadingIssue
         executor.awaitTermination( 10, SECONDS );
         
         if ( !errors.isEmpty() )
+        {
             throw new MultipleCauseException(
                     format("Exception(s) after %s iterations with %s threads", iterations, threads),
                     errors );
+        }
     }
 
     private static int idleLoop( int l )
@@ -153,7 +162,9 @@ public class TestConcurrentRelationshipChainLoadingIssue
         // Use atomic integer to disable the JVM from rewriting this loop to simple addition.
         AtomicInteger i = new AtomicInteger( 0 );
         for ( int j = 0; j < l; j++ )
+        {
             i.incrementAndGet();
+        }
         return i.get();
     }
 
@@ -165,9 +176,13 @@ public class TestConcurrentRelationshipChainLoadingIssue
         {
             node = db.createNode();
             for ( int i = 0; i < relCount / 2; i++ )
+            {
                 node.createRelationshipTo( node, MyRelTypes.TEST );
+            }
             for ( int i = 0; i < relCount / 2; i++ )
+            {
                 node.createRelationshipTo( node, MyRelTypes.TEST2 );
+            }
             tx.success();
             return node;
         }

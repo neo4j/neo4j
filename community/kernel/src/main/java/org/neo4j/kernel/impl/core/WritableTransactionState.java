@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.core;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -31,6 +33,7 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
@@ -66,6 +69,42 @@ public class WritableTransactionState implements TransactionState
 
     private boolean isRemotelyInitialized = false;
 
+    private static class MutableInteger
+    {
+        int value;
+    }
+
+    public static class SetAndDirectionCounter
+    {
+        final Collection<Long> set = new HashSet<>();
+        final MutableInteger totalCount = new MutableInteger();
+        private final Map<Direction, MutableInteger> counters = new EnumMap<>( Direction.class );
+        {
+            counters.put( Direction.OUTGOING, new MutableInteger() );
+            counters.put( Direction.INCOMING, new MutableInteger() );
+            counters.put( Direction.BOTH, new MutableInteger() );
+        }
+
+        void add( long id, Direction direction )
+        {
+            set.add( id );
+
+            counters.get( direction ).value++;
+            totalCount.value++;
+        }
+
+        int getCount( Direction direction )
+        {
+            return direction == Direction.BOTH ? totalCount.value :
+                    counters.get( direction ).value + counters.get( Direction.BOTH ).value;
+        }
+
+        public int totalCount()
+        {
+            return totalCount.value;
+        }
+    }
+    
     public static class PrimitiveElement
     {
         PrimitiveElement()
@@ -178,7 +217,7 @@ public class WritableTransactionState implements TransactionState
         private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
 
         private ArrayMap<Integer, RelIdArray> relationshipAddMap;
-        private ArrayMap<Integer, Collection<Long>> relationshipRemoveMap;
+        private ArrayMap<Integer, SetAndDirectionCounter> relationshipRemoveMap;
 
         public ArrayMap<Integer, RelIdArray> getRelationshipAddMap( boolean create )
         {
@@ -205,7 +244,7 @@ public class WritableTransactionState implements TransactionState
             return result;
         }
 
-        public ArrayMap<Integer, Collection<Long>> getRelationshipRemoveMap( boolean create )
+        public ArrayMap<Integer, SetAndDirectionCounter> getRelationshipRemoveMap( boolean create )
         {
             if ( relationshipRemoveMap == null && create )
             {
@@ -214,17 +253,17 @@ public class WritableTransactionState implements TransactionState
             return relationshipRemoveMap;
         }
 
-        public Collection<Long> getRelationshipRemoveMap( int type, boolean create )
+        public SetAndDirectionCounter getRelationshipRemoveMap( int type, boolean create )
         {
-            ArrayMap<Integer, Collection<Long>> map = getRelationshipRemoveMap( create );
+            ArrayMap<Integer, SetAndDirectionCounter> map = getRelationshipRemoveMap( create );
             if ( map == null )
             {
                 return null;
             }
-            Collection<Long> result = map.get( type );
+            SetAndDirectionCounter result = map.get( type );
             if ( result == null && create )
             {
-                result = new HashSet<>();
+                result = new SetAndDirectionCounter();
                 map.put( type, result );
             }
             return result;
@@ -319,7 +358,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public ArrayMap<Integer, Collection<Long>> getCowRelationshipRemoveMap( NodeImpl node )
+    public ArrayMap<Integer, SetAndDirectionCounter> getCowRelationshipRemoveMap( NodeImpl node )
     {
         if ( primitiveElement != null )
         {
@@ -335,7 +374,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public Collection<Long> getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type )
+    public SetAndDirectionCounter getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type )
     {
         return getPrimitiveElement( true ).nodeElement( node.getId(), true ).getRelationshipRemoveMap( type, true );
     }
@@ -637,8 +676,8 @@ public class WritableTransactionState implements TransactionState
             {
                 for ( Integer type : nodeElement.relationshipRemoveMap.keySet() )
                 {
-                    Collection<Long> deletedRels = nodeElement.relationshipRemoveMap.get( type );
-                    for ( long relId : deletedRels )
+                    SetAndDirectionCounter deletedRels = nodeElement.relationshipRemoveMap.get( type );
+                    for ( long relId : deletedRels.set )
                     {
                         if ( primitiveElement.createdRelationships.contains( relId ) )
                         {

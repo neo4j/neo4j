@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
+import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
@@ -43,14 +45,17 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
     
     private boolean lastTimeILookedThereWasMoreToLoad;
     private final boolean allTypes;
+    private final RelationshipType[] types;
 
     RelationshipIterator( RelIdIterator[] rels, NodeImpl fromNode,
-        DirectionWrapper direction, NodeManager nodeManager, boolean hasMoreToLoad, boolean allTypes )
+        DirectionWrapper direction, RelationshipType[] types, NodeManager nodeManager,
+        boolean hasMoreToLoad, boolean allTypes )
     {
         initializeRels( rels );
         this.lastTimeILookedThereWasMoreToLoad = hasMoreToLoad;
         this.fromNode = fromNode;
         this.direction = direction;
+        this.types = types;
         this.nodeManager = nodeManager;
         this.allTypes = allTypes;
     }
@@ -95,7 +100,7 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
                     // There are other relationship types to try to get relationships from, go to the next type
                     currentTypeIterator = rels[++currentTypeIndex];
                 }
-                else if ( (status = fromNode.getMoreRelationships( nodeManager )).loaded()
+                else if ( (status = fromNode.getMoreRelationships( nodeManager, direction, types )).loaded()
                         // This is here to guard for that someone else might have loaded
                         // stuff in this relationship chain (and exhausted it) while I
                         // iterated over my batch of relationships. It will only happen
@@ -125,7 +130,7 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
                     // initiate iterators for them
                     if ( allTypes )
                     {
-                        ArrayMap<Integer, Collection<Long>> skipMap = nodeManager.getTransactionState().
+                        ArrayMap<Integer, SetAndDirectionCounter> skipMap = nodeManager.getTransactionState().
                                 getCowRelationshipRemoveMap( fromNode );
                         for ( RelIdArray ids : fromNode.getRelationshipIds() )
                         {
@@ -133,9 +138,11 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
                             RelIdIterator itr = newRels.get( type );
                             if ( itr == null )
                             {
-                                Collection<Long> remove = skipMap != null ? skipMap.get( type ) : null;
-                                itr = remove == null ? ids.iterator( direction ) :
-                                        RelIdArray.from( ids, null, remove ).iterator( direction );
+                                SetAndDirectionCounter remove = skipMap != null ? skipMap.get( type ) : null;
+                                itr = remove == null ?
+                                        ids.iterator( direction ) :
+//                                        from( ids, null, remove.set ).iterator( direction );
+                                        new CombinedRelIdIterator( type, direction, ids, null, remove.set );
                                 newRels.put( type, itr );
                             }
                             else

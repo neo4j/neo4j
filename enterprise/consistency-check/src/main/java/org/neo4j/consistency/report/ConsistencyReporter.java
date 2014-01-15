@@ -29,6 +29,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.RecordCheck;
+import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
@@ -45,7 +46,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -89,7 +90,14 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     void dispatch( RecordType type, ProxyFactory<REPORT> factory, RECORD record, RecordCheck<RECORD, REPORT> checker )
     {
         ReportInvocationHandler<RECORD,REPORT> handler = new ReportHandler<>( report, factory, type, record );
-        checker.check( record, handler, records );
+        try
+        {
+            checker.check( record, handler, records );
+        }
+        catch ( Exception e )
+        {
+            handler.report.error( type, record, "Failed to check record: " + e.getMessage() );
+        }
         handler.updateSummary();
     }
 
@@ -98,7 +106,14 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                          RecordCheck<RECORD, REPORT> checker )
     {
         ReportInvocationHandler<RECORD,REPORT> handler = new DiffReportHandler<>( report, factory, type, oldRecord, newRecord );
-        checker.checkChange( oldRecord, newRecord, handler, records );
+        try
+        {
+            checker.checkChange( oldRecord, newRecord, handler, records );
+        }
+        catch ( Exception e )
+        {
+            handler.report.error( type, oldRecord, newRecord, "Failed to check record: " + e.getMessage() );
+        }
         handler.updateSummary();
     }
 

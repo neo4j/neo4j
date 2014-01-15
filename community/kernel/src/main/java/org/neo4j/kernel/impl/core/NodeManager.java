@@ -20,12 +20,15 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -33,11 +36,13 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
@@ -45,8 +50,10 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -64,9 +71,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.cast;
 
-public class NodeManager implements Lifecycle, EntityFactory
+public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupTranslator
 {
     private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
@@ -102,7 +110,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             {
                 return null;
             }
-            return new NodeImpl( id );
+            return record.isCommittedDense() ? new DenseNodeImpl( id ) : new NodeImpl( id );
         }
     };
 
@@ -569,15 +577,19 @@ public class NodeManager implements Lifecycle, EntityFactory
     private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
     {
         NodeImpl node = nodeCache.getIfCached( nodeId );
-        if ( node != null && node.getRelChainPosition() == relIdDeleted )
+        if ( node != null )
         {
-            node.setRelChainPosition( nextRelId );
+            RelationshipLoadingPosition position = node.getRelChainPosition();
+            if ( position != null )
+            {
+                position.compareAndAdvance( relIdDeleted, nextRelId );
+            }
         }
     }
 
-    long getRelationshipChainPosition( NodeImpl node )
+    RelationshipLoadingPosition getRelationshipChainPosition( NodeImpl node )
     {
-        return persistenceManager.getRelationshipChainPosition( node.getId() );
+        return persistenceManager.getRelationshipChainPosition( node.getId() ).build( this );
     }
 
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
@@ -754,13 +766,15 @@ public class NodeManager implements Lifecycle, EntityFactory
             }
             int typeId = rel.getTypeId();
             long id = rel.getId();
+            boolean loop = startNodeId == endNodeId;
             if ( startNode != null )
             {
-                tx.getOrCreateCowRelationshipRemoveMap( startNode, typeId ).add( id );
+                tx.getOrCreateCowRelationshipRemoveMap( startNode, typeId ).add( id,
+                        loop ? Direction.BOTH : Direction.OUTGOING );
             }
-            if ( endNode != null )
+            if ( endNode != null && !loop )
             {
-                tx.getOrCreateCowRelationshipRemoveMap( endNode, typeId ).add( id );
+                tx.getOrCreateCowRelationshipRemoveMap( endNode, typeId ).add( id, Direction.INCOMING );
             }
             success = true;
             return removedProps;
@@ -774,9 +788,10 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
     }
 
-    public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships( NodeImpl node )
+    Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, RelationshipType[] types )
     {
-        return relationshipLoader.getMoreRelationships( node );
+        return relationshipLoader.getMoreRelationships( node, direction, types );
     }
 
     public NodeImpl getNodeIfCached( long nodeId )
@@ -902,5 +917,58 @@ public class NodeManager implements Lifecycle, EntityFactory
     public TransactionState getTransactionState()
     {
         return transactionManager.getTransactionState();
+    }
+
+    public int getRelationshipCount( NodeImpl nodeImpl, RelationshipType type, DirectionWrapper direction )
+    {
+        Integer typeId = null;
+        if ( type != null )
+        {
+            typeId = relTypeHolder.getIdByName( type.name() );
+            if ( typeId == null )
+            {
+                return 0;
+            }
+        }
+
+        return persistenceManager.getRelationshipCount( nodeImpl.getId(),
+                type == null ? -1 : typeId.intValue(), direction );
+    }
+
+    public Iterable<RelationshipType> getRelationshipTypes( DenseNodeImpl node )
+    {
+        Integer[] types = persistenceManager.getRelationshipTypes( node.getId() );
+        return new IterableWrapper<RelationshipType, Integer>( asList( types ) )
+        {
+            @Override
+            protected RelationshipType underlyingObjectToObject( Integer type )
+            {
+                return relTypeHolder.getTokenByIdOrNull( type.intValue() );
+            }
+        };
+    }
+
+    @Override
+    public Pair<RelationshipType[], Map<String, RelationshipGroupRecord>> translateRelationshipGroups(
+            Map<Integer, RelationshipGroupRecord> rawGroups )
+    {
+        Map<String, RelationshipGroupRecord> groups = new HashMap<String, RelationshipGroupRecord>();
+        RelationshipType[] types = new RelationshipType[rawGroups.size()];
+        int i = 0;
+        for ( Map.Entry<Integer, RelationshipGroupRecord> entry : rawGroups.entrySet() )
+        {
+            RelationshipType type;
+            try
+            {
+                type = getRelationshipTypeById( entry.getKey() );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new InvalidRecordException( entry.getValue() + " refers to missing relationship type " + entry.getKey() );
+            }
+            groups.put( type.name(), entry.getValue() );
+            types[i++] = type;
+        }
+        return Pair.of( types, groups );
     }
 }

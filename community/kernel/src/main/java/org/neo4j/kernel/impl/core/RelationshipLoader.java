@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 public class RelationshipLoader
@@ -43,14 +45,14 @@ public class RelationshipLoader
         this.relationshipCache = relationshipCache;
     }
 
-    public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, Long> getMoreRelationships( NodeImpl node )
+    public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, RelationshipType[] types )
     {
         long nodeId = node.getId();
-        long position = node.getRelChainPosition();
-        Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>, Long> rels =
-                persistenceManager.getMoreRelationships( nodeId, position );
-        ArrayMap<Integer, RelIdArray> newRelationshipMap =
-                new ArrayMap<>();
+        RelationshipLoadingPosition position = node.getRelChainPosition();
+        Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> rels =
+                persistenceManager.getMoreRelationships( nodeId, position, direction, types );
+        ArrayMap<Integer, RelIdArray> newRelationshipMap = new ArrayMap<>();
 
         List<RelationshipImpl> relsList = new ArrayList<>( 150 );
 
@@ -110,12 +112,14 @@ public class RelationshipLoader
                                                                RelationshipRecord rel, long relId )
     {
         RelationshipImpl relImpl = relationshipCache.get( relId );
-        if (relImpl != null) return relImpl;
+        if (relImpl != null)
+        {
+            return relImpl;
+        }
 
         RelationshipImpl loadedRelImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(),
                 rel.getType(), false );
         newlyCreatedRelationships.add( loadedRelImpl );
         return loadedRelImpl;
     }
-
 }

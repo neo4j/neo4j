@@ -54,7 +54,7 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingForNodeNotInUse() throws Exception
     {
         // given
-        NodeRecord node = notInUse( new NodeRecord( 42, 0, 0 ) );
+        NodeRecord node = notInUse( new NodeRecord( 42, false, 0, 0 ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = check( node );
@@ -67,7 +67,7 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingForNodeThatDoesNotReferenceOtherRecords() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = check( node );
@@ -80,7 +80,7 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingForNodeWithConsistentReferences() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, 7, 11 ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
         add( inUse( new RelationshipRecord( 7, 42, 0, 0 ) ) );
         add( inUse( new PropertyRecord( 11 ) ) );
 
@@ -95,7 +95,7 @@ public class NodeRecordCheckTest
     public void shouldReportRelationshipNotInUse() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, 7, 11 ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
         RelationshipRecord relationship = add( notInUse( new RelationshipRecord( 7, 0, 0, 0 ) ) );
         add( inUse( new PropertyRecord( 11 ) ) );
 
@@ -111,7 +111,7 @@ public class NodeRecordCheckTest
     public void shouldReportPropertyNotInUse() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, 11 ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, 11 ) );
         PropertyRecord property = add( notInUse( new PropertyRecord( 11 ) ) );
 
         // when
@@ -126,7 +126,7 @@ public class NodeRecordCheckTest
     public void shouldReportPropertyNotFirstInChain() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, 11 ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, 11 ) );
         PropertyRecord property = add( inUse( new PropertyRecord( 11 ) ) );
         property.setPrevProp( 6 );
 
@@ -142,7 +142,7 @@ public class NodeRecordCheckTest
     public void shouldReportRelationshipForOtherNodes() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, 7, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 1, 2, 0 ) ) );
 
         // when
@@ -157,7 +157,7 @@ public class NodeRecordCheckTest
     public void shouldReportRelationshipNotFirstInSourceChain() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, 7, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 42, 0, 0 ) ) );
         relationship.setFirstPrevRel( 6 );
         relationship.setSecondPrevRel( 8 );
@@ -174,7 +174,7 @@ public class NodeRecordCheckTest
     public void shouldReportRelationshipNotFirstInTargetChain() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, 7, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 0, 42, 0 ) ) );
         relationship.setFirstPrevRel( 6 );
         relationship.setSecondPrevRel( 8 );
@@ -191,7 +191,7 @@ public class NodeRecordCheckTest
     public void shouldReportLoopRelationshipNotFirstInTargetAndSourceChains() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, 7, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 42, 42, 0 ) ) );
         relationship.setFirstPrevRel( 8 );
         relationship.setSecondPrevRel( 8 );
@@ -209,7 +209,7 @@ public class NodeRecordCheckTest
     public void shouldReportLabelNotInUse() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         new InlineNodeLabels( node.getLabelField(), node ).add( 1, null );
         LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( 1 ) );
 
@@ -232,7 +232,7 @@ public class NodeRecordCheckTest
         LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( labelIds.length ) );
         add( labelRecordNotInUse );
 
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         add( node );
 
         DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
@@ -258,7 +258,7 @@ public class NodeRecordCheckTest
     public void shouldReportDuplicateLabels() throws Exception
     {
         // given
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         new InlineNodeLabels( node.getLabelField(), node ).put( new long[]{1, 2, 1}, null );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
@@ -280,7 +280,7 @@ public class NodeRecordCheckTest
         // given
         long[] labelIds = createLabels( 100 );
 
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         add( node );
 
         DynamicRecord labelsRecord1 = inUse( array( new DynamicRecord( 1 ) ) );
@@ -308,7 +308,7 @@ public class NodeRecordCheckTest
         // given
         long[] labelIds = createLabels( 100 );
 
-        NodeRecord node = inUse( new NodeRecord( 42, NONE, NONE ) );
+        NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         add( node );
 
         DynamicRecord labelsRecord1 = notInUse( array( new DynamicRecord( 1 ) ) );
@@ -334,8 +334,8 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingForConsistentlyChangedNode() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, 11, 1 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, 12, 2 ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 11, 1 ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, 12, 2 ) );
 
         addChange( inUse( new RelationshipRecord( 11, 42, 0, 0 ) ),
                 notInUse( new RelationshipRecord( 11, 0, 0, 0 ) ) );
@@ -358,8 +358,8 @@ public class NodeRecordCheckTest
     public void shouldReportProblemsWithTheNewStateWhenCheckingChanges() throws Exception
     {
         // given
-        NodeRecord oldNode = notInUse( new NodeRecord( 42, 0, 0 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, 1, 2 ) );
+        NodeRecord oldNode = notInUse( new NodeRecord( 42, false, 0, 0 ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, 1, 2 ) );
         RelationshipRecord relationship = add( notInUse( new RelationshipRecord( 1, 0, 0, 0 ) ) );
         PropertyRecord property = add( notInUse( new PropertyRecord( 2 ) ) );
 
@@ -376,8 +376,8 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingWhenAddingAnInitialProperty() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, NONE, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, NONE, 10 ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, NONE ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, NONE, 10 ) );
 
         addChange( notInUse( new PropertyRecord( 10 ) ), inUse( new PropertyRecord( 10 ) ) );
 
@@ -392,8 +392,8 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingWhenChangingProperty() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, NONE, 10 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, NONE, 11 ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, 10 ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, NONE, 11 ) );
 
         PropertyRecord oldProp = addChange( inUse( new PropertyRecord( 10 ) ),
                 inUse( new PropertyRecord( 10 ) ) );
@@ -413,8 +413,8 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingWhenAddingAnInitialRelationship() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, NONE, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, 10, NONE ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, NONE ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, 10, NONE ) );
 
         addChange( notInUse( new RelationshipRecord( 10, 0, 0, 0 ) ),
                 inUse( new RelationshipRecord( 10, 42, 1, 0 ) ) );
@@ -430,8 +430,8 @@ public class NodeRecordCheckTest
     public void shouldNotReportAnythingWhenChangingRelationship() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, 9, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, 10, NONE ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 9, NONE ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, 10, NONE ) );
 
         RelationshipRecord rel1 = addChange( inUse( new RelationshipRecord( 9, 42, 0, 0 ) ),
                 inUse( new RelationshipRecord( 9, 42, 0, 0 ) ) );
@@ -451,8 +451,8 @@ public class NodeRecordCheckTest
     public void shouldReportPropertyChainReplacedButNotUpdated() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, NONE, 1 ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, NONE, 2 ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, NONE, 1 ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, NONE, 2 ) );
         addChange( notInUse( new PropertyRecord( 2 ) ),
                 inUse( new PropertyRecord( 2 ) ) );
 
@@ -468,8 +468,8 @@ public class NodeRecordCheckTest
     public void shouldReportRelationshipChainReplacedButNotUpdated() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, 1, NONE ) );
-        NodeRecord newNode = inUse( new NodeRecord( 42, 2, NONE ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 1, NONE ) );
+        NodeRecord newNode = inUse( new NodeRecord( 42, false, 2, NONE ) );
         addChange( notInUse( new RelationshipRecord( 2, 0, 0, 0 ) ),
                 inUse( new RelationshipRecord( 2, 42, 0, 0 ) ) );
 
@@ -485,8 +485,8 @@ public class NodeRecordCheckTest
     public void shouldReportDeletedButReferencesNotUpdated() throws Exception
     {
         // given
-        NodeRecord oldNode = inUse( new NodeRecord( 42, 1, 10 ) );
-        NodeRecord newNode = notInUse( new NodeRecord( 42, 1, 10 ) );
+        NodeRecord oldNode = inUse( new NodeRecord( 42, false, 1, 10 ) );
+        NodeRecord newNode = notInUse( new NodeRecord( 42, false, 1, 10 ) );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = checkChange( oldNode, newNode );

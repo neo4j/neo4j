@@ -19,34 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,10 +36,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
@@ -92,6 +68,8 @@ import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -104,6 +82,42 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+
+import static java.lang.Integer.parseInt;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.IdType.NODE;
+import static org.neo4j.kernel.IdType.RELATIONSHIP;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class WriteTransactionTest
 {
@@ -782,6 +796,88 @@ public class WriteTransactionTest
         verify( locks, times( 2 ) ).acquireNodeLock( nodes[6], LockService.LockType.WRITE_LOCK );
     }
 
+    @Test
+    public void shouldConvertToDenseNodeRepresentationWhenHittingThreshold() throws Exception
+    {
+        // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        instantiateNeoStore( 50 );
+        NeoStoreTransaction tx = newWriteTransaction();
+        int nodeId = (int) nextId( NODE ), typeA = 0, typeB = 1, typeC = 2;
+        tx.nodeCreate( nodeId );
+        tx.createRelationshipTypeToken( typeA, "A" );
+        createRelationships( tx, nodeId, typeA, OUTGOING, 6 );
+        createRelationships( tx, nodeId, typeA, INCOMING, 7 );
+
+        tx.createRelationshipTypeToken( typeB, "B" );
+        createRelationships( tx, nodeId, typeB, OUTGOING, 8 );
+        createRelationships( tx, nodeId, typeB, INCOMING, 9 );
+
+        tx.createRelationshipTypeToken( typeC, "C" );
+        createRelationships( tx, nodeId, typeC, OUTGOING, 10 );
+        createRelationships( tx, nodeId, typeC, INCOMING, 10 );
+        // here we're at the edge
+        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+
+        // WHEN creating the relationship that pushes us over the threshold
+        createRelationships( tx, nodeId, typeC, INCOMING, 1 );
+
+        // THEN the node shouod have been converted into a dense node
+        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertDenseRelationshipCounts( tx, nodeId, typeA, 6, 7 );
+        assertDenseRelationshipCounts( tx, nodeId, typeB, 8, 9 );
+        assertDenseRelationshipCounts( tx, nodeId, typeC, 10, 11 );
+    }
+
+    private void assertDenseRelationshipCounts( NeoStoreTransaction tx, long nodeId, int type, int outCount,
+            int inCount )
+    {
+        RelationshipGroupRecord group = tx.getRelationshipGroup( tx.nodeLoadLight( nodeId ), type ).forReadingData();
+        assertNotNull( group );
+
+        long relId = group.getFirstOut();
+        RelationshipRecord rel = tx.relLoadLight( relId );
+        // count is stored in the back pointer of the first relationship in the chain
+        assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
+        assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
+                manuallyCountRelationships( tx, nodeId, relId ) );
+
+        relId = group.getFirstIn();
+        rel = tx.relLoadLight( relId );
+        assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
+        assertEquals( "Manually counted relationships for INCOMING differs", inCount,
+                manuallyCountRelationships( tx, nodeId, relId ) );
+    }
+
+    private int manuallyCountRelationships( NeoStoreTransaction tx, long nodeId, long firstRelId )
+    {
+        int count = 0;
+        long relId = firstRelId;
+        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            count++;
+            RelationshipRecord record = tx.relLoadLight( relId );
+            relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
+        }
+        return count;
+    }
+
+    private long nextId( IdType type )
+    {
+        return idGeneratorFactory.get( type ).nextId();
+    }
+
+    private void createRelationships( NeoStoreTransaction tx, long nodeId, int type, Direction direction, int count )
+    {
+        for ( int i = 0; i < count; i++ )
+        {
+            long otherNodeId = nextId( NODE );
+            tx.nodeCreate( otherNodeId );
+            long first = direction == OUTGOING ? nodeId : otherNodeId;
+            long other = direction == INCOMING ? nodeId : otherNodeId;
+            tx.relationshipCreate( nextId( RELATIONSHIP ), type, first, other );
+        }
+    }
+
     private String string( int length )
     {
         StringBuilder result = new StringBuilder();
@@ -794,8 +890,8 @@ public class WriteTransactionTest
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private TransactionState transactionState;
-    private final Config config = new Config( stringMap() );
+    private final TransactionState transactionState = mock( TransactionState.class );
+    private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
@@ -807,7 +903,18 @@ public class WriteTransactionTest
     @Before
     public void before() throws Exception
     {
-        transactionState = TransactionState.NO_STATE;
+        instantiateNeoStore( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
+    }
+
+    private void instantiateNeoStore( int denseNodeThreshold )
+    {
+        if ( neoStore != null )
+        {
+            fs.clear();
+        }
+
+        config = new Config( stringMap(
+                GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), DEV_NULL, new DefaultTxHook() );
@@ -883,6 +990,11 @@ public class WriteTransactionTest
 
     private final IndexingService mockIndexing = mock( IndexingService.class );
     private final KernelTransactionImplementation kernelTransaction = mock( KernelTransactionImplementation.class );
+
+    private NeoStoreTransaction newWriteTransaction()
+    {
+        return newWriteTransaction( mockIndexing );
+    }
 
     private NeoStoreTransaction newWriteTransaction( IndexingService indexing )
     {

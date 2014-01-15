@@ -36,8 +36,10 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.valueOf;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -70,7 +72,10 @@ public class TestRelationshipGrabSize
     
     private void finishTx( boolean success )
     {
-        if ( success ) tx.success();
+        if ( success )
+        {
+            tx.success();
+        }
         tx.close();
     }
     
@@ -214,12 +219,12 @@ public class TestRelationshipGrabSize
         // Create more than one grab size
         for ( int i = 0; i < 12; i++ )
         {
-            node1.createRelationshipTo( node2, type1 );
+            Relationship rel = node1.createRelationshipTo( node2, type1 );
             count++;
         }
         for ( int i = 0; i < 11; i++ )
         {
-            node1.createRelationshipTo( node2, type2 );
+            Relationship rel = node1.createRelationshipTo( node2, type2 );
             count++;
         }
         tx.success();
@@ -237,7 +242,7 @@ public class TestRelationshipGrabSize
         Transaction tx = db.beginTx();
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
 
-        node1.createRelationshipTo( node2, createType );
+        Relationship rel = node1.createRelationshipTo( node2, createType );
         Relationship rel1 = node1.getRelationships( deleteType ).iterator().next();
         rel1.delete();
 
