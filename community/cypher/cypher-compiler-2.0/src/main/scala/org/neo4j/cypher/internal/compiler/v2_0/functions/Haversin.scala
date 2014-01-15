@@ -23,13 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.{expressions => commandexpressions}
 import symbols._
 
-case object Haversin extends Function {
+case object Haversin extends Function with SimpleTypedFunction {
   def name = "haversin"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) then
-      invocation.arguments.expectType(T <:< CTNumber) then
-      invocation.specifyType(CTDouble)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.HaversinFunction(invocation.arguments(0).toCommand)

@@ -20,21 +20,110 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
 case object Add extends Function {
-  def name = "+"
+  val name = "+"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
     when(invocation.arguments.length == 1) {
-      invocation.arguments.expectType(T <:< CTNumber)
-      invocation.specifyType(CTNumber)
+      semanticCheckUnary(ctx, invocation)
     } then when(invocation.arguments.length == 2) {
-      invocation.arguments.expectType(T <:< CTString | T <:< CTNumber | T <:< CTCollection(CTAny)) then
-      invocation.specifyType(invocation.arguments.mergeUpTypes)
+      semanticCheckInfix(ctx, invocation)
     }
+
+  private def semanticCheckUnary(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    invocation.arguments.expectType(T <:< CTInteger | T <:< CTLong | T <:< CTDouble) then
+    invocation.specifyType(invocation.arguments(0).types)
+
+  private def semanticCheckInfix(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck = {
+    val lhs = invocation.arguments(0)
+    val rhs = invocation.arguments(1)
+
+    lhs.expectType(TypeSpec.all) then
+    rhs.expectType(infixRhsTypes(lhs)) then
+    invocation.specifyType(infixOutputTypes(lhs, rhs))
+  }
+
+  private def infixRhsTypes(lhs: ast.Expression): TypeGenerator = s => {
+    val lhsTypes = lhs.types(s)
+
+    // "a" + "b" => "ab"
+    // "a" + 1 => "a1"
+    // "a" + 1.1 => "a1.1"
+    val stringTypes =
+      if (lhsTypes.containsAny(T <:< CTString))
+        T <:< CTString | T <:< CTInteger | T <:< CTLong | T <:< CTDouble
+      else
+        TypeSpec.none
+
+    // 1 + "b" => "1b"
+    // 1 + 1 => 2
+    // 1 + 1.1 => 2.1
+    // 1.1 + "b" => "1.1b"
+    // 1.1 + 1 => 2.1
+    // 1.1 + 1.1 => 2.2
+    val numberTypes =
+      if (lhsTypes.containsAny(T <:< CTInteger | T <:< CTLong | T <:< CTDouble))
+        T <:< CTString | T <:< CTInteger | T <:< CTLong | T <:< CTDouble
+      else
+        TypeSpec.none
+
+    // [a] + [b] => [a, b]
+    // [a] + b => [a, b]
+    val collectionTypes = (lhsTypes <:< CTCollection(CTAny)) | (lhsTypes <:< CTCollection(CTAny)).unwrapCollections
+
+    // a + [b] => [a, b]
+    val rhsCollectionTypes = lhsTypes.wrapInCollection
+
+    stringTypes | numberTypes | collectionTypes | rhsCollectionTypes
+  }
+
+  def infixOutputTypes(lhs: ast.Expression, rhs: ast.Expression): TypeGenerator = s => {
+    val lhsTypes = lhs.types(s)
+    val rhsTypes = rhs.types(s)
+
+    def when(fst: TypeSpec, snd: TypeSpec)(result: CypherType): TypeSpec =
+      if (lhsTypes.containsAny(fst) && rhsTypes.containsAny(snd) || lhsTypes.containsAny(snd) && rhsTypes.containsAny(fst))
+        result
+      else
+        TypeSpec.none
+
+    // "a" + "b" => "ab"
+    // "a" + 1 => "a1"
+    // "a" + 1.1 => "a1.1"
+    // 1 + "b" => "1b"
+    // 1.1 + "b" => "1.1b"
+    val stringTypes: TypeSpec =
+      when(T <:< CTString, T <:< CTInteger | T <:< CTLong | T <:< CTDouble | T <:< CTString)(CTString)
+
+    // 1 + 1 => 2
+    // 1 + 1.1 => 2.1
+    // 1.1 + 1 => 2.1
+    // 1.1 + 1.1 => 2.2
+    val numberTypes: TypeSpec =
+      when(T <:< CTInteger, T <:< CTInteger)(CTInteger) |
+      when(T <:< CTLong, T <:< CTInteger | T <:< CTLong)(CTLong) |
+      when(T <:< CTDouble, T <:< CTDouble | T <:< CTInteger | T <:< CTLong)(CTDouble)
+
+    // [a] + [b] => [a, b]
+    // [a] + b => [a, b]
+    // a + [b] => [a, b]
+    val collectionTypes = {
+      val lhsCollectionTypes = lhsTypes <:< CTCollection(CTAny)
+      val rhsCollectionTypes = rhsTypes <:< CTCollection(CTAny)
+      val lhsCollectionInnerTypes = lhsCollectionTypes.unwrapCollections
+      val rhsCollectionInnerTypes = rhsCollectionTypes.unwrapCollections
+
+      (lhsCollectionTypes intersect rhsCollectionTypes) |
+      (rhsTypes intersectWithCoercion lhsCollectionInnerTypes).wrapInCollection |
+      (lhsTypes intersectWithCoercion rhsCollectionInnerTypes).wrapInCollection
+    }
+
+    stringTypes | numberTypes | collectionTypes
+  }
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     if (invocation.arguments.length == 1) {

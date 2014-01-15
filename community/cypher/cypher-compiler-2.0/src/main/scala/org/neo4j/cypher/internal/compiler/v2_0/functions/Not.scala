@@ -20,17 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
+import symbols._
 
-case object Not extends PredicateFunction {
+case object Not extends PredicateFunction with SimpleTypedFunction {
   def name = "NOT"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) then
-    invocation.arguments.expectType(T <:< CTBoolean) then
-    invocation.specifyType(CTBoolean)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTBoolean), outputType = CTBoolean)
+  )
 
-  protected def internalToPredicate(invocation: FunctionInvocation) = commands.Not(invocation.arguments(0).toPredicate)
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) = commands.Not(invocation.arguments(0).toPredicate)
 }

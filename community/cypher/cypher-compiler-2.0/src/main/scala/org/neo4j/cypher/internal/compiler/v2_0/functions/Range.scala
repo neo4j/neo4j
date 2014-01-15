@@ -20,20 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
-case object Range extends Function {
+case object Range extends Function with SimpleTypedFunction {
   def name = "range"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, 2) then checkMaxArgs(invocation, 3) then
-    when(invocation.arguments.length >= 2) {
-      invocation.arguments(0).expectType(T <:< CTInteger | T <:< CTLong) then
-      invocation.arguments(1).expectType(T <:< CTInteger | T <:< CTLong)
-    } then when(invocation.arguments.length == 3) {
-      invocation.arguments(2).expectType(T <:< CTInteger | T <:< CTLong)
-    } then invocation.specifyType(CTCollection(CTLong))
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTCollection(CTInteger)),
+    Signature(argumentTypes = Vector(CTInteger, CTInteger, CTInteger), outputType = CTCollection(CTInteger)),
+    Signature(argumentTypes = Vector(CTLong, CTLong), outputType = CTCollection(CTLong)),
+    Signature(argumentTypes = Vector(CTLong, CTLong, CTLong), outputType = CTCollection(CTLong))
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val commands = invocation.arguments.map(_.toCommand)

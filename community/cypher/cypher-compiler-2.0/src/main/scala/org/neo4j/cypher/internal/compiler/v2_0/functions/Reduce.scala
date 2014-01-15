@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
 // this implementation exists only to handle the case where "reduce(x = 0, x in y : foo)" is parsed as a function invocation,
 // rather than a ReduceExpression

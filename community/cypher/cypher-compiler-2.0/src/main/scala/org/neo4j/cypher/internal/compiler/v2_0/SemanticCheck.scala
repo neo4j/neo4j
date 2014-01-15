@@ -26,13 +26,13 @@ object SemanticCheckResult {
 }
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
 
+
 trait SemanticChecking {
-  protected def when(pred: Boolean)(check: => SemanticCheck): SemanticCheck = state => {
+  protected def when(pred: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
     if (pred)
       check(state)
     else
       SemanticCheckResult.success(state)
-  }
 
   private val scopeState: SemanticCheck = state => SemanticCheckResult.success(state.newScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
@@ -45,6 +45,7 @@ class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
     option.fold(SemanticCheckResult.success)(check)
 }
 
+
 class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {
     (r1, o) =>
@@ -52,6 +53,7 @@ class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) ex
       SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
   }
 }
+
 
 class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
   def then(next: SemanticCheck): SemanticCheck = state => {

@@ -22,39 +22,22 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
-import org.scalatest.Assertions
 
-class LabelsTest extends Assertions {
+class LabelsTest extends FunctionTestBase("labels") {
+
+  @Test
+  def shouldFailIfWrongArguments() {
+    testInvalidApplication()("Insufficient parameters for function 'labels'")
+    testInvalidApplication(CTNode, CTNode)("Too many parameters for function 'labels'")
+  }
 
   @Test
   def shouldHaveCollectionOfStringsType() {
-    val nodeIdentifier = ast.Identifier("n", DummyToken(11, 12))
-    val labelsInvocation = ast.FunctionInvocation(
-      ast.Identifier("labels", DummyToken(6, 9)),
-      nodeIdentifier,
-      DummyToken(5,14)
-    )
-
-    val state = SemanticState.clean.declareIdentifier(nodeIdentifier, CTNode).right.get
-    val result = labelsInvocation.semanticCheck(ast.Expression.SemanticContext.Simple)(state)
-    assert(result.errors === Seq())
-    assert(labelsInvocation.types(result.state) === (CTCollection(CTString): TypeSpec))
+    testValidTypes(CTNode)(CTCollection(CTString))
   }
 
   @Test
-  def shouldReturnErrorIfNotANodeArgument() {
-    val nonNodeIdentifier = ast.Identifier("n", DummyToken(11, 12))
-    val labelsInvocation = ast.FunctionInvocation(
-      ast.Identifier("labels", DummyToken(6, 9)),
-      nonNodeIdentifier,
-      DummyToken(5,14)
-    )
-
-    val state = SemanticState.clean.declareIdentifier(nonNodeIdentifier, CTRelationship).right.get
-    val result = labelsInvocation.semanticCheck(ast.Expression.SemanticContext.Simple)(state)
-    assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Type mismatch: expected Node but was Relationship")
-    assert(result.errors.head.token === nonNodeIdentifier.token)
+  def shouldReturnErrorIfInvalidArgumentTypes() {
+    testInvalidApplication(CTLong)("Type mismatch: expected Node but was Long")
   }
-
 }

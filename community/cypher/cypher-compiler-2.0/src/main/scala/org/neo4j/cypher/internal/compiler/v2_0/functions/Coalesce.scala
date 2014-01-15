@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
 case object Coalesce extends Function {
   def name = "coalesce"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, 1) then
+    invocation.arguments.expectType(CTAny.covariant) then
     invocation.specifyType(invocation.arguments.mergeUpTypes)
 
   def toCommand(invocation: ast.FunctionInvocation) =

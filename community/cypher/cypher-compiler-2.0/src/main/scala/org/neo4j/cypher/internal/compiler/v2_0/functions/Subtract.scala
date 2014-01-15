@@ -20,18 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
-case object Subtract extends Function {
-  def name = "-"
+case object Subtract extends Function with SimpleTypedFunction {
+  val name = "-"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, 1) then checkMaxArgs(invocation, 2) then
-    invocation.arguments.expectType(T <:< CTNumber) then
-    invocation.specifyType(CTNumber)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTLong), outputType = CTLong),
+    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble),
+    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTInteger, CTLong), outputType = CTLong),
+    Signature(argumentTypes = Vector(CTLong, CTLong), outputType = CTLong),
+    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
+    Signature(argumentTypes = Vector(CTLong, CTDouble), outputType = CTDouble),
+    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+  )
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def toCommand(invocation: ast.FunctionInvocation) =
     if (invocation.arguments.length == 1) {
       commandexpressions.Subtract(commandexpressions.Literal(0), invocation.arguments(0).toCommand)
     } else {
@@ -39,5 +46,4 @@ case object Subtract extends Function {
       val right = invocation.arguments(1)
       commandexpressions.Subtract(left.toCommand, right.toCommand)
     }
-  }
 }

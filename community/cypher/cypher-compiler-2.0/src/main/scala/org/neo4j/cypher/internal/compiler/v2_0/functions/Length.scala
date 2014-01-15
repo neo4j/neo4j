@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
-case object Length extends Function {
+case object Length extends Function with SimpleTypedFunction {
   def name = "length"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) then
-    invocation.arguments.expectType(T <:< CTCollection(CTAny) | T <:< CTPath | T <:< CTString) then
-    invocation.specifyType(CTLong)
+  val signatures = Vector(
+    Signature(Vector(CTString), CTLong),
+    Signature(Vector(CTCollection(CTAny)), CTLong),
+    Signature(Vector(CTPath), CTLong)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.LengthFunction(invocation.arguments(0).toCommand)

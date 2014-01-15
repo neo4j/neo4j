@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import ast.FunctionInvocation
 import commands.{Predicate => CommandPredicate}
 import commands.expressions.{Expression => CommandExpression}
+import symbols._
 import org.neo4j.cypher.SyntaxException
 
 object Function {
-  private val knownFunctions = Seq(
+  private val knownFunctions: Seq[Function] = Vector(
     functions.Abs,
     functions.Acos,
     functions.Add,
@@ -111,54 +111,94 @@ object Function {
     functions.Xor
   )
 
-  val lookup : Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
+  val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
 }
 
 abstract class Function extends SemanticChecking {
-  def name : String
+  def name: String
 
-  def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(invocation.distinct) {
       SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.token)
     } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
 
-  protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck
+  protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck
 
-  protected def checkArgs(invocation: ast.FunctionInvocation, n: Int) : Option[SemanticError] = {
-    Seq(checkMinArgs(invocation, n), checkMaxArgs(invocation, n)).flatten.headOption
-  }
+  protected def checkArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+    Vector(checkMinArgs(invocation, n), checkMaxArgs(invocation, n)).flatten.headOption
 
-  protected def checkMaxArgs(invocation: ast.FunctionInvocation, n: Int) : Option[SemanticError] = {
+  protected def checkMaxArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length > n)
       Some(SemanticError(s"Too many parameters for function '$name'", invocation.token))
     else
       None
-  }
 
-  protected def checkMinArgs(invocation: ast.FunctionInvocation, n: Int) : Option[SemanticError] = {
+  protected def checkMinArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length < n)
       Some(SemanticError(s"Insufficient parameters for function '$name'", invocation.token))
     else
       None
-  }
 
-  def toCommand(invocation: ast.FunctionInvocation) : CommandExpression
+  def toCommand(invocation: ast.FunctionInvocation): CommandExpression
 
   def toPredicate(invocation: ast.FunctionInvocation): CommandPredicate =
     throw new SyntaxException(s"Expression must return a boolean")
 }
 
+
+trait SimpleTypedFunction { self: Function =>
+  case class Signature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
+
+  val signatures: Seq[Signature]
+
+  private lazy val signatureLengths = signatures.map(_.argumentTypes.length)
+
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    checkMinArgs(invocation, signatureLengths.min) then checkMaxArgs(invocation, signatureLengths.max) then
+    checkTypes(invocation)
+
+  private def checkTypes(invocation: ast.FunctionInvocation): SemanticCheck = s => {
+    val initSignatures = signatures.filter(_.argumentTypes.length == invocation.arguments.length)
+
+    val (remainingSignatures: Seq[Signature], result) = invocation.arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {
+      case (accumulator@(Seq(), _), _) =>
+        accumulator
+      case ((possibilities, r1), arg)  =>
+        val argTypes = possibilities.foldLeft(TypeSpec.none) { (ts, sig) => ts | (T <:< sig.argumentTypes.head) }
+        val r2 = arg.expectType(argTypes)(r1.state)
+
+        val actualTypes = arg.types(r2.state)
+        val remainingPossibilities = possibilities.filter {
+          sig => actualTypes containsAny (T <:< sig.argumentTypes.head)
+        } map {
+          sig => sig.copy(argumentTypes = sig.argumentTypes.tail)
+        }
+        (remainingPossibilities, SemanticCheckResult(r2.state, r1.errors ++ r2.errors))
+    }
+
+    val outputType = remainingSignatures match {
+      case Seq() => T <:< CTAny
+      case _     => remainingSignatures.foldLeft(TypeSpec.none) { _ | _.outputType }
+    }
+    invocation.specifyType(outputType)(result.state) match {
+      case Left(err)    => SemanticCheckResult(result.state, result.errors :+ err)
+      case Right(state) => SemanticCheckResult(state, result.errors)
+    }
+  }
+}
+
+
 abstract class PredicateFunction extends Function {
-  def toCommand(invocation: FunctionInvocation): CommandExpression = internalToPredicate(invocation)
+  def toCommand(invocation: ast.FunctionInvocation): CommandExpression = internalToPredicate(invocation)
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) : CommandPredicate
+  protected def internalToPredicate(invocation: ast.FunctionInvocation): CommandPredicate
 
-  override def toPredicate(invocation: ast.FunctionInvocation) : CommandPredicate = internalToPredicate(invocation)
+  override def toPredicate(invocation: ast.FunctionInvocation): CommandPredicate = internalToPredicate(invocation)
 }
 
 
 abstract class AggregatingFunction extends Function {
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.token)
     } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)

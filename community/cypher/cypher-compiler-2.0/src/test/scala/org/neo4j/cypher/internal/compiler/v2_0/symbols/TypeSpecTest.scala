@@ -374,6 +374,7 @@ class TypeSpecTest extends Assertions {
     assertNotEquals(T <:< CTNumber, T <:< CTNumber | T <:< CTString)
 
     assertEquals(T, T)
+    assertEquals(T, T <:< CTAny)
     assertEquals(T <:< CTCollection(CTAny), T <:< CTCollection(CTAny))
     assertEquals(T <:< CTCollection(CTAny), T <:< CTCollection(CTAny))
 

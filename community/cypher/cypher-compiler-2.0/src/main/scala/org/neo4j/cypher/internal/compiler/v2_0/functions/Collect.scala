@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
 case object Collect extends AggregatingFunction  {
   def name = "collect"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      val arg = invocation.arguments(0)
-      invocation.specifyType(arg.types(_).wrapInCollection)
+      invocation.arguments(0).expectType(CTAny.covariant) then
+      invocation.specifyType(invocation.arguments(0).types(_).wrapInCollection)
     }
 
   def toCommand(invocation: ast.FunctionInvocation) = {

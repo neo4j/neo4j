@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.{expressions => commandexpressions}
 import symbols._
 
-case object Timestamp extends Function {
+case object Timestamp extends Function with SimpleTypedFunction {
   def name = "timestamp"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 0) then
-    invocation.specifyType(CTLong)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(), outputType = CTLong)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.TimestampFunction()

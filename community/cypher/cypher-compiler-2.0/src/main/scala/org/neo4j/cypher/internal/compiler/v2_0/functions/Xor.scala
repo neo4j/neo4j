@@ -20,19 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
+import symbols._
 
-case object Xor extends PredicateFunction {
+case object Xor extends PredicateFunction with SimpleTypedFunction {
   def name = "XOR"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) then
-//    invocation.arguments.constrainType(CTBoolean) then // TODO: should constrain to boolean, when coercion is possible
-    invocation.specifyType(CTBoolean)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
+  )
 
-
-  protected def internalToPredicate(invocation: FunctionInvocation) =
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
     commands.Xor(invocation.arguments(0).toPredicate, invocation.arguments(1).toPredicate)
 }

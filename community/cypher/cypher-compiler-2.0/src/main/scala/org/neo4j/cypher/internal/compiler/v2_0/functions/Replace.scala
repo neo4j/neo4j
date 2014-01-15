@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
-case object Replace extends Function {
+case object Replace extends Function with SimpleTypedFunction {
   def name = "replace"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 3) then
-    invocation.arguments.expectType(T <:< CTString) then
-    invocation.specifyType(CTString)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTString, CTString, CTString), outputType = CTString)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val commands = invocation.arguments.map(_.toCommand)

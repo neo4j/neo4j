@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
-case object Log10 extends Function {
+case object Log10 extends Function with SimpleTypedFunction {
   def name = "log10"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) then
-    invocation.arguments.expectType(T <:< CTNumber) then
-    invocation.specifyType(CTDouble)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.Log10Function(invocation.arguments(0).toCommand)
