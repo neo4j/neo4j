@@ -42,8 +42,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.IteratorUtil.primitiveLongIterator;
 
-public class
-        NodeProxySingleRelationshipTest
+public class NodeProxySingleRelationshipTest
 {
     private static final long REL_ID = 1;
     private static final RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );

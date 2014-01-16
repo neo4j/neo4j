@@ -347,36 +347,49 @@ public class XaResourceManager
         }
     }
 
-    synchronized int prepare( Xid xid ) throws XAException
+    /*synchronized(this) in the method*/ int prepare( Xid xid ) throws XAException
     {
-        XidStatus status = xidMap.get( xid );
-        if ( status == null )
+        XidStatus status;
+        XaTransaction xaTransaction;
+        TransactionStatus txStatus;
+
+        synchronized ( this )
         {
-            throw new XAException( "Unknown xid[" + xid + "]" );
-        }
-        TransactionStatus txStatus = status.getTransactionStatus();
-        XaTransaction xaTransaction = txStatus.getTransaction();
-        checkStartWritten( txStatus, xaTransaction );
-        if ( xaTransaction.isReadOnly() )
-        {
-            // Called here to release locks of two-phase read-only transactions
-            // cf. TransactionImpl.doCommit() and commit()
-            commitKernelTx( xaTransaction );
-            log.done( xaTransaction.getIdentifier() );
-            xidMap.remove( xid );
-            if ( xaTransaction.isRecovered() )
+            status = xidMap.get( xid );
+            if ( status == null )
             {
-                recoveredTxCount--;
-                checkIfRecoveryComplete();
+                throw new XAException( "Unknown xid[" + xid + "]" );
             }
-            return XAResource.XA_RDONLY;
+            txStatus = status.getTransactionStatus();
+            xaTransaction = txStatus.getTransaction();
         }
-        else
+
+        prepareKernelTx( xaTransaction );
+
+        synchronized ( this )
         {
-            xaTransaction.prepare();
-            log.prepare( xaTransaction.getIdentifier() );
-            txStatus.markAsPrepared();
-            return XAResource.XA_OK;
+            checkStartWritten( txStatus, xaTransaction );
+            if ( xaTransaction.isReadOnly() )
+            {
+                // Called here to release locks of two-phase read-only transactions
+                // cf. TransactionImpl.doCommit() and commit()
+                commitKernelTx( xaTransaction );
+                log.done( xaTransaction.getIdentifier() );
+                xidMap.remove( xid );
+                if ( xaTransaction.isRecovered() )
+                {
+                    recoveredTxCount--;
+                    checkIfRecoveryComplete();
+                }
+                return XAResource.XA_RDONLY;
+            }
+            else
+            {
+                xaTransaction.prepare();
+                log.prepare( xaTransaction.getIdentifier() );
+                txStatus.markAsPrepared();
+                return XAResource.XA_OK;
+            }
         }
     }
 
@@ -460,6 +473,7 @@ public class XaResourceManager
             throws XAException
     {
         XaTransaction xaTransaction;
+        TransactionStatus txStatus;
         boolean isReadOnly;
 
         synchronized ( this )
@@ -469,11 +483,18 @@ public class XaResourceManager
             {
                 throw new XAException( "Unknown xid[" + xid + "]" );
             }
-            TransactionStatus txStatus = status.getTransactionStatus();
+            txStatus = status.getTransactionStatus();
             xaTransaction = txStatus.getTransaction();
-            TxIdGenerator txIdGenerator = xaTransaction.getTxIdGenerator();
             isReadOnly = xaTransaction.isReadOnly();
+        }
 
+        if ( onePhase && (!isReadOnly && !xaTransaction.isRecovered()) )
+        {
+            prepareKernelTx( xaTransaction );
+        }
+
+        synchronized ( this )
+        {
             if(isReadOnly)
             {
                 // called for one-phase read-only transactions since they skip prepare
@@ -754,7 +775,7 @@ public class XaResourceManager
     {
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
         {
-            msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
+            msgLog.info( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
             // log.makeNewLog();
             tf.recoveryComplete();
             try
@@ -774,17 +795,12 @@ public class XaResourceManager
                 }
                 recoveredTransactions.clear();
             }
-            catch ( IOException e )
+            catch ( IOException | XAException e )
             {
-                // TODO Why only printStackTrace?
-                e.printStackTrace();
+                // TODO: Why are we not throwing this?
+                msgLog.error( "Recovery error while committing unrecovered exception.", e );
             }
-            catch ( XAException e )
-            {
-                // TODO Why only printStackTrace?
-                e.printStackTrace();
-            }
-            msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
+            msgLog.info( "XaResourceManager[" + name + "] recovery completed." );
         }
     }
 
@@ -855,6 +871,16 @@ public class XaResourceManager
     XaDataSource getDataSource()
     {
         return dataSource;
+    }
+
+    private void prepareKernelTx( XaTransaction xaTransaction ) throws XAException
+    {
+        if ( !(xaTransaction instanceof NeoStoreTransaction) )
+        {
+            return;
+        }
+
+        ((NeoStoreTransaction)xaTransaction).kernelTransaction().prepare();
     }
 
     private void commitKernelTx( XaTransaction xaTransaction ) throws XAException
