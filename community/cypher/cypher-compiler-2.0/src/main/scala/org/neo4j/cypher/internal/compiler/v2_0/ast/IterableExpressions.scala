@@ -46,7 +46,7 @@ trait FilteringExpression extends Expression {
       SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
     }
 
-  protected def possibleInnerTypes : TypeGenerator = s =>
+  protected def possibleInnerTypes: TypeGenerator = s =>
     (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
 
   private def checkInnerPredicate: SemanticCheck = innerPredicate match {
@@ -56,8 +56,8 @@ trait FilteringExpression extends Expression {
     case None    => SemanticCheckResult.success
   }
 
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) : CommandExpression
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : CommandPredicate
+  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate): CommandExpression
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate): CommandPredicate
 
   override def toCommand = {
     val command = expression.toCommand
@@ -73,7 +73,7 @@ trait FilteringExpression extends Expression {
 }
 
 
-case class FilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends FilteringExpression {
+case class FilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends FilteringExpression {
   val name = "filter"
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -91,8 +91,7 @@ case class ExtractExpression(
     identifier: Identifier,
     expression: Expression,
     innerPredicate: Option[Expression],
-    extractExpression: Option[Expression],
-    token: InputToken) extends FilteringExpression
+    extractExpression: Option[Expression])(val token: InputToken) extends FilteringExpression
 {
   val name = "extract"
 
@@ -107,7 +106,7 @@ case class ExtractExpression(
       SemanticError(s"$name(...) requires '| expression' (an extract expression)", token)
     }
 
-  private def checkInnerExpression : SemanticCheck =
+  private def checkInnerExpression: SemanticCheck =
     extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
         identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
@@ -129,8 +128,7 @@ case class ListComprehension(
     identifier: Identifier,
     expression: Expression,
     innerPredicate: Option[Expression],
-    extractExpression: Option[Expression],
-    token: InputToken) extends FilteringExpression
+    extractExpression: Option[Expression])(val token: InputToken) extends FilteringExpression
 {
   val name = "[...]"
 
@@ -169,37 +167,37 @@ sealed trait IterablePredicateExpression extends FilteringExpression {
     super.semanticCheck(ctx) then
     this.specifyType(CTBoolean)
 
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) : commands.Predicate
+  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate): commands.Predicate
 
   def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) =
     toPredicate(command, identifier.name, inner)
 }
 
-case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
+case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "all"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
     commands.AllInCollection(command, identifier.name, inner)
 }
 
-case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
+case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "any"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
     commands.AnyInCollection(command, identifier.name, inner)
 }
 
-case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
+case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "none"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
     commands.NoneInCollection(command, identifier.name, inner)
 }
 
-case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression], token: InputToken) extends IterablePredicateExpression {
+case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "single"
   def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
     commands.SingleInCollection(command, identifier.name, inner)
 }
 
-case class ReduceExpression(accumulator: Identifier, init: Expression, id: Identifier, collection: Expression, expression: Expression, token: InputToken) extends Expression {
+case class ReduceExpression(accumulator: Identifier, init: Expression, id: Identifier, collection: Expression, expression: Expression)(val token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) then
     collection.semanticCheck(ctx) then

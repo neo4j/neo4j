@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{values => commandvalues
 import org.neo4j.cypher.internal.compiler.v2_0.mutation
 
 sealed trait RemoveItem extends AstNode with SemanticCheckable {
-  def toLegacyUpdateAction : mutation.UpdateAction
+  def toLegacyUpdateAction: mutation.UpdateAction
 }
 
-case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends RemoveItem {
+case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends RemoveItem {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTNode.covariant)

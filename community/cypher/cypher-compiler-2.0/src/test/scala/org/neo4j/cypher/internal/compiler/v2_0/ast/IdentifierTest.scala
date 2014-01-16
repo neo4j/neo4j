@@ -30,7 +30,7 @@ class IdentifierTest extends Assertions {
   @Test
   def shouldDefineIdentifierDuringSemanticCheckWhenUndefined() {
     val token = DummyToken(0, 1)
-    val identifier = Identifier("x", token)
+    val identifier = Identifier("x")(token)
 
     val result = identifier.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(1, result.errors.size)

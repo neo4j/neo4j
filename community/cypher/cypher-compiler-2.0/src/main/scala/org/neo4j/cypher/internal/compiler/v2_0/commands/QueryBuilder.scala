@@ -22,100 +22,56 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands
 import expressions.{ParameterExpression, Literal, Expression, AggregationExpression}
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.UpdateAction
 
-class QueryBuilder(var startItems: Seq[StartItem] = Seq()) {
-  var updates = Seq[UpdateAction]()
-  var matching: Seq[Pattern] = Seq()
-  var where: Predicate = True()
-  var optional: Boolean = false
-  var aggregation: Option[Seq[AggregationExpression]] = None
-  var orderBy: Seq[SortItem] = Seq()
-  var skip: Option[Expression] = None
-  var limit: Option[Expression] = None
-  var namedPaths: Seq[NamedPath] = Seq()
-  var using: Seq[StartItem with Hint] = Seq()
-  var tail: Option[Query] = None
-  var columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList
+case class QueryBuilder(
+  startItems: Seq[StartItem] = Seq(),
+  updates: Seq[UpdateAction] = Seq(),
+  matching: Seq[Pattern] = Seq(),
+  where: Predicate = True(),
+  optional: Boolean = false,
+  aggregation: Option[Seq[AggregationExpression]] = None,
+  orderBy: Seq[SortItem] = Seq(),
+  skip: Option[Expression] = None,
+  limit: Option[Expression] = None,
+  namedPaths: Seq[NamedPath] = Seq(),
+  using: Seq[StartItem with Hint] = Seq(),
+  tail: Option[Query] = None,
+  columns: Seq[ReturnColumn] => List[String] = (returnItems) => returnItems.map(_.name).toList) {
 
-  def startItems(items: StartItem*): QueryBuilder = store {
-    startItems = items
-  }
+  def startItems(items: StartItem*): QueryBuilder = copy(startItems = items)
 
-  def matches(patterns: Pattern*): QueryBuilder = store {
-    matching = patterns
-  }
+  def matches(patterns: Pattern*): QueryBuilder = copy(matching = patterns)
 
-  def makeOptional() = store {
-    optional = true
-  }
+  def makeOptional() = copy(optional = true)
 
-  def isOptional(opt:Boolean) = store {
-    optional = opt
-  }
+  def isOptional(opt:Boolean) = copy(optional = opt)
 
-  def updates(cmds: UpdateAction*): QueryBuilder = store {
-    updates = cmds
-  }
+  def updates(cmds: UpdateAction*): QueryBuilder = copy(updates = cmds)
 
-  def using(indexHints:StartItem with Hint*): QueryBuilder  = store {
-    this.using = indexHints.toSeq
-  }
+  def using(indexHints:StartItem with Hint*): QueryBuilder = copy(using = indexHints.toSeq)
 
-  def where(predicate: Predicate): QueryBuilder = store {
-    where = predicate
-  }
+  def where(predicate: Predicate): QueryBuilder = copy(where = predicate)
 
-  def aggregation(aggregationItems: AggregationExpression*): QueryBuilder = store {
-    aggregation = Some(aggregationItems)
-  }
+  def aggregation(aggregationItems: AggregationExpression*): QueryBuilder = copy(aggregation = Some(aggregationItems))
 
-  def orderBy(sortItems: SortItem*): QueryBuilder = store {
-    orderBy = sortItems
-  }
+  def orderBy(sortItems: SortItem*): QueryBuilder = copy(orderBy = sortItems)
 
-  def skip(skipTo: Int): QueryBuilder = store {
-    skip = Some(Literal(skipTo))
-  }
+  def skip(skipTo: Int): QueryBuilder = copy(skip = Some(Literal(skipTo)))
+  def skip(skipTo: String): QueryBuilder = copy(skip = Some(ParameterExpression(skipTo)))
+  def skip(skipTo: Expression): QueryBuilder = copy(skip = Some(skipTo))
 
-  def skip(skipTo: String): QueryBuilder = store {
-    skip = Some(ParameterExpression(skipTo))
-  }
+  def limit(limitTo: Int): QueryBuilder = copy(limit = Some(Literal(limitTo)))
+  def limit(limitTo: String): QueryBuilder = copy(limit = Some(ParameterExpression(limitTo)))
+  def limit(limitTo: Expression): QueryBuilder = copy(limit = Some(limitTo))
 
-  def skip(skipTo: Expression): QueryBuilder = store {
-    skip = Some(skipTo)
-  }
+  def namedPaths(paths: NamedPath*): QueryBuilder = copy(namedPaths = paths)
 
-  def limit(limitTo: Int): QueryBuilder = store {
-    limit = Some(Literal(limitTo))
-  }
+  def columns(columnList: String*): QueryBuilder = copy(columns = (x) => columnList.toList)
 
-  def limit(limitTo: String): QueryBuilder = store {
-    limit = Some(ParameterExpression(limitTo))
-  }
-
-  def limit(limitTo: Expression): QueryBuilder = store {
-    limit = Some(limitTo)
-  }
-
-  def namedPaths(paths: NamedPath*): QueryBuilder = store {
-    namedPaths = paths
-  }
-
-  def columns(columnList: String*): QueryBuilder = store {
-    columns = (x) => columnList.toList
-  }
-
-  def tail(q: Query): QueryBuilder = store {
-    tail = Some(q)
-  }
+  def tail(q: Query): QueryBuilder = copy(tail = Some(q))
 
   def slice: Option[Slice] = (skip, limit) match {
     case (None, None) => None
     case (s, l) => Some(Slice(skip, limit))
-  }
-
-  private def store(f: => Unit): QueryBuilder = {
-    f
-    this
   }
 
   def returns(returnItems: ReturnColumn*): Query = if (optional && startItems.nonEmpty) {

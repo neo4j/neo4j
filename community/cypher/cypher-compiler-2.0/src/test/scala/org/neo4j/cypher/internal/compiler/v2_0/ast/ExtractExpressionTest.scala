@@ -28,8 +28,8 @@ import org.scalatest.Assertions
 class ExtractExpressionTest extends Assertions {
 
   val dummyExpression = DummyExpression(
-    CTCollection(CTNode) | CTBoolean | CTCollection(CTString),
-    DummyToken(2,3))
+    CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
+  )
 
   val extractExpression = new Expression with SimpleTypedExpression {
     def token: InputToken = DummyToken(2,3)
@@ -40,7 +40,7 @@ class ExtractExpressionTest extends Assertions {
 
   @Test
   def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
-    val extract = ExtractExpression(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
+    val extract = ExtractExpression(Identifier("x")(DummyToken(5,6)), dummyExpression, None, Some(extractExpression))(DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), extract.types(result.state))
@@ -48,14 +48,14 @@ class ExtractExpressionTest extends Assertions {
 
   @Test
   def shouldRaiseSemanticErrorIfPredicateSpecified() {
-    val extract = ExtractExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, Some(True(DummyToken(5,6))), Some(extractExpression), DummyToken(0, 10))
+    val extract = ExtractExpression(Identifier("x")(DummyToken(5, 6)), dummyExpression, Some(True()(DummyToken(5,6))), Some(extractExpression))(DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("extract(...) should not contain a WHERE predicate", DummyToken(0, 10))), result.errors)
   }
 
   @Test
   def shouldRaiseSemanticErrorIfMissingExtractExpression() {
-    val extract = ExtractExpression(Identifier("x", DummyToken(5, 6)), dummyExpression, None, None, DummyToken(0, 10))
+    val extract = ExtractExpression(Identifier("x")(DummyToken(5, 6)), dummyExpression, None, None)(DummyToken(0, 10))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("extract(...) requires '| expression' (an extract expression)", DummyToken(0, 10))), result.errors)
   }

@@ -43,12 +43,12 @@ class ReduceExpressionTest extends Assertions {
     }
 
     val filter = ReduceExpression(
-      accumulator = Identifier("x", DummyToken(2,3)),
-      init = DummyExpression(CTString, DummyToken(4, 5)),
-      id = Identifier("y", DummyToken(6, 7)),
-      collection = DummyExpression(CTCollection(CTInteger), DummyToken(8,9)),
-      expression = reduceExpression,
-      token = DummyToken(0, 12))
+      accumulator = Identifier("x")(DummyToken(2,3)),
+      init = DummyExpression(CTString),
+      id = Identifier("y")(DummyToken(6, 7)),
+      collection = DummyExpression(CTCollection(CTInteger)),
+      expression = reduceExpression
+    )(DummyToken(0, 12))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq(error))
@@ -73,12 +73,12 @@ class ReduceExpressionTest extends Assertions {
     }
 
     val filter = ReduceExpression(
-      accumulator = Identifier("x", DummyToken(2,3)),
-      init = DummyExpression(initType, DummyToken(4, 5)),
-      id = Identifier("y", DummyToken(6, 7)),
-      collection = DummyExpression(collectionType, DummyToken(8,9)),
-      expression = reduceExpression,
-      token = DummyToken(0, 12))
+      accumulator = Identifier("x")(DummyToken(2,3)),
+      init = DummyExpression(initType),
+      id = Identifier("y")(DummyToken(6, 7)),
+      collection = DummyExpression(collectionType),
+      expression = reduceExpression
+    )(DummyToken(0, 12))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
@@ -102,12 +102,12 @@ class ReduceExpressionTest extends Assertions {
     }
 
     val filter = ReduceExpression(
-      accumulator = Identifier("x", DummyToken(2,3)),
-      init = DummyExpression(accumulatorType, DummyToken(4, 5)),
-      id = Identifier("y", DummyToken(6, 7)),
-      collection = DummyExpression(collectionType, DummyToken(8,9)),
-      expression = reduceExpression,
-      token = DummyToken(0, 12))
+      accumulator = Identifier("x")(DummyToken(2,3)),
+      init = DummyExpression(accumulatorType),
+      id = Identifier("y")(DummyToken(6, 7)),
+      collection = DummyExpression(collectionType),
+      expression = reduceExpression
+    )(DummyToken(0, 12))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors.size === 1)

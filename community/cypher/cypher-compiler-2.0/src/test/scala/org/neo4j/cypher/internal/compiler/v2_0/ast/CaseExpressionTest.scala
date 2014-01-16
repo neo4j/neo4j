@@ -30,19 +30,18 @@ class CaseExpressionTest extends Assertions {
   @Test
   def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
     val caseExpression = CaseExpression(
-      Some(DummyExpression(CTString, DummyToken(2, 3))),
-      Seq(
+      expression = Some(DummyExpression(CTString)),
+      alternatives = Seq(
         (
-          DummyExpression(CTString, DummyToken(5, 7)),
-          DummyExpression(CTDouble, DummyToken(10, 11))
+          DummyExpression(CTString),
+          DummyExpression(CTDouble)
         ), (
-          DummyExpression(CTString, DummyToken(12, 15)),
-          DummyExpression(CTInteger, DummyToken(17, 20))
+          DummyExpression(CTString),
+          DummyExpression(CTInteger)
         )
       ),
-      Some(DummyExpression(CTDouble, DummyToken(22, 25))),
-      DummyToken(2, 25)
-    )
+      default = Some(DummyExpression(CTDouble))
+    )(DummyToken(2, 25))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
@@ -55,16 +54,15 @@ class CaseExpressionTest extends Assertions {
       None,
       Seq(
         (
-          DummyExpression(CTBoolean, DummyToken(5, 7)),
-          DummyExpression(CTDouble | CTString, DummyToken(10, 11))
+          DummyExpression(CTBoolean),
+          DummyExpression(CTDouble | CTString)
         ), (
-          DummyExpression(CTBoolean, DummyToken(12, 15)),
-          DummyExpression(CTInteger, DummyToken(17, 20))
+          DummyExpression(CTBoolean),
+          DummyExpression(CTInteger)
         )
       ),
-      Some(DummyExpression(CTDouble | CTNode, DummyToken(22, 25))),
-      DummyToken(2, 25)
-    )
+      Some(DummyExpression(CTDouble | CTNode))
+    )(DummyToken(2, 25))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
@@ -77,16 +75,15 @@ class CaseExpressionTest extends Assertions {
       None,
       Seq(
         (
-          DummyExpression(CTBoolean, DummyToken(5, 7)),
-          DummyExpression(CTDouble, DummyToken(10, 11))
+          DummyExpression(CTBoolean),
+          DummyExpression(CTDouble)
         ), (
           DummyExpression(CTString, DummyToken(12, 15)),
-          DummyExpression(CTInteger, DummyToken(17, 20))
+          DummyExpression(CTInteger)
         )
       ),
-      Some(DummyExpression(CTDouble, DummyToken(22, 25))),
-      DummyToken(2, 25)
-    )
+      Some(DummyExpression(CTDouble))
+    )(DummyToken(2, 25))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors.size === 1)

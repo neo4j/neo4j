@@ -29,12 +29,11 @@ import org.scalatest.Assertions
 class ListComprehensionTest extends Assertions {
 
   val dummyExpression = DummyExpression(
-    CTCollection(CTNode) | CTBoolean | CTCollection(CTString),
-    DummyToken(2,3))
+    CTCollection(CTNode) | CTBoolean | CTCollection(CTString))
 
   @Test
   def withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression() {
-    val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, None, DummyToken(0, 10))
+    val filter = ListComprehension(Identifier("x")(DummyToken(5,6)), dummyExpression, None, None)(DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
@@ -49,7 +48,7 @@ class ListComprehensionTest extends Assertions {
       def toCommand = ???
     }
 
-    val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
+    val filter = ListComprehension(Identifier("x")(DummyToken(5,6)), dummyExpression, None, Some(extractExpression))(DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), filter.types(result.state))
@@ -68,7 +67,7 @@ class ListComprehensionTest extends Assertions {
       def toCommand = ???
     }
 
-    val filter = ListComprehension(Identifier("x", DummyToken(2,3)), dummyExpression, Some(predicate), None, DummyToken(0, 10))
+    val filter = ListComprehension(Identifier("x")(DummyToken(2,3)), dummyExpression, Some(predicate), None)(DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(error), result.errors)
     assertEquals(None, result.state.symbol("x"))

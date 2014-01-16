@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-case class Where(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
+case class Where(expression: Expression)(val token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTBoolean.covariant)

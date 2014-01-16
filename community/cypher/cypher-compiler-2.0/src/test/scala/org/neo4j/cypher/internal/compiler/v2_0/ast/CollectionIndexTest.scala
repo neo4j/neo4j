@@ -24,18 +24,16 @@ import symbols._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.junit.Assert._
-import scala.collection.immutable.SortedSet
 
 class CollectionIndexTest extends Assertions {
   val dummyCollection = DummyExpression(
-    CTCollection(CTNode) | CTNode | CTCollection(CTString),
-    DummyToken(2,3))
+    CTCollection(CTNode) | CTNode | CTCollection(CTString))
 
   @Test
   def shouldReturnCollectionInnerTypesOfExpression() {
     val index = CollectionIndex(dummyCollection,
-      SignedIntegerLiteral("1", DummyToken(5,6)),
-      DummyToken(4, 8))
+      SignedIntegerLiteral("1")(DummyToken(5,6))
+    )(DummyToken(4, 8))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
@@ -45,8 +43,8 @@ class CollectionIndexTest extends Assertions {
   @Test
   def shouldRaiseErrorIfIndexingByFraction() {
     val index = CollectionIndex(dummyCollection,
-      DoubleLiteral("1.3", DummyToken(5,6)),
-      DummyToken(4, 8))
+      DoubleLiteral("1.3")(DummyToken(5,6))
+    )(DummyToken(4, 8))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", index.idx.token)), result.errors)

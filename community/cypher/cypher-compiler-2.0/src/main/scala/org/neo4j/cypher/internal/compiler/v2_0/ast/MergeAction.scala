@@ -32,13 +32,13 @@ sealed trait MergeAction extends AstNode with SemanticCheckable {
   def semanticCheck: SemanticCheck = action.semanticCheck
 }
 
-case class OnCreate(action: SetClause, token: InputToken) extends MergeAction {
+case class OnCreate(action: SetClause)(val token: InputToken) extends MergeAction {
   val name = "ON CREATE"
 
   def verb: Action = On.Create
 }
 
-case class OnMatch(action: SetClause, token: InputToken) extends MergeAction {
+case class OnMatch(action: SetClause)(val token: InputToken) extends MergeAction {
   val name = "ON MATCH"
 
   def verb: Action = On.Match

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 trait Statement extends AstNode {
-  def semanticCheck : SemanticCheck
+  def semanticCheck: SemanticCheck
 
-  def toLegacyQuery : commands.AbstractQuery
+  def toLegacyQuery: commands.AbstractQuery
 }
