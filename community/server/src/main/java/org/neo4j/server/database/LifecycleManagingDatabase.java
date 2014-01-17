@@ -19,12 +19,9 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -34,8 +31,6 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.logging.Logger;
-
-import static org.neo4j.kernel.logging.LogbackWeakDependency.logbackOrDefaultToClassic;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -70,9 +65,9 @@ public class LifecycleManagingDatabase implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            public Database newDatabase( Config config, Function<Config, Logging> loggingProvider )
             {
-                return new LifecycleManagingDatabase( config, graphDbFactory, kernelExtensions );
+                return new LifecycleManagingDatabase( config, graphDbFactory, loggingProvider );
             }
         };
     }
@@ -81,18 +76,19 @@ public class LifecycleManagingDatabase implements Database
 
     private final Config dbConfig;
     private final GraphFactory dbFactory;
-
+    private final Function<Config, Logging> loggingProvider;
     private final GraphDatabaseFactoryState factoryState = new GraphDatabaseFactoryState();
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
+    private ExecutionEngine executionEngine;
 
     public LifecycleManagingDatabase( Config dbConfig, GraphFactory dbFactory,
-                                      Iterable<KernelExtensionFactory<?>> extensions )
+                                      Function<Config, Logging> loggingProvider )
     {
         this.dbConfig = dbConfig;
         this.dbFactory = dbFactory;
-        this.factoryState.addKernelExtensions( extensions );
+        this.loggingProvider = loggingProvider;
     }
 
     @Override
@@ -102,38 +98,15 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public org.neo4j.graphdb.index.Index<Relationship> getRelationshipIndex( String name )
-    {
-        RelationshipIndex index = graph.index().forRelationships( name );
-        if ( index == null )
-        {
-            throw new RuntimeException( "No index for [" + name + "]" );
-        }
-        return index;
-    }
-
-    @Override
-    public org.neo4j.graphdb.index.Index<Node> getNodeIndex( String name )
-    {
-        org.neo4j.graphdb.index.Index<Node> index = graph.index()
-                .forNodes( name );
-        if ( index == null )
-        {
-            throw new RuntimeException( "No index for [" + name + "]" );
-        }
-        return index;
-    }
-
-    @Override
-    public IndexManager getIndexManager()
-    {
-        return graph.index();
-    }
-
-    @Override
     public GraphDatabaseAPI getGraph()
     {
         return graph;
+    }
+
+    @Override
+    public ExecutionEngine executionEngine()
+    {
+        return executionEngine;
     }
 
     @Override
@@ -147,10 +120,11 @@ public class LifecycleManagingDatabase implements Database
         try
         {
             this.graph = dbFactory.newGraphDatabase( dbConfig,
-                    logbackOrDefaultToClassic(),
+                    loggingProvider,
                     factoryState.getKernelExtension(),
                     factoryState.getCacheProviders(),
                     factoryState.getTransactionInterceptorProviders() );
+            this.executionEngine = new ExecutionEngine( graph );
             isRunning = true;
             log.info( "Successfully started database" );
         }
@@ -166,11 +140,11 @@ public class LifecycleManagingDatabase implements Database
     {
         try
         {
-            if ( this.graph != null )
+            if ( graph != null )
             {
-                this.graph.shutdown();
+                graph.shutdown();
                 isRunning = false;
-                this.graph = null;
+                graph = null;
                 log.info( "Successfully stopped database" );
             }
         }

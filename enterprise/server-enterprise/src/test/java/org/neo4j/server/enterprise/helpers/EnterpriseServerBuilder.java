@@ -36,6 +36,7 @@ import org.neo4j.server.rest.web.DatabaseActions;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -77,7 +78,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         public TestEnterpriseNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
         {
             super( propertyFileConfigurator, persistent ? createDbFactory( propertyFileConfigurator.configuration() )
-                                                        : IN_MEMORY_DB  );
+                                                        : lifecycleManagingDatabase( IN_MEMORY_DB )  );
             this.configFile = configFile;
         }
 

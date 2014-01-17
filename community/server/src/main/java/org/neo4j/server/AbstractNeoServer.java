@@ -36,10 +36,9 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -145,11 +144,13 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         this.configurator = configurator;
         this.dbConfig = new Config();
-        this.database = dbFactory.newDatabase( dbConfig, Iterables.<KernelExtensionFactory<?>>empty() );
+        this.logging = new LogbackWeakDependency().tryLoadLogbackService( dbConfig, DEFAULT_TO_CLASSIC );
+
+
+        this.database = dbFactory.newDatabase( dbConfig, Functions.<Config, Logging>constant( logging ));
 
         this.preFlight = createPreflightTasks();
         this.webServer = createWebServer();
-        this.logging = new LogbackWeakDependency().tryLoadLogbackService( dbConfig, DEFAULT_TO_CLASSIC );
 
         for ( ServerModule moduleClass : createServerModules() )
         {

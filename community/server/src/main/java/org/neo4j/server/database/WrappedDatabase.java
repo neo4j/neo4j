@@ -19,26 +19,25 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
 public class WrappedDatabase extends LifecycleAdapter implements Database
 {
     private final GraphDatabaseAPI graph;
+    private final ExecutionEngine executionEngine;
 
     public static Database.Factory wrappedDatabase( final GraphDatabaseAPI db )
     {
         return new Factory()
         {
             @Override
-            public Database newDatabase( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            public Database newDatabase( Config config, Function<Config, Logging> loggingProvider )
             {
                 return new WrappedDatabase( db );
             }
@@ -48,6 +47,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     public WrappedDatabase( GraphDatabaseAPI graph )
     {
         this.graph = graph;
+        this.executionEngine = new ExecutionEngine( graph );
         try
         {
             start();
@@ -66,38 +66,15 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     }
 
     @Override
-    public org.neo4j.graphdb.index.Index<Relationship> getRelationshipIndex( String name )
-    {
-        RelationshipIndex index = graph.index().forRelationships( name );
-        if ( index == null )
-        {
-            throw new RuntimeException( "No index for [" + name + "]" );
-        }
-        return index;
-    }
-
-    @Override
-    public org.neo4j.graphdb.index.Index<Node> getNodeIndex( String name )
-    {
-        org.neo4j.graphdb.index.Index<Node> index = graph.index()
-                .forNodes( name );
-        if ( index == null )
-        {
-            throw new RuntimeException( "No index for [" + name + "]" );
-        }
-        return index;
-    }
-
-    @Override
-    public IndexManager getIndexManager()
-    {
-        return graph.index();
-    }
-
-    @Override
     public GraphDatabaseAPI getGraph()
     {
         return graph;
+    }
+
+    @Override
+    public ExecutionEngine executionEngine()
+    {
+        return executionEngine;
     }
 
     @Override

@@ -83,9 +83,8 @@ public class Config implements DiagnosticsProvider
     public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
     {
         this.settingsFunction = Functions.map( params );
+        this.params.putAll( inputParams );
         registerSettingsClasses( settingsClasses );
-
-        this.applyChanges( inputParams );
     }
 
     /** Add more settings classes. */

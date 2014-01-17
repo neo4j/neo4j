@@ -257,7 +257,7 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            database.getNodeIndex( indexName ).add( database.getGraph().getNodeById( id ), key, value );
+            database.getGraph().index().forNodes( indexName ).add( database.getGraph().getNodeById( id ), key, value );
             tx.success();
         }
         finally
@@ -272,7 +272,7 @@ public class GraphDbHelper
         try
         {
             Collection<Long> result = new ArrayList<>();
-            for ( Node node : database.getNodeIndex( indexName ).query( key, value ) )
+            for ( Node node : database.getGraph().index().forNodes( indexName ).query( key, value ) )
             {
                 result.add( node.getId() );
             }
@@ -291,7 +291,7 @@ public class GraphDbHelper
         try
         {
             Collection<Long> result = new ArrayList<>();
-            for ( Node node : database.getNodeIndex( indexName ).get( key, value ) )
+            for ( Node node : database.getGraph().index().forNodes( indexName ).get( key, value ) )
             {
                 result.add( node.getId() );
             }
@@ -310,7 +310,7 @@ public class GraphDbHelper
         try
         {
             Collection<Long> result = new ArrayList<>();
-            for ( Relationship relationship : database.getRelationshipIndex( indexName ).get( key, value ) )
+            for ( Relationship relationship : database.getGraph().index().forRelationships( indexName ).get( key, value ) )
             {
                 result.add( relationship.getId() );
             }
@@ -328,7 +328,7 @@ public class GraphDbHelper
         Transaction tx = database.getGraph().beginTx();
         try
         {
-            Index<Relationship> index = database.getRelationshipIndex( indexName );
+            Index<Relationship> index = database.getGraph().index().forRelationships( indexName );
             index.add( database.getGraph().getRelationshipById( relationshipId ), key, value );
             tx.success();
         }
@@ -343,8 +343,7 @@ public class GraphDbHelper
         Transaction transaction = database.getGraph().beginTx();
         try
         {
-            return database.getIndexManager()
-                    .nodeIndexNames();
+            return database.getGraph().index().nodeIndexNames();
         }
         finally
         {
@@ -357,8 +356,7 @@ public class GraphDbHelper
         Transaction transaction = database.getGraph().beginTx();
         try
         {
-            Index<Node> index = database.getIndexManager()
-                    .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
+            Index<Node> index = database.getGraph().index().forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
             transaction.success();
             return index;
         }
@@ -373,7 +371,7 @@ public class GraphDbHelper
         Transaction transaction = database.getGraph().beginTx();
         try
         {
-            Index<Node> nodeIndex = database.getIndexManager()
+            Index<Node> nodeIndex = database.getGraph().index()
                     .forNodes( named );
             transaction.success();
             return nodeIndex;
@@ -389,7 +387,7 @@ public class GraphDbHelper
         Transaction transaction = database.getGraph().beginTx();
         try
         {
-            return database.getIndexManager()
+            return database.getGraph().index()
                     .relationshipIndexNames();
         }
         finally
@@ -428,7 +426,7 @@ public class GraphDbHelper
         Transaction transaction = database.getGraph().beginTx();
         try
         {
-            RelationshipIndex relationshipIndex = database.getIndexManager()
+            RelationshipIndex relationshipIndex = database.getGraph().index()
                     .forRelationships( named );
             transaction.success();
             return relationshipIndex;

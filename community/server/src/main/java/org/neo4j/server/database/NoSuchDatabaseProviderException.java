@@ -19,25 +19,17 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
-
-public interface Database extends Lifecycle
+public class NoSuchDatabaseProviderException extends Exception
 {
-    interface Factory
+    private final String provider;
+
+    public NoSuchDatabaseProviderException( String provider )
     {
-
-        Database newDatabase( Config config, Function<Config, Logging> loggingProvider );
+        this.provider = provider;
     }
-    public String getLocation();
 
-    public GraphDatabaseAPI getGraph();
-
-    ExecutionEngine executionEngine();
-
-    public abstract boolean isRunning();
+    public String provider()
+    {
+        return provider;
+    }
 }

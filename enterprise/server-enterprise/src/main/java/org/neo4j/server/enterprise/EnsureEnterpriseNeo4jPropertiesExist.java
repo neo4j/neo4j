@@ -30,8 +30,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.preflight.EnsureNeo4jPropertiesExist;
 
-import static org.neo4j.server.enterprise.EnterpriseNeoServer.DatabaseMode;
-
 public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesExist
 {
     public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
@@ -48,13 +46,13 @@ public class EnsureEnterpriseNeo4jPropertiesExist extends EnsureNeo4jPropertiesE
     protected boolean validateProperties( Properties configProperties )
     {
         String dbMode = configProperties.getProperty( Configurator.DB_MODE_KEY,
-                DatabaseMode.SINGLE.name() );
+                EnterpriseNeoServer.SINGLE );
         dbMode = dbMode.toUpperCase();
-        if ( dbMode.equals( DatabaseMode.SINGLE.name() ) )
+        if ( dbMode.equals( EnterpriseNeoServer.SINGLE ) )
         {
             return true;
         }
-        if ( !dbMode.equals( DatabaseMode.HA.name() ) )
+        if ( !dbMode.equals( EnterpriseNeoServer.HA ) )
         {
             failureMessage = String.format( "Illegal value for %s \"%s\" in %s", Configurator.DB_MODE_KEY, dbMode,
                     Configurator.NEO_SERVER_CONFIG_FILE_KEY );

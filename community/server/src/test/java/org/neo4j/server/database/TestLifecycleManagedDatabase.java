@@ -29,12 +29,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.containsString;
@@ -50,6 +51,10 @@ public class TestLifecycleManagedDatabase
 {
     @Rule
     public Mute mute = muteAll();
+
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
@@ -62,14 +67,14 @@ public class TestLifecycleManagedDatabase
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
         when(dbFactory.newGraphDatabase( any( Config.class ), any(Function.class), any( Iterable.class ),
-                any( Iterable.class ), any( Iterable.class ) )).thenReturn( mock( GraphDatabaseAPI.class) );
+                any( Iterable.class ), any( Iterable.class ) )).thenReturn( dbRule.getGraphDatabaseAPI() );
         theDatabase = newDatabase();
     }
 
     private LifecycleManagingDatabase newDatabase()
     {
         Config dbConfig = new Config(stringMap( GraphDatabaseSettings.store_dir.name(), databaseDirectory.getAbsolutePath() ));
-        return new LifecycleManagingDatabase( dbConfig, dbFactory, Iterables.<KernelExtensionFactory<?>>empty() );
+        return new LifecycleManagingDatabase( dbConfig, dbFactory, Functions.<Config, Logging>constant( new TestLogging() ) );
     }
 
     @After

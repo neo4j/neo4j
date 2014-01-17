@@ -133,7 +133,7 @@ public class PropertyFileConfigurator extends Configurator.Adapter
         }
         catch( IOException e )
         {
-            databaseTuningProperties = new HashMap<String, String>();
+            databaseTuningProperties = new HashMap<>();
         }
     }
 
