@@ -75,7 +75,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**

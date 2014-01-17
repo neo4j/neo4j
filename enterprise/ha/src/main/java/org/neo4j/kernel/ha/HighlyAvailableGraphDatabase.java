@@ -27,7 +27,6 @@ import java.util.Map;
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -389,7 +388,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,
-                msgLog, config, slaves, txManager );
+                msgLog, config, slaves, txManager, jobScheduler );
         return txIdGenerator;
     }
 

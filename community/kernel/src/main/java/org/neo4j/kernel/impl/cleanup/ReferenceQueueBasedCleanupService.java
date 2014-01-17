@@ -29,6 +29,8 @@ import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.unusedResourceCleanup;
+
 class ReferenceQueueBasedCleanupService extends CleanupService implements Runnable
 {
     private volatile boolean running;
@@ -72,7 +74,7 @@ class ReferenceQueueBasedCleanupService extends CleanupService implements Runnab
     public void start()
     {
         running = true;
-        scheduler.scheduleRecurring( this, 1, TimeUnit.SECONDS );
+        scheduler.scheduleRecurring( unusedResourceCleanup, this, 1, TimeUnit.SECONDS );
     }
 
     @Override

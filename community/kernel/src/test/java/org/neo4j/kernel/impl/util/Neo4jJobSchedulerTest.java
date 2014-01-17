@@ -29,6 +29,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 public class Neo4jJobSchedulerTest
 {
@@ -49,7 +50,7 @@ public class Neo4jJobSchedulerTest
 
         // When
         scheduler.start();
-        scheduler.scheduleRecurring( new Runnable()
+        scheduler.scheduleRecurring( indexPopulation, new Runnable()
         {
             public void run()
             {

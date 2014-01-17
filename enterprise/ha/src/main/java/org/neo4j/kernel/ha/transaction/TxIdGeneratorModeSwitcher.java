@@ -33,6 +33,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerator>
@@ -44,12 +45,14 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
     private final Config config;
     private final Slaves slaves;
     private final AbstractTransactionManager tm;
+    private final JobScheduler scheduler;
 
     public TxIdGeneratorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                       DelegateInvocationHandler<TxIdGenerator> delegate, HaXaDataSourceManager xaDsm,
                                       DelegateInvocationHandler<Master> master,
                                       RequestContextFactory requestContextFactory,
-                                      StringLogger msgLog, Config config, Slaves slaves, AbstractTransactionManager tm
+                                      StringLogger msgLog, Config config, Slaves slaves, AbstractTransactionManager tm,
+                                      JobScheduler scheduler
     )
     {
         super( stateMachine, delegate );
@@ -60,12 +63,13 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
         this.config = config;
         this.slaves = slaves;
         this.tm = tm;
+        this.scheduler = scheduler;
     }
 
     @Override
     protected TxIdGenerator getMasterImpl()
     {
-        return new MasterTxIdGenerator( MasterTxIdGenerator.from( config ), msgLog, slaves );
+        return new MasterTxIdGenerator( MasterTxIdGenerator.from( config ), msgLog, slaves, new CommitPusher( scheduler ) );
     }
 
     @Override

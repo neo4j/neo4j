@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Thunk;
@@ -35,16 +34,10 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.Thunks.TRUE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -63,7 +56,7 @@ public class CleanupServiceTest
         service.start();
 
         // THEN
-        verify( scheduler ).scheduleRecurring( Matchers.<Runnable> any(), anyLong(), any( TimeUnit.class ) );
+        verify( scheduler ).scheduleRecurring(  Matchers.<JobScheduler.Group> any(), Matchers.<Runnable> any(), anyLong(), any( TimeUnit.class ) );
     }
 
     @Test
@@ -239,7 +232,7 @@ public class CleanupServiceTest
     private Runnable acquireCleanupTask()
     {
         ArgumentCaptor<Runnable> taskCaptor = ArgumentCaptor.forClass( Runnable.class );
-        verify( scheduler ).scheduleRecurring( taskCaptor.capture(), anyLong(), any( TimeUnit.class ) );
+        verify( scheduler ).scheduleRecurring( any( JobScheduler.Group.class ), taskCaptor.capture(), anyLong(), any( TimeUnit.class ) );
         Runnable task = taskCaptor.getValue();
         return task;
     }

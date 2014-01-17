@@ -28,7 +28,22 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface JobScheduler extends Lifecycle
 {
-    void schedule( Runnable job );
+    /**
+     * This is an exhaustive list of job types that run in the database. It should be expanded as needed for new groups
+     * of jobs.
+     *
+     * For now, this does naming only, but it will allow us to define per-group configuration, such as how to handle
+     * failures, shared threads and (later on) affinity strategies.
+     */
+    enum Group
+    {
+        indexPopulation,
+        masterTransactionPushing,
+        serverTransactionTimeout,
+        unusedResourceCleanup,
+    }
 
-    void scheduleRecurring( Runnable runnable, long period, TimeUnit timeUnit );
+    void schedule( Group group, Runnable job );
+
+    void scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
 }
