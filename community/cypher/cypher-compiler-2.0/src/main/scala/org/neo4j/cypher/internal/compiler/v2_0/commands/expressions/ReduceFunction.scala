@@ -46,7 +46,7 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   def identifierDependencies(expectedType: CypherType) = AnyType
 
   def calculateType(symbols: SymbolTable) = {
-    val iteratorType = collection.evaluateType(CTCollectionAny, symbols).legacyIteratedType
+    val iteratorType = collection.evaluateType(CTCollection(CTAny), symbols).legacyIteratedType
     var innerSymbols = symbols.add(acc, init.evaluateType(CTAny, symbols))
     innerSymbols = innerSymbols.add(id, iteratorType)
     // return expressions's type as the end result for reduce

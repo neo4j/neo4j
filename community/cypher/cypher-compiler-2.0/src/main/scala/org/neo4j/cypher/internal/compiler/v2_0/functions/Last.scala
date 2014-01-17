@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
 case object Last extends Function {
   def name = "last"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments(0).constrainType(CTCollectionAny) then
+      invocation.arguments(0).expectType(CTCollection(CTAny).covariant) then
       invocation.specifyType(possibleInnerTypes(invocation.arguments(0)))
     }
 
-  private def possibleInnerTypes(expression: ast.Expression): TypeGenerator =
-    expression.types(_).collect { case c: CollectionType => c.innerType }
+  private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator = s =>
+    (expression.types(s) constrain CTCollection(CTAny)).unwrapCollections
 
   def toCommand(invocation: ast.FunctionInvocation) =
     commandexpressions.CollectionIndex(

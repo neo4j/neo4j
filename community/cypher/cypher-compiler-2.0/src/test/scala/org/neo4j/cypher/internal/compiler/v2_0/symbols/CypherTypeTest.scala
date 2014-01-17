@@ -28,7 +28,7 @@ class CypherTypeTest extends Assertions {
     assert(CTInteger.parents === Seq(CTNumber, CTAny))
     assert(CTNumber.parents === Seq(CTAny))
     assert(CTAny.parents === Seq())
-    assert(CTCollection(CTString).parents === Seq(CTCollectionAny, CTAny))
+    assert(CTCollection(CTString).parents === Seq(CTCollection(CTAny), CTAny))
   }
 
   @Test
@@ -37,7 +37,6 @@ class CypherTypeTest extends Assertions {
     assert(CTAny.isAssignableFrom(CTString) === true)
     assert(CTCollection(CTString).isAssignableFrom(CTCollection(CTString)) === true)
     assert(CTCollection(CTNumber).isAssignableFrom(CTCollection(CTInteger)) === true)
-    assert(CTInteger.isAssignableFrom(CTLong) === false)
     assert(CTInteger.isAssignableFrom(CTNumber) === false)
     assert(CTCollection(CTInteger).isAssignableFrom(CTCollection(CTString)) === false)
   }
@@ -47,8 +46,8 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMergeUp(CTNumber, CTNumber, CTNumber)
     assertCorrectTypeMergeUp(CTNumber, CTAny, CTAny)
     assertCorrectTypeMergeUp(CTNumber, CTString, CTAny)
-    assertCorrectTypeMergeUp(CTNumber, CTCollectionAny, CTAny)
-    assertCorrectTypeMergeUp(CTLong, CTDouble, CTNumber)
+    assertCorrectTypeMergeUp(CTNumber, CTCollection(CTAny), CTAny)
+    assertCorrectTypeMergeUp(CTInteger, CTDouble, CTNumber)
     assertCorrectTypeMergeUp(CTMap, CTDouble, CTAny)
   }
 
@@ -56,12 +55,12 @@ class CypherTypeTest extends Assertions {
   def testTypeMergeDown() {
     assertCorrectTypeMergeDown(CTNumber, CTNumber, Some(CTNumber))
     assertCorrectTypeMergeDown(CTNumber, CTAny, Some(CTNumber))
-    assertCorrectTypeMergeDown(CTCollection(CTNumber), CTCollection(CTLong), Some(CTCollection(CTLong)))
+    assertCorrectTypeMergeDown(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
     assertCorrectTypeMergeDown(CTNumber, CTString, None)
-    assertCorrectTypeMergeDown(CTNumber, CTCollectionAny, None)
-    assertCorrectTypeMergeDown(CTLong, CTDouble, None)
+    assertCorrectTypeMergeDown(CTNumber, CTCollection(CTAny), None)
+    assertCorrectTypeMergeDown(CTInteger, CTDouble, None)
     assertCorrectTypeMergeDown(CTMap, CTDouble, None)
-    assertCorrectTypeMergeDown(CTBoolean, CTCollectionAny, None)
+    assertCorrectTypeMergeDown(CTBoolean, CTCollection(CTAny), None)
   }
 
   private def assertCorrectTypeMergeDown(a: CypherType, b: CypherType, result: Option[CypherType]) {

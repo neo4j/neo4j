@@ -20,19 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
+import symbols._
 
-case object InvalidNotEquals extends PredicateFunction {
+case object InvalidNotEquals extends PredicateFunction with SimpleTypedFunction {
   def name = "!="
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) then
-    invocation.specifyType(CTBoolean) then
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
+  )
+
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+    super.semanticCheck(ctx, invocation) then
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)
 
-  protected def internalToPredicate(invocation: FunctionInvocation) = {
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
     commands.Not(commands.Equals(left.toCommand, right.toCommand))

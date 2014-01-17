@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
 case object Tail extends Function {
   def name = "tail"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
+  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments(0).constrainType(CTCollectionAny) then
+      invocation.arguments(0).expectType(CTCollection(CTAny).covariant) then
       invocation.specifyType(invocation.arguments(0).types)
     }
 

@@ -29,7 +29,7 @@ import org.scalatest.Assertions
 class ListComprehensionTest extends Assertions {
 
   val dummyExpression = DummyExpression(
-    TypeSet(CTCollection(CTNode), CTBoolean, CTCollection(CTString)),
+    CTCollection(CTNode) | CTBoolean | CTCollection(CTString),
     DummyToken(2,3))
 
   @Test
@@ -37,14 +37,14 @@ class ListComprehensionTest extends Assertions {
     val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, None, DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CTCollection(CTNode), CTCollection(CTString)), filter.types(result.state))
+    assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
   }
 
   @Test
   def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
     val extractExpression = new Expression with SimpleTypedExpression {
       def token: InputToken = DummyToken(2,3)
-      protected def possibleTypes: TypeSet = Set(CTNode, CTNumber)
+      protected def possibleTypes: TypeSpec = CTNode | CTNumber
 
       def toCommand = ???
     }
@@ -52,7 +52,7 @@ class ListComprehensionTest extends Assertions {
     val filter = ListComprehension(Identifier("x", DummyToken(5,6)), dummyExpression, None, Some(extractExpression), DummyToken(0, 10))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
-    assertEquals(Set(CTCollection(CTNode), CTCollection(CTNumber)), filter.types(result.state))
+    assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), filter.types(result.state))
   }
 
   @Test
@@ -61,7 +61,7 @@ class ListComprehensionTest extends Assertions {
     val predicate = new Expression {
       def token = DummyToken(7,9)
       def semanticCheck(ctx: SemanticContext) = s => {
-        assertEquals(Set(CTNode, CTString), s.symbolTypes("x"))
+        assertEquals(CTNode | CTString, s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
 

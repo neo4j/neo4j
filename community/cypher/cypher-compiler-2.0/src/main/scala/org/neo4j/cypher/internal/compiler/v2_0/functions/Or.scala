@@ -20,17 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
+import symbols._
 
-case object Or extends PredicateFunction {
+case object Or extends PredicateFunction with SimpleTypedFunction {
   def name = "OR"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) then
-//    invocation.arguments.constrainType(CTBoolean) then // TODO: should constrain to boolean, when coercion is possible
-    invocation.specifyType(invocation.arguments.mergeUpTypes)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
+  )
 
-  protected def internalToPredicate(invocation: FunctionInvocation) =
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
     commands.Or(invocation.arguments(0).toPredicate, invocation.arguments(1).toPredicate)
 }

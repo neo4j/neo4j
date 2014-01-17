@@ -53,7 +53,7 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
     val aT = a.getType(symbols)
     val bT = b.getType(symbols)
 
-    (CTCollectionAny.isAssignableFrom(aT), CTCollectionAny.isAssignableFrom(bT)) match {
+    (CTCollection(CTAny).isAssignableFrom(aT), CTCollection(CTAny).isAssignableFrom(bT)) match {
       case (true, false) => mergeWithCollection(collection = aT, singleElement = bT)
       case (false, true) => mergeWithCollection(collection = bT, singleElement = aT)
       case _ => (aT, bT) match {

@@ -23,14 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.{expressions => commandexpressions}
 import symbols._
 
-case object StdDev extends AggregatingFunction {
+case object StdDev extends AggregatingFunction with SimpleTypedFunction {
   def name = "stdev"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments.constrainType(CTNumber) then
-      invocation.specifyType(invocation.arguments(0).types)
-    }
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val inner = invocation.arguments(0).toCommand

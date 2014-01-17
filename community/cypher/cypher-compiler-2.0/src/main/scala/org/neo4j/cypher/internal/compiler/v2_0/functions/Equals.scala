@@ -20,18 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.ast.FunctionInvocation
+import symbols._
 
-case object Equals extends PredicateFunction {
+case object Equals extends PredicateFunction with SimpleTypedFunction {
   def name = "="
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) then
-    invocation.specifyType(CTBoolean)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
+  )
 
-  protected def internalToPredicate(invocation: FunctionInvocation) = {
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
     val left = invocation.arguments(0)
     val right = invocation.arguments(1)
     commands.Equals(left.toCommand, right.toCommand)

@@ -20,17 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import commands.{expressions => commandexpressions}
+import symbols._
 
-case object Right extends Function {
+case object Right extends Function with SimpleTypedFunction {
   def name = "right"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) : SemanticCheck =
-    checkArgs(invocation, 2) ifOkThen {
-      invocation.arguments(0).constrainType(CTString) then
-      invocation.arguments(1).constrainType(CTLong)
-    } then invocation.specifyType(CTString)
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString)
+  )
 
   def toCommand(invocation: ast.FunctionInvocation) = {
     val commands = invocation.arguments.map(_.toCommand)
