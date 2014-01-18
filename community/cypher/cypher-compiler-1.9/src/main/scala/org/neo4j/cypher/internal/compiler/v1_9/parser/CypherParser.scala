@@ -36,7 +36,6 @@ with Updates
 with ActualParser {
   @throws(classOf[SyntaxException])
   def parse(text: String): Query = {
-    namer = new NodeNamer
     parseAll(query, text) match {
       case Success(r, q) => ReattachAliasedExpressions(r.copy(queryString = text))
       case NoSuccess(message, input) => {
