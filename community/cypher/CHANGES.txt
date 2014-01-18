@@ -1,3 +1,7 @@
+1.9.6
+-----
+o Fixes problem with parser not being thread safe. State is bad, m'kay?
+
 1.9.3
 -----
 o Fixes problems with extra columns showing up in some conditions
