@@ -1,3 +1,7 @@
+1.9.6
+-----
+o Fixes a concurrency problem in query parser
+
 1.9.3
 -----
 o Fixes problems with extra columns showing up in some conditions
