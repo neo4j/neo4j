@@ -1407,7 +1407,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
         }
 
-        RelationshipRecord relRecord = relRecords.getOrLoad( relId, null ).forReadingLinkage();
+        RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
         if ( !relRecord.inUse() )
         {
             throw new InvalidRecordException( "Relationship[" + relId + "] not in use" );
@@ -1438,7 +1438,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
         }
 
-        NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forReadingLinkage();
+        NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
         if ( !nodeRecord.inUse() )
         {
             throw new IllegalStateException( "Node[" + nodeId + "] has been deleted in this tx" );
@@ -2220,8 +2220,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void graphLoadProperties( boolean light, PropertyReceiver records )
     {
-        loadProperties( getPropertyStore(),
-                getOrLoadNeoStoreRecord().forReadingLinkage().getNextProp(), records );
+        loadProperties( getPropertyStore(), neoStore.asRecord().getNextProp(), records );
     }
 
     public void createSchemaRule( SchemaRule schemaRule )
