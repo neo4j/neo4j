@@ -34,8 +34,6 @@ class ExtractExpressionTest extends Assertions {
   val extractExpression = new Expression with SimpleTypedExpression {
     def token: InputToken = DummyToken(2,3)
     protected def possibleTypes: TypeSpec = CTNode | CTNumber
-
-    def toCommand = ???
   }
 
   @Test

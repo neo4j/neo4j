@@ -46,7 +46,7 @@ trait StartPoints extends Parser
     ) ~~ ")"
   }
 
-  private def NodeIndexLookup: ReductionRule2[ast.Identifier, Int, ast.NodeByIndex] = {
+  private def NodeIndexLookup: ReductionRule2[ast.Identifier, Int, ast.NodeByIdentifiedIndex] = {
     IdentifiedIndexLookup ~>> (_.end) ~~>> (ast.NodeByIdentifiedIndex(_: ast.Identifier, _, _, _))
   }
 
@@ -66,7 +66,7 @@ trait StartPoints extends Parser
     ) ~~ ")"
   }
 
-  private def RelationshipIndexLookup: ReductionRule2[ast.Identifier, Int, ast.StartItem] = {
+  private def RelationshipIndexLookup: ReductionRule2[ast.Identifier, Int, ast.RelationshipByIdentifiedIndex] = {
     IdentifiedIndexLookup ~>> (_.end) ~~>> (ast.RelationshipByIdentifiedIndex(_: ast.Identifier, _, _, _))
   }
 

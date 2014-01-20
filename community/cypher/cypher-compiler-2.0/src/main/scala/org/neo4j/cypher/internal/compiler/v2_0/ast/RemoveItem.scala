@@ -20,29 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v2_0.mutation
+import symbols._
 
-sealed trait RemoveItem extends AstNode with SemanticCheckable {
-  def toLegacyUpdateAction: mutation.UpdateAction
-}
+sealed trait RemoveItem extends AstNode with SemanticCheckable
 
 case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends RemoveItem {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTNode.covariant)
-
-  def toLegacyUpdateAction =
-    commands.LabelAction(expression.toCommand, commands.LabelRemoveOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
 }
 
 case class RemovePropertyItem(property: Property) extends RemoveItem {
   def token = property.token
 
   def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
-
-  def toLegacyUpdateAction =
-    mutation.DeletePropertyAction(property.map.toCommand, commandvalues.KeyToken.Unresolved(property.identifier.name, commandvalues.TokenType.PropertyKey))
 }

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{MergeAst, expressions}
+import ast.convert.StatementConverters._
+import commands.{MergeAst, expressions}
 import commands.values.{KeyToken, TokenType}
 import commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.PropertySetAction
+import mutation.PropertySetAction
 import org.junit.Test
 import org.parboiled.scala._
 

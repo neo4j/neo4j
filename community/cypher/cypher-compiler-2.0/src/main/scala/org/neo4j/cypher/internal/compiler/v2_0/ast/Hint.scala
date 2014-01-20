@@ -20,21 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import symbols._
 
-sealed trait Hint extends AstNode with SemanticCheckable {
-  def toLegacySchemaIndex: commands.StartItem with commands.Hint
-}
+sealed trait Hint extends AstNode with SemanticCheckable
 
 case class UsingIndexHint(identifier: Identifier, label: Identifier, property: Identifier)(val token: InputToken) extends Hint {
   def semanticCheck = identifier.ensureDefined then identifier.expectType(CTNode.covariant)
-
-  def toLegacySchemaIndex = commands.SchemaIndex(identifier.name, label.name, property.name, commands.AnyIndex, None)
 }
 
 case class UsingScanHint(identifier: Identifier, label: Identifier)(val token: InputToken) extends Hint {
   def semanticCheck = identifier.ensureDefined then identifier.expectType(CTNode.covariant)
-
-  def toLegacySchemaIndex = commands.NodeByLabel(identifier.name, label.name)
 }

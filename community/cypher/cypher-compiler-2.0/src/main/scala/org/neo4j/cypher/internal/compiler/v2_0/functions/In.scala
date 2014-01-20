@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -32,9 +33,13 @@ case object In extends PredicateFunction {
       invocation.arguments(1).expectType(invocation.arguments(0).types(_).wrapInCollection)
     } then invocation.specifyType(CTBoolean)
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    commands.AnyInCollection(right.toCommand, "-_-INNER-_-", commands.Equals(left.toCommand, commandexpressions.Identifier("-_-INNER-_-")))
-  }
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
+    commands.AnyInCollection(
+      invocation.arguments(1).asCommandExpression,
+      "-_-INNER-_-",
+      commands.Equals(
+        invocation.arguments(0).asCommandExpression,
+        commandexpressions.Identifier("-_-INNER-_-")
+      )
+    )
 }

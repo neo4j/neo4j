@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -30,8 +31,9 @@ case object Atan2 extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
-    val commands = invocation.arguments.map(_.toCommand)
-    commandexpressions.Atan2Function(commands(0), commands(1))
-  }
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.Atan2Function(
+      invocation.arguments(0).asCommandExpression,
+      invocation.arguments(1).asCommandExpression
+    )
 }

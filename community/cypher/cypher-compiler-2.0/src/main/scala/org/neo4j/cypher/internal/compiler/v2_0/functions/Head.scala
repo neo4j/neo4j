@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -35,7 +36,9 @@ case object Head extends Function {
   private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator =
     expression.types(_).unwrapCollections
 
-  def toCommand(invocation: ast.FunctionInvocation) =
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
     commandexpressions.CollectionIndex(
-      invocation.arguments(0).toCommand, commandexpressions.Literal(0))
+      invocation.arguments(0).asCommandExpression,
+      commandexpressions.Literal(0)
+    )
 }

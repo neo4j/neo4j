@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -124,13 +125,11 @@ case object Add extends Function {
     stringTypes | numberTypes | collectionTypes
   }
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
+  def asCommandExpression(invocation: ast.FunctionInvocation) = {
     if (invocation.arguments.length == 1) {
-      invocation.arguments(0).toCommand
+      invocation.arguments(0).asCommandExpression
     } else {
-      val left = invocation.arguments(0)
-      val right = invocation.arguments(1)
-      commandexpressions.Add(left.toCommand, right.toCommand)
+      commandexpressions.Add(invocation.arguments(0).asCommandExpression, invocation.arguments(1).asCommandExpression)
     }
   }
 }

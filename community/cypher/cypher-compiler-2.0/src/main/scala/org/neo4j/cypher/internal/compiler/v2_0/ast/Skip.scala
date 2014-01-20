@@ -20,16 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
+import symbols._
 
 case class Skip(expression: Expression)(val token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTInteger.covariant)
-
-  def toCommand = expression match {
-    case integer: UnsignedIntegerLiteral => commandexpressions.Literal(integer.value.toInt)
-    case _ => expression.toCommand
-  }
 }

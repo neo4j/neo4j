@@ -43,8 +43,6 @@ class FilteringExpressionTest extends Assertions {
     val expression = new Expression with SimpleTypedExpression {
       def token = DummyToken(5,6)
       protected def possibleTypes = CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
-
-      def toCommand = ???
     }
 
     val error = SemanticError("dummy error", DummyToken(8,9))
@@ -54,8 +52,6 @@ class FilteringExpressionTest extends Assertions {
         assertEquals(CTNode | CTString, s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
-
-      def toCommand = ???
     }
 
     val filter = TestableFilteringExpression(Identifier("x")(DummyToken(2,3)), expression, Some(predicate))

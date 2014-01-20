@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -31,6 +32,6 @@ case object Coalesce extends Function {
     invocation.arguments.expectType(CTAny.covariant) then
     invocation.specifyType(invocation.arguments.mergeUpTypes)
 
-  def toCommand(invocation: ast.FunctionInvocation) =
-    commandexpressions.CoalesceFunction(invocation.arguments.map(_.toCommand):_*)
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.CoalesceFunction(invocation.arguments.asCommandExpressions:_*)
 }

@@ -29,7 +29,6 @@ class ExpressionTest extends Assertions {
   val expression = new Expression() {
     val token = DummyToken(0, 1)
     def semanticCheck(ctx: Expression.SemanticContext) = ???
-    def toCommand = ???
   }
 
   @Test

@@ -30,6 +30,6 @@ case object Rand extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(), outputType = CTDouble)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) =
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
     commandexpressions.RandFunction()
 }

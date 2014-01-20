@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 sealed trait ReturnItems extends AstNode with SemanticCheckable {
-  def toCommands: Seq[commands.ReturnColumn]
   def declareIdentifiers(currentState: SemanticState): SemanticCheck
 }
 
@@ -35,16 +33,12 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val token: InputToken) exte
       case Some(identifier) => identifier.declare(item.expression.types(currentState))
       case None             => SemanticCheckResult.success
     })
-
-  def toCommands = items.map(_.toCommand)
 }
 
 case class ReturnAll()(val token: InputToken) extends ReturnItems {
   def semanticCheck = SemanticCheckResult.success
 
   def declareIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importSymbols(currentState.symbolTable))
-
-  def toCommands = Seq(commands.AllIdentifiers())
 }
 
 
@@ -54,8 +48,6 @@ sealed trait ReturnItem extends AstNode with SemanticCheckable {
   def name: String
 
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
-
-  def toCommand: commands.ReturnItem
 }
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val token: InputToken) extends ReturnItem {
@@ -64,13 +56,9 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val to
     case _ => None
   }
   val name = alias.map(_.name) getOrElse { inputText.trim }
-
-  def toCommand = commands.ReturnItem(expression.toCommand, name)
 }
 
 case class AliasedReturnItem(expression: Expression, identifier: Identifier)(val token: InputToken) extends ReturnItem {
   val alias = Some(identifier)
   val name = identifier.name
-
-  def toCommand = commands.ReturnItem(expression.toCommand, name, true)
 }

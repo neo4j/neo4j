@@ -44,8 +44,6 @@ class ListComprehensionTest extends Assertions {
     val extractExpression = new Expression with SimpleTypedExpression {
       def token: InputToken = DummyToken(2,3)
       protected def possibleTypes: TypeSpec = CTNode | CTNumber
-
-      def toCommand = ???
     }
 
     val filter = ListComprehension(Identifier("x")(DummyToken(5,6)), dummyExpression, None, Some(extractExpression))(DummyToken(0, 10))
@@ -63,8 +61,6 @@ class ListComprehensionTest extends Assertions {
         assertEquals(CTNode | CTString, s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
-
-      def toCommand = ???
     }
 
     val filter = ListComprehension(Identifier("x")(DummyToken(2,3)), dummyExpression, Some(predicate), None)(DummyToken(0, 10))

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import symbols._
 
 case object IsNotNull extends PredicateFunction with SimpleTypedFunction {
@@ -30,5 +31,5 @@ case object IsNotNull extends PredicateFunction with SimpleTypedFunction {
   )
 
   protected def internalToPredicate(invocation: ast.FunctionInvocation) =
-    commands.Not(commands.IsNull(invocation.arguments(0).toCommand))
+    commands.Not(commands.IsNull(invocation.arguments(0).asCommandExpression))
 }

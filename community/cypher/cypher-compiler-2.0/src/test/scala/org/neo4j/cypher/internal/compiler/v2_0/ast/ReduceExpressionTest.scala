@@ -38,14 +38,12 @@ class ReduceExpressionTest extends Assertions {
         assert(s.symbolTypes("y") === CTInteger.invariant)
         (this.specifyType(CTString) then error)(s)
       }
-
-      def toCommand = ???
     }
 
     val filter = ReduceExpression(
       accumulator = Identifier("x")(DummyToken(2,3)),
       init = DummyExpression(CTString),
-      id = Identifier("y")(DummyToken(6, 7)),
+      identifier = Identifier("y")(DummyToken(6, 7)),
       collection = DummyExpression(CTCollection(CTInteger)),
       expression = reduceExpression
     )(DummyToken(0, 12))
@@ -68,14 +66,12 @@ class ReduceExpressionTest extends Assertions {
         assert(s.symbolTypes("y") === collectionType.innerType.invariant)
         (this.specifyType(CTDouble) then SemanticCheckResult.success)(s)
       }
-
-      def toCommand = ???
     }
 
     val filter = ReduceExpression(
       accumulator = Identifier("x")(DummyToken(2,3)),
       init = DummyExpression(initType),
-      id = Identifier("y")(DummyToken(6, 7)),
+      identifier = Identifier("y")(DummyToken(6, 7)),
       collection = DummyExpression(collectionType),
       expression = reduceExpression
     )(DummyToken(0, 12))
@@ -97,14 +93,12 @@ class ReduceExpressionTest extends Assertions {
         assert(s.symbolTypes("y") === collectionType.innerType.invariant)
         (this.specifyType(CTNode) then SemanticCheckResult.success)(s)
       }
-
-      def toCommand = ???
     }
 
     val filter = ReduceExpression(
       accumulator = Identifier("x")(DummyToken(2,3)),
       init = DummyExpression(accumulatorType),
-      id = Identifier("y")(DummyToken(6, 7)),
+      identifier = Identifier("y")(DummyToken(6, 7)),
       collection = DummyExpression(collectionType),
       expression = reduceExpression
     )(DummyToken(0, 12))

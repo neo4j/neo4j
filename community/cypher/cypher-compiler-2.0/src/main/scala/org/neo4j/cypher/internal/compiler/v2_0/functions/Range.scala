@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
+import commands.expressions.{Expression => CommandExpression}
 import symbols._
 
 case object Range extends Function with SimpleTypedFunction {
@@ -31,8 +33,10 @@ case object Range extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTInteger, CTInteger, CTInteger), outputType = CTCollection(CTInteger))
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
-    val commands = invocation.arguments.map(_.toCommand)
-    commandexpressions.RangeFunction(commands(0), commands(1), commands.lift(2).getOrElse(commandexpressions.Literal(1)))
-  }
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.RangeFunction(
+      invocation.arguments(0).asCommandExpression,
+      invocation.arguments(1).asCommandExpression,
+      invocation.arguments.lift(2).asCommandExpression.getOrElse(commandexpressions.Literal(1))
+    )
 }

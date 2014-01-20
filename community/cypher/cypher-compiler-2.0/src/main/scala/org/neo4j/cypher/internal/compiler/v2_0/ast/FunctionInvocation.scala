@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.helpers.ThisShouldNotHappenError
 import Expression._
 
 object FunctionInvocation {
@@ -34,20 +33,10 @@ object FunctionInvocation {
 
 case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression])(val token: InputToken) extends Expression {
   val name = identifier.name
-  private val function = Function.lookup.get(name.toLowerCase)
+  val function = Function.lookup.get(name.toLowerCase)
 
   def semanticCheck(ctx: SemanticContext) = function match {
     case None    => SemanticError(s"Unknown function '$name'", token)
     case Some(f) => f.semanticCheckHook(ctx, this)
-  }
-
-  def toCommand = function match {
-    case None    => throw new ThisShouldNotHappenError("cleishm", "Unknown function should have failed semantic check")
-    case Some(f) => f.toCommand(this)
-  }
-
-  override def toPredicate = function match {
-    case None    => throw new ThisShouldNotHappenError("cleishm", "Unknown function should have failed semantic check")
-    case Some(f) => f.toPredicate(this)
   }
 }

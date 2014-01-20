@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
+import commands.expressions.{Expression => CommandExpression}
 import symbols._
 
 case object Sum extends AggregatingFunction with SimpleTypedFunction {
@@ -31,8 +33,8 @@ case object Sum extends AggregatingFunction with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
-    val inner = invocation.arguments(0).toCommand
+  def asCommandExpression(invocation: ast.FunctionInvocation) = {
+    val inner = invocation.arguments(0).asCommandExpression
     val command = commandexpressions.Sum(inner)
     if (invocation.distinct)
       commandexpressions.Distinct(command, inner)

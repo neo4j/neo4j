@@ -30,5 +30,5 @@ case object Pi extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(), outputType = CTDouble)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) = commandexpressions.PiFunction()
+  def asCommandExpression(invocation: ast.FunctionInvocation) = commandexpressions.PiFunction()
 }

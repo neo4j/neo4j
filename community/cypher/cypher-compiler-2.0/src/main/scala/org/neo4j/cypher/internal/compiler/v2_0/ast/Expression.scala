@@ -20,9 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate, NonEmpty, CoercedPredicate}
-import commands.expressions.{Expression => CommandExpression}
-import commands.values.TokenType.PropertyKey
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -82,9 +79,6 @@ abstract class Expression extends AstNode with SemanticChecking {
         SemanticCheckResult.success(ss)
     }
   }
-
-  def toCommand: CommandExpression
-  def toPredicate: CommandPredicate = CoercedPredicate(toCommand)
 }
 
 trait SimpleTypedExpression { self: Expression =>
@@ -92,14 +86,6 @@ trait SimpleTypedExpression { self: Expression =>
   def semanticCheck(ctx: SemanticContext): SemanticCheck = specifyType(possibleTypes)
 }
 
-trait PredicateExpression extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = CTBoolean
-
-  def toCommand: CommandExpression = internalToPredicate
-  override def toPredicate: CommandPredicate = internalToPredicate
-
-  protected def internalToPredicate: CommandPredicate
-}
 
 case class Identifier(name: String)(val token: InputToken) extends Expression {
   // check the identifier is defined and, if not, define it so that later errors are suppressed
@@ -117,34 +103,26 @@ case class Identifier(name: String)(val token: InputToken) extends Expression {
     (_: SemanticState).implicitIdentifier(this, possibleType)
   def ensureDefined() =
     (_: SemanticState).ensureIdentifierDefined(this)
-
-  def toCommand = commands.expressions.Identifier(name)
 }
 
 case class Parameter(name: String)(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTAny.covariant
-
-  def toCommand = commandexpressions.ParameterExpression(name)
 }
 
 case class Null()(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTAny.covariant
-
-  def toCommand = commandexpressions.Literal(null)
 }
 
-case class True()(val token: InputToken) extends Expression with PredicateExpression {
-  protected def internalToPredicate = commands.True()
+case class True()(val token: InputToken) extends Expression with SimpleTypedExpression {
+  protected def possibleTypes = CTBoolean
 }
 
-case class False()(val token: InputToken) extends Expression with PredicateExpression {
-  protected def internalToPredicate = commands.Not(commands.True())
+case class False()(val token: InputToken) extends Expression with SimpleTypedExpression {
+  protected def possibleTypes = CTBoolean
 }
 
 case class CountStar()(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTInteger
-
-  def toCommand = commandexpressions.CountStar()
 }
 
 case class Property(map: Expression, identifier: Identifier)(val token: InputToken)
@@ -156,8 +134,6 @@ case class Property(map: Expression, identifier: Identifier)(val token: InputTok
     map.semanticCheck(ctx) then
     map.expectType(CTMap.covariant) then
     super.semanticCheck(ctx)
-
-  def toCommand = commands.expressions.Property(map.toCommand, PropertyKey(identifier.name))
 }
 
 object LegacyProperty {
@@ -168,34 +144,25 @@ object LegacyProperty {
         case "!" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null).", token)
         case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
       }
-
-      override def toCommand = throw new UnsupportedOperationException
     }
 }
 
 case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTypedExpression {
   def token = pattern.token
-  protected def possibleTypes = CTCollection(CTPath) | CTBoolean
+  protected def possibleTypes = CTCollection(CTPath)
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.semanticCheck(Pattern.SemanticContext.Expression) then
     super.semanticCheck(ctx)
-
-  def toCommand = commands.PathExpression(pattern.toLegacyPatterns)
-
-  override def toPredicate = NonEmpty(toCommand)
 }
 
-case class HasLabels(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends Expression with PredicateExpression {
+case class HasLabels(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends Expression with SimpleTypedExpression {
+  protected def possibleTypes = CTBoolean
+
   override def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
     expression.expectType(CTNode.covariant) then
     super.semanticCheck(ctx)
-
-  private def toPredicate(l: Identifier): commands.Predicate =
-    commands.HasLabel(expression.toCommand, commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label))
-
-  protected def internalToPredicate = labels.map(toPredicate).reduceLeft(commands.And(_, _))
 }
 
 case class Collection(expressions: Seq[Expression])(val token: InputToken) extends Expression {
@@ -205,22 +172,14 @@ case class Collection(expressions: Seq[Expression])(val token: InputToken) exten
     case Seq() => CTCollection(CTAny).invariant
     case _     => expressions.mergeUpTypes(state).wrapInCollection
   }
-
-  def toCommand = commandexpressions.Collection(expressions.map(_.toCommand):_*)
 }
 
 case class MapExpression(items: Seq[(Identifier, Expression)])(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTMap
 
-  override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) then super.semanticCheck(ctx)
-
-  def toCommand = {
-    val literalMap: Map[String, CommandExpression] = items.map {
-      case (id, ex) => id.name -> ex.toCommand
-    }.toMap
-
-    commandexpressions.LiteralMap(literalMap)
-  }
+  override def semanticCheck(ctx: SemanticContext) =
+    items.map(_._2).semanticCheck(ctx) then
+    super.semanticCheck(ctx)
 }
 
 case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression])(val token: InputToken)
@@ -237,8 +196,6 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
     to.semanticCheck(ctx) then
     to.expectType(CTInteger.covariant) then
     specifyType(collection.types)
-
-  def toCommand = commandexpressions.CollectionSliceExpression(collection.toCommand, from.map(_.toCommand), to.map(_.toCommand))
 }
 
 case class CollectionIndex(collection: Expression, idx: Expression)(val token: InputToken)
@@ -250,6 +207,4 @@ case class CollectionIndex(collection: Expression, idx: Expression)(val token: I
     idx.semanticCheck(ctx) then
     idx.expectType(CTInteger.covariant) then
     specifyType(collection.types(_).unwrapCollections)
-
-  def toCommand = commandexpressions.CollectionIndex(collection.toCommand, idx.toCommand)
 }

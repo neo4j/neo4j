@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.{expressions => commandexpressions, Predicate => CommandPredicate, NonEmpty}
-import commands.expressions.{Expression => CommandExpression}
 import symbols._
 
 trait FilteringExpression extends Expression {
@@ -38,12 +36,12 @@ trait FilteringExpression extends Expression {
 
   protected def checkPredicateDefined =
     when (innerPredicate.isEmpty) {
-      SemanticError(s"${name}(...) requires a WHERE predicate", token)
+      SemanticError(s"$name(...) requires a WHERE predicate", token)
     }
 
   protected def checkPredicateNotDefined =
     when (innerPredicate.isDefined) {
-      SemanticError(s"${name}(...) should not contain a WHERE predicate", token)
+      SemanticError(s"$name(...) should not contain a WHERE predicate", token)
     }
 
   protected def possibleInnerTypes: TypeGenerator = s =>
@@ -55,21 +53,6 @@ trait FilteringExpression extends Expression {
     }
     case None    => SemanticCheckResult.success
   }
-
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate): CommandExpression
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate): CommandPredicate
-
-  override def toCommand = {
-    val command = expression.toCommand
-    val inner: CommandPredicate = innerPredicate.map(_.toPredicate).getOrElse(commands.True())
-    toCommand(command, identifier.name, inner)
-  }
-
-  override def toPredicate = {
-    val command = expression.toCommand
-    val inner = innerPredicate.map(_.toPredicate).getOrElse(commands.True())
-    toPredicate(command, identifier.name, inner)
-  }
 }
 
 
@@ -80,10 +63,6 @@ case class FilterExpression(identifier: Identifier, expression: Expression, inne
     checkPredicateDefined then
     super.semanticCheck(ctx) then
     this.specifyType(expression.types)
-
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = commandexpressions.FilterFunction(command, name, inner)
-
-  def toPredicate(command: CommandExpression, name: String, inner: CommandPredicate) = NonEmpty(toCommand(command, name, inner))
 }
 
 
@@ -115,12 +94,6 @@ case class ExtractExpression(
         this.specifyType(outerTypes)
       }
     }
-
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) =
-    commandexpressions.ExtractFunction(command, name, extractExpression.get.toCommand)
-
-  def toPredicate(command: CommandExpression, name: String, inner: CommandPredicate) =
-    NonEmpty(toCommand(command, name, inner))
 }
 
 
@@ -144,20 +117,6 @@ case class ListComprehension(
       }
     case None    => this.specifyType(expression.types)
   }
-
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) = {
-    val filter = inner match {
-      case commands.True() => command
-      case _               => commandexpressions.FilterFunction(command, name, inner)
-    }
-    extractExpression match {
-      case Some(e) => commandexpressions.ExtractFunction(filter, name, e.toCommand)
-      case None    => filter
-    }
-  }
-
-  def toPredicate(command: CommandExpression, name: String, inner: CommandPredicate) =
-     NonEmpty(toCommand(command, name, inner))
 }
 
 
@@ -166,38 +125,25 @@ sealed trait IterablePredicateExpression extends FilteringExpression {
     checkPredicateDefined then
     super.semanticCheck(ctx) then
     this.specifyType(CTBoolean)
-
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate): commands.Predicate
-
-  def toCommand(command: CommandExpression, name: String, inner: commands.Predicate) =
-    toPredicate(command, identifier.name, inner)
 }
 
 case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "all"
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
-    commands.AllInCollection(command, identifier.name, inner)
 }
 
 case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "any"
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
-    commands.AnyInCollection(command, identifier.name, inner)
 }
 
 case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "none"
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
-    commands.NoneInCollection(command, identifier.name, inner)
 }
 
 case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
   val name = "single"
-  def toPredicate(command: CommandExpression, name: String, inner: commands.Predicate) =
-    commands.SingleInCollection(command, identifier.name, inner)
 }
 
-case class ReduceExpression(accumulator: Identifier, init: Expression, id: Identifier, collection: Expression, expression: Expression)(val token: InputToken) extends Expression {
+case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) then
     collection.semanticCheck(ctx) then
@@ -207,11 +153,9 @@ case class ReduceExpression(accumulator: Identifier, init: Expression, id: Ident
         (collection.types(s) constrain CTCollection(CTAny)).unwrapCollections
       val accType: TypeGenerator = init.types
 
-      id.declare(indexType) then
+      identifier.declare(indexType) then
       accumulator.declare(accType) then
       expression.semanticCheck(SemanticContext.Simple)
     } then expression.expectType(init.types) then
     this.specifyType(s => init.types(s) mergeUp expression.types(s))
-
-  def toCommand: CommandExpression = commandexpressions.ReduceFunction(collection.toCommand, id.name, expression.toCommand, accumulator.name, init.toCommand)
 }
