@@ -66,7 +66,6 @@ public class PersistenceManager
     private final PersistenceSource persistenceSource;
     private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
-    private final ArrayMap<Transaction,ResourceHolder> resourceMap = new ArrayMap<>( (byte) 5, true, true );
     private final TxEventSyncHookFactory syncHookFactory;
 
     public PersistenceManager( StringLogger msgLog, AbstractTransactionManager transactionManager,
@@ -243,11 +242,11 @@ public class PersistenceManager
     
     public ResourceHolder getResource()
     {
-        Transaction tx = this.getCurrentTransaction();
-        ResourceHolder resource = resourceMap.get( tx );
+        TransactionState txState = transactionManager.getTransactionState();
+        ResourceHolder resource = txState.getNeoStoreTransaction();
         if ( resource == null )
         {
-            resourceMap.put( tx, resource = createResource( tx ) );
+            txState.setNeoStoreTransaction( resource = createResource( getCurrentTransaction() ) );
         }
         return resource;
     }
@@ -337,7 +336,7 @@ public class PersistenceManager
         {
             try
             {
-                releaseResourceConnectionsForTransaction( tx );
+                releaseResourceConnectionsForTransaction( tx, state );
             }
             catch ( Throwable t )
             {
@@ -346,10 +345,10 @@ public class PersistenceManager
         }
     }
 
-    void releaseResourceConnectionsForTransaction( Transaction tx )
+    void releaseResourceConnectionsForTransaction( Transaction tx, TransactionState state )
         throws NotInTransactionException
     {
-        ResourceHolder resource = resourceMap.remove( tx );
+        ResourceHolder resource = state.getNeoStoreTransaction();
         if ( resource != null )
         {
             resource.destroy();

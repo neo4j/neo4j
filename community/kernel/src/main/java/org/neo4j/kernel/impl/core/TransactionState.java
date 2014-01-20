@@ -24,6 +24,9 @@ import java.util.Set;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
+import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -102,6 +105,16 @@ public interface TransactionState
 
     // Tech debt, this is here waiting for transaction state to move to the TxState class
     Iterable<WritableTransactionState.CowNodeElement> getChangedNodes();
+    
+    /**
+     * Below are two methods for getting and setting a {@link ResourceHolder}, i.e. a carrier of a
+     * {@link NeoStoreTransaction}. This is not a very good strategy. The reason it's here is that it's
+     * less contended to put and reach that instance in each {@link TransactionState} object, instead of
+     * in a shared map or similar in {@link PersistenceManager}.
+     */
+    ResourceHolder getNeoStoreTransaction();
+    
+    void setNeoStoreTransaction( ResourceHolder neoStoreTransaction );
 
     /**
      * A history of slave transactions and their cultural impact on Graph Databases.
