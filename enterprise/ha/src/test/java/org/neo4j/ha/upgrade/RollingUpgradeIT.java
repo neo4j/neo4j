@@ -19,43 +19,50 @@
  */
 package org.neo4j.ha.upgrade;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.sleep;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
-import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
-import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
-import static org.neo4j.ha.upgrade.Utils.execJava;
-import static org.neo4j.ha.upgrade.Utils.zkConfig;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cluster.ClusterSettings;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
 
-@Ignore
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.cluster.ClusterSettings.cluster_server;
+import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
+import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.ha.HaSettings.ha_server;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
+
+@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
-    private TargetDirectory DIR = TargetDirectory.forTest( getClass() );
-    private File DBS_DIR = DIR.directory( "dbs", true );
+    private static final String OLD_VERSION = "1.9.5";
+    
+    private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
+    private final File DBS_DIR = DIR.directory( "dbs", true );
     private Process zoo;
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
@@ -64,15 +71,14 @@ public class RollingUpgradeIT
     public void doRollingUpgradeFromOneEightToOneNineWithMasterLast() throws Throwable
     {
         /* High level scenario:
-         * 1   Have a cluster of 3 instances running 1.8
-         * 1.1 Download a 1.8 package
-         * 1.2 Unpack the 1.8 package
-         * 1.3 Start ZK cluster, or just one instance even
-         * 1.4 Assembly classpath and start 3 JVMs running 1.8
+         * 1   Have a cluster of 3 instances running <old version>
+         * 1.1 Download a <old version> package
+         * 1.2 Unpack the <old version> package
+         * 1.4 Assembly classpath and start 3 JVMs running <old version>
          * 1.5 Create some data in the cluster
-         * 2   Go over each one restarting into 1.9
+         * 2   Go over each one restarting into <this version>
          * 2.1 Grab a JVM and kill it
-         * 2.2 Start that db inside this test JVM, which will run 1.9
+         * 2.2 Start that db inside this test JVM, which will run <this version>
          * 2.3 Perform a write transaction to the current master and see that it picks it up
          * 2.4 Perform a write transaction to to this instance and see that master picks it up
          * 3   Make sure the cluster functions after each one has been restarted
@@ -83,8 +89,8 @@ public class RollingUpgradeIT
         
         try
         {
-            startOneEightCluster();
-            rollOverToOneNine();
+            startOldVersionCluster();
+            rollOverToNewVersion();
             verify();
         }
         catch ( Throwable e )
@@ -103,40 +109,59 @@ public class RollingUpgradeIT
     {
         String string = "RUT " + message;
         if ( enter )
+        {
             System.out.println( string );
+        }
         else
+        {
             System.out.print( string );
+        }
     }
     
     @After
     public void cleanUp() throws Exception
     {
         if ( legacyDbs != null )
+        {
             for ( LegacyDatabase db : legacyDbs )
+            {
                 stop( db );
+            }
+        }
         if ( newDbs != null )
+        {
             for ( GraphDatabaseService db : newDbs )
+            {
                 db.shutdown();
+            }
+        }
         if ( zoo != null )
+        {
             zoo.destroy();
+        }
     }
 
-    private void startOneEightCluster() throws Exception
+    private void startOldVersionCluster() throws Exception
     {
-        debug( "Downloading 1.8 package" );
+        debug( "Downloading " + OLD_VERSION + " package" );
         File oneEightPackage = downloadAndUnpack(
-                "http://download.neo4j.org/artifact?edition=enterprise&version=1.8&distribution=zip",
-                DIR.directory( "download" ), "1.8-enterprise" );
+                "http://download.neo4j.org/artifact?edition=enterprise&version=" + OLD_VERSION + "&distribution=zip",
+                DIR.directory( "download" ), OLD_VERSION + "-enterprise" );
         String classpath = assembleClassPathFromPackage( oneEightPackage );
-        debug( "Starting zoo" );
-        zoo = startZoo( classpath );
-        debug( "Starting 1.8 cluster in separate jvms" );
-        legacyDbs = new LegacyDatabase[3];
-        for ( int i = 0; i < legacyDbs.length; i++ )
+        debug( "Starting " + OLD_VERSION + " cluster in separate jvms" );
+        @SuppressWarnings( "rawtypes" )
+        Future[] legacyDbFutures = new Future[3];
+        for ( int i = 0; i < legacyDbFutures.length; i++ )
         {
-            legacyDbs[i] = LegacyDatabaseImpl.start( classpath, new File( DBS_DIR, "" + i ), config( i, true ) );
+            legacyDbFutures[i] = LegacyDatabaseImpl.start( classpath, new File( DBS_DIR, "" + i ), config( i ) );
             debug( "  Started " + i );
         }
+        legacyDbs = new LegacyDatabase[legacyDbFutures.length];
+        for ( int i = 0; i < legacyDbFutures.length; i++ )
+        {
+            legacyDbs[i] = (LegacyDatabase) legacyDbFutures[i].get();
+        }
+        
         for ( LegacyDatabase db : legacyDbs )
         {
             debug( "  Awaiting " + db.getStoreDir() + " to start" );
@@ -148,67 +173,95 @@ public class RollingUpgradeIT
             String name = "initial-" + i;
             long node = legacyDbs[i].createNode( name );
             for ( LegacyDatabase db : legacyDbs )
+            {
                 db.verifyNodeExists( node, name );
+            }
         }
-        debug( "1.8 cluster fully operational" );
+        debug( OLD_VERSION + " cluster fully operational" );
     }
 
-    private Map<String, String> config( int serverId, boolean forOneEight ) throws UnknownHostException
+    private Map<String, String> config( int serverId ) throws UnknownHostException
     {
         String localhost = InetAddress.getLocalHost().getHostAddress();
         Map<String, String> result = MapUtil.stringMap(
-                ClusterSettings.server_id.name(), "" + serverId,
-                HaSettings.ha_server.name(), localhost + ":" + ( 6000+serverId ),
-                ClusterSettings.cluster_server.name(), localhost+":"+( 5000+serverId ),
-                "ha.coordinators", "localhost:2181", // This has changed since 1.8 so we need to provide the original config here
-                HaSettings.coordinators.name(), "localhost:2181",
-                ClusterSettings.initial_hosts.name(),
-                localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002);
+                server_id.name(), "" + serverId,
+                cluster_server.name(), localhost + ":" + ( 5000+serverId ),
+                ha_server.name(), localhost + ":" + ( 6000+serverId ),
+                initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
 //        if ( !forOneEight && serverId != 0 ) // TODO master election algo favors low serverId, default push factor favors high serverId
 //            result.put( ClusterSettings.allow_init_cluster.name(), Boolean.FALSE.toString() );
         return result;
     }
 
-    private Process startZoo( String classpath ) throws Exception
+    private void rollOverToNewVersion() throws Exception
     {
-        return execJava( classpath, "org.apache.zookeeper.server.quorum.QuorumPeerMain", zkConfig( DIR, 1, 2181 ) );
+        debug( "Starting to roll over to current version" );
+        Pair<LegacyDatabase, Integer> master = findOutWhoIsMaster();
+        newDbs = new GraphDatabaseAPI[legacyDbs.length];
+        for ( int i = 0; i < legacyDbs.length; i++ )
+        {
+            LegacyDatabase legacyDb = legacyDbs[i];
+            if ( legacyDb == master.first() )
+            {   // Roll over the master last
+                continue;
+            }
+            
+            rollOver( legacyDb, i );
+        }
+        rollOver( master.first(), master.other() );
     }
 
-    private void rollOverToOneNine() throws Exception
+    private void rollOver( LegacyDatabase legacyDb, int i ) throws Exception
     {
-        debug( "Starting to roll over to 1.9" );
-        newDbs = new GraphDatabaseAPI[legacyDbs.length];
-        for ( int i = legacyDbs.length - 1; i >= 0; i-- )
+        String storeDir = legacyDb.getStoreDir();
+        stop( legacyDb );
+        Thread.sleep( 30000 );
+
+        debug( "Starting " + i + " as current version" );
+        // start that db up in this JVM
+        newDbs[i] = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
+                .newHighlyAvailableDatabaseBuilder( storeDir )
+                .setConfig( config( i ) )
+                .newGraphDatabase();
+        debug( "Started " + i + " as current version" );
+
+        // issue transaction and see that it propagates
+        String name = "upgraded-" + i;
+        long node = createNodeWithRetry( newDbs[i], name );
+        System.out.println( "===> Created on " + i );
+        for ( int j = 0; j < i; j++ )
         {
-            // shut down db
-            LegacyDatabase legacyDb = legacyDbs[i];
-            String storeDir = legacyDb.getStoreDir();
-            stop( legacyDb );
-            Thread.sleep( 15000 );
-
-            debug( "Starting it as 1.9" );
-            // start that db up in this JVM
-            newDbs[i] = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
-                    .newHighlyAvailableDatabaseBuilder( storeDir )
-                    .setConfig( config( i, false ) )
-                    .newGraphDatabase();
-            debug( "Started as 1.9" );
-
-            // issue transaction and see that it propagates
-            String name = "upgraded-" + i;
-            long node = createNodeWithRetry( newDbs[i], name );
-            System.out.println("===> Created on "+i);
-            for ( int j = 0; j < i; j++ )
-            {
-                legacyDbs[j].verifyNodeExists( node, name );
-                debug( "Verified on legacy db " + j );
-            }
-            for ( int j = i; j < newDbs.length; j++ )
+            legacyDbs[j].verifyNodeExists( node, name );
+            debug( "Verified on legacy db " + j );
+        }
+        for ( int j = 0; j < newDbs.length; j++ )
+        {
+            if ( newDbs[j] != null )
             {
                 verifyNodeExists( newDbs[j], node, name );
                 debug( "==> Verified on new db " + j );
             }
         }
+    }
+
+    private Pair<LegacyDatabase,Integer> findOutWhoIsMaster()
+    {
+        try
+        {
+            for ( int i = 0; i < legacyDbs.length; i++ )
+            {
+                LegacyDatabase db = legacyDbs[i];
+                if ( db.isMaster() )
+                {
+                    return Pair.of( db, i );
+                }
+            }
+        }
+        catch ( RemoteException e )
+        {
+            throw new RuntimeException( e );
+        }
+        throw new IllegalStateException( "No master" );
     }
 
     private void stop( LegacyDatabase legacyDb )
@@ -245,7 +298,7 @@ public class RollingUpgradeIT
                 exception = e;
                 // Jiffy is a less well known SI unit for time equal to 1024 millis, aka binary second
                 debug( "Master not switched yet, retrying in a jiffy (" + e + ")" );
-                sleep( 1024 );
+                sleep( 1024 ); // 1024, because why the hell not
             }
         }
         throw launderedException( exception );
@@ -271,8 +324,12 @@ public class RollingUpgradeIT
     {
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         for ( Node node : at( db ).getAllNodes() )
+        {
             if ( name.equals( node.getProperty( "name", null ) ) )
+            {
                 return;
+            }
+        }
         fail( "Node " + id + " with name '" + name + "' not found" );
     }
 }

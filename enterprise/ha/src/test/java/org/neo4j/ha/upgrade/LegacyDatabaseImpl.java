@@ -19,92 +19,117 @@
  */
 package org.neo4j.ha.upgrade;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.System.currentTimeMillis;
-import static java.lang.System.getProperty;
-import static java.lang.Thread.sleep;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
-import static org.neo4j.ha.upgrade.Utils.execJava;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
-
 import java.io.File;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.test.ProcessStreamHandler;
 
+import static java.lang.Integer.parseInt;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.getProperty;
+import static java.lang.Thread.sleep;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.ha.upgrade.Utils.execJava;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
+
 public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDatabase
 {
-    // This has to be adapted to the way HA GDB is started in 1.8
+    // This has to be adapted to the way HA GDB is started in the specific old version it's used for.
     public static void main( String[] args ) throws Exception
     {
         Args arguments = new Args( args );
-        File storeDir = new File( arguments.orphans().get( 0 ) );
+        String storeDir = arguments.orphans().get( 0 );
         
-        GraphDatabaseService db = (GraphDatabaseService) LegacyDatabaseImpl.class.forName(
-                "org.neo4j.kernel.HighlyAvailableGraphDatabase" ).getConstructor(
-                        String.class, Map.class ).newInstance( storeDir.getAbsolutePath(), arguments.asMap() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
+                .newHighlyAvailableDatabaseBuilder( storeDir )
+                .setConfig( arguments.asMap() )
+                .newGraphDatabase();
 
-        LegacyDatabaseImpl legacyDb = new LegacyDatabaseImpl( storeDir.getAbsolutePath(), db );
+        LegacyDatabaseImpl legacyDb = new LegacyDatabaseImpl( storeDir, db );
         rmiLocation( parseInt( arguments.orphans().get( 1 ) ) ).bind( legacyDb );
     }
     
-    private GraphDatabaseService db;
-    private String storeDir;
+    private final GraphDatabaseAPI db;
+    private final String storeDir;
 
-    public LegacyDatabaseImpl( String storeDir, GraphDatabaseService db ) throws RemoteException
+    public LegacyDatabaseImpl( String storeDir, GraphDatabaseAPI db ) throws RemoteException
     {
         super();
         this.storeDir = storeDir;
         this.db = db;
     }
     
-    public static LegacyDatabase start( String classpath, File storeDir, Map<String, String> config ) throws Exception
+    public static Future<LegacyDatabase> start( String classpath, File storeDir, Map<String, String> config )
+            throws Exception
     {
         List<String> args = new ArrayList<String>();
         args.add( storeDir.getAbsolutePath() );
         int rmiPort = 7000 + parseInt( config.get( "ha.server_id" ) );
         args.add( "" + rmiPort );
         args.addAll( asList( new Args( config ).asArgs() ) );
-        Process process = execJava( appendNecessaryTestClasses( classpath ), LegacyDatabaseImpl.class.getName(), args.toArray( new String[0] ) );
+        final Process process = execJava( appendNecessaryTestClasses( classpath ),
+                LegacyDatabaseImpl.class.getName(), args.toArray( new String[0] ) );
         new ProcessStreamHandler( process, false ).launch();
         
-        RmiLocation rmiLocation = rmiLocation( rmiPort );
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 10000 );
-        while ( currentTimeMillis() < endTime )
+        final RmiLocation rmiLocation = rmiLocation( rmiPort );
+        ExecutorService executor = newSingleThreadExecutor();
+        Future<LegacyDatabase> future = executor.submit( new Callable<LegacyDatabase>()
         {
-            try
+            @Override
+            public LegacyDatabase call() throws Exception
             {
-                return (LegacyDatabase) rmiLocation.getBoundObject();
+                long endTime = currentTimeMillis() + SECONDS.toMillis( 10000 );
+                while ( currentTimeMillis() < endTime )
+                {
+                    try
+                    {
+                        return (LegacyDatabase) rmiLocation.getBoundObject();
+                    }
+                    catch ( RemoteException e )
+                    {
+                        // OK
+                        sleep( 100 );
+                    }
+                }
+                process.destroy();
+                throw new IllegalStateException( "Couldn't get remote to legacy database" );
             }
-            catch ( RemoteException e )
-            {
-                // OK
-                sleep( 100 );
-            }
-        }
-        
-        process.destroy();
-        throw new IllegalStateException( "Couldn't get remote to legacy database" );
+        } );
+        executor.shutdown();
+        return future;
     }
 
     private static String appendNecessaryTestClasses( String classpath )
     {
         for ( String path : getProperty( "java.class.path" ).split( File.pathSeparator ) )
+        {
             if ( path.contains( "test-classes" ) )
+            {
                 classpath = classpath + File.pathSeparator + path;
+            }
+        }
         return classpath;
     }
 
@@ -155,7 +180,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     {
         try
         {
-            db.getClass().getDeclaredMethod( "pullUpdates" ).invoke( db );
+            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         }
         catch ( Exception e )
         {
@@ -163,8 +188,18 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         }
         
         for ( Node node : at( db ).getAllNodes() )
+        {
             if ( name.equals( node.getProperty( "name", null ) ) )
+            {
                 return;
+            }
+        }
         fail( "Node " + id + " with name '" + name + "' not found" );
+    }
+    
+    @Override
+    public boolean isMaster() throws RemoteException
+    {
+        return ((HighlyAvailableGraphDatabase)db).isMaster();
     }
 }
