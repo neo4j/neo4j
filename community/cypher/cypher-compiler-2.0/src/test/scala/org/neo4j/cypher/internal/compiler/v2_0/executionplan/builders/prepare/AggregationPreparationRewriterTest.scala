@@ -25,14 +25,20 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.BuilderTest
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{PartiallySolvedQuery, PlanBuilder}
+import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_0.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Add
-import org.neo4j.cypher.internal.compiler.v2_0.commands.SingleNode
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.LiteralMap
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Divide
 import org.neo4j.cypher.internal.compiler.v2_0.commands.AllIdentifiers
 import org.neo4j.cypher.internal.compiler.v2_0.commands.SortItem
+import scala.Some
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Add
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Collect
+import org.neo4j.cypher.internal.compiler.v2_0.commands.SingleNode
+import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.CountStar
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
-import org.neo4j.graphdb.Direction
 
 class AggregationPreparationRewriterTest extends BuilderTest {
 
@@ -63,17 +69,76 @@ class AggregationPreparationRewriterTest extends BuilderTest {
     val expectedTail =
       Query.
         start().
-        returns(ReturnItem(Add(Identifier(nFooString), Identifier(countStartString)), addNFooCountStarString))
+        returns(ReturnItem(Add(Identifier(nFooString), Identifier(countStarString)), addNFooCountStarString))
 
     val expected = Query.
       matches(n).
       tail(expectedTail).
       returns(
-      ReturnItem(nFoo, nFooString, renamed = true),
-      ReturnItem(countStar, countStartString, renamed = true)
+        ReturnItem(countStar, countStarString, renamed = true),
+        ReturnItem(nFoo, nFooString, renamed = true)
     )
+    val expectedQuery = PartiallySolvedQuery(expected)
 
-    assert(result === PartiallySolvedQuery(expected))
+    assert(result === expectedQuery)
+  }
+
+  @Test
+  def should_split_complex_query_up_into_two() {
+    // given MATCH n RETURN count(*)/60/60
+    val q = Query.
+      matches(n).
+      returns(ReturnItem(countStarDiv60Div60, countStarDiv60Div60String))
+
+    // when
+    val result = assertAccepts(q).query
+
+    // then MATCH n WITH count(*)/60 AS x1, 60 AS x2 RETURN x1/x2 AS count(*)/60/60
+    val expectedTail =
+      Query.
+        start().
+        returns(ReturnItem(Divide(Identifier(countStarDiv60String), Identifier(literal60String)), countStarDiv60Div60String))
+
+    val expected = Query.
+      matches(n).
+      tail(expectedTail).
+      returns(
+        ReturnItem(countStarDiv60, countStarDiv60String, renamed = true),
+        ReturnItem(literal60, literal60String, renamed = true)
+      )
+
+    val expectedQuery = PartiallySolvedQuery(expected)
+
+    assert(result === expectedQuery)
+  }
+
+  @Test
+  def should_split_inv_complex_query_up_into_two() {
+    // given MATCH n RETURN 60/60/count(*)
+    val q = Query.
+      matches(n).
+      returns(ReturnItem(div60by60byCountStar, div60by60byCountStarString))
+
+    // when
+    val result = assertAccepts(q).query
+
+    // then MATCH n WITH 60 AS x1, 60/count(*) AS x2 RETURN x1/x2 AS 60/60/count(*)
+    val expectedTail =
+      Query.
+        start().
+        returns(ReturnItem(Divide(Identifier(literal60String), Identifier(div60byCountStarString)), div60by60byCountStarString))
+
+    val expected = Query.
+      matches(n).
+      tail(expectedTail).
+      returns(
+        ReturnItem(div60byCountStar, div60byCountStarString, renamed = true),
+        ReturnItem(literal60, literal60String, renamed = true)
+      )
+
+    val expectedQuery = PartiallySolvedQuery(expected)
+
+    assert(result === expectedQuery)
   }
 
   @Test
@@ -90,14 +155,14 @@ class AggregationPreparationRewriterTest extends BuilderTest {
     val expectedTail =
       Query.
         start().
-        returns(AllIdentifiers(), ReturnItem(Add(Identifier(nFooString), Identifier(countStartString)), addNFooCountStarString))
+        returns(AllIdentifiers(), ReturnItem(Add(Identifier(nFooString), Identifier(countStarString)), addNFooCountStarString))
 
     val expected = Query.
       matches(n).
       tail(expectedTail).
       returns(
+      ReturnItem(countStar, countStarString, renamed = true),
       ReturnItem(nFoo, nFooString, renamed = true),
-      ReturnItem(countStar, countStartString, renamed = true),
       AllIdentifiers()
     )
 
@@ -121,14 +186,14 @@ class AggregationPreparationRewriterTest extends BuilderTest {
       Query.
         start().
         orderBy(SortItem(Identifier(nFooString), true)).
-        returns(ReturnItem(Add(Identifier(nFooString), Identifier(countStartString)), addNFooCountStarString))
+        returns(ReturnItem(Add(Identifier(nFooString), Identifier(countStarString)), addNFooCountStarString))
 
     val expected = Query.
       matches(n).
       tail(expectedTail).
       returns(
-      ReturnItem(nFoo, nFooString, renamed = true),
-      ReturnItem(countStar, countStartString, renamed = true)
+      ReturnItem(countStar, countStarString, renamed = true),
+      ReturnItem(nFoo, nFooString, renamed = true)
     )
 
     assert(result === PartiallySolvedQuery(expected))
@@ -152,16 +217,17 @@ class AggregationPreparationRewriterTest extends BuilderTest {
       Query.
         start().
         returns(
-        ReturnItem(Add(Identifier(nFooString), Identifier(countStartString)), addNFooCountStarString),
+        ReturnItem(Add(Identifier(nFooString), Identifier(countStarString)), addNFooCountStarString),
         ReturnItem(Identifier(nBarString), nBarString))
 
     val expected = Query.
       matches(n).
       tail(expectedTail).
       returns(
-      ReturnItem(nFoo, nFooString, renamed = true),
-      ReturnItem(countStar, countStartString, renamed = true),
-      ReturnItem(nBar, nBarString, renamed = true))
+        ReturnItem(nBar, nBarString, renamed = true),
+        ReturnItem(countStar, countStarString, renamed = true),
+        ReturnItem(nFoo, nFooString, renamed = true)
+      )
 
     val query = PartiallySolvedQuery(expected)
     assert(result === query)
@@ -190,8 +256,9 @@ class AggregationPreparationRewriterTest extends BuilderTest {
       matches(r).
       tail(expectedTail).
       returns(
-        ReturnItem(aProp, aPropString, renamed = true),
-        ReturnItem(collect, collectString, renamed = true))
+        ReturnItem(collect, collectString, renamed = true),
+        ReturnItem(aProp, aPropString, renamed = true)
+      )
 
     val expectation = PartiallySolvedQuery(expected)
     assert(result === expectation)
@@ -204,17 +271,35 @@ class AggregationPreparationRewriterTest extends BuilderTest {
   val aProp = Equals(Property(Identifier("a"), UnresolvedProperty("prop")), Literal(42))
   val collect = Collect(Property(Identifier("b"), UnresolvedProperty("prop2")))
 
+  val countStar = CountStar()
+  val literal60 = Literal(60)
+  val countStarDiv60 =  Divide(countStar, literal60)
+  val countStarDiv60Div60 = Divide(countStarDiv60, literal60)
+  val div60byCountStar = Divide(literal60, countStar)
+  val div60by60byCountStar = Divide(literal60, div60byCountStar)
+
   val nFooString = "n.foo"
   val nBarString = "n.bar"
-  val countStartString = "count(*)"
   val addNFooCountStarString = "n.foo + count(*)"
   val aPropString = "a.prop=42"
   val collectString = "collect(b.prop2)"
-  val countStar = CountStar()
+  val countStarString = "count(*)"
+  val countStarDiv60String = "count(*)/60"
+  val countStarDiv60Div60String = "count(*)/60/60"
+  val literal60String = "60"
+  val div60byCountStarString = "60/count(*)"
+  val div60by60byCountStarString = "60/60/count(*)"
+
+
   val namer = Map[Expression, String](
-    countStar -> countStartString,
+    countStar -> countStarString,
     nFoo -> nFooString,
     nBar -> nBarString,
     aProp -> aPropString,
+    literal60 -> literal60String,
+    countStarDiv60 -> countStarDiv60String,
+    countStarDiv60Div60 -> countStarDiv60Div60String,
+    div60byCountStar -> div60byCountStarString,
+    div60by60byCountStar -> div60by60byCountStarString,
     collect -> collectString)
 }
