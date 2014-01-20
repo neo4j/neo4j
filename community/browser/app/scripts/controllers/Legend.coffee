@@ -21,9 +21,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict'
 
 angular.module('neo4jApp')
-  .controller 'LegendCtrl', ['$scope', 'GraphStyle', ($scope, graphStyle) ->
+  .controller 'LegendCtrl', ['$scope', 'Frame', 'GraphStyle', ($scope, resultFrame, graphStyle) ->
 
-    $scope.rules = graphStyle.rules
+    $scope.graph = null
+
+    update = (graph) ->
+      resultLabels = {}
+      for node in graph.nodes()
+        for label in node.labels 
+          resultLabels[label] = (resultLabels[label] || 0) + 1
+      resultRules = []
+      for rule in graphStyle.rules
+        if resultLabels.hasOwnProperty(rule.selector.klass)
+          resultRules.push(rule)
+      $scope.rules = resultRules
+
+    $scope.$watch 'frame.response', (frameResponse) ->
+      return unless frameResponse
+      if frameResponse.graph
+        $scope.graph = frameResponse.graph
+        update(frameResponse.graph) 
+
+    graphChanged = (event, graph) ->
+      if graph is $scope.graph
+        update(graph)
+
+    $scope.$on 'graph:changed', graphChanged
+
+    $scope.rules = [] 
 
     $scope.isNode = (rule) ->
       rule.selector.tag == 'node'
