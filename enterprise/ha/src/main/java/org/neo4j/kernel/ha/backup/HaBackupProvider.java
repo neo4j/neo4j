@@ -115,7 +115,6 @@ public final class HaBackupProvider extends BackupExtensionService
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                clusterClient.refreshSnapshot();
                 clusterClient.removeClusterListener( this );
             }
         });
