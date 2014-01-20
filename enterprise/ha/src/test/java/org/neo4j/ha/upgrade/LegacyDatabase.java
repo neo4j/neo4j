@@ -34,4 +34,6 @@ public interface LegacyDatabase extends Remote
     long createNode( String name ) throws RemoteException;
     
     void verifyNodeExists( long id, String name ) throws RemoteException;
+    
+    boolean isMaster() throws RemoteException;
 }
