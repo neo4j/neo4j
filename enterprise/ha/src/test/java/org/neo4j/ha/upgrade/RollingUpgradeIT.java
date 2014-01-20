@@ -63,12 +63,11 @@ public class RollingUpgradeIT
     
     private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
     private final File DBS_DIR = DIR.directory( "dbs", true );
-    private Process zoo;
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
 
     @Test
-    public void doRollingUpgradeFromOneEightToOneNineWithMasterLast() throws Throwable
+    public void doRollingUpgradeFromPreviousVersionWithMasterLast() throws Throwable
     {
         /* High level scenario:
          * 1   Have a cluster of 3 instances running <old version>
@@ -123,9 +122,9 @@ public class RollingUpgradeIT
     {
         if ( legacyDbs != null )
         {
-            for ( LegacyDatabase db : legacyDbs )
+            for ( int i = 0; i < legacyDbs.length; i++ )
             {
-                stop( db );
+                stop( i );
             }
         }
         if ( newDbs != null )
@@ -135,19 +134,15 @@ public class RollingUpgradeIT
                 db.shutdown();
             }
         }
-        if ( zoo != null )
-        {
-            zoo.destroy();
-        }
     }
 
     private void startOldVersionCluster() throws Exception
     {
         debug( "Downloading " + OLD_VERSION + " package" );
-        File oneEightPackage = downloadAndUnpack(
+        File oldVersionPackage = downloadAndUnpack(
                 "http://download.neo4j.org/artifact?edition=enterprise&version=" + OLD_VERSION + "&distribution=zip",
                 DIR.directory( "download" ), OLD_VERSION + "-enterprise" );
-        String classpath = assembleClassPathFromPackage( oneEightPackage );
+        String classpath = assembleClassPathFromPackage( oldVersionPackage );
         debug( "Starting " + OLD_VERSION + " cluster in separate jvms" );
         @SuppressWarnings( "rawtypes" )
         Future[] legacyDbFutures = new Future[3];
@@ -188,8 +183,6 @@ public class RollingUpgradeIT
                 cluster_server.name(), localhost + ":" + ( 5000+serverId ),
                 ha_server.name(), localhost + ":" + ( 6000+serverId ),
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
-//        if ( !forOneEight && serverId != 0 ) // TODO master election algo favors low serverId, default push factor favors high serverId
-//            result.put( ClusterSettings.allow_init_cluster.name(), Boolean.FALSE.toString() );
         return result;
     }
 
@@ -214,7 +207,7 @@ public class RollingUpgradeIT
     private void rollOver( LegacyDatabase legacyDb, int i ) throws Exception
     {
         String storeDir = legacyDb.getStoreDir();
-        stop( legacyDb );
+        stop( i );
         Thread.sleep( 30000 );
 
         debug( "Starting " + i + " as current version" );
@@ -224,22 +217,26 @@ public class RollingUpgradeIT
                 .setConfig( config( i ) )
                 .newGraphDatabase();
         debug( "Started " + i + " as current version" );
+        legacyDbs[i] = null;
 
         // issue transaction and see that it propagates
         String name = "upgraded-" + i;
         long node = createNodeWithRetry( newDbs[i], name );
-        System.out.println( "===> Created on " + i );
+        debug( "Node created on " + i );
         for ( int j = 0; j < i; j++ )
         {
-            legacyDbs[j].verifyNodeExists( node, name );
-            debug( "Verified on legacy db " + j );
+            if ( legacyDbs[i] != null )
+            {
+                legacyDbs[j].verifyNodeExists( node, name );
+                debug( "Verified on legacy db " + j );
+            }
         }
         for ( int j = 0; j < newDbs.length; j++ )
         {
             if ( newDbs[j] != null )
             {
                 verifyNodeExists( newDbs[j], node, name );
-                debug( "==> Verified on new db " + j );
+                debug( "Verified on new db " + j );
             }
         }
     }
@@ -264,11 +261,16 @@ public class RollingUpgradeIT
         throw new IllegalStateException( "No master" );
     }
 
-    private void stop( LegacyDatabase legacyDb )
+    private void stop( int i )
     {
         try
         {
-            legacyDb.stop();
+            LegacyDatabase legacyDb = legacyDbs[i];
+            if ( legacyDb != null )
+            {
+                legacyDb.stop();
+                legacyDbs[i] = null;
+            }
         }
         catch ( RemoteException e )
         {
