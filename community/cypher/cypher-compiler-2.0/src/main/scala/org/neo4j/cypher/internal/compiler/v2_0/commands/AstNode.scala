@@ -33,6 +33,8 @@ trait AstNode[T] {
     case _          => throw new CypherTypeException("Invalid rewrite")
   }
 
+  def contains(e:Expression) = exists(e == _)
+
   def exists(f: Expression => Boolean) = filter(f).nonEmpty
 
   def filter(isMatch: Expression => Boolean): Seq[Expression] =
