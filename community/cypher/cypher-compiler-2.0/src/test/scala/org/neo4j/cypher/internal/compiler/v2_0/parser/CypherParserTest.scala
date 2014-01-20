@@ -2758,19 +2758,12 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def genericCaseCoercesInWhen() {
     test(
-      """
-        |MATCH (a)
-        |RETURN
-        |  CASE
-        |    WHEN (a)-[:LOVES]->() THEN 1
-        |    ELSE 0
-        |  END AS result
-      """.stripMargin,
+      """MATCH (a) RETURN CASE WHEN (a)-[:LOVES]->() THEN 1 ELSE 0 END AS result""".stripMargin,
       Query.
         matches(SingleNode("a")).
         returns(
           ReturnItem(GenericCase(
-            Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED49"), "  UNNAMED37", Seq("LOVES"), Direction.OUTGOING, Map.empty)))), Literal(1))),
+            Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED42"), "  UNNAMED30", Seq("LOVES"), Direction.OUTGOING, Map.empty)))), Literal(1))),
             Some(Literal(0))
           ), "result", true)
         )
