@@ -21,6 +21,8 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -49,10 +51,26 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writeByteArray( out, (byte[]) value );
         }
+        else if ( value instanceof Map )
+        {
+            writeMap(out, (Map) value );
+        }
         else
         {
             super.writeValue( out, value );
         }
+    }
+
+    private void writeMap( JsonGenerator out, Map value ) throws IOException
+    {
+        out.writeStartObject();
+        Set<Map.Entry> set = value.entrySet();
+        for ( Map.Entry e : set )
+        {
+            out.writeFieldName( e.getKey().toString() );
+            writeValue( out, e.getValue() );
+        }
+        out.writeEndObject();
     }
 
     private void writeIterator( JsonGenerator out, Iterator value ) throws IOException
