@@ -46,7 +46,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
@@ -422,15 +421,15 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         }
         newTransaction();
         clearCache();
-        Iterable<Relationship> relIterable = toList( node1.getRelationships() );
-        Set<Relationship> relSet = new HashSet<>();
+        Iterable<Relationship> relIterable = node1.getRelationships();
+        Set<Relationship> relSet = new HashSet<Relationship>();
         for ( Relationship rel : rels )
         {
             rel.delete();
             relSet.add( rel );
         }
         newTransaction();
-        assertEquals( relSet, new HashSet<>( IteratorUtil.asCollection( relIterable ) ) );
+        assertEquals( relSet, new HashSet<Relationship>( IteratorUtil.asCollection( relIterable ) ) );
         node1.delete();
         node2.delete();
     }
