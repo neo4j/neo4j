@@ -56,8 +56,6 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            System.out.println(description.toString());
-
             subdir = TargetDirectory.this.directory( description.getMethodName() == null ? description.getDisplayName() : description.getMethodName(), clean );
             return new Statement()
             {
@@ -114,8 +112,6 @@ public class TargetDirectory
 
     public File directory( String name, boolean clean )
     {
-        System.out.println(base());
-        System.out.println(name);
         File dir = new File( base(), name );
         if ( clean && dir.exists() ) recursiveDelete( dir );
         dir.mkdir();
@@ -158,7 +154,6 @@ public class TargetDirectory
         {
             File codeSource = new File(
                     owningTest.getProtectionDomain().getCodeSource().getLocation().toURI() );
-            System.out.println("CODESOURCE "+codeSource);
             if ( codeSource.exists() )
             {
                 if ( codeSource.isFile() )// jarfile
@@ -173,7 +168,6 @@ public class TargetDirectory
         catch ( URISyntaxException e )
         {
         }
-        System.out.println("TARGET "+target);
 
         if ( target == null )
         {

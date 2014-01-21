@@ -18,22 +18,11 @@
  */
 package org.neo4j.examples.osgi;
 
-import static org.ops4j.pax.exam.CoreOptions.cleanCaches;
-import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
-import static org.ops4j.pax.exam.CoreOptions.frameworkStartLevel;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
-import static org.ops4j.pax.exam.CoreOptions.provision;
-import static org.ops4j.pax.exam.CoreOptions.repository;
-import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
-import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.index.Index;
 import org.ops4j.pax.exam.ExamSystem;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.TestContainer;
@@ -45,6 +34,19 @@ import org.ops4j.pax.exam.testforge.WaitForService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.index.Index;
+
+import static org.ops4j.pax.exam.CoreOptions.cleanCaches;
+import static org.ops4j.pax.exam.CoreOptions.frameworkStartLevel;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.provision;
+import static org.ops4j.pax.exam.CoreOptions.repository;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
+import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
+import static org.ops4j.pax.tinybundles.core.TinyBundles.withBnd;
+
 public class OSGiIT
 {
 
@@ -52,6 +54,7 @@ public class OSGiIT
             .getImplementationVersion();
     public static final String GERONIMO_JTA_VERSION = "1.1.1";
 
+    @Ignore("This creates test garbage")
     @Test
     public void neo4jStartupTestFelix() throws Exception
     {
