@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.transaction.Transaction;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -302,13 +303,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // and when that election is finished refresh the snapshot
         clusterClient.addClusterListener( new ClusterListener.Adapter()
         {
-            boolean hasRequestedElection = true; // This ensures that the election result is (at least) from our
+            boolean hasRequestedElection = false; // This ensures that the election result is (at least) from our
             // request or thereafter
 
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
                 clusterClient.performRoleElections();
+                hasRequestedElection = true;
             }
 
             @Override
@@ -316,7 +318,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
+
+                    /*
+                     * This is here just for compatibility with 1.9.5. 1.9.6 onwards does not depend on
+                     * snapshots for setting the state on cluster join. But we cannot have rolling upgrades
+                     * from 1.9.5 to 1.9.6 without this snapshot thing because before 1.9.6 not every
+                     * masterIsElected was acknowledged with a masterIsAvailable.
+                     * See also SnapshotState.ready
+                     */
+                    clusterClient.refreshSnapshot();
                     clusterClient.removeClusterListener( this );
+
                 }
             }
         } );
@@ -484,7 +496,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
                         lastUpdateTime ) );
     }
-    
+
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {
