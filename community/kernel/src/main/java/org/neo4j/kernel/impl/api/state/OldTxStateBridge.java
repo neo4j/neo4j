@@ -58,4 +58,6 @@ public interface OldTxStateBridge
     void graphRemoveProperty( DefinedProperty removedProperty );
 
     Map<Long, Object> getNodesWithChangedProperty( int propertyKeyId );
+
+    long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId );
 }

@@ -78,6 +78,7 @@ public class CombinedRelIdIterator implements RelIdIterator
                 }
             }
             currentIterator = addIterator;
+            break;
         }
         nextElementDetermined = true;
         nextElement = -1;
@@ -100,6 +101,7 @@ public class CombinedRelIdIterator implements RelIdIterator
         {
             throw new NoSuchElementException();
         }
+
         nextElementDetermined = false;
         return nextElement;
     }

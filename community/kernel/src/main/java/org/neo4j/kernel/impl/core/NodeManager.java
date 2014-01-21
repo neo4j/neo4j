@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -212,7 +211,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         long id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, true );
-        NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider, cleanupService );
+        NodeProxy proxy = new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider, cleanupService );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
         boolean success = false;
@@ -236,7 +235,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     @Override
     public NodeProxy newNodeProxyById( long id )
     {
-        return new NodeProxy( id, nodeLookup, statementCtxProvider, cleanupService );
+        return new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider, cleanupService );
     }
 
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
@@ -266,9 +265,6 @@ public class NodeManager implements Lifecycle, EntityFactory
         boolean success = false;
         try
         {
-            tx.acquireWriteLock( startNodeProxy );
-            tx.acquireWriteLock( endNode );
-            persistenceManager.relationshipCreate( id, typeId, startNodeId, endNodeId );
             tx.createRelationship( id );
             if ( startNodeId == endNodeId )
             {
@@ -279,7 +275,6 @@ public class NodeManager implements Lifecycle, EntityFactory
                 tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.OUTGOING );
                 tx.getOrCreateCowRelationshipAddMap( secondNode, typeId ).add( id, DirectionWrapper.INCOMING );
             }
-            // relCache.put( rel.getId(), rel );
             relCache.put( rel );
             success = true;
             return proxy;
@@ -297,7 +292,8 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         transactionManager.assertInTransaction();
         NodeImpl node = getLightNode( nodeId );
-        return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider, cleanupService ) : null;
+        return node != null ?
+                new NodeProxy( nodeId, nodeLookup, relationshipLookups, statementCtxProvider, cleanupService ) : null;
     }
 
     public Node getNodeById( long nodeId ) throws NotFoundException
@@ -409,20 +405,8 @@ public class NodeManager implements Lifecycle, EntityFactory
                 } ) );
     }
 
-    /**
-     * TODO: We only grab this lock in one single place, from inside the kernel:
-     * {@link org.neo4j.kernel.impl.api.DefaultLegacyKernelOperations#relationshipCreate(org.neo4j.kernel.api.Statement, long, long, long)}.
-     * We should move that code around such that this lock is grabbed through the locking layer in the kernel cake, and
-     * then we should remove this locking code. It is dangerous to have it here, because it allows grabbing a lock
-     * before the kernel is registered as a data source. If that happens in HA, we will attempt to grab locks on the
-     * master before the transaction is started on the master.
-     */
-    public NodeImpl getNodeForProxy( long nodeId, LockType lock )
+    public NodeImpl getNodeForProxy( long nodeId )
     {
-        if ( lock != null )
-        {
-            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup, statementCtxProvider, cleanupService ) );
-        }
         NodeImpl node = getLightNode( nodeId );
         if ( node == null )
         {

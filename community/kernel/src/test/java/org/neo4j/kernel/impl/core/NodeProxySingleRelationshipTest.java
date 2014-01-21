@@ -33,6 +33,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.util.TestLogging;
 
@@ -100,17 +101,18 @@ public class NodeProxySingleRelationshipTest
         }
     }
 
-    private NodeProxy mockNodeWithRels(long ... relIds)
+    private NodeProxy mockNodeWithRels(long ... relIds) throws EntityNotFoundException
     {
         ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
         NodeProxy.NodeLookup nodeLookup = mock( NodeProxy.NodeLookup.class );
+
         GraphDatabaseService gds = mock( GraphDatabaseService.class );
 
         when(gds.getRelationshipById( REL_ID )).thenReturn( mock( Relationship.class ) );
         when(gds.getRelationshipById( REL_ID + 1)).thenReturn( mock(Relationship.class) );
         when( nodeLookup.getGraphDatabase() ).thenReturn( gds );
 
-        NodeProxy nodeImpl = new NodeProxy( 1, nodeLookup, stmCtxBridge,
+        NodeProxy nodeImpl = new NodeProxy( 1, nodeLookup, mock( RelationshipProxy.RelationshipLookups.class), stmCtxBridge,
                 new CleanupService(new TestLogging())
                 {
                     @Override

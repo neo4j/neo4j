@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
 
 import static java.util.EnumSet.allOf;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -661,6 +660,26 @@ public abstract class IteratorUtil
         return addToCollection( iterator, new ArrayList<T>() );
     }
 
+    public static List<Long> asList( PrimitiveLongIterator iterator )
+    {
+        List<Long> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
+    public static List<Integer> asList( PrimitiveIntIterator iterator )
+    {
+        List<Integer> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
     /**
      * Creates a {@link Set} from an {@link Iterable}.
      *
@@ -1264,8 +1283,6 @@ public abstract class IteratorUtil
             }
         };
     }
-
-
 
     public static PrimitiveLongIterator primitiveLongIterator(final long ... values)
     {

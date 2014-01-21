@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -129,7 +130,6 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
@@ -167,7 +167,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
@@ -686,10 +685,10 @@ public abstract class InternalAbstractGraphDatabase
                 }
 
                 @Override
-                public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
+                public NodeImpl getNodeForProxy( final long nodeId )
                 {
                     guard.check();
-                    return super.getNodeForProxy( nodeId, lock );
+                    return super.getNodeForProxy( nodeId );
                 }
 
                 @Override
@@ -735,10 +734,10 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public NodeImpl getNodeForProxy( final long nodeId, final LockType lock )
+            public NodeImpl getNodeForProxy( final long nodeId )
             {
                 guard.check();
-                return super.getNodeForProxy( nodeId, lock );
+                return super.getNodeForProxy( nodeId );
             }
 
             @Override
@@ -857,20 +856,6 @@ public abstract class InternalAbstractGraphDatabase
     {
         return new NodeProxy.NodeLookup()
         {
-            @Override
-            public NodeImpl lookup( long nodeId )
-            {
-                assertDatabaseRunning();
-                return nodeManager.getNodeForProxy( nodeId, null );
-            }
-
-            @Override
-            public NodeImpl lookup( long nodeId, LockType lock )
-            {
-                assertDatabaseRunning();
-                return nodeManager.getNodeForProxy( nodeId, lock );
-            }
-
             @Override
             public GraphDatabaseService getGraphDatabase()
             {

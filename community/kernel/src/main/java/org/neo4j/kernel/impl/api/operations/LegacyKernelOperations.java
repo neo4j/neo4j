@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 /**
  * This is a temporary layer to make moving legacy components into the kernel API a two-step process, making the work
@@ -35,11 +30,4 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 public interface LegacyKernelOperations
 {
     long nodeCreate( Statement state );
-
-    long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
-
-    PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction, int[] relTypes );
-
-    PrimitiveLongIterator relationshipsGetFromNode( KernelStatement statement, long nodeId, Direction direction );
 }

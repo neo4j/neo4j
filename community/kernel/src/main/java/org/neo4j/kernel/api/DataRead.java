@@ -48,9 +48,9 @@ interface DataRead
     PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction, int ... relTypes );
+    PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction, int ... relTypes ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction );
+    PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction ) throws EntityNotFoundException;
 
     /**
      * Returns node id of unique node found in the given unique index for value or

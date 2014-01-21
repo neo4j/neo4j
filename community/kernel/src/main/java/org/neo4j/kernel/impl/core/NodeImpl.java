@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.List;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -42,14 +40,14 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
-
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
@@ -145,7 +143,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return this == obj || (obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId());
     }
 
-    Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
+    PrimitiveLongIterator getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
     {
         ensureRelationshipMapNotNull( nodeManager );
 
@@ -156,66 +154,27 @@ public class NodeImpl extends ArrayBasedPrimitive
         // the point where we check whether or not there are more relationships to load.
         boolean hasMore = hasMoreRelationshipsToLoad();
 
-        RelIdArray[] localRelationships = relationships;
-        RelIdIterator[] result = new RelIdIterator[localRelationships.length];
-        TransactionState tx = nodeManager.getTransactionState();
-        ArrayMap<Integer, RelIdArray> addMap = null;
-        ArrayMap<Integer, Collection<Long>> skipMap = null;
-        if ( tx.hasChanges() )
-        {
-            addMap = tx.getCowRelationshipAddMap( this );
-            skipMap = tx.getCowRelationshipRemoveMap( this );
-        }
 
-        for ( int i = 0; i < localRelationships.length; i++ )
+        int numberOfRelIdArrays = relationships.length;
+        RelIdIterator[] result = new RelIdIterator[numberOfRelIdArrays];
+
+        for ( int i = 0; i < numberOfRelIdArrays; i++ )
         {
-            RelIdArray src = localRelationships[i];
-            int type = src.getType();
-            RelIdIterator iterator;
-            if ( addMap != null || skipMap != null )
-            {
-                iterator = new CombinedRelIdIterator( type, direction, src,
-                        addMap != null ? addMap.get( type ) : null,
-                        skipMap != null ? skipMap.get( type ) : null );
-            }
-            else
-            {
-                iterator = src.iterator( direction );
-            }
+            RelIdArray src = relationships[i];
+            RelIdIterator iterator = src.iterator( direction );
             result[i] = iterator;
         }
 
-        // New relationship types for this node which hasn't been committed yet,
-        // but exists only as transactional state.
-        if ( addMap != null )
-        {
-            RelIdIterator[] additional = new RelIdIterator[addMap.size() /*worst case size*/];
-            int additionalSize = 0;
-            for ( int type : addMap.keySet() )
-            {
-                if ( getRelIdArray( type ) == null )
-                {
-                    RelIdArray add = addMap.get( type );
-                    additional[additionalSize++] = new CombinedRelIdIterator( type, direction, null, add,
-                            skipMap != null ? skipMap.get( type ) : null );
-                }
-            }
-            RelIdIterator[] newResult = new RelIdIterator[result.length + additionalSize];
-            arraycopy( result, 0, newResult, 0, result.length );
-            arraycopy( additional, 0, newResult, result.length, additionalSize );
-            result = newResult;
-        }
         if ( result.length == 0 )
         {
-            return Collections.emptyList();
+            return emptyPrimitiveLongIterator();
         }
         return new RelationshipIterator( result, this, direction, nodeManager, hasMore, true );
     }
 
-    Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
-                                                      DirectionWrapper direction, RelationshipType... types )
+    PrimitiveLongIterator getAllRelationshipsOfType( NodeManager nodeManager,
+                                                      DirectionWrapper direction, int[] types )
     {
-        types = deduplicate( types );
         ensureRelationshipMapNotNull( nodeManager );
 
         // We need to check if there are more relationships to load before grabbing
@@ -226,26 +185,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         boolean hasMore = hasMoreRelationshipsToLoad();
 
         RelIdIterator[] result = new RelIdIterator[types.length];
-        TransactionState tx = nodeManager.getTransactionState();
-        ArrayMap<Integer, RelIdArray> addMap = null;
-        ArrayMap<Integer, Collection<Long>> skipMap = null;
-        if ( tx.hasChanges() )
-        {
-            addMap = tx.getCowRelationshipAddMap( this );
-            skipMap = tx.getCowRelationshipRemoveMap( this );
-        }
         int actualLength = 0;
-        for ( RelationshipType type : types )
+        for ( int type : types )
         {
-            int typeId = nodeManager.getRelationshipTypeIdFor( type );
-            if ( typeId == TokenHolder.NO_ID )
-            {
-                continue;
-            }
-
-            result[actualLength++] = getRelationshipsIterator( direction,
-                                                               addMap != null ? addMap.get( typeId ) : null,
-                                                               skipMap != null ? skipMap.get( typeId ) : null, typeId );
+            result[actualLength++] = getRelationshipsIterator( direction, type );
         }
 
         if ( actualLength < result.length )
@@ -256,7 +199,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         if ( result.length == 0 )
         {
-            return Collections.emptyList();
+            return emptyPrimitiveLongIterator();
         }
         return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
     }
@@ -287,32 +230,21 @@ public class NodeImpl extends ArrayBasedPrimitive
         return types;
     }
 
-    private RelIdIterator getRelationshipsIterator( DirectionWrapper direction, RelIdArray add,
-                                                    Collection<Long> remove, int type )
+    private RelIdIterator getRelationshipsIterator( DirectionWrapper direction, int type )
     {
         RelIdArray src = getRelIdArray( type );
-        if ( add != null || remove != null )
-        {
-            return new CombinedRelIdIterator( type, direction, src, add, remove );
-        }
         return src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
     }
 
-    public Iterable<Relationship> getRelationships( NodeManager nodeManager, Direction dir )
+    public PrimitiveLongIterator getRelationships( NodeManager nodeManager, Direction dir )
     {
         return getAllRelationships( nodeManager, wrap( dir ) );
     }
 
-    public Iterable<Relationship> getRelationships( NodeManager nodeManager,
-                                                    Direction direction, RelationshipType... types )
+    public PrimitiveLongIterator getRelationships( NodeManager nodeManager,
+                                                    Direction direction, int[] types )
     {
         return getAllRelationshipsOfType( nodeManager, wrap( direction ), types );
-    }
-
-    public Iterable<Relationship> getRelationships( NodeManager nodeManager, RelationshipType type,
-                                                    Direction dir )
-    {
-        return getAllRelationshipsOfType( nodeManager, wrap( dir ), type );
     }
 
     /**
@@ -367,7 +299,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
     }
 
-    protected void updateSize( NodeManager nodeManager )
+    private void updateSize( NodeManager nodeManager )
     {
         nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
@@ -453,7 +385,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return rels;
     }
 
-    boolean hasMoreRelationshipsToLoad()
+    private boolean hasMoreRelationshipsToLoad()
     {
         return getRelChainPosition() != Record.NO_NEXT_RELATIONSHIP.intValue();
     }

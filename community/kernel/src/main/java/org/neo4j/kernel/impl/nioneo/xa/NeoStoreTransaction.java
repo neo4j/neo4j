@@ -360,8 +360,6 @@ public class NeoStoreTransaction extends XaTransaction
                     + getIdentifier() + "]" );
         }
 
-        kernelTransaction.prepare();
-
         prepared = true;
 
         int noOfCommands = nodeRecords.changeSize() +

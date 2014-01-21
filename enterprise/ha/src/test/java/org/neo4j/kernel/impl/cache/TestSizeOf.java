@@ -220,14 +220,14 @@ public class TestSizeOf
         countRelationships( node );
 
         // Now the node cache size should be the same as doing node.size()
-        assertEquals( nodeManager().getNodeForProxy( node.getId(), null ).sizeOfObjectInBytesIncludingOverhead(), nodeCache.size() );
+        assertEquals( nodeManager().getNodeForProxy( node.getId() ).sizeOfObjectInBytesIncludingOverhead(), nodeCache.size() );
     }
 
     private int sizeOfNode( Node node )
     {
         try(Transaction ignore = db.beginTx())
         {
-            return nodeManager().getNodeForProxy( node.getId(), null ).sizeOfObjectInBytesIncludingOverhead();
+            return nodeManager().getNodeForProxy( node.getId() ).sizeOfObjectInBytesIncludingOverhead();
         }
     }
 

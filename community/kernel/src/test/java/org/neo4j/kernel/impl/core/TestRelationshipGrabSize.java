@@ -25,19 +25,18 @@ import java.util.HashSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.valueOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -238,11 +237,11 @@ public class TestRelationshipGrabSize
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
 
         node1.createRelationshipTo( node2, createType );
-        Relationship rel1 = node1.getRelationships( deleteType ).iterator().next();
-        rel1.delete();
+        node1.getRelationships( deleteType ).iterator().next().delete();
 
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         assertEquals( expectedCount, count( node2.getRelationships() ) );
+
         tx.success();
         tx.finish();
 

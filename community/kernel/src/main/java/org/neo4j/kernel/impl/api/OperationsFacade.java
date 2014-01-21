@@ -171,16 +171,18 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction, int[] relTypes )
+            throws EntityNotFoundException
     {
         statement.assertOpen();
-        return legacyKernelOperations.relationshipsGetFromNode( statement, nodeId, direction, relTypes );
+        return dataRead().relationshipsGetFromNode( statement, nodeId, direction, relTypes );
     }
 
     @Override
     public PrimitiveLongIterator relationshipsGetFromNode( long nodeId, Direction direction )
+            throws EntityNotFoundException
     {
         statement.assertOpen();
-        return legacyKernelOperations.relationshipsGetFromNode( statement, nodeId, direction );
+        return dataRead().relationshipsGetFromNode( statement, nodeId, direction );
     }
 
     @Override
@@ -444,11 +446,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long relationshipCreate( long relationshipTypeId, long startNodeId, long endNodeId )
+    public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        return legacyOps().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
+        return dataWrite().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override

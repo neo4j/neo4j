@@ -22,17 +22,19 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -72,15 +74,18 @@ public class PersistenceCache
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relationshipCache;
     private final Thunk<GraphPropertiesImpl> graphProperties;
+    private final NodeManager nodeManager;
 
     public PersistenceCache(
             AutoLoadingCache<NodeImpl> nodeCache,
             AutoLoadingCache<RelationshipImpl> relationshipCache,
-            Thunk<GraphPropertiesImpl> graphProperties )
+            Thunk<GraphPropertiesImpl> graphProperties,
+            NodeManager nodeManager)
     {
         this.nodeCache = nodeCache;
         this.relationshipCache = relationshipCache;
         this.graphProperties = graphProperties;
+        this.nodeManager = nodeManager;
     }
 
     public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId, CacheLoader<int[]> cacheLoader )
@@ -190,5 +195,15 @@ public class PersistenceCache
             int propertyKeyId )
     {
         return graphProperties.evaluate().getProperty( state, cacheLoader, NO_UPDATES, propertyKeyId );
+    }
+
+    public PrimitiveLongIterator nodeGetRelationships( long node, Direction direction, int[] relTypes ) throws EntityNotFoundException
+    {
+        return getNode( node ).getRelationships( nodeManager, direction, relTypes );
+    }
+
+    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        return getNode( nodeId ).getRelationships( nodeManager, direction );
     }
 }

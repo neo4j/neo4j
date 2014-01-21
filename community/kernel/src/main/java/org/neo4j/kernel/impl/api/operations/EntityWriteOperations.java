@@ -29,6 +29,8 @@ public interface EntityWriteOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
 
+    long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId );
+
     void nodeDelete( KernelStatement state, long nodeId );
 
     void relationshipDelete( KernelStatement state, long relationshipId );
