@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -56,7 +56,9 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            subdir = TargetDirectory.this.directory( description.getMethodName(), clean );
+            System.out.println(description.toString());
+
+            subdir = TargetDirectory.this.directory( description.getMethodName() == null ? description.getDisplayName() : description.getMethodName(), clean );
             return new Statement()
             {
                 @Override
@@ -112,6 +114,8 @@ public class TargetDirectory
 
     public File directory( String name, boolean clean )
     {
+        System.out.println(base());
+        System.out.println(name);
         File dir = new File( base(), name );
         if ( clean && dir.exists() ) recursiveDelete( dir );
         dir.mkdir();
@@ -154,6 +158,7 @@ public class TargetDirectory
         {
             File codeSource = new File(
                     owningTest.getProtectionDomain().getCodeSource().getLocation().toURI() );
+            System.out.println("CODESOURCE "+codeSource);
             if ( codeSource.exists() )
             {
                 if ( codeSource.isFile() )// jarfile
@@ -168,6 +173,8 @@ public class TargetDirectory
         catch ( URISyntaxException e )
         {
         }
+        System.out.println("TARGET "+target);
+
         if ( target == null )
         {
             target = new File( "target" );

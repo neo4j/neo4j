@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.test;
 
 import java.io.IOException;
+
 import org.junit.rules.ExternalResource;
-import org.junit.rules.TemporaryFolder;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -34,8 +36,17 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 public class EmbeddedDatabaseRule
     extends ExternalResource
 {
-    TemporaryFolder temp = new TemporaryFolder();
+    TargetDirectory.TestDirectory temp;
     GraphDatabaseAPI database;
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        temp = TargetDirectory.forTest( description.getTestClass() ).cleanTestDirectory();
+        temp.apply( base, description );
+
+        return super.apply( base, description );
+    }
 
     @Override
     protected void before()
@@ -53,16 +64,15 @@ public class EmbeddedDatabaseRule
     public void create()
         throws IOException
     {
-        temp.create();
         try
         {
-            GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temp.getRoot().getAbsolutePath() );
+            GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temp.directory().getAbsolutePath() );
             configure(builder);
             database = (GraphDatabaseAPI) builder.newGraphDatabase();
         }
         catch( RuntimeException e )
         {
-            temp.delete();
+            temp.complete( false );
             throw e;
         }
     }
@@ -91,7 +101,7 @@ public class EmbeddedDatabaseRule
         }
         finally
         {
-            temp.delete();
+            temp.complete( true );
             database = null;
         }
     }

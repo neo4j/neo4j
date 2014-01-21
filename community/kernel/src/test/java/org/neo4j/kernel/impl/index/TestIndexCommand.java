@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,18 +31,24 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.test.TargetDirectory;
 
-import static java.io.File.*;
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.MapUtil.*;
-import static org.neo4j.kernel.impl.index.IndexCommand.*;
+import static java.io.File.createTempFile;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
 
 public class TestIndexCommand
 {
@@ -61,6 +67,9 @@ public class TestIndexCommand
     private static final Map<String, String> SOME_CONFIG =
             stringMap( "type", "exact", "provider", "lucene" );
     private static final byte[] BUFFER = new byte[5000];
+
+    @Rule
+    public TargetDirectory.TestDirectory directory = TargetDirectory.forTest( TestIndexCommand.class ).testDirectory();
     
     @Test
     public void testWriteReadTruncate() throws Exception
@@ -105,7 +114,7 @@ public class TestIndexCommand
 
     private File copyFile( File file ) throws IOException
     {
-        File result = createTempFile( "index", "copy" );
+        File result = createTempFile( "index", "copy", directory.directory() );
         result.delete();
         FileInputStream in = new FileInputStream( file );
         int read = in.read( BUFFER );

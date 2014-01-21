@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2013 "Neo Technology,"
+ * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,8 +19,6 @@
  */
 package examples;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,6 +37,8 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+
+import static org.junit.Assert.assertEquals;
 
 public class BatchInsertExampleTest
 {
