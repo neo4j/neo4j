@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.neo4j.shell.apps.NoopApp;
+
 /**
  * Parses a line from the client with the intention of interpreting it as
  * an "app" command, f.ex. like:
@@ -84,6 +86,7 @@ public class AppCommandParser
 	{
 		if ( line == null || line.trim().length() == 0 )
 		{
+            app = new NoopApp();
 			return;
 		}
 		

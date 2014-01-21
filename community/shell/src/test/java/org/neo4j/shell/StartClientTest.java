@@ -19,13 +19,19 @@
  */
 package org.neo4j.shell;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
+import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 public class StartClientTest
@@ -52,5 +58,50 @@ public class StartClientTest
         // Then
         assertThat( (String) db.getGraphDatabaseService().getNodeById( 1 ).getProperty( "foo" ),
                 equalTo( "bar" ) );
+    }
+
+    @Test
+    public void mustWarnWhenRunningScriptWithUnterminatedMultilineCommands()
+    {
+        // Given an empty database and the unterminated-cypher-query.txt file.
+        String script = getClass().getResource( "/unterminated-cypher-query.txt" ).getFile();
+
+        // When running the script with -file
+        String output = runAndCaptureOutput( new String[]{ "-file", script } );
+
+        // Then we should get a warning
+        assertThat( output, containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) );
+    }
+
+    @Test
+    public void mustNotAboutExitingWithUnterminatedCommandWhenItIsNothingButComments()
+    {
+        // Given an empty database and the unterminated-comment.txt file.
+        String script = getClass().getResource( "/unterminated-comment.txt" ).getFile();
+
+        // When running the script with -file
+        String output = runAndCaptureOutput( new String[]{ "-file", script, "-v" } );
+
+        // Then we should get a warning
+        assertThat( output, not( containsString( AbstractClient.WARN_UNTERMINATED_INPUT ) ) );
+    }
+
+    private String runAndCaptureOutput( String[] arguments )
+    {
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream( buf );
+        PrintStream oldOut = System.out;
+        System.setOut( out );
+
+        try
+        {
+            StartClient.main( arguments );
+            out.close();
+            return buf.toString();
+        }
+        finally
+        {
+            System.setOut( oldOut );
+        }
     }
 }

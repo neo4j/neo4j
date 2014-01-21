@@ -67,6 +67,9 @@ public abstract class AbstractClient implements ShellClient
      */
     public static final String TITLE_MAX_LENGTH = "TITLE_MAX_LENGTH";
 
+    public static final String WARN_UNTERMINATED_INPUT =
+            "Warning: Exiting with unterminated multi-line input.";
+
     private static final Set<String> EXIT_COMMANDS = new HashSet<String>(
         Arrays.asList( "exit", "quit", null ) );
 
@@ -162,9 +165,15 @@ public abstract class AbstractClient implements ShellClient
     
     private String fullLine( String line )
     {
-        if ( multiLine.isEmpty() ) return line;
+        if ( multiLine.isEmpty() )
+        {
+            return line;
+        }
         StringBuilder result = new StringBuilder();
-        for ( String oneLine : multiLine ) result.append( result.length() > 0 ? "\n" : "" ).append( oneLine );
+        for ( String oneLine : multiLine )
+        {
+            result.append( result.length() > 0 ? "\n" : "" ).append( oneLine );
+        }
         return result.append( "\n" + line ).toString();
     }
 
@@ -182,7 +191,9 @@ public abstract class AbstractClient implements ShellClient
     public String getPrompt()
     {
         if ( !multiLine.isEmpty() )
+        {
             return "> ";
+        }
         return prompt;
     }
 
@@ -235,11 +246,6 @@ public abstract class AbstractClient implements ShellClient
         return console.readLine( prompt );
     }
 
-    static String[] getExitCommands()
-    {
-        return EXIT_COMMANDS.toArray( new String[ EXIT_COMMANDS.size() ] );
-    }
-    
     protected void updateTimeForMostRecentConnection()
     {
         this.timeConnection = System.currentTimeMillis();
@@ -252,6 +258,17 @@ public abstract class AbstractClient implements ShellClient
     
     public void shutdown()
     {
+        if ( !multiLine.isEmpty() )
+        {
+            try
+            {
+                getOutput().println( WARN_UNTERMINATED_INPUT );
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
     
     @Override
@@ -268,7 +285,7 @@ public abstract class AbstractClient implements ShellClient
     	}
     	catch ( NoSuchObjectException e )
     	{
-    		System.out.println( "Couldn't unexport:" + remote );
+    		System.out.println( "Couldn't unexport: " + remote );
     	}
     }
     
