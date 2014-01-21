@@ -23,20 +23,16 @@ import org.parboiled.Context
 import org.parboiled.buffers.InputBuffer
 import org.parboiled.support.IndexRange
 
-case class BufferPosition(buffer: InputBuffer, offset: Int) extends InputPosition {
-  private val position = buffer.getPosition(offset)
-  val line = position.line
-  val column = position.column
+object BufferPosition {
+  def apply(buffer: InputBuffer, offset: Int): InputPosition = {
+    val position = buffer.getPosition(offset)
+    new InputPosition(offset, position.line, position.column)
+  }
 }
-
 
 object ContextToken {
-  def apply(ctx: Context[Any]): ContextToken = new ContextToken(ctx, ctx.getMatchRange)
-  def apply(ctx: Context[Any], start: Int, end: Int) = new ContextToken(ctx, new IndexRange(start, end))
-}
-
-case class ContextToken(val ctx: Context[Any], val range: IndexRange) extends InputToken {
-  lazy val startPosition = BufferPosition(ctx.getInputBuffer, range.start)
-  lazy val endPosition = BufferPosition(ctx.getInputBuffer, range.end)
-  override lazy val toString = ctx.getInputBuffer().extract(range)
+  def apply(ctx: Context[Any]): InputToken = ContextToken(ctx, ctx.getMatchRange)
+  def apply(ctx: Context[Any], range: IndexRange): InputToken = ContextToken(ctx, range.start, range.end)
+  def apply(ctx: Context[Any], start: Int, end: Int): InputToken =
+    new InputToken(BufferPosition(ctx.getInputBuffer, start), BufferPosition(ctx.getInputBuffer, end))
 }

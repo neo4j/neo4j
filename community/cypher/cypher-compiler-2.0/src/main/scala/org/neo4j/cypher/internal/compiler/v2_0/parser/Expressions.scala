@@ -31,109 +31,109 @@ trait Expressions extends Parser
 
   def Expression = Expression14
 
-  private def Expression14 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression14: Rule1[ast.Expression] = rule("an expression") {
     Expression13 ~ zeroOrMore(WS ~ (
         keywordIdentifier("OR") ~~ Expression13 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression13 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression13: Rule1[ast.Expression] = rule("an expression") {
     Expression12 ~ zeroOrMore(WS ~ (
         keywordIdentifier("XOR") ~~ Expression12 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression12 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression12: Rule1[ast.Expression] = rule("an expression") {
     Expression11 ~ zeroOrMore(WS ~ (
         keywordIdentifier("AND") ~~ Expression11 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
   private def Expression11 = Expression10
 
-  private def Expression10 : Rule1[ast.Expression] = rule("an expression") (
-      group(keywordIdentifier("NOT") ~~ Expression9) ~>> token ~~> (ast.FunctionInvocation(_, _, _))
+  private def Expression10: Rule1[ast.Expression] = rule("an expression") (
+      group(keywordIdentifier("NOT") ~~ Expression9) ~~>> (ast.FunctionInvocation(_, _))
     | Expression9
   )
 
-  private def Expression9 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression9: Rule1[ast.Expression] = rule("an expression") {
     Expression8 ~ zeroOrMore(WS ~ (
         operatorIdentifier("=") ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("<>") ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("!=") ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ))
   }
 
-  private def Expression8 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression8: Rule1[ast.Expression] = rule("an expression") {
     Expression7 ~ zeroOrMore(WS ~ (
         operatorIdentifier("<") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier(">") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("<=") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier(">=") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ))
   }
 
   private def Expression7 = Expression6
 
-  private def Expression6 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression6: Rule1[ast.Expression] = rule("an expression") {
     Expression5 ~ zeroOrMore(WS ~ (
         operatorIdentifier("+") ~~ Expression5 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("-") ~~ Expression5 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ))
   }
 
-  private def Expression5 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression5: Rule1[ast.Expression] = rule("an expression") {
     Expression4 ~ zeroOrMore(WS ~ (
         operatorIdentifier("*") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("/") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("%") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | operatorIdentifier("^") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ))
   }
 
-  private def Expression4 : Rule1[ast.Expression] = rule("an expression") (
+  private def Expression4: Rule1[ast.Expression] = rule("an expression") (
       Expression3
-    | operatorIdentifier("+") ~~ Expression ~~> (ast.FunctionInvocation(_: ast.Identifier, _))
-    | operatorIdentifier("-") ~~ Expression ~~> (ast.FunctionInvocation(_: ast.Identifier, _))
+    | operatorIdentifier("+") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.token))
+    | operatorIdentifier("-") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.token))
   )
 
-  private def Expression3 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression3: Rule1[ast.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (
-        "[" ~~ Expression ~~ "]" ~>> token ~~> ast.CollectionIndex
-      | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~>> token ~~> ast.CollectionSlice
+        "[" ~~ Expression ~~ "]" ~~>> (ast.CollectionIndex(_: ast.Expression, _))
+      | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.CollectionSlice(_: ast.Expression, _, _))
       | operatorIdentifier("=~") ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keywordIdentifier("IN") ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keywordIdentifier("IS", "NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
       | keywordIdentifier("IS", "NOT", "NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
-    ) : ReductionRule1[ast.Expression, ast.Expression])
+    ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
-  private def Expression2 : Rule1[ast.Expression] = rule("an expression") {
+  private def Expression2: Rule1[ast.Expression] = rule("an expression") {
     Expression1 ~ zeroOrMore(WS ~ (
         PropertyLookup
-      | NodeLabels ~>> token ~~> ast.HasLabels
+      | NodeLabels ~~>> (ast.HasLabels(_: ast.Expression, _))
     ))
   }
 
-  private def Expression1 : Rule1[ast.Expression] = rule("an expression") (
+  private def Expression1: Rule1[ast.Expression] = rule("an expression") (
       NumberLiteral
     | StringLiteral
     | Parameter
-    | keyword("TRUE") ~>> token ~~> ast.True
-    | keyword("FALSE") ~>> token ~~> ast.False
-    | keyword("NULL") ~>> token ~~> ast.Null
+    | keyword("TRUE") ~ push(ast.True()(_))
+    | keyword("FALSE") ~ push(ast.False()(_))
+    | keyword("NULL") ~ push(ast.Null()(_))
     | CaseExpression
-    | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~>> token ~~> ast.CountStar
+    | group(keyword("COUNT") ~~ "(" ~~ "*" ~~ ")") ~ push(ast.CountStar()(_))
     | MapLiteral
     | ListComprehension
-    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~>> token ~~> ast.Collection
-    | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.FilterExpression
-    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~>> token ~~> ast.ExtractExpression
-    | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~>> token ~~> ast.ReduceExpression
-    | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AllIterablePredicate
-    | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.AnyIterablePredicate
-    | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.NoneIterablePredicate
-    | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~>> token ~~> ast.SingleIterablePredicate
+    | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~~>> (ast.Collection(_))
+    | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.FilterExpression(_, _, _))
+    | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~~>> (ast.ExtractExpression(_, _, _, _))
+    | group(keyword("REDUCE") ~~ "(" ~~ Identifier ~~ "=" ~~ Expression ~~ "," ~~ IdInColl ~~ "|" ~~ Expression ~~ ")") ~~>> (ast.ReduceExpression(_, _, _, _, _))
+    | group(keyword("ALL") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.AllIterablePredicate(_, _, _))
+    | group(keyword("ANY") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.AnyIterablePredicate(_, _, _))
+    | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.NoneIterablePredicate(_, _, _))
+    | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.SingleIterablePredicate(_, _, _))
     | ShortestPathPattern ~~> ast.ShortestPathExpression
     | RelationshipsPattern ~~> ast.PatternExpression
     | "(" ~~ Expression ~~ ")"
@@ -141,45 +141,45 @@ trait Expressions extends Parser
     | Identifier
   )
 
-  def PropertyExpression : Rule1[ast.Property] = rule {
+  def PropertyExpression: Rule1[ast.Property] = rule {
     Expression1 ~ oneOrMore(WS ~ PropertyLookup)
   }
 
-  private def PropertyLookup : ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
+  private def PropertyLookup: ReductionRule1[ast.Expression, ast.Property] = rule("'.'") {
     operator(".") ~~ (
-        (group(Identifier ~~ group(anyOf("?!") ~ !OpChar) ~> ((s:String) => s)) ~>> token ~~> ast.LegacyProperty.make)
-      | (Identifier ~>> token ~~> ast.Property)
+        (group(Identifier ~~ group(anyOf("?!") ~ !OpChar) ~> ((s:String) => s)) ~~>> (ast.LegacyProperty(_: ast.Expression, _, _)))
+      | (Identifier ~~>> (ast.Property(_: ast.Expression, _)))
     )
   }
 
-  private def FilterExpression : Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
+  private def FilterExpression: Rule3[ast.Identifier, ast.Expression, Option[ast.Expression]] =
     IdInColl ~ optional(WS ~ keyword("WHERE") ~~ Expression)
 
   private def IdInColl: Rule2[ast.Identifier, ast.Expression] =
     Identifier ~~ keyword("IN") ~~ Expression
 
-  private def FunctionInvocation : Rule1[ast.FunctionInvocation] = rule("a function") {
+  private def FunctionInvocation: Rule1[ast.FunctionInvocation] = rule("a function") {
     ((group(Identifier ~~ "(" ~~
       (keyword("DISTINCT") ~ push(true) | EMPTY ~ push(false)) ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq)) memoMismatches) ~>> token ~~> (ast.FunctionInvocation(_, _, _, _))
+    ) ~~> (_.toIndexedSeq)) memoMismatches) ~~>> (ast.FunctionInvocation(_, _, _))
   }
 
-  def ListComprehension : Rule1[ast.ListComprehension] = rule("[") {
-    group("[" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ "]") ~>> token ~~> ast.ListComprehension
+  def ListComprehension: Rule1[ast.ListComprehension] = rule("[") {
+    group("[" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ "]") ~~>> (ast.ListComprehension(_, _, _, _))
   }
 
-  def CaseExpression : Rule1[ast.CaseExpression] = rule("CASE") {
+  def CaseExpression: Rule1[ast.CaseExpression] = rule("CASE") {
     (group((
         keyword("CASE") ~~ push(None) ~ oneOrMore(WS ~ CaseAlternatives)
       | keyword("CASE") ~~ Expression ~~> (Some(_)) ~ oneOrMore(WS ~ CaseAlternatives)
       ) ~ optional(WS ~
         keyword("ELSE") ~~ Expression
       ) ~~ keyword("END")
-    ) memoMismatches) ~>> token ~~> ast.CaseExpression
+    ) memoMismatches) ~~>> (ast.CaseExpression(_, _, _))
   }
 
-  private def CaseAlternatives : Rule2[ast.Expression, ast.Expression] = rule("WHEN") {
+  private def CaseAlternatives: Rule2[ast.Expression, ast.Expression] = rule("WHEN") {
     keyword("WHEN") ~~ Expression ~~ keyword("THEN") ~~ Expression
   }
 }

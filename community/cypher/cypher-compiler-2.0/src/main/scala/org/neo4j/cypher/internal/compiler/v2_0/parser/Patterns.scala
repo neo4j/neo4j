@@ -29,7 +29,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
  *    p =      shortestPath(    (a)             -[r1]->           (b)            -[r2]->           (c)       )
  */
 
-import org.neo4j.cypher.internal.compiler.v2_0.InputToken
 import org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.parboiled.scala._
 import org.neo4j.graphdb.Direction
@@ -38,48 +37,48 @@ trait Patterns extends Parser
   with Literals
   with Base {
 
-  def Pattern : Rule1[ast.Pattern] = rule("a pattern") {
-    oneOrMore(PatternPart, separator = CommaSep) ~>> token ~~> (ast.Pattern(_, _))
+  def Pattern: Rule1[ast.Pattern] = rule("a pattern") {
+    oneOrMore(PatternPart, separator = CommaSep) ~~>> (ast.Pattern(_))
   }
 
-  def PatternPart : Rule1[ast.PatternPart] = rule("a pattern") (
-      group(Identifier ~~ operator("=") ~~ AnonymousPatternPart) ~>> token ~~> ast.NamedPatternPart
+  def PatternPart: Rule1[ast.PatternPart] = rule("a pattern") (
+      group(Identifier ~~ operator("=") ~~ AnonymousPatternPart) ~~>> (ast.NamedPatternPart(_, _))
     | AnonymousPatternPart
   )
 
-  private def AnonymousPatternPart : Rule1[ast.AnonymousPatternPart] = rule (
+  private def AnonymousPatternPart: Rule1[ast.AnonymousPatternPart] = rule (
       ShortestPathPattern
     | PatternElement ~~> ast.EveryPath
   )
 
-  def ShortestPathPattern : Rule1[ast.ShortestPath] = rule (
-      (group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~>> token ~~> ast.SingleShortestPath
-    | (group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~>> token ~~> ast.AllShortestPaths
+  def ShortestPathPattern: Rule1[ast.ShortestPath] = rule (
+      (group(keyword("shortestPath") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~~>> (ast.SingleShortestPath(_))
+    | (group(keyword("allShortestPaths") ~~ "(" ~~ PatternElement ~~ ")") memoMismatches) ~~>> (ast.AllShortestPaths(_))
   ).memoMismatches
 
-  def RelationshipsPattern : Rule1[ast.RelationshipsPattern] = rule {
-    group(NodePattern ~ oneOrMore(WS ~ PatternElementChain)) ~>> token ~~> ast.RelationshipsPattern
+  def RelationshipsPattern: Rule1[ast.RelationshipsPattern] = rule {
+    group(NodePattern ~ oneOrMore(WS ~ PatternElementChain)) ~~>> (ast.RelationshipsPattern(_))
   }.memoMismatches
 
-  private def PatternElement : Rule1[ast.PatternElement] = rule (
+  private def PatternElement: Rule1[ast.PatternElement] = rule (
       NodePattern ~ zeroOrMore(WS ~ PatternElementChain)
     | "(" ~~ PatternElement ~~ ")"
   )
 
-  private def PatternElementChain : ReductionRule1[ast.PatternElement, ast.RelationshipChain] = rule("a relationship pattern") {
-    group(RelationshipPattern ~~ NodePattern) ~>> token ~~> ast.RelationshipChain
+  private def PatternElementChain: ReductionRule1[ast.PatternElement, ast.RelationshipChain] = rule("a relationship pattern") {
+    group(RelationshipPattern ~~ NodePattern) ~~>> (ast.RelationshipChain(_, _, _))
   }
 
-  private def RelationshipPattern : Rule1[ast.RelationshipPattern] = rule {
+  private def RelationshipPattern: Rule1[ast.RelationshipPattern] = rule {
     (
         "<" ~~ "-" ~~ RelationshipDetail ~~ "-" ~~ ">" ~ push(Direction.BOTH)
       | "<" ~~ "-" ~~ RelationshipDetail ~~ "-" ~ push(Direction.INCOMING)
       | "-" ~~ RelationshipDetail ~~ "-" ~~ ">" ~ push(Direction.OUTGOING)
       | "-" ~~ RelationshipDetail ~~ "-" ~ push(Direction.BOTH)
-    ) ~>> token ~~> toRelationshipPattern _
+    ) ~~>> (ast.RelationshipPattern(_, _, _, _, _, _))
   }
 
-  private def RelationshipDetail : Rule5[
+  private def RelationshipDetail: Rule5[
       Option[ast.Identifier],
       Boolean,
       Seq[ast.Identifier],
@@ -96,12 +95,12 @@ trait Patterns extends Parser
     )
   }
 
-  private def RelationshipTypes : Rule1[Seq[ast.Identifier]] = rule("relationship types") (
-      ":" ~~ oneOrMore(Identifier, separator = (WS ~ "|" ~~ optional(":") ~ WS))
+  private def RelationshipTypes: Rule1[Seq[ast.Identifier]] = rule("relationship types") (
+      ":" ~~ oneOrMore(Identifier, separator = WS ~ "|" ~~ optional(":") ~ WS)
     | EMPTY ~ push(Seq())
   )
 
-  private def MaybeVariableLength : Rule1[Option[Option[ast.Range]]] = rule("a length specification") (
+  private def MaybeVariableLength: Rule1[Option[Option[ast.Range]]] = rule("a length specification") (
       "*" ~~ (
           RangeLiteral ~~> (r => Some(Some(r)))
         | EMPTY ~ push(Some(None))
@@ -109,42 +108,20 @@ trait Patterns extends Parser
     | EMPTY ~ push(None)
   )
 
-  private def NodePattern : Rule1[ast.NodePattern] = rule("a node pattern") (
-      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")" ~ push(false)) ~>> token ~~> toNodePattern _
-    | group(MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~~? ((i, l, p) => !(i.isEmpty && l.isEmpty && p.isEmpty)) ~ push(true)) ~>> token ~~> toNodePattern _
+  private def NodePattern: Rule1[ast.NodePattern] = rule("a node pattern") (
+      group("(" ~~ MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> (ast.NodePattern(_, _, _, naked = false))
+    | group(MaybeIdentifier ~ MaybeNodeLabels ~ MaybeProperties ~~~? ((i, l, p) => !(i.isEmpty && l.isEmpty && p.isEmpty))) ~~>> (ast.NodePattern(_, _, _, naked = true))
   )
 
-  private def MaybeIdentifier : Rule1[Option[ast.Identifier]] = rule("an identifier") {
+  private def MaybeIdentifier: Rule1[Option[ast.Identifier]] = rule("an identifier") {
     optional(Identifier)
   }
 
-  private def MaybeNodeLabels : Rule1[Seq[ast.Identifier]] = rule("node labels") {
-    (WS ~ NodeLabels | EMPTY ~ push(Seq()))
-  }
-
-  private def MaybeProperties : Rule1[Option[ast.Expression]] = rule("a property map") (
-    optional(WS ~ (MapLiteral | Parameter))
+  private def MaybeNodeLabels: Rule1[Seq[ast.Identifier]] = rule("node labels") (
+    WS ~ NodeLabels | EMPTY ~ push(Seq())
   )
 
-  private def toNodePattern(
-      name: Option[ast.Identifier],
-      labels: Seq[ast.Identifier],
-      params: Option[ast.Expression],
-      naked: Boolean,
-      token: InputToken) = name match {
-    case Some(i) => ast.NamedNodePattern(i, labels, params, naked, token)
-    case None => ast.AnonymousNodePattern(labels, params, naked, token)
-  }
-
-  private def toRelationshipPattern(
-      name: Option[ast.Identifier],
-      optional: Boolean,
-      types: Seq[ast.Identifier],
-      length: Option[Option[ast.Range]],
-      params: Option[ast.Expression],
-      direction: Direction,
-      token: InputToken) = name match {
-    case Some(n) => new ast.NamedRelationshipPattern(n, direction, types, length, optional, params, token)
-    case None => new ast.AnonymousRelationshipPattern(direction, types, length, optional, params, token)
-  }
+  private def MaybeProperties: Rule1[Option[ast.Expression]] = rule("a property map") (
+    optional(WS ~ (MapLiteral | Parameter))
+  )
 }

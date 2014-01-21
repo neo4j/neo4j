@@ -38,14 +38,14 @@ case class CypherParser() extends Parser
   def parse(text: String): ast.Statement = {
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
-      case Some(statement : ast.Statement) => statement
+      case Some(statement: ast.Statement) => statement
       case _ => {
         parsingResult.parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
             error.getErrorMessage
           } else {
             error match {
-              case invalidInput : InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+              case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
               case _                                => error.getClass.getSimpleName
             }
           }

@@ -45,11 +45,11 @@ sealed abstract class IntegerLiteral(stringVal: String) extends Literal with Sim
     } then super.semanticCheck(ctx)
 }
 
-case class SignedIntegerLiteral(stringVal: String, token: InputToken) extends IntegerLiteral(stringVal)
-case class UnsignedIntegerLiteral(stringVal: String, token: InputToken) extends IntegerLiteral(stringVal)
+case class SignedIntegerLiteral(stringVal: String)(val token: InputToken) extends IntegerLiteral(stringVal)
+case class UnsignedIntegerLiteral(stringVal: String)(val token: InputToken) extends IntegerLiteral(stringVal)
 
 
-case class DoubleLiteral(stringVal: String, token: InputToken) extends Literal with SimpleTypedExpression {
+case class DoubleLiteral(stringVal: String)(val token: InputToken) extends Literal with SimpleTypedExpression {
   val value = stringVal.toDouble
 
   protected def possibleTypes = CTDouble
@@ -61,11 +61,11 @@ case class DoubleLiteral(stringVal: String, token: InputToken) extends Literal w
 }
 
 
-case class StringLiteral(value: String, token: InputToken) extends Literal with SimpleTypedExpression {
+case class StringLiteral(value: String)(val token: InputToken) extends Literal with SimpleTypedExpression {
   protected def possibleTypes = CTString
 }
 
 
-case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral], token: InputToken) extends AstNode {
+case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val token: InputToken) extends AstNode {
   def isSingleLength = lower.isDefined && upper.isDefined && lower.get.value == 1 && upper.get.value == 1
 }

@@ -26,6 +26,8 @@ import org.scalatest.Assertions
 
 abstract class FunctionTestBase(funcName: String) extends Assertions {
 
+  protected val context: SemanticContext = SemanticContext.Simple
+
   protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec) {
     val (result, invocation) = evaluateWithTypes(argumentTypes.toIndexedSeq)
     assert(result.errors.isEmpty)
@@ -39,19 +41,16 @@ abstract class FunctionTestBase(funcName: String) extends Assertions {
   }
 
   protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, ast.FunctionInvocation) = {
-    val arguments = argumentTypes.zipWithIndex.map {
-      case (t, i) => DummyExpression(t, DummyToken(i*2+4, i*2+5))
-    }
+    val arguments = argumentTypes.map(DummyExpression(_))
 
     val invocation = ast.FunctionInvocation(
-      ast.Identifier(funcName, DummyToken(6, 7)),
+      ast.Identifier(funcName)(DummyToken(6, 7)),
       distinct = false,
-      arguments,
-      DummyToken(5, 14)
-    )
+      arguments
+    )(DummyToken(5, 14))
 
-    val state = arguments.semanticCheck(SemanticContext.Simple)(SemanticState.clean).state
-    (invocation.semanticCheck(SemanticContext.Simple)(state), invocation)
+    val state = arguments.semanticCheck(context)(SemanticState.clean).state
+    (invocation.semanticCheck(context)(state), invocation)
   }
 
 }

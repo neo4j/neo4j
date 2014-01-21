@@ -24,11 +24,11 @@ import expressions.{Expression, AggregationExpression}
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 object Query {
-  def start(startItems: StartItem*) = new QueryBuilder(startItems)
-  def matches(patterns:Pattern*) = new QueryBuilder(Seq.empty).matches(patterns:_*)
-  def optionalMatches(patterns:Pattern*) = new QueryBuilder(Seq.empty).matches(patterns:_*).makeOptional()
-  def updates(cmds:UpdateAction*) = new QueryBuilder(Seq()).updates(cmds:_*)
-  def unique(cmds:UniqueLink*) = new QueryBuilder(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))))
+  def start(startItems: StartItem*) = new QueryBuilder().startItems(startItems:_*)
+  def matches(patterns:Pattern*) = new QueryBuilder().matches(patterns:_*)
+  def optionalMatches(patterns:Pattern*) = new QueryBuilder().matches(patterns:_*).makeOptional()
+  def updates(cmds:UpdateAction*) = new QueryBuilder().updates(cmds:_*)
+  def unique(cmds:UniqueLink*) = new QueryBuilder().startItems(Seq(CreateUniqueStartItem(CreateUniqueAction(cmds:_*))):_*)
 
   def empty = Query(
     start = Seq.empty,

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
 
-case class Skip(expression: Expression, token: InputToken) extends AstNode with SemanticCheckable {
+case class Skip(expression: Expression)(val token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTInteger.covariant)

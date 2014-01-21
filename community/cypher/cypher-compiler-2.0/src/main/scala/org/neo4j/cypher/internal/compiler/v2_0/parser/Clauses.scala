@@ -28,82 +28,82 @@ trait Clauses extends Parser
   with Expressions
   with Base {
 
-  def Clause : Rule1[ast.Clause]
+  def Clause: Rule1[ast.Clause]
 
-  def Start : Rule1[ast.Start] = rule("START") {
+  def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)
-    ) ~>> token ~~> ast.Start
+    ) ~~>> (ast.Start(_, _))
   }
 
-  def Match : Rule1[ast.Match] = rule("MATCH") {
+  def Match: Rule1[ast.Match] = rule("MATCH") {
     group((
         keyword("OPTIONAL", "MATCH") ~ push(true)
       | keyword("MATCH") ~ push(false)
-    ) ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)) ~>> token ~~> ast.Match
+    ) ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)) ~~>> (ast.Match(_, _, _, _))
   }
 
-  def Merge : Rule1[ast.Merge] = rule("MERGE") {
+  def Merge: Rule1[ast.Merge] = rule("MERGE") {
     group(
-      group(keyword("MERGE") ~~ PatternPart) ~>> token ~~> ((p, t) => ast.Pattern(Seq(p), t)) ~~ zeroOrMore(MergeAction, separator = WS)
-    ) ~>> token ~~> ast.Merge
+      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ast.Pattern(Seq(p))) ~~ zeroOrMore(MergeAction, separator = WS)
+    ) ~~>> (ast.Merge(_, _))
   }
 
-  def Create : Rule1[ast.Clause] = rule("CREATE") (
-      group(keyword("CREATE", "UNIQUE") ~~ Pattern) ~>> token ~~> ast.CreateUnique
-    | group(keyword("CREATE") ~~ Pattern) ~>> token ~~> ast.Create
+  def Create: Rule1[ast.Clause] = rule("CREATE") (
+      group(keyword("CREATE", "UNIQUE") ~~ Pattern) ~~>> (ast.CreateUnique(_))
+    | group(keyword("CREATE") ~~ Pattern) ~~>> (ast.Create(_))
   )
 
-  def SetClause : Rule1[ast.SetClause] = rule("SET") {
-    group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~>> token ~~> ast.SetClause
+  def SetClause: Rule1[ast.SetClause] = rule("SET") {
+    group(keyword("SET") ~~ oneOrMore(SetItem, separator = CommaSep)) ~~>> (ast.SetClause(_))
   }
 
-  def Delete : Rule1[ast.Delete] = rule("DELETE") {
-    group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~>> token ~~> ast.Delete
+  def Delete: Rule1[ast.Delete] = rule("DELETE") {
+    group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_))
   }
 
-  def Remove : Rule1[ast.Remove] = rule("REMOVE") {
-    group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~>> token ~~> ast.Remove
+  def Remove: Rule1[ast.Remove] = rule("REMOVE") {
+    group(keyword("REMOVE") ~~ oneOrMore(RemoveItem, separator = CommaSep)) ~~>> (ast.Remove(_))
   }
 
-  def Foreach : Rule1[ast.Foreach] = rule("FOREACH") {
+  def Foreach: Rule1[ast.Foreach] = rule("FOREACH") {
     group(
       keyword("FOREACH") ~~ "(" ~~ Identifier ~~ keyword("IN") ~~ Expression ~~ "|" ~~
-      oneOrMore(Clause, separator = WS) ~~ ")") ~>> token ~~> ast.Foreach
+      oneOrMore(Clause, separator = WS) ~~ ")") ~~>> (ast.Foreach(_, _, _))
   }
 
-  def With : Rule1[ast.With] = rule("WITH") (
-      group(keyword("WITH", "DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~>> token ~~> (new ast.With(_, _, _, _, _, _) with ast.DistinctClosingClause)
-    | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~>> token ~~> ast.With
+  def With: Rule1[ast.With] = rule("WITH") (
+      group(keyword("WITH", "DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
+    | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
   )
 
-  def Return : Rule1[ast.Return] = rule("RETURN") (
-      group(keyword("RETURN", "DISTINCT") ~~ ReturnBody) ~>> token ~~> (new ast.Return(_, _, _, _, _) with ast.DistinctClosingClause)
-    | group(keyword("RETURN") ~~ ReturnBody) ~>> token ~~> ast.Return
+  def Return: Rule1[ast.Return] = rule("RETURN") (
+      group(keyword("RETURN", "DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
+    | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
-  private def Where : Rule1[ast.Where] = rule("WHERE") {
-    group(keyword("WHERE") ~~ Expression) ~>> token ~~> ast.Where
+  private def Where: Rule1[ast.Where] = rule("WHERE") {
+    group(keyword("WHERE") ~~ Expression) ~~>> (ast.Where(_))
   }
 
-  private def Hint : Rule1[ast.Hint] = rule("USING") (
-      group(keyword("USING", "INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~>> token ~~> ast.UsingIndexHint
-    | group(keyword("USING", "SCAN") ~~ Identifier ~~ NodeLabel) ~>> token ~~> ast.UsingScanHint
+  private def Hint: Rule1[ast.Hint] = rule("USING") (
+      group(keyword("USING", "INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
+    | group(keyword("USING", "SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
 
   private def MergeAction = rule("ON") (
-      group(keyword("ON", "MATCH") ~~ SetClause) ~>> token ~~> ast.OnMatch
-    | group(keyword("ON", "CREATE") ~~ SetClause) ~>> token ~~> ast.OnCreate
+      group(keyword("ON", "MATCH") ~~ SetClause) ~~>> (ast.OnMatch(_))
+    | group(keyword("ON", "CREATE") ~~ SetClause) ~~>> (ast.OnCreate(_))
   )
 
-  private def SetItem : Rule1[ast.SetItem] = rule (
-      PropertyExpression ~~ group(operator("=") ~~ Expression) ~>> token ~~> ast.SetPropertyItem
-    | Identifier ~~ group(operator("=") ~~ Expression) ~>> token ~~> ast.SetPropertiesFromMapItem
-    | group(Identifier ~~ NodeLabels) ~>> token ~~> ast.SetLabelItem
+  private def SetItem: Rule1[ast.SetItem] = rule (
+      PropertyExpression ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetPropertyItem(_, _))
+    | Identifier ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetPropertiesFromMapItem(_, _))
+    | group(Identifier ~~ NodeLabels) ~~>> (ast.SetLabelItem(_, _))
   )
 
-  private def RemoveItem : Rule1[ast.RemoveItem] = rule (
-      group(Identifier ~~ NodeLabels) ~>> token ~~> ast.RemoveLabelItem
+  private def RemoveItem: Rule1[ast.RemoveItem] = rule (
+      group(Identifier ~~ NodeLabels) ~~>> (ast.RemoveLabelItem(_, _))
     | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
@@ -114,30 +114,30 @@ trait Clauses extends Parser
     optional(Limit)
   }
 
-  private def ReturnItems : Rule1[ast.ReturnItems] = rule("'*', an expression") (
-      "*" ~>> token ~~> ast.ReturnAll
-    | oneOrMore(ReturnItem, separator = CommaSep) ~>> token ~~> ast.ListedReturnItems
+  private def ReturnItems: Rule1[ast.ReturnItems] = rule("'*', an expression") (
+      "*" ~ push(ast.ReturnAll()(_))
+    | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ListedReturnItems(_))
   )
 
-  private def ReturnItem : Rule1[ast.ReturnItem] = rule (
-      group(Expression ~~ keyword("AS") ~~ Identifier) ~>> token ~~> ast.AliasedReturnItem
-    | Expression ~>> token ~~> ast.UnaliasedReturnItem
+  private def ReturnItem: Rule1[ast.ReturnItem] = rule (
+      group(Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.AliasedReturnItem(_, _))
+    | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
-  private def Order : Rule1[ast.OrderBy] = rule {
-    group(keyword("ORDER", "BY") ~~ oneOrMore(SortItem, separator = CommaSep)) ~>> token ~~> ast.OrderBy
+  private def Order: Rule1[ast.OrderBy] = rule {
+    group(keyword("ORDER", "BY") ~~ oneOrMore(SortItem, separator = CommaSep)) ~~>> (ast.OrderBy(_))
   }
 
-  private def SortItem : Rule1[ast.SortItem] = rule (
-      group(Expression ~~ (keyword("DESCENDING") | keyword("DESC"))) ~>> token ~~> ast.DescSortItem
-    | group(Expression ~~ optional(keyword("ASCENDING") | keyword("ASC"))) ~>> token ~~> ast.AscSortItem
+  private def SortItem: Rule1[ast.SortItem] = rule (
+      group(Expression ~~ (keyword("DESCENDING") | keyword("DESC"))) ~~>> (ast.DescSortItem(_))
+    | group(Expression ~~ optional(keyword("ASCENDING") | keyword("ASC"))) ~~>> (ast.AscSortItem(_))
   )
 
-  private def Skip : Rule1[ast.Skip] = rule {
-    group(keyword("SKIP") ~~ (UnsignedIntegerLiteral | Parameter)) ~>> token ~~> ast.Skip
+  private def Skip: Rule1[ast.Skip] = rule {
+    group(keyword("SKIP") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Skip(_))
   }
 
-  private def Limit : Rule1[ast.Limit] = rule {
-    group(keyword("LIMIT") ~~ (UnsignedIntegerLiteral | Parameter)) ~>> token ~~> ast.Limit
+  private def Limit: Rule1[ast.Limit] = rule {
+    group(keyword("LIMIT") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Limit(_))
   }
 }

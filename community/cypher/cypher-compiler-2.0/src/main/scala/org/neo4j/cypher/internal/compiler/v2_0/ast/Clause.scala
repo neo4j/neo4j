@@ -34,6 +34,7 @@ sealed trait UpdateClause extends Clause {
 }
 
 sealed trait ClosingClause extends Clause {
+  def distinct: Boolean
   def returnItems: ReturnItems
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
@@ -45,22 +46,29 @@ sealed trait ClosingClause extends Clause {
     checkSkipLimit
 
   // use a scoped state containing the aliased return items for the sort expressions
-  private def checkSortItems : SemanticCheck = s => {
+  private def checkSortItems: SemanticCheck = s => {
     val result = (returnItems.declareIdentifiers(s) then orderBy.semanticCheck)(s.newScope)
     SemanticCheckResult(result.state.popScope, result.errors)
   }
 
   // use an empty state when checking skip & limit, as these have isolated scope
-  private def checkSkipLimit : SemanticState => Seq[SemanticError] =
+  private def checkSkipLimit: SemanticState => Seq[SemanticError] =
     s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 
-  def closeLegacyQueryBuilder(builder: commands.QueryBuilder) : commands.Query = {
+  def closeLegacyQueryBuilder(builder: commands.QueryBuilder): commands.Query = {
     val returns = returnItems.toCommands
-    extractAggregationExpressions(returns).foreach { builder.aggregation(_:_*) }
-    skip.foreach { s => builder.skip(s.toCommand) }
-    limit.foreach { l => builder.limit(l.toCommand) }
-    orderBy.foreach { o => builder.orderBy(o.sortItems.map(_.toCommand):_*) }
-    builder.returns(returns:_*)
+
+    val addAggregates = (b: commands.QueryBuilder) => extractAggregationExpressions(returns).fold(b) { b.aggregation(_:_*) }
+    val addSkip = (b: commands.QueryBuilder) => skip.fold(b) { s => b.skip(s.toCommand) }
+    val addLimit = (b: commands.QueryBuilder) => limit.fold(b) { l => b.limit(l.toCommand) }
+    val addOrder = (b: commands.QueryBuilder) => orderBy.fold(b) { o => b.orderBy(o.sortItems.map(_.toCommand):_*) }
+
+    (
+      addAggregates andThen
+      addSkip andThen
+      addLimit andThen
+      addOrder
+    )(builder).returns(returns:_*)
   }
 
   protected def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {
@@ -70,21 +78,15 @@ sealed trait ClosingClause extends Clause {
       }
     }.flatten
 
-    aggregationExpressions match {
-      case Seq() => None
-      case _     => Some(aggregationExpressions)
+    (aggregationExpressions, distinct) match {
+      case (Seq(), false) => None
+      case _              => Some(aggregationExpressions)
     }
   }
 }
 
-trait DistinctClosingClause extends ClosingClause {
-  abstract override def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {
-    Some(super.extractAggregationExpressions(items).getOrElse(Seq()))
-  }
-}
 
-
-case class Start(items: Seq[StartItem], where: Option[Where], token: InputToken) extends Clause {
+case class Start(items: Seq[StartItem], where: Option[Where])(val token: InputToken) extends Clause {
   val name = "START"
 
   def semanticCheck = items.semanticCheck then where.semanticCheck
@@ -97,11 +99,11 @@ case class Start(items: Seq[StartItem], where: Option[Where], token: InputToken)
       case (p, Some(w))               => commands.And(p, w.toLegacyPredicate)
     }
 
-    builder.startItems((builder.startItems ++ startItems): _*).where(wherePredicate)
+    builder.startItems(builder.startItems ++ startItems: _*).where(wherePredicate)
   }
 }
 
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where], token: InputToken) extends Clause with SemanticChecking {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where])(val token: InputToken) extends Clause with SemanticChecking {
   def name = "MATCH"
 
   def semanticCheck =
@@ -128,7 +130,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction], token: InputToken) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val token: InputToken) extends UpdateClause {
   def name = "MERGE"
 
   def semanticCheck =
@@ -153,7 +155,7 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], token: InputToken)
   }
 }
 
-case class Create(pattern: Pattern, token: InputToken) extends UpdateClause {
+case class Create(pattern: Pattern)(val token: InputToken) extends UpdateClause {
   def name = "CREATE"
 
   def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create)
@@ -171,7 +173,7 @@ case class Create(pattern: Pattern, token: InputToken) extends UpdateClause {
   }
 }
 
-case class CreateUnique(pattern: Pattern, token: InputToken) extends UpdateClause {
+case class CreateUnique(pattern: Pattern)(val token: InputToken) extends UpdateClause {
   def name = "CREATE UNIQUE"
 
   def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create)
@@ -191,7 +193,7 @@ case class CreateUnique(pattern: Pattern, token: InputToken) extends UpdateClaus
   }
 }
 
-case class SetClause(items: Seq[SetItem], token: InputToken) extends UpdateClause {
+case class SetClause(items: Seq[SetItem])(val token: InputToken) extends UpdateClause {
   def name = "SET"
 
   def semanticCheck = items.semanticCheck
@@ -204,7 +206,7 @@ case class SetClause(items: Seq[SetItem], token: InputToken) extends UpdateClaus
   }
 }
 
-case class Delete(expressions: Seq[Expression], token: InputToken) extends UpdateClause {
+case class Delete(expressions: Seq[Expression])(val token: InputToken) extends UpdateClause {
   def name = "DELETE"
 
   def semanticCheck =
@@ -225,7 +227,7 @@ case class Delete(expressions: Seq[Expression], token: InputToken) extends Updat
   }
 }
 
-case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClause {
+case class Remove(items: Seq[RemoveItem])(val token: InputToken) extends UpdateClause {
   def name = "REMOVE"
 
   def semanticCheck = items.semanticCheck
@@ -238,7 +240,7 @@ case class Remove(items: Seq[RemoveItem], token: InputToken) extends UpdateClaus
   }
 }
 
-case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[Clause], token: InputToken) extends UpdateClause with SemanticChecking {
+case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[Clause])(val token: InputToken) extends UpdateClause with SemanticChecking {
   def name = "FOREACH"
 
   def semanticCheck =
@@ -260,12 +262,12 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
 }
 
 case class With(
+    distinct: Boolean,
     returnItems: ReturnItems,
     orderBy: Option[OrderBy],
     skip: Option[Skip],
     limit: Option[Limit],
-    where: Option[Where],
-    token: InputToken) extends ClosingClause
+    where: Option[Where])(val token: InputToken) extends ClosingClause
 {
   def name = "WITH"
 
@@ -283,8 +285,8 @@ case class With(
   def closeLegacyQueryBuilder(builder: commands.QueryBuilder, close: commands.QueryBuilder => commands.Query): commands.Query = {
     val subBuilder = where.foldLeft(new commands.QueryBuilder())((b, w) => b.where(w.toLegacyPredicate))
     val tailQueryBuilder = builder.tail.fold(subBuilder)(t => subBuilder.tail(t))
-    builder.tail(close(tailQueryBuilder))
-    super.closeLegacyQueryBuilder(builder)
+    val b = builder.tail(close(tailQueryBuilder))
+    super.closeLegacyQueryBuilder(b)
   }
 
   override def closeLegacyQueryBuilder(builder: commands.QueryBuilder): commands.Query = {
@@ -298,10 +300,10 @@ case class With(
 }
 
 case class Return(
+    distinct: Boolean,
     returnItems: ReturnItems,
     orderBy: Option[OrderBy],
     skip: Option[Skip],
-    limit: Option[Limit],
-    token: InputToken) extends ClosingClause {
+    limit: Option[Limit])(val token: InputToken) extends ClosingClause {
   def name = "RETURN"
 }

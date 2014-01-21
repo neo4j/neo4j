@@ -26,24 +26,25 @@ import org.parboiled.scala._
 class LiteralsTest extends ParserTest[Any, Any] with Literals {
 
   def Expression: Rule1[ast.Expression] = ???
+  val t = DummyToken(0, 1)
 
   @Test def testIdentifierCanContainASCII() {
     implicit val parserToTest = Identifier
 
-    parsing("abc") shouldMatch { case ast.Identifier("abc", _) => }
-    parsing("a123") shouldMatch { case ast.Identifier("a123", _) => }
-    parsing("ABC") shouldMatch { case ast.Identifier("ABC", _) => }
-    parsing("_abc") shouldMatch { case ast.Identifier("_abc", _) => }
-    parsing("abc_de") shouldMatch { case ast.Identifier("abc_de", _) => }
+    parsing("abc") shouldGive ast.Identifier("abc")(t)
+    parsing("a123") shouldGive ast.Identifier("a123")(t)
+    parsing("ABC") shouldGive ast.Identifier("ABC")(t)
+    parsing("_abc") shouldGive ast.Identifier("_abc")(t)
+    parsing("abc_de") shouldGive ast.Identifier("abc_de")(t)
   }
 
   @Test def testIdentifierCanContainUTF8() {
     implicit val parserToTest = Identifier
 
-    parsing("aé") shouldMatch { case ast.Identifier("aé", _) => }
-    parsing("⁔") shouldMatch { case ast.Identifier("⁔", _) => }
-    parsing("＿test") shouldMatch { case ast.Identifier("＿test", _) => }
-    parsing("a＿test") shouldMatch { case ast.Identifier("a＿test", _) => }
+    parsing("aé") shouldGive ast.Identifier("aé")(t)
+    parsing("⁔") shouldGive ast.Identifier("⁔")(t)
+    parsing("＿test") shouldGive ast.Identifier("＿test")(t)
+    parsing("a＿test") shouldGive ast.Identifier("a＿test")(t)
   }
 
   @Test
@@ -57,20 +58,20 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def testCanParseNumbers() {
     implicit val parserToTest = NumberLiteral
 
-    parsing("123") shouldMatch { case ast.SignedIntegerLiteral("123", _) => }
-    parsing("-23") shouldMatch { case ast.SignedIntegerLiteral("-23", _) => }
-    parsing("-0") shouldMatch { case ast.SignedIntegerLiteral("-0", _) => }
+    parsing("123") shouldGive ast.SignedIntegerLiteral("123")(t)
+    parsing("-23") shouldGive ast.SignedIntegerLiteral("-23")(t)
+    parsing("-0") shouldGive ast.SignedIntegerLiteral("-0")(t)
 
-    parsing("1.23") shouldMatch { case ast.DoubleLiteral("1.23", _) => }
-    parsing("13434.23399") shouldMatch { case ast.DoubleLiteral("13434.23399", _) => }
-    parsing(".3454") shouldMatch { case ast.DoubleLiteral(".3454", _) => }
-    parsing("-0.0") shouldMatch { case ast.DoubleLiteral("-0.0", _) => }
-    parsing("-54366.4") shouldMatch { case ast.DoubleLiteral("-54366.4", _) => }
-    parsing("-0.3454") shouldMatch { case ast.DoubleLiteral("-0.3454", _) => }
+    parsing("1.23") shouldGive ast.DoubleLiteral("1.23")(t)
+    parsing("13434.23399") shouldGive ast.DoubleLiteral("13434.23399")(t)
+    parsing(".3454") shouldGive ast.DoubleLiteral(".3454")(t)
+    parsing("-0.0") shouldGive ast.DoubleLiteral("-0.0")(t)
+    parsing("-54366.4") shouldGive ast.DoubleLiteral("-54366.4")(t)
+    parsing("-0.3454") shouldGive ast.DoubleLiteral("-0.3454")(t)
 
-    parsing("1E23") shouldMatch { case ast.DoubleLiteral("1E23", _) => }
-    parsing("1.34E99") shouldMatch { case ast.DoubleLiteral("1.34E99", _) => }
-    parsing("9E-443") shouldMatch { case ast.DoubleLiteral("9E-443", _) => }
+    parsing("1E23") shouldGive ast.DoubleLiteral("1E23")(t)
+    parsing("1.34E99") shouldGive ast.DoubleLiteral("1.34E99")(t)
+    parsing("9E-443") shouldGive ast.DoubleLiteral("9E-443")(t)
   }
 
   def convert(result: Any): Any = result

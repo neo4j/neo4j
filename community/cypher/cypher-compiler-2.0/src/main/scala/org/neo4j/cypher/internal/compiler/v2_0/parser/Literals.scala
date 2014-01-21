@@ -26,80 +26,80 @@ import org.parboiled.scala._
 trait Literals extends Parser
   with Base with Strings {
 
-  def Expression : Rule1[ast.Expression]
+  def Expression: Rule1[ast.Expression]
 
-  def Identifier : Rule1[ast.Identifier] = rule("an identifier") (
-      IdentifierString ~>> token ~~> ast.Identifier
+  def Identifier: Rule1[ast.Identifier] = rule("an identifier") (
+      IdentifierString ~~>> (ast.Identifier(_))
     | EscapedIdentifier
   ).memoMismatches
 
-  private def IdentifierString : Rule1[String] = rule("an identifier") {
+  private def IdentifierString: Rule1[String] = rule("an identifier") {
     group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
   }
 
-  def EscapedIdentifier : Rule1[ast.Identifier] = rule("an identifier") {
-    EscapedIdentifierString ~>> token ~~> ast.Identifier
+  def EscapedIdentifier: Rule1[ast.Identifier] = rule("an identifier") {
+    EscapedIdentifierString ~~>> (ast.Identifier(_))
   }
 
-  private def EscapedIdentifierString : Rule1[String] = rule("an identifier") {
+  private def EscapedIdentifierString: Rule1[String] = rule("an identifier") {
     (oneOrMore(
       ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def Operator : Rule1[ast.Identifier] = rule {
-    oneOrMore(OpChar) ~> t(ast.Identifier) ~ !OpChar
+  def Operator: Rule1[ast.Identifier] = rule {
+    oneOrMore(OpChar) ~>>> (ast.Identifier(_: String)) ~ !OpChar
   }
 
-  def MapLiteral : Rule1[ast.MapExpression] = rule {
+  def MapLiteral: Rule1[ast.MapExpression] = rule {
     group(
       ch('{') ~~ zeroOrMore(Identifier ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
-    ) ~>> token ~~> ast.MapExpression
+    ) ~~>> (ast.MapExpression(_))
   }
 
-  def Parameter : Rule1[ast.Parameter] = rule("a parameter") {
-    ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~>> token ~~> ast.Parameter
+  def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
+    ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_))
   }
 
-  def NumberLiteral : Rule1[ast.Literal] = rule("a number") (
+  def NumberLiteral: Rule1[ast.Literal] = rule("a number") (
       DoubleLiteral
     | SignedIntegerLiteral
   ).memoMismatches
 
   def DoubleLiteral: Rule1[ast.DoubleLiteral] = rule("a floating point number") (
-      Exponent ~> t((s, t) => ast.DoubleLiteral(s, t))
-    | Decimal ~> t((s, t) => ast.DoubleLiteral(s, t))
+      Exponent ~>>> (ast.DoubleLiteral(_))
+    | Decimal ~>>> (ast.DoubleLiteral(_))
   )
 
   def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") {
-    Integer ~> t((s, t) => ast.SignedIntegerLiteral(s, t))
+    Integer ~>>> (ast.SignedIntegerLiteral(_))
   }
 
-  def UnsignedIntegerLiteral : Rule1[ast.UnsignedIntegerLiteral] = rule("an unsigned integer") {
-    UnsignedInteger ~> t((s, t) => ast.UnsignedIntegerLiteral(s, t))
+  def UnsignedIntegerLiteral: Rule1[ast.UnsignedIntegerLiteral] = rule("an unsigned integer") {
+    UnsignedInteger ~>>> (ast.UnsignedIntegerLiteral(_))
   }
 
-  def RangeLiteral : Rule1[ast.Range] = rule (
+  def RangeLiteral: Rule1[ast.Range] = rule (
       group(
         optional(UnsignedIntegerLiteral ~ WS) ~
         ".." ~
         optional(WS ~ UnsignedIntegerLiteral)
-      ) ~>> token ~~> ast.Range
-    | UnsignedIntegerLiteral ~~> (l => ast.Range(Some(l), Some(l), l.token))
+      ) ~~>> (ast.Range(_, _))
+    | UnsignedIntegerLiteral ~~>> (l => ast.Range(Some(l), Some(l)))
   )
 
-  def NodeLabels : Rule1[Seq[ast.Identifier]] = rule("node labels") {
+  def NodeLabels: Rule1[Seq[ast.Identifier]] = rule("node labels") {
     (oneOrMore(NodeLabel, separator = WS) memoMismatches).suppressSubnodes
   }
 
-  def NodeLabel : Rule1[ast.Identifier] = rule {
+  def NodeLabel: Rule1[ast.Identifier] = rule {
     ((operator(":") ~~ Identifier) memoMismatches).suppressSubnodes
   }
 
-  def StringLiteral : Rule1[ast.StringLiteral] = rule("\"...string...\"") {
+  def StringLiteral: Rule1[ast.StringLiteral] = rule("\"...string...\"") {
     (((
        ch('\'') ~ StringCharacters('\'') ~ ch('\'')
      | ch('"') ~ StringCharacters('"') ~ ch('"')
-    ) memoMismatches) suppressSubnodes) ~>> token ~~> ast.StringLiteral
+    ) memoMismatches) suppressSubnodes) ~~>> (ast.StringLiteral(_))
   }
 }

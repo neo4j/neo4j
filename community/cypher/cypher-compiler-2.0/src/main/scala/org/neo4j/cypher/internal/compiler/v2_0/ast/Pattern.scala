@@ -41,7 +41,7 @@ object Pattern {
 }
 import Pattern._
 
-case class Pattern(patternParts: Seq[PatternPart], token: InputToken) extends AstNode {
+case class Pattern(patternParts: Seq[PatternPart])(val token: InputToken) extends AstNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) then
     patternParts.foldSemanticCheck(_.semanticCheck(ctx))
@@ -76,7 +76,7 @@ sealed abstract class PatternPart extends AstNode {
   def toAbstractPatterns: Seq[AbstractPattern]
 }
 
-case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart, token: InputToken) extends PatternPart {
+case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val token: InputToken) extends PatternPart {
   def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) then identifier.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
@@ -98,12 +98,12 @@ sealed trait AnonymousPatternPart extends PatternPart {
   def toAbstractPatterns(pathName: Option[String]): Seq[AbstractPattern]
 }
 
-case class RelationshipsPattern(element: RelationshipChain, token: InputToken) extends AstNode {
+case class RelationshipsPattern(element: RelationshipChain)(val token: InputToken) extends AstNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) then
     element.semanticCheck(ctx)
 
-  lazy val toLegacyPatterns = element.toLegacyPatterns(true)
+  lazy val toLegacyPatterns = element.toLegacyPatterns(makeOutgoing = true)
   val toLegacyNamedPath = None
   lazy val toLegacyCreates = element.toLegacyCreates
   lazy val toAbstractPatterns = element.toAbstractPatterns
@@ -114,10 +114,14 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def token = element.token
 
   def declareIdentifiers(ctx: SemanticContext) = (element, ctx) match {
-    case (n: NamedNodePattern, SemanticContext.Match) => element.declareIdentifiers(ctx) // single node identifier may be already bound in MATCH
-    case (n: NamedNodePattern, _)                     => n.identifier.declare(CTNode) then element.declareIdentifiers(ctx)
-    case _                                            => element.declareIdentifiers(ctx)
+    case (n: NodePattern, SemanticContext.Match) =>
+      element.declareIdentifiers(ctx) // single node identifier is allowed to be already bound in MATCH
+    case (n: NodePattern, _)                     =>
+      n.identifier.fold(SemanticCheckResult.success)(_.declare(CTNode)) then element.declareIdentifiers(ctx)
+    case _                                       =>
+      element.declareIdentifiers(ctx)
   }
+
   def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
 
   def toLegacyPatterns(pathName: Option[String]) = element.toLegacyPatterns(pathName.isEmpty)
@@ -132,7 +136,7 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   }
 }
 
-abstract class ShortestPath(element: PatternElement, token: InputToken) extends AnonymousPatternPart {
+abstract class ShortestPath(element: PatternElement)(val token: InputToken) extends AnonymousPatternPart {
   val name: String
   val single: Boolean
 
@@ -141,46 +145,61 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
 
   def semanticCheck(ctx: SemanticContext) =
     checkContext(ctx) then
-    checkContainsSingle(ctx) then
+    checkContainsSingle then
+    checkKnownEnds then
     checkNoMinimalLength then
     element.semanticCheck(ctx)
 
-  private def checkContext(ctx: SemanticContext) = ctx match {
-    case SemanticContext.Merge  => Some(SemanticError(s"${name}(...) cannot be used to MERGE", token, element.token))
-    case SemanticContext.Create => Some(SemanticError(s"${name}(...) cannot be used to CREATE", token, element.token))
+  private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
+    case SemanticContext.Merge  => SemanticError(s"${name}(...) cannot be used to MERGE", token, element.token)
+    case SemanticContext.Create => SemanticError(s"${name}(...) cannot be used to CREATE", token, element.token)
     case _                      => None
   }
 
-  private def checkContainsSingle(ctx: SemanticContext): SemanticCheck = element match {
-    case RelationshipChain(l: NamedNodePattern, _, r: NamedNodePattern, _) => None
-    case RelationshipChain(l: NodePattern, _, _, _)                        =>
-      Some(SemanticError(s"${name}(...) requires named nodes", token, l.token))
-    case _                                                                 =>
-      Some(SemanticError(s"${name}(...) requires a pattern containing a single relationship", token, element.token))
+  private def checkContainsSingle: SemanticCheck = element match {
+    case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
+      None
+    case _                                                    =>
+      SemanticError(s"${name}(...) requires a pattern containing a single relationship", token, element.token)
+  }
+
+  private def checkKnownEnds: SemanticCheck = element match {
+    case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
+      if (l.identifier.isEmpty)
+        SemanticError(s"${name}(...) requires named nodes", token, l.token)
+      else if (r.identifier.isEmpty)
+        SemanticError(s"${name}(...) requires named nodes", token, r.token)
+      else
+        None
+    case _                                                    =>
+      None
   }
 
   private def checkNoMinimalLength: SemanticCheck = element match {
-    case RelationshipChain(_, rel, _, _) => rel.length match {
-      case Some(Some(Range(Some(_), _, _))) =>
-        Some(SemanticError(s"${name}(...) does not support a minimal length", token, element.token))
-      case _                                => None
-    }
-    case _                               => None
+    case RelationshipChain(_, rel, _) =>
+      rel.length match {
+        case Some(Some(Range(Some(_), _))) =>
+          Some(SemanticError(s"${name}(...) does not support a minimal length", token, element.token))
+        case _                             =>
+          None
+      }
+    case _                            =>
+      None
   }
 
-  def toLegacyPatterns(maybePathName: Option[String]) : Seq[commands.ShortestPath] = {
+  def toLegacyPatterns(maybePathName: Option[String]): Seq[commands.ShortestPath] = {
     val pathName = maybePathName.getOrElse("  UNNAMED" + token.startPosition.offset)
 
     val (leftName, rel, rightName) = element match {
-      case RelationshipChain(leftNode: NodePattern, relationshipPattern, rightNode, _) =>
+      case RelationshipChain(leftNode: NodePattern, relationshipPattern, rightNode) =>
         (leftNode.toLegacyNode, relationshipPattern, rightNode.toLegacyNode)
-      case _                                                           =>
+      case _                                                                        =>
         throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
     }
     val reltypes = rel.types.map(_.name)
     val maxDepth = rel.length match {
-      case Some(Some(Range(None, Some(i), _))) => Some(i.value.toInt)
-      case _                                   => None
+      case Some(Some(Range(None, Some(i)))) => Some(i.value.toInt)
+      case _                                => None
     }
     Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, single, None))
   }
@@ -190,12 +209,12 @@ abstract class ShortestPath(element: PatternElement, token: InputToken) extends 
   def toAbstractPatterns(pathName: Option[String]): Seq[AbstractPattern] = ???
 }
 
-case class SingleShortestPath(element: PatternElement, token: InputToken) extends ShortestPath(element, token) {
+case class SingleShortestPath(element: PatternElement)(token: InputToken) extends ShortestPath(element)(token) {
   val name: String = "shortestPath"
   val single: Boolean = true
 }
 
-case class AllShortestPaths(element: PatternElement, token: InputToken) extends ShortestPath(element, token) {
+case class AllShortestPaths(element: PatternElement)(token: InputToken) extends ShortestPath(element)(token) {
   val name: String = "allShortestPaths"
   val single: Boolean = false
 }
@@ -205,12 +224,12 @@ sealed abstract class PatternElement extends AstNode {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
-  def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern]
-  def toLegacyCreates : Seq[mutation.UpdateAction]
-  def toAbstractPatterns : Seq[AbstractPattern]
+  def toLegacyPatterns(makeOutgoing: Boolean): Seq[commands.Pattern]
+  def toLegacyCreates: Seq[mutation.UpdateAction]
+  def toAbstractPatterns: Seq[AbstractPattern]
 }
 
-case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern, token: InputToken) extends PatternElement {
+case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val token: InputToken) extends PatternElement {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) then
     relationship.declareIdentifiers(ctx) then
@@ -221,7 +240,7 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
     relationship.semanticCheck(ctx) then
     rightNode.semanticCheck(ctx)
 
-  def toLegacyPatterns(makeOutgoing: Boolean) : Seq[commands.Pattern] = {
+  def toLegacyPatterns(makeOutgoing: Boolean): Seq[commands.Pattern] = {
     val (patterns, leftNode) = element match {
       case node: NodePattern            => (Vector(), node)
       case leftChain: RelationshipChain => (leftChain.toLegacyPatterns(makeOutgoing), leftChain.rightNode)
@@ -230,7 +249,7 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
     patterns :+ relationship.toLegacyPattern(leftNode, rightNode, makeOutgoing)
   }
 
-  lazy val toLegacyCreates : Seq[mutation.CreateRelationship] = {
+  lazy val toLegacyCreates: Seq[mutation.CreateRelationship] = {
     val (creates, leftEndpoint) = element match {
       case leftNode: NodePattern        => (Vector(), leftNode.toLegacyEndpoint)
       case leftChain: RelationshipChain =>
@@ -249,24 +268,28 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
       val endNode: ParsedEntity = rightNode.toAbstractPatterns.head.asInstanceOf[ParsedEntity]
 
       val maxDepth = relationship.length match {
-        case Some(Some(Range(_, Some(i), _))) => Some(i.value.toInt)
-        case _                                => None
+        case Some(Some(Range(_, Some(i)))) => Some(i.value.toInt)
+        case _                             => None
       }
 
       val minDepth = relationship.length match {
-        case Some(Some(Range(Some(i), _, _))) => Some(i.value.toInt)
-        case _                                => None
+        case Some(Some(Range(Some(i), _))) => Some(i.value.toInt)
+        case _                             => None
       }
 
       relationship.length match {
-        case None => ParsedRelation(relationship.legacyName, props, startNode, endNode, relationship.types.map(_.name),
-          relationship.direction, relationship.optional)
+        case None =>
+          ParsedRelation(
+            relationship.legacyName, props, startNode, endNode,
+            relationship.types.map(_.name), relationship.direction, relationship.optional)
 
         case _    =>
-          val (relName, relIterator) = if (relationship.isInstanceOf[NamedRelationshipPattern])
-            ("  UNNAMED" + relationship.token.startPosition.offset, Some(relationship.legacyName))
-          else
-            (relationship.legacyName, None)
+          val (relName, relIterator) = relationship.identifier match {
+            case Some(_) =>
+              ("  UNNAMED" + relationship.token.startPosition.offset, Some(relationship.legacyName))
+            case None =>
+              (relationship.legacyName, None)
+          }
 
           ParsedVarLengthRelation(relName, props, startNode, endNode, relationship.types.map(_.name),
             relationship.direction, relationship.optional, minDepth, maxDepth, relIterator)
@@ -281,12 +304,23 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 }
 
 
-sealed abstract class NodePattern extends PatternElement with SemanticChecking {
-  val labels: Seq[Identifier]
-  val properties: Option[Expression]
-  val naked: Boolean
+case class NodePattern(
+  identifier: Option[Identifier],
+  labels: Seq[Identifier],
+  properties: Option[Expression],
+  naked: Boolean)(val token: InputToken) extends PatternElement with SemanticChecking {
 
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
+    identifier.fold(SemanticCheckResult.success) {
+      identifier =>
+        ctx match {
+          case SemanticContext.Expression =>
+            identifier.ensureDefined() then
+            identifier.expectType(CTNode.covariant)
+          case _                          =>
+            identifier.implicitDeclaration(CTNode)
+        }
+    }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     checkParens then
@@ -306,7 +340,7 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
       properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(CTMap.covariant)
   }
 
-  def legacyName: String
+  val legacyName: String = identifier.fold("  UNNAMED" + (token.startPosition.offset + 1))(_.name)
 
   def toLegacyPatterns(makeOutgoing: Boolean) = Seq(toLegacyNode)
 
@@ -339,49 +373,45 @@ sealed abstract class NodePattern extends PatternElement with SemanticChecking {
   }
 }
 
-case class NamedNodePattern(identifier: Identifier, labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
-  override def declareIdentifiers(ctx: SemanticContext) = ((ctx match {
-    case SemanticContext.Expression =>
-      identifier.ensureDefined() then
-      identifier.expectType(CTNode.covariant)
-    case _                          =>
-      identifier.implicitDeclaration(CTNode)
-  }): SemanticCheck) then super.declareIdentifiers(ctx)
 
-  val legacyName = identifier.name
-}
+case class RelationshipPattern(
+    identifier: Option[Identifier],
+    optional: Boolean,
+    types: Seq[Identifier],
+    length: Option[Option[Range]],
+    properties: Option[Expression],
+    direction: Direction)(val token: InputToken) extends AstNode with SemanticChecking {
 
-case class AnonymousNodePattern(labels: Seq[Identifier], properties: Option[Expression], naked: Boolean, token: InputToken) extends NodePattern {
-  val legacyName = "  UNNAMED" + (token.startPosition.offset + 1)
-}
+  def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
+    identifier.fold(SemanticCheckResult.success) {
+      identifier =>
+        val possibleType = if (length.isEmpty) CTRelationship else CTCollection(CTRelationship)
 
-
-sealed abstract class RelationshipPattern extends AstNode with SemanticChecking {
-  val direction : Direction
-  val types : Seq[Identifier]
-  val length : Option[Option[Range]]
-  val optional : Boolean
-  val properties : Option[Expression]
-
-  def declareIdentifiers(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+        ctx match {
+          case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
+          case SemanticContext.Expression => identifier.ensureDefined() then identifier.expectType(possibleType.covariant)
+          case _                          => identifier.declare(possibleType)
+        }
+    }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     checkNoOptionalRelsForAnExpression(ctx) then
     checkNoVarLengthWhenUpdating(ctx) then
     checkNoLegacyOptionals(ctx) then
+    checkNoParamMapsWhenMatching(ctx) then
     checkProperties(ctx)
 
-  private def checkNoLegacyOptionals(ctx: SemanticContext) =
+  private def checkNoLegacyOptionals(ctx: SemanticContext): SemanticCheck =
     when (optional) {
       SemanticError("Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead", token)
     }
 
-  private def checkNoOptionalRelsForAnExpression(ctx: SemanticContext) =
+  private def checkNoOptionalRelsForAnExpression(ctx: SemanticContext): SemanticCheck =
     when (ctx == SemanticContext.Expression && optional) {
       SemanticError("Optional relationships cannot be specified in this context", token)
     }
 
-  private def checkNoVarLengthWhenUpdating(ctx: SemanticContext) =
+  private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
     when (!isSingleLength) {
       ctx match {
         case SemanticContext.Merge  => SemanticError("Variable length relationships cannot be used in MERGE", token)
@@ -390,18 +420,21 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
       }
     }
 
-  private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
+  private def checkNoParamMapsWhenMatching(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
       SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(CTMap.covariant)
+      None
   }
+
+  private def checkProperties(ctx: SemanticContext): SemanticCheck =
+    properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(CTMap.covariant)
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
 
-  def legacyName : String
+  val legacyName: String = identifier.fold("  UNNAMED" + token.startPosition.offset)(_.name)
 
   def toLegacyPattern(leftNode: NodePattern, rightNode: NodePattern, makeOutgoing: Boolean): commands.Pattern = {
     val (left, right, dir) = if (!makeOutgoing) (leftNode, rightNode, direction)
@@ -419,10 +452,7 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
           case Some(range) => (for (i <- range.lower) yield i.value.toInt, for (i <- range.upper) yield i.value.toInt)
           case None        => (None, None)
         }
-        val relIterator = this match {
-          case namedRel: NamedRelationshipPattern => Some(namedRel.identifier.name)
-          case _                                  => None
-        }
+        val relIterator = identifier.map(_.name)
         commands.VarLengthRelatedTo(pathName, left.toLegacyNode, right.toLegacyNode, min, max,
           types.map(_.name).distinct, dir, relIterator, properties = toLegacyProperties)
       }
@@ -439,7 +469,7 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
   }
 
 
-  def toLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint) : mutation.CreateRelationship = {
+  def toLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint): mutation.CreateRelationship = {
     val (from, to) = direction match {
       case Direction.OUTGOING => (fromEnd, toEnd)
       case Direction.INCOMING => (toEnd, fromEnd)
@@ -451,37 +481,4 @@ sealed abstract class RelationshipPattern extends AstNode with SemanticChecking 
     }
     mutation.CreateRelationship(legacyName, from, to, typeName, toLegacyProperties)
   }
-}
-
-case class NamedRelationshipPattern(
-    identifier: Identifier,
-    direction: Direction,
-    types: Seq[Identifier],
-    length: Option[Option[Range]],
-    optional: Boolean,
-    properties : Option[Expression],
-    token: InputToken) extends RelationshipPattern {
-
-  override def declareIdentifiers(ctx: SemanticContext) = {
-    val possibleType = if (length.isEmpty) CTRelationship else CTCollection(CTRelationship)
-
-    ((ctx match {
-      case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
-      case SemanticContext.Expression => identifier.ensureDefined() then identifier.expectType(possibleType.covariant)
-      case _                          => identifier.declare(possibleType)
-    }): SemanticCheck) then super.declareIdentifiers(ctx)
-  }
-
-  val legacyName = identifier.name
-}
-
-case class AnonymousRelationshipPattern(
-    direction: Direction,
-    types: Seq[Identifier],
-    length: Option[Option[Range]],
-    optional: Boolean,
-    properties : Option[Expression],
-    token: InputToken) extends RelationshipPattern
-{
-  val legacyName = "  UNNAMED" + token.startPosition.offset
 }

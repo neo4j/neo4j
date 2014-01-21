@@ -58,7 +58,7 @@ class FilteringExpressionTest extends Assertions {
       def toCommand = ???
     }
 
-    val filter = TestableFilteringExpression(Identifier("x", DummyToken(2,3)), expression, Some(predicate))
+    val filter = TestableFilteringExpression(Identifier("x")(DummyToken(2,3)), expression, Some(predicate))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(error), result.errors)
     assertEquals(None, result.state.symbol("x"))

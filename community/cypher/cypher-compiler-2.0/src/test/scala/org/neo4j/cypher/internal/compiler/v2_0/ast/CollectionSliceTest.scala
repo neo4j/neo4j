@@ -28,15 +28,14 @@ import scala.collection.immutable.SortedSet
 
 class CollectionSliceTest extends Assertions {
   val dummyCollection = DummyExpression(
-    CTCollection(CTNode) | CTNode | CTCollection(CTString),
-    DummyToken(2,3))
+    CTCollection(CTNode) | CTNode | CTCollection(CTString))
 
   @Test
   def shouldReturnCollectionTypesOfExpression() {
     val slice = CollectionSlice(dummyCollection,
-      Some(SignedIntegerLiteral("1", DummyToken(5,6))),
-      Some(SignedIntegerLiteral("2", DummyToken(7,8))),
-      DummyToken(4, 8))
+      Some(SignedIntegerLiteral("1")(DummyToken(5,6))),
+      Some(SignedIntegerLiteral("2")(DummyToken(7,8)))
+    )(DummyToken(4, 8))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
@@ -47,8 +46,8 @@ class CollectionSliceTest extends Assertions {
   def shouldRaiseErrorWhenNeitherFromOrTwoSpecified() {
     val slice = CollectionSlice(dummyCollection,
       None,
-      None,
-      DummyToken(4, 8))
+      None
+    )(DummyToken(4, 8))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.token)), result.errors)
@@ -56,11 +55,11 @@ class CollectionSliceTest extends Assertions {
 
   @Test
   def shouldRaiseErrorIfStartingFromFraction() {
-    val to = DoubleLiteral("1.3", DummyToken(5,6))
+    val to = DoubleLiteral("1.3")(DummyToken(5,6))
     val slice = CollectionSlice(dummyCollection,
       None,
-      Some(to),
-      DummyToken(4, 8))
+      Some(to)
+    )(DummyToken(4, 8))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", to.token)), result.errors)

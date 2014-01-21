@@ -33,20 +33,20 @@ trait Command extends Parser
       | DropIndex
   )
 
-  def CreateIndex : Rule1[ast.CreateIndex] = rule {
-    group(keyword("CREATE", "INDEX", "ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~>> token ~~> ast.CreateIndex
+  def CreateIndex: Rule1[ast.CreateIndex] = rule {
+    group(keyword("CREATE", "INDEX", "ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.CreateIndex(_, _))
   }
 
-  def DropIndex : Rule1[ast.DropIndex] = rule {
-    group(keyword("DROP", "INDEX", "ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~>> token ~~> ast.DropIndex
+  def DropIndex: Rule1[ast.DropIndex] = rule {
+    group(keyword("DROP", "INDEX", "ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.DropIndex(_, _))
   }
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniqueConstraint] = rule {
-    group(keyword("CREATE") ~~ ConstraintSyntax) ~>> token ~~> ast.CreateUniqueConstraint
+    group(keyword("CREATE") ~~ ConstraintSyntax) ~~>> (ast.CreateUniqueConstraint(_, _, _, _))
   }
 
   def DropUniqueConstraint: Rule1[ast.DropUniqueConstraint] = rule {
-    group(keyword("DROP") ~~ ConstraintSyntax) ~>> token ~~> ast.DropUniqueConstraint
+    group(keyword("DROP") ~~ ConstraintSyntax) ~~>> (ast.DropUniqueConstraint(_, _, _, _))
   }
 
   private def ConstraintSyntax = keyword("CONSTRAINT", "ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 sealed trait Query extends Statement
 
-case class SingleQuery(clauses: Seq[Clause], token: InputToken) extends Query {
+case class SingleQuery(clauses: Seq[Clause])(val token: InputToken) extends Query {
   assert(clauses.nonEmpty)
 
   def semanticCheck: SemanticCheck = checkOrder(clauses) then checkClauses
@@ -86,9 +86,9 @@ case class SingleQuery(clauses: Seq[Clause], token: InputToken) extends Query {
   def toLegacyQuery =
     groupClauses(clauses).foldRight(None: Option[commands.Query], (_: commands.QueryBuilder).returns()) {
       case (group, (tail, defaultClose)) =>
-        val builder = tail.foldLeft(new commands.QueryBuilder())((b, t) => b.tail(t))
+        val b = tail.foldLeft(commands.QueryBuilder())((b, t) => b.tail(t))
 
-        group.foldLeft(builder)((b, clause) => clause match {
+        val builder = group.foldLeft(b)((b, clause) => clause match {
           case c: Start        => c.addToLegacyQuery(b)
           case c: Match        => c.addToLegacyQuery(b)
           case c: Merge        => c.addToLegacyQuery(b)
@@ -144,8 +144,8 @@ trait Union extends Query {
 
   def semanticCheck: SemanticCheck =
     checkUnionAggregation then
-      statement.semanticCheck then
-      query.semanticCheck
+    statement.semanticCheck then
+    query.semanticCheck
 
   private def checkUnionAggregation: SemanticCheck = (statement, this) match {
     case (_: SingleQuery, _)                  => None
@@ -154,16 +154,17 @@ trait Union extends Query {
     case _                                    => Some(SemanticError("Invalid combination of UNION and UNION ALL", token))
   }
 
-  protected def unionedQueries: Seq[SingleQuery] = statement match {
-    case q: SingleQuery => Seq(query, q)
-    case u: Union       => query +: u.unionedQueries
+  def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
+  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = statement match {
+    case q: SingleQuery => accum :+ query :+ q
+    case u: Union       => u.unionedQueries(accum :+ query)
   }
 }
 
-case class UnionAll(statement: Query, token: InputToken, query: SingleQuery) extends Union {
+case class UnionAll(statement: Query, query: SingleQuery)(val token: InputToken) extends Union {
   def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, distinct = false)
 }
 
-case class UnionDistinct(statement: Query, token: InputToken, query: SingleQuery) extends Union {
+case class UnionDistinct(statement: Query, query: SingleQuery)(val token: InputToken) extends Union {
   def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, distinct = true)
 }

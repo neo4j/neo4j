@@ -24,17 +24,15 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import Expression._
 
 object FunctionInvocation {
-  def apply(identifier: Identifier, argument: Expression, token: InputToken) : FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(argument), token)
-  def apply(left: Expression, identifier: Identifier, right: Expression) : FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(left, right), identifier.token)
-  def apply(expression: Expression, identifier: Identifier) : FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression), identifier.token)
-  def apply(identifier: Identifier, expression: Expression) : FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression), identifier.token)
+  def apply(identifier: Identifier, argument: Expression)(token: InputToken): FunctionInvocation =
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(argument))(token)
+  def apply(left: Expression, identifier: Identifier, right: Expression): FunctionInvocation =
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(left, right))(identifier.token)
+  def apply(expression: Expression, identifier: Identifier): FunctionInvocation =
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression))(identifier.token)
 }
 
-case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression], token: InputToken) extends Expression {
+case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression])(val token: InputToken) extends Expression {
   val name = identifier.name
   private val function = Function.lookup.get(name.toLowerCase)
 

@@ -34,14 +34,15 @@ class BaseRulesTest extends ParserTest[Any, Any] with Base {
 
   @Test def testKeywordIdentifierWhitespaceHandling() {
     implicit val parserToTest = keywordIdentifier("IS", "NOT", "NULL")
+    val t = DummyToken(0, 1)
 
-    parsing("IS NOT NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
-    parsing("IS  NOT NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
-    parsing("IS NOT  NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
-    parsing("IS NOT　NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
-    parsing("IS NOT\nNULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
-    parsing("IS\t\tNOT\nNULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
-    parsing("IS /* comment */ NOT NULL") shouldMatch { case ast.Identifier("IS NOT NULL", _) => }
+    parsing("IS NOT NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
+    parsing("IS  NOT NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
+    parsing("IS NOT  NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
+    parsing("IS NOT　NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
+    parsing("IS NOT\nNULL") shouldGive ast.Identifier("IS NOT NULL")(t)
+    parsing("IS\t\tNOT\nNULL") shouldGive ast.Identifier("IS NOT NULL")(t)
+    parsing("IS /* comment */ NOT NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
   }
 
   def convert(result: Any): Any = result

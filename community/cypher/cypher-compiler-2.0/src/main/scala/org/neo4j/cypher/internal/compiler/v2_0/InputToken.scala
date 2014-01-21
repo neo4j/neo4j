@@ -19,21 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-abstract class InputPosition {
-  val offset : Int
-  val line : Int
-  val column : Int
+class InputPosition(val offset: Int, val line: Int, val column: Int) {
+  override def hashCode = 41 * offset
+  override def equals(that: Any): Boolean = that match {
+    case that: InputPosition =>
+      (that canEqual this) && offset == that.offset
+    case _ =>
+      false
+  }
+  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
 
   override def toString = "line " + line + ", column " + column
 }
 
-abstract class InputToken {
-  def startPosition : InputPosition
-  def endPosition : InputPosition
-  def toString : String
+class InputToken(val startPosition: InputPosition, val endPosition: InputPosition) extends Equals {
+  override def hashCode = 41 * startPosition.hashCode * endPosition.hashCode
+  override def equals(that: Any): Boolean = that match {
+    case that: InputToken =>
+      (that canEqual this) && startPosition == that.startPosition && endPosition == that.endPosition
+    case _ =>
+      false
+  }
+  def canEqual(that: Any): Boolean = that.isInstanceOf[InputToken]
 
-  def startOnly : InputToken = SinglePositionToken(startPosition)
-  def endOnly : InputToken = SinglePositionToken(endPosition)
+  def startOnly: InputToken = new InputToken(startPosition, startPosition)
+  def endOnly: InputToken = new InputToken(endPosition, endPosition)
+
+  override def toString: String = s"InputToken{start=${startPosition.offset},end=${endPosition.offset}}"
 }
 
 object InputToken {
@@ -46,10 +58,4 @@ object InputToken {
         t1.endPosition.offset.compare(t2.endPosition.offset)
     }
   }
-}
-
-case class SinglePositionToken(position: InputPosition) extends InputToken {
-  val startPosition = position
-  val endPosition = position
-  override val toString = ""
 }

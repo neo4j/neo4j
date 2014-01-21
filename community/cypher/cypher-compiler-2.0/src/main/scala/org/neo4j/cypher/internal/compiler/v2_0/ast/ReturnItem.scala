@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 sealed trait ReturnItems extends AstNode with SemanticCheckable {
-  def toCommands : Seq[commands.ReturnColumn]
-  def declareIdentifiers(currentState: SemanticState) : SemanticCheck
+  def toCommands: Seq[commands.ReturnColumn]
+  def declareIdentifiers(currentState: SemanticState): SemanticCheck
 }
 
-case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends ReturnItems {
+case class ListedReturnItems(items: Seq[ReturnItem])(val token: InputToken) extends ReturnItems {
   def semanticCheck = items.semanticCheck
 
   def declareIdentifiers(currentState: SemanticState) =
@@ -39,7 +39,7 @@ case class ListedReturnItems(items: Seq[ReturnItem], token: InputToken) extends 
   def toCommands = items.map(_.toCommand)
 }
 
-case class ReturnAll(token: InputToken) extends ReturnItems {
+case class ReturnAll()(val token: InputToken) extends ReturnItems {
   def semanticCheck = SemanticCheckResult.success
 
   def declareIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importSymbols(currentState.symbolTable))
@@ -55,20 +55,20 @@ sealed trait ReturnItem extends AstNode with SemanticCheckable {
 
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 
-  def toCommand : commands.ReturnItem
+  def toCommand: commands.ReturnItem
 }
 
-case class UnaliasedReturnItem(expression: Expression, token: InputToken) extends ReturnItem {
+case class UnaliasedReturnItem(expression: Expression, inputText: String)(val token: InputToken) extends ReturnItem {
   val alias = expression match {
     case i: Identifier => Some(i)
     case _ => None
   }
-  val name = alias.map(_.name) getOrElse { token.toString.trim }
+  val name = alias.map(_.name) getOrElse { inputText.trim }
 
   def toCommand = commands.ReturnItem(expression.toCommand, name)
 }
 
-case class AliasedReturnItem(expression: Expression, identifier: Identifier, token: InputToken) extends ReturnItem {
+case class AliasedReturnItem(expression: Expression, identifier: Identifier)(val token: InputToken) extends ReturnItem {
   val alias = Some(identifier)
   val name = identifier.name
 

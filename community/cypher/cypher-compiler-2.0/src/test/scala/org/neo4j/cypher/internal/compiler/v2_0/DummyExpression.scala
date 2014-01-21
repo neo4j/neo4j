@@ -22,6 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import ast.{SimpleTypedExpression, Expression}
 import symbols._
 
-case class DummyExpression(possibleTypes: TypeSpec, token: InputToken) extends Expression with SimpleTypedExpression {
+case class DummyExpression(possibleTypes: TypeSpec, token: InputToken = DummyToken(0, 1)) extends Expression with SimpleTypedExpression {
   def toCommand = ???
 }

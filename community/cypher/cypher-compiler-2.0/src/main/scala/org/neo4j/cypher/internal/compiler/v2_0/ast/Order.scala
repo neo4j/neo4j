@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.commands
 
-case class OrderBy(sortItems: Seq[SortItem], token: InputToken) extends AstNode with SemanticCheckable {
+case class OrderBy(sortItems: Seq[SortItem])(val token: InputToken) extends AstNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 }
 
@@ -30,11 +30,11 @@ sealed trait SortItem extends AstNode with SemanticCheckable {
   def expression: Expression
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 
-  def toCommand : commands.SortItem
+  def toCommand: commands.SortItem
 }
-case class AscSortItem(expression: Expression, token: InputToken) extends SortItem {
+case class AscSortItem(expression: Expression)(val token: InputToken) extends SortItem {
   def toCommand = commands.SortItem(expression.toCommand, ascending = true)
 }
-case class DescSortItem(expression: Expression, token: InputToken) extends SortItem {
+case class DescSortItem(expression: Expression)(val token: InputToken) extends SortItem {
   def toCommand = commands.SortItem(expression.toCommand, ascending = false)
 }

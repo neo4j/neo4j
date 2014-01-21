@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
-case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression], token: InputToken) extends Expression {
+case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression])(val token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
     val possibleTypes: TypeGenerator = (alternatives.map(_._2) ++ default).mergeUpTypes
 

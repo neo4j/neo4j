@@ -101,7 +101,7 @@ trait PredicateExpression extends Expression with SimpleTypedExpression {
   protected def internalToPredicate: CommandPredicate
 }
 
-case class Identifier(name: String, token: InputToken) extends Expression {
+case class Identifier(name: String)(val token: InputToken) extends Expression {
   // check the identifier is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
@@ -121,33 +121,33 @@ case class Identifier(name: String, token: InputToken) extends Expression {
   def toCommand = commands.expressions.Identifier(name)
 }
 
-case class Parameter(name: String, token: InputToken) extends Expression with SimpleTypedExpression {
+case class Parameter(name: String)(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTAny.covariant
 
   def toCommand = commandexpressions.ParameterExpression(name)
 }
 
-case class Null(token: InputToken) extends Expression with SimpleTypedExpression {
+case class Null()(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTAny.covariant
 
   def toCommand = commandexpressions.Literal(null)
 }
 
-case class True(token: InputToken) extends Expression with PredicateExpression {
+case class True()(val token: InputToken) extends Expression with PredicateExpression {
   protected def internalToPredicate = commands.True()
 }
 
-case class False(token: InputToken) extends Expression with PredicateExpression {
+case class False()(val token: InputToken) extends Expression with PredicateExpression {
   protected def internalToPredicate = commands.Not(commands.True())
 }
 
-case class CountStar(token: InputToken) extends Expression with SimpleTypedExpression {
+case class CountStar()(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTInteger
 
   def toCommand = commandexpressions.CountStar()
 }
 
-case class Property(map: Expression, identifier: Identifier, token: InputToken)
+case class Property(map: Expression, identifier: Identifier)(val token: InputToken)
   extends Expression with SimpleTypedExpression {
 
   protected def possibleTypes = CTAny.covariant
@@ -161,10 +161,9 @@ case class Property(map: Expression, identifier: Identifier, token: InputToken)
 }
 
 object LegacyProperty {
-  // use of val instead of def due to inability to refer to methods on objects as partially applied functions
-  val make = (map: Expression, identifier: Identifier, legacyOperator: String, token: InputToken) =>
-    new Property(map, identifier, token) {
-      override def semanticCheck(ctx: SemanticContext) : SemanticCheck = legacyOperator match {
+  def apply(map: Expression, identifier: Identifier, legacyOperator: String)(token: InputToken) =
+    new Property(map, identifier)(token) {
+      override def semanticCheck(ctx: SemanticContext): SemanticCheck = legacyOperator match {
         case "?" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.${identifier.name})) OR <ident>.${identifier.name}=<value>) if you really need the old behavior.", token)
         case "!" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null).", token)
         case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
@@ -187,7 +186,7 @@ case class PatternExpression(pattern: RelationshipsPattern) extends Expression w
   override def toPredicate = NonEmpty(toCommand)
 }
 
-case class HasLabels(expression: Expression, labels: Seq[Identifier], token: InputToken) extends Expression with PredicateExpression {
+case class HasLabels(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends Expression with PredicateExpression {
   override def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then
     expression.expectType(CTNode.covariant) then
@@ -199,7 +198,7 @@ case class HasLabels(expression: Expression, labels: Seq[Identifier], token: Inp
   protected def internalToPredicate = labels.map(toPredicate).reduceLeft(commands.And(_, _))
 }
 
-case class Collection(expressions: Seq[Expression], token: InputToken) extends Expression {
+case class Collection(expressions: Seq[Expression])(val token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
@@ -210,7 +209,7 @@ case class Collection(expressions: Seq[Expression], token: InputToken) extends E
   def toCommand = commandexpressions.Collection(expressions.map(_.toCommand):_*)
 }
 
-case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken) extends Expression with SimpleTypedExpression {
+case class MapExpression(items: Seq[(Identifier, Expression)])(val token: InputToken) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTMap
 
   override def semanticCheck(ctx: SemanticContext) = items.map(_._2).semanticCheck(ctx) then super.semanticCheck(ctx)
@@ -224,7 +223,7 @@ case class MapExpression(items: Seq[(Identifier, Expression)], token: InputToken
   }
 }
 
-case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression], token: InputToken)
+case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression])(val token: InputToken)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -242,7 +241,7 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
   def toCommand = commandexpressions.CollectionSliceExpression(collection.toCommand, from.map(_.toCommand), to.map(_.toCommand))
 }
 
-case class CollectionIndex(collection: Expression, idx: Expression, token: InputToken)
+case class CollectionIndex(collection: Expression, idx: Expression)(val token: InputToken)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =

@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-case class DummyPosition(offset: Int) extends InputPosition {
-  val line = 1
-  val column = offset
+object DummyPosition {
+  def apply(offset: Int) = new InputPosition(offset, 1, offset)
 }
 
-case class DummyToken(start: Int, end: Int) extends InputToken {
-  val startPosition = DummyPosition(start)
-  val endPosition = DummyPosition(end)
+object DummyToken {
+  def apply(start: Int, end: Int) = new InputToken(DummyPosition(start), DummyPosition(end))
 }

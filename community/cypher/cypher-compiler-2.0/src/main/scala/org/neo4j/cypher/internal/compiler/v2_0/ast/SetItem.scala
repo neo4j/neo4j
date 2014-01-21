@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commande
 import org.neo4j.cypher.internal.compiler.v2_0.mutation
 
 sealed trait SetItem extends AstNode with SemanticCheckable {
-  def toLegacyUpdateAction : mutation.UpdateAction
+  def toLegacyUpdateAction: mutation.UpdateAction
 }
 
-case class SetPropertyItem(property: Property, expression: Expression, token: InputToken) extends SetItem {
+case class SetPropertyItem(property: Property, expression: Expression)(val token: InputToken) extends SetItem {
   def semanticCheck =
     property.semanticCheck(Expression.SemanticContext.Simple) then
     expression.semanticCheck(Expression.SemanticContext.Simple)
@@ -37,7 +37,7 @@ case class SetPropertyItem(property: Property, expression: Expression, token: In
   def toLegacyUpdateAction = mutation.PropertySetAction(property.toCommand, expression.toCommand)
 }
 
-case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: InputToken) extends SetItem {
+case class SetLabelItem(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends SetItem {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTNode.covariant)
@@ -46,7 +46,7 @@ case class SetLabelItem(expression: Expression, labels: Seq[Identifier], token: 
     commands.LabelAction(expression.toCommand, commands.LabelSetOp, labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
 }
 
-case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression, token: InputToken) extends SetItem {
+case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression)(val token: InputToken) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
     identifier.expectType(CTNode.covariant | CTRelationship.covariant) then

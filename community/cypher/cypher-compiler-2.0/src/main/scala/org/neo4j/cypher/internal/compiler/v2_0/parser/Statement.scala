@@ -27,7 +27,7 @@ trait Statement extends Parser
   with Command
   with Base {
 
-  def Statement : Rule1[ast.Statement] = rule (
+  def Statement: Rule1[ast.Statement] = rule (
        Command
      | Query
   )

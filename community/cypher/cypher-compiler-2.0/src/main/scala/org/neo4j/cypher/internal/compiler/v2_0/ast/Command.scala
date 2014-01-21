@@ -24,19 +24,19 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 sealed trait Command extends Statement
 
-case class CreateIndex(label: Identifier, property: Identifier, token: InputToken) extends Command {
+case class CreateIndex(label: Identifier, property: Identifier)(val token: InputToken) extends Command {
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.CreateIndex(label.name, Seq(property.name))
 }
 
-case class DropIndex(label: Identifier, property: Identifier, token: InputToken) extends Command {
+case class DropIndex(label: Identifier, property: Identifier)(val token: InputToken) extends Command {
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.DropIndex(label.name, Seq(property.name))
 }
 
-case class CreateUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier, token: InputToken) extends Command {
+case class CreateUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier)(val token: InputToken) extends Command {
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.CreateUniqueConstraint(
@@ -46,7 +46,7 @@ case class CreateUniqueConstraint(id: Identifier, label: Identifier, idForProper
     propertyKey = propertyKey.name)
 }
 
-case class DropUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier, token: InputToken) extends Command {
+case class DropUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier)(val token: InputToken) extends Command {
   def semanticCheck = Seq()
 
   def toLegacyQuery = commands.DropUniqueConstraint(

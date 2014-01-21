@@ -2808,6 +2808,28 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def access_nested_properties() {
+    val tail = Query.
+      matches().
+      returns(
+        ReturnItem(Property(Property(Identifier("person"), PropertyKey("address")), PropertyKey("city")), "person.address.city")
+      )
+
+    test(
+      "WITH { name:'Alice', address: { city:'London', residential:true }} AS person RETURN person.address.city",
+      Query.
+        matches().
+        tail(tail).
+        returns(
+          ReturnItem(LiteralMap(
+            Map("name"->Literal("Alice"), "address"->LiteralMap(
+              Map("city"->Literal("London"), "residential"->True())
+            ))
+          ), "person", true)
+        )
+    )
+  }
+
   @Test def long_match_chain() {
     test("match (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c) return a, b, c",
       Query.

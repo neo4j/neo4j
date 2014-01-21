@@ -25,9 +25,7 @@ import scala.collection.immutable.SortedSet
 import scala.collection.breakOut
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 
-case class Symbol(identifiers: Set[ast.Identifier], types: TypeSpec) {
-  def tokens = identifiers.map(_.token)(breakOut[Set[ast.Identifier], InputToken, SortedSet[InputToken]])
-}
+case class Symbol(tokens: SortedSet[InputToken], types: TypeSpec)
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
   lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
@@ -60,9 +58,9 @@ case class SemanticState(
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     symbolTable.get(identifier.name) match {
       case None         =>
-        Right(updateIdentifier(identifier, possibleTypes, Set(identifier)))
+        Right(updateIdentifier(identifier, possibleTypes, SortedSet(identifier.token)))
       case Some(symbol) =>
-        if (symbol.identifiers.contains(identifier))
+        if (symbol.tokens.contains(identifier.token))
           Right(this)
         else
           Left(SemanticError(s"${identifier.name} already declared", identifier.token, symbol.tokens))
@@ -71,11 +69,11 @@ case class SemanticState(
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
-        Right(updateIdentifier(identifier, possibleTypes, Set(identifier)))
+        Right(updateIdentifier(identifier, possibleTypes, SortedSet(identifier.token)))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
-          Right(updateIdentifier(identifier, inferredTypes, symbol.identifiers + identifier))
+          Right(updateIdentifier(identifier, inferredTypes, symbol.tokens + identifier.token))
         } else {
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
@@ -90,7 +88,7 @@ case class SemanticState(
       case None         =>
         Left(SemanticError(s"${identifier.name} not defined", identifier.token))
       case Some(symbol) =>
-        Right(updateIdentifier(identifier, symbol.types, symbol.identifiers + identifier))
+        Right(updateIdentifier(identifier, symbol.types, symbol.tokens + identifier.token))
     }
 
   def specifyType(expression: ast.Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
@@ -109,6 +107,6 @@ case class SemanticState(
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, identifiers: Set[ast.Identifier]) =
-    copy(symbolTable = symbolTable.updated(identifier.name, Symbol(identifiers, types)), typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types)))
+  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, tokens: SortedSet[InputToken]) =
+    copy(symbolTable = symbolTable.updated(identifier.name, Symbol(tokens, types)), typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types)))
 }
