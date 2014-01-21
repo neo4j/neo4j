@@ -335,7 +335,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             {
                 return nodeManager.getGraphProperties();
             }
-        } );
+        }, nodeManager );
         cacheAccess = new BridgingCacheAccess( nodeManager, schemaCache, updateableSchemaState, persistenceCache );
 
         try

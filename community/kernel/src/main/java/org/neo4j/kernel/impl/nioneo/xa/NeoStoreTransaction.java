@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Arrays.binarySearch;
-import static java.util.Arrays.copyOf;
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -107,6 +97,16 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+
+import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.copyOf;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -396,8 +396,6 @@ public class NeoStoreTransaction extends XaTransaction
             throw new XAException( "Cannot prepare prepared transaction["
                     + getIdentifier() + "]" );
         }
-
-        kernelTransaction.prepare();
 
         prepared = true;
 
@@ -1355,7 +1353,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
             long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
-            RelationshipType[] types )
+            int[] types )
     {
         return getMoreRelationships( nodeId, position, getRelGrabSize(), direction, types, getRelationshipStore() );
     }
@@ -2591,7 +2589,7 @@ public class NeoStoreTransaction extends XaTransaction
 
     private static Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition>
             getMoreRelationships( long nodeId, RelationshipLoadingPosition originalPosition, int grabSize,
-                    DirectionWrapper direction, RelationshipType[] types, RelationshipStore relStore )
+                    DirectionWrapper direction, int[] types, RelationshipStore relStore )
     {
         // initialCapacity=grabSize saves the lists the trouble of resizing
         List<RelationshipRecord> out = new ArrayList<>();
@@ -2804,12 +2802,12 @@ public class NeoStoreTransaction extends XaTransaction
         return types;
     }
 
-    public RelationshipLoadingPosition.Definition getRelationshipChainPosition( long id )
+    public RelationshipLoadingPosition getRelationshipChainPosition( long id )
     {
         RecordChange<Long, NodeRecord, Void> nodeChange = nodeRecords.getIfLoaded( id );
         if ( nodeChange != null && nodeChange.isCreated() )
         {
-            return RelationshipLoadingPosition.EMPTY_DEFINITION;
+            return RelationshipLoadingPosition.EMPTY;
         }
         
         NodeRecord node = getNodeStore().getRecord( id );
@@ -2818,17 +2816,16 @@ public class NeoStoreTransaction extends XaTransaction
             long firstGroup = node.getNextRel();
             if ( firstGroup == Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                return RelationshipLoadingPosition.EMPTY_DEFINITION;
+                return RelationshipLoadingPosition.EMPTY;
             }
             Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( firstGroup,
                     neoStore.getRelationshipGroupStore() );
-            return new DenseNodeChainPosition.Definition( groups );
+            return new DenseNodeChainPosition( groups );
         }
         
         long firstRel = node.getNextRel();
         return firstRel == Record.NO_NEXT_RELATIONSHIP.intValue() ?
-                RelationshipLoadingPosition.EMPTY_DEFINITION :
-                new SingleChainPosition( firstRel );
+                RelationshipLoadingPosition.EMPTY : new SingleChainPosition( firstRel );
     }
     
     private static RelationshipConnection relChain( RelationshipRecord rel, long nodeId )

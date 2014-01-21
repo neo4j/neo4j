@@ -19,15 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
-import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 
 public class DefaultLegacyKernelOperations implements LegacyKernelOperations
 {
@@ -42,30 +36,5 @@ public class DefaultLegacyKernelOperations implements LegacyKernelOperations
     public long nodeCreate( Statement state )
     {
         return nodeManager.createNode().getId();
-    }
-
-    @Override
-    public long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
-    {
-        NodeImpl startNode;
-        try
-        {
-            startNode = nodeManager.getNodeForProxy( startNodeId, LockType.WRITE );
-        }
-        catch ( NotFoundException e )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, startNodeId, e );
-        }
-        try
-        {
-            return nodeManager.createRelationship( nodeManager.newNodeProxyById( startNodeId ), startNode,
-                                                   nodeManager.newNodeProxyById( endNodeId ), relationshipTypeId )
-                              .getId();
-        }
-        catch ( NotFoundException e )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, endNodeId, e );
-        }
     }
 }

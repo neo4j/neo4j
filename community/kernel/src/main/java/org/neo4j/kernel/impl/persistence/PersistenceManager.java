@@ -29,7 +29,6 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -85,13 +84,13 @@ public class PersistenceManager
         return getResource().forReading().nodeLoadLight( id );
     }
 
-    public RelationshipLoadingPosition.Definition getRelationshipChainPosition( long nodeId )
+    public RelationshipLoadingPosition getRelationshipChainPosition( long nodeId )
     {
         return getResource().forReading().getRelationshipChainPosition( nodeId );
     }
 
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> getMoreRelationships(
-            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction, RelationshipType[] types )
+            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction, int[] types )
     {
         return getResource().forReading().getMoreRelationships( nodeId, position, direction, types );
     }

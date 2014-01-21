@@ -24,22 +24,20 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs;
 
 public class TxStateTest
 {
@@ -263,6 +261,60 @@ public class TxStateTest
         // then
         assertEquals( Collections.singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
         assertEquals( Collections.singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
+    }
+
+    @Test
+    public void shouldListRelationshipsAsCreatedIfCreated() throws Exception
+    {
+        // When
+        long relId = state.relationshipDoCreate( 0, 1, 2 );
+        when(legacyState.relationshipIsAddedInThisTx( relId )).thenReturn( true ); // Temp until we move this out of legacy
+
+        // Then
+        assertTrue( state.hasChanges() );
+        assertTrue( state.relationshipIsAddedInThisTx( relId ) );
+    }
+
+    @Test
+    public void shouldAugmentWithAddedRelationships() throws Exception
+    {
+        // When
+        int startNode = 1, endNode = 2, relType = 0;
+        long relId = state.relationshipDoCreate( relType, startNode, endNode );
+
+        // Then
+        long otherRel = relId + 1;
+        assertTrue( state.hasChanges() );
+        assertThat( state.augmentRelationships( startNode, OUTGOING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+        assertThat( state.augmentRelationships( startNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+        assertThat( state.augmentRelationships( endNode, INCOMING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+        assertThat( state.augmentRelationships( endNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+    }
+
+    @Test
+    public void addedAndThenRemovedRelShouldNotShowUp() throws Exception
+    {
+        // Given
+        int startNode = 1, endNode = 2, relType = 0;
+        long relId = state.relationshipDoCreate( relType, startNode, endNode );
+
+        // When
+        state.relationshipDoDelete( relId );
+
+        // Then
+        long otherRel = relId + 1;
+        assertThat( state.augmentRelationships( startNode, OUTGOING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+        assertThat( state.augmentRelationships( startNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+        assertThat( state.augmentRelationships( endNode, INCOMING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+        assertThat( state.augmentRelationships( endNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
     }
 
     private TxState state;

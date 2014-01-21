@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
-public class SingleChainPosition implements RelationshipLoadingPosition, RelationshipLoadingPosition.Definition
+public class SingleChainPosition implements RelationshipLoadingPosition
 {
     private long position;
     
@@ -40,28 +39,22 @@ public class SingleChainPosition implements RelationshipLoadingPosition, Relatio
     }
     
     @Override
-    public long position( DirectionWrapper direction, RelationshipType[] types )
+    public long position( DirectionWrapper direction, int[] types )
     {
         return this.position;
     }
 
     @Override
-    public long nextPosition( long nextRel, DirectionWrapper direction, RelationshipType[] types )
+    public long nextPosition( long nextRel, DirectionWrapper direction, int[] types )
     {
         this.position = nextRel;
         return nextRel;
     }
     
     @Override
-    public boolean hasMore( DirectionWrapper direction, RelationshipType[] types )
+    public boolean hasMore( DirectionWrapper direction, int[] types )
     {
         return position != Record.NO_NEXT_RELATIONSHIP.intValue();
-    }
-
-    @Override
-    public RelationshipLoadingPosition build( RelationshipGroupTranslator translator )
-    {
-        return this;
     }
 
     @Override

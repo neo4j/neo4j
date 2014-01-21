@@ -26,11 +26,6 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class DenseNodeImpl extends NodeImpl
 {
-    DenseNodeImpl( long id, boolean newNode )
-    {
-        super( id, newNode );
-    }
-
     DenseNodeImpl( long id )
     {
         super( id );

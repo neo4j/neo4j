@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -61,9 +63,9 @@ import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
@@ -95,6 +97,14 @@ public class StateHandlingStatementOperations implements
     {
         legacyPropertyTrackers.nodeDelete( nodeId );
         state.txState().nodeDoDelete( nodeId );
+    }
+
+    @Override
+    public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        long id = state.txState().relationshipDoCreate( relationshipTypeId, startNodeId, endNodeId );
+        state.neoStoreTransaction.relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        return id;
     }
 
     @Override
@@ -852,6 +862,49 @@ public class StateHandlingStatementOperations implements
         }
     }
 
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
+                                                       int[] relTypes ) throws EntityNotFoundException
+    {
+        relTypes = deduplicate( relTypes );
+
+        if ( state.hasTxStateWithChanges() )
+        {
+            TxState txState = state.txState();
+            PrimitiveLongIterator stored;
+            if( txState.nodeIsAddedInThisTx( nodeId ) )
+            {
+                stored = emptyPrimitiveLongIterator();
+            }
+            else
+            {
+                stored = storeLayer.nodeListRelationships( state, nodeId, direction, relTypes );
+            }
+            return txState.augmentRelationships( nodeId, direction, relTypes, stored );
+        }
+        return storeLayer.nodeListRelationships( state, nodeId, direction, relTypes );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            TxState txState = state.txState();
+            PrimitiveLongIterator stored;
+            if( txState.nodeIsAddedInThisTx( nodeId ) )
+            {
+                stored = emptyPrimitiveLongIterator();
+            }
+            else
+            {
+                stored = storeLayer.nodeListRelationships( state, nodeId, direction );
+            }
+            return txState.augmentRelationships( nodeId, direction, stored );
+        }
+        return storeLayer.nodeListRelationships( state, nodeId, direction );
+    }
+
     //
     // Methods that delegate directly to storage
     //
@@ -943,5 +996,31 @@ public class StateHandlingStatementOperations implements
     public int relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName ) throws IllegalTokenNameException
     {
         return storeLayer.relationshipTypeGetOrCreateForName( relationshipTypeName );
+    }
+
+    private static int[] deduplicate( int[] types )
+    {
+        int unique = 0;
+        for ( int i = 0; i < types.length; i++ )
+        {
+            int type = types[i];
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( type == types[j] )
+                {
+                    type = -1; // signal that this relationship is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( type != -1 )
+            { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                types[unique++] = types[i];
+            }
+        }
+        if ( unique < types.length )
+        {
+            types = Arrays.copyOf( types, unique );
+        }
+        return types;
     }
 }

@@ -25,7 +25,6 @@ import java.util.HashSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -242,12 +241,12 @@ public class TestRelationshipGrabSize
         Transaction tx = db.beginTx();
         db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
 
-        Relationship rel = node1.createRelationshipTo( node2, createType );
-        Relationship rel1 = node1.getRelationships( deleteType ).iterator().next();
-        rel1.delete();
+        node1.createRelationshipTo( node2, createType );
+        node1.getRelationships( deleteType ).iterator().next().delete();
 
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         assertEquals( expectedCount, count( node2.getRelationships() ) );
+
         tx.success();
         tx.finish();
 

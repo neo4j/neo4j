@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -28,11 +27,11 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
 {
     void updateFirst( long first );
     
-    long position( DirectionWrapper direction, RelationshipType[] types );
+    long position( DirectionWrapper direction, int[] types );
     
-    long nextPosition( long position, DirectionWrapper direction, RelationshipType[] types );
+    long nextPosition( long position, DirectionWrapper direction, int[] types );
     
-    boolean hasMore( DirectionWrapper direction, RelationshipType[] types );
+    boolean hasMore( DirectionWrapper direction, int[] types );
 
     void compareAndAdvance( long relIdDeleted, long nextRelId );
     
@@ -47,19 +46,19 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
         }
         
         @Override
-        public long position( DirectionWrapper direction, RelationshipType[] types )
+        public long position( DirectionWrapper direction, int[] types )
         {
             return Record.NO_NEXT_RELATIONSHIP.intValue();
         }
         
         @Override
-        public long nextPosition( long position, DirectionWrapper direction, RelationshipType[] types )
+        public long nextPosition( long position, DirectionWrapper direction, int[] types )
         {
             return Record.NO_NEXT_RELATIONSHIP.intValue();
         }
         
         @Override
-        public boolean hasMore( DirectionWrapper direction, RelationshipType[] types )
+        public boolean hasMore( DirectionWrapper direction, int[] types )
         {
             return false;
         }
@@ -75,18 +74,5 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
             return this;
         }
     };
-    
-    public interface Definition
-    {
-        RelationshipLoadingPosition build( RelationshipGroupTranslator translator );
-    }
-    
-    public static final Definition EMPTY_DEFINITION = new Definition()
-    {
-        @Override
-        public RelationshipLoadingPosition build( RelationshipGroupTranslator translator )
-        {
-            return EMPTY;
-        }
-    };
+
 }

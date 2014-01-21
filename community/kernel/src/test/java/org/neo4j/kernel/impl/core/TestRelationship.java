@@ -89,12 +89,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
         allGetRelationshipMethods( node1, Direction.OUTGOING );
         allGetRelationshipMethods( node2, Direction.INCOMING );
-        node1.getRelationships( MyRelTypes.TEST,
-            Direction.OUTGOING ).iterator().next().delete();
-        node1.getRelationships( MyRelTypes.TEST_TRAVERSAL,
-            Direction.OUTGOING ).iterator().next().delete();
-        node1.getRelationships( MyRelTypes.TEST2,
-            Direction.OUTGOING ).iterator().next().delete();
+        node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ).iterator().next().delete();
+        node1.getRelationships( MyRelTypes.TEST_TRAVERSAL, Direction.OUTGOING ).iterator().next().delete();
+        node1.getRelationships( MyRelTypes.TEST2, Direction.OUTGOING ).iterator().next().delete();
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
         node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
@@ -208,8 +205,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         countRelationships( 3, node.getRelationships( MyRelTypes.TEST_TRAVERSAL ) );
         countRelationships( 3, node.getRelationships( MyRelTypes.TEST, dir ) );
         countRelationships( 3, node.getRelationships( MyRelTypes.TEST2, dir ) );
-        countRelationships( 3, node.getRelationships(
-            MyRelTypes.TEST_TRAVERSAL, dir ) );
+        countRelationships( 3, node.getRelationships( MyRelTypes.TEST_TRAVERSAL, dir ) );
     }
 
     private void allGetRelationshipMethods2( Node node, Direction dir )

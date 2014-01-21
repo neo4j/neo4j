@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,10 +32,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -51,36 +55,43 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.transaction.LockType;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.lang.String.format;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
 public class NodeProxy implements Node
 {
     public interface NodeLookup
     {
-        NodeImpl lookup( long nodeId );
-
         GraphDatabaseService getGraphDatabase();
 
         NodeManager getNodeManager();
 
-        NodeImpl lookup( long nodeId, LockType lock );
+        NodeImpl lookup( long nodeId );
+
     }
 
     private final NodeLookup nodeLookup;
+    private final RelationshipProxy.RelationshipLookups relLookup;
     private final ThreadToStatementContextBridge statementContextProvider;
+    private final CleanupService cleanupService;
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeLookup nodeLookup, ThreadToStatementContextBridge statementContextProvider )
+    NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
+               ThreadToStatementContextBridge statementContextProvider, CleanupService cleanupService )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
+        this.relLookup = relLookup;
         this.statementContextProvider = statementContextProvider;
+        this.cleanupService = cleanupService;
     }
 
     @Override
@@ -113,82 +124,112 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public Iterable<Relationship> getRelationships()
+    public ResourceIterable<Relationship> getRelationships()
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager() );
+        return getRelationships( Direction.BOTH );
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getRelationships( Direction dir )
+    {
+        Statement statement = statementContextProvider.instance();
+        try
+        {
+            return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, dir ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            statement.close();
+            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+        }
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getRelationships( RelationshipType... types )
+    {
+        return getRelationships( Direction.BOTH, types );
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getRelationships( RelationshipType type, Direction dir )
+    {
+        return getRelationships(dir, type);
+    }
+
+    @Override
+    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType ... types )
+    {
+        Statement statement = statementContextProvider.instance();
+        try
+        {
+            return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, direction,
+                    relTypeIds( types, statement ) ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            statement.close();
+            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+        }
     }
 
     @Override
     public boolean hasRelationship()
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager() );
-    }
-
-    @Override
-    public Iterable<Relationship> getRelationships( Direction dir )
-    {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), dir );
+        return hasRelationship( Direction.BOTH );
     }
 
     @Override
     public boolean hasRelationship( Direction dir )
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), dir );
-    }
-
-    @Override
-    public Iterable<Relationship> getRelationships( RelationshipType... types )
-    {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), types );
-    }
-
-    @Override
-    public Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types )
-    {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), direction, types );
+        try(ResourceIterator<Relationship> rels = getRelationships(dir).iterator())
+        {
+            return rels.hasNext();
+        }
     }
 
     @Override
     public boolean hasRelationship( RelationshipType... types )
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), types );
+        return hasRelationship(Direction.BOTH, types);
     }
 
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), direction, types );
-    }
-
-    @Override
-    public Iterable<Relationship> getRelationships( RelationshipType type,
-                                                    Direction dir )
-    {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).getRelationships( nodeLookup.getNodeManager(), type, dir );
+        try(ResourceIterator<Relationship> rels = getRelationships(direction, types).iterator())
+        {
+            return rels.hasNext();
+        }
     }
 
     @Override
     public boolean hasRelationship( RelationshipType type, Direction dir )
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).hasRelationship( nodeLookup.getNodeManager(), type, dir );
+        return hasRelationship(dir, type);
     }
 
     @Override
-    public Relationship getSingleRelationship( RelationshipType type,
-                                               Direction dir )
+    public Relationship getSingleRelationship( RelationshipType type, Direction dir )
     {
-        assertInTransaction();
-        return nodeLookup.lookup( nodeId ).getSingleRelationship( nodeLookup.getNodeManager(), type, dir );
+        try(ResourceIterator<Relationship> rels = getRelationships(dir, type).iterator())
+        {
+            if(!rels.hasNext())
+            {
+                return null;
+            }
+
+            Relationship rel = rels.next();
+            while ( rels.hasNext() )
+            {
+                Relationship other = rels.next();
+                if ( !other.equals( rel ) )
+                {
+                    throw new NotFoundException( "More than one relationship[" +
+                            type + ", " + dir + "] found for " + this );
+                }
+            }
+            return rel;
+        }
     }
 
     private void assertInTransaction()
@@ -405,7 +446,7 @@ public class NodeProxy implements Node
         //}
         try ( Statement statement = statementContextProvider.instance() )
         {
-            long relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
+            int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
             return nodeLookup.getNodeManager().newRelationshipProxyById(
                     statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() ) );
         }
@@ -560,7 +601,7 @@ public class NodeProxy implements Node
             throw new ThisShouldNotHappenError( "Stefan", "Label retrieved through kernel API should exist." );
         }
     }
-    
+
     @Override
     public int getDegree()
     {
@@ -589,5 +630,38 @@ public class NodeProxy implements Node
     public Iterable<RelationshipType> getRelationshipTypes()
     {
         return nodeLookup.lookup( nodeId ).getRelationshipTypes( nodeLookup.getNodeManager() );
+    }
+
+    private int[] relTypeIds( RelationshipType[] types, Statement statement )
+    {
+        int[] ids = new int[types.length];
+        int outIndex = 0;
+        for(int i=0;i<types.length;i++)
+        {
+            int id = statement.readOperations().relationshipTypeGetForName( types[i].name() );
+            if(id != NO_SUCH_RELATIONSHIP_TYPE )
+            {
+                ids[outIndex++] = id;
+            }
+        }
+
+        if(outIndex != ids.length)
+        {
+            // One or more relationship types do not exist, so we can exclude them right away.
+            ids = Arrays.copyOf(ids, outIndex);
+        }
+        return ids;
+    }
+
+    private ResourceIterable<Relationship> map2rels( Statement statement, PrimitiveLongIterator input )
+    {
+        return asResourceIterable( cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Relationship>()
+        {
+            @Override
+            public Relationship apply( long id )
+            {
+                return new RelationshipProxy( id, relLookup, statementContextProvider );
+            }
+        }, input ), statement ) );
     }
 }

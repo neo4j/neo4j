@@ -53,8 +53,6 @@ public interface TransactionState
 
     LockElement acquireReadLock( Object resource );
 
-    ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node );
-
     RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type );
 
     ArrayMap<Integer, SetAndDirectionCounter> getCowRelationshipRemoveMap( NodeImpl node );
@@ -68,8 +66,6 @@ public interface TransactionState
     void commitCows();
 
     void rollback();
-
-    boolean hasLocks();
 
     ArrayMap<Integer, DefinedProperty> getCowPropertyRemoveMap( Primitive primitive );
 
@@ -169,4 +165,6 @@ public interface TransactionState
     boolean isRemotelyInitialized();
 
     void markAsRemotelyInitialized();
+
+    ArrayMap<Integer,RelIdArray> getCowRelationshipAddMap( NodeImpl node );
 }

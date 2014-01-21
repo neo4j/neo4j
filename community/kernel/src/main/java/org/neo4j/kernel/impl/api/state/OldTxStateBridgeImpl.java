@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -31,6 +30,7 @@ import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 public class OldTxStateBridgeImpl implements OldTxStateBridge
 {
@@ -106,9 +106,18 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     }
 
     @Override
+    public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        NodeImpl startNode = nodeManager.getNodeForProxy( startNodeId );
+        return nodeManager.createRelationship( nodeManager.newNodeProxyById( startNodeId ), startNode,
+                nodeManager.newNodeProxyById( endNodeId ), relationshipTypeId )
+                .getId();
+    }
+
+    @Override
     public void deleteNode( long nodeId )
     {
-        NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
+        NodeImpl node = nodeManager.getNodeForProxy( nodeId );
         boolean success = false;
         try
         {
@@ -180,7 +189,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     @Override
     public void nodeSetProperty( long nodeId, DefinedProperty property )
     {
-        NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
+        NodeImpl node = nodeManager.getNodeForProxy( nodeId );
         state.getOrCreateCowPropertyAddMap( node ).put( property.propertyKeyId(), property );
         ArrayMap<Integer, DefinedProperty> removed = state.getCowPropertyRemoveMap( node );
         if ( removed != null )
@@ -216,7 +225,7 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     @Override
     public void nodeRemoveProperty( long nodeId, DefinedProperty property )
     {
-        NodeImpl node = nodeManager.getNodeForProxy( nodeId, null );
+        NodeImpl node = nodeManager.getNodeForProxy( nodeId );
         state.getOrCreateCowPropertyRemoveMap( node ).put( property.propertyKeyId(), property );
         ArrayMap<Integer, DefinedProperty> added = state.getCowPropertyAddMap( node );
         if ( added != null )

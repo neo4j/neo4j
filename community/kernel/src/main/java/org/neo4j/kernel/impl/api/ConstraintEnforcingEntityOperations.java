@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -139,6 +140,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     public void nodeDelete( KernelStatement state, long nodeId )
     {
         entityWriteOperations.nodeDelete( state, nodeId );
+    }
+
+    @Override
+    public long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        return entityWriteOperations.relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override
@@ -307,5 +314,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     public Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state )
     {
         return entityReadOperations.graphGetAllProperties( state );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
+                                                       int[] relTypes ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetRelationships( statement, nodeId, direction, relTypes );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetRelationships( statement, nodeId, direction );
     }
 }

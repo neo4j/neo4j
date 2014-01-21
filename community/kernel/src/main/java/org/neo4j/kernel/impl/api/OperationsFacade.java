@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -166,6 +167,22 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
             return Property.noNodeProperty( nodeId, propertyKeyId );
         }
         return dataRead().nodeGetProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+            throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetRelationships( statement, nodeId, direction, relTypes );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction )
+            throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetRelationships( statement, nodeId, direction );
     }
 
     @Override
@@ -429,11 +446,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long relationshipCreate( long relationshipTypeId, long startNodeId, long endNodeId )
+    public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        return legacyOps().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
+        return dataWrite().relationshipCreate( statement, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override

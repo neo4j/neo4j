@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -46,6 +47,10 @@ interface DataRead
      */
     PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
+
+    PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes ) throws EntityNotFoundException;
+
+    PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
 
     /**
      * Returns node id of unique node found in the given unique index for value or
