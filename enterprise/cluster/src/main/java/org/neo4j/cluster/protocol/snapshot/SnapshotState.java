@@ -101,8 +101,18 @@ public enum SnapshotState
                         {
                             SnapshotMessage.SnapshotState state = message.getPayload();
 
-                            // If we have already delivered everything that is rolled into this snapshot, ignore it
-                            state.setState( context.getSnapshotProvider(), context.getClusterContext().getObjectInputStreamFactory() );
+                            /*
+                             * This is here just for compatibility with 1.9.5. 1.9.6 onwards does not depend on
+                             * snapshots for setting the state on cluster join. But we cannot have rolling upgrades
+                             * from 1.9.5 to 1.9.6 without this snapshot thing because before 1.9.6 not every
+                             * masterIsElected was acknowledged with a masterIsAvailable.
+                             * On the other hand, we cannot have snapshots going around after 1.9.6. So for the
+                             * time being we'll simply have 1.9.6 master instances respond with a null state message.
+                             */
+                            if ( state != null )
+                            {
+                                state.setState( context.getSnapshotProvider(), context.getClusterContext().getObjectInputStreamFactory() );
+                            }
 
                             return ready;
                         }
@@ -153,11 +163,15 @@ public enum SnapshotState
 
                         case sendSnapshot:
                         {
-                            outgoing.offer( Message.respond( SnapshotMessage.snapshot, message,
-                                    new SnapshotMessage.SnapshotState( context.getLearnerContext()
-                                            .getLastDeliveredInstanceId(), context.getSnapshotProvider(),
-                                            context.getClusterContext().getObjectInputStreamFactory(),
-                                            context.getClusterContext().getObjectOutputStreamFactory()) ) );
+                            /*
+                             * This is here just for compatibility with 1.9.5. 1.9.6 onwards does not depend on
+                             * snapshots for setting the state on cluster join. But we cannot have rolling upgrades
+                             * from 1.9.5 to 1.9.6 without this snapshot thing because before 1.9.6 not every
+                             * masterIsElected was acknowledged with a masterIsAvailable.
+                             * On the other hand, we cannot have snapshots going around after 1.9.6. So for the
+                             * time being we'll simply have 1.9.6 master instances respond with a null state message.
+                             */
+                            outgoing.offer( Message.respond( SnapshotMessage.snapshot, message, null ) );
                             break;
                         }
 
