@@ -19,9 +19,26 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
@@ -33,21 +50,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMi
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
-
-import java.io.File;
-import java.io.IOException;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class StoreUpgraderTestIT
 {
@@ -205,8 +207,8 @@ public class StoreUpgraderTestIT
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), config, new UpgradableDatabase(fileSystem), migrator,
-                files, new DefaultIdGeneratorFactory(), fileSystem );
+        return new StoreUpgrader( defaultConfig(), config, new UpgradableDatabase( new StoreVersionCheck( fs.get() ) ), migrator,
+                files, new DefaultIdGeneratorFactory(), fs.get() );
     }
 
     @Before

@@ -32,6 +32,7 @@ frontend http-in
     default_backend neo4j
 
 backend neo4j
+    option httpchk GET /db/manage/server/ha/available
     server s1 10.0.1.10:7474 maxconn 32
     server s2 10.0.1.11:7474 maxconn 32
     server s3 10.0.1.12:7474 maxconn 32
@@ -51,16 +52,20 @@ HAProxy can now be started by running:
 You can connect to http://<ha-proxy-ip>:8080/haproxy?stats to view the status dashboard. This dashboard can
 be moved to run on port 80, and authentication can also be added. See the HAProxy documentation for details on this.
 
-== Configuring separate sets for master and slaves ==
+== Optimizing for reads and writes ==
 
-It is possible to set HAProxy backends up to only include slaves or the master. To accomplish this, 
-Neo4j provides _health check URLs_ that HAProxy (or any load balancer for that matter) can use to 
-distinguish machines using HTTP response codes. The two URLs are:
+Neo4j provides a catalogue of _health check URLs_ (see <<ha-rest-info>>) that HAProxy (or any load balancer for that matter) can use to distinguish machines using HTTP response codes.
+In the example above we used the +/available+ endpoint, which directs requests to machines that are generally available for transaction processing (they are alive!).
 
-* +/db/manage/server/ha/master+, which returns 200 if the machine is the master, and 404 if the machine is a slave
-* +/db/manage/server/ha/slave+, which returns 200 if the machine is a slave, and 404 if the machine is the master
+However, it is possible to have requests directed to slaves only, or to the master only.
+If you are able to distinguish in your application between requests that write, and requests that only read, then you can take advantage of two (logical) load balancers: one that sends all your writes to the master, and one that sends all your read-only requests to a slave.
+In HAProxy you build logical load balancers by adding multiple ++backend++s.
 
-The following example excludes the master from the set of machines, so that requests are only be sent to slaves.
+The trade-off here is that while Neo4j allows slaves to proxy writes for you, this indirection unnecessarily ties up resources on the slave and adds latency to your write requests.
+Conversely, you don't particularly want read traffic to tie up resources on the master; Neo4j allows you to scale out for reads, but writes are still constrained to a single instance.
+If possible, that instance should exclusively do writes to ensure maximum write performance.
+
+The following example excludes the master from the set of machines using the +/slave+ endpoint.
 
 [source]
 ----

@@ -160,12 +160,6 @@ public abstract class CommonAbstractStore implements IdSequence
             if ( !readOnly || backupSlave )
             {
                 this.fileLock = fileSystemAbstraction.tryLock( storageFileName, fileChannel );
-                if ( fileLock == null )
-                {
-                    throw new IllegalStateException( "Unable to lock store ["
-                                                     + storageFileName + "], this is usually a result of some "
-                                                     + "other Neo4j kernel running using the same store." );
-                }
             }
         }
         catch ( IOException e )

@@ -19,9 +19,21 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.junit.Test;
+
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -29,16 +41,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFi
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.LEGACY_VERSION;
-
-import java.io.File;
-import java.io.IOException;
-
-import org.junit.Test;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 
 public class StoreUpgraderInterruptionTestIT
 {
@@ -82,7 +84,7 @@ public class StoreUpgraderInterruptionTestIT
     
     private StoreUpgrader newUpgrader( StoreMigrator migrator, DatabaseFiles files )
     {
-        return new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(fileSystem), migrator,
+        return new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), migrator,
                 files, defaultIdGeneratorFactory(), defaultFileSystemAbstraction() );        
     }
 

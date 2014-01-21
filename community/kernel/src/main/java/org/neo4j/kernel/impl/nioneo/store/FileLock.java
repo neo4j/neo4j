@@ -30,11 +30,12 @@ import org.neo4j.kernel.StoreLocker;
 
 public abstract class FileLock
 {
-    private static FileLock wrapOrNull( final java.nio.channels.FileLock lock )
+    private static FileLock wrapFileChannelLock( FileChannel channel ) throws IOException
     {
+        final java.nio.channels.FileLock lock = channel.tryLock();
         if ( lock == null )
         {
-            return null;
+            throw new IOException( "Unable to lock " + channel );
         }
 
         return new FileLock()
@@ -68,24 +69,28 @@ public abstract class FileLock
         }
         else if ( fileName.getName().equals( NeoStore.DEFAULT_NAME ) )
         {
-            FileLock regular = wrapOrNull( channel.tryLock() );
-            if ( regular == null )
-                throw new IOException( "Unable to lock " + channel +" because another process already holds the lock.");
-
-            FileLock extra = getLockFileBasedFileLock( fileName.getParentFile() );
-            if ( extra == null )
+            // Lock the file
+            FileLock regular = wrapFileChannelLock( channel );
+            
+            // Lock the parent as well
+            boolean success = false;
+            try
             {
-                regular.release();
-                throw new IOException( "Unable to lock lock file for " + fileName.getParentFile() );
+                FileLock extra = getLockFileBasedFileLock( fileName.getParentFile() );
+                success = true;
+                return new DoubleFileLock( regular, extra );
             }
-            return new DoubleFileLock( regular, extra );
+            finally
+            {
+                if ( !success )
+                {   // The parent lock failed, so unlock the regular too
+                    regular.release();
+                }
+            }
         }
         else
         {
-            FileLock regular = wrapOrNull( channel.tryLock() );
-            if ( regular == null )
-                throw new IOException( "Unable to lock " + channel + " because another process already holds the lock." );
-            return regular;
+            return wrapFileChannelLock( channel );
         }
     }
 
@@ -154,7 +159,6 @@ public abstract class FileLock
         private final java.nio.channels.FileLock fileChannelLock;
 
         public WindowsFileLock( File lockFile, FileChannel fileChannel, java.nio.channels.FileLock lock )
-                throws IOException
         {
             this.lockFile = lockFile;
             this.fileChannel = fileChannel;

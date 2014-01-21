@@ -41,6 +41,7 @@ public class MasterInfoService implements AdvertisableService
     public static final String BASE_PATH = "server/ha";
     public static final String IS_MASTER_PATH = "/master";
     public static final String IS_SLAVE_PATH = "/slave";
+    public static final String IS_AVAILABLE_PATH = "/available";
 
     private final OutputFormat output;
     private final HighlyAvailableGraphDatabase haDb;
@@ -114,6 +115,24 @@ public class MasterInfoService implements AdvertisableService
         if ( role.equals( "master" ))
         {
             return negativeResponse();
+        }
+
+        return unknownResponse();
+    }
+
+    @GET
+    @Path( IS_AVAILABLE_PATH )
+    public Response isAvailable()
+    {
+        if ( haDb == null )
+        {
+            return status( FORBIDDEN ).build();
+        }
+
+        String role = haDb.role().toLowerCase();
+        if ( "slave".equals( role ) || "master".equals( role ))
+        {
+            return plainTextResponse( OK, role );
         }
 
         return unknownResponse();
