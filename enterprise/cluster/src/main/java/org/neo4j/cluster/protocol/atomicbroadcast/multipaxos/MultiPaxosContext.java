@@ -62,6 +62,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.helpers.Uris.parameter;
@@ -69,8 +70,6 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.toList;
-
-import static org.neo4j.cluster.util.Quorums.isQuorum;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -1135,40 +1134,7 @@ public class MultiPaxosContext
         @Override
         public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
         {
-            elections.put( role, new Election( new WinnerStrategy()
-            {
-                @Override
-                public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
-                {
-
-                    // Remove blank votes
-                    List<Vote> filteredVoteList = toList( filter( new Predicate<Vote>()
-                    {
-                        @Override
-                        public boolean accept( Vote item )
-                        {
-                            return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-                        }
-                    }, voteList ) );
-
-                    // Sort based on credentials
-                    // The most suited candidate should come out on top
-                    Collections.sort( filteredVoteList );
-                    Collections.reverse( filteredVoteList );
-
-                    for ( Vote vote : filteredVoteList )
-                    {
-                        // Don't elect as winner the node we are trying to demote
-                        if ( !vote.getSuggestedNode().equals( demoteNode ) )
-                        {
-                            return vote.getSuggestedNode();
-                        }
-                    }
-
-                    // No possible winner
-                    return null;
-                }
-            } ) );
+            elections.put( role, new Election( new BiasedWinnerStrategy( demoteNode, false /*demotion*/ ) ) );
         }
 
         @Override
@@ -1181,22 +1147,17 @@ public class MultiPaxosContext
                 public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
                 {
                     // Remove blank votes
-                    List<Vote> filteredVoteList = toList( filter( new Predicate<Vote>()
-                    {
-                        @Override
-                        public boolean accept( Vote item )
-                        {
-                            return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-                        }
-                    }, voteList ) );
+                    List<Vote> filteredVoteList = removeBlankVotes( voteList );
 
                     // Sort based on credentials
                     // The most suited candidate should come out on top
                     Collections.sort( filteredVoteList );
                     Collections.reverse( filteredVoteList );
 
-                    clusterContext.getLogger( getClass() ).debug( "Elections ended up with list " + filteredVoteList );
+                    clusterContext.getLogger( getClass() ).debug( "Election started with " + voteList +
+                            ", ended up with " + filteredVoteList );
 
+                    // Elect this highest voted instance
                     for ( Vote vote : filteredVoteList )
                     {
                         return vote.getSuggestedNode();
@@ -1211,40 +1172,7 @@ public class MultiPaxosContext
         @Override
         public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
         {
-            elections.put( role, new Election( new WinnerStrategy()
-            {
-                @Override
-                public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
-                {
-
-                    // Remove blank votes
-                    List<Vote> filteredVoteList = toList( filter( new Predicate<Vote>()
-                    {
-                        @Override
-                        public boolean accept( Vote item )
-                        {
-                            return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-                        }
-                    }, voteList ) );
-
-                    // Sort based on credentials
-                    // The most suited candidate should come out on top
-                    Collections.sort( filteredVoteList );
-                    Collections.reverse( filteredVoteList );
-
-                    for ( Vote vote : filteredVoteList )
-                    {
-                        // Don't elect as winner the node we are trying to demote
-                        if ( !vote.getSuggestedNode().equals( promoteNode ) )
-                        {
-                            return vote.getSuggestedNode();
-                        }
-                    }
-
-                    // No possible winner
-                    return null;
-                }
-            } ) );
+            elections.put( role, new Election( new BiasedWinnerStrategy( promoteNode, true /*promotion*/ ) ) );
         }
 
         @Override
@@ -1461,7 +1389,6 @@ public class MultiPaxosContext
     private static class Election
     {
         private final WinnerStrategy winnerStrategy;
-//        List<Vote> votes = new ArrayList<Vote>();
         private final Map<org.neo4j.cluster.InstanceId, Vote> votes = new HashMap<org.neo4j.cluster.InstanceId, Vote>();
 
         private Election( WinnerStrategy winnerStrategy )
@@ -1483,5 +1410,57 @@ public class MultiPaxosContext
     interface WinnerStrategy
     {
         org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes );
+    }
+    
+    private class BiasedWinnerStrategy implements WinnerStrategy
+    {
+        private final org.neo4j.cluster.InstanceId biasedNode;
+        private final boolean positiveSuggestion;
+
+        public BiasedWinnerStrategy( org.neo4j.cluster.InstanceId biasedNode, boolean positiveSuggestion )
+        {
+            this.biasedNode = biasedNode;
+            this.positiveSuggestion = positiveSuggestion;
+        }
+
+        @Override
+        public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
+        {
+            // Remove blank votes
+            List<Vote> filteredVoteList = removeBlankVotes( voteList );
+
+            // Sort based on credentials
+            // The most suited candidate should come out on top
+            Collections.sort( filteredVoteList );
+            Collections.reverse( filteredVoteList );
+
+            clusterContext.getLogger( getClass() ).debug( "Election started with " + voteList +
+                    ", ended up with " + filteredVoteList + " where " + biasedNode + " is biased for " +
+                    (positiveSuggestion ? "promotion" : "demotion") );
+
+            for ( Vote vote : filteredVoteList )
+            {
+                // Elect the biased instance biased as winner
+                if ( vote.getSuggestedNode().equals( biasedNode ) == positiveSuggestion )
+                {
+                    return vote.getSuggestedNode();
+                }
+            }
+
+            // No possible winner
+            return null;
+        }
+    }
+
+    private static List<Vote> removeBlankVotes( Collection<Vote> voteList )
+    {
+        return toList( Iterables.filter( new Predicate<Vote>()
+        {
+            @Override
+            public boolean accept( Vote item )
+            {
+                return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+            }
+        }, voteList ) );
     }
 }

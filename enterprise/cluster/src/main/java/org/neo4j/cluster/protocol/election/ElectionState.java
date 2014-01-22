@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import static org.neo4j.helpers.collection.Iterables.first;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +32,8 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.Iterables.first;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -261,7 +261,10 @@ public enum ElectionState
                         case voted:
                         {
                             ElectionMessage.VotedData data = message.getPayload();
-                            context.voted( data.getRole(), data.getInstanceId(),  data.getVoteCredentials() );
+                            context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials() );
+                            
+                            String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
+                            logger.debug( voter + " voted " + data );
 
                             /*
                              * This is the URI of the current role holder and, yes, it could very well be null. However
@@ -278,8 +281,7 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    logger.debug( "Elected " +
-                                            winner + " as " + data.getRole() );
+                                    logger.debug( "Elected winner as " + data.getRole() );
 
                                     // Broadcast this
                                     ClusterMessage.ConfigurationChangeState configurationChangeState = new
