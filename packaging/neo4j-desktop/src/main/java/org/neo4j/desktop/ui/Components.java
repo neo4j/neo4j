@@ -30,7 +30,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -38,6 +37,8 @@ import javax.swing.border.Border;
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
+import static javax.swing.JOptionPane.WARNING_MESSAGE;
+import static org.neo4j.desktop.ui.ScrollableOptionPane.showWrappedMessageDialog;
 
 @SuppressWarnings("MagicConstant")
 public final class Components
@@ -145,6 +146,6 @@ public final class Components
 
     public static void alert( String message )
     {
-        JOptionPane.showMessageDialog( null, message, "Alert", JOptionPane.WARNING_MESSAGE );
+        showWrappedMessageDialog( null, message, "Alert", WARNING_MESSAGE );
     }
 }

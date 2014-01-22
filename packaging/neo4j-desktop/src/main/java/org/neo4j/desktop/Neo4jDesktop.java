@@ -61,7 +61,7 @@ public final class Neo4jDesktop
             DatabaseActions databaseActions = new DatabaseActions( model );
             addShutdownHook( databaseActions );
 
-            MainWindow window = new MainWindow( databaseActions, installation, model );
+            MainWindow window = new MainWindow( databaseActions, model );
             window.display();
         }
         catch ( Exception e )

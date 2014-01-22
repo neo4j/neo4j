@@ -32,7 +32,7 @@ import static java.awt.Cursor.HAND_CURSOR;
 import static java.awt.Cursor.getPredefinedCursor;
 import static java.lang.String.format;
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
-import static javax.swing.JOptionPane.showMessageDialog;
+import static org.neo4j.desktop.ui.ScrollableOptionPane.showWrappedMessageDialog;
 
 /**
  * {@link MouseListener} that can open links in the systems default browser, presumably using {@link Desktop}. 
@@ -58,11 +58,16 @@ public class OpenBrowserMouseListener extends MouseAdapter
         catch ( IOException | URISyntaxException e )
         {
             e.printStackTrace( System.out );
-            showMessageDialog( link,
-                    format("Couldn't open the browser: %s", e.getMessage() ),
-                    "Error",
-                    ERROR_MESSAGE );
+            showError( e );
         }
+    }
+
+    private void showError( Exception e )
+    {
+        showWrappedMessageDialog( link,
+                format( "Couldn't open the browser: %s", e.getMessage() ),
+                "Error",
+                ERROR_MESSAGE );
     }
 
     @Override
