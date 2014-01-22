@@ -34,8 +34,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.kernel.Traversal;
 
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
@@ -84,22 +82,23 @@ public class FunctionalTestPlugin extends ServerPlugin
     public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
             final @Parameter( name = "other" ) Node end )
     {
+        List<Relationship> result = new ArrayList<>();
         Transaction tx = start.getGraphDatabase().beginTx();
         try
         {
-            return new FilteringIterable<>( start.getRelationships(), new Predicate<Relationship>()
+            for ( Relationship relationship : start.getRelationships() )
             {
-                @Override
-                public boolean accept( Relationship item )
+                if ( relationship.getOtherNode( start ).equals( end ) )
                 {
-                    return item.getOtherNode( start ).equals( end );
+                    result.add( relationship );
                 }
-            } );
+            }
         }
         finally
         {
             tx.finish();
         }
+        return result;
     }
 
     @PluginTarget( Node.class )
