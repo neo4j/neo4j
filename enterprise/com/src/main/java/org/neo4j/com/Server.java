@@ -50,7 +50,6 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -87,7 +86,7 @@ import static org.neo4j.com.Protocol.writeString;
  *
  * @see Client
  */
-public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
+public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle
 {
     private InetSocketAddress socketAddress;
     private final Clock clock;
@@ -299,85 +298,89 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
     {
         ChannelPipeline pipeline = Channels.pipeline();
         addLengthFieldPipes( pipeline, frameLength );
-        pipeline.addLast( "serverHandler", new ServerHandler() );
+        pipeline.addLast( "serverHandler", this );
         return pipeline;
     }
 
-    private class ServerHandler extends SimpleChannelHandler
+
+    @Override
+    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
     {
-        @Override
-        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        channelGroup.add( e.getChannel() );
+    }
+
+    @Override
+    public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
+            throws Exception
+    {
+        try
         {
-            channelGroup.add( e.getChannel() );
+            ChannelBuffer message = (ChannelBuffer) event.getMessage();
+            handleRequest( message, event.getChannel() );
+        }
+        catch ( Throwable e )
+        {
+            msgLog.error( "Error handling request", e );
+
+            // Attempt to reply to the client
+            ChunkingChannelBuffer buffer = newChunkingBuffer( event.getChannel() );
+            buffer.clear( /* failure = */true );
+            writeFailureResponse( e, buffer );
+
+            ctx.getChannel().close();
+            tryToFinishOffChannel( ctx.getChannel() );
+            throw Exceptions.launderedException( e );
+        }
+    }
+
+    @Override
+    public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
+    {
+        /*
+         * This is here to ensure that channels that have stuff written to them for a long time, long transaction
+         * pulls and store copies (mainly the latter), will not timeout and have their transactions rolled back.
+         * This is actually not a problem, since both mentioned above have no transaction associated with them
+         * but it is more sanitary and leaves less exceptions in the logs
+         * Each time a write completes, simply update the corresponding channel's timestamp.
+         */
+        Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
+        if ( slave != null )
+        {
+            slave.other().set( clock.currentTimeMillis() );
+            super.writeComplete( ctx, e );
+        }
+    }
+
+    @Override
+    public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
+            throws Exception
+    {
+        super.channelClosed( ctx, e );
+
+        if ( !ctx.getChannel().isOpen() )
+        {
+            tryToFinishOffChannel( ctx.getChannel() );
         }
 
-        @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
-                throws Exception
+        channelGroup.remove( e.getChannel() );
+    }
+
+    @Override
+    public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
+            throws Exception
+    {
+        super.channelDisconnected( ctx, e );
+
+        if ( !ctx.getChannel().isConnected() )
         {
-            try
-            {
-                ChannelBuffer message = (ChannelBuffer) event.getMessage();
-                handleRequest( message, event.getChannel() );
-            }
-            catch ( Throwable e )
-            {
-                msgLog.logMessage( "Error handling request", e );
-                ctx.getChannel().close();
-                tryToFinishOffChannel( ctx.getChannel() );
-                throw Exceptions.launderedException( e );
-            }
+            tryToFinishOffChannel( ctx.getChannel() );
         }
+    }
 
-        @Override
-        public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
-        {
-            /*
-             * This is here to ensure that channels that have stuff written to them for a long time, long transaction
-             * pulls and store copies (mainly the latter), will not timeout and have their transactions rolled back.
-             * This is actually not a problem, since both mentioned above have no transaction associated with them
-             * but it is more sanitary and leaves less exceptions in the logs
-             * Each time a write completes, simply update the corresponding channel's timestamp.
-             */
-            Pair<RequestContext, AtomicLong> slave = connectedSlaveChannels.get( ctx.getChannel() );
-            if ( slave != null )
-            {
-                slave.other().set( clock.currentTimeMillis() );
-                super.writeComplete( ctx, e );
-            }
-        }
-
-        @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
-                throws Exception
-        {
-            super.channelClosed( ctx, e );
-
-            if ( !ctx.getChannel().isOpen() )
-            {
-                tryToFinishOffChannel( ctx.getChannel() );
-            }
-
-            channelGroup.remove( e.getChannel() );
-        }
-
-        @Override
-        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
-                throws Exception
-        {
-            super.channelDisconnected( ctx, e );
-
-            if ( !ctx.getChannel().isConnected() )
-            {
-                tryToFinishOffChannel( ctx.getChannel() );
-            }
-        }
-
-        @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
-        {
-            msgLog.warn( "Exception from Netty", e.getCause() );
-        }
+    @Override
+    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+    {
+        msgLog.warn( "Exception from Netty", e.getCause() );
     }
 
     protected void tryToFinishOffChannel( Channel channel )
@@ -529,17 +532,14 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
         }
         catch ( final IllegalProtocolVersionException e )
         {   // Version mismatch, fail with a good exception back to the client
-            final ChunkingChannelBuffer failureResponse = new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(),
-                    channel,
-                    chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
             submitSilent( targetCallExecutor, new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    writeFailureResponse( e, failureResponse );
+                    writeFailureResponse( e, newChunkingBuffer( channel ) );
                 }
-            } );
+            });
             return null;
         }
         return (byte) (header[0] & 0x1);
@@ -721,6 +721,13 @@ public abstract class Server<T, R> implements ChannelPipelineFactory, Lifecycle
             }
         }
         return result;
+    }
+
+    private ChunkingChannelBuffer newChunkingBuffer( Channel channel )
+    {
+        return new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(),
+                channel,
+                chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
     }
 
     // =====================================================================

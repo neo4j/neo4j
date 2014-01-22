@@ -21,16 +21,158 @@ package org.neo4j.com;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
+import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
-public abstract class Protocol
+/**
+ * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
+ * responses and deserializing requests, which is hard-coded in the server class. That should be moved over
+ * eventually.
+ */
+public class Protocol
 {
     public static final int MEGA = 1024 * 1024;
     public static final int DEFAULT_FRAME_LENGTH = 16*MEGA;
+
+    private final int chunkSize;
+    private final byte applicationProtocolVersion;
+    private final byte internalProtocolVersion;
+
+    public Protocol( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
+    {
+        this.chunkSize = chunkSize;
+        this.applicationProtocolVersion = applicationProtocolVersion;
+        this.internalProtocolVersion = internalProtocolVersion;
+    }
+
+    public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType<?> type, RequestContext ctx,
+                                  Serializer payload ) throws IOException
+    {
+        buffer.clear();
+        ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( buffer,
+                channel, chunkSize, internalProtocolVersion, applicationProtocolVersion );
+        chunkingBuffer.writeByte( type.id() );
+        writeContext( ctx, chunkingBuffer );
+        payload.write( chunkingBuffer );
+        chunkingBuffer.done();
+    }
+
+    public <PAYLOAD> Response<PAYLOAD> deserializeResponse(BlockingReadHandler<ChannelBuffer> reader, ByteBuffer input, long timeout,
+                                                           Deserializer<PAYLOAD> payloadDeserializer,
+                                                           ResourceReleaser channelReleaser) throws IOException
+    {
+        DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
+                internalProtocolVersion, applicationProtocolVersion );
+
+        PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
+        StoreId storeId = readStoreId( dechunkingBuffer, input );
+        TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
+        return new Response<PAYLOAD>( response, storeId, txStreams, channelReleaser );
+    }
+
+    private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
+    {
+        targetBuffer.writeLong( context.getEpoch() );
+        targetBuffer.writeInt( context.machineId() );
+        targetBuffer.writeInt( context.getEventIdentifier() );
+        RequestContext.Tx[] txs = context.lastAppliedTransactions();
+        targetBuffer.writeByte( txs.length );
+        for ( RequestContext.Tx tx : txs )
+        {
+            writeString( targetBuffer, tx.getDataSourceName() );
+            targetBuffer.writeLong( tx.getTxId() );
+        }
+        targetBuffer.writeInt( context.getMasterId() );
+        targetBuffer.writeLong( context.getChecksum() );
+    }
+
+    private TransactionStream readTransactionStreams( final ChannelBuffer buffer )
+    {
+        final String[] datasources = readTransactionStreamHeader( buffer );
+
+        if ( datasources.length == 1 )
+        {
+            return TransactionStream.EMPTY;
+        }
+
+        return new TransactionStream()
+        {
+            @Override
+            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+            {
+                makeSureNextTransactionIsFullyFetched( buffer );
+                String datasource = datasources[buffer.readUnsignedByte()];
+                if ( datasource == null )
+                {
+                    return null;
+                }
+                long txId = buffer.readLong();
+                TxExtractor extractor = TxExtractor.create( new BlockLogReader( buffer ) );
+                return Triplet.of( datasource, txId, extractor );
+            }
+
+            @Override
+            public String[] dataSourceNames()
+            {
+                return Arrays.copyOfRange( datasources, 1, datasources.length );
+            }
+        };
+    }
+
+    private String[] readTransactionStreamHeader( ChannelBuffer buffer )
+    {
+        short numberOfDataSources = buffer.readUnsignedByte();
+        final String[] datasources = new String[numberOfDataSources + 1];
+        datasources[0] = null; // identifier for "no more transactions"
+        for ( int i = 1; i < datasources.length; i++ )
+        {
+            datasources[i] = readString( buffer );
+        }
+        return datasources;
+    }
+
+    private static void makeSureNextTransactionIsFullyFetched( ChannelBuffer buffer )
+    {
+        buffer.markReaderIndex();
+        try
+        {
+            if ( buffer.readUnsignedByte() > 0 /* datasource id */ )
+            {
+                buffer.skipBytes( 8 ); // tx id
+                int blockSize = 0;
+                while ( (blockSize = buffer.readUnsignedByte()) == 0 )
+                {
+                    buffer.skipBytes( BlockLogBuffer.DATA_SIZE );
+                }
+                buffer.skipBytes( blockSize );
+            }
+        }
+        finally
+        {
+            buffer.resetReaderIndex();
+        }
+    }
+
+    private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
+    {
+        byteBuffer.clear();
+        byteBuffer.limit( 8 + 8 + 8 );
+        source.readBytes( byteBuffer );
+        byteBuffer.flip();
+        return StoreId.deserialize( byteBuffer );
+    }
+
+    /* ========================
+       Static utility functions
+       ======================== */
 
     public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
@@ -70,7 +212,7 @@ public abstract class Protocol
     };
     public static final Serializer EMPTY_SERIALIZER = new Serializer()
     {
-        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+        public void write( ChannelBuffer buffer ) throws IOException
         {
         }
     };

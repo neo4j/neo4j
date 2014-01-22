@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -41,8 +40,6 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
-import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
@@ -55,8 +52,6 @@ import org.neo4j.tooling.Clock;
 
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -73,41 +68,39 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     // with the server in some way.
     public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
-
     private ClientBootstrap bootstrap;
+
     private final SocketAddress address;
     private final StringLogger msgLog;
     private ExecutorService executor;
     private ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
+    private final Protocol protocol;
     private final int frameLength;
     private final long readTimeout;
     private final int maxUnusedChannels;
-    private final byte applicationProtocolVersion;
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
 
-    private int chunkSize;
-
     public Client( String hostNameOrIp, int port, Logging logging,
                    StoreId storeId, int frameLength,
                    byte applicationProtocolVersion, long readTimeout,
-                   int maxConcurrentChannels, int maxUnusedPoolSize, int chunkSize )
+                   int maxConcurrentChannels, int chunkSize )
     {
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
 
         this.msgLog = logging.getMessagesLog( getClass() );
         this.storeId = storeId;
         this.frameLength = frameLength;
-        this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.chunkSize = chunkSize;
         this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
-        address = new InetSocketAddress( hostNameOrIp, port );
-        msgLog.logMessage( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
-                port, true );
+        this.address = new InetSocketAddress( hostNameOrIp, port );
+        this.protocol = new Protocol( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+
+        msgLog.info( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
+                port );
     }
 
     @Override
@@ -189,14 +182,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         msgLog.logMessage( toString() + " shutdown", true );
     }
 
-    /**
-     * Only exposed so that tests can control it. It's not configurable really.
-     */
-    protected byte getInternalProtocolVersion()
-    {
-        return Server.INTERNAL_PROTOCOL_VERSION;
-    }
-
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
                                            Serializer serializer, Deserializer<R> deserializer )
     {
@@ -214,40 +199,32 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             // Send 'em over the wire
             channelContext = getChannel( type );
             Channel channel = channelContext.first();
-            channelContext.second().clear();
-            ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
-                    channel, chunkSize, getInternalProtocolVersion(), applicationProtocolVersion );
-            chunkingBuffer.writeByte( type.id() );
-            writeContext( type, context, chunkingBuffer );
-            serializer.write( chunkingBuffer, channelContext.third() );
-            chunkingBuffer.done();
+            ChannelBuffer output = channelContext.second();
+            ByteBuffer input = channelContext.third();
 
-            // Read the response
+            // Request
+            protocol.serializeRequest( channel, output, type, context, serializer );
+
+            // Response
             @SuppressWarnings("unchecked")
-            BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
-                    channel.getPipeline().get( "blockingHandler" );
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, getReadTimeout( type,
-                    readTimeout ),
-                    getInternalProtocolVersion(), applicationProtocolVersion );
+            Response<R> response = protocol.deserializeResponse(
+                    (BlockingReadHandler<ChannelBuffer>) channel.getPipeline().get( "blockingHandler" ), input,
+                    getReadTimeout( type, readTimeout ), deserializer, resourcePoolReleaser );
 
-            R response = deserializer.read( dechunkingBuffer, channelContext.third() );
-            StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
             if ( shouldCheckStoreId( type ) )
             {
                 // specificStoreId is there as a workaround for then the graphDb isn't initialized yet
                 if ( specificStoreId != null )
                 {
-                    assertCorrectStoreId( storeId, specificStoreId );
+                    assertCorrectStoreId( response.getStoreId(), specificStoreId );
                 }
                 else
                 {
-                    assertCorrectStoreId( storeId, this.storeId );
+                    assertCorrectStoreId( response.getStoreId(), storeId );
                 }
             }
-            TransactionStream txStreams = readTransactionStreams(
-                    dechunkingBuffer, channelPool );
-            return new Response<R>( response, storeId, txStreams,
-                    resourcePoolReleaser );
+
+            return response;
         }
         catch ( IllegalProtocolVersionException e )
         {
@@ -274,7 +251,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
              */
             if ( !success )
             {
-                releaseChannel( type, channelContext );
+                releaseChannel();
             }
         }
     }
@@ -302,31 +279,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
     }
 
-    private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
-    {
-        byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 );
-        source.readBytes( byteBuffer );
-        byteBuffer.flip();
-        return StoreId.deserialize( byteBuffer );
-    }
-
-    protected void writeContext( RequestType<T> type, RequestContext context, ChannelBuffer targetBuffer )
-    {
-        targetBuffer.writeLong( context.getEpoch() );
-        targetBuffer.writeInt( context.machineId() );
-        targetBuffer.writeInt( context.getEventIdentifier() );
-        Tx[] txs = context.lastAppliedTransactions();
-        targetBuffer.writeByte( txs.length );
-        for ( Tx tx : txs )
-        {
-            writeString( targetBuffer, tx.getDataSourceName() );
-            targetBuffer.writeLong( tx.getTxId() );
-        }
-        targetBuffer.writeInt( context.getMasterId() );
-        targetBuffer.writeLong( context.getChecksum() );
-    }
-
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel( RequestType<T> type ) throws Exception
     {
         // Calling acquire is dangerous since it may be a blocking call... and if this
@@ -341,12 +293,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         return result;
     }
 
-    protected void releaseChannel( RequestType<T> type, Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
+    private void releaseChannel()
     {
         channelPool.release();
     }
 
-    protected void closeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
+    private void closeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
     {
         channel.first().close().awaitUninterruptibly();
     }
@@ -361,83 +313,19 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         return pipeline;
     }
 
+    public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd )
+    {
+        mismatchingVersionHandlers.add( toAdd );
+    }
+
+    protected byte getInternalProtocolVersion()
+    {
+        return Server.INTERNAL_PROTOCOL_VERSION;
+    }
+
     @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[" + address + "]";
-    }
-
-    protected static TransactionStream readTransactionStreams(
-            final ChannelBuffer buffer,
-            final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> resourcePool )
-    {
-        final String[] datasources = readTransactionStreamHeader( buffer );
-
-        if ( datasources.length == 1 )
-        {
-            return TransactionStream.EMPTY;
-        }
-
-        return new TransactionStream()
-        {
-            @Override
-            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
-            {
-                makeSureNextTransactionIsFullyFetched( buffer );
-                String datasource = datasources[buffer.readUnsignedByte()];
-                if ( datasource == null )
-                {
-                    return null;
-                }
-                long txId = buffer.readLong();
-                TxExtractor extractor = TxExtractor.create( new BlockLogReader( buffer ) );
-                return Triplet.of( datasource, txId, extractor );
-            }
-
-            @Override
-            public String[] dataSourceNames()
-            {
-                return Arrays.copyOfRange( datasources, 1, datasources.length );
-            }
-        };
-    }
-
-    protected static String[] readTransactionStreamHeader( ChannelBuffer buffer )
-    {
-        short numberOfDataSources = buffer.readUnsignedByte();
-        final String[] datasources = new String[numberOfDataSources + 1];
-        datasources[0] = null; // identifier for "no more transactions"
-        for ( int i = 1; i < datasources.length; i++ )
-        {
-            datasources[i] = readString( buffer );
-        }
-        return datasources;
-    }
-
-    private static void makeSureNextTransactionIsFullyFetched( ChannelBuffer buffer )
-    {
-        buffer.markReaderIndex();
-        try
-        {
-            if ( buffer.readUnsignedByte() > 0 /* datasource id */ )
-            {
-                buffer.skipBytes( 8 ); // tx id
-                int blockSize = 0;
-                while ( (blockSize = buffer.readUnsignedByte()) == 0 )
-                {
-                    buffer.skipBytes( BlockLogBuffer.DATA_SIZE );
-                }
-                buffer.skipBytes( blockSize );
-            }
-        }
-        finally
-        {
-            buffer.resetReaderIndex();
-        }
-    }
-
-    public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd )
-    {
-        mismatchingVersionHandlers.add( toAdd );
     }
 }

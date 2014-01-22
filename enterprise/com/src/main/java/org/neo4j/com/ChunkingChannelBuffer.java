@@ -529,6 +529,8 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
 
     private void sendChunkIfNeeded( int bytesPlus )
     {
+        // Note: This is wasteful, it should pack as much data as possible into the current chunk before sending it off.
+        // Refactor when there is time.
         if ( writerIndex()+bytesPlus >= capacity )
         {
             setContinuation( CONTINUATION_MORE );

@@ -687,6 +687,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             handshake = response.response();
             requestContextFactory.setEpoch( handshake.epoch() );
         }
+        catch( BranchedDataException e )
+        {
+            // Rethrow wrapped in a branched data exception on our side, to clarify where the problem originates.
+            throw new BranchedDataException( "Master detected branched data for this machine.", e );
+        }
         catch ( RuntimeException e )
         {
             // Checked exceptions will be wrapped as the cause if this was a serialized

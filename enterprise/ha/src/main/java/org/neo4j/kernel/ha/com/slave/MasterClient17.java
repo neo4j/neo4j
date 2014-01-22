@@ -71,8 +71,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
             int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
         super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, Math.min( maxConcurrentChannels,
-                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ), chunkSize );
+                readTimeoutSeconds, maxConcurrentChannels, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
     }
 
@@ -93,7 +92,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.ALLOCATE_IDS, context, new Serializer()
         {
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 buffer.writeByte( idType.ordinal() );
             }
@@ -111,7 +110,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.CREATE_RELATIONSHIP_TYPE, context, new Serializer()
         {
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 writeString( buffer, name );
             }
@@ -195,7 +194,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.COMMIT, context, new Serializer()
         {
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 writeString( buffer, resource );
                 BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer );
@@ -219,7 +218,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
         {
             return sendRequest( HaRequestType17.FINISH, context, new Serializer()
             {
-                public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+                public void write( ChannelBuffer buffer ) throws IOException
                 {
                     buffer.writeByte( success ? 1 : 0 );
                 }
@@ -262,7 +261,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
     {
         return sendRequest( HaRequestType17.HANDSHAKE, RequestContext.EMPTY, new Serializer()
         {
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 buffer.writeLong( txId );
             }
@@ -297,7 +296,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
         context = stripFromTransactions( context );
         return sendRequest( HaRequestType17.COPY_TRANSACTIONS, context, new Serializer()
         {
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
+            public void write( ChannelBuffer buffer )
                     throws IOException
             {
                 writeString( buffer, ds );
@@ -338,7 +337,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
             this.entities = entities;
         }
 
-        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+        public void write( ChannelBuffer buffer ) throws IOException
         {
             buffer.writeInt( entities.length );
             for ( long entity : entities )
@@ -360,7 +359,7 @@ public class MasterClient17 extends Client<Master> implements MasterClient
         }
 
         @Override
-        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+        public void write( ChannelBuffer buffer ) throws IOException
         {
             writeString( buffer, index );
             writeString( buffer, key );

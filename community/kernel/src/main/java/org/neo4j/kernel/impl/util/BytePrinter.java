@@ -42,7 +42,7 @@ public class BytePrinter
      */
     public static void print( ByteBuffer bytes, PrintStream out )
     {
-        print( bytes, out, 0, bytes.capacity() );
+        print( bytes, out, 0, bytes.limit() );
     }
 
     /**
@@ -70,6 +70,11 @@ public class BytePrinter
                 out.print( " " );
             }
         }
+    }
+
+    public static void print( byte[] bytes, PrintStream out )
+    {
+        print( ByteBuffer.wrap(bytes), out );
     }
 
     /**
@@ -165,5 +170,4 @@ public class BytePrinter
     {
         return hex( bytes, 0, bytes.capacity() );
     }
-
 }
