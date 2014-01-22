@@ -135,6 +135,7 @@ public class Jetty9WebServer implements WebServer
 
             HttpConfiguration httpConfig = new HttpConfiguration();
             httpConfig.setRequestHeaderSize( 20 * 1024 );
+            httpConfig.setResponseHeaderSize( 20 * 1024 );
             HttpConnectionFactory httpFactory = new HttpConnectionFactory( httpConfig );
 
             ServerConnector connector = new ServerConnector(jetty, httpFactory);
