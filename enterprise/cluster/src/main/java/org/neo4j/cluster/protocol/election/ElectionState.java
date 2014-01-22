@@ -290,8 +290,7 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    logger.warn( "Election " +
-                                            "could not pick a winner" );
+                                    logger.warn( "Election could not pick a winner" );
                                     if ( currentElected != null )
                                     {
                                         // Someone had the role and doesn't anymore. Broadcast this
