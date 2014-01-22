@@ -98,9 +98,7 @@ import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -186,7 +184,6 @@ public abstract class InternalAbstractGraphDatabase
     protected PersistenceManager persistenceManager;
     protected PropertyIndexManager propertyIndexManager;
     protected IndexStore indexStore;
-    protected LogBufferFactory logBufferFactory;
     protected AbstractTransactionManager txManager;
     protected TxIdGenerator txIdGenerator;
     protected StoreFactory storeFactory;
@@ -485,13 +482,6 @@ public abstract class InternalAbstractGraphDatabase
         // after we've instantiated Config.
         params = config.getParams();
 
-        /*
-         *  LogBufferFactory needs access to the parameters so it has to be added after the default and
-         *  user supplied configurations are consolidated
-         */
-
-        logBufferFactory = new DefaultLogBufferFactory();
-
         extensions = life.add( createKernelData() );
 
         if ( config.get( Configuration.load_kernel_extensions ) )
@@ -513,7 +503,7 @@ public abstract class InternalAbstractGraphDatabase
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
-        xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
+        xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
                 logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 

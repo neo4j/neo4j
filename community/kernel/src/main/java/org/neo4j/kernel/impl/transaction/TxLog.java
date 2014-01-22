@@ -95,7 +95,6 @@ public class TxLog
      * 
      * @param fileName
      *            Filename of file to use
-     * @param msgLog 
      * @throws IOException
      *             If unable to open file
      */

@@ -38,20 +38,18 @@ public class XaFactory
     private final Config config;
     private final TxIdGenerator txIdGenerator;
     private final AbstractTransactionManager txManager;
-    private final LogBufferFactory logBufferFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final Logging logging;
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
 
     public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
-            LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystemAbstraction,
+            FileSystemAbstraction fileSystemAbstraction,
             Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
         this.txManager = txManager;
-        this.logBufferFactory = logBufferFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.logging = logging;
         this.recoveryVerifier = recoveryVerifier;
@@ -75,12 +73,12 @@ public class XaFactory
         XaLogicalLog log;
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
-            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, logBufferFactory,
+            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers,
                     fileSystemAbstraction, logging, pruneStrategy, stateFactory, rotateAtSize );
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, logBufferFactory, fileSystemAbstraction,
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, fileSystemAbstraction,
                     logging, pruneStrategy, stateFactory, rotateAtSize );
         }
 

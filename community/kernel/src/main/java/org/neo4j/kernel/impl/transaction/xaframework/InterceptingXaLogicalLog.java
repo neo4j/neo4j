@@ -36,11 +36,11 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
 
     public InterceptingXaLogicalLog( File fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
-            TransactionInterceptorProviders providers, LogBufferFactory logBufferFactory,
+            TransactionInterceptorProviders providers,
             FileSystemAbstraction fileSystem, Logging logging,
             LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory, long rotateAtSize )
     {
-        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, logging, pruneStrategy,
+        super( fileName, xaRm, cf, xaTf, fileSystem, logging, pruneStrategy,
                 stateFactory, rotateAtSize );
         this.providers = providers;
         this.ds = xaRm.getDataSource();

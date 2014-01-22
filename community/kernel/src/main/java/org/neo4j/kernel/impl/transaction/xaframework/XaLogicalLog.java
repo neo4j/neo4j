@@ -96,7 +96,6 @@ public class XaLogicalLog implements LogLoader
     private boolean autoRotate;
     private long rotateAtSize;
 
-    private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
     private long recoveredTxCount;
@@ -113,7 +112,7 @@ public class XaLogicalLog implements LogLoader
     private final TransactionStateFactory stateFactory;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
-                         XaTransactionFactory xaTf, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem,
+                         XaTransactionFactory xaTf, FileSystemAbstraction fileSystem,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
                          long rotateAtSize )
     {
@@ -121,7 +120,6 @@ public class XaLogicalLog implements LogLoader
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
-        this.logBufferFactory = logBufferFactory;
         this.fileSystem = fileSystem;
         this.pruneStrategy = pruneStrategy;
         this.stateFactory = stateFactory;
@@ -194,7 +192,7 @@ public class XaLogicalLog implements LogLoader
 
     private LogBuffer instantiateCorrectWriteBuffer( FileChannel channel ) throws IOException
     {
-        return logBufferFactory.create( channel );
+        return new DirectMappedLogBuffer( channel );
     }
 
     private void open( File fileToOpen ) throws IOException

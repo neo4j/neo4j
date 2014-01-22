@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultLogBufferFactory;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
@@ -52,7 +51,7 @@ public class TestUpgradeOneDotFourToFiveIT
 //        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
-        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(),
+        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null,
                 defaultFileSystemAbstraction(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
                 TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), 25 * 1024 * 1024 );
         log.open();
