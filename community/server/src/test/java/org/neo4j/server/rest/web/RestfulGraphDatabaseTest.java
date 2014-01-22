@@ -59,6 +59,7 @@ import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollecti
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
+import static java.lang.Long.parseLong;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasKey;
@@ -75,6 +76,7 @@ public class RestfulGraphDatabaseTest
     private static final String NODE_AUTO_INDEX = "node_auto_index";
     private static final String RELATIONSHIP_AUTO_INDEX = "relationship_auto_index";
     private static final String BASE_URI = "http://neo4j.org/";
+    private static final String NODE_SUBPATH = "node/";
     private static RestfulGraphDatabase service;
     private static Database database;
     private static GraphDbHelper helper;
@@ -160,6 +162,30 @@ public class RestfulGraphDatabaseTest
     {
         String entity = entityAsString( response );
         return (List<String>) JsonHelper.readJson( entity );
+    }
+
+    @Test
+    public void shouldFailGracefullyWhenViolatingConstraintOnPropertyUpdate() throws Exception
+    {
+        Response response = service.createPropertyUniquenessConstraint( "Person", "{\"property_keys\":[\"name\"]}" );
+        assertEquals( 200, response.getStatus() );
+
+        createPerson( "Fred" );
+        String wilma = createPerson( "Wilma" );
+
+        assertEquals( 409, service.setAllNodeProperties( FORCE, parseLong( wilma ), "{\"name\":\"Fred\"}" ).getStatus() );
+        assertEquals( 409, service.setNodeProperty( FORCE, parseLong( wilma ), "name", "\"Fred\"" ).getStatus() );
+    }
+
+    private String createPerson( final String name ) throws JsonParseException
+    {
+        Response response = service.createNode( FORCE, "{\"name\" : \"" + name + "\"}" );
+        assertEquals( 201, response.getStatus() );
+        String self = (String) JsonHelper.jsonToMap( entityAsString( response ) ).get( "self" );
+        String nodeId = self.substring( self.indexOf( NODE_SUBPATH ) + NODE_SUBPATH.length() );
+        response = service.addNodeLabel( FORCE, parseLong( nodeId ), "\"Person\"" );
+        assertEquals( 204, response.getStatus() );
+        return nodeId;
     }
 
     @Test
@@ -1073,7 +1099,7 @@ public class RestfulGraphDatabaseTest
         Object node = response.getMetadata().getFirst( "Location" );
         assertNotNull( node );
         String uri = node.toString();
-        Map<String, Object> properties = helper.getNodeProperties( Long.parseLong( uri.substring( uri.lastIndexOf(
+        Map<String, Object> properties = helper.getNodeProperties( parseLong( uri.substring( uri.lastIndexOf(
                 '/' ) + 1 ) ) );
         assertEquals( 1, properties.size() );
         assertEquals( value, properties.get( key ) );
@@ -1099,7 +1125,7 @@ public class RestfulGraphDatabaseTest
         Object node = response.getMetadata().getFirst( "Location" );
         assertNotNull( node );
         String uri = node.toString();
-        assertEquals( properties, helper.getNodeProperties( Long.parseLong( uri.substring( uri.lastIndexOf( '/' ) + 1
+        assertEquals( properties, helper.getNodeProperties( parseLong( uri.substring( uri.lastIndexOf( '/' ) + 1
         ) ) ) );
     }
 
@@ -1199,7 +1225,7 @@ public class RestfulGraphDatabaseTest
         Object rel = response.getMetadata().getFirst( "Location" );
         assertNotNull( rel );
         String uri = rel.toString();
-        Map<String, Object> properties = helper.getRelationshipProperties( Long.parseLong( uri.substring( uri
+        Map<String, Object> properties = helper.getRelationshipProperties( parseLong( uri.substring( uri
                 .lastIndexOf( '/' ) + 1 ) ) );
         assertEquals( 1, properties.size() );
         assertEquals( value, properties.get( key ) );
@@ -1230,7 +1256,7 @@ public class RestfulGraphDatabaseTest
         Object rel = response.getMetadata().getFirst( "Location" );
         assertNotNull( rel );
         String uri = rel.toString();
-        assertEquals( properties, helper.getRelationshipProperties( Long.parseLong( uri.substring( uri.lastIndexOf(
+        assertEquals( properties, helper.getRelationshipProperties( parseLong( uri.substring( uri.lastIndexOf(
                 '/' ) + 1 ) ) ) );
     }
 
@@ -1241,7 +1267,7 @@ public class RestfulGraphDatabaseTest
         URI end = (URI) service.createNode( FORCE, null ).getMetadata().getFirst( "Location" );
         String path = start.getPath();
         URI rel = (URI) service.createRelationship( FORCE,
-                Long.parseLong( path.substring( path.lastIndexOf( '/' ) + 1 ) ),
+                parseLong( path.substring( path.lastIndexOf( '/' ) + 1 ) ),
                 "{\"to\":\"" + end + "\",\"type\":\"knows\"}" ).getMetadata()
                 .getFirst( "Location" );
         Map<String, Object> unwanted = new HashMap<String, Object>();
@@ -1705,10 +1731,10 @@ public class RestfulGraphDatabaseTest
         Response response = service.traverse( startNode, TraverserReturnType.node, description );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         String entity = entityAsString( response );
-        assertTrue( entity.contains( "node/" + startNode ) );
-        assertFalse( entity.contains( "node/" + node1 ) );
-        assertFalse( entity.contains( "node/" + node2 ) );
-        assertTrue( entity.contains( "node/" + node3 ) );
+        assertTrue( entity.contains( NODE_SUBPATH + startNode ) );
+        assertFalse( entity.contains( NODE_SUBPATH + node1 ) );
+        assertFalse( entity.contains( NODE_SUBPATH + node2 ) );
+        assertTrue( entity.contains( NODE_SUBPATH + node3 ) );
     }
 
     @Test
