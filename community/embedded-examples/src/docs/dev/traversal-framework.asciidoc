@@ -13,7 +13,7 @@ You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful 
 
 Here follows a short explanation of all different methods that can modify or add to a traversal description.
 
-* _Expanders_ -- define what to traverse, typically in terms of relationship direction and type.
+* _Pathexpanders_ -- define what to traverse, typically in terms of relationship direction and type.
 * _Order_ -- for example depth-first or breadth-first.
 * _Uniqueness_ -- visit nodes (relationships, paths) only once.
 * _Evaluator_ -- decide what to return and whether to stop or continue traversal beyond the current position. 
@@ -25,7 +25,7 @@ Here follows a short explanation of all different methods that can modify or add
 Uniqueness -> "Traversal Description" [label="avoid duplicates"]
 Evaluator -> "Traversal Description" [label="return and prune policy"]
 Order -> "Traversal Description" [label="where to go next"]
-Expander -> "Traversal Description" [label="what to traverse"]
+PathExpander -> "Traversal Description" [label="what to traverse"]
 
 "Depth First" [TEXTNODE]
 "Breadth First" [TEXTNODE]
@@ -41,8 +41,8 @@ Expander -> "Traversal Description" [label="what to traverse"]
 "Depth First" -> Order [dir="back"]
 "Breadth First" -> Order [dir="back"]
 
-Expander -> "Relationship Type"
-"Direction" -> Expander [dir="back"]
+PathExpander -> "Relationship Type"
+"Direction" -> PathExpander [dir="back"]
 
 "Unique Nodes" -> Uniqueness [dir="back"]
 "Unique Relationships" -> Uniqueness [dir="back"]
@@ -70,7 +70,7 @@ See <<tutorial-traversal-java-api>> for more details.
 
 The traversal framework consists of a few main interfaces in addition to +Node+ and +Relationship+: +TraversalDescription+, +Evaluator+, +Traverser+ and +Uniqueness+ are the main ones.
 The +Path+ interface also has a special purpose in traversals, since it is used to represent a position in the graph when evaluating that position.
-Furthermore the +PathExpander+ (replacing +RelationshipExpander+) and +Expander+ interfaces are central to traversals, but users of the API rarely need to implement them.
+Furthermore the +PathExpander+ (replacing +RelationshipExpander+ and +Expander+) interface is central to traversals, but users of the API rarely need to implement it.
 There are also a set of interfaces for advanced use, when explicit control over the traversal order is required: +BranchSelector+, +BranchOrderingPolicy+ and +TraversalBranch+.
 
 === TraversalDescription ===
@@ -107,8 +107,8 @@ The actual traversal is performed lazily each time the +next()+-method of the it
 
 === Uniqueness ===
 
-Sets the rules for how positions can be revisited during a traversal as stated in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Uniqueness.html[+Uniqueness+].
-Default if not set is http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Uniqueness.html#NODE_GLOBAL[+NODE_GLOBAL+].
+Sets the rules for how positions can be revisited during a traversal as stated in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Uniqueness.html[+Uniqueness+].
+Default if not set is http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Uniqueness.html#NODE_GLOBAL[+NODE_GLOBAL+].
 
 A Uniqueness can be supplied to the TraversalDescription to dictate under what circumstances a traversal may revisit the same position in the graph. The various uniqueness levels that can be used in Neo4j are:
 
@@ -124,7 +124,7 @@ A Uniqueness can be supplied to the TraversalDescription to dictate under what c
 ==== Depth First / Breadth First ====
 
 These are convenience methods for setting preorder http://en.wikipedia.org/wiki/Depth-first_search[depth-first]/ http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first] +BranchSelector+|+ordering+ policies.
-The same result can be achieved by calling the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#order[+order+] method with ordering policies from the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#preorderDepthFirst[+Traversal+] http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#preorderBreadthFirst[+factory+], or to write your own +BranchSelector+/+BranchOrderingPolicy+ and pass in.
+The same result can be achieved by calling the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#order[+order+] method with ordering policies from http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/BranchOrderingPolicies.html[+BranchOrderingPolicies+], or to write your own +BranchSelector+/+BranchOrderingPolicy+ and pass in.
 
 === Order -- How to move through branches? ===
 
@@ -133,27 +133,32 @@ A more generic version of depthFirst/breadthFirst methods in that it allows an a
 
 === BranchSelector ===
 
-A BranchSelector is used for selecting which branch of the traversal to attempt next. This is used for implementing traversal orderings. The traversal framework provides a few basic ordering implementations:
+A +BranchSelector+/+BranchOrderingPolicy+ is used for selecting which branch of the traversal to attempt next.
+This is used for implementing traversal orderings.
+The traversal framework provides a few basic ordering implementations:
 
-* +Traversal.preorderDepthFirst()+: Traversing depth first, visiting each node before visiting its child nodes.
-* +Traversal.postorderDepthFirst()+: Traversing depth first, visiting each node after visiting its child nodes.
-* +Traversal.preorderBreadthFirst()+: Traversing breadth first, visiting each node before visiting its child nodes.
-* +Traversal.postorderBreadthFirst()+: Traversing breadth first, visiting each node after visiting its child nodes.
+* +BranchOrderingPolicies.PREORDER_DEPTH_FIRST+: Traversing depth first, visiting each node before visiting its child nodes.
+* +BranchOrderingPolicies.POSTORDER_DEPTH_FIRST+: Traversing depth first, visiting each node after visiting its child nodes.
+* +BranchOrderingPolicies.PREORDER_BREADTH_FIRST+: Traversing breadth first, visiting each node before visiting its child nodes.
+* +BranchOrderingPolicies.POSTORDER_BREADTH_FIRST+: Traversing breadth first, visiting each node after visiting its child nodes.
 
 NOTE: Please note that breadth first traversals have a higher memory overhead than depth first traversals.
 
-BranchSelectors carries state and hence needs to be uniquely instantiated for each traversal. Therefore it is supplied to the TraversalDescription through a BranchOrderingPolicy interface, which is a factory of BranchSelector instances.
+++BranchSelector++s carries state and hence needs to be uniquely instantiated for each traversal.
+Therefore it is supplied to the +TraversalDescription+ through a +BranchOrderingPolicy+ interface, which is a factory of +BranchSelector+ instances.
 
-A user of the Traversal framework rarely needs to implement his own BranchSelector or BranchOrderingPolicy, it is provided to let graph algorithm implementors provide their own traversal orders. The Neo4j Graph Algorithms package contains for example a BestFirst order BranchSelector/BranchOrderingPolicy that is used in BestFirst search algorithms such as A* and Dijkstra.
+A user of the Traversal framework rarely needs to implement his own +BranchSelector+ or +BranchOrderingPolicy+, it is provided to let graph algorithm implementors provide their own traversal orders.
+The Neo4j Graph Algorithms package contains for example a +BestFirst+ order +BranchSelector+/+BranchOrderingPolicy+ that is used in BestFirst search algorithms such as A* and Dijkstra.
 
 ==== BranchOrderingPolicy ====
 
-A factory for creating BranchSelectors to decide in what order branches are returned (where a branch's position is represented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+] from the start node to the current node). Common policies are http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+depth-first+] and http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#breadthFirst()[+breadth-first+] and that's why there are convenience methods for those.
+A factory for creating ++BranchSelector++s to decide in what order branches are returned (where a branch's position is represented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+] from the start node to the current node).
+Common policies are http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+depth-first+] and http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#breadthFirst()[+breadth-first+] and that's why there are convenience methods for those.
 For example, calling http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+TraversalDescription#depthFirst()+] is equivalent to:
 
 [source,java]
 ----
-description.order( Traversal.preorderDepthFirst() );
+description.order( BranchOrderingPolicies.PREORDER_DEPTH_FIRST );
 ----
 
 ==== TraversalBranch ====
@@ -169,11 +174,12 @@ Path objects are also used in the evaluation of positions in the graph, for dete
 
 === PathExpander/RelationshipExpander ===
 
-The traversal framework use PathExpanders (replacing RelationshipExpander) to discover the relationships that should be followed from a particular path to further branches in the traversal.
+The traversal framework use ++PathExpander++s (replacing +RelationshipExpander+) to discover the relationships that should be followed from a particular path to further branches in the traversal.
 
 === Expander ===
 
-A more generic version of relationships where a +RelationshipExpander+ is injected, defining all relationships to be traversed for any given node. By default (and when using relationships) a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#emptyExpander[default expander] is used, where any particular order of relationships isn't guaranteed.
+A more generic version of relationships where a +RelationshipExpander+ is injected, defining all relationships to be traversed for any given node.
+By default (and when using relationships) a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#emptyExpander[default expander] is used, where any particular order of relationships isn't guaranteed.
 There's another implementation which guarantees that relationships are traversed in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/OrderedByTypeExpander.html[order of relationship type], where types are iterated in the order they were added.
 
 The +Expander+ interface is an extension of the +RelationshipExpander+ interface that makes it possible to build customized versions of an +Expander+.

@@ -18,22 +18,24 @@
  */
 package org.neo4j.examples.server.plugins;
 
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 
 /**
-* An extension performaing a predefined graph traversal
-*/
+ * An extension performing a predefined graph traversal
+ */
 @Description( "Performs a depth two traversal along all relationship types." )
 public class DepthTwo extends ServerPlugin
 {
@@ -41,23 +43,55 @@ public class DepthTwo extends ServerPlugin
     @PluginTarget( Node.class )
     public Iterable<Node> nodesOnDepthTwo( @Source Node node )
     {
-        return traversal.traverse( node ).nodes();
+        ArrayList<Node> nodes = new ArrayList<>();
+        try (Transaction tx = node.getGraphDatabase().beginTx())
+        {
+            for ( Node foundNode : getTraversal( node ).traverse( node ).nodes() )
+            {
+                nodes.add( foundNode );
+            }
+            tx.success();
+        }
+        return nodes;
     }
 
     @Description( "Traverse depth two and return the last relationships" )
     @PluginTarget( Node.class )
     public Iterable<Relationship> relationshipsOnDepthTwo( @Source Node node )
     {
-        return traversal.traverse( node ).relationships();
+        List<Relationship> rels = new ArrayList<>();
+        try (Transaction tx = node.getGraphDatabase().beginTx())
+        {
+            for ( Relationship rel : getTraversal( node ).traverse( node ).relationships() )
+            {
+                rels.add( rel );
+            }
+            tx.success();
+        }
+        return rels;
     }
 
     @Description( "Traverse depth two and return the paths" )
     @PluginTarget( Node.class )
     public Iterable<Path> pathsOnDepthTwo( @Source Node node )
     {
-        return traversal.traverse( node );
+        List<Path> paths = new ArrayList<>();
+        try (Transaction tx = node.getGraphDatabase().beginTx())
+        {
+            for ( Path path : getTraversal( node ).traverse( node ) )
+            {
+                paths.add( path );
+            }
+            tx.success();
+        }
+        return paths;
     }
 
-    private static final TraversalDescription traversal = Traversal.description().uniqueness(
-            Uniqueness.RELATIONSHIP_PATH ).evaluator( atDepth( 2 ) );
+    private TraversalDescription getTraversal( Node node )
+    {
+        return node.getGraphDatabase()
+                .traversalDescription()
+                .uniqueness( Uniqueness.RELATIONSHIP_PATH )
+                .evaluator( Evaluators.atDepth( 2 ) );
+    }
 }

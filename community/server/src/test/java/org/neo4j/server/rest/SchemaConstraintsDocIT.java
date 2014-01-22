@@ -61,7 +61,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "person", propertyKey = "name";
+        String labelName = "Person", propertyKey = "name";
         Map<String, Object> definition = map( "property_keys", asList( propertyKey ) );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).payload( createJsonFrom( definition ) ).post(
@@ -84,7 +84,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "user", propertyKey = "name";
+        String labelName = "User", propertyKey = "name";
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
 
         String result = gen.get().noGraph().expectedStatus( 200 ).get(
@@ -109,7 +109,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "user", propertyKey1 = "name1", propertyKey2 = "name2";
+        String labelName = "User", propertyKey1 = "name1", propertyKey2 = "name2";
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
@@ -143,7 +143,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName = "user", propertyKey1 = "name1", propertyKey2 = "name2";
+        String labelName = "User", propertyKey1 = "name1", propertyKey2 = "name2";
         createLabelUniquenessPropertyConstraint( labelName, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName, propertyKey2 );
 
@@ -177,8 +177,8 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     {
         data.get();
 
-        String labelName1 = "user", propertyKey1 = "name1";
-        String labelName2 = "prog", propertyKey2 = "name2";
+        String labelName1 = "User", propertyKey1 = "name1";
+        String labelName2 = "Prog", propertyKey2 = "name2";
         createLabelUniquenessPropertyConstraint( labelName1, propertyKey1 );
         createLabelUniquenessPropertyConstraint( labelName2, propertyKey2 );
 
@@ -232,7 +232,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void create_existing_constraint()
     {
-        String labelName = "mylabel", propertyKey = "name";
+        String labelName = "Mylabel", propertyKey = "name";
         createLabelUniquenessPropertyConstraint( labelName, propertyKey );
     }
 

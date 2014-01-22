@@ -18,8 +18,11 @@
  */
 package org.neo4j.examples;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
@@ -27,15 +30,9 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphVizWithNodeId;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
 {
@@ -94,7 +91,7 @@ public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
         gen.get().addTestSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );
         // START SNIPPET: traverser
         final Node target = data.get().get( "Principal1" );
-        TraversalDescription td = Traversal.description()
+        TraversalDescription td = db.traversalDescription()
                 .uniqueness( Uniqueness.NODE_PATH )
                 .evaluator( new Evaluator()
         {

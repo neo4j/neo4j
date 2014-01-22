@@ -18,9 +18,13 @@
  */
 package org.neo4j.examples.server.plugins;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
 import org.neo4j.server.plugins.PluginTarget;
@@ -37,14 +41,32 @@ public class GetAll extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Iterable<Node> getAllNodes( @Source GraphDatabaseService graphDb )
     {
-        return GlobalGraphOperations.at( graphDb ).getAllNodes();
+        ArrayList<Node> nodes = new ArrayList<>();
+        try (Transaction tx = graphDb.beginTx())
+        {
+            for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
+            {
+                nodes.add( node );
+            }
+            tx.success();
+        }
+        return nodes;
     }
 
     @Description( "Get all relationships from the Neo4j graph database" )
     @PluginTarget( GraphDatabaseService.class )
     public Iterable<Relationship> getAllRelationships( @Source GraphDatabaseService graphDb )
     {
-        return GlobalGraphOperations.at( graphDb ).getAllRelationships();
+        List<Relationship> rels = new ArrayList<>();
+        try (Transaction tx = graphDb.beginTx())
+        {
+            for ( Relationship rel : GlobalGraphOperations.at( graphDb ).getAllRelationships() )
+            {
+                rels.add( rel );
+            }
+            tx.success();
+        }
+        return rels;
     }
 }
-//END SNIPPET: GetAll
+// END SNIPPET: GetAll

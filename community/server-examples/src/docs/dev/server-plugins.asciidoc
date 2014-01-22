@@ -153,7 +153,8 @@ If everything is OK a response code +200+ and a list of zero or more items will 
 If nothing is returned (null returned from extension) an empty result and response code +204+ will be returned.
 If the extension throws an exception response code +500+ and a detailed error message is returned.
 
-Extensions that do any kind of write operation will have to manage their own transactions, i.e. transactions aren't managed automatically.
+Extensions that do any kind of database operation will have to manage their own transactions, i.e. transactions aren't managed automatically.
+Note that the results of traversals or execution of graph algorithms should be exhausted inside the transaction before returning the result.
 
 Through this model, any plugin can naturally fit into the general hypermedia scheme that Neo4j espouses -- meaning that
 clients can still take advantage of abstractions like  Nodes, Relationships and Paths with a straightforward upgrade

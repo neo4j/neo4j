@@ -22,8 +22,8 @@ package org.neo4j.graphdb.traversal;
 import org.neo4j.graphdb.PathExpander;
 
 /**
- * A catalogue of convenient branch ordering policies.
- *
+ * A catalog of convenient branch ordering policies.
+ * 
  * Copied from kernel package so that we can hide kernel from the public API.
  */
 public enum BranchOrderingPolicies implements BranchOrderingPolicy

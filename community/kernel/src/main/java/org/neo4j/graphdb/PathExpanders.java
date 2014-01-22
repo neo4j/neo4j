@@ -23,11 +23,11 @@ import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.kernel.StandardExpander;
 
 /**
- * A catalogue of convenient {@link PathExpander} factory methods. Copied from kernel package so that we can hide
- * kernel from the public API.
- * <p/>
- * Use {@link PathExpanderBuilder} to build specialised {@link PathExpander}s.
+ * A catalog of convenient {@link PathExpander} factory methods.
+ * <p>
+ * Use {@link PathExpanderBuilder} to build specialized {@link PathExpander}s.
  */
+// Copied from kernel package so that we can hide kernel from the public API.
 public abstract class PathExpanders
 {
     /**
