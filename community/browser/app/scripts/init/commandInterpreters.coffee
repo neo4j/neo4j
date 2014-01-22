@@ -160,7 +160,7 @@ angular.module('neo4jApp')
             else
               # insist that data is parseable JSON
               try
-                data = JSON.parse(data.replace(/\n/g, ""))
+                JSON.parse(data.replace(/\n/g, ""))
               catch e
                 q.reject(error("Payload does not seem to be valid data."))
                 return q.promise
