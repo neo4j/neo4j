@@ -106,7 +106,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
@@ -119,6 +118,7 @@ import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -349,7 +349,7 @@ public abstract class InternalAbstractGraphDatabase
         this.logging = createLogging();
         
         // Component monitoring
-        this.monitors = new Monitors( logging.getMessagesLog( Monitors.class ) );
+        this.monitors = new Monitors();
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -1402,6 +1402,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( LifeSupport.class.isAssignableFrom( type ) )
             {
                 return (T) life;
+            }
+            else if ( Monitors.class.isAssignableFrom( type ) )
+            {
+                return (T) monitors;
             }
             else if ( DependencyResolver.class.isAssignableFrom( type ) )
             {
