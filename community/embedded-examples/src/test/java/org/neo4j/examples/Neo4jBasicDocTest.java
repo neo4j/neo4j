@@ -18,21 +18,18 @@
  */
 package org.neo4j.examples;
 
-import java.util.HashMap;
-import java.util.Map;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * An example of unit testing with Neo4j.
@@ -67,13 +64,11 @@ public class Neo4jBasicDocTest
     public void startWithConfiguration()
     {
         // START SNIPPET: startDbWithConfig
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( "neostore.nodestore.db.mapped_memory", "10M" );
-        config.put( "string_block_size", "60" );
-        config.put( "array_block_size", "300" );
         GraphDatabaseService db = new TestGraphDatabaseFactory()
             .newImpermanentDatabaseBuilder()
-            .setConfig( config )
+            .setConfig( GraphDatabaseSettings.nodestore_mapped_memory_size, "10M" )
+            .setConfig( GraphDatabaseSettings.string_block_size, "60" )
+            .setConfig( GraphDatabaseSettings.array_block_size, "300" )
             .newGraphDatabase();
         // END SNIPPET: startDbWithConfig
         db.shutdown();

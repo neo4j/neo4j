@@ -21,22 +21,36 @@
 package org.neo4j.examples;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 public class TraversalExample
 {
+    private GraphDatabaseService db;
+    private TraversalDescription friendsTraversal;
+
+    public TraversalExample( GraphDatabaseService db )
+    {
+        this.db = db;
+        // START SNIPPET: basetraverser
+        friendsTraversal = db.traversalDescription()
+                .depthFirst()
+                .relationships( Rels.KNOWS )
+                .uniqueness( Uniqueness.RELATIONSHIP_GLOBAL );
+        // END SNIPPET: basetraverser
+    }
+    
     public String knowsLikesTraverser( Node node )
     {
         String output = "";
         // START SNIPPET: knowslikestraverser
-        for ( Path position : Traversal.description()
+        for ( Path position : db.traversalDescription()
                 .depthFirst()
                 .relationships( Rels.KNOWS )
                 .relationships( Rels.LIKES, Direction.INCOMING )
@@ -49,18 +63,11 @@ public class TraversalExample
         return output;
     }
 
-    // START SNIPPET: basetraverser
-    final TraversalDescription FRIENDS_TRAVERSAL = Traversal.description()
-            .depthFirst()
-            .relationships( Rels.KNOWS )
-            .uniqueness( Uniqueness.RELATIONSHIP_GLOBAL );
-    // END SNIPPET: basetraverser
-
     public String traverseBaseTraverser( Node node )
     {
         String output = "";
         // START SNIPPET: traversebasetraverser
-        for ( Path path : FRIENDS_TRAVERSAL.traverse( node ) )
+        for ( Path path : friendsTraversal.traverse( node ) )
         {
             output += path + "\n";
         }
@@ -72,7 +79,7 @@ public class TraversalExample
     {
         String output = "";
         // START SNIPPET: depth3
-        for ( Path path : FRIENDS_TRAVERSAL
+        for ( Path path : friendsTraversal
                 .evaluator( Evaluators.toDepth( 3 ) )
                 .traverse( node ) )
         {
@@ -86,7 +93,7 @@ public class TraversalExample
     {
         String output = "";
         // START SNIPPET: depth4
-        for ( Path path : FRIENDS_TRAVERSAL
+        for ( Path path : friendsTraversal
                 .evaluator( Evaluators.fromDepth( 2 ) )
                 .evaluator( Evaluators.toDepth( 4 ) )
                 .traverse( node ) )
@@ -101,7 +108,7 @@ public class TraversalExample
     {
         String output = "";
         // START SNIPPET: nodes
-        for ( Node currentNode : FRIENDS_TRAVERSAL
+        for ( Node currentNode : friendsTraversal
                 .traverse( node )
                 .nodes() )
         {
@@ -115,11 +122,11 @@ public class TraversalExample
     {
         String output = "";
         // START SNIPPET: relationships
-        for ( Relationship relationship : FRIENDS_TRAVERSAL
+        for ( Relationship relationship : friendsTraversal
                 .traverse( node )
                 .relationships() )
         {
-            output += relationship.getType() + "\n";
+            output += relationship.getType().name() + "\n";
         }
         // END SNIPPET: relationships
         return output;

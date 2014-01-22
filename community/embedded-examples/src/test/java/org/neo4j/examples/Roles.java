@@ -19,8 +19,14 @@
 
 package org.neo4j.examples;
 
-import org.junit.Test;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
@@ -30,15 +36,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
-
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
-import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 public class Roles extends ImpermanentGraphJavaDocTestBase
 {
@@ -182,7 +179,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         System.out.println( "All admins:" );
         // START SNIPPET: get-admins
         Node admins = getNodeByName( "Admins" );
-        TraversalDescription traversal = traversal()
+        TraversalDescription traversal = db.traversalDescription()
                 .breadthFirst()
                 .evaluator( excludeStartPosition() )
                 .relationships( RoleRels.PART_OF, INCOMING )
@@ -203,7 +200,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         //Jale's memberships
         // START SNIPPET: get-user-memberships
         Node jale = getNodeByName( "Jale" );
-        traversal = traversal()
+        traversal = db.traversalDescription()
                 .depthFirst()
                 .evaluator( excludeStartPosition() )
                 .relationships( RoleRels.MEMBER_OF, OUTGOING )
@@ -225,7 +222,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         // get all groups
         // START SNIPPET: get-groups
         Node referenceNode = getNodeByName( "Reference_Node") ;
-        traversal = traversal()
+        traversal = db.traversalDescription()
                 .breadthFirst()
                 .evaluator( excludeStartPosition() )
                 .relationships( RoleRels.ROOT, INCOMING )
@@ -246,7 +243,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         
         //get all members
         // START SNIPPET: get-members
-        traversal = traversal()
+        traversal = db.traversalDescription()
                 .breadthFirst()
                 .evaluator( Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) )
                 .relationships( RoleRels.ROOT, INCOMING )

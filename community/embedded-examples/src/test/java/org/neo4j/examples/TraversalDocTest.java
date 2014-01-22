@@ -115,7 +115,7 @@ public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
     public void how_to_use_the_Traversal_framework()
     {
         Node joe = data.get().get( "Joe" );
-        TraversalExample example = new TraversalExample();
+        TraversalExample example = new TraversalExample( db );
         gen.get().addSnippet(
                 "graph",
                         createGraphVizWithNodeId( "Traversal Example Graph", graphdb(),

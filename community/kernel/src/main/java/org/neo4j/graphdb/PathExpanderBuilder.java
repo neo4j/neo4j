@@ -26,7 +26,7 @@ import static org.neo4j.graphdb.Direction.BOTH;
 /**
  * A fluent builder for creating specialized {@link PathExpander path expanders}.
  * <p/>
- * See {@link PathExpanders} for a catalogue of common expanders.
+ * See {@link PathExpanders} for a catalog of common expanders.
  */
 public class PathExpanderBuilder
 {

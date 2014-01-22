@@ -18,13 +18,18 @@
  */
 package org.neo4j.examples.server.plugins;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanderBuilder;
+import org.neo4j.graphdb.PathExpanders;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Parameter;
 import org.neo4j.server.plugins.PluginTarget;
@@ -46,22 +51,32 @@ public class ShortestPath extends ServerPlugin
             @Description( "The maximum path length to search for, default value (if omitted) is 4." )
                 @Parameter( name = "depth", optional = true ) Integer depth )
     {
-        Expander expander;
+        PathExpander<?> expander;
+        List<Path> paths = new ArrayList<>();
         if ( types == null )
         {
-            expander = Traversal.expanderForAllTypes();
+            expander = PathExpanders.allTypesAndDirections();
         }
         else
         {
-            expander = Traversal.emptyExpander();
+            PathExpanderBuilder expanderBuilder = PathExpanderBuilder.empty();
             for ( int i = 0; i < types.length; i++ )
             {
-                expander = expander.add( DynamicRelationshipType.withName( types[i] ) );
+                expanderBuilder = expanderBuilder.add( DynamicRelationshipType.withName( types[i] ) );
             }
+            expander = expanderBuilder.build();
         }
-        PathFinder<Path> shortestPath = GraphAlgoFactory.shortestPath(
-                expander, depth == null ? 4 : depth.intValue() );
-        return shortestPath.findAllPaths( source, target );
+        try (Transaction tx = source.getGraphDatabase().beginTx())
+        {
+            PathFinder<Path> shortestPath = GraphAlgoFactory.shortestPath( expander,
+                    depth == null ? 4 : depth.intValue() );
+            for ( Path path : shortestPath.findAllPaths( source, target ) )
+            {
+                paths.add( path );
+            }
+            tx.success();
+        }
+        return paths;
     }
 }
 // END SNIPPET: ShortestPath

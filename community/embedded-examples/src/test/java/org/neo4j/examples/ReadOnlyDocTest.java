@@ -75,9 +75,8 @@ public class ReadOnlyDocTest
     @Test
     public void makeSureDbIsOnlyReadable()
     {
-        Transaction tx = graphDb.beginTx();
         // when
-        try
+        try (Transaction tx = graphDb.beginTx())
         {
             graphDb.createNode();
 
@@ -87,10 +86,6 @@ public class ReadOnlyDocTest
         catch ( ReadOnlyDbException e )
         {
             // ok
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 }
