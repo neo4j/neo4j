@@ -101,6 +101,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.com.ServerUtil.getHostString;
 import static org.neo4j.helpers.Functions.withDefaults;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Uris.parameter;
@@ -314,47 +315,54 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToMaster()
     {
-        msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
-        try
+        scheduledExecutorService.submit( new Runnable()
         {
-            DependencyResolver resolver = graphDb.getDependencyResolver();
-            HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
-            synchronized ( xaDataSourceManager )
+            @Override
+            public void run()
             {
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                final TransactionManager txManager = graphDb.getDependencyResolver()
-                        .resolveDependency( TransactionManager.class );
+                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
+                try
+                {
+                    DependencyResolver resolver = graphDb.getDependencyResolver();
+                    HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
+                    synchronized ( xaDataSourceManager )
+                    {
+                        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        final TransactionManager txManager = graphDb.getDependencyResolver()
+                                .resolveDependency( TransactionManager.class );
 
-                idGeneratorFactory.switchToMaster();
+                        idGeneratorFactory.switchToMaster();
 
-                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
+                        MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
 
-                MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
-                        logging, config );
+                        MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
+                                logging, config );
 
-                MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                        new BranchDetectingTxVerifier( graphDb ) );
-                life.add( masterImpl );
-                life.add( masterServer );
-                assignMaster( masterImpl );
+                        MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
+                                new BranchDetectingTxVerifier( graphDb ) );
+                        life.add( masterImpl );
+                        life.add( masterServer );
+                        assignMaster( masterImpl );
 
-                idGeneratorFactory.switchToMaster();
+                        idGeneratorFactory.switchToMaster();
 
-                life.start();
+                        life.start();
 
-                masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
-                        ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
-                        masterServer.getSocketAddress().getPort() + "?serverId=" +
-                        config.get( ClusterSettings.server_id ) );
-                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
-                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
-                        ", successfully moved to master" );
+                        masterHaURI = URI.create( "ha://" + (getHostString( masterServer.getSocketAddress() ).contains
+                                ("0.0.0.0") ? me.getHost() : getHostString( masterServer.getSocketAddress() )) + ":" +
+                                masterServer.getSocketAddress().getPort() + "?serverId=" +
+                                config.get( ClusterSettings.server_id ) );
+                        clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+                        msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
+                                ", successfully moved to master" );
+                    }
+                }
+                catch ( Throwable e )
+                {
+                    msgLog.logMessage( "Failed to switch to master", e );
+                }
             }
-        }
-        catch ( Throwable e )
-        {
-            msgLog.logMessage( "Failed to switch to master", e );
-        }
+        } );
     }
 
     private void assignMaster( Master master )
@@ -387,7 +395,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             public void run()
             {
                 if (life.getStatus() == LifecycleStatus.STARTED)
-                {
+                 {
                     return; // Already switched - this can happen if a second master becomes available while waiting
                 }
 
