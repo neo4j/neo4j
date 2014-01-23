@@ -21,23 +21,24 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
 
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations
 {
@@ -200,7 +201,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetUniqueFromIndexLookup(
+            KernelStatement state,
+            IndexDescriptor index,
+            Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( state, index );
@@ -219,13 +223,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         try ( ReleasableLock r = holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal ) )
         {
             long nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
-            if ( StatementConstants.NO_SUCH_NODE == nodeId )
+            if ( NO_SUCH_NODE == nodeId )
             {
                 r.release(); // and change to a WRITE lock
                 try ( ReleasableLock w = holder.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, stringVal ) )
                 {
                     nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
-                    if ( StatementConstants.NO_SUCH_NODE != nodeId ) // we found it under the WRITE lock
+                    if ( NO_SUCH_NODE != nodeId ) // we found it under the WRITE lock
                     { // downgrade to a READ lock
                         holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal )
                               .registerWithTransaction();

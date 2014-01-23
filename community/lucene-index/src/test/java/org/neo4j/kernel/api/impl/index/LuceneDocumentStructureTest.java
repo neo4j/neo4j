@@ -20,19 +20,11 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.NumericUtils;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.ArrayEncoder;
-
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
-import static org.apache.lucene.util.NumericUtils.doubleToPrefixCoded;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncoding.Array;
@@ -42,52 +34,6 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.ValueEncod
 
 public class LuceneDocumentStructureTest
 {
-    @Test
-    public void shouldDecodePropertyValueFromTerm() throws Exception
-    {
-        LuceneDocumentStructure structure = new LuceneDocumentStructure();
-        assertEquals( 1.0, structure.propertyValue( new Term( Number.key(), doubleToPrefixCoded( 1.0 ) ) ) );
-        assertEquals( true, structure.propertyValue( new Term( Bool.key(), "true" ) ) );
-        assertEquals( "Characters", structure.propertyValue( new Term( String.key(), "Characters" ) ) );
-        assertArrayEquals( new Object[]{1.0},
-                (Object[]) structure.propertyValue( new Term( Array.key(), ArrayEncoder.encode( new int[]{1} ) ) ) );
-    }
-
-    @Test
-    public void shouldNotTreatIdFieldAsAProperty() throws Exception
-    {
-        LuceneDocumentStructure structure = new LuceneDocumentStructure();
-
-        assertFalse( structure.isPropertyTerm( new Term( NODE_ID_KEY ) ) );
-    }
-
-    @Test
-    public void shouldTreatPropertyFieldsAsAProperty() throws Exception
-    {
-        LuceneDocumentStructure structure = new LuceneDocumentStructure();
-
-        assertTrue( structure.isPropertyTerm( new Term( Array.key() ) ) );
-        assertTrue( structure.isPropertyTerm( new Term( Bool.key() ) ) );
-        assertTrue( structure.isPropertyTerm( new Term( Number.key() ) ) );
-        assertTrue( structure.isPropertyTerm( new Term( String.key() ) ) );
-    }
-
-    @Test
-    public void shouldThrowExceptionWhenDecodingUnexpectedField() throws Exception
-    {
-        try
-        {
-            // when
-            new LuceneDocumentStructure().propertyValue( new Term( "food", doubleToPrefixCoded( 1.0 ) ) );
-            fail( "should have thrown" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then
-            assertEquals( "Unexpected field: food", e.getMessage() );
-        }
-    }
-
     @Test
     public void shouldBuildDocumentRepresentingStringProperty() throws Exception
     {
@@ -170,7 +116,6 @@ public class LuceneDocumentStructureTest
         TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( new Integer[] { 1,2,3 } );
 
         // then
-        assertArrayEquals( new Object[]{1.0, 2.0, 3.0}, ArrayEncoder.decode( query.getTerm().text() ) );
+        assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
     }
-
 }

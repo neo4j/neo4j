@@ -31,22 +31,21 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-
-import static java.lang.Boolean.getBoolean;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
 class InMemoryIndex
 {
-    private final InMemoryIndexImplementation indexData;
+    protected final InMemoryIndexImplementation indexData;
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
 
     InMemoryIndex()
     {
-        this( getBoolean( "neo4j.index.in_memory.USE_HASH" ) ? new HashBasedIndex() : new ListBasedIndex() );
+        this( new HashBasedIndex() );
     }
 
     InMemoryIndex( InMemoryIndexImplementation indexData )
@@ -118,12 +117,13 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws Exception
         {
+            InMemoryIndex.this.verifyDeferredConstraints( accessor );
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater() throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
         {
             return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE, true );
         }
@@ -149,6 +149,10 @@ class InMemoryIndex
             failure = failureString;
             state = InternalIndexState.FAILED;
         }
+    }
+
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws Exception
+    {
     }
 
     private class OnlineAccessor implements IndexAccessor

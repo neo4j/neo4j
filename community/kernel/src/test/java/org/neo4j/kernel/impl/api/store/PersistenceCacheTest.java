@@ -47,7 +47,7 @@ public class PersistenceCacheTest
         int[] labels = new int[] {1, 2, 3};
         @SuppressWarnings( "unchecked" )
         CacheLoader<int[]> loader = mock( CacheLoader.class );
-        when( loader.load( state, nodeId ) ).thenReturn( labels );
+        when( loader.load( nodeId ) ).thenReturn( labels );
         NodeImpl node = new NodeImpl( nodeId );
         when( nodeCache.get( nodeId ) ).thenReturn( node );
 
@@ -58,7 +58,7 @@ public class PersistenceCacheTest
         // THEN
         assertTrue( hasLabel1 );
         assertTrue( hasLabel2 );
-        verify( loader, times( 1 ) ).load( state, nodeId );
+        verify( loader, times( 1 ) ).load( nodeId );
         verify( nodeCache, times( 2 ) ).get( nodeId );
     }
 

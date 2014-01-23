@@ -24,34 +24,46 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.kernel.api.properties.Property;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 
 class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
+    private final IndexDescriptor descriptor;
     private SearcherManager searcherManager;
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
                                                               LuceneIndexWriterFactory indexWriterFactory,
                                                               IndexWriterStatus writerStatus,
                                                               DirectoryFactory dirFactory, File dirFile,
-                                                              FailureStorage failureStorage, long indexId )
+                                                              FailureStorage failureStorage, long indexId,
+                                                              IndexDescriptor descriptor )
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        this.descriptor = descriptor;
     }
 
     @Override
@@ -79,13 +91,14 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     }
 
     @Override
-    public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         searcherManager.maybeRefresh();
-        try ( IndexSearcher searcher = searcherManager.acquire() )
-        {
-            IndexReader indexReader = searcher.getIndexReader();
+        IndexSearcher searcher = searcherManager.acquire();
 
+        try ( IndexReader indexReader = searcher.getIndexReader())
+        {
+            DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
             TermEnum terms = indexReader.terms();
             while ( terms.next() )
             {
@@ -93,23 +106,34 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
 
                 if ( !NODE_ID_KEY.equals( term.field() ) && terms.docFreq() > 1 )
                 {
-                    TopDocs duplicateEntries = searcher.search( new TermQuery( term ), 2 );
-
-                    // docFreq may include deleted documents, so we are not yet certain that this term is a duplicate
-                    if ( duplicateEntries.totalHits > 1 )
-                    {
-                        long nodeId1 = getNodeId( indexReader, duplicateEntries, 0 );
-                        long nodeId2 = getNodeId( indexReader, duplicateEntries, 1 );
-                        Object propertyValue = documentStructure.propertyValue( term );
-                        throw new PreexistingIndexEntryConflictException( propertyValue, nodeId1, nodeId2 );
-                    }
+                    collector.reset();
+                    searcher.search( new TermQuery( term ), collector );
                 }
             }
         }
+        catch ( IOException e )
+        {
+            Throwable cause = e.getCause();
+            if ( cause instanceof IndexEntryConflictException )
+            {
+                throw (IndexEntryConflictException) cause;
+            }
+            throw e;
+        }
+        finally
+        {
+            searcher.close();
+            searcherManager.release( searcher );
+        }
+    }
+
+    private DuplicateCheckingCollector duplicateCheckingCollector( PropertyAccessor accessor )
+    {
+        return new DuplicateCheckingCollector( accessor, documentStructure, descriptor.getPropertyKeyId() );
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater() throws IOException
+    public IndexUpdater newPopulatingUpdater( final PropertyAccessor accessor ) throws IOException
     {
         return new IndexUpdater()
         {
@@ -142,21 +166,28 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             {
                 searcherManager.maybeRefresh();
                 IndexSearcher searcher = searcherManager.acquire();
+                DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
                 try
                 {
                     for ( Object propertyValue : updatedPropertyValues )
                     {
-                        TopDocs docs = searcher.search( documentStructure.newQuery( propertyValue ), 2 );
-                        if ( docs.totalHits > 1 )
-                        {
-                            long nodeId1 = getNodeId( searcher.getIndexReader(), docs, 0 );
-                            long nodeId2 = getNodeId( searcher.getIndexReader(), docs, 1 );
-                            throw new PreexistingIndexEntryConflictException( propertyValue, nodeId1, nodeId2 );
-                        }
+                        collector.reset();
+                        Query query = documentStructure.newQuery( propertyValue );
+                        searcher.search( query, collector );
                     }
+                }
+                catch ( IOException e )
+                {
+                    Throwable cause = e.getCause();
+                    if ( cause instanceof IndexEntryConflictException )
+                    {
+                        throw (IndexEntryConflictException) cause;
+                    }
+                    throw e;
                 }
                 finally
                 {
+                    searcher.close();
                     searcherManager.release( searcher );
                 }
             }
@@ -169,8 +200,127 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         };
     }
 
-    private long getNodeId( IndexReader indexReader, TopDocs duplicateEntries, int index ) throws IOException
+    private static class DuplicateCheckingCollector extends Collector
     {
-        return documentStructure.getNodeId( indexReader.document( duplicateEntries.scoreDocs[index].doc ) );
+        private final PropertyAccessor accessor;
+        private final LuceneDocumentStructure documentStructure;
+        private final int propertyKeyId;
+        private final EntrySet actualValues;
+        private IndexReader reader;
+        private int docBase;
+
+        public DuplicateCheckingCollector(
+                PropertyAccessor accessor,
+                LuceneDocumentStructure documentStructure,
+                int propertyKeyId )
+        {
+            this.accessor = accessor;
+            this.documentStructure = documentStructure;
+            this.propertyKeyId = propertyKeyId;
+            actualValues = new EntrySet();
+        }
+
+        @Override
+        public void setScorer( Scorer scorer ) throws IOException
+        {
+        }
+
+        @Override
+        public void collect( int doc ) throws IOException
+        {
+            try
+            {
+                doCollect( doc );
+            }
+            catch ( KernelException e )
+            {
+                throw new ThisShouldNotHappenError(
+                        "Chris", "Indexed node should exist and have the indexed property.", e );
+            }
+            catch ( PreexistingIndexEntryConflictException e )
+            {
+                throw new IOException( e );
+            }
+        }
+
+        private void doCollect( int doc ) throws IOException, KernelException, PreexistingIndexEntryConflictException
+        {
+            Document document = reader.document( doc );
+            long nodeId = documentStructure.getNodeId( document );
+            Property property = accessor.getProperty( nodeId, propertyKeyId );
+
+            // We either have to find the first conflicting entry set element,
+            // or append one for the property we just fetched:
+            EntrySet current = actualValues;
+            scan:do {
+                for ( int i = 0; i < EntrySet.INCREMENT; i++ )
+                {
+                    Object value = current.value[i];
+
+                    if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
+                    {
+                        current.value[i] = property.value();
+                        current.nodeId[i] = nodeId;
+                        if ( i == EntrySet.INCREMENT - 1 )
+                        {
+                            current.next = new EntrySet();
+                        }
+                        break scan;
+                    }
+                    else if ( property.valueEquals( value ) )
+                    {
+                        throw new PreexistingIndexEntryConflictException(
+                                value, current.nodeId[i], nodeId );
+                    }
+                }
+                current = current.next;
+            } while ( current != null );
+        }
+
+        @Override
+        public void setNextReader( IndexReader reader, int docBase ) throws IOException
+        {
+            this.reader = reader;
+            this.docBase = docBase;
+        }
+
+        @Override
+        public boolean acceptsDocsOutOfOrder()
+        {
+            return true;
+        }
+
+        public void reset()
+        {
+            actualValues.reset(); // TODO benchmark this vs. not clearing and instead creating a new object, perhaps
+        }
+    }
+
+    /**
+     * A small struct of arrays of nodeId + property value pairs, with a next pointer.
+     * Should exhibit fairly fast linear iteration, small memory overhead and dynamic growth.
+     *
+     * NOTE: Must always call reset() before use!
+     */
+    private static class EntrySet
+    {
+        static final int INCREMENT = 100;
+
+        Object[] value = new Object[INCREMENT];
+        long[] nodeId = new long[INCREMENT];
+        EntrySet next;
+
+        public void reset()
+        {
+            EntrySet current = this;
+            do {
+                for (int i = 0; i < INCREMENT; i++)
+                {
+                    current.value[i] = null;
+                    current.nodeId[i] = StatementConstants.NO_SUCH_NODE;
+                }
+                current = next;
+            } while ( current != null );
+        }
     }
 }

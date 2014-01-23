@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.PrimitiveLongPredicate;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -44,8 +46,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -63,7 +64,7 @@ import static java.util.Collections.emptyList;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
@@ -72,8 +73,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 public class StateHandlingStatementOperations implements
         KeyReadOperations,
         KeyWriteOperations,
-        EntityReadOperations,
-        EntityWriteOperations,
+        EntityOperations,
         SchemaReadOperations,
         SchemaWriteOperations
 {
@@ -440,70 +440,85 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public long nodeGetUniqueFromIndexLookup(
+            KernelStatement state,
+            IndexDescriptor index,
+            Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        if ( state.hasTxStateWithChanges() )
-        {
-            TxState txState = state.txState();
-            DiffSets<Long> diff = nodesWithLabelAndPropertyDiffSet( state, index, value );
-            long indexNode = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
-
-            if ( diff.isEmpty() )
-            {
-                if ( NO_SUCH_NODE == indexNode )
-                {
-                    return NO_SUCH_NODE;
-                }
-                else
-                {
-                    return nodeIfNotDeleted( indexNode, txState );
-                }
-            }
-            else
-            {
-                if ( NO_SUCH_NODE  == indexNode )
-                {
-                    // No underlying node, return any node created in the tx state, or nothing
-                    Iterator<Long> iterator = diff.getAdded().iterator();
-                    if ( iterator.hasNext() )
-                    {
-                        return single( txState.nodesDeletedInTx().apply( iterator ), NO_SUCH_NODE );
-                    }
-                    else
-                    {
-                        return NO_SUCH_NODE;
-                    }
-                }
-                else
-                {
-                    // There is a node already, apply tx state diff
-                    return single(
-                        txState.nodesDeletedInTx().applyPrimitiveLongIterator(
-                            diff.applyPrimitiveLongIterator( asPrimitiveIterator( indexNode ) ) ), NO_SUCH_NODE );
-                }
-            }
-        }
-
-        return storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
+        PrimitiveLongIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
+        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
+        return single( changeFilteredMatches, NO_SUCH_NODE );
     }
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, final Object value )
             throws IndexNotFoundKernelException
     {
+        PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexLookup( state, index, value );
+        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
+        return changeFilteredMatches;
+    }
+
+    private PrimitiveLongIterator filterExactIndexMatches(
+            KernelStatement state,
+            IndexDescriptor index,
+            Object value,
+            PrimitiveLongIterator committed )
+    {
+        if ( isNumberOrArray( value ) )
+        {
+            return filter( exactMatch( state, index.getPropertyKeyId(), value ), committed );
+        }
+        return committed;
+    }
+
+    private boolean isNumberOrArray( Object value )
+    {
+        return value instanceof Number || value.getClass().isArray();
+    }
+
+    private PrimitiveLongPredicate exactMatch(
+            final KernelStatement state,
+            final int propertyKeyId,
+            final Object value )
+    {
+        return new PrimitiveLongPredicate()
+        {
+            @Override
+            public boolean accept( long nodeId )
+            {
+                try
+                {
+                    return nodeGetProperty( state, nodeId, propertyKeyId ).valueEquals( value );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    throw new ThisShouldNotHappenError( "Chris", "An index claims a node by id " + nodeId +
+                            " has the value. However, it looks like that node does not exist.", e);
+                }
+            }
+        };
+    }
+
+    private PrimitiveLongIterator filterIndexStateChanges(
+            KernelStatement state,
+            IndexDescriptor index,
+            Object value,
+            PrimitiveLongIterator nodeIds )
+    {
         if ( state.hasTxStateWithChanges() )
         {
-            TxState txState = state.txState();
-            DiffSets<Long> diff = nodesWithLabelAndPropertyDiffSet( state, index, value );
+            DiffSets<Long> labelPropertyChanges = nodesWithLabelAndPropertyDiffSet( state, index, value );
+            DiffSets<Long> deletionChanges = state.txState().nodesDeletedInTx();
 
             // Apply to actual index lookup
-            PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexLookup( state, index, value );
-            return
-                txState.nodesDeletedInTx().applyPrimitiveLongIterator( diff.applyPrimitiveLongIterator( committed ) );
+            return deletionChanges.applyPrimitiveLongIterator(
+                    labelPropertyChanges.applyPrimitiveLongIterator( nodeIds ) );
         }
-
-        return storeLayer.nodesGetFromIndexLookup( state, index, value );
+        return nodeIds;
     }
 
     @Override

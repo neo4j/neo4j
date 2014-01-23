@@ -34,23 +34,29 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.api.index.IndexUpdaterSupport.updatePopulator;
 
 public class LuceneSchemaIndexPopulatorTest
 {
+
     @Test
     public void addingValuesShouldPersistThem() throws Exception
     {
@@ -96,7 +102,7 @@ public class LuceneSchemaIndexPopulatorTest
         index.add( 1, "value" );
         index.add( 2, "value" );
         index.add( 3, "value" );
-        updatePopulator( index, asList( remove( 2, "value" ) ) );
+        updatePopulator( index, asList( remove( 2, "value" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -109,7 +115,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        updatePopulator( index, asList( change( 1, "1", "1a" ) ) );
+        updatePopulator( index, asList( change( 1, "1", "1a" ) ), indexStoreView );
         index.add( 3, "3" );
 
         // THEN
@@ -126,7 +132,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        updatePopulator( index,  asList( remove( 1, "1" ), add( 1, "1a" ) ) );
+        updatePopulator( index,  asList( remove( 1, "1" ), add( 1, "1a" ) ), indexStoreView );
         index.add( 3, "3" );
 
         // THEN
@@ -143,7 +149,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        updatePopulator( index,  asList( remove( 2, "2" ) ) );
+        updatePopulator( index,  asList( remove( 2, "2" ) ), indexStoreView );
         index.add( 3, "3" );
 
         // THEN
@@ -159,10 +165,10 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         index.add( 1, "1" );
         index.add( 2, "2" );
-        updatePopulator( index,  asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ) );
+        updatePopulator( index,  asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), indexStoreView );
         index.add( 3, "3" );
         index.add( 4, "4" );
-        updatePopulator( index,  asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ) );
+        updatePopulator( index,  asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -217,13 +223,16 @@ public class LuceneSchemaIndexPopulatorTest
     {
         return NodePropertyUpdate.remove( nodeId, 0, removedValue, new long[0] );
     }
-    
+
+    private IndexDescriptor indexDescriptor;
+    private IndexStoreView indexStoreView;
     private LuceneSchemaIndexProvider provider;
     private Directory directory;
     private IndexPopulator index;
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
+    private int propertyKeyId = 666;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
     
     @Before
@@ -234,7 +243,9 @@ public class LuceneSchemaIndexPopulatorTest
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( directoryFactory,
                 new Config( stringMap( store_dir.name(), "target/whatever" ) ) );
-        index = provider.getPopulator( indexId, new IndexConfiguration( false ) );
+        indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
+        indexStoreView = mock( IndexStoreView.class );
+        index = provider.getPopulator( indexId, indexDescriptor, new IndexConfiguration( false ) );
         index.create();
     }
 
@@ -270,5 +281,20 @@ public class LuceneSchemaIndexPopulatorTest
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
         reader = IndexReader.open( directory );
         searcher = new IndexSearcher( reader );
+    }
+
+    private static void updatePopulator(
+            IndexPopulator populator,
+            Iterable<NodePropertyUpdate> updates,
+            PropertyAccessor accessor )
+            throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
+        {
+            for ( NodePropertyUpdate update :  updates )
+            {
+                updater.process( update );
+            }
+        }
     }
 }

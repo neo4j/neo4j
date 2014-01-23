@@ -446,7 +446,7 @@ public class IndexingService extends LifecycleAdapter
         // TODO: This is here because there is a circular dependency from PopulatingIndexProxy to FlippableIndexProxy
         final String indexUserDescription = indexUserDescription( descriptor, providerDescriptor );
         IndexPopulator populator =
-            getPopulatorFromProvider( providerDescriptor, ruleId, new IndexConfiguration( constraint ) );
+            getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, new IndexConfiguration( constraint ) );
 
         FailedIndexProxyFactory failureDelegateFactory =
             new FailedPopulatingIndexProxyFactory( descriptor, providerDescriptor, populator, indexUserDescription );
@@ -515,7 +515,7 @@ public class IndexingService extends LifecycleAdapter
                                                        IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = getPopulatorFromProvider( providerDescriptor, ruleId,
-                                                                  new IndexConfiguration( unique ) );
+                descriptor, new IndexConfiguration( unique ) );
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
         IndexProxy result =
             new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
@@ -533,10 +533,10 @@ public class IndexingService extends LifecycleAdapter
     }
 
     private IndexPopulator getPopulatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
-                                                     IndexConfiguration config )
+                                                     IndexDescriptor descriptor, IndexConfiguration config )
     {
         SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
-        return indexProvider.getPopulator( ruleId, config );
+        return indexProvider.getPopulator( ruleId, descriptor, config );
     }
 
     private IndexAccessor getOnlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,

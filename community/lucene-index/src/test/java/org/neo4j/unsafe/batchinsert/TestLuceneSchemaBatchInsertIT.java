@@ -19,35 +19,27 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
-
-import java.io.File;
-
-import org.junit.Test;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.api.impl.index.DirectoryFactory;
-import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class TestLuceneSchemaBatchInsertIT
 {
@@ -58,34 +50,29 @@ public class TestLuceneSchemaBatchInsertIT
         String storeDir = forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
         BatchInserter inserter = inserter( storeDir );
         inserter.createDeferredSchemaIndex( LABEL ).on( "name" ).create();
-        
+
         // WHEN
         inserter.createNode( map( "name", "Mattias" ), LABEL );
         inserter.shutdown();
 
         // THEN
-        Config config = new Config( stringMap( GraphDatabaseSettings.store_dir.name(), storeDir ) );
-        LifeSupport life = new LifeSupport();
-        LuceneSchemaIndexProvider provider = life.add( new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config ) );
-        StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
-        NeoStore neoStore = storeFactory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
-        life.start();
-        SchemaRule rule = single( filter( new Predicate<SchemaRule>()
+        GraphDatabaseFactory graphDatabaseFactory = new GraphDatabaseFactory();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabase( storeDir );
+        DependencyResolver dependencyResolver = db.getDependencyResolver();
+        SchemaIndexProvider schemaIndexProvider = dependencyResolver.resolveDependency(
+                SchemaIndexProvider.class,
+                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+
+        // assert the indexProvider is a Lucene one
+        try ( Transaction ignore = db.beginTx() )
         {
-            @Override
-            public boolean accept( SchemaRule item )
-            {
-                return item.getKind() == Kind.INDEX_RULE;
-            }
-        }, neoStore.getSchemaStore() ) );
-        InternalIndexState initialState = provider.getInitialState( rule.getId() );
-        assertEquals( InternalIndexState.ONLINE, initialState );
-        
+            IndexDefinition indexDefinition = single( db.schema().getIndexes( LABEL ) );
+            assertThat( db.schema().getIndexState( indexDefinition ), is( Schema.IndexState.ONLINE ) );
+            assertThat( schemaIndexProvider, instanceOf( LuceneSchemaIndexProvider.class ) );
+        }
+
         // CLEANUP
-        life.shutdown();
-        neoStore.close();
+        db.shutdown();
     }
     
     private static final Label LABEL = label( "Person" );

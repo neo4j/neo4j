@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
-public class InMemoryIndexProviderApprovalTest extends SchemaProviderApprovalTest
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
+
+/**
+ * Used by the {@link IndexPopulator} for verifying constraints, if need be.
+ */
+public interface PropertyAccessor
 {
-    public InMemoryIndexProviderApprovalTest( TestValue value )
-    {
-        super( value );
-    }
+    Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException;
 }

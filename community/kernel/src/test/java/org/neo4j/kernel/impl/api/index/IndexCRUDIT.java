@@ -38,10 +38,12 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -165,7 +167,8 @@ public class IndexCRUDIT
     private GatheringIndexWriter newWriter( String propertyKey ) throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter( propertyKey );
-        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );
+        when( mockedIndexProvider.getPopulator(
+                anyLong(), any( IndexDescriptor.class ), any( IndexConfiguration.class ) ) ).thenReturn( writer );
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) ).thenReturn( writer );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) ).thenReturn( 1 ); // always pretend to have highest priority
@@ -203,12 +206,12 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater() throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
         {
             return newUpdater( IndexUpdateMode.ONLINE );
         }

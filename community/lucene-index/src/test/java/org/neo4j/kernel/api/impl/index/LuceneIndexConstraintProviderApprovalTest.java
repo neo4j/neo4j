@@ -17,19 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import org.junit.Test;
+import org.neo4j.kernel.api.index.SchemaConstraintProviderApprovalTest;
 
-import static junit.framework.TestCase.assertEquals;
-
-public class ArrayEncoderTest
+public class LuceneIndexConstraintProviderApprovalTest extends SchemaConstraintProviderApprovalTest
 {
-    @Test
-    public void shouldEncodeArrays() throws Exception
+    public LuceneIndexConstraintProviderApprovalTest( TestValue value )
     {
-        assertEquals( "D1.0|2.0|3.0|", ArrayEncoder.encode( new int[]{1, 2, 3} ) );
-        assertEquals( "Ztrue|false|", ArrayEncoder.encode( new boolean[]{true, false} ) );
-        assertEquals( "LYWxp|YXJl|eW91|b2s=|", ArrayEncoder.encode( new String[]{"ali", "are", "you", "ok"} ) );
+        super( value );
     }
 }

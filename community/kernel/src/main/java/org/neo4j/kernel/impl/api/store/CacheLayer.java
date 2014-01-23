@@ -42,7 +42,6 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -53,11 +52,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -87,7 +87,7 @@ public class CacheLayer implements StoreReadLayer
     private final CacheLoader<Iterator<DefinedProperty>> nodePropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
     {
         @Override
-        public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
+        public Iterator<DefinedProperty> load( long id ) throws EntityNotFoundException
         {
             return diskLayer.nodeGetAllProperties( id );
         }
@@ -95,7 +95,7 @@ public class CacheLayer implements StoreReadLayer
     private final CacheLoader<Iterator<DefinedProperty>> relationshipPropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
     {
         @Override
-        public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
+        public Iterator<DefinedProperty> load( long id ) throws EntityNotFoundException
         {
             return diskLayer.relationshipGetAllProperties( id );
         }
@@ -103,7 +103,7 @@ public class CacheLayer implements StoreReadLayer
     private final CacheLoader<Iterator<DefinedProperty>> graphPropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
     {
         @Override
-        public Iterator<DefinedProperty> load( KernelStatement state, long id ) throws EntityNotFoundException
+        public Iterator<DefinedProperty> load( long id ) throws EntityNotFoundException
         {
             return diskLayer.graphGetAllProperties();
         }
@@ -111,7 +111,7 @@ public class CacheLayer implements StoreReadLayer
     private final CacheLoader<int[]> nodeLabelLoader = new CacheLoader<int[]>()
     {
         @Override
-        public int[] load( KernelStatement state, long id ) throws EntityNotFoundException
+        public int[] load( long id ) throws EntityNotFoundException
         {
             return primitiveIntIteratorToIntArray( diskLayer.nodeGetLabels( id ) );
         }
@@ -229,19 +229,19 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetPropertyKeys( state, nodeId, nodePropertyLoader );
+        return persistenceCache.nodeGetPropertyKeys( nodeId, nodePropertyLoader );
     }
 
     @Override
     public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetProperty( state, nodeId, propertyKeyId, nodePropertyLoader );
+        return persistenceCache.nodeGetProperty( nodeId, propertyKeyId, nodePropertyLoader );
     }
 
     @Override
     public Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetProperties( state, nodeId, nodePropertyLoader );
+        return persistenceCache.nodeGetProperties( nodeId, nodePropertyLoader );
     }
 
     @Override
@@ -255,7 +255,7 @@ public class CacheLayer implements StoreReadLayer
     public Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
-        return persistenceCache.relationshipGetProperty( state, relationshipId, propertyKeyId,
+        return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId,
                 relationshipPropertyLoader );
     }
 
@@ -263,25 +263,25 @@ public class CacheLayer implements StoreReadLayer
     public Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long nodeId )
             throws EntityNotFoundException
     {
-        return persistenceCache.relationshipGetProperties( state, nodeId, relationshipPropertyLoader );
+        return persistenceCache.relationshipGetProperties( nodeId, relationshipPropertyLoader );
     }
 
     @Override
     public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
     {
-        return persistenceCache.graphGetPropertyKeys( state, graphPropertyLoader );
+        return persistenceCache.graphGetPropertyKeys( graphPropertyLoader );
     }
 
     @Override
     public Property graphGetProperty( KernelStatement state, int propertyKeyId )
     {
-        return persistenceCache.graphGetProperty( state, graphPropertyLoader, propertyKeyId );
+        return persistenceCache.graphGetProperty( graphPropertyLoader, propertyKeyId );
     }
 
     @Override
     public Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state )
     {
-        return persistenceCache.graphGetProperties( state, graphPropertyLoader );
+        return persistenceCache.graphGetProperties( graphPropertyLoader );
     }
 
     @Override
@@ -304,7 +304,10 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public long nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
+    public PrimitiveLongIterator nodeGetUniqueFromIndexLookup(
+            KernelStatement state,
+            IndexDescriptor index,
+            Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         return diskLayer.nodeGetUniqueFromIndexLookup( state, schemaCache.indexId( index ), value );

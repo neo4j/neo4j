@@ -24,8 +24,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
 import static java.util.Arrays.asList;
@@ -33,10 +34,12 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
-import static org.neo4j.kernel.impl.api.index.IndexUpdaterSupport.updatePopulator;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class UniqueLuceneIndexPopulatorTest
 {
@@ -74,11 +77,21 @@ public class UniqueLuceneIndexPopulatorTest
                 documentStructure, standard(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
+        int propertyKeyId = 100;
 
         // when
         populator.add( 1, "value1" );
         populator.add( 2, "value2" );
-        updatePopulator( populator, asList( NodePropertyUpdate.add( 3, 100, "value3", new long[]{1000} ) ) );
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        when( propertyAccessor.getProperty( 1, propertyKeyId ) ).thenReturn(
+                stringProperty( propertyKeyId, "value1" ) );
+        when( propertyAccessor.getProperty( 2, propertyKeyId )).thenReturn(
+                stringProperty( propertyKeyId, "value2" ) );
+
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+        {
+            updater.process( add( 3, propertyKeyId, "value3", new long[]{1000} ) );
+        }
 
         populator.close( true );
 
@@ -157,11 +170,20 @@ public class UniqueLuceneIndexPopulatorTest
         populator.create();
         populator.add( 1, "value1" );
         populator.add( 2, "value2" );
+        int propertyKeyId = 100;
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        when( propertyAccessor.getProperty( 1, propertyKeyId ) ).thenReturn(
+                stringProperty( propertyKeyId, "value1" ) );
+        when( propertyAccessor.getProperty( 2, propertyKeyId ) ).thenReturn(
+                stringProperty( propertyKeyId, "value2" ) );
 
         // when
         try
         {
-            updatePopulator( populator, asList( NodePropertyUpdate.add( 2, 100, "value1", new long[]{1000} ) ) );
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+            {
+                updater.process( add( 2, propertyKeyId, "value1", new long[]{1000} ) );
+            }
 
             fail( "should have thrown exception" );
         }

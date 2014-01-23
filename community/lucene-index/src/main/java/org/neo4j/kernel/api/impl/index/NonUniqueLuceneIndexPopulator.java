@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
 class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
@@ -51,13 +52,13 @@ class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
     {
         // no constraints to verify so do nothing
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater() throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
     {
         return new IndexUpdater()
         {

@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 import org.neo4j.kernel.impl.util.Charsets;
-
-import static java.lang.String.format;
 
 public class ArrayEncoder
 {
@@ -67,39 +64,4 @@ public class ArrayEncoder
         }
         return type + builder.toString();
     }
-
-    public static Object[] decode( String encoded )
-    {
-        char type = encoded.charAt( 0 );
-        String[] values = encoded.substring( 1 ).split( "\\|" );
-        Object[] array = new Object[values.length];
-        for ( int i = 0; i < values.length; i++ )
-        {
-            switch ( type )
-            {
-                case 'D':
-                    array[i] = Double.parseDouble( values[i] );
-                    break;
-                case 'Z':
-                    array[i] = Boolean.parseBoolean( values[i] );
-                    break;
-                case 'L':
-                    try
-                    {
-                        array[i] = new String( base64Decoder.decodeBuffer( values[i] ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new IllegalArgumentException( format( "Unable to BASE64 decode %s", values[i] ), e );
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException( format( "Unknown array type: %s", type ) );
-
-            }
-        }
-        return array;
-
-    }
-
 }

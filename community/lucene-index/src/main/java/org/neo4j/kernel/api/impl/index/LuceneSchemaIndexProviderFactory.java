@@ -51,7 +51,9 @@ public class LuceneSchemaIndexProviderFactory extends
     @Override
     public LuceneSchemaIndexProvider newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new LuceneSchemaIndexProvider(
-                directoryFactory( dependencies.getConfig(), dependencies.getFileSystem() ), dependencies.getConfig() );
+        Config config = dependencies.getConfig();
+        FileSystemAbstraction fileSystem = dependencies.getFileSystem();
+        DirectoryFactory directoryFactory = directoryFactory( config, fileSystem );
+        return new LuceneSchemaIndexProvider( directoryFactory, config );
     }
 }

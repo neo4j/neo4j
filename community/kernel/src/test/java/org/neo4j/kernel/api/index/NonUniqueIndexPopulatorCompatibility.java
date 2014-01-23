@@ -22,16 +22,16 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-
-import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.impl.api.index.IndexUpdaterSupport.updatePopulator;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -49,7 +49,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
     {
         // when
-        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
         populator.create();
         populator.add( 1, "value1" );
         populator.add( 2, "value1" );
@@ -69,7 +69,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
         String failure = "The contrived failure";
 
         // WHEN
@@ -83,7 +83,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
         String failure = "The contrived failure";
 
         // WHEN
@@ -97,7 +97,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 17, new IndexConfiguration( false ) );
+        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( false ) );
         populator.close( false );
 
         // WHEN
@@ -110,16 +110,27 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
     public void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexPopulator populator = indexProvider.getPopulator( 13, new IndexConfiguration( false ) );
+        IndexPopulator populator = indexProvider.getPopulator( 13, descriptor, new IndexConfiguration( false ) );
         populator.create();
         long nodeId = 1;
         int propertyKeyId = 10, labelId = 11; // Can we just use arbitrary ids here?
-        String propertyValue = "value1";
+        final String propertyValue = "value1";
+        PropertyAccessor propertyAccessor = new PropertyAccessor()
+        {
+            @Override
+            public Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException
+            {
+                return Property.stringProperty( propertyKeyId, propertyValue );
+            }
+        };
 
         // this update (using add())...
         populator.add( nodeId, propertyValue );
         // ...is the same as this update (using update())
-        updatePopulator( populator, asList( add( nodeId, propertyKeyId, propertyValue, new long[]{labelId} ) ) );
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+        {
+            updater.process( add( nodeId, propertyKeyId, propertyValue, new long[]{labelId} ) );
+        }
 
         populator.close( true );
 

@@ -44,7 +44,7 @@ public interface IndexPopulator
      * called by the same thread every time. All data coming in here is guaranteed to not
      * have been added to this index previously, so no checks needs to be performed before applying it.
      * Implementations may verify constraints at this time, or defer them until the first verification
-     * of {@link #verifyDeferredConstraints()}.
+     * of {@link #verifyDeferredConstraints(PropertyAccessor)}.
      *
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to index.
@@ -54,7 +54,8 @@ public interface IndexPopulator
     /**
      * Verify constraints for all entries added so far.
      */
-    void verifyDeferredConstraints() throws IndexEntryConflictException, IOException;
+    @Deprecated // TODO we want to remove this in 2.1, and properly prevent value collisions.
+    void verifyDeferredConstraints( PropertyAccessor accessor ) throws Exception;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -77,7 +78,7 @@ public interface IndexPopulator
      *   applied idempotently.</li>
      * </ol>
      */
-    IndexUpdater newPopulatingUpdater() throws IOException;
+    IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException;
 
     // void update( Iterable<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException;
 
@@ -120,12 +121,12 @@ public interface IndexPopulator
         }
 
         @Override
-        public void verifyDeferredConstraints() throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater()
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }

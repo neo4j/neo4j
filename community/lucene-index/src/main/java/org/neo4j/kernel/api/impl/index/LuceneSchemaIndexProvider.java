@@ -24,8 +24,10 @@ import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
+
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -54,16 +56,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexConfiguration config )
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config )
     {
         if ( config.isUnique() )
         {
-//            return new UniqueLuceneIndexPopulator(
-//                    UniqueLuceneIndexPopulator.DEFAULT_BATCH_SIZE, documentStructure, standard(), writerStatus,
-//                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
                     documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
+                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage,
+                    indexId, descriptor );
         }
         else
         {

@@ -41,7 +41,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
+import static org.neo4j.graphdb.Neo4jMatchers.createConstraint;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -54,7 +54,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
  * class in the index provider module, all value types will be checked against the index provider.
  */
 @RunWith(value = Parameterized.class)
-public abstract class SchemaProviderApprovalTest
+public abstract class SchemaConstraintProviderApprovalTest
 {
     /*
     These are the values that will be checked. Searching
@@ -67,25 +67,33 @@ public abstract class SchemaProviderApprovalTest
         STRING_FALSE( "false" ),
         STRING_UPPER_A( "A" ),
         STRING_LOWER_A( "a" ),
-        CHAR_UPPER_A( 'A' ),
-        CHAR_LOWER_A( 'a' ),
+        CHAR_UPPER_A( 'B' ),
+        CHAR_LOWER_A( 'b' ),
         INT_42( 42 ),
-        LONG_42( (long) 42 ),
-        BYTE_42( (byte) 42 ),
-        DOUBLE_42( (double) 42 ),
+        LONG_42( (long) 43 ),
+        LARGE_LONG_1( 4611686018427387905l ),
+        LARGE_LONG_2( 4611686018427387907l ),
+        BYTE_42( (byte) 44 ),
+        DOUBLE_42( (double) 41 ),
         DOUBLE_42andAHalf( 42.5d ),
-        SHORT_42( (short) 42 ),
-        FLOAT_42( (float) 42 ),
-        FLOAT_42andAHalf( 42.5f ),
+        SHORT_42( (short) 45 ),
+        FLOAT_42( (float) 46 ),
+        FLOAT_42andAHalf( 41.5f ),
         ARRAY_OF_INTS( new int[]{1, 2, 3} ),
+        ARRAY_OF_LONGS( new long[]{4, 5, 6} ),
+        ARRAY_OF_LARGE_LONGS_1( new long[] { 4611686018427387905l } ),
+        ARRAY_OF_LARGE_LONGS_2( new long[] { 4611686018427387906l } ),
+        ARRAY_OF_LARGE_LONGS_3( new Long[] { 4611686018425387907l } ),
+        ARRAY_OF_LARGE_LONGS_4( new Long[] { 4611686018425387908l } ),
         ARRAY_OF_BOOL_LIKE_STRING( new String[]{"true", "false", "true"} ),
         ARRAY_OF_BOOLS( new boolean[]{true, false, true} ),
-        ARRAY_OF_DOUBLES( new double[]{1, 2, 3} ),
-        ARRAY_OF_STRING( new String[]{"1", "2", "3"} ),
+        ARRAY_OF_DOUBLES( new double[]{7, 8, 9} ),
+        ARRAY_OF_STRING( new String[]{"a", "b", "c"} ),
+        EMPTY_ARRAY_OF_STRING( new String[0] ),
         ONE( new String[]{"", "||"} ),
         OTHER( new String[]{"||", ""} ),
         ANOTHER_ARRAY_OF_STRING( new String[]{"1|2|3"} ),
-        ARRAY_OF_CHAR( new char[]{'1', '2', '3'} );
+        ARRAY_OF_CHAR( new char[]{'d', 'e', 'f'} );
 
         private final Object value;
 
@@ -96,11 +104,11 @@ public abstract class SchemaProviderApprovalTest
     }
 
     private static Map<TestValue, Set<Object>> noIndexRun;
-    private static Map<TestValue, Set<Object>> indexRun;
+    private static Map<TestValue, Set<Object>> constraintRun;
 
     private final TestValue currentValue;
 
-    public SchemaProviderApprovalTest( TestValue value )
+    public SchemaConstraintProviderApprovalTest( TestValue value )
     {
         currentValue = value;
     }
@@ -129,8 +137,8 @@ public abstract class SchemaProviderApprovalTest
         }
 
         noIndexRun = runFindByLabelAndProperty( db );
-        createIndex( db, label( LABEL ), PROPERTY_KEY );
-        indexRun = runFindByLabelAndProperty( db );
+        createConstraint( db, label( LABEL ), PROPERTY_KEY );
+        constraintRun = runFindByLabelAndProperty( db );
         db.shutdown();
     }
 
@@ -154,11 +162,11 @@ public abstract class SchemaProviderApprovalTest
     public void test()
     {
         Set<Object> noIndexResult = asSet( noIndexRun.get( currentValue ) );
-        Set<Object> indexResult = asSet( indexRun.get( currentValue ) );
+        Set<Object> constraintResult = asSet( constraintRun.get( currentValue ) );
 
         String errorMessage = currentValue.toString();
 
-        assertEquals( errorMessage, noIndexResult, indexResult );
+        assertEquals( errorMessage, noIndexResult, constraintResult );
     }
 
     private static Map<TestValue, Set<Object>> runFindByLabelAndProperty( GraphDatabaseService db )
@@ -212,11 +220,7 @@ public abstract class SchemaProviderApprovalTest
         @Override
         public boolean equals( Object obj )
         {
-            if ( obj instanceof ArrayEqualityObject )
-            {
-                return ArrayUtil.equals( array, ((ArrayEqualityObject) obj).array );
-            }
-            return false;
+            return obj instanceof ArrayEqualityObject && ArrayUtil.equals( array, ((ArrayEqualityObject) obj).array );
         }
 
         @Override
