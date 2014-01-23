@@ -66,6 +66,7 @@ public class ServerTestUtils
         {
             throw new RuntimeException( "temp config directory not created" );
         }
+        d.deleteOnExit();
         return d;
     }
 
@@ -168,6 +169,8 @@ public class ServerTestUtils
 
     public static File createTempPropertyFile( File parentDir ) throws IOException
     {
-        return File.createTempFile( "neo4j", "properties", parentDir );
+        File file = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
+        file.deleteOnExit();
+        return file;
     }
 }

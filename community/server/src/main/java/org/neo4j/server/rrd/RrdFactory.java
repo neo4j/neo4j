@@ -26,21 +26,23 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+import org.rrd4j.ConsolFun;
+import org.rrd4j.core.DsDef;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.RrdDef;
+import org.rrd4j.core.RrdToolkit;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-import org.rrd4j.ConsolFun;
-import org.rrd4j.core.DsDef;
-import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.RrdDef;
-import org.rrd4j.core.RrdToolkit;
 
 import static java.lang.Double.NaN;
 import static java.util.Arrays.asList;
@@ -53,6 +55,19 @@ import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY
 import static org.rrd4j.ConsolFun.AVERAGE;
 import static org.rrd4j.ConsolFun.MAX;
 import static org.rrd4j.ConsolFun.MIN;
+
+import static java.lang.Double.NaN;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.rrd4j.ConsolFun.AVERAGE;
+import static org.rrd4j.ConsolFun.MAX;
+import static org.rrd4j.ConsolFun.MIN;
+
+import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
 
 public class RrdFactory
 {
@@ -110,8 +125,26 @@ public class RrdFactory
 
     protected String tempRrdFile() throws IOException
     {
-        File tempFile = File.createTempFile( "neo4j", "rrd" );
+        final File tempFile = File.createTempFile( "neo4j", "rrd" );
         tempFile.delete();
+        tempFile.mkdir();
+
+        Runtime.getRuntime().addShutdownHook( new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    FileUtils.deleteRecursively(tempFile);
+                }
+                catch ( IOException e )
+                {
+                    // Ignore
+                }
+            }
+        });
+
         return tempFile.getAbsolutePath();
     }
 
