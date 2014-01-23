@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -307,7 +308,7 @@ public class TestDoubleRecovery extends AbstractSubProcessTestBase
             graphdb.shutdown();
         }
 
-        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction() );
+        TxLog log = new TxLog( new File(args[0]), new DefaultFileSystemAbstraction(), new Monitors() );
         byte globalId[] = new byte[NEOKERNL.length + 16];
         System.arraycopy( NEOKERNL, 0, globalId, 0, NEOKERNL.length );
         ByteBuffer byteBuf = ByteBuffer.wrap( globalId );

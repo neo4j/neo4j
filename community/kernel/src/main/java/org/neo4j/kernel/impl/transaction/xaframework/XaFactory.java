@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+
 import java.io.File;
 
 import org.neo4j.kernel.TransactionInterceptorProviders;
@@ -27,8 +29,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
 * TODO
@@ -39,18 +40,20 @@ public class XaFactory
     private final TxIdGenerator txIdGenerator;
     private final AbstractTransactionManager txManager;
     private final FileSystemAbstraction fileSystemAbstraction;
+    private final Monitors monitors;
     private final Logging logging;
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
 
     public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
-            FileSystemAbstraction fileSystemAbstraction,
-            Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+                      FileSystemAbstraction fileSystemAbstraction,
+                      Monitors monitors, Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
         this.txManager = txManager;
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.monitors = monitors;
         this.logging = logging;
         this.recoveryVerifier = recoveryVerifier;
         this.pruneStrategy = pruneStrategy;
@@ -73,12 +76,12 @@ public class XaFactory
         XaLogicalLog log;
         if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
-            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers,
-                    fileSystemAbstraction, logging, pruneStrategy, stateFactory, rotateAtSize );
+            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, fileSystemAbstraction,
+                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize );
         }
         else
         {
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, fileSystemAbstraction,
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, fileSystemAbstraction, monitors,
                     logging, pruneStrategy, stateFactory, rotateAtSize );
         }
 

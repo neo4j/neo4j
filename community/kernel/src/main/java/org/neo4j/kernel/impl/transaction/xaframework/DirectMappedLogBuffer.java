@@ -40,9 +40,12 @@ public class DirectMappedLogBuffer implements LogBuffer
     private final ByteBuffer byteBuffer;
     private long bufferStartPosition;
 
-    public DirectMappedLogBuffer( FileChannel fileChannel ) throws IOException
+    private final LogBufferMonitor monitor;
+
+    public DirectMappedLogBuffer( FileChannel fileChannel, LogBufferMonitor monitor ) throws IOException
     {
         this.fileChannel = fileChannel;
+        this.monitor = monitor;
         bufferStartPosition = fileChannel.position();
         byteBuffer = ByteBuffer.allocateDirect( BUFFER_SIZE );
     }
@@ -158,12 +161,13 @@ public class DirectMappedLogBuffer implements LogBuffer
 
         while((bufferStartPosition += (bytesWritten = fileChannel.write( byteBuffer, bufferStartPosition ))) < expectedEndPosition)
         {
-            if(bytesWritten <= 0)
+            if( bytesWritten <= 0 )
             {
                 throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
             }
         }
 
+        monitor.bytesWritten( bytesWritten );
         byteBuffer.clear();
     }
 

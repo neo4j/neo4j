@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
@@ -31,16 +32,17 @@ import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.mockfs.BreakableFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.FileSystemGuard;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestDirectMappedLogBuffer
 {
-
     class FileChannelWithChoppyDisk extends FileChannel
     {
 
@@ -169,7 +171,7 @@ public class TestDirectMappedLogBuffer
     {
         // Given
         FileChannelWithChoppyDisk mockChannel = new FileChannelWithChoppyDisk(/* that writes */2/* bytes at a time */);
-        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel );
+        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel, new Monitors().newMonitor( LogBufferMonitor.class ) );
 
         // When
         writeBuffer.put( new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16} );
@@ -184,7 +186,7 @@ public class TestDirectMappedLogBuffer
     {
         // Given
         FileChannelWithChoppyDisk mockChannel = new FileChannelWithChoppyDisk(/* that writes */0/* bytes at a time */);
-        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel );
+        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel, new Monitors().newMonitor( LogBufferMonitor.class ) );
 
         // When
         writeBuffer.put( new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16} );
@@ -224,7 +226,7 @@ public class TestDirectMappedLogBuffer
         };
 
         BreakableFileSystemAbstraction fs = new BreakableFileSystemAbstraction( new EphemeralFileSystemAbstraction(), guard );
-        DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( fs.create( new File( "log" ) ) );
+        DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( fs.create( new File( "log" ) ), new Monitors().newMonitor( LogBufferMonitor.class ) );
         buffer.putInt( 1 ).putInt( 2 ).putInt( 3 );
         try
         {
@@ -235,5 +237,73 @@ public class TestDirectMappedLogBuffer
             e.printStackTrace();
         }
         buffer.writeOut();
+    }
+
+    @Test
+    public void testMonitoringBytesWritten() throws Exception
+    {
+        Monitors monitors = new Monitors();
+        LogBufferMonitor monitor = monitors.newMonitor( LogBufferMonitor.class );
+        DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( new FileChannelWithChoppyDisk( 100 ), monitor );
+
+        final AtomicLong bytesWritten = new AtomicLong();
+
+        monitors.addMonitorListener( new LogBufferMonitor()
+        {
+            @Override
+            public void bytesWritten( long numberOfBytes )
+            {
+                bytesWritten.addAndGet( numberOfBytes );
+            }
+
+            @Override
+            public void bytesRead( long numberOfBytes )
+            {
+
+            }
+        } );
+
+        buffer.put( (byte) 1 );
+        assertEquals( 0, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 1, bytesWritten.get() );
+
+        buffer.putShort( (short) 1 );
+        assertEquals( 1, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 3, bytesWritten.get() );
+
+        buffer.putInt( 1 );
+        assertEquals( 3, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 7, bytesWritten.get() );
+
+        buffer.putLong( 1 );
+        assertEquals( 7, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 15, bytesWritten.get() );
+
+        buffer.putFloat( 1 );
+        assertEquals( 15, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 19, bytesWritten.get() );
+
+        buffer.putDouble( 1 );
+        assertEquals( 19, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 27, bytesWritten.get() );
+
+        buffer.put( new byte[]{ 1, 2, 3 } );
+        assertEquals( 27, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 30, bytesWritten.get() );
+
+        buffer.put( new char[] { '1', '2', '3'} );
+        assertEquals( 30, bytesWritten.get() );
+        buffer.force();
+        assertEquals( 36, bytesWritten.get() );
+
+        buffer.force();
+        assertEquals( 36, bytesWritten.get() );
     }
 }

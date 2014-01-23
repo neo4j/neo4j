@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
@@ -105,6 +106,7 @@ public class XaLogicalLogTest
                                                       mock( XaCommandFactory.class ),
                                                       xaTf,
                                                       fs,
+                                                      new Monitors(),
                                                       new SingleLoggingService( StringLogger.wrap( output.writer() ) ),
                                                       LogPruneStrategies.NO_PRUNING,
                                                       mock( TransactionStateFactory.class ),
@@ -136,6 +138,7 @@ public class XaLogicalLogTest
                 new FixedSizeXaCommandFactory(),
                 new VersionRespectingXaTransactionFactory(),
                 ephemeralFs.get(),
+                new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
                 mock( TransactionStateFactory.class ), maxSize );

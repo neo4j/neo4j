@@ -45,9 +45,11 @@ import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -238,7 +240,7 @@ public class LogTestUtils
         FileChannel in = fileSystem.open( file, "r" );
         in.position( startPosition );
         FileChannel out = fileSystem.open( tempFile, "rw" );
-        LogBuffer outBuffer = new DirectMappedLogBuffer( out );
+        LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( LogBufferMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         boolean changed = false;
         try
@@ -347,7 +349,7 @@ public class LogTestUtils
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
         FileChannel in = fileSystem.open( file, "r" );;
         FileChannel out = fileSystem.open( tempFile, "rw" );
-        LogBuffer outBuffer = new DirectMappedLogBuffer( out );
+        LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( LogBufferMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
         CommandFactory cf = new CommandFactory();
