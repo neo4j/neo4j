@@ -19,9 +19,10 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
+
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
-
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
@@ -45,14 +46,16 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
     @Override
     public void dispatch( Object o, final HttpContext httpContext )
     {
+        RepresentationWriteHandler representationWriteHandler = DO_NOTHING;
+
         if ( o instanceof RestfulGraphDatabase )
         {
             RestfulGraphDatabase restfulGraphDatabase = (RestfulGraphDatabase) o;
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler(
-                    new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
+            restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
+                    CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ));
         }
         else if ( o instanceof BatchOperationService )
         {
@@ -60,8 +63,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            batchOperationService.setRepresentationWriteHandler(
-                    new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
+            batchOperationService.setRepresentationWriteHandler( representationWriteHandler = new
+                    CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
         }
         else if ( o instanceof CypherService )
         {
@@ -69,8 +72,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            cypherService.getOutputFormat().setRepresentationWriteHandler(
-                    new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
+            cypherService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
+                    CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
         }
         else if ( o instanceof DatabaseMetadataService )
         {
@@ -78,7 +81,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             final Transaction transaction = database.getGraph().beginTx();
 
-            databaseMetadataService.setRepresentationWriteHandler( new RepresentationWriteHandler()
+            databaseMetadataService.setRepresentationWriteHandler( representationWriteHandler = new
+                    RepresentationWriteHandler()
             {
                 @Override
                 public void onRepresentationStartWriting()
@@ -102,7 +106,8 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         else if ( o instanceof ExtensionService )
         {
             ExtensionService extensionService = (ExtensionService) o;
-            extensionService.getOutputFormat().setRepresentationWriteHandler( new RepresentationWriteHandler()
+            extensionService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
+                    RepresentationWriteHandler()
             {
                 Transaction transaction;
 
@@ -129,6 +134,15 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
             } );
         }
 
-        requestDispatcher.dispatch( o, httpContext );
+        try
+        {
+            requestDispatcher.dispatch( o, httpContext );
+        }
+        catch ( RuntimeException e )
+        {
+            representationWriteHandler.onRepresentationFinal();
+
+            throw e;
+        }
     }
 }

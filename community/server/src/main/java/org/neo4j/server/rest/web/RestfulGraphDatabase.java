@@ -312,6 +312,10 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
+        catch ( ConstraintViolationException e )
+        {
+            return output.conflict( e );
+        }
         return nothing();
     }
 
@@ -357,6 +361,10 @@ public class RestfulGraphDatabase
         catch ( NodeNotFoundException e )
         {
             return output.notFound( e );
+        }
+        catch ( ConstraintViolationException e)
+        {
+            return output.conflict( e );
         }
         return nothing();
     }
