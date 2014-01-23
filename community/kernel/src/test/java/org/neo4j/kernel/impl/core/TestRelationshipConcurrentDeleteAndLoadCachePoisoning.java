@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
-
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -42,6 +40,10 @@ import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
+
 /**
  * This test tests the exact same issue as {@link TestConcurrentModificationOfRelationshipChains}. The difference is
  * that it tries to cut it as close as possible by doing the relationship cache load right after the removal of the
@@ -56,8 +58,9 @@ import org.neo4j.test.subprocess.SubProcessTestRunner;
 public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
 {
     private static final int RelationshipGrabSize = 2;
-    @ClassRule
-    public static EmbeddedDatabaseRule database = new EmbeddedDatabaseRule()
+
+    @Rule
+    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
