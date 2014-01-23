@@ -276,6 +276,16 @@ public abstract class XaDataSource implements Lifecycle
         throw new UnsupportedOperationException( getClass().getName() );
     }
 
+    public ResourceIterator<File> listStoreFiles(  ) throws IOException
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
+    }
+
+    public ResourceIterator<File> listLogicalLogs(  ) throws IOException
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
+    }
+
     /**
      * Returns previous value
      */

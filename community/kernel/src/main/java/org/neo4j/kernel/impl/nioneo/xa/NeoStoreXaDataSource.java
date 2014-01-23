@@ -685,6 +685,18 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         return fileListing.listStoreFiles( includeLogicalLogs );
     }
 
+    @Override
+    public ResourceIterator<File> listStoreFiles() throws IOException
+    {
+        return fileListing.listStoreFiles();
+    }
+
+    @Override
+    public ResourceIterator<File> listLogicalLogs() throws IOException
+    {
+        return fileListing.listLogicalLogs();
+    }
+
     public void registerDiagnosticsWith( DiagnosticsManager manager )
     {
         manager.registerAll( Diagnostics.class, this );
