@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TargetDirectory;
 
 import static java.io.File.createTempFile;
 
@@ -63,6 +65,9 @@ public class TestIndexCommand
     private static final int INT_VALUE = 345;
     private static final Map<String, String> SOME_CONFIG = stringMap( "type", "exact", "provider", "lucene" );
     
+    @Rule
+    public TargetDirectory.TestDirectory directory = TargetDirectory.forTest( TestIndexCommand.class ).testDirectory();
+
     @Test
     public void testWriteReadTruncate() throws Exception
     {
@@ -98,7 +103,7 @@ public class TestIndexCommand
 
     private File copyAndTruncateFile( File file, long fileSize ) throws IOException
     {
-        File copy = createTempFile( "index", "copy" );
+        File copy = createTempFile( "index", "copy", directory.directory() );
         copyFile( file, copy );
         RandomAccessFile raFile = new RandomAccessFile( copy, "rw" );
         try
