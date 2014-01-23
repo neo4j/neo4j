@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -46,10 +44,6 @@ import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcess;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
