@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -150,7 +151,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         super.create();
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
-                (TxManager) txManager, availabilityGuard, masterDelegateInvocationHandler ) );
+                (TxManager) txManager, availabilityGuard, logging, masterDelegateInvocationHandler ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, msgLog ) );
 
