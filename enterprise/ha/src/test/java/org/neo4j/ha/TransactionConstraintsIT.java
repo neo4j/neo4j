@@ -235,7 +235,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             tx.finish();
         }
     }
-    
+
     @Test
     public void deadlock_detection_involving_two_slaves() throws Exception
     {
@@ -273,8 +273,14 @@ public class TransactionConstraintsIT extends AbstractClusterTest
                 return commonNode;
             }
         } ) );
-        thread2.waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
-        
+
+        for ( int i = 0; i < 10; i++ )
+        {
+            thread2.waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
+
+            Thread.sleep(2);
+        }
+
         try
         {
             // WHEN
