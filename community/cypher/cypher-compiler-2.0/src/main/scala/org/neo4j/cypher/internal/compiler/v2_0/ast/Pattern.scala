@@ -43,7 +43,7 @@ case class Pattern(patternParts: Seq[PatternPart])(val token: InputToken) extend
 case class RelationshipsPattern(element: RelationshipChain)(val token: InputToken) extends AstNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) then
-      element.semanticCheck(ctx)
+    element.semanticCheck(ctx)
 }
 
 
