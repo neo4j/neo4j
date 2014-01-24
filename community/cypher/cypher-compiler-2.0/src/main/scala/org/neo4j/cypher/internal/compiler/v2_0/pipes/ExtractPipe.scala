@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.expressions.Expression
+import commands.expressions.{CachedExpression, Identifier, Expression}
 import data.SimpleVal
 import symbols._
 
@@ -44,14 +44,43 @@ class ExtractPipe(val source: Pipe, val expressions: Map[String, Expression]) ex
     source.symbols.add(newIdentifiers)
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = input.map(
-    subgraph => {
+  /*
+  Most of the time, we can execute expressions and put the results straight back into the original execution context.
+  Some times, an expression we want to run can overwrite an identifier that already exists in the context. In these
+  cases, we need to run the expressions on the original execution context. Here we decide wich one it is we're dealing
+  with and hard code the version to use
+   */
+  val applyExpressions: (ExecutionContext, QueryState) => ExecutionContext = {
+    val overwritesAlreadyExistingIdentifiers = expressions.exists {
+      case (name, Identifier(originalName)) => name != originalName
+      case (name, CachedExpression(originalName, _)) => name != originalName
+      case (name, _) => source.symbols.hasIdentifierNamed(name)
+    }
+
+    val applyExpressionsOverwritingOriginal = (ctx: ExecutionContext, state: QueryState) => {
       expressions.foreach {
         case (name, expression) =>
-        subgraph += name -> expression(subgraph)(state)
+          ctx += name -> expression(ctx)(state)
+      }
+      ctx
     }
-    subgraph
-  })
+    val applyExpressionsWhileKeepingOriginal = (ctx: ExecutionContext, state: QueryState) => {
+      val original = ctx.clone()
+      expressions.foreach {
+        case (name, expression) =>
+          ctx += name -> expression(original)(state)
+      }
+      ctx
+    }
+
+    if (overwritesAlreadyExistingIdentifiers)
+      applyExpressionsWhileKeepingOriginal
+    else
+      applyExpressionsOverwritingOriginal
+  }
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+    input.map( ctx => applyExpressions(ctx, state) )
 
   override def executionPlanDescription =
     source.executionPlanDescription

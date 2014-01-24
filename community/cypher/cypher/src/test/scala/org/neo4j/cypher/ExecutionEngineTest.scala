@@ -2703,4 +2703,11 @@ RETURN x0.name""")
     val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
     assert(result("A") === 1)
   }
+
+  @Test
+  def should_be_able_to_alias_expressions() {
+    createNode("id" -> 42)
+    val result = execute("match (a) return a.id as a, a.id")
+    assert(result.toList === List(Map("a" -> 42, "a.id" -> 42)))
+  }
 }
