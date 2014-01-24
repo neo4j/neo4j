@@ -25,8 +25,6 @@ import java.awt.FlowLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.neo4j.desktop.config.Environment;
-
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.ellipsis;
 import static org.neo4j.desktop.ui.Components.withBackground;
@@ -42,10 +40,8 @@ public enum DatabaseStatus
     public static final Color CHANGING_COLOR = new Color( 1.0f, 1.0f, 0.5f );
     public static final Color STARTED_COLOR = new Color( 0.5f, 1.0f, 0.5f );
 
-    public Component display( DesktopModel model, Environment environment )
+    public Component display( DesktopModel model )
     {
-        System.out.println("DatabaseStatus.display(" + this.name() + ")");
-
         switch ( this )
         {
             case STOPPED:
@@ -54,7 +50,7 @@ public enum DatabaseStatus
             case STARTING:
                 return createTextStatusDisplay( CHANGING_COLOR, ellipsis( "In just a few seconds, Neo4j will be ready" ) );
             case STARTED:
-                return createStartedStatusDisplay( model, environment );
+                return createStartedStatusDisplay( model );
             case STOPPING:
                 return createTextStatusDisplay( CHANGING_COLOR, ellipsis( "Neo4j is shutting down" ) );
             default:
@@ -67,7 +63,7 @@ public enum DatabaseStatus
         return createStatusDisplay( color, new JLabel( text ) );
     }
 
-    private static JPanel createStartedStatusDisplay( DesktopModel model, Environment environment )
+    private static JPanel createStartedStatusDisplay( DesktopModel model )
     {
         final JLabel link = new JLabel( "http://localhost:7474/" );
 
