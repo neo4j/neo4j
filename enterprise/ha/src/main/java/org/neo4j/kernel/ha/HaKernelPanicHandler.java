@@ -27,6 +27,8 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 
 public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGuard.AvailabilityRequirement
 {
@@ -35,14 +37,16 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
     private final AtomicInteger epoch = new AtomicInteger();
     private final AvailabilityGuard availabilityGuard;
     private final DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
+    private final StringLogger logger;
 
     public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
-                                 AvailabilityGuard availabilityGuard,
+                                 AvailabilityGuard availabilityGuard, Logging logging,
                                  DelegateInvocationHandler<Master> masterDelegateInvocationHandler )
     {
         this.dataSourceManager = dataSourceManager;
         this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
+        this.logger = logging.getMessagesLog( getClass() );
         this.masterDelegateInvocationHandler = masterDelegateInvocationHandler;
         availabilityGuard.grant(this);
     }
@@ -67,6 +71,8 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
                         return;
                     }
 
+                    logger.info( "Recovering from HA kernel panic" );
+                    epoch.incrementAndGet();
                     availabilityGuard.deny(this);
                     try
                     {
@@ -76,17 +82,19 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
                         txManager.start();
                         txManager.doRecovery();
                         masterDelegateInvocationHandler.harden();
-                        epoch.incrementAndGet();
                     }
                     finally
                     {
                         availabilityGuard.grant(this);
+                        logger.info( "Done recovering from HA kernel panic" );
                     }
                 }
             }
             catch ( Throwable t )
             {
-                throw new RuntimeException( "error while handling kernel panic for TX_MANAGER_NOT_OK", t );
+                String msg = "Error while handling HA kernel panic";
+                logger.warn( msg, t );
+                throw new RuntimeException( msg, t );
             }
         }
         else if ( error == ErrorState.STORAGE_MEDIA_FULL )
