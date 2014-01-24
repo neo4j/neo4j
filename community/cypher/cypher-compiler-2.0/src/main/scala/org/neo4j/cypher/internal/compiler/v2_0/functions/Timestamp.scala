@@ -30,6 +30,6 @@ case object Timestamp extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(), outputType = CTInteger)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) =
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
     commandexpressions.TimestampFunction()
 }

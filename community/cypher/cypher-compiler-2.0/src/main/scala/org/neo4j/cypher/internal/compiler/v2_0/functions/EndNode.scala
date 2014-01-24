@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -30,6 +31,6 @@ case object EndNode extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTRelationship), outputType = CTNode)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) =
-    commandexpressions.RelationshipEndPoints(invocation.arguments(0).toCommand, start = false)
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.RelationshipEndPoints(invocation.arguments(0).asCommandExpression, start = false)
 }

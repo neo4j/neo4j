@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
+import commands.expressions.{Expression => CommandExpression}
 import symbols._
 
 case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction {
@@ -31,9 +33,9 @@ case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction 
     Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
-    val firstArg = invocation.arguments(0).toCommand
-    val secondArg = invocation.arguments(1).toCommand
+  def asCommandExpression(invocation: ast.FunctionInvocation) = {
+    val firstArg = invocation.arguments(0).asCommandExpression
+    val secondArg = invocation.arguments(1).asCommandExpression
 
     val command = commandexpressions.PercentileDisc(firstArg, secondArg)
     if (invocation.distinct)

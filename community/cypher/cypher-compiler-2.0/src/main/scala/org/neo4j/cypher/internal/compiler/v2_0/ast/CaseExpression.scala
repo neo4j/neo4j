@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
+import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, Predicate => CommandPredicate}
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
+import symbols._
 
 case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression])(val token: InputToken) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
@@ -35,14 +33,5 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
     when (expression.isEmpty) {
       alternatives.map(_._1).expectType(CTBoolean.covariant)
     } then this.specifyType(possibleTypes)
-  }
-
-  def toCommand: CommandExpression = expression match {
-    case Some(e) =>
-      val legacyAlternatives = alternatives.map { a => (a._1.toCommand, a._2.toCommand) }
-      commandexpressions.SimpleCase(e.toCommand, legacyAlternatives, default.map(_.toCommand))
-    case None    =>
-      val predicateAlternatives = alternatives.map { a => (a._1.toPredicate, a._2.toCommand) }
-      commandexpressions.GenericCase(predicateAlternatives, default.map(_.toCommand))
   }
 }

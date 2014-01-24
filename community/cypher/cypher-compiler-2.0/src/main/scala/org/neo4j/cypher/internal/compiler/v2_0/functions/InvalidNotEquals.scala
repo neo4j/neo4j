@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import symbols._
 
 case object InvalidNotEquals extends PredicateFunction with SimpleTypedFunction {
@@ -33,9 +34,9 @@ case object InvalidNotEquals extends PredicateFunction with SimpleTypedFunction 
     super.semanticCheck(ctx, invocation) then
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    commands.Not(commands.Equals(left.toCommand, right.toCommand))
-  }
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
+    commands.Not(commands.Equals(
+      invocation.arguments(0).asCommandExpression,
+      invocation.arguments(1).asCommandExpression
+    ))
 }

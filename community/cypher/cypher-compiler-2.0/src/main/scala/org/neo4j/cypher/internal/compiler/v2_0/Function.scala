@@ -139,9 +139,9 @@ abstract class Function extends SemanticChecking {
     else
       None
 
-  def toCommand(invocation: ast.FunctionInvocation): CommandExpression
+  def asCommandExpression(invocation: ast.FunctionInvocation): CommandExpression
 
-  def toPredicate(invocation: ast.FunctionInvocation): CommandPredicate =
+  def asPredicateExpression(invocation: ast.FunctionInvocation): CommandPredicate =
     throw new SyntaxException(s"Expression must return a boolean")
 }
 
@@ -189,11 +189,11 @@ trait SimpleTypedFunction { self: Function =>
 
 
 abstract class PredicateFunction extends Function {
-  def toCommand(invocation: ast.FunctionInvocation): CommandExpression = internalToPredicate(invocation)
+  def asCommandExpression(invocation: ast.FunctionInvocation): CommandExpression = internalToPredicate(invocation)
 
   protected def internalToPredicate(invocation: ast.FunctionInvocation): CommandPredicate
 
-  override def toPredicate(invocation: ast.FunctionInvocation): CommandPredicate = internalToPredicate(invocation)
+  override def asPredicateExpression(invocation: ast.FunctionInvocation): CommandPredicate = internalToPredicate(invocation)
 }
 
 

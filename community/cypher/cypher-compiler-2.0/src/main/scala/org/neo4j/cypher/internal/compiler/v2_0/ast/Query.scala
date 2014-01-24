@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_0.commands
 
 sealed trait Query extends Statement
 
@@ -82,60 +80,6 @@ case class SingleQuery(clauses: Seq[Clause])(val token: InputToken) extends Quer
       case _       => checkClause(clause, last)
     })
   }
-
-  def toLegacyQuery =
-    groupClauses(clauses).foldRight(None: Option[commands.Query], (_: commands.QueryBuilder).returns()) {
-      case (group, (tail, defaultClose)) =>
-        val b = tail.foldLeft(commands.QueryBuilder())((b, t) => b.tail(t))
-
-        val builder = group.foldLeft(b)((b, clause) => clause match {
-          case c: Start        => c.addToLegacyQuery(b)
-          case c: Match        => c.addToLegacyQuery(b)
-          case c: Merge        => c.addToLegacyQuery(b)
-          case c: Create       => c.addToLegacyQuery(b)
-          case c: CreateUnique => c.addToLegacyQuery(b)
-          case c: SetClause    => c.addToLegacyQuery(b)
-          case c: Delete       => c.addToLegacyQuery(b)
-          case c: Remove       => c.addToLegacyQuery(b)
-          case c: Foreach      => c.addToLegacyQuery(b)
-          case _: With         => b
-          case _: Return       => b
-          case _               => throw new ThisShouldNotHappenError("cleishm", "Unknown clause while grouping")
-        })
-
-        val query = Some(group.takeRight(2) match {
-          case Seq(w: With, r: Return)  => w.closeLegacyQueryBuilder(builder, r.closeLegacyQueryBuilder)
-          case Seq(_, c: ClosingClause) => c.closeLegacyQueryBuilder(builder)
-          case Seq(c: ClosingClause)    => c.closeLegacyQueryBuilder(builder)
-          case _                        => defaultClose(builder)
-        })
-
-        (query, (_: commands.QueryBuilder).returns(commands.AllIdentifiers()))
-    }._1.get
-
-  private def groupClauses(clauses: Seq[Clause]): IndexedSeq[IndexedSeq[Clause]] = {
-    val (groups, last) = clauses.sliding(2).foldLeft((Vector.empty[Vector[Clause]], Vector(clauses.head))) {
-      case ((groups, last), pair) =>
-        def split   = (groups :+ last, pair.tail.toVector)
-        def combine = (groups, last ++ pair.tail)
-
-        pair match {
-          case Seq(clause)                           => (groups, last)
-          case Seq(_: With, _: Return)               => combine
-          case Seq(_: ClosingClause, _)              => split
-          case Seq(_, _: ClosingClause)              => combine
-          case Seq(_: UpdateClause, _: Create)       => split
-          case Seq(_: UpdateClause, _: CreateUnique) => split
-          case Seq(_: UpdateClause, _: Merge)        => split
-          case Seq(_: UpdateClause, _: UpdateClause) => combine
-          case Seq(_: UpdateClause, _)               => split
-          case Seq(_, _: UpdateClause)               => split
-          case Seq(_: Match, _)                      => split
-          case Seq(_, _)                             => combine
-        }
-    }
-    groups :+ last
-  }
 }
 
 trait Union extends Query {
@@ -161,10 +105,5 @@ trait Union extends Query {
   }
 }
 
-case class UnionAll(statement: Query, query: SingleQuery)(val token: InputToken) extends Union {
-  def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, distinct = false)
-}
-
-case class UnionDistinct(statement: Query, query: SingleQuery)(val token: InputToken) extends Union {
-  def toLegacyQuery = commands.Union(unionedQueries.reverseMap(_.toLegacyQuery), commands.QueryString.empty, distinct = true)
-}
+case class UnionAll(statement: Query, query: SingleQuery)(val token: InputToken) extends Union
+case class UnionDistinct(statement: Query, query: SingleQuery)(val token: InputToken) extends Union

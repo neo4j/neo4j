@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import symbols._
 
 case object LessThanOrEqual extends PredicateFunction with SimpleTypedFunction {
@@ -31,9 +32,9 @@ case object LessThanOrEqual extends PredicateFunction with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    commands.LessThanOrEqual(left.toCommand, right.toCommand)
-  }
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
+    commands.LessThanOrEqual(
+      invocation.arguments(0).asCommandExpression,
+      invocation.arguments(1).asCommandExpression
+    )
 }

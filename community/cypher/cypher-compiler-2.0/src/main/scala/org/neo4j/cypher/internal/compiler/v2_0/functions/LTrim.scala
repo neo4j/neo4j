@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -30,6 +31,6 @@ case object LTrim extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTString), outputType = CTString)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) =
-    commandexpressions.LTrimFunction(invocation.arguments(0).toCommand)
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.LTrimFunction(invocation.arguments(0).asCommandExpression)
 }

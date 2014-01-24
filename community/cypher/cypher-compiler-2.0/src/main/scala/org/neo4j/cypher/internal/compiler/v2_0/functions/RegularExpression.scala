@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
+import commands.expressions.{Expression => CommandExpression}
 import symbols._
 
 case object RegularExpression extends PredicateFunction with SimpleTypedFunction {
@@ -31,11 +33,11 @@ case object RegularExpression extends PredicateFunction with SimpleTypedFunction
   )
 
   protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    right.toCommand match {
-      case literal: commandexpressions.Literal => commands.LiteralRegularExpression(left.toCommand, literal)
-      case command                             => commands.RegularExpression(left.toCommand, command)
+    val left = invocation.arguments(0).asCommandExpression
+    val right = invocation.arguments(1).asCommandExpression
+    right match {
+      case literal: commandexpressions.Literal => commands.LiteralRegularExpression(left, literal)
+      case command                             => commands.RegularExpression(left, command)
     }
   }
 }

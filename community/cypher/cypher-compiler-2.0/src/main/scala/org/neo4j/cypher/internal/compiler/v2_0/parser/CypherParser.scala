@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.StatementConverters._
 import commands.AbstractQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -63,6 +64,6 @@ case class CypherParser() extends Parser
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", query, error.token.startPosition.offset)
     }
-    ReattachAliasedExpressions(statement.toLegacyQuery.setQueryText(query))
+    ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
   }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import symbols._
 
 case object Not extends PredicateFunction with SimpleTypedFunction {
@@ -29,5 +30,6 @@ case object Not extends PredicateFunction with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTBoolean), outputType = CTBoolean)
   )
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) = commands.Not(invocation.arguments(0).toPredicate)
+  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
+    commands.Not(invocation.arguments(0).asCommandPredicate)
 }

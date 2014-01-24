@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.values.TokenType.PropertyKey
 import symbols._
 
@@ -37,6 +38,6 @@ case object Has extends PredicateFunction {
 
   protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
     val property = invocation.arguments(0).asInstanceOf[ast.Property]
-    commands.Has(property.map.toCommand, PropertyKey(property.identifier.name))
+    commands.Has(property.map.asCommandExpression, PropertyKey(property.identifier.name))
   }
 }

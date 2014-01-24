@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
+import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions}
-import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
+import symbols._
 
 trait Literal extends Expression {
   def value: Any
-
-  def toCommand = commandexpressions.Literal(value)
 }
 
 sealed abstract class IntegerLiteral(stringVal: String) extends Literal with SimpleTypedExpression {

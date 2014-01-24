@@ -26,6 +26,4 @@ case class Where(expression: Expression)(val token: InputToken) extends AstNode 
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTBoolean.covariant)
-
-  def toLegacyPredicate = expression.toPredicate
 }

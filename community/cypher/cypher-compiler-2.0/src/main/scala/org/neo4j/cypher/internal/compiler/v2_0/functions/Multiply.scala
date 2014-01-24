@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -36,9 +37,9 @@ case object Multiply extends Function with SimpleTypedFunction {
     Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
   )
 
-  def toCommand(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0)
-    val right = invocation.arguments(1)
-    commandexpressions.Multiply(left.toCommand, right.toCommand)
-  }
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.Multiply(
+      invocation.arguments(0).asCommandExpression,
+      invocation.arguments(1).asCommandExpression
+    )
 }

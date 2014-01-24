@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
@@ -32,7 +33,10 @@ case object Tail extends Function {
       invocation.specifyType(invocation.arguments(0).types)
     }
 
-  def toCommand(invocation: ast.FunctionInvocation) =
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
   commandexpressions.CollectionSliceExpression(
-    invocation.arguments(0).toCommand, Some(commandexpressions.Literal(1)), None)
+    invocation.arguments(0).asCommandExpression,
+    Some(commandexpressions.Literal(1)),
+    None
+  )
 }

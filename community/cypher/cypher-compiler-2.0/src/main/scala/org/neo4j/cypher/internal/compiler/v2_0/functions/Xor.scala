@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
 import symbols._
 
 case object Xor extends PredicateFunction with SimpleTypedFunction {
@@ -30,5 +31,8 @@ case object Xor extends PredicateFunction with SimpleTypedFunction {
   )
 
   protected def internalToPredicate(invocation: ast.FunctionInvocation) =
-    commands.Xor(invocation.arguments(0).toPredicate, invocation.arguments(1).toPredicate)
+    commands.Xor(
+      invocation.arguments(0).asCommandPredicate,
+      invocation.arguments(1).asCommandPredicate
+    )
 }
