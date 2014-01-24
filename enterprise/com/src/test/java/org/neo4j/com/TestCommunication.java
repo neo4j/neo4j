@@ -19,17 +19,6 @@
  */
 package org.neo4j.com;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.yield;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
-import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -37,6 +26,14 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.yield;
+import static org.junit.Assert.*;
+import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
+import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 public class TestCommunication
 {

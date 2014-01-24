@@ -25,6 +25,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.tooling.Clock;
 
@@ -168,6 +169,17 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
                                            RequestContext context, ChannelBuffer input, ChannelBuffer target )
             {
                 return master.throwException( readString( input ) );
+            }
+        }, Protocol.VOID_SERIALIZER ),
+
+        CAUSE_READ_CONTEXT_EXCEPTION( new TargetCaller<MadeUpCommunicationInterface, Integer>()
+        {
+            @Override
+            public Response<Integer> call( MadeUpCommunicationInterface master,
+                RequestContext context, ChannelBuffer input, ChannelBuffer target )
+            {
+                throw new ThisShouldNotHappenError( "Jake", "Test should not reach this far, " +
+                    "it should fail while reading the request context." );
             }
         }, Protocol.VOID_SERIALIZER );
 

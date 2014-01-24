@@ -41,7 +41,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
     {
         super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH, PROTOCOL_VERSION, 40 * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH );
+                FRAME_LENGTH );
     }
 
     public Response<Void> fullBackup( StoreWriter storeWriter )

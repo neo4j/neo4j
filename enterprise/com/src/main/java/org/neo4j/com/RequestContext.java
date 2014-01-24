@@ -34,7 +34,7 @@ public final class RequestContext
         private final String dataSourceName;
         private final long txId;
 
-        private Tx( String dataSourceName, long txId )
+        public Tx( String dataSourceName, long txId )
         {
             this.dataSourceName = dataSourceName;
             this.txId = txId;
