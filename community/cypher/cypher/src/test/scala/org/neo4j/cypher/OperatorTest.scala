@@ -24,7 +24,7 @@ import org.neo4j.graphdb._
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.internal.compiler.v2_1.runtime._
 import collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.runtime.StatementContext
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 
 class OperatorTest extends ExecutionEngineHelper {
 
@@ -53,7 +53,7 @@ class OperatorTest extends ExecutionEngineHelper {
       while (inner.next()) {
         val result = new mutable.HashMap[String, Any]()
         table.foreach {
-          case (name, Long(idx)) => result += name -> data.getLongRegister(idx)
+          case (name, Long(idx)) => result += name -> data.getEntityRegister(idx)
           case (name, Object(idx)) => result += name -> data.getObjectRegister(idx)
         }
         resultBuilder += result.toMap
@@ -64,14 +64,14 @@ class OperatorTest extends ExecutionEngineHelper {
   }
 
   @Test def all_nodes_on_empty_database() {
-    val allNodesScan = new AllNodesScanOp(ctx, new MapRegisters(), 0)
+    val allNodesScan = new AllNodesScanOp(ctx, new EntityRegister(new MapRegisters(), 0))
     allNodesScan.open()
     assert(allNodesScan.next() === false, "Expected not to find any nodes")
   }
 
   @Test def all_nodes_on_database_with_three_nodes() {
     val data = new MapRegisters()
-    val allNodesScan = new AllNodesScanOp(ctx, data, 0)
+    val allNodesScan = new AllNodesScanOp(ctx, new EntityRegister(data, 0))
 
     createNode()
     createNode()
@@ -92,7 +92,7 @@ class OperatorTest extends ExecutionEngineHelper {
     createLabeledNode("B")
     val a2 = createLabeledNode("A")
 
-    val allNodesScan = new LabelScanOp(ctx, registerIdx, labelToken, data)
+    val allNodesScan = new LabelScanOp(ctx, labelToken, new EntityRegister(data, registerIdx))
 
     implicit val table = Map("a" -> Long(0))
     assert(allNodesScan.toList(data) === List(Map("a" -> a1.getId), Map("a" -> a2.getId)))
@@ -110,9 +110,9 @@ class OperatorTest extends ExecutionEngineHelper {
 
     val lhs = {
       val labelToken = 0
-      new LabelScanOp(ctx, sourceId, labelToken, data)
+      new LabelScanOp(ctx, labelToken, new EntityRegister(data, sourceId))
     }
-    val expand = new ExpandToNodeOp(ctx, sourceId, destinationId, lhs, data, Direction.OUTGOING)
+    val expand = new ExpandToNodeOp(ctx, lhs, new EntityRegister(data, sourceId), Direction.OUTGOING, new EntityRegister(data, destinationId))
 
     implicit val table: Map[String, TableKey] = Map("a" -> Long(0), "b" -> Long(1))
     assert(expand.toList(data) === List(Map("a" -> source.getId, "b" -> destination.getId)))
@@ -142,13 +142,13 @@ class OperatorTest extends ExecutionEngineHelper {
     val labelAToken = 0
     val labelBToken = 1
 
-    val labelScan1 = new LabelScanOp(ctx, id1, labelAToken, data)
-    val lhs = new ExpandToNodeOp(ctx, id1, joinKeyId, labelScan1, data, Direction.OUTGOING)
+    val labelScan1 = new LabelScanOp(ctx, labelAToken, new EntityRegister(data, id1))
+    val lhs = new ExpandToNodeOp(ctx, labelScan1, new EntityRegister(data, id1), Direction.OUTGOING, new EntityRegister(data, joinKeyId))
 
-    val labelScan2 = new LabelScanOp(ctx, id2, labelBToken, data)
-    val rhs = new ExpandToNodeOp(ctx, id2, joinKeyId, labelScan2, data, Direction.OUTGOING)
+    val labelScan2 = new LabelScanOp(ctx, labelBToken, new EntityRegister(data, id2))
+    val rhs = new ExpandToNodeOp(ctx, labelScan2, new EntityRegister(data, id2), Direction.OUTGOING, new EntityRegister(data, joinKeyId))
 
-    val hashJoin = new HashJoinOp(joinKeyId, Array(id1), Array.empty, lhs, rhs, data)
+    val hashJoin = new HashJoinOp(new EntityRegister(data, joinKeyId), Array(new EntityRegister(data, id1)), Array.empty, lhs, rhs)
 
     implicit val table = Map("a" -> Long(0), "b" -> Long(1), "c" -> Long(2))
 
@@ -174,13 +174,13 @@ class OperatorTest extends ExecutionEngineHelper {
     val labelAToken = 0
     val labelBToken = 1
 
-    val labelScan1 = new LabelScanOp(ctx, id1, labelAToken, data)
-    val lhs = new ExpandToNodeOp(ctx, id1, joinKeyId, labelScan1, data, Direction.OUTGOING)
+    val labelScan1 = new LabelScanOp(ctx, labelAToken, new EntityRegister(data, id1))
+    val lhs = new ExpandToNodeOp(ctx, labelScan1, new EntityRegister(data, id1), Direction.OUTGOING, new EntityRegister(data, joinKeyId))
 
-    val labelScan2 = new LabelScanOp(ctx, id2, labelBToken, data)
-    val rhs = new ExpandToNodeOp(ctx, id2, joinKeyId, labelScan2, data, Direction.OUTGOING)
+    val labelScan2 = new LabelScanOp(ctx, labelBToken, new EntityRegister(data, id2))
+    val rhs = new ExpandToNodeOp(ctx, labelScan2, new EntityRegister(data, id2), Direction.OUTGOING, new EntityRegister(data, joinKeyId))
 
-    val hashJoin = new HashJoinOp(joinKeyId, Array(id1), Array.empty, lhs, rhs, data)
+    val hashJoin = new HashJoinOp(new EntityRegister(data, joinKeyId), Array(new EntityRegister(data, id1)), Array.empty, lhs, rhs)
 
     implicit val table = Map("a" -> Long(0), "b" -> Long(1), "c" -> Long(2))
 
@@ -188,7 +188,10 @@ class OperatorTest extends ExecutionEngineHelper {
   }
 
   @Ignore @Test def performance_of_expand() {
-    val data = new MapRegisters()
+    val numTries = 100
+    val skipTries = 20
+
+    val data = new ArrayRegisters(0, 2)
 
     for (i <- 0.until(10000)) {
       val source = createLabeledNode("A")
@@ -205,34 +208,11 @@ class OperatorTest extends ExecutionEngineHelper {
     val destinationId = 1
     val labelToken = 0
 
-    var opsTime = new Counter(20)
-    var cypherTime= new Counter(20)
-    var coreTime = new Counter(20)
-    var inlinedTime = new Counter(20)
+    var cypherTime= new Counter(skipTries)
+    var coreTime = new Counter(skipTries)
+    var opsTime = new Counter(skipTries)
 
-    (0 until 100) foreach {
-      x =>
-        val start = System.nanoTime()
-
-        val lhs = {
-          new LabelScanOp(ctx, sourceId, labelToken, data)
-        }
-        val expand = new ExpandToNodeOp(ctx, sourceId, destinationId, lhs, data, Direction.OUTGOING)
-
-        var count = 0
-        expand.open()
-        while (expand.next()) {
-          count += 1
-        }
-        expand.close()
-        val end = System.nanoTime()
-
-        val duration = (end - start) / 1000000
-        println(s"new operator time: ${duration} count: ${count}")
-        opsTime += duration
-    }
-
-    (0 until 100) foreach {
+    (0 until numTries) foreach {
       x =>
         val start = System.nanoTime()
         val count = execute("match (a:A)-[r]->() return r").size
@@ -243,10 +223,9 @@ class OperatorTest extends ExecutionEngineHelper {
         cypherTime += duration
     }
 
-    val label = DynamicLabel.label("A")
-
-    (0 until 100) foreach {
+    (0 until numTries) foreach {
       x =>
+        val label = DynamicLabel.label("A")
         val start = System.nanoTime()
         val allNodes: ResourceIterable[Node] = GlobalGraphOperations.at(graph).getAllNodesWithLabel(label)
         val nodes: ResourceIterator[Node] = allNodes.iterator()
@@ -266,10 +245,31 @@ class OperatorTest extends ExecutionEngineHelper {
         coreTime += duration
     }
 
-    println(s"ops: ${opsTime.avg}")
+    (0 until numTries) foreach {
+      x =>
+        val start = System.nanoTime()
+
+        val lhs = {
+          new LabelScanOp(ctx, labelToken, new EntityRegister(data, sourceId))
+        }
+        val expand = new ExpandToNodeOp(ctx, lhs, new EntityRegister(data, sourceId), Direction.OUTGOING, new EntityRegister(data, destinationId))
+
+        var count = 0
+        expand.open()
+        while (expand.next()) {
+          count += 1
+        }
+        expand.close()
+        val end = System.nanoTime()
+
+        val duration = (end - start) / 1000000
+        println(s"new operator time: ${duration} count: ${count}")
+        opsTime += duration
+    }
+
     println(s"cypher: ${cypherTime.avg}")
     println(s"core: ${coreTime.avg}")
-    println(s"inline: ${inlinedTime.avg}")
+    println(s"ops: ${opsTime.avg}")
   }
 
   class Counter(skip: Int) {

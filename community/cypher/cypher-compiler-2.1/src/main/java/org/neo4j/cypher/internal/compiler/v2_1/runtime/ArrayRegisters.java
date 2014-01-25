@@ -44,7 +44,7 @@ public class ArrayRegisters implements Registers
     }
 
     @Override
-    public void setLongRegister( int idx, long value )
+    public void setEntityRegister( int idx, long value )
     {
         longs[idx] = value;
     }
@@ -56,7 +56,7 @@ public class ArrayRegisters implements Registers
     }
 
     @Override
-    public long getLongRegister( int idx )
+    public long getEntityRegister( int idx )
     {
         return longs[idx];
     }

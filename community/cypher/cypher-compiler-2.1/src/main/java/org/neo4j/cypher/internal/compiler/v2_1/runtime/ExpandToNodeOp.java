@@ -23,48 +23,55 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-public class ExpandToNodeOp implements Operator {
+public class ExpandToNodeOp implements Operator
+{
     private final StatementContext ctx;
-    private final int sourceIdx;
-    private final int dstIdx;
     private final Operator sourceOp;
-    private final Registers registers;
+    private final EntityRegister sourceNode;
     private final Direction dir;
+    private final EntityRegister destinationNode;
     private PrimitiveLongIterator currentNodes;
 
-    public ExpandToNodeOp(StatementContext ctx, int sourceIdx, int dstIdx, Operator sourceOp, Registers registers, Direction dir) {
+    public ExpandToNodeOp( StatementContext ctx, Operator sourceOp, EntityRegister sourceNode, Direction dir,
+                           EntityRegister destinationNode )
+    {
         this.ctx = ctx;
-        this.sourceIdx = sourceIdx;
-        this.dstIdx = dstIdx;
         this.sourceOp = sourceOp;
-        this.registers = registers;
+        this.sourceNode = sourceNode;
         this.dir = dir;
+        this.destinationNode = destinationNode;
         this.currentNodes = IteratorUtil.emptyPrimitiveLongIterator();
     }
 
     @Override
-    public void open() {
+    public void open()
+    {
         sourceOp.open();
     }
 
     @Override
-    public boolean next() {
-        while (!currentNodes.hasNext() && sourceOp.next()) {
-            long fromNodeId = registers.getLongRegister(sourceIdx);
+    public boolean next()
+    {
+        while (!currentNodes.hasNext() && sourceOp.next())
+        {
+            long fromNodeId = sourceNode.getEntity();
             currentNodes = ctx.FAKEgetNodesRelatedBy(fromNodeId, dir);
         }
 
         if (!currentNodes.hasNext())
+        {
             return false;
+        }
 
         long nextNode = currentNodes.next();
-        registers.setLongRegister(dstIdx, nextNode);
+        destinationNode.setEntity( nextNode );
 
         return true;
     }
 
     @Override
-    public void close() {
+    public void close()
+    {
         sourceOp.close();
     }
 }

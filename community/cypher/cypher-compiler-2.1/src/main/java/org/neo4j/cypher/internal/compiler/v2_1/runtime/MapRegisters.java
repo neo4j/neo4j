@@ -36,22 +36,22 @@ public class MapRegisters implements Registers {
     }
 
     @Override
-    public void setObjectRegister(int idx, Object value) {
+    public void setObjectRegister( int idx, Object value ) {
         objects.put(idx, value);
     }
 
     @Override
-    public void setLongRegister(int idx, long value) {
+    public void setEntityRegister( int idx, long value ) {
         longs.put(idx, value);
     }
 
     @Override
-    public Object getObjectRegister(int idx) {
+    public Object getObjectRegister( int idx ) {
         return objects.get(idx);
     }
 
     @Override
-    public long getLongRegister(int idx) {
+    public long getEntityRegister( int idx ) {
         return longs.get(idx);
     }
 
