@@ -21,6 +21,29 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
-trait PlanGenerator {
-  def generatePlan(planContext: PlanContext, qg: QueryGraph, planTable: PlanTable): PlanTable
+case class InitPlanGenerator(estimator: CardinalityEstimator, calculator: CostCalculator) extends PlanGenerator {
+  def generatePlan(planContext: PlanContext, qg: QueryGraph, planTable: PlanTable): PlanTable = {
+    val m = qg.maxId.allIncluding.map {
+      id =>
+        val selections: Seq[Selection] = qg.selectionsByNode(id)
+        val labelScans = selections.collect {
+          case NodeLabelSelection(label) =>
+            val tokenId: Token = planContext.labelGetId(label.name)
+            val cardinality = estimator.estimateLabelScan(tokenId)
+            LabelScan(id, tokenId, calculator.costForLabelScan(cardinality))
+        }
+
+        val plan = if (labelScans.isEmpty) {
+          val cardinality = estimator.estimateAllNodes()
+          AllNodesScan(id, calculator.costForAllNodes(cardinality))
+        }
+        else {
+          labelScans.head
+        }
+
+        plan
+    }
+    PlanTable(m)
+
+  }
 }

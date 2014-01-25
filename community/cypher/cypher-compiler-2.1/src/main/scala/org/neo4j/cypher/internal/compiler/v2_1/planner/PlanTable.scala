@@ -19,8 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+/**
+ * The plan table keeps track of the currently interesting plans.
+ */
+case class PlanTable(m: Seq[AbstractPlan]) {
+  def size: Int = m.size
 
-trait PlanGenerator {
-  def generatePlan(planContext: PlanContext, qg: QueryGraph, planTable: PlanTable): PlanTable
+  override def toString: String = m.map {
+    case plan => plan.coveredIds.mkString("[", ",", "]") + " " + plan.toString + " " + plan.effort
+  }.mkString(s"\n")
+}
+
+object PlanTable {
+  def empty = new PlanTable(Seq.empty)
 }
