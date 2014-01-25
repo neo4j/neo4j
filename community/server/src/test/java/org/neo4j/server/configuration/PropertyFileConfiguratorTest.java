@@ -110,7 +110,7 @@ public class PropertyFileConfiguratorTest
     }
 
     @Test
-    public void shouldGetThirdPartyJaxRsPackagesReturnLinkedHashSet() throws IOException
+    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
     {
         File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( Configurator.THIRD_PARTY_PACKAGES_KEY,
