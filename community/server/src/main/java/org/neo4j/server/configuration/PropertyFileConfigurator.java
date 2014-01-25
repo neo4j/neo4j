@@ -24,11 +24,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -51,7 +50,6 @@ public class PropertyFileConfigurator extends Configurator.Adapter
 
     private Validator validator = new Validator();
     private Map<String, String> databaseTuningProperties = null;
-    private HashSet<ThirdPartyJaxRsPackage> thirdPartyPackages;
 
     public PropertyFileConfigurator( File propertiesFile )
     {
@@ -75,10 +73,10 @@ public class PropertyFileConfigurator extends Configurator.Adapter
             propertyFileDirectory = propertiesFile.getParentFile();
             loadPropertiesConfig( propertiesFile );
             loadDatabaseTuningProperties( propertiesFile );
-            
+
             normalizeUris();
             ensureRelativeUris();
-            
+
             if ( v != null )
             {
                 v.validate( this.configuration() );
@@ -224,14 +222,23 @@ public class PropertyFileConfigurator extends Configurator.Adapter
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
-        thirdPartyPackages = new HashSet<ThirdPartyJaxRsPackage>();
-        Properties properties = this.configuration()
-                .getProperties( THIRD_PARTY_PACKAGES_KEY );
-        for ( Object key : properties.keySet() )
+        List<ThirdPartyJaxRsPackage> thirdPartyPackages = new ArrayList<ThirdPartyJaxRsPackage>();
+        List<String> packagesAndMountpoints = this.configuration().getList( THIRD_PARTY_PACKAGES_KEY );
+
+        for ( String packageAndMoutpoint : packagesAndMountpoints )
         {
-            thirdPartyPackages.add( new ThirdPartyJaxRsPackage( key.toString(), properties.getProperty( key.toString() ) ) );
+            String[] parts = packageAndMoutpoint.split( "=" );
+            if ( parts.length != 2 )
+            {
+                throw new IllegalArgumentException( "config for " + THIRD_PARTY_PACKAGES_KEY + " is wrong: " +
+                        packageAndMoutpoint );
+            }
+            String pkg = parts[0];
+            String mountPoint = parts[1];
+
+            thirdPartyPackages.add( new ThirdPartyJaxRsPackage( pkg, mountPoint ) );
         }
         return thirdPartyPackages;
     }

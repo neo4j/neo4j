@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
@@ -36,6 +35,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.server.webadmin.console.ShellSessionCreator;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 
 public interface Configurator
 {
@@ -46,7 +48,7 @@ public interface Configurator
     String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
     String DB_MODE_KEY = "org.neo4j.server.database.mode";
-    
+
     String DEFAULT_DATABASE_LOCATION_PROPERTY_KEY = "data/graph.db";
 
     int DEFAULT_WEBSERVER_PORT = 7474;
@@ -70,7 +72,7 @@ public interface Configurator
     String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
 
     String RRDB_LOCATION_PROPERTY_KEY = "org.neo4j.server.webadmin.rrdb.location";
-    
+
     String MANAGEMENT_CONSOLE_ENGINES = "org.neo4j.server.manage.console_engines";
     List<String> DEFAULT_MANAGEMENT_CONSOLE_ENGINES = new ArrayList<String>(){
         private static final long serialVersionUID = 6621747998288594121L;
@@ -85,16 +87,16 @@ public interface Configurator
 
     String WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY = "org.neo4j.server.webserver.https.enabled";
     Boolean DEFAULT_WEBSERVER_HTTPS_ENABLED = false;
-    
+
     String WEBSERVER_HTTPS_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.https.port";
     int DEFAULT_WEBSERVER_HTTPS_PORT = 7473;
 
     String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.keystore.location";
     String DEFAULT_WEBSERVER_KEYSTORE_PATH = "neo4j-home/ssl/keystore";
-    
+
     String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.cert.location";
     String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = "neo4j-home/ssl/snakeoil.cert";
-    
+
     String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.key.location";
     String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = "neo4j-home/ssl/snakeoil.key";
 
@@ -102,7 +104,7 @@ public interface Configurator
     boolean DEFAULT_HTTP_LOGGING = false;
     String HTTP_LOG_CONFIG_LOCATION = "org.neo4j.server.http.log.config";
     String WADL_ENABLED = "unsupported_wadl_generation_enabled";
-    
+
 	String STARTUP_TIMEOUT = "org.neo4j.server.startup_timeout";
 	int DEFAULT_STARTUP_TIMEOUT = 120;
 
@@ -111,9 +113,9 @@ public interface Configurator
     Map<String, String> getDatabaseTuningProperties();
 
     @Deprecated
-    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
+    List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
 
-    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages();
+    List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages();
 
     DiagnosticsExtractor<Configurator> DIAGNOSTICS = new DiagnosticsExtractor<Configurator>()
     {
@@ -140,41 +142,41 @@ public interface Configurator
                 }, true );
             }
         }
-        
+
         @Override
         public String toString()
         {
             return Configurator.class.getName();
         }
     };
-    
+
     public static abstract class Adapter implements Configurator
     {
         @Override
-        public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+        public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
         {
             return getThirdpartyJaxRsPackages();
         }
 
         @Override
-        public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+        public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
         {
-            return emptySet();
+            return emptyList();
         }
-        
+
         @Override
         public Map<String, String> getDatabaseTuningProperties()
         {
             return emptyMap();
         }
-        
+
         @Override
         public Configuration configuration()
         {
             return new MapConfiguration( emptyMap() );
         }
     }
-    
+
     public static final Configurator EMPTY = new Configurator.Adapter()
     {
     };
