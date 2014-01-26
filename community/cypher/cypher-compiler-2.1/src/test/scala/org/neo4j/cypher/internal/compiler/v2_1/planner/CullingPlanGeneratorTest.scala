@@ -1,8 +1,30 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.scalatest.FunSuite
+import org.scalatest.junit.JUnitRunner
+import org.junit.runner.RunWith
 
-class CullingPlanGeneratorTest extends FunSuite {
+@RunWith(classOf[JUnitRunner])
+class CullingPlanGeneratorTest extends FunSuite with PlanGeneratorTest {
   val planGenerator = CullingPlanGenerator()
 
   test("empty plan returns empty") {
@@ -88,15 +110,5 @@ class CullingPlanGeneratorTest extends FunSuite {
     assert(generatedPlanTable === EXPECTED)
   }
 
-  private def table(plans: Plan*): PlanTable = new PlanTable(plans)
-
-  private def plan(ids: Set[Int], name: String, effort: Int) = Plan(ids.map(Id.apply), name, Cost(effort, 1))
-
   private def cull(planTable: PlanTable) = planGenerator.generatePlan(null, null, planTable)
-
-  private case class Plan(coveredIds: Set[Id], name: String, effort: Cost) extends AbstractPlan {
-    def lhs: Option[AbstractPlan] = ???
-
-    def rhs: Option[AbstractPlan] = ???
-  }
 }

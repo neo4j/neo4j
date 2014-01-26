@@ -19,29 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-/**
- * The plan table keeps track of the currently interesting plans.
- */
-case class PlanTable(plans: Seq[AbstractPlan]) {
-  def size: Int = plans.size
+trait PlanGeneratorTest {
+  case class Plan(coveredIds: Set[Id], name: String, effort: Cost) extends AbstractPlan {
+    def lhs: Option[AbstractPlan] = ???
 
-  def add(newPatterns: Seq[AbstractPlan]): PlanTable = new PlanTable(plans ++ newPatterns)
-
-  override def toString: String = {
-    val maxNumber = plans.map(_.coveredIds.size).max
-
-    val DIV = "*****************************"
-    val CR = s"\n"
-    val apa = CR + DIV + CR + plans.map {
-      case plan => ids(plan, maxNumber) + " " + plan.effort + " " + plan.toString
-    }.mkString(s"\n") + CR + DIV + CR
-    apa
+    def rhs: Option[AbstractPlan] = ???
   }
 
-  def ids(plan: AbstractPlan, maxNumber: Int): String =
-    plan.coveredIds.map(_.id).mkString("[", ",", "]").padTo(3 + maxNumber * 2, ' ')
-}
+  def table(plans: Plan*): PlanTable = new PlanTable(plans)
 
-object PlanTable {
-  def empty = new PlanTable(Seq.empty)
+  def plan(ids: Set[Int], name: String, effort: Int) = Plan(ids.map(Id.apply), name, Cost(effort, 1))
+
 }

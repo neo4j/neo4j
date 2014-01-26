@@ -23,56 +23,19 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 /*
 This plan generator adds plans by taking all existing plans and adding any query relationships
-from the query grap to the plan.
+from the query graph to the plan.
  */
 class ExpansionPlanGenerator(calculator: CostCalculator, estimator: CardinalityEstimator) extends PlanGenerator {
 
   def generatePlan(planContext: PlanContext, qg: QueryGraph, currentPlan: PlanTable): PlanTable = {
-    //    var currentPlan: PlanTable = buildInitialTable(planContext, qg)
-
-//    // Loop until we've found a single plan to use.
-//      val cheapestNewPlan: PartialPlan = findImprovedPartialPlan(planContext, currentPlan, qg)
-//      currentPlan = currentPlan.addAndRemove(cheapestNewPlan)
-//    }
-//
-//    currentPlan.plan
-//  }
-//
-//  private def findImprovedPartialPlan(planContext: PlanContext, table: PlanTable, qg: QueryGraph): PartialPlan = {
-//    var result: Option[PartialPlan] = None
-//
-//    for (ids <- table.m.keys) {
-//      val plan = table(ids)
-//
-//      // find extensions
-//      for (id <- ids) {
-//        for (rel <- qg.graphRelsById(id)) {
-//          val otherId = rel.other(id)
-//
-//          if (! ids(otherId)) {
-//            // construct plan and candidate
-//            val relTypeTokens = rel.types.map(t => planContext.relationshipTypeGetId(t.name))
-//            val cardinality = estimator.estimateExpandRelationship(Seq.empty, relTypeTokens, rel.direction)
-//            val expandedPlan = ExpandRelationships(plan, rel.direction, calculator.costForExpandRelationship(cardinality))
-//            val candidate = PartialPlan(ids, Set(otherId), expandedPlan)
-//
-//            result = candidate.update(result)
-//          }
-//        }
-//      }
-//
-//    }
-//
-//    result.get
-//  }
-    ???
-  }
-}
-
-case class PartialPlan(lhs: Set[Id], rhs: Set[Id], plan: AbstractPlan) {
-  def update(current: Option[PartialPlan]): Option[PartialPlan] = current match {
-    case None                                         => Some(this)
-    case Some(best) if best.plan.effort > plan.effort => Some(this)
-    case _                                            => current
+    val newPlans: Seq[AbstractPlan] = for (plan <- currentPlan.plans;
+                                           id <- plan.coveredIds if qg.graphRelsById.contains(id);
+                                           rel <- qg.graphRelsById(id) if !plan.coveredIds(rel.other(id))) yield {
+      // construct plan and candidate
+      val relTypeTokens = rel.types.map(t => planContext.relationshipTypeGetId(t.name))
+      val cardinality = estimator.estimateExpandRelationship(Seq.empty, relTypeTokens, rel.direction)
+      ExpandRelationships(plan, rel.direction, calculator.costForExpandRelationship(cardinality), rel.other(id))
+    }
+    currentPlan.add(newPlans)
   }
 }

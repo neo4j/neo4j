@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.scalatest.Assertions
-import org.junit.Test
+import org.scalatest.FunSuite
 import org.parboiled.scala._
 import org.neo4j.graphdb.Direction
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-class QueryGraphTest extends Assertions with parser.Query {
+@RunWith(classOf[JUnitRunner])
+class QueryGraphTest extends FunSuite with parser.Query {
 
   private def parse(input: String): ast.Query =
     ReportingParseRunner(Query ~ EOI).run(input).result match {
@@ -33,7 +35,7 @@ class QueryGraphTest extends Assertions with parser.Query {
       case None => fail("oh noes!")
     }
 
-  @Test def simple_pattern_with_two_nodes() {
+  test("simple pattern with two nodes") {
     val astObject = parse("match (a)-->(b) return *")
     val edges = Seq(GraphRelationship(Id(0), Id(1), Direction.OUTGOING, Seq.empty))
     val projection = Seq.empty
@@ -43,7 +45,7 @@ class QueryGraphTest extends Assertions with parser.Query {
     assert(result === QueryGraph(Id(1), edges, Seq.empty, projection))
   }
 
-  @Test def simple_pattern_with_three_nodes() {
+  test("simple pattern with three nodes") {
     val astObject = parse("match (a)-->(b)-->(c) return *")
     val edges = Seq(GraphRelationship(Id(0), Id(1), Direction.OUTGOING, Seq.empty), GraphRelationship(Id(1), Id(2), Direction.OUTGOING, Seq.empty))
     val projection = Seq.empty
@@ -53,7 +55,7 @@ class QueryGraphTest extends Assertions with parser.Query {
     assert(result === QueryGraph(Id(2), edges, Seq.empty, projection))
   }
 
-  @Test def labeled_nodes() {
+  test("labeled nodes") {
     val astObject = parse("match (a:Foo)-->(b:Bar) return *")
     val edges = Seq(GraphRelationship(Id(0), Id(1), Direction.OUTGOING, Seq.empty))
     val projection = Seq.empty

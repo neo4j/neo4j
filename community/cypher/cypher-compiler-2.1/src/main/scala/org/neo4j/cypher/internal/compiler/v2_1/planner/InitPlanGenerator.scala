@@ -23,27 +23,27 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 case class InitPlanGenerator(estimator: CardinalityEstimator, calculator: CostCalculator) extends PlanGenerator {
   def generatePlan(planContext: PlanContext, qg: QueryGraph, planTable: PlanTable): PlanTable = {
-    val m = qg.maxId.allIncluding.map {
+    val m = qg.maxId.allIncluding.flatMap {
       id =>
-        val selections: Seq[Selection] = qg.selectionsByNode(id)
-        val labelScans = selections.collect {
-          case NodeLabelSelection(label) =>
-            val tokenId: Token = planContext.labelGetId(label.name)
-            val cardinality = estimator.estimateLabelScan(tokenId)
-            LabelScan(id, tokenId, calculator.costForLabelScan(cardinality))
-        }
-
-        val plan = if (labelScans.isEmpty) {
+        val labelScans: Seq[AbstractPlan] = getLabelScanPlans(qg, id, planContext)
+        val allNodes: AbstractPlan = {
           val cardinality = estimator.estimateAllNodes()
           AllNodesScan(id, calculator.costForAllNodes(cardinality))
         }
-        else {
-          labelScans.head
-        }
 
-        plan
+        labelScans :+ allNodes
     }
     PlanTable(m)
+  }
 
+  private def getLabelScanPlans(qg: QueryGraph, id: Id, planContext: PlanContext): Seq[LabelScan] = {
+    val selections: Seq[Selection] = qg.selectionsByNode(id)
+    val labelScans = selections.collect {
+      case NodeLabelSelection(label) =>
+        val tokenId: Token = planContext.labelGetId(label.name)
+        val cardinality = estimator.estimateLabelScan(tokenId)
+        LabelScan(id, tokenId, calculator.costForLabelScan(cardinality))
+    }
+    labelScans
   }
 }

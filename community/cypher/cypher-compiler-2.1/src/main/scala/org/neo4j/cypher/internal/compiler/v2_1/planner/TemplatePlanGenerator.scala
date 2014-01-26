@@ -38,6 +38,6 @@ class TemplatePlanGenerator(estimator: CardinalityEstimator, calculator: CostCal
       planTable = expansion.generatePlan(planContext, qg, planTable)
     }
 
-    planTable.m.head
+    planTable.plans.head
   }
 }

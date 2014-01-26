@@ -39,21 +39,6 @@ case class QueryGraph(maxId: Id,
       case edge: GraphRelationship =>
         Seq(edge.start -> edge, edge.end -> edge)
     }.flatten.groupBy(_._1).mapValues(_.map(_._2))
-
-//  val edgesByIds: Map[QueryEdge.Key, Seq[QueryEdge]] = Map.empty
-//
-//  def optJoinMethods(leftIds: Set[Id], rightIds: Set[Id]): Seq[PropertyJoin] = {
-//    var joins = Seq.newBuilder[PropertyJoin]
-//    for (leftId <- leftIds;
-//         rightId <- rightIds if leftId.id < rightId.id) {
-//      val link = QueryEdge.Key(leftId, rightId)
-//      edgesByIds.get(link) match {
-//        case Some(propertyJoins) => joins ++= propertyJoins.collect { case edge: PropertyJoin => edge }
-//        case None =>
-//      }
-//    }
-//    joins.result()
-//  }
 }
 
 object QueryEdge {
@@ -99,9 +84,6 @@ case class Id(id: Int) extends AnyVal {
 }
 
 case class PropertyKey(name: String) extends AnyVal
-
 case class RelationshipType(name: String) extends AnyVal
-
 case class Label(name: String) extends AnyVal
-
 case class Token(value: Int)
