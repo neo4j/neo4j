@@ -38,31 +38,31 @@ sealed abstract class IntegerLiteral(stringVal: String) extends Literal with Sim
     } catch {
       case e:java.lang.NumberFormatException => false
     })) {
-      SemanticError("integer is too large", token)
+      SemanticError("integer is too large", position)
     } then super.semanticCheck(ctx)
 }
 
-case class SignedIntegerLiteral(stringVal: String)(val token: InputToken) extends IntegerLiteral(stringVal)
-case class UnsignedIntegerLiteral(stringVal: String)(val token: InputToken) extends IntegerLiteral(stringVal)
+case class SignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
+case class UnsignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 
 
-case class DoubleLiteral(stringVal: String)(val token: InputToken) extends Literal with SimpleTypedExpression {
+case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends Literal with SimpleTypedExpression {
   val value = stringVal.toDouble
 
   protected def possibleTypes = CTDouble
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     when(value.isInfinite) {
-      SemanticError("floating point number is too large", token)
+      SemanticError("floating point number is too large", position)
     } then super.semanticCheck(ctx)
 }
 
 
-case class StringLiteral(value: String)(val token: InputToken) extends Literal with SimpleTypedExpression {
+case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTypedExpression {
   protected def possibleTypes = CTString
 }
 
 
-case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val token: InputToken) extends AstNode {
+case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val position: InputPosition) extends ASTNode {
   def isSingleLength = lower.isDefined && upper.isDefined && lower.get.value == 1 && upper.get.value == 1
 }

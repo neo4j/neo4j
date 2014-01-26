@@ -33,7 +33,7 @@ class ListComprehensionTest extends Assertions {
 
   @Test
   def withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression() {
-    val filter = ListComprehension(Identifier("x")(DummyToken(5,6)), dummyExpression, None, None)(DummyToken(0, 10))
+    val filter = ListComprehension(Identifier("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
@@ -41,12 +41,9 @@ class ListComprehensionTest extends Assertions {
 
   @Test
   def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
-    val extractExpression = new Expression with SimpleTypedExpression {
-      def token: InputToken = DummyToken(2,3)
-      protected def possibleTypes: TypeSpec = CTNode | CTNumber
-    }
+    val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
-    val filter = ListComprehension(Identifier("x")(DummyToken(5,6)), dummyExpression, None, Some(extractExpression))(DummyToken(0, 10))
+    val filter = ListComprehension(Identifier("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), filter.types(result.state))
@@ -54,16 +51,15 @@ class ListComprehensionTest extends Assertions {
 
   @Test
   def shouldSemanticCheckPredicateInStateContainingTypedIdentifier() {
-    val error = SemanticError("dummy error", DummyToken(8,9))
-    val predicate = new Expression {
-      def token = DummyToken(7,9)
-      def semanticCheck(ctx: SemanticContext) = s => {
+    val error = SemanticError("dummy error", DummyPosition(8))
+    val predicate = new DummyExpression(CTAny, DummyPosition(7)) {
+      override def semanticCheck(ctx: SemanticContext) = s => {
         assertEquals(CTNode | CTString, s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
     }
 
-    val filter = ListComprehension(Identifier("x")(DummyToken(2,3)), dummyExpression, Some(predicate), None)(DummyToken(0, 10))
+    val filter = ListComprehension(Identifier("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(error), result.errors)
     assertEquals(None, result.state.symbol("x"))

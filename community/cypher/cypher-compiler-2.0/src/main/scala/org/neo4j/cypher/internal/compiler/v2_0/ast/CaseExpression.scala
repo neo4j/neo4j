@@ -23,7 +23,7 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression])(val token: InputToken) extends Expression {
+case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Expression, Expression)], default: Option[Expression])(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
     val possibleTypes: TypeGenerator = (alternatives.map(_._2) ++ default).mergeUpTypes
 

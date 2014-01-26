@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import scala.collection.immutable.SortedSet
 
 object SemanticError {
-  def apply(msg: String, token: InputToken, references: InputToken*) : SemanticError = apply(msg, token, SortedSet(references:_*))
+  def apply(msg: String, position: InputPosition, references: InputPosition*) : SemanticError = apply(msg, position, SortedSet(references:_*))
 }
 
-case class SemanticError(msg: String, token: InputToken, references: SortedSet[InputToken])
+case class SemanticError(msg: String, position: InputPosition, references: SortedSet[InputPosition])

@@ -34,25 +34,25 @@ object Pattern {
 }
 import Pattern._
 
-case class Pattern(patternParts: Seq[PatternPart])(val token: InputToken) extends AstNode {
+case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) then
     patternParts.foldSemanticCheck(_.semanticCheck(ctx))
 }
 
-case class RelationshipsPattern(element: RelationshipChain)(val token: InputToken) extends AstNode {
+case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) then
     element.semanticCheck(ctx)
 }
 
 
-sealed abstract class PatternPart extends AstNode {
+sealed abstract class PatternPart extends ASTNode {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
 
-case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val token: InputToken) extends PatternPart {
+case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
   def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) then identifier.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 }
@@ -61,7 +61,7 @@ case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatter
 sealed trait AnonymousPatternPart extends PatternPart
 
 case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
-  def token = element.token
+  def position = element.position
 
   def declareIdentifiers(ctx: SemanticContext) = (element, ctx) match {
     case (n: NodePattern, SemanticContext.Match) =>
@@ -75,7 +75,7 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
 }
 
-case class ShortestPaths(element: PatternElement, single: Boolean)(val token: InputToken) extends AnonymousPatternPart {
+case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition) extends AnonymousPatternPart {
   val name: String =
     if (single)
       "shortestPath"
@@ -93,8 +93,8 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val token: In
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
-    case SemanticContext.Merge  => SemanticError(s"$name(...) cannot be used to MERGE", token, element.token)
-    case SemanticContext.Create => SemanticError(s"$name(...) cannot be used to CREATE", token, element.token)
+    case SemanticContext.Merge  => SemanticError(s"$name(...) cannot be used to MERGE", position, element.position)
+    case SemanticContext.Create => SemanticError(s"$name(...) cannot be used to CREATE", position, element.position)
     case _                      => None
   }
 
@@ -102,15 +102,15 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val token: In
     case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
       None
     case _                                                    =>
-      SemanticError(s"$name(...) requires a pattern containing a single relationship", token, element.token)
+      SemanticError(s"$name(...) requires a pattern containing a single relationship", position, element.position)
   }
 
   private def checkKnownEnds: SemanticCheck = element match {
     case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
       if (l.identifier.isEmpty)
-        SemanticError(s"$name(...) requires named nodes", token, l.token)
+        SemanticError(s"$name(...) requires named nodes", position, l.position)
       else if (r.identifier.isEmpty)
-        SemanticError(s"$name(...) requires named nodes", token, r.token)
+        SemanticError(s"$name(...) requires named nodes", position, r.position)
       else
         None
     case _                                                    =>
@@ -121,7 +121,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val token: In
     case RelationshipChain(_, rel, _) =>
       rel.length match {
         case Some(Some(Range(Some(_), _))) =>
-          Some(SemanticError(s"$name(...) does not support a minimal length", token, element.token))
+          Some(SemanticError(s"$name(...) does not support a minimal length", position, element.position))
         case _                             =>
           None
       }
@@ -131,12 +131,12 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val token: In
 }
 
 
-sealed abstract class PatternElement extends AstNode {
+sealed abstract class PatternElement extends ASTNode {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
 
-case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val token: InputToken) extends PatternElement {
+case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition) extends PatternElement {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     element.declareIdentifiers(ctx) then
     relationship.declareIdentifiers(ctx) then
@@ -153,7 +153,7 @@ case class NodePattern(
   identifier: Option[Identifier],
   labels: Seq[Identifier],
   properties: Option[Expression],
-  naked: Boolean)(val token: InputToken) extends PatternElement with SemanticChecking {
+  naked: Boolean)(val position: InputPosition) extends PatternElement with SemanticChecking {
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     identifier.fold(SemanticCheckResult.success) {
@@ -173,14 +173,14 @@ case class NodePattern(
 
   private def checkParens: SemanticCheck =
     when (naked && (!labels.isEmpty || properties.isDefined)) {
-      SemanticError("Parentheses are required to identify nodes in patterns", token)
+      SemanticError("Parentheses are required to identify nodes in patterns", position)
     }
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case _                                           =>
       properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(CTMap.covariant)
   }
@@ -193,7 +193,7 @@ case class RelationshipPattern(
     types: Seq[Identifier],
     length: Option[Option[Range]],
     properties: Option[Expression],
-    direction: Direction)(val token: InputToken) extends AstNode with SemanticChecking {
+    direction: Direction)(val position: InputPosition) extends ASTNode with SemanticChecking {
 
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
     identifier.fold(SemanticCheckResult.success) {
@@ -216,28 +216,28 @@ case class RelationshipPattern(
 
   private def checkNoLegacyOptionals(ctx: SemanticContext): SemanticCheck =
     when (optional) {
-      SemanticError("Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead", token)
+      SemanticError("Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead", position)
     }
 
   private def checkNoOptionalRelsForAnExpression(ctx: SemanticContext): SemanticCheck =
     when (ctx == SemanticContext.Expression && optional) {
-      SemanticError("Optional relationships cannot be specified in this context", token)
+      SemanticError("Optional relationships cannot be specified in this context", position)
     }
 
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
     when (!isSingleLength) {
       ctx match {
-        case SemanticContext.Merge  => SemanticError("Variable length relationships cannot be used in MERGE", token)
-        case SemanticContext.Create => SemanticError("Variable length relationships cannot be used in CREATE", token)
+        case SemanticContext.Merge  => SemanticError("Variable length relationships cannot be used in MERGE", position)
+        case SemanticContext.Create => SemanticError("Variable length relationships cannot be used in CREATE", position)
         case _                      => None
       }
     }
 
   private def checkNoParamMapsWhenMatching(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.token)
+      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case _                                           =>
       None
   }

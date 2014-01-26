@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-sealed trait RemoveItem extends AstNode with SemanticCheckable
+sealed trait RemoveItem extends ASTNode with SemanticCheckable
 
-case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends RemoveItem {
+case class RemoveLabelItem(expression: Expression, labels: Seq[Identifier])(val position: InputPosition) extends RemoveItem {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTNode.covariant)
 }
 
 case class RemovePropertyItem(property: Property) extends RemoveItem {
-  def token = property.token
+  def position = property.position
 
   def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
 }

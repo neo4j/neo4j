@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
 case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTypedExpression {
-  def token = pattern.token
+  def position = pattern.position
   protected def possibleTypes = CTCollection(CTPath)
 
   override def semanticCheck(ctx: SemanticContext) =

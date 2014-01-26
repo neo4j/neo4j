@@ -44,10 +44,10 @@ abstract class FunctionTestBase(funcName: String) extends Assertions {
     val arguments = argumentTypes.map(DummyExpression(_))
 
     val invocation = ast.FunctionInvocation(
-      ast.Identifier(funcName)(DummyToken(6, 7)),
+      ast.Identifier(funcName)(DummyPosition(6)),
       distinct = false,
       arguments
-    )(DummyToken(5, 14))
+    )(DummyPosition(5))
 
     val state = arguments.semanticCheck(context)(SemanticState.clean).state
     (invocation.semanticCheck(context)(state), invocation)

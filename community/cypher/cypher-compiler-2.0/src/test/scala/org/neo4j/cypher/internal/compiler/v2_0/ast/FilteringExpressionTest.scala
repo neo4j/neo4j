@@ -31,7 +31,7 @@ class FilteringExpressionTest extends Assertions {
 
   case class TestableFilteringExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
     def name = "Testable Filter Expression"
-    def token = DummyToken(0,10)
+    def position = DummyPosition(0)
 
     def toCommand(command: expressions.Expression, name: String, inner: Predicate) = ???
 
@@ -40,21 +40,17 @@ class FilteringExpressionTest extends Assertions {
 
   @Test
   def shouldSemanticCheckPredicateInStateContainingTypedIdentifier() {
-    val expression = new Expression with SimpleTypedExpression {
-      def token = DummyToken(5,6)
-      protected def possibleTypes = CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
-    }
+    val expression = DummyExpression(CTCollection(CTNode) | CTBoolean | CTCollection(CTString), DummyPosition(5))
 
-    val error = SemanticError("dummy error", DummyToken(8,9))
-    val predicate = new Expression {
-      def token = DummyToken(7,9)
-      def semanticCheck(ctx: SemanticContext) = s => {
+    val error = SemanticError("dummy error", DummyPosition(8))
+    val predicate = new DummyExpression(CTAny, DummyPosition(7)) {
+      override def semanticCheck(ctx: SemanticContext) = s => {
         assertEquals(CTNode | CTString, s.symbolTypes("x"))
         SemanticCheckResult.error(s, error)
       }
     }
 
-    val filter = TestableFilteringExpression(Identifier("x")(DummyToken(2,3)), expression, Some(predicate))
+    val filter = TestableFilteringExpression(Identifier("x")(DummyPosition(2)), expression, Some(predicate))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(error), result.errors)
     assertEquals(None, result.state.symbol("x"))

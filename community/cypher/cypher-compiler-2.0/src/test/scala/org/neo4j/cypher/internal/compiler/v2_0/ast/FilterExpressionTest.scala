@@ -34,10 +34,10 @@ class FilterExpressionTest extends Assertions {
   @Test
   def shouldHaveCollectionTypesOfInnerExpression() {
     val filter = FilterExpression(
-      identifier = Identifier("x")(DummyToken(5, 6)),
+      identifier = Identifier("x")(DummyPosition(5)),
       expression = dummyExpression,
-      innerPredicate = Some(True()(DummyToken(5, 6)))
-    )(DummyToken(0, 10))
+      innerPredicate = Some(True()(DummyPosition(5)))
+    )(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
     assertEquals(CTCollection(CTNode) | CTCollection(CTString), filter.types(result.state))
@@ -46,11 +46,11 @@ class FilterExpressionTest extends Assertions {
   @Test
   def shouldRaiseSyntaxErrorIfMissingPredicate() {
     val filter = FilterExpression(
-      identifier = Identifier("x")(DummyToken(5, 6)),
+      identifier = Identifier("x")(DummyPosition(5)),
       expression = dummyExpression,
       innerPredicate = None
-    )(DummyToken(0, 10))
+    )(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyToken(0, 10))), result.errors)
+    assertEquals(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyPosition(0))), result.errors)
   }
 }

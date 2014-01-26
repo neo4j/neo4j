@@ -22,7 +22,3 @@ package org.neo4j.cypher.internal.compiler.v2_0
 object DummyPosition {
   def apply(offset: Int) = new InputPosition(offset, 1, offset)
 }
-
-object DummyToken {
-  def apply(start: Int, end: Int) = new InputToken(DummyPosition(start), DummyPosition(end))
-}

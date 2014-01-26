@@ -32,7 +32,7 @@ case object Has extends PredicateFunction {
       invocation.arguments(0).expectType(CTAny.covariant) then
       (invocation.arguments(0) match {
         case _: ast.Property => None
-        case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.token, invocation.token))
+        case e => Some(SemanticError(s"Argument to ${invocation.name} is not a property", e.position, invocation.position))
       })
     } then invocation.specifyType(CTBoolean)
 

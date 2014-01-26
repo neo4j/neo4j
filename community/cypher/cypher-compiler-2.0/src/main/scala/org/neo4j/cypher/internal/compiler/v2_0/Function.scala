@@ -119,7 +119,7 @@ abstract class Function extends SemanticChecking {
 
   def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(invocation.distinct) {
-      SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.token)
+      SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.position)
     } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
 
   protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck
@@ -129,13 +129,13 @@ abstract class Function extends SemanticChecking {
 
   protected def checkMaxArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length > n)
-      Some(SemanticError(s"Too many parameters for function '$name'", invocation.token))
+      Some(SemanticError(s"Too many parameters for function '$name'", invocation.position))
     else
       None
 
   protected def checkMinArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length < n)
-      Some(SemanticError(s"Insufficient parameters for function '$name'", invocation.token))
+      Some(SemanticError(s"Insufficient parameters for function '$name'", invocation.position))
     else
       None
 
@@ -200,6 +200,6 @@ abstract class PredicateFunction extends Function {
 abstract class AggregatingFunction extends Function {
   override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
-      SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.token)
+      SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
     } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
 }

@@ -93,8 +93,8 @@ trait Expressions extends Parser
 
   private def Expression4: Rule1[ast.Expression] = rule("an expression") (
       Expression3
-    | operatorIdentifier("+") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.token))
-    | operatorIdentifier("-") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.token))
+    | operatorIdentifier("+") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.position))
+    | operatorIdentifier("-") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.position))
   )
 
   private def Expression3: Rule1[ast.Expression] = rule("an expression") {

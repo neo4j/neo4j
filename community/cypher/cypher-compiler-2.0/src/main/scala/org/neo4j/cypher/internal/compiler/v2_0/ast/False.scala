@@ -22,6 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-case class False()(val token: InputToken) extends Expression with SimpleTypedExpression {
+case class False()(val position: InputPosition) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTBoolean
 }

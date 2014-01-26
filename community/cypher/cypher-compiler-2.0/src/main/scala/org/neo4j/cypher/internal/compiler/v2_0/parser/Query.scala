@@ -48,7 +48,7 @@ trait Query extends Parser
   )
 
   def Union: ReductionRule1[ast.Query, ast.Union] = rule("UNION") (
-      keyword("UNION", "ALL") ~>> token ~~ SingleQuery ~~> ((q: ast.Query, t, sq) => ast.UnionAll(q, sq)(t))
-    | keyword("UNION") ~>> token ~~ SingleQuery ~~> ((q: ast.Query, t, sq) => ast.UnionDistinct(q, sq)(t))
+      keyword("UNION", "ALL") ~>> position ~~ SingleQuery ~~> ((q: ast.Query, p, sq) => ast.UnionAll(q, sq)(p))
+    | keyword("UNION") ~>> position ~~ SingleQuery ~~> ((q: ast.Query, p, sq) => ast.UnionDistinct(q, sq)(p))
   )
 }

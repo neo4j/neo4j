@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 
-sealed trait MergeAction extends AstNode with SemanticCheckable
+sealed trait MergeAction extends ASTNode with SemanticCheckable
 
-case class OnCreate(action: SetClause)(val token: InputToken) extends MergeAction {
+case class OnCreate(action: SetClause)(val position: InputPosition) extends MergeAction {
   def semanticCheck: SemanticCheck = action.semanticCheck
 }
 
-case class OnMatch(action: SetClause)(val token: InputToken) extends MergeAction {
+case class OnMatch(action: SetClause)(val position: InputPosition) extends MergeAction {
   def semanticCheck: SemanticCheck = action.semanticCheck
 }

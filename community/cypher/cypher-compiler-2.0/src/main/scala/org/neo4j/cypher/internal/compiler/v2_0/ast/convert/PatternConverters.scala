@@ -115,7 +115,7 @@ object PatternConverters {
 
   implicit class ShortestPathsConverter(val part: ast.ShortestPaths) extends AnyVal {
     def asLegacyPatterns(maybePathName: Option[String]): Seq[commands.ShortestPath] = {
-      val pathName = maybePathName.getOrElse("  UNNAMED" + part.token.startPosition.offset)
+      val pathName = maybePathName.getOrElse("  UNNAMED" + part.position.offset)
       val (leftName, rel, rightName) = part.element match {
         case ast.RelationshipChain(leftNode: ast.NodePattern, relationshipPattern, rightNode) =>
           (leftNode.asLegacyNode, relationshipPattern, rightNode.asLegacyNode)
@@ -205,7 +205,7 @@ object PatternConverters {
           case _    =>
             val (relName, relIterator) = chain.relationship.identifier match {
               case Some(_) =>
-                ("  UNNAMED" + chain.relationship.token.startPosition.offset, Some(chain.relationship.legacyName))
+                ("  UNNAMED" + chain.relationship.position.offset, Some(chain.relationship.legacyName))
               case None =>
                 (chain.relationship.legacyName, None)
             }
@@ -236,14 +236,14 @@ object PatternConverters {
 
     def asLegacyNode = commands.SingleNode(node.legacyName, labels.map(x => commandvalues.UnresolvedLabel(x.name)), properties = node.legacyProperties)
 
-    def legacyName = node.identifier.fold("  UNNAMED" + (node.token.startPosition.offset + 1))(_.name)
+    def legacyName = node.identifier.fold("  UNNAMED" + (node.position.offset + 1))(_.name)
 
     private def labels = node.labels.map(t => commandvalues.KeyToken.Unresolved(t.name, commandvalues.TokenType.Label))
 
     def legacyProperties = node.properties match {
       case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, p._2.asCommandExpression)).toMap
       case Some(p: ast.Parameter)     => Map[String, CommandExpression]("*" -> p.asCommandExpression)
-      case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
+      case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
       case None                       => Map[String, CommandExpression]()
     }
   }
@@ -260,7 +260,7 @@ object PatternConverters {
 
       relationship.length match {
         case Some(maybeRange) =>
-          val pathName = "  UNNAMED" + relationship.token.startPosition.offset
+          val pathName = "  UNNAMED" + relationship.position.offset
           val (min, max) = maybeRange match {
             case Some(range) => (for (i <- range.lower) yield i.value.toInt, for (i <- range.upper) yield i.value.toInt)
             case None        => (None, None)
@@ -282,17 +282,17 @@ object PatternConverters {
       }
       val typeName = relationship.types match {
         case Seq(i) => i.name
-        case _ => throw new SyntaxException(s"A single relationship type must be specified for CREATE (${relationship.token.startPosition})")
+        case _ => throw new SyntaxException(s"A single relationship type must be specified for CREATE (${relationship.position})")
       }
       mutation.CreateRelationship(relationship.legacyName, from, to, typeName, legacyProperties)
     }
 
-    def legacyName = relationship.identifier.fold("  UNNAMED" + relationship.token.startPosition.offset)(_.name)
+    def legacyName = relationship.identifier.fold("  UNNAMED" + relationship.position.offset)(_.name)
 
     def legacyProperties = relationship.properties match {
       case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, p._2.asCommandExpression)).toMap
       case Some(p: ast.Parameter)     => Map("*" -> p.asCommandExpression)
-      case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.token.startPosition})")
+      case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
       case None                       => Map[String, CommandExpression]()
     }
   }
