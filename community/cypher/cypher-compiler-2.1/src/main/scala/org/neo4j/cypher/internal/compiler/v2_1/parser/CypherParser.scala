@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.scala._
-import org.parboiled.errors.InvalidInputError
+import org.parboiled.errors.{ParseError, InvalidInputError}
+import scala.Some
 
 case class CypherParser() extends Parser
   with Statement
@@ -35,24 +35,36 @@ case class CypherParser() extends Parser
 
   @throws(classOf[SyntaxException])
   def parse(text: String): ast.Statement = {
-    val parsingResult = ReportingParseRunner(SingleStatement).run(text)
+    val parsingResult: ParsingResult[ast.Statement] = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
-      case Some(statement: ast.Statement) => statement
-      case _ => {
-        parsingResult.parseErrors.map { error =>
-          val message = if (error.getErrorMessage != null) {
-            error.getErrorMessage
-          } else {
-            error match {
-              case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-              case _                                => error.getClass.getSimpleName
-            }
-          }
-          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          throw new SyntaxException(s"$message ($position)", text, error.getStartIndex)
+      case Some(statement: ast.Statement) =>
+        val semanticState = statement.semanticCheck(SemanticState.clean)
+
+        semanticState.errors.map { error =>
+          throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", text, error.token.startPosition.offset)
         }
-      }
+
+        statement
+
+      case None =>
+        throwErrors(parsingResult.parseErrors, text)
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
+    }
+  }
+
+  private def throwErrors(errors: List[ParseError], text:String) {
+    errors.map {
+      error =>
+        val message = if (error.getErrorMessage != null) {
+          error.getErrorMessage
+        } else {
+          error match {
+            case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+            case _ => error.getClass.getSimpleName
+          }
+        }
+        val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+        throw new SyntaxException(s"$message ($position)", text, error.getStartIndex)
     }
   }
 }
