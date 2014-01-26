@@ -29,7 +29,7 @@ public class AllNodesScanOp implements Operator {
 
     public AllNodesScanOp( StatementContext ctx, EntityRegister nodeRegister ) {
         this.nodeRegister = nodeRegister;
-        this.allNodes = ctx.FAKEgetAllNodes();
+        this.allNodes = ctx.FAKE_nodeGetAll();
     }
 
     @Override

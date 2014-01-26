@@ -58,7 +58,7 @@ public class StatementContext
         return registerFactory;
 
     }
-    public PrimitiveLongIterator FAKEgetAllNodes()
+    public PrimitiveLongIterator FAKE_nodeGetAll()
     {
         final Iterator<Node> allNodes = graph.getAllNodes().iterator();
         return new PrimitiveLongIterator()
@@ -77,7 +77,7 @@ public class StatementContext
         };
     }
 
-    public PrimitiveLongIterator FAKEgetNodesRelatedBy( long nodeId, Direction direction )
+    public PrimitiveLongIterator FAKE_nodeGetRelated( long nodeId, Direction direction )
     {
         final Node nodeById = graph.getNodeById(nodeId);
         final Iterator<Relationship> relationships = nodeById.getRelationships(direction).iterator();

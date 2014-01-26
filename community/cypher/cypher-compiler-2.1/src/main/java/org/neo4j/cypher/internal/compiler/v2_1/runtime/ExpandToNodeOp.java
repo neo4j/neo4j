@@ -55,7 +55,7 @@ public class ExpandToNodeOp implements Operator
         while (!currentNodes.hasNext() && sourceOp.next())
         {
             long fromNodeId = sourceNode.getEntity();
-            currentNodes = ctx.FAKEgetNodesRelatedBy(fromNodeId, dir);
+            currentNodes = ctx.FAKE_nodeGetRelated( fromNodeId, dir );
         }
 
         if (!currentNodes.hasNext())
