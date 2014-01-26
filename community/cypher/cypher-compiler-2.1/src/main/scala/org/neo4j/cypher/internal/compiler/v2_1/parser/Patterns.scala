@@ -31,7 +31,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.parboiled.scala._
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.Direction
 
 trait Patterns extends Parser
   with Literals

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.scalatest.FunSuite
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.Direction
 import org.mockito.Mockito._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner

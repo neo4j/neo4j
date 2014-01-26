@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.Direction
 
 /**
  * The abstract physical plan. Objects of this type are responsible for

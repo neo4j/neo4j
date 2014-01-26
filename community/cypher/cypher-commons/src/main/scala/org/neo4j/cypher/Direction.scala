@@ -17,26 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher
 
-import org.neo4j.cypher.Direction
+trait Direction
 
-case class Cost(cardinality: Int, effort: Int) extends Ordered[Cost] {
-  // TODO: Include effort here
-  def compare(that: Cost): Int = that match {
-    case null => -1
-    case _ => cardinality - that.cardinality
-  }
+object Direction {
+  case object OUTGOING extends Direction
+  case object INCOMING extends Direction
+  case object BOTH extends Direction
 }
 
-trait CostCalculator {
-  def costForLabelScan(cardinality: Int): Cost
-  def costForAllNodes(cardinality: Int): Cost
-  def costForExpandRelationship(cardinality: Int): Cost
-}
-
-trait CardinalityEstimator {
-  def estimateLabelScan(labelId: Token): Int
-  def estimateAllNodes(): Int
-  def estimateExpandRelationship(labelId: Seq[Token], relationshipType: Seq[Token], dir: Direction): Int
-}

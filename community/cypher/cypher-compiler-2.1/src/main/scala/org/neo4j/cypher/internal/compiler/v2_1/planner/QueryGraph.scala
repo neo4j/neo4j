@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.Direction
 
 case class QueryGraph(maxId: Id,
                       edges: Seq[QueryEdge],

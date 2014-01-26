@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Token
 import org.neo4j.cypher.internal.compiler.v2_1.runtime.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.Direction
 
 case class CypherCompiler(planContext: PlanContext, queryCache: (String, => Object) => Object) {
   val parser = CypherParser()

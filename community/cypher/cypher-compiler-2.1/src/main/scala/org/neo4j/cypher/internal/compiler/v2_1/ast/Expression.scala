@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 object Expression {
   sealed trait SemanticContext

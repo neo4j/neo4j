@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{InternalException, SyntaxException}
 import org.parboiled.scala._
 import org.parboiled.errors.{ParseError, InvalidInputError}
 import scala.Some
@@ -48,7 +48,7 @@ case class CypherParser() extends Parser
 
       case None =>
         throwErrors(parsingResult.parseErrors, text)
-        throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
+        throw new InternalException("Parsing failed but no parse errors were provided")
     }
   }
 

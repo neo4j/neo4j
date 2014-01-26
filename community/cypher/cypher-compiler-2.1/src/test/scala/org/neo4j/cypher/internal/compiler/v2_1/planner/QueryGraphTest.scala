@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.scalatest.FunSuite
 import org.parboiled.scala._
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.Direction
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 

@@ -17,37 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.runtime;
+package org.neo4j.cypher.internal.compiler.v2_1.spi;
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.StatementContext;
+import org.neo4j.cypher.Direction;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-public class LabelScanOp implements Operator {
-    private final int registerIdx;
-    private final Registers registers;
-    private final PrimitiveLongIterator nodes;
+public interface StatementContext {
 
-    public LabelScanOp(StatementContext ctx, int registerIdx, int labelToken, Registers registers) {
-        this.registerIdx = registerIdx;
-        this.registers = registers;
-        nodes = ctx.nodesGetForLabel(labelToken);
-    }
+    PrimitiveLongIterator FAKEgetAllNodes();
 
-    @Override
-    public void open() {
-    }
+    PrimitiveLongIterator FAKEgetNodesRelatedBy(long fromNodeId, Direction dir);
 
-    @Override
-    public boolean next() {
-        if(!nodes.hasNext()) {
-            return false;
-        }
-
-        registers.setLongRegister(registerIdx, nodes.next());
-        return true;
-    }
-
-    @Override
-    public void close() {
-    }
+    PrimitiveLongIterator nodesGetForLabel(int labelToken);
 }
