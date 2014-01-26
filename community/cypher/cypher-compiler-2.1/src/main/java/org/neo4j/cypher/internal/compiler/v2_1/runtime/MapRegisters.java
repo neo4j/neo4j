@@ -20,29 +20,41 @@
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
 import java.util.HashMap;
+import java.util.Set;
 
-public class MapRegisters implements Registers {
+public class MapRegisters implements Registers
+{
+    public static final RegisterFactory FACTORY = new Factory();
 
     private final HashMap<Integer, Long> longs;
     private final HashMap<Integer, Object> objects;
 
-    public MapRegisters() {
-        this(new HashMap<Integer, Long>(), new HashMap<Integer, Object>());
+    private RegisterSignature signature;
+
+    public MapRegisters()
+    {
+        this( new RegisterSignature( 0, 0 ) );
     }
 
-    protected MapRegisters(HashMap<Integer, Long> longs, HashMap<Integer, Object> objects) {
+    public MapRegisters( RegisterSignature signature )
+    {
+        this(
+            signature,
+            new HashMap<Integer, Object>( signature.objectRegisters() ),
+            new HashMap<Integer, Long>( signature.entityRegisters() )
+        );
+    }
+
+    public MapRegisters( RegisterSignature signature,
+                         HashMap<Integer, Object> objects, HashMap<Integer, Long> longs )
+    {
         this.longs = longs;
         this.objects = objects;
-    }
 
-    @Override
-    public void setObjectRegister( int idx, Object value ) {
-        objects.put(idx, value);
-    }
+        int maxObjectRegister = maxRegister( signature.objectRegisters(), objects.keySet() );
+        int maxLongRegister = maxRegister( signature.entityRegisters(), longs.keySet() );
 
-    @Override
-    public void setEntityRegister( int idx, long value ) {
-        longs.put(idx, value);
+        this.signature = new RegisterSignature( maxObjectRegister, maxLongRegister );
     }
 
     @Override
@@ -51,12 +63,69 @@ public class MapRegisters implements Registers {
     }
 
     @Override
+    public void setObjectRegister( int idx, Object value ) {
+        if ( idx > signature.objectRegisters() )
+        {
+            signature = signature.withObjectRegisters( idx );
+        }
+        objects.put(idx, value);
+    }
+
+    @Override
     public long getEntityRegister( int idx ) {
         return longs.get(idx);
     }
 
     @Override
+    public void setEntityRegister( int idx, long value ) {
+        if ( idx > signature.entityRegisters() )
+        {
+            signature = signature.withEntityRegisters( idx );
+        }
+        longs.put(idx, value);
+    }
+
+    @Override
+    public RegisterFactory factory()
+    {
+        return FACTORY;
+    }
+
+    @Override
+    public RegisterSignature signature()
+    {
+        return signature;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
     public Registers copy() {
-        return new MapRegisters((HashMap<Integer, Long>)longs.clone(), (HashMap<Integer, Object>)objects.clone());
+        return new MapRegisters(
+                signature,
+                (HashMap<Integer, Object>)objects.clone(),
+                (HashMap<Integer, Long>)longs.clone()
+        );
+    }
+
+    private static int maxRegister( int initialMaxRegister, Set<Integer> registerKeys )
+    {
+        int maxRegister = initialMaxRegister;
+        for ( Integer key : registerKeys )
+        {
+            if ( key > maxRegister )
+            {
+                maxRegister = key;
+            }
+        }
+        return maxRegister;
+    }
+
+    private static class Factory implements RegisterFactory
+    {
+        @Override
+        public Registers createRegisters( RegisterSignature signature )
+        {
+            return new MapRegisters( signature );
+        }
     }
 }

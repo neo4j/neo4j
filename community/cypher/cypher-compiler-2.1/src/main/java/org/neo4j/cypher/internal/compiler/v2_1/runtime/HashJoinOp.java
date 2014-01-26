@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 public class HashJoinOp implements Operator {
+    private final StatementContext ctx;
     private EntityRegister joinRegister;
     private EntityRegister[] lhsTailEntityRegister;
     private ObjectRegister[] lhsTailObjectRegister;
@@ -34,12 +35,14 @@ public class HashJoinOp implements Operator {
     private int bucketPos = 0;
     private List<Registers> currentBucketEntry = null;
 
-    public HashJoinOp(EntityRegister joinNode,
+    public HashJoinOp(StatementContext ctx,
+                      EntityRegister joinNode,
                       EntityRegister[] lhsTailEntityRegisters,
                       ObjectRegister[] lhsTailObjectRegisters,
                       Operator lhs,
                       Operator rhs)
     {
+        this.ctx = ctx;
         this.joinRegister = joinNode;
         this.lhsTailEntityRegister = lhsTailEntityRegisters;
         this.lhsTailObjectRegister = lhsTailObjectRegisters;

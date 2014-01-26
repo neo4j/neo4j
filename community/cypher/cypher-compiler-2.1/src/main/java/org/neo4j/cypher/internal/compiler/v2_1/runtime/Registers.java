@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
 public interface Registers {
+    RegisterFactory factory();
+    RegisterSignature signature();
+
     Object getObjectRegister( int idx );
     void setObjectRegister( int idx, Object value );
 

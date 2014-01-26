@@ -23,16 +23,21 @@ import java.util.Arrays;
 
 public class ArrayRegisters implements Registers
 {
+    public static final RegisterFactory FACTORY = new Factory();
+
+    private final RegisterSignature signature;
+
     private final Object[] objects;
     private final long[] longs;
 
-    public ArrayRegisters(int numObjects, int numLongs)
+    public ArrayRegisters( RegisterSignature signature )
     {
-        this( new Object[numObjects], new long[numLongs] );
+        this( signature, new Object[ signature.objectRegisters() ], new long[ signature.entityRegisters() ] );
     }
 
-    public ArrayRegisters(Object[] objects, long[] longs)
+    public ArrayRegisters( RegisterSignature signature, Object[] objects, long[] longs)
     {
+        this.signature = signature;
         this.objects = objects;
         this.longs = longs;
     }
@@ -41,12 +46,6 @@ public class ArrayRegisters implements Registers
     public void setObjectRegister( int idx, Object value )
     {
         objects[idx] = value;
-    }
-
-    @Override
-    public void setEntityRegister( int idx, long value )
-    {
-        longs[idx] = value;
     }
 
     @Override
@@ -62,8 +61,39 @@ public class ArrayRegisters implements Registers
     }
 
     @Override
+    public void setEntityRegister( int idx, long value )
+    {
+        longs[idx] = value;
+    }
+
+    @Override
+    public RegisterSignature signature()
+    {
+        return signature;
+    }
+
+    @Override
+    public RegisterFactory factory()
+    {
+        return FACTORY;
+    }
+
+    @Override
     public Registers copy()
     {
-        return new ArrayRegisters( Arrays.copyOf( objects, objects.length ), Arrays.copyOf( longs, longs.length ) );
+        return new ArrayRegisters(
+                signature,
+                Arrays.copyOf( objects, objects.length ),
+                Arrays.copyOf( longs, longs.length )
+        );
+    }
+
+    private static final class Factory implements RegisterFactory
+    {
+        @Override
+        public Registers createRegisters( RegisterSignature signature )
+        {
+            return new ArrayRegisters( signature );
+        }
     }
 }
