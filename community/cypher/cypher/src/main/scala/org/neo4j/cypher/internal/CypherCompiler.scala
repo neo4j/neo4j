@@ -24,12 +24,10 @@ import CypherVersion._
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
-import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
+import org.neo4j.cypher.internal.compiler.v2_1.runtime.{ExecutionPlan => ExecutionPlan_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.spi.v1_9.GDSBackedQueryContext
 
@@ -44,8 +42,9 @@ object CypherCompiler {
 
   case class VersionProxy(graph: GraphDatabaseService, defaultVersion: CypherVersion) {
     private val queryCache = new LRUCache[(CypherVersion, String), Object](getQueryCacheSize)
-    private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
-    private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
+    private val compiler2_1 = new compiler.v2_1.CypherCompiler(null, (q, f) => queryCache.getOrElseUpdate((v2_1, q), f))
+    private val compiler2_0 = new compiler.v2_0.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
+    private val compiler1_9 = new compiler.v1_9.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
 
 
     @throws(classOf[SyntaxException])
@@ -61,8 +60,15 @@ object CypherCompiler {
           new ExecutionPlanWrapperForV1_9(plan)
 
         case CypherVersion.v2_0 => 
-          val plan = compiler2_0.prepare(remainingQuery, new TransactionBoundPlanContext(statement, context))
+          val plan: ExecutionPlan_v2_0 = compiler2_0.prepare(remainingQuery, new spi.v2_0.TransactionBoundPlanContext(statement, context))
           new ExecutionPlanWrapperForV2_0(plan)
+
+        case CypherVersion.v2_1 =>
+          val plan:Option[ExecutionPlan_v2_1] = compiler2_1.prepare(remainingQuery)
+          plan.map(p => ???).getOrElse {
+            val plan = compiler2_0.prepare(remainingQuery, new spi.v2_0.TransactionBoundPlanContext(statement, context))
+            new ExecutionPlanWrapperForV2_0(plan)
+          }
       }
     }
 
@@ -84,7 +90,7 @@ object CypherCompiler {
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
 
   private def queryContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement) =
-    new ExceptionTranslatingQueryContext(new TransactionBoundExecutionContext(graph, tx, statement))
+    new ExceptionTranslatingQueryContext(new spi.v2_0.TransactionBoundExecutionContext(graph, tx, statement))
 
   def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
     inner.profile(queryContext(graph, tx, statement), params)
@@ -104,4 +110,3 @@ class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPl
   def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
     inner.execute(queryContext(graph), tx, params)
 }
-
