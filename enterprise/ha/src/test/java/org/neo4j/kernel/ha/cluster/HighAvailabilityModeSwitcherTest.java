@@ -34,9 +34,9 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -54,7 +54,7 @@ public class HighAvailabilityModeSwitcherTest
                 mock( DelegateInvocationHandler.class ), availability,
                 mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
                 mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
-                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(), new Monitors( StringLogger.DEV_NULL),
+                UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(), new Monitors(),
                 mock( RequestContextFactory.class ) );
 
         // When
@@ -80,7 +80,7 @@ public class HighAvailabilityModeSwitcherTest
                 mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
                 mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
                 UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(),
-                new Monitors( StringLogger.DEV_NULL), mock( RequestContextFactory.class ) );
+                new Monitors(), mock( RequestContextFactory.class ) );
 
         // When
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -105,7 +105,7 @@ public class HighAvailabilityModeSwitcherTest
                 mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
                 mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
                 UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(),
-                new Monitors( StringLogger.DEV_NULL), mock( RequestContextFactory.class ) );
+                new Monitors(), mock( RequestContextFactory.class ) );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -130,7 +130,7 @@ public class HighAvailabilityModeSwitcherTest
                 mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
                 mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ), mock(
                 UpdateableSchemaState.class), Iterables.<KernelExtensionFactory<?>>empty(),
-                new Monitors( StringLogger.DEV_NULL), mock( RequestContextFactory.class ) );
+                new Monitors(), mock( RequestContextFactory.class ) );
 
         // When
         toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,

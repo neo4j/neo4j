@@ -57,7 +57,7 @@ public class BytePrinter
      */
     public static void print( ByteBuffer bytes, PrintStream out )
     {
-        print( bytes, out, 0, bytes.capacity() );
+        print( bytes, out, 0, bytes.limit() );
     }
 
     /**

@@ -24,7 +24,6 @@ import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
@@ -51,7 +50,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         super( hostNameOrIp, port, logging, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 SlaveServer.APPLICATION_PROTOCOL_VERSION,
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
-                maxConcurrentChannels, maxConcurrentChannels, chunkSize );
+                maxConcurrentChannels, chunkSize );
         this.machineId = machineId;
     }
 
@@ -61,7 +60,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         return sendRequest( SlaveRequestType.PULL_UPDATES, RequestContext.EMPTY, new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 writeString( buffer, resource );
                 buffer.writeLong( upToAndIncludingTxId );

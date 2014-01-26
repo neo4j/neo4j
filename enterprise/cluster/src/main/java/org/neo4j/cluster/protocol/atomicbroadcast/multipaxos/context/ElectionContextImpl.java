@@ -131,40 +131,7 @@ class ElectionContextImpl
     @Override
     public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
     {
-        elections.put( role, new Election( new WinnerStrategy()
-        {
-            @Override
-            public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
-            {
-
-                // Remove blank votes
-                List<Vote> filteredVoteList = toList( Iterables.filter( new Predicate<Vote>()
-                {
-                    @Override
-                    public boolean accept( Vote item )
-                    {
-                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-                    }
-                }, voteList ) );
-
-                // Sort based on credentials
-                // The most suited candidate should come out on top
-                Collections.sort( filteredVoteList );
-                Collections.reverse( filteredVoteList );
-
-                for ( Vote vote : filteredVoteList )
-                {
-                    // Don't elect as winner the node we are trying to demote
-                    if ( !vote.getSuggestedNode().equals( demoteNode ) )
-                    {
-                        return vote.getSuggestedNode();
-                    }
-                }
-
-                // No possible winner
-                return null;
-            }
-        } ) );
+        elections.put( role, new Election( new BiasedWinnerStrategy( demoteNode, false /*demotion*/ ) ) );
     }
 
     @Override
@@ -177,22 +144,17 @@ class ElectionContextImpl
             public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
             {
                 // Remove blank votes
-                List<Vote> filteredVoteList = toList( Iterables.filter( new Predicate<Vote>()
-                {
-                    @Override
-                    public boolean accept( Vote item )
-                    {
-                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-                    }
-                }, voteList ) );
+                List<Vote> filteredVoteList = removeBlankVotes( voteList );
 
                 // Sort based on credentials
                 // The most suited candidate should come out on top
                 Collections.sort( filteredVoteList );
                 Collections.reverse( filteredVoteList );
 
-                clusterContext.getLogger( getClass() ).debug( "Elections ended up with list " + filteredVoteList );
+                clusterContext.getLogger( getClass() ).debug( "Election started with " + voteList +
+                        ", ended up with " + filteredVoteList );
 
+                // Elect this highest voted instance
                 for ( Vote vote : filteredVoteList )
                 {
                     return vote.getSuggestedNode();
@@ -207,40 +169,7 @@ class ElectionContextImpl
     @Override
     public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
     {
-        elections.put( role, new Election( new WinnerStrategy()
-        {
-            @Override
-            public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
-            {
-
-                // Remove blank votes
-                List<Vote> filteredVoteList = toList( Iterables.filter( new Predicate<Vote>()
-                {
-                    @Override
-                    public boolean accept( Vote item )
-                    {
-                        return !(item.getCredentials() instanceof NotElectableElectionCredentials);
-                    }
-                }, voteList ) );
-
-                // Sort based on credentials
-                // The most suited candidate should come out on top
-                Collections.sort( filteredVoteList );
-                Collections.reverse( filteredVoteList );
-
-                for ( Vote vote : filteredVoteList )
-                {
-                    // Don't elect as winner the node we are trying to demote
-                    if ( !vote.getSuggestedNode().equals( promoteNode ) )
-                    {
-                        return vote.getSuggestedNode();
-                    }
-                }
-
-                // No possible winner
-                return null;
-            }
-        } ) );
+        elections.put( role, new Election( new BiasedWinnerStrategy( promoteNode, true /*promotion*/ ) ) );
     }
 
     @Override
@@ -539,5 +468,57 @@ class ElectionContextImpl
         int result = roles != null ? roles.hashCode() : 0;
         result = 31 * result + (elections != null ? elections.hashCode() : 0);
         return result;
+    }
+    
+    private class BiasedWinnerStrategy implements WinnerStrategy
+    {
+        private final org.neo4j.cluster.InstanceId biasedNode;
+        private final boolean positiveSuggestion;
+
+        public BiasedWinnerStrategy( org.neo4j.cluster.InstanceId biasedNode, boolean positiveSuggestion )
+        {
+            this.biasedNode = biasedNode;
+            this.positiveSuggestion = positiveSuggestion;
+        }
+
+        @Override
+        public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
+        {
+            // Remove blank votes
+            List<Vote> filteredVoteList = removeBlankVotes( voteList );
+
+            // Sort based on credentials
+            // The most suited candidate should come out on top
+            Collections.sort( filteredVoteList );
+            Collections.reverse( filteredVoteList );
+
+            clusterContext.getLogger( getClass() ).debug( "Election started with " + voteList +
+                    ", ended up with " + filteredVoteList + " where " + biasedNode + " is biased for " +
+                    (positiveSuggestion ? "promotion" : "demotion") );
+
+            for ( Vote vote : filteredVoteList )
+            {
+                // Elect the biased instance biased as winner
+                if ( vote.getSuggestedNode().equals( biasedNode ) == positiveSuggestion )
+                {
+                    return vote.getSuggestedNode();
+                }
+            }
+
+            // No possible winner
+            return null;
+        }
+    }
+
+    private static List<Vote> removeBlankVotes( Collection<Vote> voteList )
+    {
+        return toList( Iterables.filter( new Predicate<Vote>()
+        {
+            @Override
+            public boolean accept( Vote item )
+            {
+                return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+            }
+        }, voteList ) );
     }
 }

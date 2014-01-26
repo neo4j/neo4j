@@ -93,13 +93,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Functions.withDefaults;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -705,6 +705,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             handshake = response.response();
             requestContextFactory.setEpoch( handshake.epoch() );
+        }
+        catch( BranchedDataException e )
+        {
+            // Rethrow wrapped in a branched data exception on our side, to clarify where the problem originates.
+            throw new BranchedDataException( "Master detected branched data for this machine.", e );
         }
         catch ( RuntimeException e )
         {

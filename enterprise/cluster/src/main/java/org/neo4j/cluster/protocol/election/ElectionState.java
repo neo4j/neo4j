@@ -257,7 +257,10 @@ public enum ElectionState
                         case voted:
                         {
                             ElectionMessage.VotedData data = message.getPayload();
-                            context.voted( data.getRole(), data.getInstanceId(),  data.getVoteCredentials() );
+                            context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials() );
+                            
+                            String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
+                            logger.debug( voter + " voted " + data );
 
                             /*
                              * This is the URI of the current role holder and, yes, it could very well be null. However
@@ -274,8 +277,7 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    logger.debug( "Elected " +
-                                            winner + " as " + data.getRole() );
+                                    logger.debug( "Elected winner as " + data.getRole() );
 
                                     // Broadcast this
                                     ClusterMessage.ConfigurationChangeState configurationChangeState = new
@@ -286,8 +288,7 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    logger.warn( "Election " +
-                                            "could not pick a winner" );
+                                    logger.warn( "Election could not pick a winner" );
                                     if ( currentElected != null )
                                     {
                                         // Someone had the role and doesn't anymore. Broadcast this
