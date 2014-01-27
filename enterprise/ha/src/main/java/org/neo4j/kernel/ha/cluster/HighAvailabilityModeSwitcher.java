@@ -135,7 +135,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
     private final Config config;
-    private LifeSupport life;
+    private LifeSupport haCommunicationLife;
     private final StringLogger msgLog;
     private final ConsoleLogger console;
 
@@ -163,7 +163,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         this.logging = logging;
         this.requestContextFactory = requestContextFactory;
         this.msgLog = logging.getMessagesLog( getClass() );
-        this.life = new LifeSupport();
+        this.haCommunicationLife = new LifeSupport();
         this.stateHandler = stateHandler;
 
         this.console = logging.getConsoleLog( getClass() );
@@ -184,19 +184,19 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             }
         };
         bindingNotifier.addBindingListener( bindingListener );
-        life.init();
+        haCommunicationLife.init();
     }
 
     @Override
     public synchronized void start() throws Throwable
     {
-        life.start();
+        haCommunicationLife.start();
     }
 
     @Override
     public synchronized void stop() throws Throwable
     {
-        life.stop();
+        haCommunicationLife.stop();
     }
 
     @Override
@@ -209,7 +209,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
         scheduledExecutorService.awaitTermination( 60, TimeUnit.SECONDS );
 
-        life.shutdown();
+        haCommunicationLife.shutdown();
     }
 
     @Override
@@ -260,8 +260,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         switch ( event.getNewState() )
         {
             case TO_MASTER:
-                life.shutdown();
-                life = new LifeSupport();
+                haCommunicationLife.shutdown();
+                haCommunicationLife = new LifeSupport();
 
                 if ( event.getOldState().equals( HighAvailabilityMemberState.SLAVE ) )
                 {
@@ -271,7 +271,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 switchToMaster();
                 break;
             case TO_SLAVE:
-                life.shutdown();
+                haCommunicationLife.shutdown();
                 switchToSlave();
                 break;
             case PENDING:
@@ -284,8 +284,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     clusterMemberAvailability.memberIsUnavailable( MASTER );
                 }
 
-                life.shutdown();
-                life = new LifeSupport();
+                haCommunicationLife.shutdown();
+                haCommunicationLife = new LifeSupport();
                 break;
             default:
                 // do nothing
@@ -318,11 +318,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                         new BranchDetectingTxVerifier( graphDb ) );
-                life.add( masterImpl );
-                life.add( masterServer );
+                haCommunicationLife.add( masterImpl );
+                haCommunicationLife.add( masterServer );
                 assignMaster( masterImpl );
 
-                life.start();
+                haCommunicationLife.start();
 
                 masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
                         ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
@@ -369,14 +369,14 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             @Override
             public void run()
             {
-                if (life.getStatus() == LifecycleStatus.STARTED)
+                if (haCommunicationLife.getStatus() == LifecycleStatus.STARTED)
                 {
                     return; // Already switched - this can happen if a second master becomes available while waiting
                 }
 
                 try
                 {
-                    life = new LifeSupport();
+                    haCommunicationLife = new LifeSupport();
 
                     URI masterUri = availableMasterId;
 
@@ -417,7 +417,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Error while trying to switch to slave", t );
                 }
 
-                life.shutdown();
+                haCommunicationLife.shutdown();
 
                 // Try again later
                 wait.set( (1 + wait.get()*2) ); // Exponential backoff
@@ -435,7 +435,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         try
         {
-            MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), life );
+            MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
             Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
                     new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
@@ -443,9 +443,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
             SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging );
             assignMaster( master );
-            life.add( slaveImpl );
-            life.add( server );
-            life.start();
+            haCommunicationLife.add( slaveImpl );
+            haCommunicationLife.add( server );
+            haCommunicationLife.start();
 
             slaveHaURI = createHaURI( server );
             clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI );
@@ -454,9 +454,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         catch ( Throwable t )
         {
             msgLog.logMessage( "Got exception while starting HA communication", t );
-            life.shutdown();
-            life = new LifeSupport();
-            nioneoDataSource.stop();
+            haCommunicationLife.shutdown();
+            haCommunicationLife = new LifeSupport();
         }
         return false;
     }
