@@ -131,7 +131,7 @@ class ElectionContextImpl
     @Override
     public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
     {
-        elections.put( role, new Election( new BiasedWinnerStrategy( demoteNode, false /*demotion*/ ) ) );
+        elections.put( role, new Election( BiasedWinnerStrategy.demotion( clusterContext, demoteNode ) ) );
     }
 
     @Override
@@ -144,7 +144,7 @@ class ElectionContextImpl
             public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
             {
                 // Remove blank votes
-                List<Vote> filteredVoteList = removeBlankVotes( voteList );
+                List<Vote> filteredVoteList = removeIneligibleVotes( voteList );
 
                 // Sort based on credentials
                 // The most suited candidate should come out on top
@@ -169,7 +169,7 @@ class ElectionContextImpl
     @Override
     public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
     {
-        elections.put( role, new Election( new BiasedWinnerStrategy( promoteNode, true /*promotion*/ ) ) );
+        elections.put( role, new Election( BiasedWinnerStrategy.promotion( clusterContext, promoteNode ) ) );
     }
 
     @Override
@@ -329,75 +329,6 @@ class ElectionContextImpl
                 snapshotHeartbeatContext, new ArrayList<>(roles), electionsSnapshot, credentialsProvider );
     }
 
-    private static class Vote
-            implements Comparable<Vote>
-    {
-        private final org.neo4j.cluster.InstanceId suggestedNode;
-        private final Comparable<Object> voteCredentials;
-
-        private Vote( org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> voteCredentials )
-        {
-            this.suggestedNode = suggestedNode;
-            this.voteCredentials = voteCredentials;
-        }
-
-        public org.neo4j.cluster.InstanceId getSuggestedNode()
-        {
-            return suggestedNode;
-        }
-
-        public Comparable<Object> getCredentials()
-        {
-            return voteCredentials;
-        }
-
-        @Override
-        public String toString()
-        {
-            return suggestedNode + ":" + voteCredentials;
-        }
-
-        @Override
-        public int compareTo( Vote o )
-        {
-            return this.voteCredentials.compareTo( o.voteCredentials );
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            Vote vote = (Vote) o;
-
-            if ( !suggestedNode.equals( vote.suggestedNode ) )
-            {
-                return false;
-            }
-            if ( !voteCredentials.equals( vote.voteCredentials ) )
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = suggestedNode.hashCode();
-            result = 31 * result + voteCredentials.hashCode();
-            return result;
-        }
-    }
-
     static class Election
     {
         private final WinnerStrategy winnerStrategy;
@@ -406,7 +337,7 @@ class ElectionContextImpl
         private Election( WinnerStrategy winnerStrategy )
         {
             this.winnerStrategy = winnerStrategy;
-            this.votes = new HashMap<org.neo4j.cluster.InstanceId, Vote>();
+            this.votes = new HashMap<>();
         }
 
         private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId, Vote> votes )
@@ -469,48 +400,8 @@ class ElectionContextImpl
         result = 31 * result + (elections != null ? elections.hashCode() : 0);
         return result;
     }
-    
-    private class BiasedWinnerStrategy implements WinnerStrategy
-    {
-        private final org.neo4j.cluster.InstanceId biasedNode;
-        private final boolean positiveSuggestion;
 
-        public BiasedWinnerStrategy( org.neo4j.cluster.InstanceId biasedNode, boolean positiveSuggestion )
-        {
-            this.biasedNode = biasedNode;
-            this.positiveSuggestion = positiveSuggestion;
-        }
-
-        @Override
-        public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
-        {
-            // Remove blank votes
-            List<Vote> filteredVoteList = removeBlankVotes( voteList );
-
-            // Sort based on credentials
-            // The most suited candidate should come out on top
-            Collections.sort( filteredVoteList );
-            Collections.reverse( filteredVoteList );
-
-            clusterContext.getLogger( getClass() ).debug( "Election started with " + voteList +
-                    ", ended up with " + filteredVoteList + " where " + biasedNode + " is biased for " +
-                    (positiveSuggestion ? "promotion" : "demotion") );
-
-            for ( Vote vote : filteredVoteList )
-            {
-                // Elect the biased instance biased as winner
-                if ( vote.getSuggestedNode().equals( biasedNode ) == positiveSuggestion )
-                {
-                    return vote.getSuggestedNode();
-                }
-            }
-
-            // No possible winner
-            return null;
-        }
-    }
-
-    private static List<Vote> removeBlankVotes( Collection<Vote> voteList )
+    public static List<Vote> removeIneligibleVotes( Collection<Vote> voteList )
     {
         return toList( Iterables.filter( new Predicate<Vote>()
         {

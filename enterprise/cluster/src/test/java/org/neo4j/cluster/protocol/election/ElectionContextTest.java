@@ -243,20 +243,4 @@ public class ElectionContextTest
         assertEquals( moreThanQuorum, !toTest.electionOk() );
     }
 
-    private static final class IntegerElectionCredentials implements ElectionCredentials
-    {
-        private final int credential;
-
-        private IntegerElectionCredentials( int credential )
-        {
-            this.credential = credential;
-        }
-
-        @Override
-        public int compareTo( Object o )
-        {
-            return o instanceof IntegerElectionCredentials
-                    ? Integer.valueOf(credential).compareTo(Integer.valueOf(( (IntegerElectionCredentials) o).credential)) : 0;
-        }
-    }
 }
