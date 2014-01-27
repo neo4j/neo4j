@@ -19,8 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -37,6 +35,8 @@ import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
+import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
 
 public class DechunkingChannelBuffer implements ChannelBuffer
 {
@@ -146,18 +146,25 @@ public class DechunkingChannelBuffer implements ChannelBuffer
 
     private void readAndThrowFailureResponse()
     {
-        Throwable cause = null;
+        Throwable cause;
         try
         {
             ObjectInputStream input = new ObjectInputStream( asInputStream() );
             cause = (Throwable) input.readObject();
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
-            throw new ComException( "Couldn't read failure response", e );
+            // Note: this is due to a problem with the streaming of exceptions, the ChunkingChannelBuffer will almost
+            // always sends exceptions back as two chunks, the first one empty and the second with the exception.
+            // We hit this when we try to read the exception of the first one, and in reading it hit the second
+            // chunk with the "real" exception. This should be revisited to 1) clear up the chunking and 2) handle
+            // serialized exceptions spanning multiple chunks.
+            if ( e instanceof RuntimeException ) throw (RuntimeException) e;
+            if ( e instanceof Error ) throw (Error) e;
+
+            throw new ComException( e );
         }
 
-        
         if ( cause instanceof RuntimeException ) throw (RuntimeException) cause;
         if ( cause instanceof Error ) throw (Error) cause;
         throw new ComException( cause );

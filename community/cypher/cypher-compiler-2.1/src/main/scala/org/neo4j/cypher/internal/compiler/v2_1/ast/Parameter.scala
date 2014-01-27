@@ -22,6 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-case class Parameter(name: String)(val token: InputToken) extends Expression with SimpleTypedExpression {
+case class Parameter(name: String)(val position: InputPosition) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTAny.covariant
 }

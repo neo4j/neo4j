@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.kernel.monitoring;
 
-object DummyPosition {
-  def apply(offset: Int) = new InputPosition(offset, 1, offset)
-}
+import java.lang.reflect.Method;
 
-object DummyToken {
-  def apply(start: Int, end: Int) = new InputToken(DummyPosition(start), DummyPosition(end))
+public interface MonitorListenerInvocationHandler
+{
+    public void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
 }

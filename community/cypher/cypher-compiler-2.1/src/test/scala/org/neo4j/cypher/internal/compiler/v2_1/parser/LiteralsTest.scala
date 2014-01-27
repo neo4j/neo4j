@@ -26,7 +26,7 @@ import org.parboiled.scala._
 class LiteralsTest extends ParserTest[Any, Any] with Literals {
 
   def Expression: Rule1[ast.Expression] = ???
-  val t = DummyToken(0, 1)
+  val t = DummyPosition(0)
 
   @Test def testIdentifierCanContainASCII() {
     implicit val parserToTest = Identifier

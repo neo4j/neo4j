@@ -47,7 +47,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
                 applicationProtocolVersion, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, chunkSize );
+                chunkSize );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
@@ -75,7 +75,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpRequestType.MULTIPLY, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 buffer.writeInt( value1 );
                 buffer.writeInt( value2 );
@@ -96,7 +96,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpRequestType.FETCH_DATA_STREAM, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 buffer.writeInt( dataSize );
             }
@@ -118,7 +118,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpRequestType.SEND_DATA_STREAM, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 BlockLogBuffer writer = new BlockLogBuffer( buffer );
                 try
@@ -139,7 +139,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         return sendRequest( MadeUpRequestType.THROW_EXCEPTION, getRequestContext(), new Serializer()
         {
             @Override
-            public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+            public void write( ChannelBuffer buffer ) throws IOException
             {
                 writeString( buffer, messageInException );
             }

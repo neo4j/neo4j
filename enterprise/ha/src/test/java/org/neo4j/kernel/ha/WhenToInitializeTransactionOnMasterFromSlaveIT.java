@@ -30,9 +30,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
-import org.neo4j.kernel.impl.util.Monitors;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -69,7 +69,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
         }
 
         // And now monitor the master for incoming calls
-        cluster.getMaster().getDependencyResolver().resolveDependency( Monitors.class ).addListener( masterMonitor );
+        cluster.getMaster().getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( masterMonitor );
     }
 
     @Test

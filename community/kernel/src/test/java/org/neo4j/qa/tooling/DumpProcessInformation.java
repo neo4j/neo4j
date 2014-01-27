@@ -58,17 +58,12 @@ public class DumpProcessInformation
 
     public static File doThreadDump( Pair<Long, String> pid, File outputDirectory ) throws Exception
     {
+        System.out.println( "Creating thread dump of " + pid + " to " + outputDirectory.getAbsolutePath() );
         String[] cmdarray = new String[] {"jstack", "" + pid.first()};
         File outputFile = new File( outputDirectory, fileName( "threaddump", pid ) );
         Process process = Runtime.getRuntime().exec( cmdarray );
         writeProcessOutputToFile( process, outputFile );
-        reduceThreadDump( outputFile, new File( outputFile.getParentFile(), outputFile.getName() + "-reduced" ) );
         return outputFile;
-    }
-
-    private static void reduceThreadDump( File outputFile, File file )
-    {
-//        new ReduceThreaddump( IteratorUtil.asIterator( outputFile ) );
     }
 
     private static void writeProcessOutputToFile( Process process, File outputFile ) throws Exception

@@ -41,7 +41,7 @@ class CaseExpressionTest extends Assertions {
         )
       ),
       default = Some(DummyExpression(CTDouble))
-    )(DummyToken(2, 25))
+    )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
@@ -62,7 +62,7 @@ class CaseExpressionTest extends Assertions {
         )
       ),
       Some(DummyExpression(CTDouble | CTNode))
-    )(DummyToken(2, 25))
+    )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
@@ -78,17 +78,17 @@ class CaseExpressionTest extends Assertions {
           DummyExpression(CTBoolean),
           DummyExpression(CTDouble)
         ), (
-          DummyExpression(CTString, DummyToken(12, 15)),
+          DummyExpression(CTString, DummyPosition(12)),
           DummyExpression(CTInteger)
         )
       ),
       Some(DummyExpression(CTDouble))
-    )(DummyToken(2, 25))
+    )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors.size === 1)
     assert(result.errors.head.msg === "Type mismatch: expected Boolean but was String")
-    assert(result.errors.head.token === DummyToken(12,15))
+    assert(result.errors.head.position === DummyPosition(12))
   }
 
 }
