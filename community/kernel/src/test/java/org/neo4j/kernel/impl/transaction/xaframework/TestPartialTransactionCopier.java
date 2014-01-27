@@ -47,6 +47,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
@@ -79,7 +80,8 @@ public class TestPartialTransactionCopier
         PartialTransactionCopier copier = new PartialTransactionCopier(
                 buffer, new CommandFactory(),
                 StringLogger.DEV_NULL, new LogExtractor.LogPositionCache(),
-                null, createXidMapWithOneStartEntry( masterId, /*txId=*/brokenTxIdentifier ) );
+                null, createXidMapWithOneStartEntry( masterId, /*txId=*/brokenTxIdentifier ),
+                new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         // When
         File newLogFile = new File( "new.log" );

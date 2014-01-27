@@ -53,7 +53,7 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
         // This is created every time because transaction interceptors can be stateful
         final TransactionInterceptor interceptor = providers.resolveChain( ds );
 
-        LogDeserializer toReturn = new LogDeserializer( byteChannel )
+        LogDeserializer toReturn = new LogDeserializer( byteChannel, bufferMonitor )
         {
             @Override
             protected void intercept( List<LogEntry> entries )

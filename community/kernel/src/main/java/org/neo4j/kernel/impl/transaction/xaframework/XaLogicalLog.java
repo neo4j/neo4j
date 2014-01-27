@@ -139,7 +139,7 @@ public class XaLogicalLog implements LogLoader
                 + Xid.MAXBQUALSIZE * 10 );
         msgLog = logging.getMessagesLog( getClass() );
 
-        this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this, xidIdentMap );
+        this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this, xidIdentMap, monitors.newMonitor( ByteCounterMonitor.class, getClass(), "copier" ) );
     }
 
     synchronized void open() throws IOException
@@ -923,7 +923,9 @@ public class XaLogicalLog implements LogLoader
                 throw new RuntimeException( "Expected start or command entry but found: " + entry );
             }
         }
-        long bytesRead = sharedBuffer.position() - startedAt;
+
+        // position now minus position before is how much we read from disk
+        bufferMonitor.bytesRead( sharedBuffer.position() - startedAt );
 
         if ( !found )
         {
@@ -952,7 +954,7 @@ public class XaLogicalLog implements LogLoader
 
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
-        return new LogExtractor( positionCache, this, cf, startTxId, endTxIdHint );
+        return new LogExtractor( positionCache, this, bufferMonitor, cf, startTxId, endTxIdHint );
     }
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -1091,28 +1093,32 @@ public class XaLogicalLog implements LogLoader
 
     protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel )
     {
-        return new LogDeserializer( byteChannel );
+        return new LogDeserializer( byteChannel, logDeserializerMonitor );
     }
 
     protected class LogDeserializer
     {
         private final ReadableByteChannel byteChannel;
+        private final ByteCounterMonitor monitor;
         LogEntry.Start startEntry;
         LogEntry.Commit commitEntry;
 
         private final List<LogEntry> logEntries;
 
-        protected LogDeserializer( ReadableByteChannel byteChannel )
+        protected LogDeserializer( ReadableByteChannel byteChannel, ByteCounterMonitor monitor )
         {
             this.byteChannel = byteChannel;
+            this.monitor = monitor;
             this.logEntries = new LinkedList<LogEntry>();
         }
 
         public boolean readAndWriteAndApplyEntry( int newXidIdentifier )
                 throws IOException
         {
+            long startedAtPosition = sharedBuffer.position();
             LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel,
                     cf );
+            monitor.bytesRead( sharedBuffer.position() - startedAtPosition );
             if ( entry == null )
             {
                 try

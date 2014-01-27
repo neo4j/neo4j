@@ -42,10 +42,11 @@ class PartialTransactionCopier
     private final LogExtractor.LogPositionCache positionCache;
     private final LogExtractor.LogLoader logLoader;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
+    private final ByteCounterMonitor monitor;
 
     PartialTransactionCopier( ByteBuffer sharedBuffer, XaCommandFactory commandFactory, StringLogger log,
                               LogExtractor.LogPositionCache positionCache, LogExtractor.LogLoader logLoader,
-                              ArrayMap<Integer, LogEntry.Start> xidIdentMap )
+                              ArrayMap<Integer, LogEntry.Start> xidIdentMap, ByteCounterMonitor monitor )
     {
         this.sharedBuffer = sharedBuffer;
         this.commandFactory = commandFactory;
@@ -53,6 +54,7 @@ class PartialTransactionCopier
         this.positionCache = positionCache;
         this.logLoader = logLoader;
         this.xidIdentMap = xidIdentMap;
+        this.monitor = monitor;
     }
 
     public void copy( FileChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
@@ -106,7 +108,7 @@ class PartialTransactionCopier
 
     private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId, LogBuffer target ) throws IOException
     {
-        LogExtractor extractor = new LogExtractor( positionCache, logLoader, commandFactory, txId, txId );
+        LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandFactory, txId, txId );
         InMemoryLogBuffer tempBuffer = new InMemoryLogBuffer();
         extractor.extractNext( tempBuffer );
         ByteBuffer localBuffer = newLogReaderBuffer();

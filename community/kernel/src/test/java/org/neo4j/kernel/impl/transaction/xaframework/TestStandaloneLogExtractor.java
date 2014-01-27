@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -61,7 +62,7 @@ public class TestStandaloneLogExtractor
         
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
         XaDataSource ds = newDb.getXaDataSourceManager().getNeoStoreDataSource();
-        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ) );
+        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ), new Monitors().newMonitor( ByteCounterMonitor.class ) );
         long expectedTxId = 2;
         while ( true )
         {
