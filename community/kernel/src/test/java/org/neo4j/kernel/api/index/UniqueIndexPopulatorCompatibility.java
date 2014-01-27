@@ -83,6 +83,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldProvideAccessorThatEnforcesUniqueConstraintsAgainstDataAddedOnline() throws Exception
     {
@@ -110,6 +111,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldProvideAccessorThatEnforcesUniqueConstraintsAgainstDataAddedThroughPopulator() throws Exception
     {
@@ -136,6 +138,7 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldProvideAccessorThatEnforcesUniqueConstraintsAgainstDataAddedInSameTx() throws Exception
     {

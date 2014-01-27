@@ -35,6 +35,11 @@ public class MultipleUnderlyingStorageExceptions extends UnderlyingStorageExcept
     {
         super( buildMessage( exceptions ) );
         this.exceptions = Collections.unmodifiableSet( exceptions );
+
+        for ( Pair<IndexDescriptor, UnderlyingStorageException> exception : exceptions )
+        {
+            this.addSuppressed( exception.other() );
+        }
     }
 
     private static String buildMessage( Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions )
