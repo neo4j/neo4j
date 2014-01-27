@@ -27,6 +27,7 @@ import org.neo4j.kernel.ha.MasterClient196;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
 {
@@ -35,14 +36,14 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
     private boolean downgradeForbidden = false;
 
     @Override
-    public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
+    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life )
     {
         if ( currentFactory == null )
         {
             assignDefaultFactory();
         }
         
-        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, storeId, life );
+        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, monitors, storeId, life );
         result.addMismatchingVersionHandler( this );
         return result;
     }
@@ -161,9 +162,9 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient18( hostNameOrIp, port, logging, storeId,
+            return life.add( new MasterClient18( hostNameOrIp, port, logging, monitors, storeId,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     }
@@ -177,9 +178,9 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient196( hostNameOrIp, port, logging, storeId,
+            return life.add( new MasterClient196( hostNameOrIp, port, logging, monitors, storeId,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
         }
     }

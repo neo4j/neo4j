@@ -19,6 +19,12 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -51,6 +57,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.neo4j.com.RequestContext.Tx;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -59,16 +66,12 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
-
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -88,6 +91,8 @@ import static org.neo4j.com.Protocol.writeString;
  */
 public abstract class Server<T, R> extends SimpleChannelHandler implements ChannelPipelineFactory, Lifecycle
 {
+    private final ByteCounterMonitor byteCounterMonitor;
+    private final RequestMonitor requestMonitor;
     private InetSocketAddress socketAddress;
     private final Clock clock;
 
@@ -139,7 +144,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private int chunkSize;
 
     public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
-                   byte applicationProtocolVersion, TxChecksumVerifier txVerifier, Clock clock )
+                   byte applicationProtocolVersion, TxChecksumVerifier txVerifier, Clock clock, Monitors monitors )
     {
         this.requestTarget = requestTarget;
         this.config = config;
@@ -148,6 +153,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.msgLog = logging.getMessagesLog( getClass() );
         this.txVerifier = txVerifier;
         this.clock = clock;
+        this.byteCounterMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
+        this.requestMonitor = monitors.newMonitor( RequestMonitor.class, getClass() );
     }
 
     @Override
@@ -554,19 +561,26 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             @SuppressWarnings("unchecked")
             public void run()
             {
+                Map<String, String> requestContext = new HashMap<String, String>();
+                requestContext.put( "type", type.toString() );
+                requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
+                requestContext.put( "slaveContext", context.toString() );
+                requestMonitor.beginRequest( requestContext );
                 Response<R> response = null;
+                Throwable failure = null;
                 try
                 {
                     unmapSlave( channel );
                     response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response.transactions(), targetBuffer );
+                    writeTransactionStreams( response.transactions(), targetBuffer, byteCounterMonitor );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
                 catch ( Throwable e )
                 {
+                    failure = e;
                     targetBuffer.clear( true );
                     writeFailureResponse( e, targetBuffer );
                     tryToFinishOffChannel( channel, context );
@@ -578,6 +592,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                     {
                         response.close();
                     }
+                    requestMonitor.endRequest( failure );
                 }
             }
         };
@@ -609,7 +624,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer )
+    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer, ByteCounterMonitor bufferMonitor )
     {
         if ( !txStream.hasNext() )
         {
@@ -631,7 +646,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         {
             buffer.writeByte( datasourceId.get( tx.first() ) );
             buffer.writeLong( tx.second() );
-            BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer );
+            BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer, bufferMonitor );
             tx.third().extract( blockBuffer );
             blockBuffer.done();
         }

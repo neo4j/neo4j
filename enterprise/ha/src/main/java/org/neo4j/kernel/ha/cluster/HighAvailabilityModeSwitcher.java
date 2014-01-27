@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
@@ -90,6 +89,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Functions.withDefaults;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -317,7 +317,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 MasterImpl masterImpl = new MasterImpl( spi, logging, config );
 
                 MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                        new BranchDetectingTxVerifier( graphDb ) );
+                        new BranchDetectingTxVerifier( graphDb ),
+                        graphDb.getDependencyResolver().resolveDependency( Monitors.class ));
                 haCommunicationLife.add( masterImpl );
                 haCommunicationLife.add( masterServer );
                 assignMaster( masterImpl );
@@ -360,7 +361,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
-                config.get( HaSettings.com_chunk_size ).intValue() );
+                config.get( HaSettings.com_chunk_size ).intValue()  );
         
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max wait time.
         final AtomicLong wait = new AtomicLong();
@@ -441,7 +442,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
                             graphDb.getDependencyResolver() ), xaDataSourceManager );
 
-            SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging );
+            SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
+                    graphDb.getDependencyResolver().resolveDependency( Monitors.class ) );
             assignMaster( master );
             haCommunicationLife.add( slaveImpl );
             haCommunicationLife.add( server );
@@ -622,7 +624,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
     {
-        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(), storeId, life );
+        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
+                graphDb.getDependencyResolver().resolveDependency( Monitors.class ), storeId, life );
     }
 
     private void startServicesAgain() throws Throwable

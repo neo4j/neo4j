@@ -38,6 +38,8 @@ package org.neo4j.kernel.ha.cluster.zoo;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import static org.neo4j.cluster.ClusterSettings.server_id;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -65,7 +67,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.NetworkReceiver;
@@ -83,13 +84,13 @@ import org.neo4j.kernel.ha.switchover.CompatibilityModeListener;
 import org.neo4j.kernel.ha.switchover.CompatibilityMonitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import static org.neo4j.cluster.ClusterSettings.server_id;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class ZooClient implements Lifecycle, CompatibilityMonitor
 {
@@ -816,7 +817,8 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( fileSystem, storeDir, committedTx );
+            extractor = LogExtractor.from( fileSystem, storeDir, new Monitors().newMonitor( ByteCounterMonitor.class ),
+                    committedTx );
             long tx = extractor.extractNext( NullLogBuffer.INSTANCE );
             if ( tx != committedTx )
             {

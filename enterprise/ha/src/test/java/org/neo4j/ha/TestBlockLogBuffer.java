@@ -34,6 +34,8 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.BlockLogReader;
+import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestBlockLogBuffer
 {
@@ -43,7 +45,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte byteValue = 5;
         int intValue = 1234;
@@ -82,7 +84,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         
         byte byteValue = 5;
         int intValue = 1234;
@@ -113,7 +115,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte byteValue = 5;
         int intValue = 1234;
@@ -154,7 +156,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[256];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte[] bytesValue = new byte[255];
         bytesValue[0] = 1;
@@ -175,7 +177,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[256];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte[] bytesValue = new byte[255];
         bytesValue[0] = 1;
@@ -198,7 +200,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[300];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte[] bytesValue = new byte[255];
         bytesValue[0] = 1;
@@ -223,7 +225,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte[] bytesValue = new byte[600];
         bytesValue[1] = 1;
@@ -258,7 +260,7 @@ public class TestBlockLogBuffer
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
         wrappedBuffer.resetWriterIndex();
-        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( wrappedBuffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         byte[] bytesValue = new byte[600];
         bytesValue[1] = 1;

@@ -350,7 +350,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
-
                     /*
                      * This is here just for compatibility with 1.9.5. 1.9.6 onwards does not depend on
                      * snapshots for setting the state on cluster join. But we cannot have rolling upgrades
@@ -460,7 +459,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
         slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(
-                xaDataSourceManager, logging, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+                xaDataSourceManager, logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
 
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,

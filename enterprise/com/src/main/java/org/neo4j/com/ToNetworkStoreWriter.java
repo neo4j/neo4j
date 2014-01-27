@@ -25,13 +25,18 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
+
 public class ToNetworkStoreWriter implements StoreWriter
 {
     private final ChannelBuffer targetBuffer;
+    private final ByteCounterMonitor bufferMonitor;
 
-    public ToNetworkStoreWriter( ChannelBuffer targetBuffer )
+    public ToNetworkStoreWriter( ChannelBuffer targetBuffer, Monitors monitors )
     {
         this.targetBuffer = targetBuffer;
+        bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass(), "storeCopier" );
     }
 
     @Override
@@ -43,7 +48,7 @@ public class ToNetworkStoreWriter implements StoreWriter
         Protocol.writeChars( targetBuffer, chars );
         targetBuffer.writeByte( hasData ? 1 : 0 );
         // TODO Make use of temporaryBuffer?
-        BlockLogBuffer buffer = new BlockLogBuffer( targetBuffer );
+        BlockLogBuffer buffer = new BlockLogBuffer( targetBuffer, bufferMonitor );
         int totalWritten = 2 + chars.length*2 + 1;
         if ( hasData )
         {

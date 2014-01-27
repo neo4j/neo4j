@@ -17,37 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.metrics;
 
-import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-
-import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class ToChannelBufferWriter implements MadeUpWriter
+public class MetricsLogExtensionFactory
+    extends KernelExtensionFactory<MetricsLogExtensionFactory.Dependencies>
 {
-    private final ChannelBuffer target;
-
-    public ToChannelBufferWriter( ChannelBuffer target )
+    public interface Dependencies
     {
-        this.target = target;
+        Monitors monitors();
+        Config config();
+        FileSystemAbstraction fileSystem();
+        TxManager txManager();
+    }
+
+    public MetricsLogExtensionFactory( )
+    {
+        super( "metricslog");
     }
 
     @Override
-    public void write( ReadableByteChannel data )
+    public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        BlockLogBuffer blockBuffer = new BlockLogBuffer( target, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-        try
-        {
-            blockBuffer.write( data );
-            blockBuffer.done();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return new MetricsLogExtension(dependencies.monitors(), dependencies.config(), dependencies.fileSystem(), dependencies.txManager());
     }
 }

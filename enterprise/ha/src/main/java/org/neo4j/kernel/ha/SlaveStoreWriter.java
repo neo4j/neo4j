@@ -112,7 +112,7 @@ public class SlaveStoreWriter
             public boolean accept( File file )
             {
                 // Skip log files and tx files from temporary database
-                return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !("active_tx_log tm_tx_log.1 tm_tx_log" +
+                return !file.getName().startsWith( "metrics" ) && !file.getName().equals( StringLogger.DEFAULT_NAME ) && !("active_tx_log tm_tx_log.1 tm_tx_log" +
                         ".2").contains( file.getName() );
             }
         } ) )
