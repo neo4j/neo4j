@@ -139,9 +139,8 @@ public class Monitors
             Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry = iter.next();
             if ( handlerEntry.getValue() instanceof UntaggedMonitorListenerInvocationHandler )
             {
-                UntaggedMonitorListenerInvocationHandler invocationHandler =
-                        (UntaggedMonitorListenerInvocationHandler) monitorListener;
-                if ( invocationHandler.getMonitorListener() == monitorListener )
+                if ( ((UntaggedMonitorListenerInvocationHandler)
+                        handlerEntry.getValue()).getMonitorListener() == monitorListener )
                 {
                     iter.remove();
                 }
