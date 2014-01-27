@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import static org.mockito.Mockito.*;
+import org.junit.Test;
 
 public class MonitorsTest
 {
@@ -66,7 +67,6 @@ public class MonitorsTest
         verify(listener).takesArgs( "ha", 12, obj );
     }
 
-    @Ignore
     @Test
     public void shouldUnregister() throws Exception
     {
