@@ -29,50 +29,71 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import java.util.Iterator;
 
-public class StatementContext {
+public class StatementContext
+{
     private final Statement statement;
     private final GraphDatabaseService graph;
+    private final RegisterFactory registerFactory;
 
-    public StatementContext(Statement statement, GraphDatabaseService graph) {
+    public StatementContext( Statement statement, GraphDatabaseService graph, RegisterFactory registerFactory )
+    {
         this.statement = statement;
         this.graph = graph;
+        this.registerFactory = registerFactory;
     }
 
-    public ReadOperations read() {
+    public StatementContext( Statement statement, GraphDatabaseService graph )
+    {
+        this( statement, graph, ArrayRegisters.FACTORY );
+    }
+
+    public ReadOperations read()
+    {
         return statement.readOperations();
     }
 
-    public PrimitiveLongIterator FAKEgetAllNodes() {
+
+    public RegisterFactory registerFactory()
+    {
+        return registerFactory;
+
+    }
+    public PrimitiveLongIterator FAKE_nodeGetAll()
+    {
         final Iterator<Node> allNodes = graph.getAllNodes().iterator();
-        return new PrimitiveLongIterator() {
+        return new PrimitiveLongIterator()
+        {
             @Override
-            public boolean hasNext() {
+            public boolean hasNext()
+            {
                 return allNodes.hasNext();
             }
 
             @Override
-            public long next() {
+            public long next()
+            {
                 return allNodes.next().getId();
             }
         };
     }
 
-    public PrimitiveLongIterator FAKEgetNodesRelatedBy(long nodeId, Direction direction) {
+    public PrimitiveLongIterator FAKE_nodeGetRelated( long nodeId, Direction direction )
+    {
         final Node nodeById = graph.getNodeById(nodeId);
         final Iterator<Relationship> relationships = nodeById.getRelationships(direction).iterator();
-        return new PrimitiveLongIterator() {
+        return new PrimitiveLongIterator()
+        {
             @Override
-            public boolean hasNext() {
+            public boolean hasNext()
+            {
                 return relationships.hasNext();
             }
 
             @Override
-            public long next() {
+            public long next()
+            {
                 return relationships.next().getOtherNode(nodeById).getId();
             }
         };
     }
-
-
-
 }

@@ -19,36 +19,44 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
+public final class ObjectRegister implements Register
+{
+    private final Registers registers;
+    private final int idx;
 
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-
-public class AllNodesScanOp implements Operator {
-
-    private final EntityRegister nodeRegister;
-    private final PrimitiveLongIterator allNodes;
-
-    public AllNodesScanOp( StatementContext ctx, EntityRegister nodeRegister ) {
-        this.nodeRegister = nodeRegister;
-        this.allNodes = ctx.FAKE_nodeGetAll();
+    public ObjectRegister( Registers registers, int idx )
+    {
+        this.registers = registers;
+        this.idx = idx;
     }
 
     @Override
-    public void open() {
+    public Registers registers()
+    {
+        return registers;
     }
 
     @Override
-    public boolean next() {
-        if ( !allNodes.hasNext() )
-        {
-            return false;
-        }
-
-        nodeRegister.setEntity( allNodes.next() );
-
-        return true;
+    public Object getObject()
+    {
+        return registers.getObjectRegister( idx );
     }
 
     @Override
-    public void close() {
+    public void setObject( Object value )
+    {
+        registers.setObjectRegister( idx, value );
+    }
+
+    @Override
+    public void copyFrom( Registers registers )
+    {
+        setObject( registers.getObjectRegister( idx ) );
+    }
+
+    @Override
+    public void copyTo( Registers registers )
+    {
+        registers.setObjectRegister( idx, getObject() );
     }
 }
