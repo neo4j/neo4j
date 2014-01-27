@@ -30,7 +30,7 @@ case object Reduce extends Function {
     semanticCheck(ctx, invocation)
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    SemanticError(s"${name}(...) requires '| expression' (an accumulation expression)", invocation.token)
+    SemanticError(s"${name}(...) requires '| expression' (an accumulation expression)", invocation.position)
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = ???
 }

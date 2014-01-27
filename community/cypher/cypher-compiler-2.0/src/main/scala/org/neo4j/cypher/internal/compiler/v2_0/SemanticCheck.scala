@@ -28,8 +28,8 @@ case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticError])
 
 
 trait SemanticChecking {
-  protected def when(pred: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
-    if (pred)
+  protected def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
+    if (condition)
       check(state)
     else
       SemanticCheckResult.success(state)

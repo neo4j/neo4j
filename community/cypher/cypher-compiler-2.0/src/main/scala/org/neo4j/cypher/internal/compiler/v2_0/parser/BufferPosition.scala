@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0
+package org.neo4j.cypher.internal.compiler.v2_0.parser
 
-import org.parboiled.Context
+import org.neo4j.cypher.internal.compiler.v2_0._
 import org.parboiled.buffers.InputBuffer
-import org.parboiled.support.IndexRange
+import org.parboiled.Context
 
 object BufferPosition {
   def apply(buffer: InputBuffer, offset: Int): InputPosition = {
@@ -30,9 +30,7 @@ object BufferPosition {
   }
 }
 
-object ContextToken {
-  def apply(ctx: Context[Any]): InputToken = ContextToken(ctx, ctx.getMatchRange)
-  def apply(ctx: Context[Any], range: IndexRange): InputToken = ContextToken(ctx, range.start, range.end)
-  def apply(ctx: Context[Any], start: Int, end: Int): InputToken =
-    new InputToken(BufferPosition(ctx.getInputBuffer, start), BufferPosition(ctx.getInputBuffer, end))
+object ContextPosition {
+  def apply(ctx: Context[Any]): InputPosition =
+    BufferPosition(ctx.getInputBuffer, ctx.getMatchRange.start)
 }

@@ -22,21 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-sealed trait SetItem extends AstNode with SemanticCheckable
+sealed trait SetItem extends ASTNode with SemanticCheckable
 
-case class SetPropertyItem(property: Property, expression: Expression)(val token: InputToken) extends SetItem {
+case class SetPropertyItem(property: Property, expression: Expression)(val position: InputPosition) extends SetItem {
   def semanticCheck =
     property.semanticCheck(Expression.SemanticContext.Simple) then
     expression.semanticCheck(Expression.SemanticContext.Simple)
 }
 
-case class SetLabelItem(expression: Expression, labels: Seq[Identifier])(val token: InputToken) extends SetItem {
+case class SetLabelItem(expression: Expression, labels: Seq[Identifier])(val position: InputPosition) extends SetItem {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTNode.covariant)
 }
 
-case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression)(val token: InputToken) extends SetItem {
+case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression)(val position: InputPosition) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
     identifier.expectType(CTNode.covariant | CTRelationship.covariant) then

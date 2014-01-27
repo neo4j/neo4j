@@ -23,7 +23,7 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-case class Collection(expressions: Seq[Expression])(val token: InputToken) extends Expression {
+case class Collection(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
@@ -32,14 +32,14 @@ case class Collection(expressions: Seq[Expression])(val token: InputToken) exten
   }
 }
 
-case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression])(val token: InputToken)
+case class CollectionSlice(collection: Expression, from: Option[Expression], to: Option[Expression])(val position: InputPosition)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =
     collection.semanticCheck(ctx) then
     collection.expectType(CTCollection(CTAny).covariant) then
     when(from.isEmpty && to.isEmpty) {
-      SemanticError("The start or end (or both) is required for a collection slice", token)
+      SemanticError("The start or end (or both) is required for a collection slice", position)
     } then
     from.semanticCheck(ctx) then
     from.expectType(CTInteger.covariant) then
@@ -48,7 +48,7 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
     specifyType(collection.types)
 }
 
-case class CollectionIndex(collection: Expression, idx: Expression)(val token: InputToken)
+case class CollectionIndex(collection: Expression, idx: Expression)(val position: InputPosition)
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =

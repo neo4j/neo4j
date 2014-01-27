@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-sealed trait Clause extends AstNode with SemanticCheckable {
+sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
 }
 
@@ -52,13 +52,13 @@ sealed trait ClosingClause extends Clause {
 }
 
 
-case class Start(items: Seq[StartItem], where: Option[Where])(val token: InputToken) extends Clause {
+case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   val name = "START"
 
   def semanticCheck = items.semanticCheck then where.semanticCheck
 }
 
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where])(val token: InputToken) extends Clause with SemanticChecking {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
   def name = "MATCH"
 
   def semanticCheck =
@@ -67,7 +67,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
       where.semanticCheck
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val token: InputToken) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {
   def name = "MERGE"
 
   def semanticCheck =
@@ -75,25 +75,25 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val token: InputTo
     actions.semanticCheck
 }
 
-case class Create(pattern: Pattern)(val token: InputToken) extends UpdateClause {
+case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   def name = "CREATE"
 
   def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create)
 }
 
-case class CreateUnique(pattern: Pattern)(val token: InputToken) extends UpdateClause {
+case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   def name = "CREATE UNIQUE"
 
   def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create)
 }
 
-case class SetClause(items: Seq[SetItem])(val token: InputToken) extends UpdateClause {
+case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {
   def name = "SET"
 
   def semanticCheck = items.semanticCheck
 }
 
-case class Delete(expressions: Seq[Expression])(val token: InputToken) extends UpdateClause {
+case class Delete(expressions: Seq[Expression])(val position: InputPosition) extends UpdateClause {
   def name = "DELETE"
 
   def semanticCheck =
@@ -103,17 +103,17 @@ case class Delete(expressions: Seq[Expression])(val token: InputToken) extends U
 
   def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
-      e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.token)
+      e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
     }
 }
 
-case class Remove(items: Seq[RemoveItem])(val token: InputToken) extends UpdateClause {
+case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends UpdateClause {
   def name = "REMOVE"
 
   def semanticCheck = items.semanticCheck
 }
 
-case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[Clause])(val token: InputToken) extends UpdateClause with SemanticChecking {
+case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
   def name = "FOREACH"
 
   def semanticCheck =
@@ -121,7 +121,7 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
     expression.expectType(CTCollection(CTAny).covariant) then withScopedState {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
       identifier.declare(possibleInnerTypes) then updates.semanticCheck
-    } then updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.token))
+    } then updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position))
 }
 
 case class With(
@@ -130,7 +130,7 @@ case class With(
     orderBy: Option[OrderBy],
     skip: Option[Skip],
     limit: Option[Limit],
-    where: Option[Where])(val token: InputToken) extends ClosingClause
+    where: Option[Where])(val position: InputPosition) extends ClosingClause
 {
   def name = "WITH"
 
@@ -139,7 +139,7 @@ case class With(
     checkAliasedReturnItems
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
-    case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.token))
+    case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
 }
@@ -149,6 +149,6 @@ case class Return(
     returnItems: ReturnItems,
     orderBy: Option[OrderBy],
     skip: Option[Skip],
-    limit: Option[Limit])(val token: InputToken) extends ClosingClause {
+    limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
   def name = "RETURN"
 }

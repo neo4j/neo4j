@@ -26,10 +26,7 @@ import org.scalatest.Assertions
 
 class ExpressionTest extends Assertions {
 
-  val expression = new Expression() {
-    val token = DummyToken(0, 1)
-    def semanticCheck(ctx: Expression.SemanticContext) = ???
-  }
+  val expression = DummyExpression(CTAny, DummyPosition(0))
 
   @Test
   def shouldReturnCalculatedType() {
@@ -59,7 +56,7 @@ class ExpressionTest extends Assertions {
     )(SemanticState.clean)
 
     assert(result.errors.size === 1)
-    assert(result.errors.head.token === expression.token)
+    assert(result.errors.head.position === expression.position)
     assert(expression.types(result.state).isEmpty)
   }
 }

@@ -23,18 +23,18 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 
 sealed trait Command extends Statement
 
-case class CreateIndex(label: Identifier, property: Identifier)(val token: InputToken) extends Command {
+case class CreateIndex(label: Identifier, property: Identifier)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()
 }
 
-case class DropIndex(label: Identifier, property: Identifier)(val token: InputToken) extends Command {
+case class DropIndex(label: Identifier, property: Identifier)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()
 }
 
-case class CreateUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier)(val token: InputToken) extends Command {
+case class CreateUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()
 }
 
-case class DropUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier)(val token: InputToken) extends Command {
+case class DropUniqueConstraint(id: Identifier, label: Identifier, idForProperty: Identifier, propertyKey: Identifier)(val position: InputPosition) extends Command {
   def semanticCheck = Seq()
 }

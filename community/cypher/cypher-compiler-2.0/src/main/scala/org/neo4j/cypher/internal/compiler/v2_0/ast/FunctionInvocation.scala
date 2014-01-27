@@ -23,20 +23,20 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import Expression._
 
 object FunctionInvocation {
-  def apply(identifier: Identifier, argument: Expression)(token: InputToken): FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(argument))(token)
+  def apply(identifier: Identifier, argument: Expression)(position: InputPosition): FunctionInvocation =
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(argument))(position)
   def apply(left: Expression, identifier: Identifier, right: Expression): FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(left, right))(identifier.token)
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(left, right))(identifier.position)
   def apply(expression: Expression, identifier: Identifier): FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression))(identifier.token)
+    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression))(identifier.position)
 }
 
-case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression])(val token: InputToken) extends Expression {
+case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression])(val position: InputPosition) extends Expression {
   val name = identifier.name
   val function = Function.lookup.get(name.toLowerCase)
 
   def semanticCheck(ctx: SemanticContext) = function match {
-    case None    => SemanticError(s"Unknown function '$name'", token)
+    case None    => SemanticError(s"Unknown function '$name'", position)
     case Some(f) => f.semanticCheckHook(ctx, this)
   }
 }

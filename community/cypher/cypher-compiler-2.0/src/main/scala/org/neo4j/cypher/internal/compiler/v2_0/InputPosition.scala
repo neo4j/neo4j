@@ -32,30 +32,9 @@ class InputPosition(val offset: Int, val line: Int, val column: Int) {
   override def toString = "line " + line + ", column " + column
 }
 
-class InputToken(val startPosition: InputPosition, val endPosition: InputPosition) extends Equals {
-  override def hashCode = 41 * startPosition.hashCode * endPosition.hashCode
-  override def equals(that: Any): Boolean = that match {
-    case that: InputToken =>
-      (that canEqual this) && startPosition == that.startPosition && endPosition == that.endPosition
-    case _ =>
-      false
-  }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputToken]
-
-  def startOnly: InputToken = new InputToken(startPosition, startPosition)
-  def endOnly: InputToken = new InputToken(endPosition, endPosition)
-
-  override def toString: String = s"InputToken{start=${startPosition.offset},end=${endPosition.offset}}"
-}
-
-object InputToken {
-  implicit object InputTokenOrdering extends Ordering[InputToken] {
-    def compare(t1: InputToken, t2: InputToken) = {
-      val comp = t1.startPosition.offset.compare(t2.startPosition.offset)
-      if (comp != 0)
-        comp
-      else
-        t1.endPosition.offset.compare(t2.endPosition.offset)
-    }
+object InputPosition {
+  implicit object InputPositionOrdering extends Ordering[InputPosition] {
+    def compare(p1: InputPosition, p2: InputPosition) =
+      p1.offset.compare(p2.offset)
   }
 }

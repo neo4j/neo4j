@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 
-case class OrderBy(sortItems: Seq[SortItem])(val token: InputToken) extends AstNode with SemanticCheckable {
+case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 }
 
-sealed trait SortItem extends AstNode with SemanticCheckable {
+sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 }
 
-case class AscSortItem(expression: Expression)(val token: InputToken) extends SortItem
-case class DescSortItem(expression: Expression)(val token: InputToken) extends SortItem
+case class AscSortItem(expression: Expression)(val position: InputPosition) extends SortItem
+case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem

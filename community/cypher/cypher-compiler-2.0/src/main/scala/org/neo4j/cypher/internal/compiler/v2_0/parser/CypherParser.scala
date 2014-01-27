@@ -47,11 +47,11 @@ case class CypherParser() extends Parser
           } else {
             error match {
               case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-              case _                                => error.getClass.getSimpleName
+              case _                               => error.getClass.getSimpleName
             }
           }
           val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          throw new SyntaxException(s"$message ($position)", text, error.getStartIndex)
+          throw new SyntaxException(s"$message ($position)", text, position.offset)
         }
       }
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
@@ -62,7 +62,7 @@ case class CypherParser() extends Parser
   def parseToQuery(query: String): AbstractQuery = {
     val statement = parse(query)
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
-      throw new SyntaxException(s"${error.msg} (${error.token.startPosition})", query, error.token.startPosition.offset)
+      throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }
     ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
   }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 import org.scalatest.Assertions
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
-import org.neo4j.cypher.internal.compiler.v2_0.{BufferPosition, InvalidInputErrorFormatter}
+import org.neo4j.cypher.internal.compiler.v2_0.InvalidInputErrorFormatter
 
 trait ParserTest[T, J] extends Assertions {
 

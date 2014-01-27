@@ -57,7 +57,7 @@ object Expression {
 
 import Expression._
 
-abstract class Expression extends AstNode with SemanticChecking {
+abstract class Expression extends ASTNode with SemanticChecking {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def types: TypeGenerator = s => s.expressionType(this).actual
@@ -74,7 +74,7 @@ abstract class Expression extends AstNode with SemanticChecking {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(this).specified.mkString(", ", " or ")
         val expectedTypesString = possibleTypes.mkString(", ", " or ")
-        SemanticCheckResult.error(ss, SemanticError(s"Type mismatch: expected $expectedTypesString but was $existingTypesString", this.token))
+        SemanticCheckResult.error(ss, SemanticError(s"Type mismatch: expected $expectedTypesString but was $existingTypesString", position))
       case (ss, _)             =>
         SemanticCheckResult.success(ss)
     }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 
 sealed trait Query extends Statement
 
-case class SingleQuery(clauses: Seq[Clause])(val token: InputToken) extends Query {
+case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends Query {
   assert(clauses.nonEmpty)
 
   def semanticCheck: SemanticCheck = checkOrder(clauses) then checkClauses
@@ -35,11 +35,11 @@ case class SingleQuery(clauses: Seq[Clause])(val token: InputToken) extends Quer
           case Seq(_: With, _: Start) =>
             None
           case Seq(clause, start: Start) =>
-            Some(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.token, start.token))
+            Some(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.position, start.position))
           case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
-            Some(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.token, match1.token))
+            Some(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.position, match1.position))
           case Seq(clause: Return, _) =>
-            Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.token))
+            Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.position))
           case Seq(_: UpdateClause, _: UpdateClause) =>
             None
           case Seq(_: UpdateClause, _: With) =>
@@ -47,7 +47,7 @@ case class SingleQuery(clauses: Seq[Clause])(val token: InputToken) extends Quer
           case Seq(_: UpdateClause, _: Return) =>
             None
           case Seq(update: UpdateClause, clause) =>
-            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.token, update.token))
+            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position, update.position))
           case _ =>
             None
         }
@@ -60,7 +60,7 @@ case class SingleQuery(clauses: Seq[Clause])(val token: InputToken) extends Quer
       case _: Return =>
         None
       case clause =>
-        Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.token))
+        Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
     }
 
     SemanticCheckResult(s, errors ++ lastError)
@@ -95,7 +95,7 @@ trait Union extends Query {
     case (_: SingleQuery, _)                  => None
     case (_: UnionAll, _: UnionAll)           => None
     case (_: UnionDistinct, _: UnionDistinct) => None
-    case _                                    => Some(SemanticError("Invalid combination of UNION and UNION ALL", token))
+    case _                                    => Some(SemanticError("Invalid combination of UNION and UNION ALL", position))
   }
 
   def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
@@ -105,5 +105,5 @@ trait Union extends Query {
   }
 }
 
-case class UnionAll(statement: Query, query: SingleQuery)(val token: InputToken) extends Union
-case class UnionDistinct(statement: Query, query: SingleQuery)(val token: InputToken) extends Union
+case class UnionAll(statement: Query, query: SingleQuery)(val position: InputPosition) extends Union
+case class UnionDistinct(statement: Query, query: SingleQuery)(val position: InputPosition) extends Union

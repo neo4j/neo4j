@@ -33,9 +33,9 @@ class CollectionSliceTest extends Assertions {
   @Test
   def shouldReturnCollectionTypesOfExpression() {
     val slice = CollectionSlice(dummyCollection,
-      Some(SignedIntegerLiteral("1")(DummyToken(5,6))),
-      Some(SignedIntegerLiteral("2")(DummyToken(7,8)))
-    )(DummyToken(4, 8))
+      Some(SignedIntegerLiteral("1")(DummyPosition(5))),
+      Some(SignedIntegerLiteral("2")(DummyPosition(7)))
+    )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
@@ -47,21 +47,21 @@ class CollectionSliceTest extends Assertions {
     val slice = CollectionSlice(dummyCollection,
       None,
       None
-    )(DummyToken(4, 8))
+    )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.token)), result.errors)
+    assertEquals(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)), result.errors)
   }
 
   @Test
   def shouldRaiseErrorIfStartingFromFraction() {
-    val to = DoubleLiteral("1.3")(DummyToken(5,6))
+    val to = DoubleLiteral("1.3")(DummyPosition(5))
     val slice = CollectionSlice(dummyCollection,
       None,
       Some(to)
-    )(DummyToken(4, 8))
+    )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", to.token)), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", to.position)), result.errors)
   }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
-import org.neo4j.cypher.internal.compiler.v2_0.InputToken
+import org.neo4j.cypher.internal.compiler.v2_0._
 
-trait AstNode {
-  def token: InputToken
+trait ASTNode {
+  def position: InputPosition
 }

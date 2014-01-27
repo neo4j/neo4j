@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-case class Limit(expression: Expression)(val token: InputToken) extends AstNode with SemanticCheckable {
+case class Limit(expression: Expression)(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
     expression.expectType(CTInteger.covariant)

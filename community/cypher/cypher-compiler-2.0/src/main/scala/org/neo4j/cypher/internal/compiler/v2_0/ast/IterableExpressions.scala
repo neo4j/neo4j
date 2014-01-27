@@ -36,12 +36,12 @@ trait FilteringExpression extends Expression {
 
   protected def checkPredicateDefined =
     when (innerPredicate.isEmpty) {
-      SemanticError(s"$name(...) requires a WHERE predicate", token)
+      SemanticError(s"$name(...) requires a WHERE predicate", position)
     }
 
   protected def checkPredicateNotDefined =
     when (innerPredicate.isDefined) {
-      SemanticError(s"$name(...) should not contain a WHERE predicate", token)
+      SemanticError(s"$name(...) should not contain a WHERE predicate", position)
     }
 
   protected def possibleInnerTypes: TypeGenerator = s =>
@@ -56,7 +56,7 @@ trait FilteringExpression extends Expression {
 }
 
 
-case class FilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends FilteringExpression {
+case class FilterExpression(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends FilteringExpression {
   val name = "filter"
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -70,7 +70,7 @@ case class ExtractExpression(
     identifier: Identifier,
     expression: Expression,
     innerPredicate: Option[Expression],
-    extractExpression: Option[Expression])(val token: InputToken) extends FilteringExpression
+    extractExpression: Option[Expression])(val position: InputPosition) extends FilteringExpression
 {
   val name = "extract"
 
@@ -82,7 +82,7 @@ case class ExtractExpression(
 
   private def checkExtractExpressionDefined =
     when (extractExpression.isEmpty) {
-      SemanticError(s"$name(...) requires '| expression' (an extract expression)", token)
+      SemanticError(s"$name(...) requires '| expression' (an extract expression)", position)
     }
 
   private def checkInnerExpression: SemanticCheck =
@@ -101,7 +101,7 @@ case class ListComprehension(
     identifier: Identifier,
     expression: Expression,
     innerPredicate: Option[Expression],
-    extractExpression: Option[Expression])(val token: InputToken) extends FilteringExpression
+    extractExpression: Option[Expression])(val position: InputPosition) extends FilteringExpression
 {
   val name = "[...]"
 
@@ -127,23 +127,23 @@ sealed trait IterablePredicateExpression extends FilteringExpression {
     this.specifyType(CTBoolean)
 }
 
-case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
+case class AllIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
   val name = "all"
 }
 
-case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
+case class AnyIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
   val name = "any"
 }
 
-case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
+case class NoneIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
   val name = "none"
 }
 
-case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val token: InputToken) extends IterablePredicateExpression {
+case class SingleIterablePredicate(identifier: Identifier, expression: Expression, innerPredicate: Option[Expression])(val position: InputPosition) extends IterablePredicateExpression {
   val name = "single"
 }
 
-case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val token: InputToken) extends Expression {
+case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) then
     collection.semanticCheck(ctx) then
