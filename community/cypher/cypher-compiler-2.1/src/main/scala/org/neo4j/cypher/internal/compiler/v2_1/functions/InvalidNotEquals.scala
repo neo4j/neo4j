@@ -31,5 +31,5 @@ case object InvalidNotEquals extends Function with SimpleTypedFunction {
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     super.semanticCheck(ctx, invocation) then
-    SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.token)
+    SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", invocation.position)
 }

@@ -66,12 +66,15 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     /**
      * Updates the delegate for this handler, also {@link #harden() hardens} instances
      * {@link #cement(Object) cemented} from the last call to {@link #setDelegate(Object)}.
+     * This call will also dereference the {@link Concrete}, such that future calls to {@link #harden()}
+     * cannot affect any reference received from {@link #cement()} prior to this call.
      * @param delegate the new delegate to set.
      */
     public void setDelegate( T delegate )
     {
         this.delegate = delegate;
         harden();
+        concrete.invalidate();
     }
 
     /**
@@ -80,10 +83,10 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      * will see the current delegate.
      */
     @SuppressWarnings( "unchecked" )
+
     public void harden()
     {
         ((Concrete<T>)Proxy.getInvocationHandler( concrete.evaluate() )).set( delegate );
-        concrete.invalidate();
     }
     
     @Override

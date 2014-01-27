@@ -17,11 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast
+package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
+import org.parboiled.buffers.InputBuffer
+import org.parboiled.Context
 
-case class True()(val position: InputPosition) extends Expression with SimpleTypedExpression {
-  protected def possibleTypes = CTBoolean
+object BufferPosition {
+  def apply(buffer: InputBuffer, offset: Int): InputPosition = {
+    val position = buffer.getPosition(offset)
+    new InputPosition(offset, position.line, position.column)
+  }
+}
+
+object ContextPosition {
+  def apply(ctx: Context[Any]): InputPosition =
+    BufferPosition(ctx.getInputBuffer, ctx.getMatchRange.start)
 }

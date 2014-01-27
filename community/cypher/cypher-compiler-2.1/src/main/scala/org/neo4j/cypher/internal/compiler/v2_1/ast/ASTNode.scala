@@ -17,22 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.parboiled.Context
-import org.parboiled.buffers.InputBuffer
-import org.parboiled.support.IndexRange
+import org.neo4j.cypher.internal.compiler.v2_1._
 
-object BufferPosition {
-  def apply(buffer: InputBuffer, offset: Int): InputPosition = {
-    val position = buffer.getPosition(offset)
-    new InputPosition(offset, position.line, position.column)
-  }
-}
-
-object ContextToken {
-  def apply(ctx: Context[Any]): InputToken = ContextToken(ctx, ctx.getMatchRange)
-  def apply(ctx: Context[Any], range: IndexRange): InputToken = ContextToken(ctx, range.start, range.end)
-  def apply(ctx: Context[Any], start: Int, end: Int): InputToken =
-    new InputToken(BufferPosition(ctx.getInputBuffer, start), BufferPosition(ctx.getInputBuffer, end))
+trait ASTNode {
+  def position: InputPosition
 }

@@ -36,9 +36,9 @@ public enum ElectionMessage
     public static class VotedData
         implements Serializable
     {
-        private String role;
-        private InstanceId instanceId;
-        private Comparable<Object> voteCredentials;
+        private final String role;
+        private final InstanceId instanceId;
+        private final Comparable<Object> voteCredentials;
 
         public VotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials )
         {
@@ -60,6 +60,13 @@ public enum ElectionMessage
         public Comparable<Object> getVoteCredentials()
         {
             return voteCredentials;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[role:" + role + ", instance:" + instanceId + ", credentials:" +
+                    voteCredentials + "]";
         }
     }
 }

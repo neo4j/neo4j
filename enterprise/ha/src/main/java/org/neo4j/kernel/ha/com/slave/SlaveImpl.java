@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import java.io.PrintStream;
-
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
@@ -45,14 +43,10 @@ public class SlaveImpl implements Slave
         this.xaDsm = xaDsm;
     }
 
-    private static PrintStream out = System.out;
     @Override
     public Response<Void> pullUpdates( String resource, long upToAndIncludingTxId )
     {
-        long start = System.currentTimeMillis(), delta;
         xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
-        if( (delta=System.currentTimeMillis() - start) > 100)
-            out.println("  WARN: master.pullUpdates() " + delta + "ms." );
         return ServerUtil.packResponseWithoutTransactionStream( storeId, null );
     }
 

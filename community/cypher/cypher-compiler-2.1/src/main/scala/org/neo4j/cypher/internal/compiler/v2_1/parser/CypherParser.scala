@@ -45,11 +45,11 @@ case class CypherParser() extends Parser
           } else {
             error match {
               case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-              case _                                => error.getClass.getSimpleName
+              case _                               => error.getClass.getSimpleName
             }
           }
           val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          throw new SyntaxException(s"$message ($position)", text, error.getStartIndex)
+          throw new SyntaxException(s"$message ($position)", text, position.offset)
         }
       }
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")

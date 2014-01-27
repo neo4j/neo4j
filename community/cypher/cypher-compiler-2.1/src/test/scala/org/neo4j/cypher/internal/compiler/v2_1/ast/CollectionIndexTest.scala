@@ -32,8 +32,8 @@ class CollectionIndexTest extends Assertions {
   @Test
   def shouldReturnCollectionInnerTypesOfExpression() {
     val index = CollectionIndex(dummyCollection,
-      SignedIntegerLiteral("1")(DummyToken(5,6))
-    )(DummyToken(4, 8))
+      SignedIntegerLiteral("1")(DummyPosition(5))
+    )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assertEquals(Seq(), result.errors)
@@ -43,10 +43,10 @@ class CollectionIndexTest extends Assertions {
   @Test
   def shouldRaiseErrorIfIndexingByFraction() {
     val index = CollectionIndex(dummyCollection,
-      DoubleLiteral("1.3")(DummyToken(5,6))
-    )(DummyToken(4, 8))
+      DoubleLiteral("1.3")(DummyPosition(5))
+    )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", index.idx.token)), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", index.idx.position)), result.errors)
   }
 }
