@@ -19,10 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -45,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -77,10 +72,19 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
+import ch.qos.logback.classic.LoggerContext;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -270,9 +274,11 @@ public class ClusterManager
         {
             StringBuilder result = new StringBuilder();
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
+            {
                 result.append( result.length() > 0 ? "," : "" ).append( ":" +
                         member.getDependencyResolver().resolveDependency(
                                 ClusterClient.class ).getClusterServer().getPort() );
+            }
             return result.toString();
         }
 
@@ -425,7 +431,9 @@ public class ClusterManager
             Clusters.Member member = spec.getMembers().get( serverId-1 );
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
             for (int i = 1; i < spec.getMembers().size(); i++)
+            {
                 initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
+            }
             File parent = new File( root, name );
             URI clusterUri = new URI( "cluster://" + member.getHost() );
             if ( member.isFullHaMember() )
@@ -524,7 +532,8 @@ public class ClusterManager
                 }
             }
             String state = printState( this );
-            throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds + " for " + predicate+":"+state );
+            throw new IllegalStateException( format(
+                    "Awaited condition never met, waited %s for %s:%n%s", maxSeconds, predicate, state ) );
         }
 
         /**
@@ -551,8 +560,12 @@ public class ClusterManager
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<HighlyAvailableGraphDatabase>( asList( except ) );
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
+            {
                 if ( !exceptSet.contains( db ) )
+                {
                     db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+                }
+            }
         }
     }
 
@@ -765,7 +778,9 @@ public class ClusterManager
                     if ( !exceptSet.contains( graphDatabaseService ))
                     {
                         if ( graphDatabaseService.isMaster() )
+                        {
                             return true;
+                        }
                     }
                 }
                 return false;
@@ -902,7 +917,7 @@ public class ClusterManager
     private class StartNetworkAgainKit implements RepairKit
     {
         private final HighlyAvailableGraphDatabase db;
-        private Iterable<Lifecycle> stoppedServices;
+        private final Iterable<Lifecycle> stoppedServices;
 
         StartNetworkAgainKit( HighlyAvailableGraphDatabase db, Iterable<Lifecycle> stoppedServices )
         {
@@ -923,8 +938,8 @@ public class ClusterManager
 
     private class StartDatabaseAgainKit implements RepairKit
     {
-        private int serverId;
-        private ManagedCluster cluster;
+        private final int serverId;
+        private final ManagedCluster cluster;
 
         public StartDatabaseAgainKit( ManagedCluster cluster, int serverId )
         {
