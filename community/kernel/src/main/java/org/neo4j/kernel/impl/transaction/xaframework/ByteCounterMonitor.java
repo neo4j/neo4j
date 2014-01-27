@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-public interface LogBufferMonitor
+public interface ByteCounterMonitor
 {
     void bytesWritten( long numberOfBytes );
 

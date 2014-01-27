@@ -40,9 +40,9 @@ public class DirectMappedLogBuffer implements LogBuffer
     private final ByteBuffer byteBuffer;
     private long bufferStartPosition;
 
-    private final LogBufferMonitor monitor;
+    private final ByteCounterMonitor monitor;
 
-    public DirectMappedLogBuffer( FileChannel fileChannel, LogBufferMonitor monitor ) throws IOException
+    public DirectMappedLogBuffer( FileChannel fileChannel, ByteCounterMonitor monitor ) throws IOException
     {
         this.fileChannel = fileChannel;
         this.monitor = monitor;

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
@@ -45,7 +45,7 @@ public class TestTxLogMonitoring
 
         TxLog txLog = new TxLog( theLogFile, new DefaultFileSystemAbstraction(), monitors );
         final AtomicLong bytesWritten = new AtomicLong();
-        monitors.addMonitorListener( new LogBufferMonitor()
+        monitors.addMonitorListener( new ByteCounterMonitor()
         {
             @Override
             public void bytesWritten( long numberOfBytes )

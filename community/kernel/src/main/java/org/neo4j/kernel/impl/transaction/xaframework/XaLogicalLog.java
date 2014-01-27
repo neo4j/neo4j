@@ -112,7 +112,10 @@ public class XaLogicalLog implements LogLoader
 
     private final TransactionStateFactory stateFactory;
 
-    private final LogBufferMonitor bufferMonitor;
+    // Monitors for counting bytes read/written in various parts
+    // We need separate monitors to differentiate between network/disk I/O
+    protected final ByteCounterMonitor bufferMonitor;
+    protected final ByteCounterMonitor logDeserializerMonitor;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
@@ -124,7 +127,8 @@ public class XaLogicalLog implements LogLoader
         this.cf = cf;
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
-        this.bufferMonitor = monitors.newMonitor( LogBufferMonitor.class, getClass().getName() );
+        this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
+        this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );
         this.pruneStrategy = pruneStrategy;
         this.stateFactory = stateFactory;
         this.rotateAtSize = rotateAtSize;

@@ -39,10 +39,10 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 // TODO: fixed sized logs (pre-initialize them)
@@ -57,7 +57,7 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class TxLog
 {
-    private final LogBufferMonitor bufferMonitor;
+    private final ByteCounterMonitor bufferMonitor;
     private File name = null;
     private LogBuffer logBuffer;
     private int recordCount = 0;
@@ -103,7 +103,7 @@ public class TxLog
      */
     public TxLog( File fileName, FileSystemAbstraction fileSystem, Monitors monitors ) throws IOException
     {
-        this.bufferMonitor = monitors.newMonitor( LogBufferMonitor.class, getClass().getName() );
+        this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );

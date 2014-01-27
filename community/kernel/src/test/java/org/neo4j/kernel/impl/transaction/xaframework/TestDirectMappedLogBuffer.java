@@ -171,7 +171,7 @@ public class TestDirectMappedLogBuffer
     {
         // Given
         FileChannelWithChoppyDisk mockChannel = new FileChannelWithChoppyDisk(/* that writes */2/* bytes at a time */);
-        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel, new Monitors().newMonitor( LogBufferMonitor.class ) );
+        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         // When
         writeBuffer.put( new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16} );
@@ -186,7 +186,7 @@ public class TestDirectMappedLogBuffer
     {
         // Given
         FileChannelWithChoppyDisk mockChannel = new FileChannelWithChoppyDisk(/* that writes */0/* bytes at a time */);
-        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel, new Monitors().newMonitor( LogBufferMonitor.class ) );
+        LogBuffer writeBuffer = new DirectMappedLogBuffer( mockChannel, new Monitors().newMonitor( ByteCounterMonitor.class ) );
 
         // When
         writeBuffer.put( new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16} );
@@ -226,7 +226,7 @@ public class TestDirectMappedLogBuffer
         };
 
         BreakableFileSystemAbstraction fs = new BreakableFileSystemAbstraction( new EphemeralFileSystemAbstraction(), guard );
-        DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( fs.create( new File( "log" ) ), new Monitors().newMonitor( LogBufferMonitor.class ) );
+        DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( fs.create( new File( "log" ) ), new Monitors().newMonitor( ByteCounterMonitor.class ) );
         buffer.putInt( 1 ).putInt( 2 ).putInt( 3 );
         try
         {
@@ -243,12 +243,12 @@ public class TestDirectMappedLogBuffer
     public void testMonitoringBytesWritten() throws Exception
     {
         Monitors monitors = new Monitors();
-        LogBufferMonitor monitor = monitors.newMonitor( LogBufferMonitor.class );
+        ByteCounterMonitor monitor = monitors.newMonitor( ByteCounterMonitor.class );
         DirectMappedLogBuffer buffer = new DirectMappedLogBuffer( new FileChannelWithChoppyDisk( 100 ), monitor );
 
         final AtomicLong bytesWritten = new AtomicLong();
 
-        monitors.addMonitorListener( new LogBufferMonitor()
+        monitors.addMonitorListener( new ByteCounterMonitor()
         {
             @Override
             public void bytesWritten( long numberOfBytes )
