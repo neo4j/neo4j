@@ -27,4 +27,3 @@ import org.neo4j.kernel.api.Statement
 trait ExecutionPlan {
   def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]): ExecutionResult
   def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]): ExecutionResult
-}

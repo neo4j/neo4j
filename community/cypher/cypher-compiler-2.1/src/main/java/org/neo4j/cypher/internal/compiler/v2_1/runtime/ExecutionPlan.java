@@ -20,4 +20,5 @@
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
 public interface ExecutionPlan {
+    void forEach(ResultVisitor visitor);
 }

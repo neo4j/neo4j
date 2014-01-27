@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
+/*
+This generator will create a plan for
+ */
 case class InitPlanGenerator(estimator: CardinalityEstimator, calculator: CostCalculator) extends PlanGenerator {
   def generatePlan(planContext: PlanContext, qg: QueryGraph, planTable: PlanTable): PlanTable = {
     val m = qg.maxId.allIncluding.flatMap {
