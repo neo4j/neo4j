@@ -277,7 +277,7 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    logger.debug( "Elected winner as " + data.getRole() );
+                                    logger.debug( "Elected " + winner + " as " + data.getRole() );
 
                                     // Broadcast this
                                     ClusterMessage.ConfigurationChangeState configurationChangeState = new
