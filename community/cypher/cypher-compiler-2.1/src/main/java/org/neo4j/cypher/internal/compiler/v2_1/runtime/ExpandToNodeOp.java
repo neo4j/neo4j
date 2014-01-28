@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
+import org.neo4j.cypher.internal.compiler.v2_1.spi.StatementContext;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;

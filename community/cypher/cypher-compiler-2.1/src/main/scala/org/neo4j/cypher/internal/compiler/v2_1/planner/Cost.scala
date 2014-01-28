@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.graphdb.Direction
 
+
 case class Cost(cardinality: Int, effort: Int) extends Ordered[Cost] {
   // TODO: Include effort here
   def compare(that: Cost): Int = that match {
@@ -29,8 +30,14 @@ case class Cost(cardinality: Int, effort: Int) extends Ordered[Cost] {
   }
 }
 
-trait CostEstimator {
-  def costForScan(labelId: Token): Cost
-  def costForAllNodes(): Cost
-  def costForExpandRelationship(labelId: Seq[Token], relationshipType: Seq[Token], dir: Direction): Cost
+trait CostCalculator {
+  def costForLabelScan(cardinality: Int): Cost
+  def costForAllNodes(cardinality: Int): Cost
+  def costForExpandRelationship(cardinality: Int): Cost
+}
+
+trait CardinalityEstimator {
+  def estimateLabelScan(labelId: Token): Int
+  def estimateAllNodes(): Int
+  def estimateExpandRelationship(labelId: Seq[Token], relationshipType: Seq[Token], dir: Direction): Int
 }

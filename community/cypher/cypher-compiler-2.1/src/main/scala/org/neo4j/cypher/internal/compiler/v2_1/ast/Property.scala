@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.InternalException
 
 case class Property(map: Expression, identifier: Identifier)(val position: InputPosition) extends Expression with SimpleTypedExpression {
   protected def possibleTypes = CTAny.covariant
@@ -39,7 +39,7 @@ object LegacyProperty {
       override def semanticCheck(ctx: SemanticContext): SemanticCheck = legacyOperator match {
         case "?" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.${identifier.name})) OR <ident>.${identifier.name}=<value>) if you really need the old behavior.", position)
         case "!" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null).", position)
-        case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
+        case _   => throw new InternalException(s"Invalid legacy operator $legacyOperator following access to property.")
       }
     }
 }

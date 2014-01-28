@@ -24,6 +24,7 @@ import CypherVersion._
 import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.cypher.internal.compiler.v2_1.runtime.{ExecutionPlan => ExecutionPlan_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.kernel.api.Statement
@@ -41,7 +42,7 @@ object CypherCompiler {
 
   case class VersionProxy(graph: GraphDatabaseService, defaultVersion: CypherVersion) {
     private val queryCache = new LRUCache[(CypherVersion, String), Object](getQueryCacheSize)
-    private val compiler2_1 = new compiler.v2_1.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v2_1, q), f))
+    private val compiler2_1 = new compiler.v2_1.CypherCompiler(null, (q, f) => queryCache.getOrElseUpdate((v2_1, q), f))
     private val compiler2_0 = new compiler.v2_0.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
     private val compiler1_9 = new compiler.v1_9.CypherCompiler(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
 
@@ -59,11 +60,11 @@ object CypherCompiler {
           new ExecutionPlanWrapperForV1_9(plan)
 
         case CypherVersion.v2_0 => 
-          val plan = compiler2_0.prepare(remainingQuery, new spi.v2_0.TransactionBoundPlanContext(statement, context))
+          val plan: ExecutionPlan_v2_0 = compiler2_0.prepare(remainingQuery, new spi.v2_0.TransactionBoundPlanContext(statement, context))
           new ExecutionPlanWrapperForV2_0(plan)
 
         case CypherVersion.v2_1 =>
-          val plan = compiler2_1.prepare(remainingQuery)
+          val plan:Option[ExecutionPlan_v2_1] = compiler2_1.prepare(remainingQuery)
           plan.map(p => ???).getOrElse {
             val plan = compiler2_0.prepare(remainingQuery, new spi.v2_0.TransactionBoundPlanContext(statement, context))
             new ExecutionPlanWrapperForV2_0(plan)

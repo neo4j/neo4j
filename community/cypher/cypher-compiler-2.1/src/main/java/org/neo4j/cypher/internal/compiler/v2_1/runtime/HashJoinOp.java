@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
+import org.neo4j.cypher.internal.compiler.v2_1.spi.StatementContext;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;

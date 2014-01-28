@@ -24,6 +24,8 @@ import org.neo4j.graphdb._
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.internal.compiler.v2_1.runtime._
 import collection.mutable
+import org.neo4j.cypher.internal.spi.v2_1.StatementContext
+import org.neo4j.graphdb.{Direction => GraphDirection}
 
 class OperatorTest extends ExecutionEngineHelper {
 
@@ -235,8 +237,8 @@ class OperatorTest extends ExecutionEngineHelper {
         var count = 0
         val result = Array.newBuilder[Relationship]
         while (nodes.hasNext) {
-          val current = nodes.next()
-          val relationships = current.getRelationships(Direction.OUTGOING).iterator()
+          val current: Node = nodes.next()
+          val relationships = current.getRelationships(GraphDirection.OUTGOING).iterator()
           while(relationships.hasNext()) {
             count += 1
             result += relationships.next()

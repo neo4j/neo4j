@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
 
+import org.neo4j.cypher.internal.compiler.v2_1.spi.StatementContext;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public class AllNodesScanOp implements Operator {
