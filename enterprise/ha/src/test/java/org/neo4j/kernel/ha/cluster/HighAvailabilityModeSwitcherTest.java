@@ -34,7 +34,6 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 

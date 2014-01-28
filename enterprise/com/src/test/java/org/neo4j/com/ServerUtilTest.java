@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.regex.Pattern;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -244,9 +243,9 @@ public class ServerUtilTest
     {
         private final FileSystemAbstraction fs;
         private final TargetDirectory.TestDirectory testDirectory;
-        private Queue<String> files;
+        private final Queue<String> files;
         private String nextFilePath;
-        private List<String> filesToDelete = new ArrayList<>();
+        private final List<String> filesToDelete = new ArrayList<>();
 
         public FileResourceIterator( FileSystemAbstraction fs, TargetDirectory.TestDirectory testDirectory,
                                      String... files )
@@ -304,7 +303,7 @@ public class ServerUtilTest
 
     private class StubFileSystemAbstraction implements FileSystemAbstraction
     {
-        private List<File> files = new ArrayList<>();
+        private final List<File> files = new ArrayList<>();
 
         @Override
         public FileChannel open( File fileName, String mode ) throws IOException
