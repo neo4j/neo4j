@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
  * During log rotation, any unfinished transactions in the current log need to be copied over to the

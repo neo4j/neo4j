@@ -19,7 +19,7 @@
  */
 package org.neo4j.metrics;
 
-import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class ByteCounterMetrics
     implements ByteCounterMonitor

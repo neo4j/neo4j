@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 // make package access?
 public class XaResourceManager
@@ -62,7 +63,7 @@ public class XaResourceManager
 
     public XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
             TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
-            RecoveryVerifier recoveryVerifier, String name )
+            RecoveryVerifier recoveryVerifier, String name, Monitors monitors )
     {
         this.dataSource = dataSource;
         this.tf = tf;

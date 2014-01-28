@@ -34,7 +34,7 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Test;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.BlockLogReader;
-import org.neo4j.kernel.impl.transaction.xaframework.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestBlockLogBuffer

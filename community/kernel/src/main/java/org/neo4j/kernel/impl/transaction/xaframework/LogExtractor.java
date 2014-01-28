@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static java.lang.Math.max;
 
