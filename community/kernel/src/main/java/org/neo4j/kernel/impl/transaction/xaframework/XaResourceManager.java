@@ -49,6 +49,7 @@ public class XaResourceManager
         new ArrayMap<XAResource,Xid>();
     private final ArrayMap<Xid,XidStatus> xidMap =
         new ArrayMap<Xid,XidStatus>();
+    private final TransactionMonitor transactionMonitor;
     private int recoveredTxCount = 0;
     private final Set<TransactionInfo> recoveredTransactions = new HashSet<TransactionInfo>();
 
@@ -71,6 +72,7 @@ public class XaResourceManager
         this.transactionManager = transactionManager;
         this.recoveryVerifier = recoveryVerifier;
         this.name = name;
+        this.transactionMonitor = monitors.newMonitor( TransactionMonitor.class, getClass(), dataSource.getName() );
     }
 
     public synchronized void setLogicalLog( XaLogicalLog log )
@@ -392,6 +394,7 @@ public class XaResourceManager
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
+        transactionMonitor.injectOnePhaseCommit( xid );
     }
 
     synchronized void injectTwoPhaseCommit( Xid xid ) throws XAException
@@ -407,6 +410,7 @@ public class XaResourceManager
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
+        transactionMonitor.injectTwoPhaseCommit( xid );
     }
 
     synchronized XaTransaction getXaTransaction( Xid xid ) throws XAException
@@ -506,6 +510,7 @@ public class XaResourceManager
                 recoveredTxCount--;
                 checkIfRecoveryComplete();
             }
+            transactionMonitor.transactionCommitted( xid, xaTransaction.isRecovered() );
         }
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )

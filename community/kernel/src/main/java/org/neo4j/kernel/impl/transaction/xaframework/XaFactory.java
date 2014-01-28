@@ -70,7 +70,8 @@ public class XaFactory
         }
 
         // TODO The dependencies between XaRM, LogicalLog and XaTF should be resolved to avoid the setter
-        XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier, logicalLog.getName() );
+        XaResourceManager rm = new XaResourceManager( xaDataSource, tf, txIdGenerator, txManager, recoveryVerifier,
+                logicalLog.getName(), monitors );
 
         long rotateAtSize = config.get( logical_log_rotation_threshold );
         XaLogicalLog log;
