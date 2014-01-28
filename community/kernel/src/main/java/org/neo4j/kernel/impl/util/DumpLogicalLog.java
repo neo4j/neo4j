@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -33,8 +35,6 @@ import java.util.TreeSet;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Format;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -43,6 +43,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+
+import static java.util.TimeZone.getTimeZone;
+
+import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 
 public class DumpLogicalLog
 {
@@ -53,14 +57,13 @@ public class DumpLogicalLog
         this.fileSystem = fileSystem;
     }
     
-    public int dump( String filenameOrDirectory,
-            TimeZone timeZone ) throws IOException
+    public int dump( String filenameOrDirectory, PrintStream out, TimeZone timeZone ) throws IOException
     {
         int logsFound = 0;
         for ( String fileName : filenamesOf( filenameOrDirectory, getLogPrefix() ) )
         {
             logsFound++;
-            System.out.println( "=== " + fileName + " ===" );
+            out.println( "=== " + fileName + " ===" );
             FileChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
             ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                     + Xid.MAXBQUALSIZE * 10 );
@@ -73,16 +76,19 @@ public class DumpLogicalLog
             }
             catch ( IOException ex )
             {
-                System.out.println( "Unable to read timestamp information, "
+                out.println( "Unable to read timestamp information, "
                     + "no records in logical log." );
-                System.out.println( ex.getMessage() );
+                out.println( ex.getMessage() );
                 fileChannel.close();
                 throw ex;
             }
-            System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
+            out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
             XaCommandFactory cf = instantiateCommandFactory();
-            while ( readAndPrintEntry( fileChannel, buffer, cf, timeZone ) );
+            while ( readAndPrintEntry( fileChannel, buffer, cf, out, timeZone ) )
+            {
+                ;
+            }
             fileChannel.close();
         }
         return logsFound;
@@ -94,13 +100,13 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf, TimeZone timeZone )
-            throws IOException
+    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf,
+            PrintStream out, TimeZone timeZone ) throws IOException
     {
         LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, cf );
         if ( entry != null )
         {
-            System.out.println( entry.toString( timeZone ) );
+            out.println( entry.toString( timeZone ) );
             return true;
         }
         return false;
@@ -118,18 +124,85 @@ public class DumpLogicalLog
 
     public static void main( String args[] ) throws IOException
     {
-        Pair<Iterable<String>, TimeZone> config = parseConfig( args );
-        for ( String file : config.first() )
-            new DumpLogicalLog( new DefaultFileSystemAbstraction() ).dump( file, config.other() );
+        Args arguments = new Args( args );
+        TimeZone timeZone = parseTimeZoneConfig( arguments );
+        try ( Printer printer = getPrinter( arguments ) )
+        {
+            for ( String fileAsString : arguments.orphans() )
+            {
+                new DumpLogicalLog( new DefaultFileSystemAbstraction() ).dump(
+                        fileAsString, printer.getFor( fileAsString ), timeZone );
+            }
+        }
+    }
+    
+    public static Printer getPrinter( Args args )
+    {
+        boolean toFile = args.getBoolean( "tofile", false, true ).booleanValue();
+        return toFile ? new FilePrinter() : SYSTEM_OUT_PRINTER;
+    }
+    
+    public interface Printer extends AutoCloseable
+    {
+        PrintStream getFor( String file ) throws FileNotFoundException;
+        
+        @Override
+        void close();
+    }
+    
+    private static final Printer SYSTEM_OUT_PRINTER = new Printer()
+    {
+        @Override
+        public PrintStream getFor( String file )
+        {
+            return System.out;
+        }
+
+        @Override
+        public void close()
+        {   // Don't close System.out
+        }
+    };
+    
+    private static class FilePrinter implements Printer
+    {
+        private File directory;
+        private PrintStream out;
+        
+        @Override
+        public PrintStream getFor( String file ) throws FileNotFoundException
+        {
+            File absoluteFile = new File( file ).getAbsoluteFile();
+            File dir = absoluteFile.isDirectory() ? absoluteFile : absoluteFile.getParentFile();
+            if ( !dir.equals( directory ) )
+            {
+                safeClose();
+                File dumpFile = new File( dir, "dump-logical-log.txt" );
+                System.out.println( "Redirecting the output to " + dumpFile.getPath() );
+                out = new PrintStream( dumpFile );
+                directory = dir;
+            }
+            return out;
+        }
+
+        private void safeClose()
+        {
+            if ( out != null )
+            {
+                out.close();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            safeClose();
+        }
     }
 
-    public static Pair<Iterable<String>, TimeZone> parseConfig( String[] args )
+    public static TimeZone parseTimeZoneConfig( Args arguments )
     {
-        Args arguments = new Args( args );
-        TimeZone timeZone = Format.DEFAULT_TIME_ZONE;
-        String timeZoneString = arguments.get( "timezone", null );
-        if ( timeZoneString != null ) timeZone = TimeZone.getTimeZone( timeZoneString );
-        return Pair.<Iterable<String>,TimeZone>of( arguments.orphans(), timeZone );
+        return getTimeZone( arguments.get( "timezone", DEFAULT_TIME_ZONE.getID() ) );
     }
 
     protected static String[] filenamesOf( String filenameOrDirectory, final String prefix )
@@ -173,7 +246,10 @@ public class DumpLogicalLog
             {
                 String toFind = ".v";
                 int index = string.indexOf( toFind );
-                if ( index == -1 ) return Integer.MAX_VALUE;
+                if ( index == -1 )
+                {
+                    return Integer.MAX_VALUE;
+                }
                 return Integer.valueOf( string.substring( index + toFind.length() ) );
             }
         };

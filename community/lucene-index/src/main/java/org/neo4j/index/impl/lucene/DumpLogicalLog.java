@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.TimeZone;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -41,14 +41,19 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
     public static void main( String[] args ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        Pair<Iterable<String>, TimeZone> config = parseConfig( args );
-        for ( String file : config.first() )
+        Args arguments = new Args( args );
+        TimeZone timeZome = parseTimeZoneConfig( arguments );
+        try ( Printer printer = getPrinter( arguments ) )
         {
-            int dumped = new DumpLogicalLog( fs ).dump( file, config.other() );
-            if ( dumped == 0 && isAGraphDatabaseDirectory( file ) )
-            {   // If none were found and we really pointed to a neodb directory
-                // then go to its index folder and try there.
-                new DumpLogicalLog( fs ).dump( new File( file, "index" ).getAbsolutePath(), config.other() );
+            for ( String file : arguments.orphans() )
+            {
+                int dumped = new DumpLogicalLog( fs ).dump( file, printer.getFor( file ), timeZome );
+                if ( dumped == 0 && isAGraphDatabaseDirectory( file ) )
+                {   // If none were found and we really pointed to a neodb directory
+                    // then go to its index folder and try there.
+                    new DumpLogicalLog( fs ).dump( new File( file, "index" ).getAbsolutePath(),
+                            printer.getFor( file ), timeZome );
+                }
             }
         }
     }
