@@ -237,7 +237,7 @@ public interface ConsistencyReport
         @Documented
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
-        /** This node was not found the in the expected index. */
+        /** This node was not found in the expected index. */
         @Documented
         void notIndexed( IndexRule index, Object propertyValue );
 
@@ -578,10 +578,12 @@ public interface ConsistencyReport
     interface LabelScanConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
         /** This label scan document refers to a node record that is not in use. */
+        @Override
         @Documented
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
         /** This label scan document refers to a node that does not have the expected label. */
+        @Override
         @Documented
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
@@ -589,10 +591,12 @@ public interface ConsistencyReport
     interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
     {
         /** This index entry refers to a node record that is not in use. */
+        @Override
         @Documented
         void nodeNotInUse( NodeRecord referredNodeRecord );
 
         /** This index entry refers to a node that does not have the expected label. */
+        @Override
         @Documented
         void nodeDoesNotHaveExpectedLabel( NodeRecord referredNodeRecord, long expectedLabelId );
     }
