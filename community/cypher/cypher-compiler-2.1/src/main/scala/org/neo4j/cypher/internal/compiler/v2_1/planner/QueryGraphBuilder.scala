@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast
+import org.neo4j.cypher.internal.compiler.v2_1.{CantHandleQueryException, ast}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.NodePattern
 import org.neo4j.cypher.internal.compiler.v2_1.ast.EveryPath
@@ -74,8 +74,10 @@ object QueryGraphBuilder {
           }).unzip
 
           QueryGraph(Id(lastNode), edges.flatten, selections.flatten, Seq.empty)
+        case _ => throw new CantHandleQueryException()
       }
+
     case _ =>
-      ???
+      throw new CantHandleQueryException()
   }
 }

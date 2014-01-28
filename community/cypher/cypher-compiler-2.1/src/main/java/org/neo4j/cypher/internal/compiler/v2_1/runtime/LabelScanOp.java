@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
+import org.neo4j.cypher.internal.compiler.v2_1.spi.StatementContext;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public class LabelScanOp implements Operator
 {
     private final PrimitiveLongIterator nodes;
-    private final EntityRegister nodeRegister;
+    private EntityRegister nodeRegister;
 
     public LabelScanOp( StatementContext ctx, int labelToken, EntityRegister nodeRegister )
     {
         this.nodeRegister = nodeRegister;
-        nodes = ctx.read().nodesGetForLabel( labelToken );
+        nodes = ctx.nodesGetForLabel(labelToken);
     }
 
     @Override

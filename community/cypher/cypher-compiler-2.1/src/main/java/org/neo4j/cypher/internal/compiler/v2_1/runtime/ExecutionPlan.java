@@ -17,17 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.runtime;
 
-trait PlanGeneratorTest {
-  case class Plan(coveredIds: Set[Id], name: String, effort: Cost) extends AbstractPlan {
-    def lhs: Option[AbstractPlan] = ???
-
-    def rhs: Option[AbstractPlan] = ???
-  }
-
-  def table(plans: Plan*): PlanTable = new PlanTable(plans)
-
-  def plan(ids: Set[Int], name: String, effort: Int) = Plan(ids.map(Id.apply), name, Cost(effort, 1))
-
+public interface ExecutionPlan {
+    void forEach(ResultVisitor visitor);
 }

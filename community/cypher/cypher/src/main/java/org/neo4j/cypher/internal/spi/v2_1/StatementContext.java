@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.runtime;
+package org.neo4j.cypher.internal.spi.v2_1;
 
+import org.neo4j.cypher.internal.compiler.v2_1.runtime.ArrayRegisters;
+import org.neo4j.cypher.internal.compiler.v2_1.runtime.RegisterFactory;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import java.util.Iterator;
 
-public class StatementContext
-{
+public class StatementContext implements org.neo4j.cypher.internal.compiler.v2_1.spi.StatementContext {
     private final Statement statement;
     private final GraphDatabaseService graph;
     private final RegisterFactory registerFactory;
@@ -46,12 +46,6 @@ public class StatementContext
     {
         this( statement, graph, ArrayRegisters.FACTORY );
     }
-
-    public ReadOperations read()
-    {
-        return statement.readOperations();
-    }
-
 
     public RegisterFactory registerFactory()
     {
@@ -95,5 +89,11 @@ public class StatementContext
                 return relationships.next().getOtherNode(nodeById).getId();
             }
         };
+    }
+
+
+    @Override
+    public PrimitiveLongIterator nodesGetForLabel(int labelToken) {
+        return statement.readOperations().nodesGetForLabel(labelToken);
     }
 }

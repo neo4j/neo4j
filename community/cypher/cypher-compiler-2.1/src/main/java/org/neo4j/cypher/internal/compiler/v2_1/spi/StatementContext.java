@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.spi;
 
-trait PlanGeneratorTest {
-  case class Plan(coveredIds: Set[Id], name: String, effort: Cost) extends AbstractPlan {
-    def lhs: Option[AbstractPlan] = ???
+import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-    def rhs: Option[AbstractPlan] = ???
-  }
+public interface StatementContext {
 
-  def table(plans: Plan*): PlanTable = new PlanTable(plans)
+    PrimitiveLongIterator FAKE_nodeGetAll();
 
-  def plan(ids: Set[Int], name: String, effort: Int) = Plan(ids.map(Id.apply), name, Cost(effort, 1))
+    PrimitiveLongIterator FAKE_nodeGetRelated(long fromNodeId, Direction dir);
 
+    PrimitiveLongIterator nodesGetForLabel(int labelToken);
 }

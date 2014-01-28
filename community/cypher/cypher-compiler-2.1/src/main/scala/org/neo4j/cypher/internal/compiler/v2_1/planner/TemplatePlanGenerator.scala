@@ -20,7 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.CantHandleQueryException
 
-trait PlanGenerator {
-  def generatePlan(planContext: PlanContext, qg: QueryGraph, planTable: PlanTable): PlanTable
+/*
+The meta plan generator creates a plan by using other plan generators as
+tools.
+ */
+class TemplatePlanGenerator(estimator: CardinalityEstimator, calculator: CostCalculator) {
+
+  val init = new InitPlanGenerator(estimator, calculator)
+  val expansion = new ExpansionPlanGenerator(calculator, estimator)
+  val culler = new CullingPlanGenerator()
+
+  def generatePlan(planContext: PlanContext, qg: QueryGraph): AbstractPlan = {
+    var planTable: PlanTable = init.generatePlan(planContext, qg, PlanTable.empty)
+
+    while (planTable.size > 1) {
+      val expandedPlan = expansion.generatePlan(planContext, qg, planTable)
+      val culledPlan = culler.generatePlan(planContext, qg, expandedPlan)
+
+      if(culledPlan == planTable)
+        throw new CantHandleQueryException()
+
+      planTable = culledPlan
+    }
+
+    planTable.plans.head
+  }
 }
