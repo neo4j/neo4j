@@ -19,21 +19,32 @@
  */
 package org.neo4j.ha;
 
-import static junit.framework.Assert.assertFalse;
-import static junit.framework.Assert.assertTrue;
-
 import java.io.File;
 
+import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+import org.neo4j.test.ha.ClusterManager.RepairKit;
+
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class TestBranchedData
 {
@@ -62,6 +73,69 @@ public class TestBranchedData
                     new File( dir, "branched-" + timestamp ).exists() );
             assertTrue( "directory " + timestamp + " is not there",
                     BranchedDataPolicy.getBranchedDataDirectory( dir, timestamp ).exists() );
+        }
+    }
+    
+    @Test
+    public void shouldCopyStoreFromMasterIfBranched() throws Throwable
+    {
+        // GIVEN
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 3 ), dir, stringMap() ) );
+        life.start();
+        ManagedCluster cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
+        createNode( cluster.getMaster(), "A" );
+        cluster.sync();
+        
+        // WHEN
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+        String storeDir = slave.getStoreDir();
+        RepairKit starter = cluster.shutdown( slave );
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        HighlyAvailableGraphDatabase otherSlave = cluster.getAnySlave();
+        createNode( master, "B1" );
+        createNode( master, "C" );
+        createTransaction( storeDir, "B2" );
+        starter.repair();
+        
+        // THEN
+        cluster.await( allSeesAllAsAvailable() );
+        slave = cluster.getAnySlave( otherSlave );
+        slave.beginTx().finish();
+    }
+    
+    private final LifeSupport life = new LifeSupport();
+    
+    @After
+    public void after()
+    {
+        life.shutdown();
+    }
+
+    private void createTransaction( String storeDir, String name )
+    {
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        try
+        {
+            createNode( db, name );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void createNode( GraphDatabaseService db, String name )
+    {
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.createNode().setProperty( "name", name );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
         }
     }
 
