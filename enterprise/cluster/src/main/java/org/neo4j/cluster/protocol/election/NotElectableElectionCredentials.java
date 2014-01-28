@@ -30,6 +30,8 @@ import java.io.ObjectOutput;
  */
 public final class NotElectableElectionCredentials implements ElectionCredentials, Externalizable
 {
+    private static final long serialVersionUID = -5137673055300127606L;
+
     // For Externalizable
     public NotElectableElectionCredentials()
     {}
@@ -68,5 +70,12 @@ public final class NotElectableElectionCredentials implements ElectionCredential
     @Override
     public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
     {
+    }
+
+
+    @Override
+    public String toString()
+    {
+        return "cannot be elected as coordinator";
     }
 }
