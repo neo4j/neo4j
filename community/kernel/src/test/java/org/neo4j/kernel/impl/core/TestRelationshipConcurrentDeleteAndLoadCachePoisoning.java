@@ -33,6 +33,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.qa.tooling.DumpProcessInformation;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -53,7 +55,6 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.Predicates.stringContains;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.qa.tooling.DumpProcessInformation.doThreadDump;
 import static org.neo4j.qa.tooling.DumpVmInformation.dumpVmInfo;
 import static org.neo4j.test.subprocess.DebuggerDeadlockCallback.RESUME_THREAD;
 
@@ -159,7 +160,8 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         {
             File dumpDirectory = targetDir.directory( "dump", true );
             dumpVmInfo( dumpDirectory );
-            doThreadDump( stringContains( SubProcess.class.getSimpleName() ), dumpDirectory );
+            new DumpProcessInformation( new SystemOutLogging(), dumpDirectory ).doThreadDump(
+                    stringContains( SubProcess.class.getSimpleName() ) );
             fail( "Test didn't complete within a reasonable time, dumping process information to " + dumpDirectory );
         }
     }

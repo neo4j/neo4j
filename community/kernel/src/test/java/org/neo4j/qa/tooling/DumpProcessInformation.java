@@ -29,6 +29,9 @@ import java.util.Collection;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.logging.SystemOutLogging;
 
 import static org.neo4j.helpers.Format.time;
 import static org.neo4j.helpers.Predicates.in;
@@ -41,32 +44,98 @@ public class DumpProcessInformation
         boolean doHeapDump = arg.getBoolean( "heap", false, true );
         String[] containing = arg.orphans().toArray( new String[arg.orphans().size()] );
         String dumpDir = arg.get( "dir", "data" );
-        File dirFile = dumpDir != null ? new File( dumpDir ) : null;
-        if ( dirFile != null )
+        new DumpProcessInformation( new SystemOutLogging(), new File( dumpDir ) ).dumpRunningProcesses(
+                doHeapDump, containing );
+    }
+    
+    private final StringLogger logger;
+    private final File outputDirectory;
+    
+    public DumpProcessInformation( Logging logging, File outputDirectory )
+    {
+        this.logger = logging.getMessagesLog( getClass() );
+        this.outputDirectory = outputDirectory;
+    }
+    
+    public void dumpRunningProcesses( boolean includeHeapDump, String... javaPidsContainingClassNames )
+            throws Exception
+    {
+        outputDirectory.mkdirs();
+        for ( Pair<Long, String> pid : getJPids( in( javaPidsContainingClassNames ) ) )
         {
-            dirFile.mkdirs();
-        }
-        for ( Pair<Long, String> pid : getJPids( in( containing ) ) )
-        {
-            doThreadDump( pid, dirFile );
-            if ( doHeapDump )
+            doThreadDump( pid );
+            if ( includeHeapDump )
             {
-                doHeapDump( pid, dirFile );
+                doHeapDump( pid );
             }
         }
     }
 
-    public static File doThreadDump( Pair<Long, String> pid, File outputDirectory ) throws Exception
+    public File doThreadDump( Pair<Long, String> pid ) throws Exception
     {
-        System.out.println( "Creating thread dump of " + pid + " to " + outputDirectory.getAbsolutePath() );
-        String[] cmdarray = new String[] {"jstack", "" + pid.first()};
         File outputFile = new File( outputDirectory, fileName( "threaddump", pid ) );
+        logger.info( "Creating thread dump of " + pid + " to " + outputFile.getAbsolutePath() );
+        String[] cmdarray = new String[] {"jstack", "" + pid.first()};
         Process process = Runtime.getRuntime().exec( cmdarray );
         writeProcessOutputToFile( process, outputFile );
         return outputFile;
     }
 
-    private static void writeProcessOutputToFile( Process process, File outputFile ) throws Exception
+    public void doHeapDump( Pair<Long, String> pid ) throws Exception
+    {
+        File outputFile = new File( outputDirectory, fileName( "heapdump", pid ) );
+        logger.info( "Creating heap dump of " + pid + " to " + outputFile.getAbsolutePath() );
+        String[] cmdarray = new String[] {"jmap", "-dump:file=" + outputFile.getAbsolutePath(), "" + pid.first() };
+        Runtime.getRuntime().exec( cmdarray ).waitFor();
+    }
+    
+    public void doThreadDump( Predicate<String> processFilter ) throws Exception
+    {
+        for ( Pair<Long,String> pid : getJPids( processFilter ) )
+        {
+            doThreadDump( pid );
+        }
+    }
+    
+    public Collection<Pair<Long, String>> getJPids( Predicate<String> filter ) throws Exception
+    {
+        Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
+        BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+        String line = null;
+        Collection<Pair<Long, String>> jPids = new ArrayList<>(), excludedJPids = new ArrayList<>();
+        while ( (line = reader.readLine()) != null )
+        {
+            int spaceIndex = line.indexOf( ' ' );
+            String name = line.substring( spaceIndex + 1 );
+            // Work-around for a windows problem where if your java.exe is in a directory
+            // containing spaces the value in the second column from jps output will be
+            // something like "C:\Program" if it was under "C:\Program Files\Java..."
+            // If that's the case then use the PID instead
+            if ( name.contains( ":" ) )
+            {
+                String pid = line.substring( 0, spaceIndex );
+                name = pid;
+            }
+            
+            Pair<Long, String> pid = Pair.of( Long.parseLong( line.substring( 0, spaceIndex ) ), name );
+            if ( name.contains( DumpProcessInformation.class.getSimpleName() ) ||
+                    name.contains( "Jps" ) ||
+                    name.contains( "eclipse.equinox" ) ||
+                    !filter.accept( name ) )
+            {
+                excludedJPids.add( pid );
+                continue;
+            }
+            jPids.add( pid );
+        }
+        process.waitFor();
+        
+        logger.info( "Found jPids:" + jPids + ", excluded:" + excludedJPids );
+        
+        return jPids;
+    }
+
+    private void writeProcessOutputToFile( Process process, File outputFile ) throws Exception
     {
         BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
         String line = null;
@@ -86,53 +155,5 @@ public class DumpProcessInformation
                 "-" + category +
                 "-" + pid.first() +
                 "-" + pid.other();
-    }
-
-    private static void doHeapDump( Pair<Long, String> pid, File dir ) throws Exception
-    {
-        String[] cmdarray = new String[] {"jmap", "-dump:file=" + new File( dir,
-                fileName( "heapdump", pid ) ).getAbsolutePath(), "" + pid.first() };
-        Runtime.getRuntime().exec( cmdarray ).waitFor();
-    }
-    
-    public static void doThreadDump( Predicate<String> processFilter, File outputDirectory ) throws Exception
-    {
-        for ( Pair<Long,String> pid : getJPids( processFilter ) )
-        {
-            doThreadDump( pid, outputDirectory );
-        }
-    }
-    
-    public static Collection<Pair<Long, String>> getJPids( Predicate<String> filter ) throws Exception
-    {
-        Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
-        BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-        String line = null;
-        Collection<Pair<Long, String>> jPids = new ArrayList<>();
-        while ( (line = reader.readLine()) != null )
-        {
-            int spaceIndex = line.indexOf( ' ' );
-            String name = line.substring( spaceIndex + 1 );
-            // Work-around for a windows problem where if your java.exe is in a directory
-            // containing spaces the value in the second column from jps output will be
-            // something like "C:\Program" if it was under "C:\Program Files\Java..."
-            // If that's the case then use the PID instead
-            if ( name.contains( ":" ) )
-            {
-                String pid = line.substring( 0, spaceIndex );
-                name = pid;
-            }
-            
-            if ( name.contains( DumpProcessInformation.class.getSimpleName() ) ||
-                    name.contains( "Jps" ) ||
-                    name.contains( "eclipse.equinox" ) ||
-                    !filter.accept( name ) )
-            {
-                continue;
-            }
-            jPids.add( Pair.of( Long.parseLong( line.substring( 0, spaceIndex ) ), name ) );
-        }
-        process.waitFor();
-        return jPids;
     }
 }

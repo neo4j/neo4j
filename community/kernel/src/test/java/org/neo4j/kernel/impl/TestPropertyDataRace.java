@@ -26,10 +26,13 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.qa.tooling.DumpProcessInformation;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -47,8 +50,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.Predicates.stringContains;
-import static org.neo4j.qa.tooling.DumpProcessInformation.doThreadDump;
 import static org.neo4j.qa.tooling.DumpVmInformation.dumpVmInfo;
 
 @ForeignBreakpoints( {
@@ -162,7 +165,8 @@ public class TestPropertyDataRace
         {
             File dumpDirectory = targetDir.directory( "dump", true );
             dumpVmInfo( dumpDirectory );
-            doThreadDump( stringContains( SubProcess.class.getSimpleName() ), dumpDirectory );
+            new DumpProcessInformation( new SystemOutLogging(), dumpDirectory ).doThreadDump(
+                    stringContains( SubProcess.class.getSimpleName() ) );
             fail( "Test didn't complete within a reasonable time, dumping process information to " + dumpDirectory );
         }
         
@@ -216,7 +220,10 @@ public class TestPropertyDataRace
     public static void onSetProperties( BreakPoint self, DebugInterface di )
     {
         self.disable();
-        if ( thread != null ) thread.resume();
+        if ( thread != null )
+        {
+            thread.resume();
+        }
         thread = di.thread().suspend( RESUME_THREAD );
     }
 
@@ -224,7 +231,10 @@ public class TestPropertyDataRace
     public static void onGetNodeIfCached( BreakPoint self, DebugInterface di )
     {
         self.disable();
-        if ( thread == null ) thread = di.thread().suspend( null );
+        if ( thread == null )
+        {
+            thread = di.thread().suspend( null );
+        }
     }
 
     @BreakpointHandler( "done" )
