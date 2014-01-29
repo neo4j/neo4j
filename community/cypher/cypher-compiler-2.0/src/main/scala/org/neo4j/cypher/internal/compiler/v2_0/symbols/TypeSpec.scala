@@ -151,7 +151,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       strings.addString(b, start, sep, end)
   }
 
-  override def toString = mkString("TypeSet(", ", ", ")")
+  override def toString = mkString("TypeSpec(", ", ", ")")
 
   private def innerTypeRanges(rs: Seq[TypeRange]): Seq[TypeRange] = rs.flatMap {
     case TypeRange(c: CollectionType, Some(u: CollectionType)) => Some(TypeRange(c.innerType, u.innerType))

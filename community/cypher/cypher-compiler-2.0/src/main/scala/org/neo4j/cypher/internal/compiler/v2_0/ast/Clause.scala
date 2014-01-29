@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
+import java.net.{URI, MalformedURLException, URL}
+import scala.collection.immutable.SortedSet
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -51,6 +53,20 @@ sealed trait ClosingClause extends Clause {
     s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 }
 
+case class LoadCSV(withHeaders: Boolean, url: URLLiteral, identifier: Identifier, fieldTerminator: Option[StringLiteral], rowTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+  val name = "LOAD CSV"
+
+  def semanticCheck: SemanticCheck = typeCheck then url.semanticCheck
+
+  private def typeCheck: SemanticCheck = {
+    val typ = if (withHeaders)
+      CTMap
+    else
+      CTCollection(CTAny)
+
+    identifier.declare(typ)
+  }
+}
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   val name = "START"

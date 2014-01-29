@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 import org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.parboiled.Context
 import org.parboiled.scala._
+import org.neo4j.cypher.internal.compiler.v2_0.ast.StringLiteral
 
 trait Literals extends Parser
   with Base with Strings {
@@ -101,5 +102,9 @@ trait Literals extends Parser
        ch('\'') ~ StringCharacters('\'') ~ ch('\'')
      | ch('"') ~ StringCharacters('"') ~ ch('"')
     ) memoMismatches) suppressSubnodes) ~~>> (ast.StringLiteral(_))
+  }
+
+  def URLLiteral: Rule1[ast.URLLiteral] = rule("url literal") {
+    StringLiteral ~~> { (s) => ast.URLLiteral(s.value)(s.position) }
   }
 }

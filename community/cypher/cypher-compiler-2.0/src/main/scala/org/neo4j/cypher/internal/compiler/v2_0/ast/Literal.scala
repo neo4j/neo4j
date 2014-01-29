@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
+import java.net.URI
+import scala.collection.immutable.SortedSet
 
 trait Literal extends Expression {
   def value: Any
@@ -57,11 +59,23 @@ case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends
     } then super.semanticCheck(ctx)
 }
 
-
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTypedExpression {
   protected def possibleTypes = CTString
 }
 
+case class URLLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTypedExpression {
+  protected def possibleTypes = CTString
+  val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
+
+  def semanticCheck: SemanticCheck = (state: SemanticState) => {
+    val protocol = new URI(value).getScheme
+    val protocolSupported = protocolWhiteList.contains( protocol )
+    if (protocolSupported)
+      SemanticCheckResult.success(state)
+    else
+      SemanticCheckResult.error(state, new SemanticError(s"Unsupported URL protocol: $protocol", position, SortedSet.empty))
+  }
+}
 
 case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val position: InputPosition) extends ASTNode {
   def isSingleLength = lower.isDefined && upper.isDefined && lower.get.value == 1 && upper.get.value == 1
