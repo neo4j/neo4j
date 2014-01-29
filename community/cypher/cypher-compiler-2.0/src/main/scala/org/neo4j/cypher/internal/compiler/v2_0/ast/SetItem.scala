@@ -27,7 +27,8 @@ sealed trait SetItem extends ASTNode with SemanticCheckable
 case class SetPropertyItem(property: Property, expression: Expression)(val position: InputPosition) extends SetItem {
   def semanticCheck =
     property.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.semanticCheck(Expression.SemanticContext.Simple)
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    property.map.expectType(CTNode.covariant | CTRelationship.covariant)
 }
 
 case class SetLabelItem(expression: Expression, labels: Seq[Identifier])(val position: InputPosition) extends SetItem {

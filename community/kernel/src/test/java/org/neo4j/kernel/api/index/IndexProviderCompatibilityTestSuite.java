@@ -26,7 +26,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
         NonUniqueIndexPopulatorCompatibility.class,
         UniqueIndexPopulatorCompatibility.class,
-        UniqueIndexAccessorCompatibility.class
+        UniqueIndexAccessorCompatibility.class,
+        UniqueConstraintCompatibility.class
 })
 public abstract class IndexProviderCompatibilityTestSuite
 {

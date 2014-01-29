@@ -1119,7 +1119,7 @@ public class NeoStoreTransaction extends XaTransaction
     /**
      * Tries to load the light node with the given id, returns true on success.
      *
-     * @param id The id of the node to load.
+     * @param nodeId The id of the node to load.
      * @return True iff the node record can be found.
      */
     public NodeRecord nodeLoadLight( long nodeId )
@@ -1178,7 +1178,7 @@ public class NeoStoreTransaction extends XaTransaction
      * deleted in this
      * transaction.
      *
-     * @param relId The id of the relationship to delete.
+     * @param id The id of the relationship to delete.
      * @return The properties of the relationship that were removed during the
      *         delete.
      */
@@ -1778,10 +1778,10 @@ public class NeoStoreTransaction extends XaTransaction
      * and of type typeId
      *
      * @param id The id of the relationship to create.
-     * @param typeId The id of the relationship type this relationship will
+     * @param type The id of the relationship type this relationship will
      *            have.
-     * @param startNodeId The id of the start node.
-     * @param endNodeId The id of the end node.
+     * @param firstNodeId The id of the start node.
+     * @param secondNodeId The id of the end node.
      */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId )
     {
@@ -1845,7 +1845,7 @@ public class NeoStoreTransaction extends XaTransaction
     /**
      * Creates a node for the given id
      *
-     * @param id The id of the node to create.
+     * @param nodeId The id of the node to create.
      */
     public void nodeCreate( long nodeId )
     {
@@ -2216,7 +2216,7 @@ public class NeoStoreTransaction extends XaTransaction
      * map from property index id to property data.
      *
      * @param light If the properties should be loaded light or not.
-     * @param receiver receiver of loaded properties.
+     * @param records receiver of loaded properties.
      */
     public void graphLoadProperties( boolean light, PropertyReceiver records )
     {

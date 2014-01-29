@@ -113,6 +113,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         assertEquals( asList( 1l ), getAllNodes( "value2" ) );
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldRejectChangingEntryToAlreadyIndexedValue() throws Exception
     {
@@ -133,6 +134,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         }
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange() throws Exception
     {
@@ -154,6 +156,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         }
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldRejectEntryWithAlreadyIndexedValue() throws Exception
     {
@@ -174,6 +177,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         }
     }
 
+    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
     @Test
     public void shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues() throws Exception
     {

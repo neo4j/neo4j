@@ -25,7 +25,7 @@ public interface TxIdGenerator
 {
     TxIdGenerator DEFAULT = new TxIdGenerator()
     {
-        public long generate( XaDataSource dataSource, int identifier )
+        public long generate( XaDataSource dataSource, int identifier ) throws XAException
         {
             return dataSource.getLastCommittedTxId() + 1;
         }
