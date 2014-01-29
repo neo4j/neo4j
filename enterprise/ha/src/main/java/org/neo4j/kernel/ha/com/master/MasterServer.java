@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,7 +29,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.jboss.netty.channel.Channel;
-
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -38,8 +39,7 @@ import org.neo4j.kernel.ha.HaRequestType201;
 import org.neo4j.kernel.ha.MasterClient201;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -50,10 +50,10 @@ public class MasterServer extends Server<Master, Void>
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
-                         TxChecksumVerifier txVerifier )
+                         TxChecksumVerifier txVerifier, Monitors monitors )
     {
         super( requestTarget, config, logging, FRAME_LENGTH, MasterClient201.PROTOCOL_VERSION, txVerifier,
-                SYSTEM_CLOCK );
+                SYSTEM_CLOCK, monitors );
     }
 
     @Override

@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
-
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -66,7 +66,8 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             {
                 return new HostnamePort( null, port );
             }
-        }, new DevNullLoggingService(), FRAME_LENGTH, applicationProtocolVersion, txVerifier, SYSTEM_CLOCK);
+        }, new DevNullLoggingService(), FRAME_LENGTH, applicationProtocolVersion, txVerifier, SYSTEM_CLOCK,
+                new Monitors());
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

@@ -111,7 +111,7 @@ public class Monitors
     {
         MonitorListenerInvocationHandler monitorListenerInvocationHandler = tags.length == 0 ? new
                 UntaggedMonitorListenerInvocationHandler( monitorListener ) :
-                new TaggedMonitorListenerInvocationHandler( monitorListener );
+                new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
         for ( Class<?> monitorInterface : getInterfacesOf( monitorListener.getClass() ) )
         {
             for ( final Method method : monitorInterface.getMethods() )

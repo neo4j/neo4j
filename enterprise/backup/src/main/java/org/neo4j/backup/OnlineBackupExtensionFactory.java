@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineBackupExtensionFactory.Dependencies>
@@ -44,6 +45,8 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         Logging logging();
 
         KernelPanicEventGenerator kpeg();
+
+        Monitors monitors();
     }
 
     public OnlineBackupExtensionFactory()
@@ -60,6 +63,8 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(), dependencies.xaDataSourceManager(), dependencies.kpeg(), dependencies.logging() );
+        return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
+                dependencies.xaDataSourceManager(), dependencies.kpeg(), dependencies.logging(),
+                dependencies.monitors() );
     }
 }

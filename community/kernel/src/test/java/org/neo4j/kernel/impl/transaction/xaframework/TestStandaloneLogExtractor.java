@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.BatchTransaction.beginBatchTx;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -27,13 +30,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 public class TestStandaloneLogExtractor
 {
@@ -78,7 +80,8 @@ public class TestStandaloneLogExtractor
 
         XaDataSource ds = newDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource();
-        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ) );
+        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ),
+                new Monitors().newMonitor( ByteCounterMonitor.class ) );
         long expectedTxId = 2;
         while ( true )
         {

@@ -385,7 +385,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
                         new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
         slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory(
-                xaDataSourceManager, logging, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+                xaDataSourceManager, logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
 
         new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,

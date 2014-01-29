@@ -21,8 +21,6 @@ package org.neo4j.kernel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 
 @Deprecated
@@ -36,11 +34,6 @@ public class CommonFactories
     public static FileSystemAbstraction defaultFileSystemAbstraction()
     {
         return new DefaultFileSystemAbstraction();
-    }
-
-    public static LogBufferFactory defaultLogBufferFactory()
-    {
-        return new DefaultLogBufferFactory();
     }
 
     public static RemoteTxHook defaultTxHook()

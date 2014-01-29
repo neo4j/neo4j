@@ -137,9 +137,7 @@ import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -235,7 +233,6 @@ public abstract class InternalAbstractGraphDatabase
     protected PropertyKeyTokenHolder propertyKeyTokenHolder;
     protected LabelTokenHolder labelTokenHolder;
     protected IndexStore indexStore;
-    protected LogBufferFactory logBufferFactory;
     protected AbstractTransactionManager txManager;
     protected TxIdGenerator txIdGenerator;
     protected StoreFactory storeFactory;
@@ -486,7 +483,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
                         logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory,
-                        xidGlobalIdFactory );
+                        xidGlobalIdFactory, monitors );
             }
             else
             {
@@ -541,13 +538,6 @@ public abstract class InternalAbstractGraphDatabase
         // after we've instantiated Config.
         params = config.getParams();
 
-        /*
-         *  LogBufferFactory needs access to the parameters so it has to be added after the default and
-         *  user supplied configurations are consolidated
-         */
-
-        logBufferFactory = new DefaultLogBufferFactory();
-
         extensions = life.add( createKernelData() );
 
         life.add( kernelExtensions );
@@ -567,8 +557,8 @@ public abstract class InternalAbstractGraphDatabase
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
-        xaFactory = new XaFactory( config, txIdGenerator, txManager, logBufferFactory, fileSystem,
-                logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
+        xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
+                monitors, logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
                 fileSystem, keepLogicalLogsConfig ) );
 
         createNeoDataSource();

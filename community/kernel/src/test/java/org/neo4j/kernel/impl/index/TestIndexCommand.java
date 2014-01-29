@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import static java.io.File.createTempFile;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
+import static org.neo4j.kernel.impl.util.FileUtils.copyFile;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,18 +42,14 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
-import static java.io.File.createTempFile;
-
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
-import static org.neo4j.kernel.impl.util.FileUtils.copyFile;
 
 public class TestIndexCommand
 {
@@ -170,7 +172,7 @@ public class TestIndexCommand
         try
         {
             FileChannel fileChannel = randomAccessFile.getChannel();
-            LogBuffer writeBuffer = new DefaultLogBufferFactory().create( fileChannel );
+            LogBuffer writeBuffer = new DirectMappedLogBuffer( fileChannel, new Monitors().newMonitor( ByteCounterMonitor.class ) );
             startPositions = new ArrayList<Long>();
             for ( XaCommand command : commands )
             {

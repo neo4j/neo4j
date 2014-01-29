@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.monitoring;
 
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-
-public interface LogBufferFactory
+public interface ByteCounterMonitor
 {
-    LogBuffer create( FileChannel fileChannel ) throws IOException;
+    void bytesWritten( long numberOfBytes );
+
+    void bytesRead( long numberOfBytes );
 }

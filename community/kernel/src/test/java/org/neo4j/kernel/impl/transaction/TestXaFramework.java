@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -35,7 +40,6 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -50,7 +54,6 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -70,12 +73,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -397,8 +395,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
                         new PlaceboTm( null, getGraphDbAPI().getDependencyResolver()
                                 .resolveDependency( TxIdGenerator.class ) ),
-                        new DefaultLogBufferFactory(),
-                        fileSystem, new DevNullLoggingService(),
+                        fileSystem, new Monitors(), new DevNullLoggingService(),
                         RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
@@ -452,7 +449,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
-                            (AbstractTransactionManager)tm, new DefaultLogBufferFactory(), fileSystem, new DevNullLoggingService(),
+                            (AbstractTransactionManager)tm, fileSystem, new Monitors(), new DevNullLoggingService(),
                             RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
             DummyXaDataSource xaDs1 = (DummyXaDataSource) xaDsMgr.getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();
