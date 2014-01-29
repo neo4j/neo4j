@@ -26,16 +26,19 @@ import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class DefaultSlaveFactory implements SlaveFactory
 {
     private final Logging logging;
+    private final Monitors monitors;
     private final int chunkSize;
     private StoreId storeId;
 
-    public DefaultSlaveFactory( XaDataSourceManager xaDsm, Logging logging, int chunkSize )
+    public DefaultSlaveFactory( XaDataSourceManager xaDsm, Logging logging, Monitors monitors, int chunkSize )
     {
         this.logging = logging;
+        this.monitors = monitors;
         this.chunkSize = chunkSize;
         xaDsm.addDataSourceRegistrationListener( new StoreIdSettingListener() );
     }
@@ -44,7 +47,7 @@ public class DefaultSlaveFactory implements SlaveFactory
     public Slave newSlave( ClusterMember clusterMember )
     {
         return new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(),
-                clusterMember.getHAUri().getPort(), logging, storeId,
+                clusterMember.getHAUri().getPort(), logging, monitors, storeId,
                 2, // and that's 1 too many, because we push from the master from one thread only anyway
                 chunkSize );
     }

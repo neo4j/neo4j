@@ -19,6 +19,10 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -27,6 +31,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -53,10 +58,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class RebuildFromLogs
 {
@@ -79,7 +82,7 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( FS, sourceDir );
+            extractor = LogExtractor.from( FS, sourceDir, new Monitors().newMonitor( ByteCounterMonitor.class ) );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );

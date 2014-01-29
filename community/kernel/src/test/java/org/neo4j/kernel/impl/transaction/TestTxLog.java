@@ -19,25 +19,26 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestTxLog
 {
@@ -85,7 +86,7 @@ public class TestTxLog
         }
         try
         {
-            TxLog txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction() );
+            TxLog txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
             assertTrue( !txLog.getDanglingRecords().iterator().hasNext() );
             byte globalId[] = new byte[64];
             byte branchId[] = new byte[45];
@@ -110,7 +111,7 @@ public class TestTxLog
             txLog.markAsCommitting( globalId, ForceMode.unforced );
             assertEquals( 3, txLog.getRecordCount() );
             txLog.close();
-            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction() );
+            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
             assertEquals( 0, txLog.getRecordCount() );
             lists = getRecordLists( txLog.getDanglingRecords() );
             assertEquals( 1, lists.length );
@@ -135,7 +136,7 @@ public class TestTxLog
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.close();
-            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction() );
+            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.close();
@@ -170,7 +171,7 @@ public class TestTxLog
         }
         try
         {
-            TxLog txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction() );
+            TxLog txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
             byte globalId[] = new byte[64];
             byte branchId[] = new byte[45];
             txLog.txStart( globalId );
@@ -180,12 +181,12 @@ public class TestTxLog
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.close();
-            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction() );
+            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
             txLog.txStart( globalId );
             txLog.addBranch( globalId, branchId );
             txLog.markAsCommitting( globalId, ForceMode.unforced );
             txLog.close();
-            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction() );
+            txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
             assertEquals( 1,
                 getRecordLists( txLog.getDanglingRecords() ).length );
             txLog.truncate();
@@ -212,7 +213,7 @@ public class TestTxLog
         ch.force(false);
         ch.close();
 
-        TxLog log = new TxLog( logFile, fileSystem);
+        TxLog log = new TxLog( logFile, fileSystem, new Monitors() );
 
         ByteBuffer tmp = ByteBuffer.allocate( Xid.MAXGTRIDSIZE );
 

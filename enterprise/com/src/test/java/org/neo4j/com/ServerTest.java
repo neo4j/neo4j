@@ -19,6 +19,19 @@
  */
 package org.neo4j.com;
 
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.RequestContext.Tx;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -27,17 +40,9 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.junit.Test;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.helpers.TickingClock;
-
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.RequestContext.Tx;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class ServerTest
 {
@@ -105,7 +110,7 @@ public class ServerTest
     private Server<Object, Object> newServer( final TxChecksumVerifier checksumVerifier )
     {
         return new Server<Object, Object>(null, mock( Server.Configuration.class), new DevNullLoggingService(),
-                Protocol.DEFAULT_FRAME_LENGTH, (byte)0, checksumVerifier, new TickingClock( 0, 1 ))
+                Protocol.DEFAULT_FRAME_LENGTH, (byte)0, checksumVerifier, new TickingClock( 0, 1 ), mock( Monitors.class) )
         {
             @Override
             protected RequestType<Object> getRequestContext( byte id )

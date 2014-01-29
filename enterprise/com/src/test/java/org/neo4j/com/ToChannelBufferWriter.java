@@ -24,6 +24,9 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
+
 public class ToChannelBufferWriter implements MadeUpWriter
 {
     private final ChannelBuffer target;
@@ -36,7 +39,7 @@ public class ToChannelBufferWriter implements MadeUpWriter
     @Override
     public void write( ReadableByteChannel data )
     {
-        BlockLogBuffer blockBuffer = new BlockLogBuffer( target );
+        BlockLogBuffer blockBuffer = new BlockLogBuffer( target, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         try
         {
             blockBuffer.write( data );

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
@@ -49,17 +50,19 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private XaDataSourceManager xaDataSourceManager;
     private KernelPanicEventGenerator kpeg;
     private Logging logging;
+    private final Monitors monitors;
     private BackupServer server;
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, XaDataSourceManager
-            xaDataSourceManager, KernelPanicEventGenerator kpeg, Logging logging )
+            xaDataSourceManager, KernelPanicEventGenerator kpeg, Logging logging, Monitors monitors )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
         this.xaDataSourceManager = xaDataSourceManager;
         this.kpeg = kpeg;
         this.logging = logging;
+        this.monitors = monitors;
     }
 
     @Override
@@ -89,7 +92,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
             try
             {
                 server = new BackupServer( backup,
-                        config.get( OnlineBackupSettings.online_backup_server ), logging );
+                        config.get( OnlineBackupSettings.online_backup_server ), logging, monitors );
                 server.init();
                 server.start();
 

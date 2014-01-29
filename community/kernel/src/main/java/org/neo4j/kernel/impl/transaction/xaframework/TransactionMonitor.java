@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-import java.nio.channels.FileChannel;
+import javax.transaction.xa.Xid;
 
-public class DefaultLogBufferFactory implements LogBufferFactory
+public interface TransactionMonitor
 {
-    public LogBuffer create( FileChannel fileChannel )
-        throws IOException
-    {
-        return new DirectMappedLogBuffer( fileChannel );
-    }
+    void transactionCommitted( Xid xid, boolean recovered );
+
+    void injectOnePhaseCommit( Xid xid );
+
+    void injectTwoPhaseCommit( Xid xid );
 }

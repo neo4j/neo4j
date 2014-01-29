@@ -28,7 +28,7 @@ public interface StoreWriter
     // "hasData" is an effect of the block format not supporting a zero length block
     // whereas a neostore file may actually be 0 bytes we'll have to keep track
     // of that special case.
-    void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData )
+    int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData )
             throws IOException;
 
     void done();

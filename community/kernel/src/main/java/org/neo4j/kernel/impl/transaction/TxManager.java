@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.util.ExceptionCauseSetter;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.ThreadLocalWithSize;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Default transaction manager implementation
@@ -123,6 +124,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
     private final Factory<byte[]> xidGlobalIdFactory;
+    private final Monitors monitors;
 
     private final Monitor monitor;
 
@@ -132,11 +134,12 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory,
-                      Factory<byte[]> xidGlobalIdFactory
+                      Factory<byte[]> xidGlobalIdFactory,
+                      Monitors monitors
     )
     {
         this( txLogDir, xaDataSourceManager, kpe, log, fileSystem, stateFactory, new Monitor.Adapter(),
-              xidGlobalIdFactory
+              xidGlobalIdFactory, monitors
         );
     }
 
@@ -147,7 +150,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory,
                       Monitor monitor,
-                      Factory<byte[]> xidGlobalIdFactory
+                      Factory<byte[]> xidGlobalIdFactory,
+                      Monitors monitors
     )
     {
         this.txLogDir = txLogDir;
@@ -158,6 +162,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.stateFactory = stateFactory;
         this.monitor = monitor;
         this.xidGlobalIdFactory = xidGlobalIdFactory;
+        this.monitors = monitors;
     }
 
     int getNextEventIdentifier()
@@ -788,7 +793,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                                     "Unable to start TM, " + "active tx log file[" +
                                             currentTxLog + "] not found." ) );
                 }
-                txLog = new TxLog( currentTxLog, fileSystem );
+                txLog = new TxLog( currentTxLog, fileSystem, monitors );
                 log.info( "TM opening log: " + currentTxLog );
             }
             else
@@ -808,7 +813,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                         .getBytes( "UTF-8" ) );
                 FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem );
+                txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem, monitors );
                 log.info( "TM new log: " + txLog1FileName );
                 fc.force( true );
                 fc.close();
