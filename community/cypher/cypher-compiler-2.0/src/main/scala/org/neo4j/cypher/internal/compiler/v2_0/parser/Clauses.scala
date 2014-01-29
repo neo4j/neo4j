@@ -30,6 +30,16 @@ trait Clauses extends Parser
 
   def Clause: Rule1[ast.Clause]
 
+  def LoadCSV: Rule1[ast.LoadCSV] = rule("LOAD CSV") {
+      keyword("LOAD CSV") ~~
+      group(keyword("WITH HEADERS") ~ push(true) | push(false)) ~~
+      keyword("FROM") ~~ StringLiteral ~~
+      keyword("AS") ~~ Identifier ~~
+      optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~
+      optional(keyword("ROWTERMINATOR") ~~ StringLiteral) ~~>>
+      (ast.LoadCSV(_, _, _, _, _))
+  }
+
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)

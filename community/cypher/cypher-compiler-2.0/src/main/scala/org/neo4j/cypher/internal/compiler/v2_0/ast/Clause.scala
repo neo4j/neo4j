@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
+import java.net.URI
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -51,6 +52,35 @@ sealed trait ClosingClause extends Clause {
     s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 }
 
+case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: Identifier, fieldTerminator: Option[StringLiteral], rowTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+  val name = "LOAD CSV"
+
+  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
+
+  def semanticCheck: SemanticCheck =
+    urlString.semanticCheck(Expression.SemanticContext.Simple) then
+    urlString.expectType(CTString) then
+    urlString.checkURL then
+    checkProtocolSupported then
+    typeCheck
+
+  private def checkProtocolSupported: SemanticCheck = {
+    val protocol = urlString.asURL.getProtocol
+    if (protocolWhiteList.contains(protocol))
+      SemanticCheckResult.success
+    else
+      SemanticError(s"Unsupported URL protocol: $protocol", position)
+  }
+
+  private def typeCheck: SemanticCheck = {
+    val typ = if (withHeaders)
+      CTMap
+    else
+      CTCollection(CTAny)
+
+    identifier.declare(typ)
+  }
+}
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   val name = "START"

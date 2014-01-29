@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
+import java.net.URL
 
 sealed trait Literal extends Expression {
   def value: Any
@@ -58,6 +59,17 @@ case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends
 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTyping {
   protected def possibleTypes = CTString
+
+  lazy val asURL = new URL(value)
+
+  def checkURL: SemanticCheck =
+    try {
+      this.asURL
+      SemanticCheckResult.success
+    } catch {
+      case e: java.net.MalformedURLException =>
+        SemanticError(s"invalid URL specified (${e.getMessage})", position)
+    }
 }
 
 case class Null()(val position: InputPosition) extends Literal with SimpleTyping {
