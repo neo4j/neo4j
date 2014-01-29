@@ -42,12 +42,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ProcessStreamHandler;
 
 /**
@@ -144,8 +144,8 @@ public class TestRecovery
                 "store_dir", getDbPath().getPath() );
         Config config = new Config( params, GraphDatabaseSettings.class );
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
-                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ), new DefaultLogBufferFactory(),
-                        fileSystemAbstraction, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
+                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
+                        fileSystemAbstraction, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), null, new DevNullLoggingService() );
         ds.start();
         ds.stop();

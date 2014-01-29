@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
@@ -49,11 +52,9 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -71,19 +72,21 @@ public class MasterClient196 extends Client<Master> implements MasterClient
      */
     public static final byte PROTOCOL_VERSION = 7;
 
+    private final ByteCounterMonitor bufferMonitor;
     private final long lockReadTimeout;
 
-    public MasterClient196( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+    public MasterClient196( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
+        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, chunkSize );
+        this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
         this.lockReadTimeout = lockReadTimeout;
     }
 
-    public MasterClient196( URI masterUri, Logging logging, StoreId storeId, Config config )
+    public MasterClient196( URI masterUri, Logging logging, Monitors monitors, StoreId storeId, Config config )
     {
-        this( masterUri.getHost(), masterUri.getPort(), logging, storeId,
+        this( masterUri.getHost(), masterUri.getPort(), logging, monitors, storeId,
                 config.get( HaSettings.read_timeout ),
                 config.get( HaSettings.lock_read_timeout ),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
@@ -227,7 +230,7 @@ public class MasterClient196 extends Client<Master> implements MasterClient
                     public void write( ChannelBuffer buffer ) throws IOException
                     {
                         writeString( buffer, resource );
-                        BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer );
+                        BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer, bufferMonitor );
                         txGetter.extract( blockLogBuffer );
                         blockLogBuffer.done();
                     }

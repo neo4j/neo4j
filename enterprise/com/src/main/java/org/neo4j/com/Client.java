@@ -19,11 +19,16 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +45,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
@@ -48,10 +54,8 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
-
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -82,7 +86,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
 
-    public Client( String hostNameOrIp, int port, Logging logging,
+    private final RequestMonitor requestMonitor;
+
+    private int chunkSize;
+
+    public Client( String hostNameOrIp, int port, Logging logging, Monitors monitors,
                    StoreId storeId, int frameLength,
                    byte applicationProtocolVersion, long readTimeout,
                    int maxConcurrentChannels, int chunkSize )
@@ -101,6 +109,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + hostNameOrIp + ":" +
                 port );
+        this.requestMonitor = monitors.newMonitor( RequestMonitor.class, getClass() );
     }
 
     @Override
@@ -194,6 +203,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         boolean success = true;
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
+        Throwable failure = null;
         try
         {
             // Send 'em over the wire
@@ -201,6 +211,13 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             Channel channel = channelContext.first();
             ChannelBuffer output = channelContext.second();
             ByteBuffer input = channelContext.third();
+
+
+            Map<String, String> requestContext = new HashMap<String, String>();
+            requestContext.put( "type", type.toString() );
+            requestContext.put( "slaveContext", context.toString() );
+            requestContext.put( "serverAddress", channel.getRemoteAddress().toString() );
+            requestMonitor.beginRequest( requestContext );
 
             // Request
             protocol.serializeRequest( channel, output, type, context, serializer );
@@ -228,6 +245,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
         catch ( IllegalProtocolVersionException e )
         {
+            failure = e;
             success = false;
             for ( MismatchingVersionHandler handler : mismatchingVersionHandlers )
             {
@@ -237,6 +255,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
         catch ( Throwable e )
         {
+            failure = e;
             success = false;
             if ( channelContext != null )
             {
@@ -253,6 +272,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             {
                 releaseChannel();
             }
+            requestMonitor.endRequest( failure );
         }
     }
 

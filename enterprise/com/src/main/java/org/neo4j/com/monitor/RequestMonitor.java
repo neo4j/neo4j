@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.com.slave;
+package org.neo4j.com.monitor;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
+import java.util.Map;
 
-public interface MasterClientFactory
+public interface RequestMonitor
 {
-    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life );
+    void beginRequest( Map<String, String> requestContext );
+
+    void endRequest( Throwable t );
 }

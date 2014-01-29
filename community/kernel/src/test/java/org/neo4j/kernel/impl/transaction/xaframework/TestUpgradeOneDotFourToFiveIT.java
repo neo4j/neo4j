@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.CommonFactories.defaultLogBufferFactory;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
@@ -31,6 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
@@ -52,8 +52,8 @@ public class TestUpgradeOneDotFourToFiveIT
 //        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
 //        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         
-        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, defaultLogBufferFactory(),
-                defaultFileSystemAbstraction(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
+        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null,
+                defaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
                 TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), 25 * 1024 * 1024 );
         log.open();
         fail( "Shouldn't be able to start" );

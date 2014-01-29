@@ -17,54 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.metrics;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-@Service.Implementation(KernelExtensionFactory.class)
-public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineBackupExtensionFactory.Dependencies>
+public class MetricsLogExtensionFactory
+    extends KernelExtensionFactory<MetricsLogExtensionFactory.Dependencies>
 {
-    static final String KEY = "online backup";
-
     public interface Dependencies
     {
-        Config getConfig();
-
-        XaDataSourceManager xaDataSourceManager();
-
-        GraphDatabaseAPI getGraphDatabaseAPI();
-
-        Logging logging();
-
-        KernelPanicEventGenerator kpeg();
-
         Monitors monitors();
+        Config config();
+        FileSystemAbstraction fileSystem();
+        TxManager txManager();
     }
 
-    public OnlineBackupExtensionFactory()
+    public MetricsLogExtensionFactory( )
     {
-        super( KEY );
-    }
-
-    @Override
-    public Class getSettingsClass()
-    {
-        return OnlineBackupSettings.class;
+        super( "metricslog");
     }
 
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                dependencies.xaDataSourceManager(), dependencies.kpeg(), dependencies.logging(),
-                dependencies.monitors() );
+        return new MetricsLogExtension(dependencies.monitors(), dependencies.config(), dependencies.fileSystem(), dependencies.txManager());
     }
 }

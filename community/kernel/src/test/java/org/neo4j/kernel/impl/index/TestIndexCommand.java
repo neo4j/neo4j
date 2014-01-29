@@ -41,9 +41,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestIndexCommand
 {
@@ -151,7 +153,7 @@ public class TestIndexCommand
     {
         File file = createTempFile( "index", "command" );
         FileChannel fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
-        LogBuffer writeBuffer = new DefaultLogBufferFactory().create( fileChannel );
+        LogBuffer writeBuffer = new DirectMappedLogBuffer( fileChannel, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         List<Long> startPositions = new ArrayList<Long>();
         for ( XaCommand command : commands )
         {

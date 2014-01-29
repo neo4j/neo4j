@@ -48,6 +48,7 @@ import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class RebuildFromLogs
 {
@@ -79,7 +81,7 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( FS, sourceDir );
+            extractor = LogExtractor.from( FS, sourceDir, new Monitors().newMonitor( ByteCounterMonitor.class ) );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );

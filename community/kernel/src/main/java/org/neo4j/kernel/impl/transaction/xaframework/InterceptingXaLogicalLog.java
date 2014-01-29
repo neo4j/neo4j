@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class InterceptingXaLogicalLog extends XaLogicalLog
 {
@@ -36,11 +37,11 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
 
     public InterceptingXaLogicalLog( File fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
-            TransactionInterceptorProviders providers, LogBufferFactory logBufferFactory,
-            FileSystemAbstraction fileSystem, Logging logging,
+            TransactionInterceptorProviders providers,
+            FileSystemAbstraction fileSystem, Monitors monitors, Logging logging,
             LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory, long rotateAtSize )
     {
-        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, logging, pruneStrategy,
+        super( fileName, xaRm, cf, xaTf, fileSystem, monitors, logging, pruneStrategy,
                 stateFactory, rotateAtSize );
         this.providers = providers;
         this.ds = xaRm.getDataSource();
@@ -52,7 +53,7 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
         // This is created every time because transaction interceptors can be stateful
         final TransactionInterceptor interceptor = providers.resolveChain( ds );
 
-        LogDeserializer toReturn = new LogDeserializer( byteChannel )
+        LogDeserializer toReturn = new LogDeserializer( byteChannel, bufferMonitor )
         {
             @Override
             protected void intercept( List<LogEntry> entries )

@@ -17,32 +17,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
+import javax.transaction.xa.Xid;
 
-@Deprecated
-public class CommonFactories
+public class EideticTransactionMonitor implements TransactionMonitor
 {
-    public static IdGeneratorFactory defaultIdGeneratorFactory()
+    private int commitCount;
+    private int injectOnePhaseCommitCount;
+    private int injectTwoPhaseCommitCount;
+
+    @Override
+    public void transactionCommitted( Xid xid, boolean recovered )
     {
-        return new DefaultIdGeneratorFactory();
+        commitCount++;
     }
 
-    public static FileSystemAbstraction defaultFileSystemAbstraction()
+    @Override
+    public void injectOnePhaseCommit( Xid xid )
     {
-        return new DefaultFileSystemAbstraction();
+        injectOnePhaseCommitCount++;
     }
 
-    public static RemoteTxHook defaultTxHook()
+    @Override
+    public void injectTwoPhaseCommit( Xid xid )
     {
-        return new DefaultTxHook();
+        injectTwoPhaseCommitCount++;
     }
 
-    public static RecoveryVerifier defaultRecoveryVerifier()
+    public int getCommitCount()
     {
-        return RecoveryVerifier.ALWAYS_VALID;
+        return commitCount;
+    }
+
+    public int getInjectOnePhaseCommitCount()
+    {
+        return injectOnePhaseCommitCount;
+    }
+
+    public int getInjectTwoPhaseCommitCount()
+    {
+        return injectTwoPhaseCommitCount;
     }
 }

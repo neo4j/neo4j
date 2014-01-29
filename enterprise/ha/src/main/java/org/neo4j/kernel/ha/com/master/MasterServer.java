@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.jboss.netty.channel.Channel;
-
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.ha.HaRequestType196;
 import org.neo4j.kernel.ha.MasterClient196;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
 
 /**
@@ -49,10 +49,10 @@ public class MasterServer extends Server<Master, Void>
     public static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
 
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
-                         TxChecksumVerifier txVerifier )
+                         TxChecksumVerifier txVerifier, Monitors monitors )
     {
         super( requestTarget, config, logging, FRAME_LENGTH, MasterClient196.PROTOCOL_VERSION, txVerifier,
-                Clock.REAL_CLOCK );
+                Clock.REAL_CLOCK, monitors );
     }
 
     @Override

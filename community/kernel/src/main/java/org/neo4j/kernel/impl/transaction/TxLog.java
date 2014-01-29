@@ -39,9 +39,11 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.monitoring.Monitors;
 
 // TODO: fixed sized logs (pre-initialize them)
 // keep dangling records in memory for log switch
@@ -55,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
  */
 public class TxLog
 {
+    private final ByteCounterMonitor bufferMonitor;
     private File name = null;
     private LogBuffer logBuffer;
     private int recordCount = 0;
@@ -80,7 +83,7 @@ public class TxLog
         {
             return Arrays.hashCode( bytes );
         }
-        
+
         @Override
         public boolean equals( Object obj )
         {
@@ -95,12 +98,12 @@ public class TxLog
      * 
      * @param fileName
      *            Filename of file to use
-     * @param msgLog 
      * @throws IOException
      *             If unable to open file
      */
-    public TxLog( File fileName, FileSystemAbstraction fileSystem ) throws IOException
+    public TxLog( File fileName, FileSystemAbstraction fileSystem, Monitors monitors ) throws IOException
     {
+        this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );
@@ -108,9 +111,9 @@ public class TxLog
         this.fileSystem = fileSystem;
         FileChannel fileChannel = fileSystem.open( fileName, "rw" );
         fileChannel.position( fileChannel.size() );
-        logBuffer = new DirectMappedLogBuffer( fileChannel );
+        logBuffer = new DirectMappedLogBuffer( fileChannel, bufferMonitor );
         this.name = fileName;
-        
+
         recreateActiveTransactionState();
     }
 
@@ -165,7 +168,7 @@ public class TxLog
         fileChannel.position( 0 );
         fileChannel.truncate( 0 );
         recordCount = 0;
-        logBuffer = new DirectMappedLogBuffer( fileChannel );
+        logBuffer = new DirectMappedLogBuffer( fileChannel, bufferMonitor  );
         activeTransactions.clear();
     }
 
@@ -539,7 +542,7 @@ public class TxLog
         Iterator<Record> recordItr = records.iterator();
         FileChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
-        logBuffer = new DirectMappedLogBuffer( fileChannel );
+        logBuffer = new DirectMappedLogBuffer( fileChannel, bufferMonitor  );
         name = newFile;
         truncate();
         while ( recordItr.hasNext() )

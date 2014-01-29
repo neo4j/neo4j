@@ -25,6 +25,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 /**
@@ -45,13 +47,15 @@ public class BlockLogBuffer implements LogBuffer
     static final int DATA_SIZE = MAX_SIZE-1;
 
     private final ChannelBuffer target;
+    private final ByteCounterMonitor monitor;
     // MAX_SIZE can be overcome by one primitive put(), the largest is 8 bytes
     private final byte[] byteArray = new byte[MAX_SIZE + 8/*largest atom*/];
     private final ByteBuffer byteBuffer = ByteBuffer.wrap( byteArray );
 
-    public BlockLogBuffer( ChannelBuffer target )
+    public BlockLogBuffer( ChannelBuffer target, ByteCounterMonitor monitor )
     {
         this.target = target;
+        this.monitor = monitor;
         clearInternalBuffer();
     }
 
@@ -75,6 +79,7 @@ public class BlockLogBuffer implements LogBuffer
         if ( byteBuffer.position() > MAX_SIZE )
         {
             target.writeBytes( byteArray, 0, MAX_SIZE );
+            monitor.bytesWritten( MAX_SIZE );
             int pos = byteBuffer.position();
             clearInternalBuffer();
             byteBuffer.put( byteArray, MAX_SIZE, pos - MAX_SIZE );

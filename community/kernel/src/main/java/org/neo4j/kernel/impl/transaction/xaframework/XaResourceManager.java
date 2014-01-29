@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 // make package access?
 public class XaResourceManager
@@ -48,6 +49,7 @@ public class XaResourceManager
         new ArrayMap<XAResource,Xid>();
     private final ArrayMap<Xid,XidStatus> xidMap =
         new ArrayMap<Xid,XidStatus>();
+    private final TransactionMonitor transactionMonitor;
     private int recoveredTxCount = 0;
     private final Set<TransactionInfo> recoveredTransactions = new HashSet<TransactionInfo>();
 
@@ -62,7 +64,7 @@ public class XaResourceManager
 
     public XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
             TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
-            RecoveryVerifier recoveryVerifier, String name )
+            RecoveryVerifier recoveryVerifier, String name, Monitors monitors )
     {
         this.dataSource = dataSource;
         this.tf = tf;
@@ -70,6 +72,7 @@ public class XaResourceManager
         this.transactionManager = transactionManager;
         this.recoveryVerifier = recoveryVerifier;
         this.name = name;
+        this.transactionMonitor = monitors.newMonitor( TransactionMonitor.class, getClass(), dataSource.getName() );
     }
 
     public synchronized void setLogicalLog( XaLogicalLog log )
@@ -391,6 +394,7 @@ public class XaResourceManager
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
+        transactionMonitor.injectOnePhaseCommit( xid );
     }
 
     synchronized void injectTwoPhaseCommit( Xid xid ) throws XAException
@@ -406,6 +410,7 @@ public class XaResourceManager
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
+        transactionMonitor.injectTwoPhaseCommit( xid );
     }
 
     synchronized XaTransaction getXaTransaction( Xid xid ) throws XAException
@@ -505,6 +510,7 @@ public class XaResourceManager
                 recoveredTxCount--;
                 checkIfRecoveryComplete();
             }
+            transactionMonitor.transactionCommitted( xid, xaTransaction.isRecovered() );
         }
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )

@@ -39,15 +39,16 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class SlaveClient extends Client<Slave> implements Slave
 {
     private final int machineId;
 
-    public SlaveClient( int machineId, String hostNameOrIp, int port, Logging logging, StoreId storeId,
-                        int maxConcurrentChannels, int chunkSize )
+    public SlaveClient( int machineId, String hostNameOrIp, int port, Logging logging, Monitors monitors,
+                        StoreId storeId, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logging, storeId, Protocol.DEFAULT_FRAME_LENGTH,
+        super( hostNameOrIp, port, logging, monitors, storeId, Protocol.DEFAULT_FRAME_LENGTH,
                 SlaveServer.APPLICATION_PROTOCOL_VERSION,
                 HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
                 maxConcurrentChannels, chunkSize );

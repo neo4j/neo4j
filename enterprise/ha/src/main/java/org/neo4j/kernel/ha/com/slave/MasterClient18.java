@@ -49,7 +49,9 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
@@ -70,19 +72,22 @@ public class MasterClient18 extends Client<Master> implements MasterClient
     public static final byte PROTOCOL_VERSION = 4;
 
     private final long lockReadTimeout;
+    private final ByteCounterMonitor monitor;
+
     private Config config;
 
-    public MasterClient18( String hostNameOrIp, int port, Logging logging, StoreId storeId,
+    public MasterClient18( String hostNameOrIp, int port, Logging logging, Monitors monitors, StoreId storeId,
                            long readTimeoutSeconds, long lockReadTimeout, int maxConcurrentChannels, int chunkSize )
     {
-        super( hostNameOrIp, port, logging, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
+        super( hostNameOrIp, port, logging, monitors, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION,
                 readTimeoutSeconds, maxConcurrentChannels, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
+        this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
     }
 
-    public MasterClient18( URI masterUri, Logging logging, StoreId storeId, Config config )
+    public MasterClient18( URI masterUri, Logging logging, Monitors monitors, StoreId storeId, Config config )
     {
-        this( masterUri.getHost(), masterUri.getPort(), logging, storeId,
+        this( masterUri.getHost(), masterUri.getPort(), logging, monitors, storeId,
                 config.get( HaSettings.read_timeout ),
                 config.get( HaSettings.lock_read_timeout ),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
@@ -223,7 +228,7 @@ public class MasterClient18 extends Client<Master> implements MasterClient
                     public void write( ChannelBuffer buffer ) throws IOException
                     {
                         writeString( buffer, resource );
-                        BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer );
+                        BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer, monitor );
                         txGetter.extract( blockLogBuffer );
                         blockLogBuffer.done();
                     }

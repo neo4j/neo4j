@@ -17,13 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.com.slave;
+package org.neo4j.metrics;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
-public interface MasterClientFactory
+public class ByteCounterMetrics
+    implements ByteCounterMonitor
 {
-    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life );
+    private long bytesWritten;
+    private long bytesRead;
+
+    @Override
+    public void bytesWritten( long numberOfBytes )
+    {
+        bytesWritten++;
+    }
+
+    @Override
+    public void bytesRead( long numberOfBytes )
+    {
+        bytesRead++;
+    }
+
+    public long getBytesWritten()
+    {
+        return bytesWritten;
+    }
+
+    public long getBytesRead()
+    {
+        return bytesRead;
+    }
 }

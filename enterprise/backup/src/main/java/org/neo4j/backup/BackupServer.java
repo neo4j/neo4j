@@ -22,7 +22,6 @@ package org.neo4j.backup;
 import java.io.IOException;
 
 import org.jboss.netty.channel.Channel;
-
 import org.neo4j.backup.BackupClient.BackupRequestType;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
@@ -32,6 +31,7 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
 
 class BackupServer extends Server<TheBackupInterface, Object>
@@ -42,7 +42,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     static final int FRAME_LENGTH = Protocol.MEGA * 4;
 
     public BackupServer( TheBackupInterface requestTarget, final HostnamePort server,
-                         Logging logging ) throws IOException
+                         Logging logging, Monitors monitors ) throws IOException
     {
         super( requestTarget, new Configuration()
         {
@@ -70,7 +70,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
                 return server;
             }
         }, logging, FRAME_LENGTH, PROTOCOL_VERSION,
-                TxChecksumVerifier.ALWAYS_MATCH, Clock.REAL_CLOCK );
+                TxChecksumVerifier.ALWAYS_MATCH, Clock.REAL_CLOCK, monitors );
     }
 
     @Override
