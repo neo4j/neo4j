@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.mutation
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.expressions._
 import pipes.QueryState
-import symbols._
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -34,22 +33,22 @@ case class PropertySetAction(prop: Property, e: Expression)
   def exec(context: ExecutionContext, state: QueryState) = {
     implicit val s = state
 
-    val value = makeValueNeoSafe(e(context))
     val qtx = state.query
-    mapExpr(context) match {
-      case (n: Node) =>
-        if ( null == value )
-          propertyKey.getOptId(qtx).foreach(qtx.nodeOps.removeProperty(n.getId, _))
-        else
-          qtx.nodeOps.setProperty(n.getId, propertyKey.getOrCreateId(qtx), value)
-      case (r: Relationship) =>
-        if ( null == value )
-          propertyKey.getOptId(qtx).foreach(qtx.relationshipOps.removeProperty(r.getId, _))
-        else
-          qtx.relationshipOps.setProperty(r.getId, propertyKey.getOrCreateId(qtx), value)
-      case _ =>
-        throw new ThisShouldNotHappenError("Stefan", "This should be a node or a relationship")
+
+    val expr = mapExpr(context)
+    if (expr != null) {
+      val (id, ops) = expr match {
+        case (e: Relationship) => (e.getId, qtx.relationshipOps)
+        case (e: Node) => (e.getId, qtx.nodeOps)
+        case _ => throw new ThisShouldNotHappenError("Stefan", "This should be a node or a relationship")
+      }
+
+      makeValueNeoSafe(e(context)) match {
+        case null => propertyKey.getOptId(qtx).foreach(ops.removeProperty(id, _))
+        case value => ops.setProperty(id, propertyKey.getOrCreateId(qtx), value)
+      }
     }
+
 
     Iterator(context)
   }
