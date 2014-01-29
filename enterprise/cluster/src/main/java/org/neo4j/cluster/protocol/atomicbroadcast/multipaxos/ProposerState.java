@@ -288,7 +288,14 @@ public enum ProposerState
                                 }
 
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage.phase1Timeout, message, message.getPayload() ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, message.getPayload() ),
+                                        InstanceId.INSTANCE ) );
+                            }
+                            else if ( instance.isState( PaxosInstance.State.closed )
+                                    || instance.isState( PaxosInstance.State.delivered ) )
+                            {
+                                outgoing.offer( message.copyHeadersTo( Message.internal( ProposerMessage.propose,
+                                        message.getPayload() ) ) );
                             }
                             break;
                         }
