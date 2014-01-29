@@ -313,12 +313,13 @@ class BackupService
             private int totalFiles;
 
             @Override
-            public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                                boolean hasData ) throws IOException
             {
-                actual.write( path, data, temporaryBuffer, hasData );
+                int written = actual.write( path, data, temporaryBuffer, hasData );
                 progress.update( true, 1 );
                 totalFiles++;
+                return written;
             }
 
             @Override
