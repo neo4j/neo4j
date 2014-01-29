@@ -51,6 +51,18 @@ sealed trait ClosingClause extends Clause {
     s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 }
 
+case class LoadCSV(withHeaders: Boolean, url: StringLiteral, identifier: Identifier, fieldTerminator: Option[StringLiteral], rowTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+  val name = "LOAD CSV"
+
+  def semanticCheck: SemanticCheck = {
+    val typ = if (withHeaders)
+      CTMap
+    else
+      CTCollection(CTAny)
+
+    identifier.declare(typ)
+  }
+}
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   val name = "START"

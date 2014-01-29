@@ -2944,6 +2944,25 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def should_handle_load_and_return_as_map() {
+    test(
+      "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",
+      Query.
+        start(LoadCSV(true, "file:///tmp/file.cvs", "line")).
+        returns(ReturnItem(Property(Identifier("line"), PropertyKey("key")), "line"))
+    )
+  }
+
+  @Test def should_handle_load_and_return() {
+    test(
+      "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
+      Query.
+        start(LoadCSV(false, "file:///tmp/file.cvs", "line")).
+        returns(ReturnItem(Identifier("line"), "line"))
+    )
+  }
+
+
   private def test(query: String, expectedQuery: AbstractQuery) {
     val ast = cypherParser.parseToQuery(query)
     try {

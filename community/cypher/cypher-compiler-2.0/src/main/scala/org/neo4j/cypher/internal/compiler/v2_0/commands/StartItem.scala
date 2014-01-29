@@ -113,6 +113,11 @@ case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty)
 case class AllRelationships(columnName: String) extends StartItem(columnName, Map.empty)
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
+case class LoadCSV(withHeaders: Boolean, fileUrl: String, identifier: String) extends StartItem(identifier, Map.empty)
+  with ReadOnlyStartItem {
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> (if (withHeaders) CTMap else CTCollection(CTAny)))
+}
+
 //We need to wrap the inner classes to be able to have two different rewrite methods
 abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Map.empty) {
 
