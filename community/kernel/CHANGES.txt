@@ -1,3 +1,8 @@
+2.0.1
+-----
+o Improve speed of verifying unique constraints on constraint creation.
+o Improve speed of creating label scan store in BatchInserter.
+
 2.0.0-RC1
 ---------
 o BREAKING CHANGE: Reference node has been removed.
