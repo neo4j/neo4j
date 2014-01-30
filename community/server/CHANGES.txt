@@ -1,3 +1,7 @@
+2.0.1
+-----
+o Fixes issue with transactions leaking when there is an exception while rendering the response
+
 2.0.0-RC1
 ---------
 o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#stopServerOnly(). To stop the server use

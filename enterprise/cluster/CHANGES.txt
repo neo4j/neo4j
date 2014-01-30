@@ -1,3 +1,10 @@
+2.0.1
+-----
+o Fixes message reordering issue
+o Fixes a Paxos instance reuse issue
+o Cluster join denial now includes cluster configuration
+o Fixes issues with proper Payload values passed around
+
 1.9.5 (2013-11-11)
 ------------------
 o Fixed a bug around channel handling which might lead to messages being delayed and leading

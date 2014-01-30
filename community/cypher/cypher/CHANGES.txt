@@ -5,6 +5,7 @@ o Makes it possible to write MERGE queries with no already known parts
 o Fixes problem with compiling queries with NOT expressions in them
 o Fixes #1735 - Indexes and AND predicates produce wrong results
 o Fixes #1876 - Null nodes and properties should be ignored when SETting properties
+o Fixes problem with parser not being thread safe. State is bad, m'kay?
 
 2.0.0-RC1
 ---------
@@ -73,10 +74,6 @@ o Added index hints ("USING INDEX")
 o START now is optional when using index hints or there is exactly one useable index
 o Cypher now uses the label-based indexes to perform lookups
 o Profiler now shows which entity producers have been chosen
-
-1.9.6
------
-o Fixes problem with parser not being thread safe. State is bad, m'kay?
 
 1.9.3
 -----

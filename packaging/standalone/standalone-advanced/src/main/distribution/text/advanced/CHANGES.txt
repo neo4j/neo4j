@@ -1,5 +1,17 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.1
+-----
+Kernel:
+o Improve speed of verifying unique constraints on constraint creation.
+o Improve speed of creating label scan store in BatchInserter.
+o Fixes issue with batch inserter which could lead to record not in use exception
+  when adding properties
+o Introduces monitoring for reads/writes to the logical log
+
+Server:
+o Fixes issue with transactions leaking when there is an exception while rendering the response
+
 2.0.0-RC1
 ---------
 Kernel:
