@@ -84,7 +84,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
                                      AtomicBroadcast atomicBroadcast, Logging logging,
                                      Predicate<ClusterMembersSnapshot> validator,
-                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> snapshotFilter,
+                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
+                                        Iterable<MemberIsAvailable>> snapshotFilter,
                                      ObjectInputStreamFactory lenientObjectInputStream,
                                      ObjectOutputStreamFactory lenientObjectOutputStream)
     {
@@ -102,7 +103,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         this.snapshotValidator = validator;
 
-        clusterMembersSnapshot = new ClusterMembersSnapshot(snapshotFilter);
+        clusterMembersSnapshot = new ClusterMembersSnapshot( snapshotFilter );
     }
 
     @Override
@@ -248,7 +249,8 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     public static class ClusterMembersSnapshot
         implements Serializable
     {
-        private Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
+        private final
+        Function2<Iterable<MemberIsAvailable>, MemberIsAvailable, Iterable<MemberIsAvailable>> nextSnapshotFunction;
 
         private Iterable<MemberIsAvailable> availableMembers = new ArrayList<MemberIsAvailable>();
 
