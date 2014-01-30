@@ -95,11 +95,11 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         searcherManager.maybeRefresh();
         IndexSearcher searcher = searcherManager.acquire();
-
-        try ( IndexReader indexReader = searcher.getIndexReader())
+        
+        try
         {
             DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
-            TermEnum terms = indexReader.terms();
+            TermEnum terms = searcher.getIndexReader().terms();
             while ( terms.next() )
             {
                 Term term = terms.term();
@@ -122,7 +122,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         }
         finally
         {
-            searcher.close();
             searcherManager.release( searcher );
         }
     }
@@ -166,9 +165,9 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             {
                 searcherManager.maybeRefresh();
                 IndexSearcher searcher = searcherManager.acquire();
-                DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
                 try
                 {
+                    DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
                     for ( Object propertyValue : updatedPropertyValues )
                     {
                         collector.reset();
@@ -187,7 +186,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                 }
                 finally
                 {
-                    searcher.close();
                     searcherManager.release( searcher );
                 }
             }
