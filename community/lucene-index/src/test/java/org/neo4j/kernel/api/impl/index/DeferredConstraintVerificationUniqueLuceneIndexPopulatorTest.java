@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Collections;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -31,8 +32,12 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.test.CleanupRule;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -47,7 +52,6 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
-
     @Test
     public void shouldVerifyThatThereAreNoDuplicates() throws Exception
     {
@@ -356,19 +360,67 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
             assertEquals( iterations, conflict.getAddedNodeId() );
         }
     }
+    
+    @Test
+    public void shouldReleaseSearcherProperlyAfterVerifyingDeferredConstraints() throws Exception
+    {
+        /*
+         * This test was created due to a problem in closing an index updater after deferred constraints
+         * had been verified, where it got stuck in a busy loop in ReferenceManager#acquire.
+         */
+        
+        // GIVEN an index updater that we close
+        OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<Void>( "Deferred", null ) );
+        executor.execute( new WorkerCommand<Void, Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+                {   // Just open it and let it be closed
+                }
+                return null;
+            }
+        } );
+        // ... and where we verify deferred constraints after
+        executor.execute( new WorkerCommand<Void, Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                populator.verifyDeferredConstraints( propertyAccessor );
+                return null;
+            }
+        } );
+        
+        // WHEN doing more index updating after that
+        // THEN it should be able to complete within a very reasonable time
+        executor.execute( new WorkerCommand<Void, Void>()
+        {
+            @Override
+            public Void doWork( Void state ) throws Exception
+            {
+                try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( propertyAccessor ) )
+                {   // Just open it and let it be closed
+                }
+                return null;
+            }
+        }, 5, SECONDS );
+    }
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
 
     private final FailureStorage failureStorage = mock( FailureStorage.class );
     private final long indexId = 1;
-    private DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
+    private final DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
+    private final IndexDescriptor descriptor = new IndexDescriptor( LABEL_ID, PROPERTY_KEY_ID );
 
     private File indexDirectory;
     private LuceneDocumentStructure documentLogic;
     private PropertyAccessor propertyAccessor;
     private DeferredConstraintVerificationUniqueLuceneIndexPopulator populator;
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     @Before
     public void setUp() throws Exception
