@@ -48,7 +48,7 @@ class LoadCsvAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
       execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {number: line[0]}) RETURN a.number")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
 
-    result.columnAs[Long]("a.name").toList === List("")
+    result.columnAs[Long]("a.number").toList === List("")
   }
 
   @Test def import_three_rows_numbers_and_strings() {
@@ -60,14 +60,27 @@ class LoadCsvAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
     }
 
     val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 3)
+    assertStats(result, nodesCreated = 3, propertiesSet = 3)
+  }
+
+  @Test def import_three_rows_with_headers() {
+    val fileName = createFile {
+      writer =>
+        writer.println("id,name")
+        writer.println("1, 'Aadvark'")
+        writer.println("2, 'Babs'")
+        writer.println("3, 'Cash'")
+    }
+
+    val result = execute(s"LOAD CSV WITH HEADERS FROM 'file://${fileName}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name")
+    assertStats(result, nodesCreated = 3, propertiesSet = 6)
   }
 
   @Test def empty_file_does_not_create_anything() {
     val fileName = createFile(writer => {})
 
     val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {name: line[0]}) RETURN a.name")
-    assertStats(result, nodesCreated = 3)
+    assertStats(result, nodesCreated = 0)
   }
 
   var files: Seq[File] = Seq.empty

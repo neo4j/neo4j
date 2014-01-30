@@ -33,18 +33,30 @@ class LoadCSVPipe(source: Pipe, withHeaders: Boolean, urlString: String, identif
       val csvReader = new CSVReader(reader)
       state.addCleanupTask(new CleanupTask { def close() { reader.close() } })
 
-      new Iterator[ExecutionContext] {
-        private var nextRow: Array[String] = csvReader.readNext()
+      class RowIterator extends Iterator[ExecutionContext] {
+        protected var nextRow: Array[String] = csvReader.readNext()
 
         def hasNext: Boolean =
           nextRow != null
 
+        abstract def rowValue(): Any
 
         def next(): ExecutionContext = {
           if (nextRow == null) Iterator.empty.next()
-          val newContext = context.newWith(identifier -> nextRow.toSeq)
+          val newContext = context.newWith(identifier -> rowValue(nextRow))
           nextRow = csvReader.readNext()
           newContext
+        }
+      }
+
+      if (withHeaders) {
+        val headers = csvReader.readNext().toSeq
+        new RowIterator {
+          def rowValue = nextRow.toSeq.zip(headers).toMap
+        }
+      } else {
+        new RowIterator {
+          def rowValue = nextRow.toSeq
         }
       }
     })

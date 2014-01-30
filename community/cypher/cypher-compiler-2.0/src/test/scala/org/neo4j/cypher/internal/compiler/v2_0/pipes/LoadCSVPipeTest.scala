@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.scalatest.Assertions
@@ -31,6 +50,29 @@ class LoadCSVPipeTest extends Assertions {
       Map("foo" -> Seq("2")),
       Map("foo" -> Seq("3")),
       Map("foo" -> Seq("4"))
+    ))
+  }
+
+  @Test
+  def should_handle_with_headers() {
+    //given
+    val ctx = ExecutionContext.empty
+    val input = new FakePipe(Iterator(ctx))
+
+    val fileName = createFile { writer =>
+      writer.println("a,b")
+      writer.println("1,2")
+      writer.println("3,4")
+    }
+    val pipe = new LoadCSVPipe(input, true, "file://" + fileName, "foo")
+
+    //when
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+
+    //then
+    assert(result === List(
+      Map("foo" -> Map("a" -> "1", "b" -> "2")),
+      Map("foo" -> Map("a" -> "3", "b" -> "4"))
     ))
   }
 

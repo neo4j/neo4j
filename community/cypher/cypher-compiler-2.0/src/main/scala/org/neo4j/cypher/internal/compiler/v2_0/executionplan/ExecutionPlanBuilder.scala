@@ -194,7 +194,7 @@ The Neo4j Team""")
       new PredicateRewriter, 
       new KeyTokenResolver,  
       new AggregationPreparationRewriter(), 
-      new IndexLookupBuilder, 
+      new IndexLookupBuilder,
       new StartPointChoosingBuilder, 
       new MergeStartPointBuilder,
       new OptionalMatchBuilder(matching)
@@ -205,7 +205,8 @@ The Neo4j Team""")
     def myBuilders: Seq[PlanBuilder] = Seq(
       new TraversalMatcherBuilder,
       new FilterBuilder, 
-      new NamedPathBuilder, 
+      new NamedPathBuilder,
+      new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder, 
       new ShortestPathBuilder 
