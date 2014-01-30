@@ -42,7 +42,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
-@Ignore("Temporarily, pending backport of fixes from master")
+@Ignore("Breaks occasionally, needs investigation")
 public class BackupHaIT
 {
     private DbRepresentation representation;
