@@ -20,10 +20,34 @@
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, MapType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_0.{CleanupTask, ExecutionContext, PlanDescription}
+import java.io.FileReader
+import au.com.bytecode.opencsv.CSVReader
+import java.net.URL
 
 class LoadCSVPipe(source: Pipe, withHeaders: Boolean, fileUrl: String, identifier: String) extends PipeWithSource(source) {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = ???
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    val reader = new CSVReader(new FileReader(new URL(fileUrl).getPath))
+
+    state.addCleanupTask(new CleanupTask { def close() { reader.close() } })
+
+    input.flatMap(f = context => {
+      new Iterator[ExecutionContext] {
+        private var nextRow: Array[String] = reader.readNext()
+
+        def hasNext: Boolean =
+          nextRow != null
+
+
+        def next(): ExecutionContext = {
+          if (nextRow == null) Iterator.empty.next()
+          val newContext = context.newWith(identifier -> nextRow.toSeq)
+          nextRow = reader.readNext()
+          newContext
+        }
+      }
+    })
+  }
 
   def executionPlanDescription: PlanDescription = {
     source.executionPlanDescription.andThen(this, "LoadCSV")
