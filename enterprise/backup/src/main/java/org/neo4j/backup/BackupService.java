@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -66,6 +64,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.util.Collections.emptyMap;
 
 class BackupService
 {
@@ -319,9 +319,8 @@ class BackupService
             public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                                boolean hasData ) throws IOException
             {
-                actual.write( path, data, temporaryBuffer, hasData );
-                progress.add( 1 );
                 int written = actual.write( path, data, temporaryBuffer, hasData );
+                progress.add( 1 );
                 return written;
             }
 

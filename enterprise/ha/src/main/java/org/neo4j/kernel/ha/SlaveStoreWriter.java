@@ -140,7 +140,7 @@ public class SlaveStoreWriter
             {
                 console.log( "Copying " + path );
                 int written = actual.write( path, data, temporaryBuffer, hasData );
-                console.log( "Copied " + path + " " + bytes( written ) );
+                console.log( "Copied  " + path + " " + bytes( written ) );
                 totalFiles++;
                 return written;
             }
