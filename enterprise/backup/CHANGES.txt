@@ -1,3 +1,7 @@
+1.9.6 (2014-01-31)
+------------------
+o HA backup instances now are logged as backup instead of "-1"
+
 1.9.4 (2013-09-19)
 ------------------
 o Backup tool and command line utility now exit with status 1 in case the

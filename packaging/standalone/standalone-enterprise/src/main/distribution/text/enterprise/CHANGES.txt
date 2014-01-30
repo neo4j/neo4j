@@ -1,4 +1,35 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
+1.9.6 (2014-01-31)
+------------------
+HA:
+o Index delete now propagates properly across all cluster nodes
+o Slaves now retry switching, making possible overcoming temporary failures
+o Remote transaction initialization is now explicitly marked and tracked, solving
+  transaction leakage and reuse problems
+o HA instances no longer require a snapshot on cluster join
+o HA instances now properly switch to PENDING state when losing quorum
+o Fixes save deadlock problem
+o Transactions now happen in the context of a master epoch, to solve issues
+  with transactions wrongly propagating between masters
+o Introduces monitoring for remote calls between cluster instances
+
+Kernel:
+o Fixes issue with batch inserter which could lead to record not in use exception
+  when adding properties
+o Introduces monitoring for reads/writes to the logical log
+
+Server:
+o Fixes issue with transacions leaking when there is an exception while rendering the response
+
+Backup:
+o HA backup instances now are logged as backup instead of "-1"
+
+Cluster:
+o Fixes message reordering issue
+o Fixes a Paxos instance reuse issue
+o Cluster join denial now includes cluster configuration
+o Fixes issues with proper Payload values passed around
+
 
 1.9.5 (2013-11-11)
 ------------------
