@@ -1,3 +1,8 @@
+2.0.1
+-----
+o Improve command formatting and escaping.
+o Save history in home directory to avoid permission issues.
+
 2.0.0-RC1
 ---------
 o Add '-' as filename for piping stdin directly into the shell, behaves as a file import.

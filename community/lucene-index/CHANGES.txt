@@ -1,3 +1,8 @@
+2.0.1
+-----
+o Improve speed of verifying unique constraints on constraint creation.
+o Reduce size on disk for numeric indexes.
+
 1.9.4 (2013-09-19)
 ------------------
 o Fixed issue where querying an index for "*:*" while having removed entities
