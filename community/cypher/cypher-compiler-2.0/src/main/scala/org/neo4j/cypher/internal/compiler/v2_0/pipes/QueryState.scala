@@ -30,7 +30,7 @@ case class QueryState(db: GraphDatabaseService,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
                       timeReader: TimeReader = new TimeReader,
-                      var initialContext: Option[ExecutionContext] = None) {
+                      var initialContext: Option[ExecutionContext] = None) extends CleanupTaskList {
   def readTimeStamp(): Long = timeReader.getTime
 
   private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
@@ -45,6 +45,8 @@ case class QueryState(db: GraphDatabaseService,
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def getStatistics = updateTrackingQryCtx.getStatistics
+
+  def getCleanupTasks: Seq[CleanupTask] = Seq.empty
 }
 
 class TimeReader {

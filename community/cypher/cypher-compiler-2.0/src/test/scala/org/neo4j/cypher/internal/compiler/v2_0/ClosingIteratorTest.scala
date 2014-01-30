@@ -20,51 +20,61 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
-import org.junit.Test
+import org.junit.{Before, Test}
 import org.hamcrest.CoreMatchers.is
 import org.junit.Assert.assertThat
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.when
-import org.mockito.Mockito.verify
+import org.mockito.Mockito._
 import org.scalatest.Assertions
+import org.scalatest.mock.MockitoSugar
 
-class ClosingIteratorTest extends Assertions {
+class ClosingIteratorTest extends Assertions with MockitoSugar {
+  var ctx: QueryContext = _
+  var cleanupTaskList: CleanupTaskList = _
+  var cleanupTask: CleanupTask = _
+
+  @Before
+  def before() {
+    ctx = mock[QueryContext]
+    cleanupTaskList = mock[CleanupTaskList]
+    cleanupTask = mock[CleanupTask]
+    when(cleanupTaskList.getCleanupTasks).thenReturn(Seq(cleanupTask))
+  }
+
   @Test
-  def should_call_close_when_we_reach_the_end() {
+  def should_cleanup_when_we_reach_the_end() {
     //Given
-    val ctx      = mock(classOf[QueryContext])
     val wrapee   = Iterator(Map("k" -> 42))
-    val iterator = new ClosingIterator(wrapee, ctx)
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
 
     //When
     val result = iterator.next()
 
     //Then
     verify(ctx).close(success = true)
+    verify(cleanupTask, times(1)).close()
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 
   @Test
-  def should_close_querycontext_even_for_empty_iterator() {
+  def should_cleanup_even_for_empty_iterator() {
     //Given
-    val ctx      = mock(classOf[QueryContext])
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, ctx)
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
 
     //When
     val result = iterator.hasNext
 
     //Then
     verify(ctx).close(success = true)
+    verify(cleanupTask, times(1)).close()
     assertThat(result, is(false))
   }
 
   @Test
   def multiple_has_next_should_not_close_more_than_once() {
     //Given
-    val ctx      = mock(classOf[QueryContext])
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, ctx)
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
 
     //When
     val result = iterator.hasNext
@@ -74,39 +84,56 @@ class ClosingIteratorTest extends Assertions {
     iterator.hasNext
 
     //Then
-    verify(ctx).close(success = true)
+    verify(ctx, times(1)).close(success = true)
+    verify(cleanupTask, times(1)).close()
     assertThat(result, is(false))
   }
 
   @Test
   def exception_in_hasNext_should_fail_transaction() {
     //Given
-    val ctx    = mock(classOf[QueryContext])
-    val wrapee = mock(classOf[Iterator[Map[String, Any]]])
+    val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenThrow(new RuntimeException)
-    val iterator = new ClosingIterator(wrapee, ctx)
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
 
     //Then
     verify(ctx).close(success = false)
+    verify(cleanupTask, times(1)).close()
   }
 
   @Test
   def exception_in_next_should_fail_transaction() {
     //Given
-    val ctx    = mock(classOf[QueryContext])
-    val wrapee = mock(classOf[Iterator[Map[String, Any]]])
+    val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
 
-    val iterator = new ClosingIterator(wrapee, ctx)
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
 
     //When
     intercept[RuntimeException](iterator.next())
 
     //Then
     verify(ctx).close(success = false)
+    verify(cleanupTask, times(1)).close()
+  }
+
+  @Test
+  def close_runs_cleanup() {
+    //Given
+    val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43))
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+
+    //When
+    val result = iterator.next()
+    iterator.close()
+
+    //Then
+    verify(ctx).close(success = true)
+    verify(cleanupTask, times(1)).close()
+    assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 }
