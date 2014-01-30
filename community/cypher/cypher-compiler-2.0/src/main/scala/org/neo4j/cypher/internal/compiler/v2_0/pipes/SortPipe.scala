@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import commands.SortItem
-import symbols._
 import scala.math.signum
+import java.util.concurrent.ThreadLocalRandom
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSource(source) with ExecutionContextComparer {
   def symbols = source.symbols
@@ -38,8 +38,8 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends PipeWithSo
 
 trait ExecutionContextComparer extends Comparer {
   def compareBy(a: ExecutionContext, b: ExecutionContext, order: Seq[SortItem])(implicit qtx: QueryState): Boolean = order match {
-    case Nil => false
-    case head :: tail => {
+    case Nil => ThreadLocalRandom.current().nextBoolean()
+    case head :: tail =>
       val aVal = head(a)
       val bVal = head(b)
       signum(compare(aVal, bVal)) match {
@@ -47,7 +47,5 @@ trait ExecutionContextComparer extends Comparer {
         case -1 => head.ascending
         case 0 => compareBy(a, b, tail)
       }
-    }
   }
-
 }
