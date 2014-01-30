@@ -7,6 +7,9 @@ o Fixes issue with batch inserter which could lead to record not in use exceptio
   when adding properties
 o Introduces monitoring for reads/writes to the logical log
 
+Cypher:
+o Fixes a concurrency problem in query parser
+
 Server:
 o Fixes issue with transacions leaking when there is an exception while rendering the response
 
@@ -17,7 +20,7 @@ o Fixed NPE in PersistenceWindowPool when concurrently loading non-mapped window
 o Fixed potential deadlock in PersistenceWindowPool cause by negative mark count
 o Performance optimizations for best-first selector
 o Database now waits on a timeout for transactions to finish before actually shutting
-  down, while preventing new transactions from starting up 
+  down, while preventing new transactions from starting up
 
 Server:
 o Shutdown hook is now properly removed on normal shutdown, removing potential thread
@@ -32,7 +35,6 @@ o Fixed potential suboptimal path finding in A* executions for particular graph 
 Lucene index:
 o Fixed issue where querying an index for "*:*" while having removed entities
   from it in the same transaction might result in exceptions.
-
 
 1.9.3 (2013-08-30)
 ------------------
@@ -209,8 +211,8 @@ o Optimizations for read performance
     transaction instead
 
 Server:
-o Server now allows - under some specific circumstances - setting empty arrays as properties. 
-  Specifically, it is allowed if there is a pre-existing array property on the entity from 
+o Server now allows - under some specific circumstances - setting empty arrays as properties.
+  Specifically, it is allowed if there is a pre-existing array property on the entity from
   which the server can infer the type of array to store.
 o Traversal Javascript is now security sandboxed. It is possible to turn the sandbox off for
   the next two releases, for backwards compatibility.
@@ -264,7 +266,7 @@ Kernel:
  o Fix for Node/Relationship#getPropertyValues() sometimes returning null values from the iterator.
 
 Server:
- o Upgraded Jackson JAXRS to version 1.9.7 
+ o Upgraded Jackson JAXRS to version 1.9.7
  o Keeping the Cypher execution engine between calls makes it possible to re-use execution plans
  o added User-Agent header tracking to udc to determine rest-driver usage
 
@@ -282,7 +284,7 @@ Cypher:
  o Fixed #818: Problem where properties could only have scalar values (they can be arrays as well)
  o Fixed #834: Gives relevant syntax exception when properties are entered in MATCH
 
- 1.8.M07 (2012-08-08)
+1.8.M07 (2012-08-08)
 --------------------
 Kernel:
  o Traversal framework backwards compatibility
@@ -303,7 +305,6 @@ UDC:
  o Fixed release version and revision
  o Changed precedence of database configuration over internal udc configuration
  o Added distribution information (dpkg, rpm, unknown)
-
 
 1.8.M06 (2012-07-06)
 --------------------
@@ -470,7 +471,7 @@ o Adding possiblity to restart server via JMX.
 --------------------
 o [cypher] BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
 o [cypher] BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator.
-o [server] DEPRECATION: Cypher execution is now part of the core REST API, the cypher plugin is deprecated. 
+o [server] DEPRECATION: Cypher execution is now part of the core REST API, the cypher plugin is deprecated.
 o [server] Webadmin data browser now supports cypher queries
 o [server] Updated to gremlin 1.4
 o [server] Fixed bug in how auto indexes are represented
@@ -507,7 +508,7 @@ o First iteration of the Cypher Query Language included,
   with a section in the manual.
 o Experimental support for batch operations in REST
 o The Neo4j Manual now includes some examples, and the
-  section on REST has been extended.   
+  section on REST has been extended.
 
 1.4.M01 (2011-04-28)
 --------------------
@@ -628,7 +629,7 @@ o Shuts down databases after verifying them.
 - Server
 o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
 o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
-o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property: 
+o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property:
   org.neo4j.server.db.tuning.properties into the neo4j-server.properties file.
 o Webadmin: Removed component titles, added save button to data browser, minor change to data browser layout.
 o Webadmin: Minor UI updates, added error message that shows up when server connection is lost.
@@ -667,7 +668,6 @@ o integrated index is now supported by the shell
 o new Evaluator interface improves the traversal API
 o support for index hit scores in neo4j-lucene-index
 o index caching support added to BatchInserter
-
 
 1.2.M04 (2010-11-18)
 --------------------
