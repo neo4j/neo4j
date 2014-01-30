@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.executionplan
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
 import scala.util.Random
 
-
 trait Namer extends (Expression => String) {
   def nextName(): String
 
@@ -32,5 +31,5 @@ trait Namer extends (Expression => String) {
 class RandomNamer extends Namer {
   val rand = new Random()
 
-  def nextName(): String = "  UNNAMED" + rand.nextString(5)
+  def nextName(): String = "  UNNAMED" + rand.nextLong()
 }

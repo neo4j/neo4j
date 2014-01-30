@@ -34,6 +34,13 @@ import org.scalautils.LegacyTripleEquals
 
 class ExecutionEngineTest extends ExecutionEngineHelper with StatisticsChecker with LegacyTripleEquals {
 
+  @Test def shouldSupportMultipleDivisionsInAggregateFunction() {
+    createNode()
+    val result = executeScalar[Number]("match (n) return count(n)/60/60 as count").intValue()
+
+    assertEquals(0, result)
+  }
+
   @Ignore
   @Test def assignToPathInsideForeachShouldWork() {
     execute(
