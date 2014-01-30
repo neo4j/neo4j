@@ -6,6 +6,19 @@ o Fixes problem with compiling queries with NOT expressions in them
 o Fixes #1735 - Indexes and AND predicates produce wrong results
 o Fixes #1876 - Null nodes and properties should be ignored when SETting properties
 o Fixes problem with parser not being thread safe. State is bad, m'kay?
+o Add support for double literals in exponent form
+o Use internal heirarchy for types. Previously dependeded on Scala type hierarchy
+o Fixes MERGE without any identifier previously known
+
+2.0
+---
+o Fix for problem with index lookups against properties
+o Fix: MERGE should work when finding multiple elements
+o Fix: Should support updates for merging
+o Fix issue when mixing Cypher queries of different versions
+o Fix problems with CREATE for relationships without declared nodes
+o Allow MERGE to run inside FOREACH
+o Prevent the use of parameter maps in MATCH and MERGE
 
 2.0.0-RC1
 ---------
