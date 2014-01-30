@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,16 +29,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -56,144 +54,19 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     }
 
     @Test
-    public void shouldAddUniqueEntries() throws Exception
+    public void closingAnOnlineIndexUpdaterMustNotThrowEvenIfItHasBeenFedConflictingData() throws Exception
     {
-        // when
-        updateAndCommit( asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
-        updateAndCommit( asList( add( 3l, "value3" ) ) );
+        // The reason is that we use and close IndexUpdaters in commit - not in prepare - and therefor
+        // we cannot have them go around and throw exceptions, because that could potentially break
+        // recovery.
+        // Conflicting data can happen because of faulty data coercion. These faults are resolved by
+        // the exact-match filtering we do on index lookups in StateHandlingStatementOperations.
 
-        // then
-        assertEquals( asList( 1l ), getAllNodes( "value1" ) );
-    }
+        updateAndCommit( asList(
+                NodePropertyUpdate.add( 1L, PROPERTY_KEY_ID, "a", new long[]{1000} ),
+                NodePropertyUpdate.add( 2L, PROPERTY_KEY_ID, "a", new long[]{1000} ) ) );
 
-    @Test
-    public void shouldUpdateUniqueEntries() throws Exception
-    {
-        // when
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-        updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
-
-        // then
-        assertEquals( asList( 1l ), getAllNodes( "value2" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( "value1" ) );
-    }
-
-    @Test
-    public void shouldRemoveAndAddEntries() throws Exception
-    {
-        // when
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-        updateAndCommit( asList( add( 2l, "value2" ) ) );
-        updateAndCommit( asList( add( 3l, "value3" ) ) );
-        updateAndCommit( asList( add( 4l, "value4" ) ) );
-        updateAndCommit( asList( remove( 1l, "value1" ) ) );
-        updateAndCommit( asList( remove( 2l, "value2" ) ) );
-        updateAndCommit( asList( remove( 3l, "value3" ) ) );
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-        updateAndCommit( asList( add( 3l, "value3b" ) ) );
-
-        // then
-        assertEquals( asList( 1l ), getAllNodes( "value1" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( "value2" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( "value3" ) );
-        assertEquals( asList( 3l ), getAllNodes( "value3b" ) );
-        assertEquals( asList( 4l ), getAllNodes( "value4" ) );
-    }
-
-    @Test
-    public void shouldConsiderWholeTransactionForValidatingUniqueness() throws Exception
-    {
-        // when
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-        updateAndCommit( asList( add( 2l, "value2" ) ) );
-        updateAndCommit( asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
-
-        // then
-        assertEquals( asList( 2l ), getAllNodes( "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( "value2" ) );
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectChangingEntryToAlreadyIndexedValue() throws Exception
-    {
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-        updateAndCommit( asList( add( 2l, "value2" ) ) );
-
-        // when
-        try
-        {
-            updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value2", 2l, 1l );
-        }
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange() throws Exception
-    {
-        // given
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-        updateAndCommit( asList( change( 1l, "value1", "value2" ) ) );
-
-        // when
-        try
-        {
-            updateAndCommit( asList( add( 2l, "value2" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value2", 1l, 2l );
-        }
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectEntryWithAlreadyIndexedValue() throws Exception
-    {
-        // given
-        updateAndCommit( asList( add( 1l, "value1" ) ) );
-
-        // when
-        try
-        {
-            updateAndCommit( asList( add( 2l, "value1" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value1", 1l, 2l );
-        }
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues() throws Exception
-    {
-        // when
-        try
-        {
-            updateAndCommit( asList( add( 1l, "value1" ),
-                    add( 2l, "value1" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( DuplicateIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value1", 1l, 2l );
-        }
+        assertThat( getAllNodes( "a" ), equalTo( asList( 1L, 2L ) ) );
     }
 
     @Before
@@ -223,41 +96,13 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
             {
                 list.add( iterator.next() );
             }
+            Collections.sort( list );
             return list;
         }
         finally
         {
             reader.close();
         }
-    }
-
-    private NodePropertyUpdate add( long nodeId, Object propertyValue )
-    {
-        return NodePropertyUpdate.add( nodeId, PROPERTY_KEY_ID, propertyValue, new long[]{1000} );
-    }
-
-    private NodePropertyUpdate change( long nodeId, Object oldValue, Object newValue )
-    {
-        return NodePropertyUpdate.change( nodeId, PROPERTY_KEY_ID, oldValue, new long[]{1000}, newValue, new long[]{1000} );
-    }
-
-    private NodePropertyUpdate remove( long nodeId, Object oldValue )
-    {
-        return NodePropertyUpdate.remove( nodeId, PROPERTY_KEY_ID, oldValue, new long[]{1000} );
-    }
-
-    private void assertConflict( PreexistingIndexEntryConflictException conflict, String propertyValue,
-                                 long existingNode, long addedNode )
-    {
-        assertEquals( propertyValue, conflict.getPropertyValue() );
-        assertEquals( existingNode, conflict.getExistingNodeId() );
-        assertEquals( addedNode, conflict.getAddedNodeId() );
-    }
-
-    private void assertConflict( DuplicateIndexEntryConflictException conflict, String propertyValue, Long... nodes )
-    {
-        assertEquals( propertyValue, conflict.getPropertyValue() );
-        assertEquals( asSet( nodes ), conflict.getConflictingNodeIds() );
     }
 
     private void updateAndCommit( List<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
