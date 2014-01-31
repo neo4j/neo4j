@@ -33,7 +33,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
@@ -54,12 +54,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+
 
 public class XaLogicalLogTest
 {
@@ -107,8 +107,8 @@ public class XaLogicalLogTest
                                                       mock( XaResourceManager.class ),
                                                       mock( XaCommandFactory.class ),
                                                       xaTf,
-                                                      new DefaultLogBufferFactory(),
                                                       fs,
+                                                      new Monitors(),
                                                       new SingleLoggingService( StringLogger.wrap( output.writer() ) ),
                                                       LogPruneStrategies.NO_PRUNING,
                                                       mock( TransactionStateFactory.class ),
@@ -140,8 +140,8 @@ public class XaLogicalLogTest
                 mock( XaResourceManager.class ),
                 new FixedSizeXaCommandFactory(),
                 new VersionRespectingXaTransactionFactory(),
-                new DefaultLogBufferFactory(),
                 ephemeralFs.get(),
+                new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
                 mock( TransactionStateFactory.class ), maxSize,

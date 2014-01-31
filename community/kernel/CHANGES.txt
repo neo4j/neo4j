@@ -1,3 +1,11 @@
+2.0.1
+-----
+o Improve speed of verifying unique constraints on constraint creation.
+o Improve speed of creating label scan store in BatchInserter.
+o Fixes issue with batch inserter which could lead to record not in use exception
+  when adding properties
+o Introduces monitoring for reads/writes to the logical log
+
 2.0.0-RC1
 ---------
 o BREAKING CHANGE: Reference node has been removed.

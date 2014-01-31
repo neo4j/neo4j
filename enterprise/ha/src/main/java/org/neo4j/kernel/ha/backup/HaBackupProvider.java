@@ -47,6 +47,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -107,7 +108,8 @@ public final class HaBackupProvider extends BackupExtensionService
                 new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
-                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), null, objectStreamFactory, objectStreamFactory ) );
+                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), new HANewSnapshotFunction(),
+                objectStreamFactory, objectStreamFactory ) );
 
         // Refresh the snapshot once we join
         clusterClient.addClusterListener( new ClusterListener.Adapter()
@@ -115,7 +117,7 @@ public final class HaBackupProvider extends BackupExtensionService
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                clusterClient.refreshSnapshot();
+                clusterClient.performRoleElections();
                 clusterClient.removeClusterListener( this );
             }
         });

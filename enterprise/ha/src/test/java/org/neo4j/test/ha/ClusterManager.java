@@ -79,6 +79,7 @@ import org.slf4j.impl.StaticLoggerBinder;
 import org.w3c.dom.Document;
 import ch.qos.logback.classic.LoggerContext;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 
@@ -601,7 +602,8 @@ public class ClusterManager
                 }
             }
             String state = printState( this );
-            throw new IllegalStateException( "Awaited condition never met, waited " + maxSeconds + " for " + predicate+":"+state );
+            throw new IllegalStateException( format(
+                    "Awaited condition never met, waited %s for %s:%n%s", maxSeconds, predicate, state ) );
         }
 
         /**

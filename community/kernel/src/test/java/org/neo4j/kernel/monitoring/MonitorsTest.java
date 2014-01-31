@@ -20,8 +20,10 @@
 package org.neo4j.kernel.monitoring;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import org.junit.Test;
 
@@ -86,5 +88,27 @@ public class MonitorsTest
 
         // Then
         verifyNoMoreInteractions( listener );
+    }
+
+    @Test
+    public void shouldRespectTags() throws Exception
+    {
+        // Given
+        Monitors monitors = new Monitors();
+
+        MyMonitor listener = mock( MyMonitor.class );
+        MyMonitor monitorTag1 = monitors.newMonitor( MyMonitor.class, "tag1" );
+        MyMonitor monitorTag2 = monitors.newMonitor( MyMonitor.class, "tag2" );
+
+        // When
+        monitors.addMonitorListener( listener, "tag2" );
+
+        // Then
+        monitorTag1.aVoid();
+        verifyZeroInteractions( listener );
+        monitorTag2.aVoid();
+        verify( listener, times(1) ).aVoid();
+        verifyNoMoreInteractions( listener );
+
     }
 }

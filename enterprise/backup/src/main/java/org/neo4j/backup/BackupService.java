@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Collections.emptyMap;
 
@@ -98,7 +99,8 @@ class BackupService
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
 
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(), null );
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
+                new Monitors(), null );
         client.start();
         long timestamp = System.currentTimeMillis();
         Map<String, Long> lastCommittedTxs = emptyMap();
@@ -142,7 +144,10 @@ class BackupService
                      * span the next-to-last up to the latest for each datasource
                      */
                     BackupClient recoveryClient = new BackupClient(
-                            sourceHostNameOrIp, sourcePort, targetDb.getDependencyResolver().resolveDependency( Logging.class ), targetDb.storeId() );
+                    sourceHostNameOrIp, sourcePort,
+                        targetDb.getDependencyResolver().resolveDependency( Logging.class ),
+                        targetDb.getDependencyResolver().resolveDependency( Monitors.class ),
+                        targetDb.storeId() );
                     recoveryClient.start();
                     Response<Void> recoveryResponse = null;
                     Map<String, Long> recoveryDiff = new HashMap<String, Long>();
@@ -311,11 +316,12 @@ class BackupService
             private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded( "Files copied", 1 );
 
             @Override
-            public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+            public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                                boolean hasData ) throws IOException
             {
-                actual.write( path, data, temporaryBuffer, hasData );
+                int written = actual.write( path, data, temporaryBuffer, hasData );
                 progress.add( 1 );
+                return written;
             }
 
             @Override
@@ -343,7 +349,8 @@ class BackupService
                 param.configure( config );
             }
         }
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( targetDirectory ).setConfig( config ).newGraphDatabase();
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( targetDirectory )
+                .setConfig( config ).newGraphDatabase();
     }
 
     private RequestContext addDiffToSlaveContext( RequestContext original,
@@ -382,7 +389,9 @@ class BackupService
     private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
                                                   RequestContext context )
     {
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, targetDb.getDependencyResolver().resolveDependency( Logging.class ),
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
+                targetDb.getDependencyResolver().resolveDependency( Logging.class ),
+                targetDb.getDependencyResolver().resolveDependency( Monitors.class ),
                 targetDb.storeId() );
         client.start();
         Map<String, Long> lastCommittedTxs;

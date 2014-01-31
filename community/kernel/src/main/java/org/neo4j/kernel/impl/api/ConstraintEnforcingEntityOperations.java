@@ -195,7 +195,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     @Override
     public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException
-
     {
         return entityReadOperations.nodesGetFromIndexLookup( state, index, value );
     }

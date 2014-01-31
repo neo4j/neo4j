@@ -24,15 +24,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.index.DuplicateIndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.util.DiffSets;
-
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
@@ -77,27 +72,29 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        // verify uniqueness
-        for ( Map.Entry<Object, DiffSets<Long>> entry : referenceCount.entrySet() )
-        {
-            Object value = entry.getKey();
-            int delta = entry.getValue().delta();
-            if ( delta > 1 )
-            {
-                throw new DuplicateIndexEntryConflictException( value, asSet( entry.getValue().getAdded() ) );
-            }
-            if ( delta == 1 )
-            {
-                Long addedNode = single( entry.getValue().getAdded() );
+        // This has been commented out for now. See trello card #1039.
 
-                Long existingNode = lookup.currentlyIndexedNode( value );
-
-                if ( existingNode != null && !addedNode.equals( existingNode ) )
-                {
-                    throw new PreexistingIndexEntryConflictException( value, existingNode, addedNode );
-                }
-            }
-        }
+//        // verify uniqueness
+//        for ( Map.Entry<Object, DiffSets<Long>> entry : referenceCount.entrySet() )
+//        {
+//            Object value = entry.getKey();
+//            int delta = entry.getValue().delta();
+//            if ( delta > 1 )
+//            {
+//                throw new DuplicateIndexEntryConflictException( value, asSet( entry.getValue().getAdded() ) );
+//            }
+//            if ( delta == 1 )
+//            {
+//                Long addedNode = single( entry.getValue().getAdded() );
+//
+//                Long existingNode = lookup.currentlyIndexedNode( value );
+//
+//                if ( existingNode != null && !addedNode.equals( existingNode ) )
+//                {
+//                    throw new PreexistingIndexEntryConflictException( value, existingNode, addedNode );
+//                }
+//            }
+//        }
 
         // flush updates
         flushUpdates( updates );

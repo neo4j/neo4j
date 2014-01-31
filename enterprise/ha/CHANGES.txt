@@ -1,3 +1,18 @@
+2.0.1
+-----
+o HA Backup now properly resolves the master URI, solving a bug where ha:// backups not running
+  from the current master would in some cases fail
+o Index delete now propagates properly across all cluster nodes
+o Slaves now retry switching, making possible overcoming temporary failures
+o Remote transaction initialization is now explicitly marked and tracked, solving
+  transaction leakage and reuse problems
+o HA instances no longer require a snapshot on cluster join
+o HA instances now properly switch to PENDING state when losing quorum
+o Fixes save deadlock problem
+o Transactions now happen in the context of a master epoch, to solve issues
+  with transactions wrongly propagating between masters
+o Introduces monitoring for remote calls between cluster instances
+
 2.0.0-RC1
 ---------
 o The GCResistantCache is now called the HighPerformanceCache. The configuration for enabling it has changed from
@@ -6,11 +21,6 @@ o The GCResistantCache is now called the HighPerformanceCache. The configuration
 2.0.0.M06
 ---------
 o Constraints can now be created in a running HA cluster
-
-1.9.6
------
-o HA Backup now properly resolves the master URI, solving a bug where ha:// backups not running
-  from the current master would in some cases fail
 
 1.9.5 (2013-11-11)
 ------------------

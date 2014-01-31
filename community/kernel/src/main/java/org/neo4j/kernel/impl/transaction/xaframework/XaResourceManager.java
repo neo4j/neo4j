@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 // make package access?
 public class XaResourceManager
@@ -58,6 +59,7 @@ public class XaResourceManager
     
     private final ArrayMap<XAResource,ResourceTransaction> xaResourceMap = new ArrayMap<>();
     private final ArrayMap<Xid,XidStatus> xidMap = new ArrayMap<>();
+    private final TransactionMonitor transactionMonitor;
     private int recoveredTxCount = 0;
     private final Map<Integer, TransactionInfo> recoveredTransactions = new HashMap<>();
 
@@ -71,8 +73,8 @@ public class XaResourceManager
     private final RecoveryVerifier recoveryVerifier;
 
     public XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
-                              TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
-                              RecoveryVerifier recoveryVerifier, String name )
+            TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
+            RecoveryVerifier recoveryVerifier, String name, Monitors monitors )
     {
         this.dataSource = dataSource;
         this.tf = tf;
@@ -80,6 +82,7 @@ public class XaResourceManager
         this.transactionManager = transactionManager;
         this.recoveryVerifier = recoveryVerifier;
         this.name = name;
+        this.transactionMonitor = monitors.newMonitor( TransactionMonitor.class, getClass(), dataSource.getName() );
     }
 
     public synchronized void setLogicalLog( XaLogicalLog log )
@@ -427,6 +430,7 @@ public class XaResourceManager
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
+        transactionMonitor.injectOnePhaseCommit( xid );
     }
 
     synchronized void injectTwoPhaseCommit( Xid xid ) throws XAException
@@ -442,6 +446,7 @@ public class XaResourceManager
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
+        transactionMonitor.injectTwoPhaseCommit( xid );
     }
 
     synchronized XaTransaction getXaTransaction( Xid xid ) throws XAException
@@ -482,7 +487,7 @@ public class XaResourceManager
             }
             else
             {
-                commitWriteTx( xid, onePhase, xaTransaction, isReadOnly, txStatus, txIdGenerator );
+                commitWriteTx( xid, onePhase, xaTransaction, txStatus, txIdGenerator );
             }
         }
 
@@ -521,7 +526,7 @@ public class XaResourceManager
         }
     }
 
-    private void commitWriteTx( Xid xid, boolean onePhase, XaTransaction xaTransaction, boolean readOnly,
+    private void commitWriteTx( Xid xid, boolean onePhase, XaTransaction xaTransaction,
                                 TransactionStatus txStatus, TxIdGenerator txIdGenerator ) throws XAException
     {
         checkStartWritten( txStatus, xaTransaction );
@@ -529,7 +534,7 @@ public class XaResourceManager
         if ( onePhase )
         {
             txStatus.markAsPrepared();
-            if ( !readOnly && !xaTransaction.isRecovered() )
+            if ( !xaTransaction.isRecovered() )
             {
                 xaTransaction.prepare();
 
@@ -540,36 +545,39 @@ public class XaResourceManager
                         xaTransaction.getCommitTxId(), getForceMode() );
             }
         }
+
         if ( !txStatus.prepared() || txStatus.rollback() )
         {
             throw new XAException( "Transaction not prepared or "
                     + "(marked as) rolledbacked" );
         }
-        if ( !readOnly )
+
+        if ( !onePhase && !xaTransaction.isRecovered() )
         {
-            if ( !onePhase && !xaTransaction.isRecovered() )
-            {
-                long txId = txIdGenerator.generate( dataSource,
-                        xaTransaction.getIdentifier() );
-                xaTransaction.setCommitTxId( txId );
-                log.commitTwoPhase( xaTransaction.getIdentifier(),
-                        xaTransaction.getCommitTxId(), getForceMode() );
-            }
-            txStatus.markCommitStarted();
-            if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )
-            {
-                boolean previousRecoveredValue = dataSource.setRecovered( true );
-                try
-                {
-                    xaTransaction.setCommitTxId( dataSource.getLastCommittedTxId() + 1 );
-                }
-                finally
-                {
-                    dataSource.setRecovered( previousRecoveredValue );
-                }
-            }
-            xaTransaction.commit();
+            long txId = txIdGenerator.generate( dataSource,
+                    xaTransaction.getIdentifier() );
+            xaTransaction.setCommitTxId( txId );
+            log.commitTwoPhase( xaTransaction.getIdentifier(),
+                    xaTransaction.getCommitTxId(), getForceMode() );
         }
+
+        txStatus.markCommitStarted();
+
+        if ( xaTransaction.isRecovered() && xaTransaction.getCommitTxId() == -1 )
+        {
+            boolean previousRecoveredValue = dataSource.setRecovered( true );
+            try
+            {
+                xaTransaction.setCommitTxId( dataSource.getLastCommittedTxId() + 1 );
+            }
+            finally
+            {
+                dataSource.setRecovered( previousRecoveredValue );
+            }
+        }
+
+        xaTransaction.commit();
+
         if ( !xaTransaction.isRecovered() )
         {
             log.done( xaTransaction.getIdentifier() );
@@ -581,12 +589,15 @@ public class XaResourceManager
             recoveredTransactions.put( identifier, new TransactionInfo( identifier, onePhase,
                     xaTransaction.getCommitTxId(), startEntry.getMasterId(), startEntry.getChecksum() ) );
         }
+
         xidMap.remove( xid );
+
         if ( xaTransaction.isRecovered() )
         {
             recoveredTxCount--;
             checkIfRecoveryComplete();
         }
+        transactionMonitor.transactionCommitted( xid, xaTransaction.isRecovered() );
     }
 
     private ForceMode getForceMode()

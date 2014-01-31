@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.io.File;
-import javax.transaction.SystemException;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.kernel.KernelEventHandlers;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TargetDirectory;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
+import java.io.File;
+
+import javax.transaction.SystemException;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TargetDirectory;
 
 public class TxManagerTest
 {
@@ -50,7 +51,8 @@ public class TxManagerTest
     {
         // Given
         File txLogDir = TargetDirectory.forTest( fs.get(), getClass() ).directory( "log", true );
-        TxManager txm = new TxManager( txLogDir, mockXaManager, panicGenerator, StringLogger.DEV_NULL, fs.get(), null, null );
+        TxManager txm = new TxManager( txLogDir, mockXaManager, panicGenerator, StringLogger.DEV_NULL, fs.get(), null,
+                null, new Monitors() );
         txm.doRecovery(); // Make the txm move to an ok state
 
         String msg = "These kinds of throwables, breaking our transaction managers, are why we can't have nice things.";

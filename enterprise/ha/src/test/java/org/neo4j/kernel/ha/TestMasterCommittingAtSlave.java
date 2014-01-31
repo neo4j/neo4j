@@ -45,6 +45,7 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.LogMarker;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.*;
@@ -284,7 +286,7 @@ public class TestMasterCommittingAtSlave
         @Override
         public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
         {
-            return LogExtractor.from( FS, dir, startTxId );
+            return LogExtractor.from( FS, dir, new Monitors().newMonitor( ByteCounterMonitor.class ), startTxId );
         }
 
         @Override
