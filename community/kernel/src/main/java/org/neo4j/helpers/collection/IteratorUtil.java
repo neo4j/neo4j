@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
 
@@ -344,9 +346,9 @@ public abstract class IteratorUtil
         }
         finally
         {
-            if ( iterator instanceof ResourceIterator )
+            if ( iterator instanceof Resource )
             {
-                ((ResourceIterator) iterator).close();
+                ((Resource) iterator).close();
             }
         }
     }
@@ -363,20 +365,27 @@ public abstract class IteratorUtil
      */
     public static long single( PrimitiveLongIterator iterator, long itemIfNone )
     {
-        if ( iterator.hasNext() )
+        try
         {
-            long result = iterator.next();
             if ( iterator.hasNext() )
             {
-                throw new NoSuchElementException( "More than one element in " +
-                        iterator + ". First element is '" + result +
-                        "' and the second element is '" + iterator.next() + "'" );
+                long result = iterator.next();
+                if ( iterator.hasNext() )
+                {
+                    throw new NoSuchElementException( "More than one element in " +
+                            iterator + ". First element is '" + result +
+                            "' and the second element is '" + iterator.next() + "'" );
+                }
+                return result;
             }
-            return result;
-        }
-        else
-        {
             return itemIfNone;
+        }
+        finally
+        {
+            if ( iterator instanceof Resource )
+            {
+                ((Resource) iterator).close();
+            }
         }
     }
 
@@ -1261,6 +1270,31 @@ public abstract class IteratorUtil
                     throw new NoSuchElementException();
                 }
                 return current.next();
+            }
+        };
+    }
+    
+    public static PrimitiveLongResourceIterator resourceIterator( final PrimitiveLongIterator iterator,
+            final Resource resource )
+    {
+        return new PrimitiveLongResourceIterator()
+        {
+            @Override
+            public void close()
+            {
+                resource.close();
+            }
+            
+            @Override
+            public long next()
+            {
+                return iterator.next();
+            }
+            
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
             }
         };
     }
