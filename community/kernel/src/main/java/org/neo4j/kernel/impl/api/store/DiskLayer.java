@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -64,10 +65,12 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveIntIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
@@ -139,14 +142,12 @@ public class DiskLayer
             }
         }
     }
-
     
     public int labelGetForName( String label )
     {
         return labelTokenHolder.getIdByName( label );
     }
 
-    
     public boolean nodeHasLabel( long nodeId, int labelId )
     {
         try
@@ -158,7 +159,6 @@ public class DiskLayer
             return false;
         }
     }
-
     
     public PrimitiveIntIterator nodeGetLabels( long nodeId )
     {
@@ -195,7 +195,6 @@ public class DiskLayer
             return emptyPrimitiveIntIterator();
         }
     }
-
     
     public String labelGetName( int labelId ) throws LabelNotFoundKernelException
     {
@@ -214,7 +213,6 @@ public class DiskLayer
         return state.getLabelScanReader().nodesWithLabel( labelId );
     }
 
-
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
             throws SchemaRuleNotFoundException
     {
@@ -226,24 +224,20 @@ public class DiskLayer
         return new IndexDescriptor( ruleRecord.getLabel(), ruleRecord.getPropertyKey() );
     }
 
-    
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( indexRules( labelId ) );
     }
-
     
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         return getIndexDescriptorsFor( INDEX_RULES );
     }
-
     
     public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
-
     
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
@@ -309,27 +303,23 @@ public class DiskLayer
         }, filtered );
     }
 
-    
     public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getOwningConstraint();
     }
 
-    
     public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         return schemaStorage.indexRule( index.getLabelId(), index.getPropertyKeyId() ).getId();
     }
 
-    
     public InternalIndexState indexGetState( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getState();
     }
 
-    
     public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getProxyForRule( indexId( descriptor ) ).getPopulationFailure().asString();
@@ -359,7 +349,6 @@ public class DiskLayer
             }
         } );
     }
-
     
     public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
     {
@@ -367,25 +356,21 @@ public class DiskLayer
                 labelId, Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
-    
     public Iterator<UniquenessConstraint> constraintsGetAll()
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
                 Predicates.<UniquenessConstraintRule>TRUE() );
     }
 
-    
     public int propertyKeyGetOrCreateForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getOrCreateId( propertyKey );
     }
 
-
     public int propertyKeyGetForName( String propertyKey )
     {
         return propertyKeyTokenHolder.getIdByName( propertyKey );
     }
-
     
     public String propertyKeyGetName( int propertyKeyId )
             throws PropertyKeyIdNotFoundKernelException
@@ -400,7 +385,6 @@ public class DiskLayer
         }
     }
 
-    
     public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId )
             throws EntityNotFoundException
     {
@@ -413,7 +397,6 @@ public class DiskLayer
             throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
     }
-
     
     public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
@@ -428,17 +411,22 @@ public class DiskLayer
         }
     }
 
-    
     public Iterator<DefinedProperty> graphGetAllProperties()
     {
         return loadAllPropertiesOf( neoStore.asRecord() );
     }
 
-
-    public PrimitiveLongIterator nodeGetUniqueFromIndexLookup( KernelStatement state, long indexId, Object value )
+    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state,
+            long indexId, Object value )
             throws IndexNotFoundKernelException
     {
-        return state.getFreshIndexReader( indexId ).lookup( value );
+        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
+         * since subsequent filtering will happen outside, but at the same time have the ability to
+         * close the IndexReader when done iterating over the lookup result. This is because we get
+         * a fresh reader that isn't associated with the current transaction and hence will not be
+         * automatically closed. */
+        IndexReader reader = state.getFreshIndexReader( indexId );
+        return resourceIterator( reader.lookup( value ), reader );
     }
 
     public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, long index, Object value )

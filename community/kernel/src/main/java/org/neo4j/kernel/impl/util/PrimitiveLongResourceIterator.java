@@ -17,33 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.impl.util;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-
-/**
- * Reader for an {@link IndexAccessor}.
- * Must honor repeatable reads, which means that if a lookup is executed multiple times the same result set
- * must be returned.
- */
-public interface IndexReader extends Resource
+public interface PrimitiveLongResourceIterator extends PrimitiveLongIterator, Resource
 {
-    PrimitiveLongIterator lookup( Object value );
-    
-    IndexReader EMPTY = new IndexReader()
-    {
-        @Override
-        public PrimitiveLongIterator lookup( Object value )
-        {
-            return emptyPrimitiveLongIterator();
-        }
-        
-        @Override
-        public void close()
-        {
-        }
-    };
 }
