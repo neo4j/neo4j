@@ -103,8 +103,8 @@ trait Expressions extends Parser
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.CollectionSlice(_: ast.Expression, _, _))
       | operatorIdentifier("=~") ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
       | keywordIdentifier("IN") ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | keywordIdentifier("IS", "NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
-      | keywordIdentifier("IS", "NOT", "NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
+      | keywordIdentifier("IS NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
+      | keywordIdentifier("IS NOT NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
