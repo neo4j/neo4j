@@ -77,6 +77,45 @@ class LoadCSVPipeTest extends Assertions {
   }
 
   @Test
+  def should_handle_with_headers_even_for_uneven_files() {
+    //given
+    val ctx = ExecutionContext.empty
+    val input = new FakePipe(Iterator(ctx))
+
+    val fileName = createFile {
+      writer =>
+        writer.println("a,b")
+        writer.println("1,2")
+        writer.println("3")
+    }
+    val pipe = new LoadCSVPipe(input, true, "file://" + fileName, "foo")
+
+    //when
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+
+    //then
+    assert(result === List(
+      Map("foo" -> Map("a" -> "1", "b" -> "2")),
+      Map("foo" -> Map("a" -> "3"))
+    ))
+  }
+
+  @Test
+  def should_give_a_helpful_message_when_asking_for_headers_with_empty_file() {
+    //given
+    val ctx = ExecutionContext.empty
+    val input = new FakePipe(Iterator(ctx))
+
+    val fileName = createFile(_ => {})
+    val pipe = new LoadCSVPipe(input, true, "file://" + fileName, "foo")
+
+    //when
+    val result = pipe.createResults(QueryStateHelper.empty).toList
+
+    assert(result === List())
+  }
+
+  @Test
   def should_be_able_to_read_a_file_twice() {
     //given
     val ctx = ExecutionContext.empty
@@ -97,7 +136,8 @@ class LoadCSVPipeTest extends Assertions {
     assert(result.size === 8)
   }
 
-  @Ignore("2014-01-30 Andres & Jakub - Tries to get data from internet") @Test
+  @Ignore("2014-01-30 Andres & Jakub - Tries to get data from internet")
+  @Test
   def should_be_able_to_handle_an_http_file() {
     //given
     val ctx = ExecutionContext.empty

@@ -76,6 +76,25 @@ class LoadCsvAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
   }
 
+  @Test def should_handle_quotes() {
+    val fileName = createFile {
+      writer =>
+        writer.println("String without quotes")
+        writer.println("'String, with single quotes'")
+        writer.println("\"String, with double quotes\"")
+        writer.println(""""String with ""quotes"" in it"""")
+        writer.println("""String with "quotes" in it""")
+    }
+
+    val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line RETURN line as string").toList
+    assert(result === List(
+      Map("string" -> Seq("String without quotes")),
+      Map("string" -> Seq("'String", " with single quotes'")),
+      Map("string" -> Seq("String, with double quotes")),
+      Map("string" -> Seq( """String with "quotes" in it""")),
+      Map("string" -> Seq( """String with "quotes" in it"""))))
+  }
+
   @Test def empty_file_does_not_create_anything() {
     val fileName = createFile(writer => {})
 
