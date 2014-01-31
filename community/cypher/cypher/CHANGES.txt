@@ -5,10 +5,11 @@ o Makes it possible to write MERGE queries with no already known parts
 o Fixes problem with compiling queries with NOT expressions in them
 o Fixes #1735 - Indexes and AND predicates produce wrong results
 o Fixes #1876 - Null nodes and properties should be ignored when SETting properties
-o Fixes problem with parser not being thread safe. State is bad, m'kay?
+o Fixes problem with parser not being thread safe.
 o Add support for double literals in exponent form
 o Use internal heirarchy for types. Previously dependeded on Scala type hierarchy
 o Fixes MERGE without any identifier previously known
+o Corrects numerous inconsistencies when performing static type inference during compilation.
 
 2.0
 ---
