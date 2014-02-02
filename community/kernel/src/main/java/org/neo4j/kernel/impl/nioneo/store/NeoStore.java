@@ -73,7 +73,7 @@ public class NeoStore extends AbstractStore
 
     public static boolean isStorePresent( FileSystemAbstraction fs, Config config )
     {
-        File neoStore = config.get( Configuration.neo_store );
+        File neoStore = config.get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store );
         return fs.fileExists( neoStore );
     }
 
@@ -159,7 +159,7 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( Configuration.neo_store) ));
+                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store) ));
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
                     throw new IllegalStateException( format(
@@ -185,18 +185,25 @@ public class NeoStore extends AbstractStore
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
          */
-        if ( getFileChannel().size() == RECORD_SIZE*5 )
+        setRecovered();
+        try
         {
-            insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
-            registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
+            if ( getFileChannel().size() == RECORD_SIZE * 5 )
+            {
+                insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
+                registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
+            }
+            /* Silent upgrade for latest constraint introducing tx
+             */
+            if ( getFileChannel().size() == RECORD_SIZE * 6 )
+            {
+                insertRecord( LATEST_CONSTRAINT_TX_POSITION, 0 );
+                registerIdFromUpdateRecord( LATEST_CONSTRAINT_TX_POSITION );
+            }
         }
-
-        /* Silent upgrade for latest constraint introducing tx
-         */
-        if ( getFileChannel().size() == RECORD_SIZE*6 )
+        finally
         {
-            insertRecord( LATEST_CONSTRAINT_TX_POSITION, 0 );
-            registerIdFromUpdateRecord( LATEST_CONSTRAINT_TX_POSITION );
+            unsetRecovered();
         }
     }
 
@@ -336,7 +343,10 @@ public class NeoStore extends AbstractStore
         {
             try
             {
-                if ( channel != null ) channel.close();
+                if ( channel != null )
+                {
+                    channel.close();
+                }
             }
             catch ( IOException e )
             {
@@ -385,7 +395,9 @@ public class NeoStore extends AbstractStore
             try
             {
                 if ( channel != null )
+                {
                     channel.close();
+                }
             }
             catch ( IOException e )
             {
@@ -556,7 +568,7 @@ public class NeoStore extends AbstractStore
     {
         return nodeStore;
     }
-    
+
     /**
      * @return the schema store.
      */
@@ -744,10 +756,12 @@ public class NeoStore extends AbstractStore
         {
             char c = storeVersion.charAt( i );
             if ( c < 0 || c >= 256 )
+            {
                 throw new IllegalArgumentException(
                         String.format(
                                 "Store version strings should be encode-able as Latin1 - %s is not",
                                 storeVersion ) );
+            }
             bits.put( c, 8 ); // Just the lower byte
         }
         return bits.getLong();

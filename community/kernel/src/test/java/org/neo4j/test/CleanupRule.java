@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.Closeable;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,12 +28,12 @@ import org.junit.rules.ExternalResource;
 
 public class CleanupRule extends ExternalResource
 {
-    private final List<Closeable> toCloseAfterwards = new ArrayList<>();
-    
+    private final List<AutoCloseable> toCloseAfterwards = new ArrayList<>();
+
     @Override
     protected void after()
     {
-        for ( Closeable toClose : toCloseAfterwards )
+        for ( AutoCloseable toClose : toCloseAfterwards )
         {
             try
             {
@@ -44,10 +45,41 @@ public class CleanupRule extends ExternalResource
             }
         }
     }
-    
-    public <T extends Closeable> T add( T toClose )
+
+    public <t> t add( t toClose )
     {
-        toCloseAfterwards.add( toClose );
+        toCloseAfterwards.add( closeableOf( toClose ) );
         return toClose;
+    }
+
+    private AutoCloseable closeableOf( final Object toClose )
+    {
+        if ( toClose instanceof AutoCloseable )
+        {
+            return (Closeable) toClose;
+        }
+
+        // Fallback to likely close methods by name
+        for ( String methodName : new String[] { "close", "shutdown" } )
+        {
+            try
+            {
+                final Method method = toClose.getClass().getMethod( methodName );
+                return new AutoCloseable()
+                {
+                    @Override
+                    public void close() throws Exception
+                    {
+                        method.invoke( toClose );
+                    }
+                };
+            }
+            catch ( NoSuchMethodException | SecurityException e )
+            {
+                continue;
+            }
+        }
+
+        throw new IllegalArgumentException( "Couldn't find a way to close " + toClose );
     }
 }
