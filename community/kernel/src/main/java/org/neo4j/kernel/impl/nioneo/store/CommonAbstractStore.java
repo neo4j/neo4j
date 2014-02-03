@@ -490,7 +490,7 @@ public abstract class CommonAbstractStore implements IdSequence
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
         return idGeneratorFactory
-                .open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
+                .open( fileSystemAbstraction, fileName, grabSize, getIdType(), 0 );
     }
 
     protected abstract long figureOutHighestIdInUse();

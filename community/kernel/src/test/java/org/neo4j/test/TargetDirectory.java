@@ -30,7 +30,6 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 import static java.lang.String.format;
 
@@ -53,7 +52,10 @@ public class TargetDirectory
 
         public File directory()
         {
-            if ( subdir == null ) throw new IllegalStateException( "Not initialized" );
+            if ( subdir == null )
+            {
+                throw new IllegalStateException( "Not initialized" );
+            }
             return subdir;
         }
 
@@ -89,7 +91,10 @@ public class TargetDirectory
 
         private void complete( boolean success )
         {
-            if ( success && subdir != null ) recursiveDelete( subdir );
+            if ( success && subdir != null )
+            {
+                recursiveDelete( subdir );
+            }
             subdir = null;
         }
     }
@@ -121,22 +126,9 @@ public class TargetDirectory
 
     public File directoryForDescription( Description description, boolean clean )
     {
-        String testName = description.getMethodName();
-        String dirName = DigestUtils.md5Hex( testName );
-        return TargetDirectory.this.registeredDirectory( dirName, testName, clean );
-    }
-
-    private File registeredDirectory( String dirName, String testName, boolean clean )
-    {
-        try
-        {
-            FileUtils.writeToFile( new File( base(), ".register" ), format("%s=%s\n", dirName, testName), true );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return directory( dirName, clean );
+        String methodName = description.getMethodName();
+        String dirName = DigestUtils.md5Hex( methodName );
+        return directory( methodName + "_" + dirName, clean );
     }
 
     public File file( String name )
@@ -211,7 +203,9 @@ public class TargetDirectory
     private File base()
     {
         if ( fileSystem.fileExists( base ) && !fileSystem.isDirectory( base ) )
+        {
             throw new IllegalStateException( base + " exists and is not a directory!" );
+        }
 
         try
         {

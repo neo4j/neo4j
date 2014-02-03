@@ -238,7 +238,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     @Override
     public String toString()
     {
-        return getClass().getSimpleName();
+        return "GraphProperties";
     }
 
     @Override

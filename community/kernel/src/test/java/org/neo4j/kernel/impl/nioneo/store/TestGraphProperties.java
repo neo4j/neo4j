@@ -64,7 +64,7 @@ public class TestGraphProperties
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -109,7 +109,7 @@ public class TestGraphProperties
     public void setManyGraphProperties() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        
+
         Transaction tx = db.beginTx();
         Object[] values = new Object[]{10, "A string value", new float[]{1234.567F, 7654.321F},
                 "A rather longer string which wouldn't fit inlined #!)(&¤"};
@@ -197,7 +197,7 @@ public class TestGraphProperties
     public void graphPropertiesAreLockedPerTx() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        
+
         Worker worker1 = new Worker( "W1", new State( db ) );
         Worker worker2 = new Worker( "W2", new State( db ) );
 
@@ -277,7 +277,7 @@ public class TestGraphProperties
         // Remove the last record, next startup will look like as if we're upgrading an old store
         File neoStoreFile = new File( storeDir, NeoStore.DEFAULT_NAME );
         FileChannel channel = fileSystem.open( neoStoreFile, "rw" );
-        channel.position( NeoStore.RECORD_SIZE * 7/*position of "next prop"*/ );
+        channel.position( NeoStore.RECORD_SIZE * 6/*position of "next prop"*/ );
         int trail = (int) (channel.size() - channel.position());
         ByteBuffer trailBuffer = null;
         if ( trail > 0 )
@@ -292,6 +292,12 @@ public class TestGraphProperties
             channel.write( trailBuffer );
         }
         channel.truncate( channel.position() );
+        channel.close();
+
+        // Set high id to one less
+        File neoStoreIdFile = new File( storeDir, NeoStore.DEFAULT_NAME + ".id" );
+        fileSystem.deleteFile( neoStoreIdFile );
+        IdGeneratorImpl.createGenerator( fileSystem, neoStoreIdFile, 6 );
     }
 
     @Test
@@ -301,7 +307,7 @@ public class TestGraphProperties
         EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
-        
+
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
         assertThat( nodeManager( db ).getGraphProperties(), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
         db.shutdown();
@@ -406,7 +412,7 @@ public class TestGraphProperties
             } );
         }
     }
-    
+
     private EphemeralFileSystemAbstraction produceUncleanStore( EphemeralFileSystemAbstraction fileSystem,
             String storeDir )
     {
