@@ -428,4 +428,28 @@ class MergeRelationshipAcceptanceTest
 
     assertStats(result, nodesCreated = 6*4, relationshipsCreated = 3*4+6*3, propertiesSet = 6*4*2)
   }
+
+  @Test def should_handle_on_create_on_created_nodes() {
+    val result = execute("merge (a)-[:KNOWS]->(b) ON CREATE SET b.created = timestamp()")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+  }
+
+  @Test def should_handle_on_match_on_created_nodes() {
+    val result = execute("merge (a)-[:KNOWS]->(b) ON MATCH SET b.created = timestamp()")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 0)
+  }
+
+  @Test def should_handle_on_create_on_created_rels() {
+    val result = execute("merge (a)-[r:KNOWS]->(b) ON CREATE SET r.created = timestamp()")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+  }
+
+  @Test def should_handle_on_match_on_created_rels() {
+    val result = execute("merge (a)-[r:KNOWS]->(b) ON MATCH SET r.created = timestamp()")
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 0)
+  }
 }

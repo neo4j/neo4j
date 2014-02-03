@@ -95,8 +95,13 @@ case class MergePatternAction(patterns: Seq[Pattern],
       maybeMatchPipe = maybeMatchPipe)
 
   def symbolTableDependencies: Set[String] = {
-    val dependencies = (patterns.flatMap(_.symbolTableDependencies) ++ actions.flatMap(_.symbolTableDependencies)).toSet
-    val introducedIdentifiers = actions.flatMap(_.identifiers.map(_._1))
+    val dependencies = (
+      patterns.flatMap(_.symbolTableDependencies) ++
+      actions.flatMap(_.symbolTableDependencies) ++
+      onMatch.flatMap(_.symbolTableDependencies)).toSet
+
+    val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
+
     dependencies -- introducedIdentifiers
   }
 }

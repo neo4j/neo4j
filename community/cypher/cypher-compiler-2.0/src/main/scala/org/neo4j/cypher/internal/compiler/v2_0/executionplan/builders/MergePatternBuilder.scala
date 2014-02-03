@@ -103,7 +103,6 @@ object MergePatternBuilder {
       case ((symbols, acc), action) =>
         (symbols, acc :+ action)
     }
-    
 
   def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
     case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) => 
