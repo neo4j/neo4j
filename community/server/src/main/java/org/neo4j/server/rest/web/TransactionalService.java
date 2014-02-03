@@ -112,7 +112,7 @@ public class TransactionalService
         {
             return invalidTransaction( e );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle ) );
+        return okResponse( executeStatementsAndCommit( input, transactionHandle, false ) );
     }
 
     @POST
@@ -130,7 +130,7 @@ public class TransactionalService
         {
             return invalidTransaction( e );
         }
-        return okResponse( executeStatementsAndCommit( input, transactionHandle ) );
+        return okResponse( executeStatementsAndCommit( input, transactionHandle, true ) );
     }
 
     @DELETE
@@ -188,14 +188,16 @@ public class TransactionalService
         };
     }
 
-    private StreamingOutput executeStatementsAndCommit( final InputStream input, final TransactionHandle transactionHandle )
+    private StreamingOutput executeStatementsAndCommit( final InputStream input, 
+                                                       final TransactionHandle transactionHandle,
+                                                        final boolean pristine )
     {
         return new StreamingOutput()
         {
             @Override
             public void write( OutputStream output ) throws IOException, WebApplicationException
             {
-                transactionHandle.commit( facade.deserializer( input ), facade.serializer( output ) );
+                transactionHandle.commit( facade.deserializer( input ), facade.serializer( output ), pristine );
             }
         };
     }

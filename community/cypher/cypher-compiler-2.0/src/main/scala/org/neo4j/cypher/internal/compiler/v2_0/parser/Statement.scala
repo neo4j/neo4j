@@ -31,5 +31,4 @@ trait Statement extends Parser
        Command
      | Query
   )
-
 }

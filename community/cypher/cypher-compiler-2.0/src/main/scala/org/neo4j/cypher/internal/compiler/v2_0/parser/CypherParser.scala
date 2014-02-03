@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import ast.convert.StatementConverters._
-import commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_0.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.AbstractQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
+import scala.Some
 
 case class CypherParser() extends Parser
   with Statement
@@ -64,6 +65,7 @@ case class CypherParser() extends Parser
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }
-    ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
+    val abstractQuery = statement.asQuery
+    ReattachAliasedExpressions(abstractQuery.setQueryText(query))
   }
 }

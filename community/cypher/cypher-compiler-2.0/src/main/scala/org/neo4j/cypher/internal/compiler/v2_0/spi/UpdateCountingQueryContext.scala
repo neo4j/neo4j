@@ -37,7 +37,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val constraintsAdded = new Counter
   private val constraintsRemoved = new Counter
 
-  def getStatistics: QueryStatistics = QueryStatistics(
+  def getStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
     relationshipsCreated = relationshipsCreated.count,
     propertiesSet = propertiesSet.count,
@@ -49,6 +49,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesRemoved = indexesRemoved.count,
     constraintsAdded = constraintsAdded.count,
     constraintsRemoved = constraintsRemoved.count)
+
+  override def getOptStatistics = Some(getStatistics)
 
   override def createNode() = {
     nodesCreated.increase()

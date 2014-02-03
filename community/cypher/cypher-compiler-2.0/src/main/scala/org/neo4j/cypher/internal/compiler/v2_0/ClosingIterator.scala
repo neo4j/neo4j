@@ -90,23 +90,23 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
     }
   }
 
-  private def translateException[U](f: => U): U = try {
-    f
-  } catch {
-    case e: TransactionFailureException => {
-
-      var cause: Throwable = e
-      while (cause.getCause != null) {
-        cause = cause.getCause
-        if (cause.isInstanceOf[ConstraintViolationException]) {
-          cause.getMessage match {
-            case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
-            case _                           => throw e
+  private def translateException[U](f: => U): U = {
+    try {
+      f
+    } catch {
+      case e: TransactionFailureException =>
+        var cause: Throwable = e
+        while (cause.getCause != null) {
+          cause = cause.getCause
+          if (cause.isInstanceOf[ConstraintViolationException]) {
+            cause.getMessage match {
+              case still_has_relationships(id) => throw new NodeStillHasRelationshipsException(id.toLong, e)
+              case _                           => throw e
+            }
           }
         }
-      }
 
-      throw e
+        throw e
     }
   }
 

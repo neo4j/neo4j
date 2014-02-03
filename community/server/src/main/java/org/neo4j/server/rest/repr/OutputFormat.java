@@ -58,6 +58,10 @@ public class OutputFormat
         this.representationWriteHandler = representationWriteHandler;
     }
 
+    public RepresentationWriteHandler getRepresentationWriteHandler() {
+        return this.representationWriteHandler;
+    }
+
     public final Response ok( Representation representation )
     {
         if ( representation.isEmpty() )

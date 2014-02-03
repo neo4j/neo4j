@@ -29,6 +29,8 @@ so the user can either use the raw expression, or the alias
  */
 object ReattachAliasedExpressions {
   def apply(in: AbstractQuery): AbstractQuery = in match {
+    case q: AutoCommitQuery =>
+      q.copy(query = ReattachAliasedExpressions(q.query))
     case q: Query =>
       val newSort = q.sort.map(rewrite(q.returns.returnItems))
       q.copy(sort = newSort, tail = q.tail.map(x => apply(x).asInstanceOf[Query]))

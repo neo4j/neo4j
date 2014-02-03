@@ -17,11 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.commons
 
-import org.neo4j.cypher.internal.compiler.v2_0._
+import scala.reflect.io.File
+import java.io.PrintWriter
 
-trait Statement extends ASTNode {
-  def semanticCheck: SemanticCheck
+trait CreateTempFileTestSupport extends CypherTestSupport {
+  self: CypherTestSuite =>
+
+  private var files: Seq[File] = Seq.empty
+
+  override protected def stopTest(): Unit = {
+    try {
+      files.foreach(_.delete())
+    }
+    finally
+    {
+      super.stopTest()
+    }
+  }
+
+  def createTempFile(name: String, ext: String, f: PrintWriter => Unit): String = synchronized {
+    val file = File.makeTemp(name, ext)
+    val writer = file.printWriter()
+    f(writer)
+    writer.flush()
+    writer.close()
+    files = files :+ file
+    file.toAbsolute.path
+  }
 }
-

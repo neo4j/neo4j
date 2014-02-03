@@ -45,6 +45,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee   = Iterator(Map("k" -> 42))
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    when(ctx.isOpen).thenReturn(true)
 
     //When
     val result = iterator.next()
@@ -60,6 +61,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee   = Iterator.empty
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    when(ctx.isOpen).thenReturn(true)
 
     //When
     val result = iterator.hasNext
@@ -75,6 +77,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee   = Iterator.empty
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    when(ctx.isOpen).thenReturn(true).thenReturn(false)
 
     //When
     val result = iterator.hasNext
@@ -95,6 +98,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenThrow(new RuntimeException)
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    when(ctx.isOpen).thenReturn(true)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
@@ -110,6 +114,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
+    when(ctx.isOpen).thenReturn(true)
 
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
 
@@ -126,6 +131,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43))
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    when(ctx.isOpen).thenReturn(true)
 
     //When
     val result = iterator.next()

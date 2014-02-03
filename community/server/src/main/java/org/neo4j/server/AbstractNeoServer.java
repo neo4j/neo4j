@@ -19,19 +19,9 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.Filter;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,13 +38,7 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.CypherExecutorProvider;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.database.GraphDatabaseServiceProvider;
-import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.database.RrdDbWrapper;
+import org.neo4j.server.database.*;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
@@ -67,11 +51,7 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
-import org.neo4j.server.rest.transactional.TransactionFacade;
-import org.neo4j.server.rest.transactional.TransactionFilter;
-import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
-import org.neo4j.server.rest.transactional.TransactionRegistry;
-import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
+import org.neo4j.server.rest.transactional.*;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.rrd.RrdFactory;
@@ -84,6 +64,12 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
 import org.neo4j.shell.ShellSettings;
 
+import javax.servlet.Filter;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.*;
+
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -92,12 +78,7 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
-import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
-import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
-import static org.neo4j.server.configuration.Configurator.TRANSACTION_TIMEOUT;
+import static org.neo4j.server.configuration.Configurator.*;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
 public abstract class AbstractNeoServer implements NeoServer
@@ -310,7 +291,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         return new TransactionFacade(
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
-                new ExecutionEngine( database.getGraph(), logging.getMessagesLog( ExecutionEngine.class ) ),
+                new ServerExecutionEngine( database.getGraph(), logging.getMessagesLog( ExecutionEngine.class ) ),
                 transactionRegistry,
                 baseUri(), logging.getMessagesLog( TransactionFacade.class )
         );

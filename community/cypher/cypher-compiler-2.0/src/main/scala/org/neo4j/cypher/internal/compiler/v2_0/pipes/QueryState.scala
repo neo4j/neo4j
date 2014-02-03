@@ -30,13 +30,15 @@ case class QueryState(db: GraphDatabaseService,
                       inner: QueryContext,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
+                      collectStatistics: Boolean = true,
                       timeReader: TimeReader = new TimeReader,
                       var initialContext: Option[ExecutionContext] = None,
                       _cleanupTasks: ListBuffer[() => Unit] = ListBuffer.empty) extends CleanupTaskList {
   def readTimeStamp(): Long = timeReader.getTime
 
-  private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
-  val query: QueryContext = updateTrackingQryCtx
+  private val wrappedContext = if (collectStatistics) new UpdateCountingQueryContext(inner) else inner
+
+  val query: QueryContext = wrappedContext
 
   def graphDatabaseAPI: GraphDatabaseAPI = db match {
     case i: GraphDatabaseAPI => i
@@ -46,7 +48,7 @@ case class QueryState(db: GraphDatabaseService,
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
-  def getStatistics = updateTrackingQryCtx.getStatistics
+  def getStatistics = wrappedContext.getOptStatistics.get
 
   def cleanupTasks: Seq[() => Unit] = _cleanupTasks.toSeq
 
@@ -58,3 +60,4 @@ case class QueryState(db: GraphDatabaseService,
 class TimeReader {
   lazy val getTime = System.currentTimeMillis()
 }
+

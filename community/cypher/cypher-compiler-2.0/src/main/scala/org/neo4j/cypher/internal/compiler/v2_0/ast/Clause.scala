@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
-import java.net.URI
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -181,4 +180,15 @@ case class Return(
     skip: Option[Skip],
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
   def name = "RETURN"
+}
+
+case class AutoCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {
+  def name = s"USING AUTOCOMMIT $size"
+
+  override def semanticCheck: SemanticCheck = size match {
+    case Some(integer) if integer.value <= 0 =>
+      SemanticError(s"Commit size error - expected positive value larger than zero, got ${integer.value}", integer.position)
+    case _ =>
+      SemanticCheckResult.success
+  }
 }

@@ -46,7 +46,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
   @Test def should_mark_transaction_successful_if_successful() {
     // GIVEN
     Mockito.when(outerTx.failure()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundExecutionContext(graph, outerTx, statement)
+    val context = new TransactionBoundExecutionContext(graph, outerTx, isTopLevelTx = true, statement)
 
     // WHEN
     context.close(success = true)
@@ -60,7 +60,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
   @Test def should_mark_transaction_failed_if_not_successful() {
     // GIVEN
     Mockito.when(outerTx.success()).thenThrow( new AssertionError( "Shouldn't be called" ) )
-    val context = new TransactionBoundExecutionContext(graph, outerTx, statement)
+    val context = new TransactionBoundExecutionContext(graph, outerTx, isTopLevelTx = true, statement)
 
     // WHEN
     context.close(success = false)
@@ -77,7 +77,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
     val node = createMiniGraph(relTypeName)
 
     val tx = graph.beginTx()
-    val context = new TransactionBoundExecutionContext(graph, tx, statement)
+    val context = new TransactionBoundExecutionContext(graph, tx, isTopLevelTx = true, statement)
 
     // WHEN
     val iterable = DynamicIterable( context.getRelationshipsFor(node, Direction.BOTH, Seq.empty) )

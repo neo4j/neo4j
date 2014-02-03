@@ -92,6 +92,10 @@ trait Clauses extends Parser
     | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
+  def AutoCommitHint: Rule1[ast.AutoCommitHint] = rule("USING AUTOCOMMIT") (
+    group(keyword("USING AUTOCOMMIT") ~~ optional(SignedIntegerLiteral)) ~~>> (ast.AutoCommitHint(_))
+  )
+
   private def Where: Rule1[ast.Where] = rule("WHERE") {
     group(keyword("WHERE") ~~ Expression) ~~>> (ast.Where(_))
   }

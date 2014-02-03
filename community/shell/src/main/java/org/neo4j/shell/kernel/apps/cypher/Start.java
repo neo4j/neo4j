@@ -23,10 +23,12 @@ import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.text.MessageFormat;
 import java.util.Map;
+import javax.transaction.SystemException;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -44,7 +46,7 @@ import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 @Service.Implementation(App.class)
 public class Start extends TransactionProvidingApp
 {
-    private ExecutionEngine engine;
+    private ServerExecutionEngine engine;
 
     @Override
     public String getDescription()
@@ -64,14 +66,13 @@ public class Start extends TransactionProvidingApp
 
         if ( isComplete( query ) )
         {
-
             try
             {
                 final long startTime = System.currentTimeMillis();
-                ExecutionResult result = getEngine().execute( trimQuery( query ), getParameters( session ) );
+                ExecutionResult result = getResult( trimQuery( query ), getParameters( session ) );
                 handleResult( out, result, startTime, session, parser );
             }
-            catch ( CypherException e )
+            catch ( CypherException | SystemException e )
             {
                 throw ShellException.wrapCause( e );
             }
@@ -81,6 +82,12 @@ public class Start extends TransactionProvidingApp
         {
             return Continuation.INPUT_INCOMPLETE;
         }
+    }
+
+    protected ExecutionResult getResult( String query, Map<String, Object> parameters ) throws ShellException,
+            RemoteException, SystemException
+    {
+        return getEngine().execute( query, parameters );
     }
 
     protected String trimQuery( String query )
@@ -126,7 +133,7 @@ public class Start extends TransactionProvidingApp
     }
 
 
-    protected ExecutionEngine getEngine()
+    protected ServerExecutionEngine getEngine()
     {
         if ( this.engine == null )
         {
@@ -134,7 +141,7 @@ public class Start extends TransactionProvidingApp
             {
                 if ( this.engine == null )
                 {
-                    this.engine = new ExecutionEngine( getServer().getDb(), getCypherLogger() );
+                    this.engine = new ServerExecutionEngine( getServer().getDb(), getCypherLogger() );
                 }
             }
         }

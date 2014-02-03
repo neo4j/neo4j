@@ -50,6 +50,6 @@ class PlanBuildingTest extends MockitoSugar {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val abstractQuery = parser.parseToQuery(q)
-    planBuilder.buildPipes(planContext, abstractQuery)._1
+    planBuilder.buildPipes(planContext, abstractQuery).pipe
   }
 }

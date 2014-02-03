@@ -530,6 +530,7 @@ public class TestApps extends AbstractShellTest
         // Given
         executeCommand( "create a,b,a-[:x]->b;" );
 
+        String stackTrace = "";
         // When
         try
         {
@@ -538,9 +539,11 @@ public class TestApps extends AbstractShellTest
         }
         catch ( ShellException e )
         {
-            // Then
-            assertThat( e.getStackTraceAsString(), containsString( "still has relationships" ) );
+            stackTrace = e.getStackTraceAsString();
         }
+
+        // Then
+        assertThat( stackTrace, containsString( "still has relationships" ) );
     }
 
     @Test
@@ -549,6 +552,21 @@ public class TestApps extends AbstractShellTest
         executeCommand( "merge (n:Person {name:'Andres'});" );
 
         assertThat( findNodesByLabelAndProperty( label( "Person" ), "name", "Andres", db ), hasSize( 1 ) );
+    }
+
+    @Test
+    public void use_cypher_autocommit() throws Exception
+    {
+        try
+        {
+            // WHEN
+            executeCommand( "USING AUTOCOMMIT 100 CREATE n;" );
+        }
+        catch ( ShellException e )
+        {
+            // THEN NOT
+            fail( "Failed to execute AUTOCOMMIT query" );
+        }
     }
 
     @Test

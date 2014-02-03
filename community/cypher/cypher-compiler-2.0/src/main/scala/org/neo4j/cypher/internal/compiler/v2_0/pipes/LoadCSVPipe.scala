@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, MapType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescription}
-import java.io.{InputStreamReader, BufferedReader}
+import java.io._
 import au.com.bytecode.opencsv.CSVReader
 import java.net.URL
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -57,7 +59,14 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
 
   private def getCSVReader(state: QueryState): CSVReader = {
 
-    val reader = new BufferedReader(new InputStreamReader(url.openStream()))
+    val inputStream =
+      if (url.getProtocol == "file") {
+        // workaround for https://bugs.openjdk.java.net/browse/JDK-7177996
+        new FileInputStream(new File(url.getFile))
+      }
+      else
+        url.openStream()
+    val reader = new BufferedReader(new InputStreamReader(inputStream))
     val csvReader = new CSVReader(reader)
 
     state.addCleanupTask(() => csvReader.close())

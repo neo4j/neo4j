@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -31,12 +27,16 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
+
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.*;
@@ -51,7 +51,7 @@ public class TransactionHandleTest
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
-        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( executionEngine.execute( "query", map() ) ).thenReturn( executionResult );
         TransactionRegistry registry = mock( TransactionRegistry.class );
@@ -85,10 +85,10 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        ExecutionEngine engine = mock( ExecutionEngine.class );
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( engine.execute( "query", map() ) ).thenReturn( executionResult );
-        TransactionHandle handle = new TransactionHandle( kernel, engine,
+        when( executionEngine.execute( "query", map() ) ).thenReturn( executionResult );
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine,
                 registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
@@ -119,7 +119,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
 
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
                 StringLogger.DEV_NULL );
@@ -150,6 +150,38 @@ public class TransactionHandleTest
     }
 
     @Test
+    public void shouldCommitSingleAutoCommitStatement() throws Exception
+    {
+        // given
+        String queryText = "USING AUTOCOMMIT CREATE()";
+        TransitionalPeriodTransactionMessContainer kernel = mockKernel();
+
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
+        ExecutionResult executionResult = mock( ExecutionResult.class );
+        when( executionEngine.isAutoCommitQuery( queryText) ).thenReturn( true );
+        when( executionEngine.execute( queryText ) ).thenReturn( executionResult );
+
+        TransactionRegistry registry = mock( TransactionRegistry.class );
+        when( registry.begin() ).thenReturn( 1337l );
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger.DEV_NULL );
+        ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
+        Statement statement = new Statement( queryText, map(), false, (ResultDataContent[]) null );
+
+        // when
+        handle.commit(statements(statement), output, true);
+
+        // then
+        verify( executionEngine ).isAutoCommitQuery(queryText);
+        verify( executionEngine ).execute(queryText, map());
+
+        InOrder outputOrder = inOrder( output );
+        outputOrder.verify( output ).statementResult( null, false, (ResultDataContent[]) null );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).finish();
+        verifyNoMoreInteractions( output );
+    }
+
+    @Test
     public void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Exception
     {
         // given
@@ -159,7 +191,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        ExecutionEngine engine = mock( ExecutionEngine.class );
+        ServerExecutionEngine engine = mock( ServerExecutionEngine.class );
         ExecutionResult result = mock( ExecutionResult.class );
         when( engine.execute( "query", map() ) ).thenReturn( result );
         TransactionHandle handle = new TransactionHandle( kernel, engine,
@@ -167,7 +199,8 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "query", map(), false, (ResultDataContent[]) null ) ), output );
+        Statement statement = new Statement("query", map(), false, (ResultDataContent[]) null);
+        handle.commit( statements( statement ), output, false );
 
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
@@ -191,7 +224,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        TransactionHandle handle = new TransactionHandle( kernel, mock( ExecutionEngine.class ),
+        TransactionHandle handle = new TransactionHandle( kernel, mock( ServerExecutionEngine.class ),
                 registry, uriScheme, StringLogger.DEV_NULL );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
@@ -219,7 +252,7 @@ public class TransactionHandleTest
         when( registry.begin() ).thenReturn( 1337l );
 
         // when
-        ExecutionEngine engine = mock( ExecutionEngine.class );
+        ServerExecutionEngine engine = mock( ServerExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( engine.execute( "query", map() ) ).thenReturn( executionResult );
         TransactionHandle handle = new TransactionHandle( kernel, engine,
@@ -253,7 +286,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         when( executionEngine.execute( "query", map() ) ).thenThrow( new NullPointerException() );
 
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
@@ -287,14 +320,15 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin() ).thenReturn( 1337l );
 
-        ExecutionEngine engine = mock( ExecutionEngine.class );
+        ServerExecutionEngine engine = mock( ServerExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
         when( engine.execute( "query", map() ) ).thenReturn( executionResult );
         TransactionHandle handle = new TransactionHandle( kernel, engine, registry, uriScheme, log );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "query", map(), false, (ResultDataContent[])null ) ), output );
+        Statement statement = new Statement( "query", map(), false, (ResultDataContent[]) null );
+        handle.commit( statements( statement ), output, false );
 
         // then
         verify( log ).error( eq( "Failed to commit transaction." ), any( NullPointerException.class ) );
@@ -313,7 +347,7 @@ public class TransactionHandleTest
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
-        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         when( executionEngine.execute( "matsch (n) return n", map() ) ).thenThrow( new SyntaxException( "did you mean MATCH?" ) );
 
         StringLogger log = mock( StringLogger.class );
@@ -325,7 +359,8 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "matsch (n) return n", map(), false, (ResultDataContent[])null ) ), output );
+        Statement statement = new Statement("matsch (n) return n", map(), false, (ResultDataContent[]) null);
+        handle.commit( statements( statement ), output, false );
 
         // then
         verify( registry ).forget( 1337l );
@@ -341,7 +376,7 @@ public class TransactionHandleTest
     {
         // given
 
-        ExecutionEngine executionEngine = mock( ExecutionEngine.class );
+        ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         when( executionEngine.execute( "match (n) return n", map() ) ).thenAnswer( new Answer()
         {
             @Override
@@ -356,8 +391,8 @@ public class TransactionHandleTest
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
-        handle.commit( statements( new Statement( "match (n) return n", map(), false, (ResultDataContent[])null ) ),
-                output );
+        Statement statement = new Statement( "match (n) return n", map(), false, (ResultDataContent[]) null );
+        handle.commit( statements( statement ), output, false );
 
         // then
         verify( registry ).forget( 1337l );

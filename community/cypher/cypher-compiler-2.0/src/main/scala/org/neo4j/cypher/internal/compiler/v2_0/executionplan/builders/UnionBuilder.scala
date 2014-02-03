@@ -24,16 +24,17 @@ import org.neo4j.cypher.internal.compiler.v2_0.pipes.{DistinctPipe, UnionPipe, P
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PipeInfo
 
 
-class UnionBuilder(queryBuilder: {def buildQuery(q: Query, context:PlanContext): (Pipe, Boolean)}) {
-  def buildUnionQuery(union: Union, context:PlanContext): (Pipe, Boolean) = {
+class UnionBuilder(queryBuilder: {def buildQuery(q: Query, context:PlanContext):  PipeInfo}) {
+  def buildUnionQuery(union: Union, context:PlanContext): PipeInfo = {
     checkQueriesHaveSameColumns(union)
 
     val combined = union.queries.map( q => queryBuilder.buildQuery(q, context))
 
-    val pipes = combined.map(_._1)
-    val updating = combined.map(_._2).reduce(_ || _)
+    val pipes = combined.map(_.pipe)
+    val updating = combined.map(_.updating).reduce(_ || _)
 
     val unionPipe = new UnionPipe(pipes, union.queries.head.columns)
     val pipe = if (union.distinct) {
@@ -43,7 +44,7 @@ class UnionBuilder(queryBuilder: {def buildQuery(q: Query, context:PlanContext):
       unionPipe
     }
 
-    (pipe, updating)
+    PipeInfo(pipe, updating)
   }
 
   private def checkQueriesHaveSameColumns(union: Union) {

@@ -34,28 +34,37 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class ThreadToStatementContextBridge extends LifecycleAdapter implements Provider<Statement>
 {
     private final PersistenceManager persistenceManager;
-    private boolean isShutdown = false;
+    private boolean isShutdown;
 
     public ThreadToStatementContextBridge( PersistenceManager persistenceManager )
     {
         this.persistenceManager = persistenceManager;
+        this.isShutdown = false;
+    }
+
+    public boolean hasTransaction()
+    {
+        checkIfShutdown();
+        return persistenceManager.hasCurrentTransaction();
     }
 
     @Override
     public Statement instance()
     {
-        return transaction().acquireStatement();
-    }
-
-    private KernelTransaction transaction()
-    {
         checkIfShutdown();
         KernelTransaction transaction = persistenceManager.currentKernelTransactionForReading();
-        if ( transaction == null )
+        if ( null == transaction )
         {
             throw new NotInTransactionException();
         }
-        return transaction;
+        return transaction.acquireStatement();
+    }
+
+    public void assertInTransaction()
+    {
+        checkIfShutdown();
+        // Contract: Persistence manager throws NotInTransactionException if we are not in a transaction.
+        persistenceManager.getCurrentTransaction();
     }
 
     @Override
@@ -72,10 +81,4 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         }
     }
 
-    public void assertInTransaction()
-    {
-        checkIfShutdown();
-        // Contract: Persistence manager throws NotInTransactionException if we are not in a transaction.
-        persistenceManager.getCurrentTransaction();
-    }
 }

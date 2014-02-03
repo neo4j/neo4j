@@ -27,21 +27,23 @@ import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.prepare.{A
 import pipes._
 import profiler.Profiler
 import symbols.SymbolTable
-import org.neo4j.cypher.{SyntaxException, ExecutionResult}
+import org.neo4j.cypher.{AutoCommitInOpenTransactionException, SyntaxException, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{QueryContext, PlanContext}
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
+case class PipeInfo(pipe: Pipe, updating: Boolean, autocommit: Option[AutoCommitInfo] = None)
 
-  type PipeAndIsUpdating = (Pipe, Boolean)
+case class AutoCommitInfo(size: Option[Long])
+
+class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
 
-    val (p, isUpdating) = buildPipes(planContext, inputQuery)
+    val PipeInfo(p, isUpdating, autoCommitInfo) = buildPipes(planContext, inputQuery)
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
     val func = if (isUpdating) {
-      getEagerReadWriteQuery(p, columns)
+      getEagerReadWriteQuery(p, columns, autoCommitInfo)
     } else {
       getLazyReadonlyQuery(p, columns)
     }
@@ -52,7 +54,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     }
   }
 
-  def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeAndIsUpdating = in match {
+  def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeInfo = in match {
+    case q: AutoCommitQuery           => buildPipes(planContext, q.query).copy(autocommit = Some(AutoCommitInfo(q.batchSize)))
     case q: Query                     => buildQuery(q, planContext)
     case q: IndexOperation            => buildIndexQuery(q)
     case q: UniqueConstraintOperation => buildConstraintQuery(q)
@@ -61,18 +64,18 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
 
   val unionBuilder = new UnionBuilder(this)
 
-  def buildUnionQuery(union: Union, context:PlanContext): PipeAndIsUpdating = unionBuilder.buildUnionQuery(union, context)
+  def buildUnionQuery(union: Union, context:PlanContext): PipeInfo = unionBuilder.buildUnionQuery(union, context)
 
-  def buildIndexQuery(op: IndexOperation): PipeAndIsUpdating = (new IndexOperationPipe(op), true)
+  def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true)
 
-  def buildConstraintQuery(op: UniqueConstraintOperation): PipeAndIsUpdating = {
+  def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
 
-    (new ConstraintOperationPipe(op, label, propertyKey), true)
+    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true)
   }
 
-  def buildQuery(inputQuery: Query, context: PlanContext): PipeAndIsUpdating = {
+  def buildQuery(inputQuery: Query, context: PlanContext): PipeInfo = {
     val initialPSQ = PartiallySolvedQuery(inputQuery)
 
     var continue = true
@@ -98,7 +101,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       }
     }
 
-    (planInProgress.pipe, planInProgress.isUpdating)
+    PipeInfo(planInProgress.pipe, planInProgress.isUpdating)
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
@@ -131,9 +134,23 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     func
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String], autocommit: Option[AutoCommitInfo]):
+    (QueryContext, Map[String, Any], Boolean) => ExecutionResult =
+  {
     val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
-      val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
+      val newQueryContext: QueryContext = autocommit match {
+        case Some(info) =>
+          if (!queryContext.isTopLevelTx)
+            throw new AutoCommitInOpenTransactionException()
+
+          val defaultSize = 10000L
+          val size = info.size.getOrElse(defaultSize)
+          new AutoCommitQueryContext(size, queryContext)
+
+        case _ =>
+          queryContext
+      }
+      val (state, results, descriptor) = prepareStateAndResult(newQueryContext, params, pipe, profile)
       new EagerPipeExecutionResult(results, columns, state, descriptor)
     }
 

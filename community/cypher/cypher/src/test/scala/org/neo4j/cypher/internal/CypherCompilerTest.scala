@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v2_0._
+import org.scalatest.{Matchers, FunSuite}
+import org.neo4j.graphdb.GraphDatabaseService
+import org.scalatest.mock.MockitoSugar
 
-trait Statement extends ASTNode {
-  def semanticCheck: SemanticCheck
+class CypherCompilerTest extends FunSuite with Matchers with MockitoSugar {
+  test("isAutoCommit handles versioned queries") {
+    val gds = mock[GraphDatabaseService]
+    val compiler = new CypherCompiler(gds)
+    compiler.isAutoCommit("CYPHER 2.0 USING AUTOCOMMIT CREATE n RETURN n") should be(true)
+  }
 }
-

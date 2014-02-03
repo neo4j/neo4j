@@ -24,6 +24,11 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
+
+  def isOpen: Boolean = inner.isOpen
+
+  def isTopLevelTx: Boolean = inner.isTopLevelTx
+
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     inner.setLabelsOnNode(node, labelIds)
   }
@@ -85,6 +90,10 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = inner.exactUniqueIndexSearch(index, value)
+
+  override def commitAndRestartTx() {
+    inner.commitAndRestartTx()
+  }
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

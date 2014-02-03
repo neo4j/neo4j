@@ -136,10 +136,12 @@ trait Expressions extends Parser
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.SingleIterablePredicate(_, _, _))
     | ShortestPathPattern ~~> ast.ShortestPathExpression
     | RelationshipsPattern ~~> ast.PatternExpression
-    | "(" ~~ Expression ~~ ")"
+    | parenthesizedExpression
     | FunctionInvocation
     | Identifier
   )
+
+  def parenthesizedExpression: Rule1[ast.Expression] = "(" ~~ Expression ~~ ")"
 
   def PropertyExpression: Rule1[ast.Property] = rule {
     Expression1 ~ oneOrMore(WS ~ PropertyLookup)

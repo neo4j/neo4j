@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_0
 
 import org.neo4j.graphdb._
-import org.neo4j.kernel.{GraphDatabaseAPI}
+import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
 import collection.mutable
 import scala.collection.Iterator
@@ -35,14 +35,19 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_0.spi._
-import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
-class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
+class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
+                                       var tx: Transaction,
+                                       val isTopLevelTx: Boolean,
+                                       var statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {
 
   private var open = true
+  private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+
+  def isOpen = open
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
@@ -68,12 +73,12 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
       work(this)
     }
     else {
+      val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
       try {
-        val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-        val otherStatement = bridge.instance()
+        val otherStatement = txBridge.instance()
         val result = try {
-          work(new TransactionBoundExecutionContext(graph, tx, otherStatement))
+          work(new TransactionBoundExecutionContext(graph, tx, isTopLevelTx, otherStatement))
         }
         finally {
           otherStatement.close()
@@ -257,4 +262,12 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI, tx: Transaction,
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
+
+  override def commitAndRestartTx() {
+    tx.success()
+    tx.close()
+
+    tx = graph.beginTx()
+    statement = txBridge.instance()
+  }
 }

@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.tooling.GlobalGraphOperations
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
-import org.junit.{Test, Before}
+import org.junit.{Ignore, Test, Before}
 import org.junit.Assert._
 import collection.JavaConverters._
 import org.scalatest.Assertions
@@ -48,8 +48,6 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
   var a: Node = null
   var b: Node = null
   var c: Node = null
-
-
 
   override protected def initTest() {
     super.initTest()
@@ -194,8 +192,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     when(bridge.instance()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
-    when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,(LRUCache[String, ExecutionPlan], GeneralCypherCompiler.VersionProxy)](anyObject(), anyObject())).thenReturn(
-      (new LRUCache[String, ExecutionPlan](1), GeneralCypherCompiler(fakeGraph)))
+    when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,LRUCache[String, ExecutionPlan]](anyObject(), anyObject())).thenReturn(new LRUCache[String, ExecutionPlan](1))
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)

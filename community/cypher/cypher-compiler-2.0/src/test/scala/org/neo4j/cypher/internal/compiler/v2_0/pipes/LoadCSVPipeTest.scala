@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
-import org.scalatest.Assertions
-import org.junit.{Ignore, After, Test}
+import org.junit.{Ignore, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
-import java.io.PrintWriter
-import scala.reflect.io.File
 import java.net.URL
+import java.io.PrintWriter
+import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.commons.CypherJUnitSuite
 
-class LoadCSVPipeTest extends Assertions {
+class LoadCSVPipeTest extends CypherJUnitSuite with CreateTempFileTestSupport {
 
   @Test
   def should_handle_strings() {
@@ -34,7 +34,7 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val url = createFile { writer =>
+    val url = createFileURL { writer =>
       writer.println("1")
       writer.println("2")
       writer.println("3")
@@ -60,7 +60,7 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val url = createFile { writer =>
+    val url = createFileURL { writer =>
       writer.println("a,b")
       writer.println("1,2")
       writer.println("3,4")
@@ -83,7 +83,7 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val url = createFile {
+    val url = createFileURL {
       writer =>
         writer.println("a,b")
         writer.println("1,2")
@@ -107,7 +107,7 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val url = createFile(_ => {})
+    val url = createFileURL(_ => {})
     val pipe = new LoadCSVPipe(input, HasHeaders, url, "foo")
 
     //when
@@ -122,7 +122,7 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx, ctx))
 
-    val url = createFile { writer =>
+    val url = createFileURL { writer =>
       writer.println("1")
       writer.println("2")
       writer.println("3")
@@ -158,21 +158,5 @@ class LoadCSVPipeTest extends Assertions {
     ))
   }
 
-  var files: Seq[File] = Seq.empty
-
-  private def createFile(f: PrintWriter => Unit): URL = synchronized {
-    val file = File.makeTemp("cypher", ".csv")
-    val writer = file.printWriter()
-    f(writer)
-    writer.flush()
-    writer.close()
-    files = files :+ file
-    file.toURI.toURL
-  }
-
-  @After def cleanup() {
-    files.foreach(_.delete())
-    files = Seq.empty
-  }
-
+  private def createFileURL(f: PrintWriter => Unit) = new URL(s"file://${createTempFile("cypher", ".csv", f)}")
 }

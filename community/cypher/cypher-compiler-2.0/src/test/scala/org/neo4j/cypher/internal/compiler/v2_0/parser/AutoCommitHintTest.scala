@@ -19,37 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
-import org.neo4j.cypher.internal.compiler.v2_0.ast
+import org.neo4j.cypher.internal.compiler.v2_0.DummyPosition
 import org.parboiled.scala._
+import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.ast
 
-trait Query extends Parser
-  with Clauses
-  with Base {
+class AutoCommitHintTest extends ParserTest[ast.AutoCommitHint, Any] with Query {
 
-  def Query: Rule1[ast.Query] = rule {
-    group(optional(AutoCommitHint ~ WS) ~ SingleQuery ~ zeroOrMore(WS ~ Union)) ~~>> (ast.Query(_, _))
+  implicit val parserToTest = AutoCommitHint ~ EOI
+
+  val t = DummyPosition(0)
+
+  @Test def tests() {
+    parsing("USING AUTOCOMMIT") shouldGive ast.AutoCommitHint(None)(t)
+    parsing("USING AUTOCOMMIT 300") shouldGive ast.AutoCommitHint(Some(ast.SignedIntegerLiteral("300")(t)))(t)
   }
 
-  def SingleQuery: Rule1[ast.SingleQuery] = rule {
-    oneOrMore(Clause, separator = WS) ~~>> (ast.SingleQuery(_))
-  }
-
-  def Clause: Rule1[ast.Clause] = (
-      LoadCSV
-    | Start
-    | Match
-    | Merge
-    | Create
-    | SetClause
-    | Delete
-    | Remove
-    | Foreach
-    | With
-    | Return
-  )
-
-  def Union: ReductionRule1[ast.QueryPart, ast.QueryPart] = rule("UNION") (
-      keyword("UNION ALL") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionAll(q, sq)(p))
-    | keyword("UNION") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionDistinct(q, sq)(p))
-  )
+  override def convert(astNode: ast.AutoCommitHint): Any = astNode
 }

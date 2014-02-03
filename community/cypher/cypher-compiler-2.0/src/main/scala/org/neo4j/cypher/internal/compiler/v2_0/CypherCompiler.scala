@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import ast.convert.StatementConverters._
-import commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{AutoCommitQuery, AbstractQuery}
 import executionplan.{ExecutionPlanBuilder, ExecutionPlan}
 import executionplan.verifiers.HintVerifier
 import parser.CypherParser
@@ -28,30 +27,30 @@ import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 
-
-case class CypherCompiler(graph: GraphDatabaseService, queryCache: (Object, => Object) => Object) {
+case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
+  
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier)
+  val planBuilder = new ExecutionPlanBuilder(graph)
+  
+  @throws(classOf[SyntaxException])
+  def isAutoCommit(queryText: String) = cachedQuery(queryText) match {
+    case _: AutoCommitQuery => true
+    case _                  => false
+  }
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String, context: PlanContext): ExecutionPlan = {
-    val statement = parser.parse(query)
+  def prepare(queryText: String, context: PlanContext): ExecutionPlan = planBuilder.build(context, cachedQuery(queryText))
 
-    queryCache(statement, {
-      statement.semanticCheck(SemanticState.clean).errors.map { error =>
-        throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
-      }
+  private def cachedQuery(queryText: String): AbstractQuery =
+    queryCache(queryText, { verify(parse(queryText)) }).asInstanceOf[AbstractQuery]
 
-      val parsedQuery = ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
-      parsedQuery.verifySemantics()
-      verify(parsedQuery)
-      val planBuilder = new ExecutionPlanBuilder(graph)
-      planBuilder.build(context, parsedQuery)
-    }).asInstanceOf[ExecutionPlan]
-  }
-
-  def verify(query: AbstractQuery) {
+  private def verify(query: AbstractQuery): AbstractQuery = {
+    query.verifySemantics()
     for (verifier <- verifiers)
       verifier.verify(query)
+    query
   }
+
+  private def parse(query: String): AbstractQuery = parser.parseToQuery(query)
 }

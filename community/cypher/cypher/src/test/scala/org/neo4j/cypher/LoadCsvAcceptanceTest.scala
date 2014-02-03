@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{After, Test}
-import java.io.PrintWriter
-import scala.reflect.io.File
+import org.junit.Test
+import java.io.{FileNotFoundException, PrintWriter}
+import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 
-class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
+class LoadCsvAcceptanceTest
+  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
+
   @Test def import_three_strings() {
     val url = createFile {
       writer =>
@@ -115,19 +117,9 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     assertStats(result, nodesCreated = 0)
   }
 
-  var files: Seq[File] = Seq.empty
-
-  private def createFile(f: PrintWriter => Unit): String = synchronized {
-    val file = File.makeTemp("cypher", ".csv")
-    val writer = file.printWriter()
-    f(writer)
-    writer.flush()
-    writer.close()
-    files = files :+ file
-    file.toURI.toURL.toString.replace("\\", "\\\\")
+  @Test def should_fail_gracefully_when_loading_missing_file() {
+    intercept[FileNotFoundException] { execute("LOAD CSV FROM 'file://missing_file.csv' AS line CREATE (a {name:line[0]})") }
   }
 
-  @After def cleanup() {
-    files.foreach(_.delete())
-  }
+  private def createFile(f: PrintWriter => Unit) = s"file://${createTempFile("cypher", ".csv", f)}"
 }

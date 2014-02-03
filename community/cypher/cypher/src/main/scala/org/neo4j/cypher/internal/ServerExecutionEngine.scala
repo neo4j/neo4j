@@ -17,11 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v2_0._
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.cypher.ExecutionEngine
 
-trait Statement extends ASTNode {
-  def semanticCheck: SemanticCheck
+/**
+ * This is used by {@link org.neo4j.cypher.javacompat.internal.ServerExecutionEngine} to provide additional
+ * API to REST server
+ *
+ */
+class ServerExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL)
+  extends ExecutionEngine(graph, logger) {
+
+  def isAutoCommitQuery(queryText: String): Boolean = compiler.isAutoCommit(queryText)
 }
-

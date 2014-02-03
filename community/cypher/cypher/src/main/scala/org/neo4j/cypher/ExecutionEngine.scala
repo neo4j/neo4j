@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{ExecutionPlan, CypherCompiler, LRUCache}
+import org.neo4j.cypher.internal.{TransactionInfo, ExecutionPlan, CypherCompiler, LRUCache}
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.graphdb.{Transaction, GraphDatabaseService}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.api.Statement
@@ -34,49 +34,53 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   require(graph != null, "Can't work with a null graph database")
 
-  private def graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
+  protected val compiler = createCompiler()
+
+  // true means we run inside REST server
+  protected val isServer = false
+  protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(query)
-    val (plan, tx) = prepare(query)
-    plan.profile(graphAPI, tx, txBridge.instance(), params)
-  }
+  def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
-
+  def profile(query: String, params: Map[String, Any]): ExecutionResult = {
+    logger.debug(query)
+    val (plan, txInfo) = prepare(query)
+    plan.profile(graphAPI, txInfo, params)
+  }
 
   @throws(classOf[SyntaxException])
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
-    logger.debug(query)
-    val (plan, tx) = prepare(query)
-    plan.execute(graphAPI, tx, txBridge.instance(), params)
-  }
-
-  @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, Transaction)=  {
+  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
+    logger.debug(query)
+    val (plan, txInfo) = prepare(query)
+    plan.execute(graphAPI, txInfo, params)
+  }
+
+  @throws(classOf[SyntaxException])
+  private def prepare(query: String): (ExecutionPlan, TransactionInfo) =  {
 
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
       var touched = false
+      val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
       val statement = txBridge.instance()
       val plan = try {
         // fetch plan cache
-        val (planCache, compiler) = getOrCreateFromSchemaState(statement,
-          (new LRUCache[String, ExecutionPlan](getPlanCacheSize), createCompiler())
-        )
+        val planCache = getOrCreateFromSchemaState(statement, {
+          new LRUCache[String, ExecutionPlan](getPlanCacheSize)
+        })
 
         // get plan or build it
         planCache.getOrElseUpdate(query, {
@@ -101,7 +105,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
         statement.close()
-        return (plan, tx)
+        return (plan, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
       }
 
       n += 1
@@ -123,15 +127,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query:String): String = Prettifier(query)
 
-  private def createCompiler() =
+  private def createCompiler(): CypherCompiler =
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
       .andThen({
-      case v:String => CypherCompiler(graph, v)
-      case _        => CypherCompiler(graph)
+      case v:String => new CypherCompiler(graph, v)
+      case _        => new CypherCompiler(graph)
     })
-      .applyOrElse(graph, (_: GraphDatabaseService) => CypherCompiler(graph) )
-
+      .applyOrElse(graph, (_: GraphDatabaseService) => new CypherCompiler(graph) )
 
   private def getPlanCacheSize : Int =
     optGraphAs[InternalAbstractGraphDatabase]
@@ -151,3 +154,5 @@ object ExecutionEngine {
   val DEFAULT_PLAN_CACHE_SIZE: Int = 100
   val PLAN_BUILDING_TRIES: Int = 20
 }
+
+

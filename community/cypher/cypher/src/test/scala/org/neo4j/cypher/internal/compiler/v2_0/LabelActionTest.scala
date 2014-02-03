@@ -82,6 +82,10 @@ class SnitchingQueryContext extends QueryContext {
     ids.size
   }
 
+  def isOpen: Boolean = ???
+
+  def isTopLevelTx: Boolean = ???
+
   def getOrCreateLabelId(labelName: String) = labels(labelName)
 
   def getLabelsForNode(node: Node) = Seq(12L)
@@ -139,4 +143,8 @@ class SnitchingQueryContext extends QueryContext {
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
+
+  override def commitAndRestartTx() {
+    ???
+  }
 }

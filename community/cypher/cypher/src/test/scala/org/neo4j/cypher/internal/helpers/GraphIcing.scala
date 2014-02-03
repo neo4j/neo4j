@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.graphdb.{DynamicLabel, Node}
 import org.neo4j.graphdb.DynamicLabel._
-import org.neo4j.kernel.{GraphDatabaseAPI}
+import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.transaction.TxManager
 
 trait GraphIcing {
 
@@ -69,12 +70,21 @@ trait GraphIcing {
         tx.success()
         result
       } finally {
-        tx.finish()
+        tx.close()
       }
     }
 
-    private def txBridge: ThreadToStatementContextBridge = graph.
-      getDependencyResolver.
-      resolveDependency(classOf[ThreadToStatementContextBridge])
+    def txCounts = TxCounts(txManager.getCommittedTxCount, txManager.getRolledbackTxCount, txManager.getActiveTxCount)
+
+    private def txManager: TxManager = resolveDependency(classOf[TxManager])
+
+    private def txBridge: ThreadToStatementContextBridge = resolveDependency(classOf[ThreadToStatementContextBridge])
+
+    private def resolveDependency[T](clazz: Class[T]): T =graph.getDependencyResolver.resolveDependency(clazz)
   }
+}
+
+final case class TxCounts(commits: Int = 0, rollbacks: Int = 0, active: Int = 0) {
+  def +(other: TxCounts) = TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
+  def -(other: TxCounts) = TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
 }

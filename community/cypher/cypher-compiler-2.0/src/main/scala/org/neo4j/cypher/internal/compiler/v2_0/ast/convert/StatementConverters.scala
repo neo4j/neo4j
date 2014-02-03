@@ -22,19 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast.convert
 import ExpressionConverters._
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues, StartItem}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.StartItem
+import org.neo4j.cypher.internal.compiler.v2_0.commands.AutoCommitQuery
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {
 
   implicit class StatementConverter(val statement: ast.Statement) extends AnyVal {
     def asQuery: commands.AbstractQuery = statement match {
-      case s: ast.SingleQuery =>
-        s.asQuery
-      case s: ast.UnionAll =>
-        commands.Union(s.unionedQueries.reverseMap(_.asQuery), commands.QueryString.empty, distinct = false)
-      case s: ast.UnionDistinct =>
-        commands.Union(s.unionedQueries.reverseMap(_.asQuery), commands.QueryString.empty, distinct = true)
+      case s: ast.Query =>
+        val innerQuery = s.part.asQuery
+        s.autoCommitHint match {
+          case Some(hint) => AutoCommitQuery(innerQuery, hint.size.map(_.value))
+          case _          => innerQuery
+        }
       case s: ast.CreateIndex =>
         commands.CreateIndex(s.label.name, Seq(s.property.name))
       case s: ast.DropIndex =>
@@ -53,6 +55,17 @@ object StatementConverters {
           propertyKey = s.propertyKey.name)
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown statement during transformation ($statement)")
+    }
+  }
+
+  implicit class QueryPartConverter(val queryPart: ast.QueryPart) extends AnyVal {
+    def asQuery: commands.AbstractQuery = queryPart match {
+      case s: ast.SingleQuery =>
+        s.asQuery
+      case s: ast.UnionAll =>
+        commands.Union(s.unionedQueries.reverseMap(_.asQuery), commands.QueryString.empty, distinct = false)
+      case s: ast.UnionDistinct =>
+        commands.Union(s.unionedQueries.reverseMap(_.asQuery), commands.QueryString.empty, distinct = true)
     }
   }
 

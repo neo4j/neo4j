@@ -175,6 +175,73 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    public void begin_and_execute_autocommit_and_commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin and execute and commit
+        Response response = http.POST(
+                "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" )
+        );
+
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response, containsNoErrors() );
+        assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
+    }
+
+    @Test
+    public void begin_and_execute_invalid_query_and_commit() throws Exception
+    {
+        // begin and execute and commit
+        Response response = http.POST(
+                "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'MATCH n RETURN m' } ] }" )
+        );
+
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response, hasErrors(Status.Statement.InvalidSyntax) );
+    }
+
+    @Test
+    public void begin_and_execute_multiple_autocommit_last_and_commit() throws Exception
+    {
+        // begin and execute and commit
+        Response response = http.POST(
+                "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" )
+        );
+        assertThat( response, hasErrors(Status.Statement.InvalidSemantics) );
+    }
+
+    @Test
+    public void begin__execute__execute_and_autocommit() throws Exception
+    {
+        // begin
+        Response begin = http.POST( "/db/data/transaction" );
+
+        // execute
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
+
+        // execute
+        Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" ) );
+
+        assertThat( response, hasErrors(Status.Statement.InvalidSemantics) );
+    }
+
+    @Test
+    public void begin_and_execute_autocommit__commit() throws Exception
+    {
+        // begin and execute
+        Response begin = http.POST(
+                "/db/data/transaction",
+                quotedJson( "{ 'statements': [ { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" )
+        );
+
+        assertThat( begin, hasErrors(Status.Statement.InvalidSemantics) );
+    }
+
+    @Test
     public void begin__execute_multiple__commit() throws Exception
     {
         long nodesInDatabaseBeforeTransaction = countNodes();

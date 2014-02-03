@@ -26,3 +26,4 @@ abstract class ExecutionPlan {
   def execute(queryContext: QueryContext, params: Map[String, Any]):ExecutionResult
   def profile(queryContext: QueryContext, params: Map[String, Any]):ExecutionResult
 }
+

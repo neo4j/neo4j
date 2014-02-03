@@ -17,11 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.server.rest.web.integration;
 
-import org.neo4j.cypher.internal.compiler.v2_0._
+import org.junit.Test;
 
-trait Statement extends ASTNode {
-  def semanticCheck: SemanticCheck
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.test.server.HTTP;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+
+public class CypherOldEndpointIT extends AbstractRestFunctionalTestBase
+{
+    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
+
+    @Test
+    public void autocommitTest() throws Exception
+    {
+        // begin
+        HTTP.Response begin = http.POST(
+                "/db/data/cypher",
+                quotedJson( "{ 'query': 'USING AUTOCOMMIT 10 CREATE ()' }" )
+        );
+
+        assertThat( begin.status(), equalTo( 200 ) );
+    }
 }
 

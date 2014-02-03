@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class LoadCSVTest extends CypherFunSuite {
+
   val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4))
   val identifier = Identifier("a")(DummyPosition(4))
 

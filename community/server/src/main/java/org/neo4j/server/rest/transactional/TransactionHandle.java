@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
+import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.server.rest.web.TransactionUriScheme;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
-import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -58,14 +58,14 @@ public class TransactionHandle
     private static final CypherExceptionMapping EXCEPTION_MAPPING = new CypherExceptionMapping();
 
     private final TransitionalPeriodTransactionMessContainer txManagerFacade;
-    private final ExecutionEngine engine;
+    private final ServerExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final StringLogger log;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
 
-    public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, ExecutionEngine engine,
+    public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, ServerExecutionEngine engine,
                               TransactionRegistry registry, TransactionUriScheme uriScheme, StringLogger log )
     {
         this.txManagerFacade = txManagerFacade;
@@ -101,13 +101,50 @@ public class TransactionHandle
         }
     }
 
-    public void commit( StatementDeserializer statements, ExecutionResultSerializer output )
+    public void commit( StatementDeserializer statements, ExecutionResultSerializer output, boolean pristine )
     {
         List<Neo4jError> errors = new LinkedList<>();
         try
         {
-            ensureActiveTransaction();
-            commit( statements, output, errors );
+            try
+            {
+                // AUTOCOMMIT queries may only be used when directly committing a pristine (newly created)
+                // transaction and when the first statement is an AUTOCOMMIT statement.
+                //
+                // In that case we refrain from opening a transaction and leave management of
+                // transactions to Cypher. If there are any further statements they will all be
+                // executed in a separate transaction (Once you AUTOCOMMIT all bets are off).
+                //
+                boolean autocommit;
+                try
+                {
+                    autocommit = pristine && engine.isAutoCommitQuery( statements.peek().statement() );
+                }
+                catch ( CypherException e )
+                {
+                    errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
+                    throw e;
+                }
+
+                if ( autocommit )
+                {
+                    // If there is an open transaction at this point this will cause an immediate error
+                    // as soon as Cypher tries to execute the initial AUTOCOMMIT statement
+                    executeStatements( statements, output, errors );
+                }
+                else
+                {
+                    ensureActiveTransaction();
+                    // If any later statement is an AUTOCOMMIT query, executeStatements will fail
+                    // as Cypher does refuse to execute AUTOCOMMIT queries in an open transaction
+                    executeStatements( statements, output, errors );
+                    closeContextAndCollectErrors( errors );
+                }
+            }
+            finally
+            {
+                registry.forget(id);
+            }
         }
         catch ( InternalBeginTransactionError e )
         {
@@ -182,41 +219,31 @@ public class TransactionHandle
         }
     }
 
-    private void commit( StatementDeserializer statements, ExecutionResultSerializer output,
-                         List<Neo4jError> errors )
+    private void closeContextAndCollectErrors( List<Neo4jError> errors )
     {
-        try
+        if ( errors.isEmpty() )
         {
-            executeStatements( statements, output, errors );
-
-            if ( errors.isEmpty() )
+            try
             {
-                try
-                {
-                    context.commit();
-                }
-                catch ( Exception e )
-                {
-                    log.error( "Failed to commit transaction.", e );
-                    errors.add( new Neo4jError( Status.Transaction.CouldNotCommit, e ) );
-                }
+                context.commit();
             }
-            else
+            catch ( Exception e )
             {
-                try
-                {
-                    context.rollback();
-                }
-                catch ( Exception e )
-                {
-                    log.error( "Failed to rollback transaction.", e );
-                    errors.add( new Neo4jError( Status.Transaction.CouldNotRollback, e ) );
-                }
+                log.error( "Failed to commit transaction.", e );
+                errors.add( new Neo4jError( Status.Transaction.CouldNotCommit, e ) );
             }
         }
-        finally
+        else
         {
-            registry.forget( id );
+            try
+            {
+                context.rollback();
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failed to rollback transaction.", e );
+                errors.add( new Neo4jError( Status.Transaction.CouldNotRollback, e ) );
+            }
         }
     }
 

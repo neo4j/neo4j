@@ -2962,6 +2962,30 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("should parse an autocommit query with size") {
+    expectQuery(
+      "USING AUTOCOMMIT 10 CREATE (n)",
+      AutoCommitQuery(
+        Query.
+          start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
+          returns(),
+        Some(10)
+      )
+    )
+  }
+
+  test("should parse an autocommit query without size") {
+    expectQuery(
+      "USING AUTOCOMMIT CREATE (n) ",
+      AutoCommitQuery(
+        Query.
+          start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
+          returns(),
+        None
+      )
+    )
+  }
+
   private def expectQuery(query: String, expectedQuery: AbstractQuery) {
     val ast = parser.parseToQuery(query)
     try {

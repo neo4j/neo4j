@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.server.rest.web.TransactionUriScheme;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-import org.neo4j.server.rest.web.TransactionUriScheme;
 
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
@@ -52,12 +52,12 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
 public class TransactionFacade
 {
     private final TransitionalPeriodTransactionMessContainer kernel;
-    private final ExecutionEngine engine;
+    private final ServerExecutionEngine engine;
     private final TransactionRegistry registry;
     private final StringLogger log;
     private final URI baseUri;
 
-    public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, ExecutionEngine engine,
+    public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, ServerExecutionEngine engine,
                               TransactionRegistry registry, URI baseUri, StringLogger log )
     {
         this.kernel = kernel;

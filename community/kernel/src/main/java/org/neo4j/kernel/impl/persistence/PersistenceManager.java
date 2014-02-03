@@ -225,7 +225,7 @@ public class PersistenceManager
     {
         return getResource().forReading().getLabelsForNode( nodeId );
     }
-    
+
     public int getRelationshipCount( long id, int type, DirectionWrapper direction )
     {
         return getResource().forReading().getRelationshipCount( id, type, direction );
@@ -274,14 +274,27 @@ public class PersistenceManager
             tx.registerSynchronization( new ResourceCleanupHook( tx, state, result ) );
             return result;
         }
-        catch ( RollbackException e )
+        catch ( RollbackException | SystemException e )
         {
             throw new ResourceAcquisitionFailedException( e );
         }
-        catch ( SystemException e )
+    }
+
+    public boolean hasCurrentTransaction()
+    {
+        try
         {
-            throw new ResourceAcquisitionFailedException( e );
+            if ( null == transactionManager || null == transactionManager.getTransaction() )
+            {
+                return false;
+            }
         }
+        catch ( SystemException se )
+        {
+            throw new TransactionFailureException( "Error fetching transaction "
+                    + "for current thread", se );
+        }
+        return true;
     }
 
     public Transaction getCurrentTransaction()
@@ -414,13 +427,9 @@ public class PersistenceManager
                     tx.registerSynchronization( hook );
                 }
             }
-            catch ( RollbackException re )
+            catch ( RollbackException | SystemException re )
             {
                 throw new ResourceAcquisitionFailedException( re );
-            }
-            catch ( SystemException se )
-            {
-                throw new ResourceAcquisitionFailedException( se );
             }
         }
 
