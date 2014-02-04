@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.indexcompat;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +33,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -44,6 +42,8 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.test.Unzip.unzip;
 
 public class IndexFormatCompatibilityTest
 {
@@ -54,8 +54,7 @@ public class IndexFormatCompatibilityTest
     @Before
     public void startDatabase() throws IOException
     {
-        String file = getClass().getResource( "neostore" ).getFile();
-        FileUtils.copyRecursively( new File( file ).getParentFile(), storeDir.directory() );
+        copyRecursively( unzip( getClass(), "db.zip" ), storeDir.directory() );
 
         db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getPath() );
     }

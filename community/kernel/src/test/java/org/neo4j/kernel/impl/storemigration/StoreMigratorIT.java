@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -50,10 +52,17 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.Unzip;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -66,13 +75,13 @@ public class StoreMigratorIT
     {
         // GIVEN
         LegacyStore legacyStore = new LegacyStore( fs,
-                new File( getClass().getResource( "legacystore/exampledb/neostore" ).getFile() ) );
+                new File( MigrationTestUtils.findOldFormatStoreDirectory(), NeoStore.DEFAULT_NAME ) );
         NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
 
         // WHEN
         new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
         legacyStore.close();
-        
+
         // THEN
         neoStore = storeFactory.newNeoStore( storeFileName );
         verifyNeoStore( neoStore );
@@ -93,15 +102,15 @@ public class StoreMigratorIT
         // CLEANUP
         database.shutdown();
     }
-    
+
     @Test
     public void shouldDedupUniquePropertyIndexKeys() throws Exception
     {
         // GIVEN
         // a store that contains two nodes with property "name" of which there are two key tokens
         // that should be merged in the store migration
-        LegacyStore legacyStore = new LegacyStore( fs,
-                new File( getClass().getResource( "legacystore/propkeydupdb/neostore" ).getFile() ) );
+        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "propkeydupdb.zip" );
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
         NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
 
         // WHEN
@@ -122,7 +131,7 @@ public class StoreMigratorIT
         assertThat( nodeC, inTx( db, hasProperty( "other" ).withValue( "a value" ) ) );
         assertThat( nodeC, inTx( db, hasProperty( "third" ).withValue( "something" ) ) );
         db.shutdown();
-        
+
         // THEN
         // verify that there are no duplicate keys in the store
         PropertyKeyTokenStore tokenStore =
@@ -131,7 +140,7 @@ public class StoreMigratorIT
         tokenStore.close();
         assertNuDuplicates( tokens );
     }
-    
+
     private void assertNuDuplicates( Token[] tokens )
     {
         Set<String> visited = new HashSet<String>();
@@ -167,7 +176,7 @@ public class StoreMigratorIT
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;
     private File storeFileName;
-    
+
     @Before
     public void setUp()
     {
@@ -183,7 +192,7 @@ public class StoreMigratorIT
         assertEquals( 1317392957120l, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
         assertEquals( 1l, neoStore.getVersion() );
-        assertEquals( NeoStore.ALL_STORES_VERSION, NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
+        assertEquals( CommonAbstractStore.ALL_STORES_VERSION, NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
         assertEquals( 1004l, neoStore.getLastCommittedTx() );
     }
 
