@@ -38,7 +38,7 @@ trait Clauses extends Parser
 
   def Match: Rule1[ast.Match] = rule("MATCH") {
     group((
-        keyword("OPTIONAL", "MATCH") ~ push(true)
+        keyword("OPTIONAL MATCH") ~ push(true)
       | keyword("MATCH") ~ push(false)
     ) ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)) ~~>> (ast.Match(_, _, _, _))
   }
@@ -50,7 +50,7 @@ trait Clauses extends Parser
   }
 
   def Create: Rule1[ast.Clause] = rule("CREATE") (
-      group(keyword("CREATE", "UNIQUE") ~~ Pattern) ~~>> (ast.CreateUnique(_))
+      group(keyword("CREATE UNIQUE") ~~ Pattern) ~~>> (ast.CreateUnique(_))
     | group(keyword("CREATE") ~~ Pattern) ~~>> (ast.Create(_))
   )
 
@@ -73,12 +73,12 @@ trait Clauses extends Parser
   }
 
   def With: Rule1[ast.With] = rule("WITH") (
-      group(keyword("WITH", "DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
+      group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
     | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
   )
 
   def Return: Rule1[ast.Return] = rule("RETURN") (
-      group(keyword("RETURN", "DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
+      group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
     | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
 
@@ -87,13 +87,13 @@ trait Clauses extends Parser
   }
 
   private def Hint: Rule1[ast.Hint] = rule("USING") (
-      group(keyword("USING", "INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
-    | group(keyword("USING", "SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
+      group(keyword("USING INDEX") ~~ Identifier ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
+    | group(keyword("USING SCAN") ~~ Identifier ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
 
   private def MergeAction = rule("ON") (
-      group(keyword("ON", "MATCH") ~~ SetClause) ~~>> (ast.OnMatch(_))
-    | group(keyword("ON", "CREATE") ~~ SetClause) ~~>> (ast.OnCreate(_))
+      group(keyword("ON MATCH") ~~ SetClause) ~~>> (ast.OnMatch(_))
+    | group(keyword("ON CREATE") ~~ SetClause) ~~>> (ast.OnCreate(_))
   )
 
   private def SetItem: Rule1[ast.SetItem] = rule (
@@ -125,7 +125,7 @@ trait Clauses extends Parser
   )
 
   private def Order: Rule1[ast.OrderBy] = rule {
-    group(keyword("ORDER", "BY") ~~ oneOrMore(SortItem, separator = CommaSep)) ~~>> (ast.OrderBy(_))
+    group(keyword("ORDER BY") ~~ oneOrMore(SortItem, separator = CommaSep)) ~~>> (ast.OrderBy(_))
   }
 
   private def SortItem: Rule1[ast.SortItem] = rule (

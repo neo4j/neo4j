@@ -48,15 +48,17 @@ trait Base extends Parser {
     )
   }.suppressNode
 
-  def keyword(string: String): Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ !IdentifierPart)
-  def keyword(firstString: String, strings: String*): Rule0 =
-    group(strings.foldLeft(keyword(firstString)) {
-      (acc, s) => acc ~ WS ~ keyword(s)
+  def keyword(string: String): Rule0 = {
+    def word(string: String): Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ !IdentifierPart)
+    val strings = string.trim.split(' ')
+    group(strings.tail.foldLeft(word(strings.head)) {
+      (acc, s) => acc ~ WS ~ word(s)
     })
+  }
   def operator(string: String) = group(string ~ !OpChar)
 
-  def keywordIdentifier(firstString: String, strings: String*): Rule1[ast.Identifier] =
-    keyword(firstString, strings:_*) ~ push(ast.Identifier((firstString +: strings).mkString(" "))(_))
+  def keywordIdentifier(string: String): Rule1[ast.Identifier] =
+    keyword(string) ~ push(ast.Identifier(string)(_))
   def operatorIdentifier(string: String): Rule1[ast.Identifier] =
     operator(string) ~ push(ast.Identifier(string)(_))
 
