@@ -30,6 +30,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.Unzip;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
@@ -54,8 +55,7 @@ public class UpgradableDatabaseTestIT
     @Test
     public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
-        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
+        File resourceDirectory = Unzip.unzip( getClass(), "exampledb.zip" );
         File workingDirectory = new File( "target/" + UpgradableDatabaseTestIT.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
@@ -69,8 +69,7 @@ public class UpgradableDatabaseTestIT
     @Test
     public void shouldRejectStoresIfOneFileHasIncorrectVersion() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
-        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
+        File resourceDirectory = Unzip.unzip( getClass(), "exampledb.zip" );
         File workingDirectory = new File( "target/" + UpgradableDatabaseTestIT.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
@@ -86,8 +85,7 @@ public class UpgradableDatabaseTestIT
     @Test
     public void shouldRejectStoresIfOneFileHasNoVersionAsIfNotShutDownCleanly() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
-        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
+        File resourceDirectory = Unzip.unzip( getClass(), "exampledb.zip" );
         File workingDirectory = new File( "target/" + UpgradableDatabaseTestIT.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
@@ -103,8 +101,7 @@ public class UpgradableDatabaseTestIT
     @Test
     public void shouldRejectStoresIfOneFileShorterThanExpectedVersionString() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
-        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
+        File resourceDirectory = Unzip.unzip( getClass(), "exampledb.zip" );
         File workingDirectory = new File( "target/" + UpgradableDatabaseTestIT.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
