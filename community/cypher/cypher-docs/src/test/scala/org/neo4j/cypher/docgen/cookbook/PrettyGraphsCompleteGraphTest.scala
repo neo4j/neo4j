@@ -38,25 +38,17 @@ class PrettyGraphsCompleteGraphTest extends DocumentingTestBase with StatisticsC
     testQuery(
       title = "Complete graph",
       text =
-"""For this graph, a root node is created, and used to hang a number
-of nodes from. Then, two nodes are selected, hanging from the center, with the requirement that the
-id of the first is less than the id of the next. This is to prevent double relationships and
-self relationships. Using said match, relationships between all these nodes are created. Lastly,
-the center node and all relationships connected to it are removed.""",
-      queryText = """create (center)
-foreach( x in range(1,6) |
-   create (leaf {count : x}), (center)-[:X]->(leaf)
-)
-WITH center
-MATCH (leaf1)<--(center)-->(leaf2)
-WHERE id(leaf1)<id(leaf2)
-CREATE (leaf1)-[:X]->(leaf2)
-WITH center
-MATCH (center)-[r]->()
-DELETE center,r;""",
+        """To create this graph, we first create 6 nodes and label them with the Leaf label. We then
+          |match all the unique pairs of nodes, and create a relationship between them.
+        """.stripMargin,
+      queryText = """FOREACH (x in range(1,6) | CREATE (leaf:Leaf {count : x}))
+WITH *
+MATCH (leaf1:Leaf), (leaf2:Leaf)
+WHERE id(leaf1) < id(leaf2)
+CREATE (leaf1)-[:X]->(leaf2);""",
       returns =
 """Nothing is returned by this query.""",
-      assertions = (p) => assertStats(p, nodesCreated = 7, propertiesSet = 6, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
+      assertions = (p) => assertStats(p, nodesCreated = 6, propertiesSet = 6, relationshipsCreated = 15, labelsAdded = 6)
     )
   } 
 }
