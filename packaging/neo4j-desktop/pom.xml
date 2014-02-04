@@ -219,7 +219,7 @@
                     <install4j projectfile="${project.basedir}/target/install4j/neo4j-desktop.install4j"
                                mediatypes="windows"
                                verbose="true"
-                               release="1.9.4-SNAPSHOT"
+                               release="${project.version}"
                                winKeystorePassword="${install4j.win.key.store.password}"
                                destination="${project.basedir}/target/install4j" />
                   </target>
