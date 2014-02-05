@@ -1,7 +1,7 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-2.0.1
------
+2.0.1 (2014-01-04)
+------------------
 Kernel:
 o Improve speed of verifying unique constraints on constraint creation.
 o Improve speed of creating label scan store in BatchInserter.
@@ -23,8 +23,8 @@ o Use internal heirarchy for types. Previously dependeded on Scala type hierarch
 o Fixes MERGE without any identifier previously known
 o Corrects numerous inconsistencies when performing static type inference during compilation.
 
-2.0.0
------
+2.0.0 (2013-12-11)
+------------------
 Cypher:
 o Fix for problem with index lookups against properties
 o Fix: MERGE should work when finding multiple elements
@@ -34,121 +34,121 @@ o Fix problems with CREATE for relationships without declared nodes
 o Allow MERGE to run inside FOREACH
 o Prevent the use of parameter maps in MATCH and MERGE
 
-2.0.0-RC1
----------
+2.0.0-RC1 (2013-11-21)
+----------------------
 Kernel:
-  o BREAKING CHANGE: Reference node has been removed.
-  o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
-    those related to the traversal frameworks, are now deprecated and due to be moved
-    into internal packages. This includes well-known classes such as EmbeddedGraphDatabase
-    and HighlyAvailableGraphDatabase, both of which are replaced by GraphDatabaseFactory
-    and HighlyAvailableGraphDatabaseFactory, respectively.
-  o BREAKING CHANGE: Removed deprecated settings from org.neo4j.graphdb.factory.GraphDatabaseSettings. These settings are
-    no longer effective and can be removed without any effect.
-  o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.index.IndexProvider (and associated
-    org.neo4j.graphdb.index.IndexIterable and org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory). This has been
-    replaced by the kernel extension mechanism.
-  o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.PropertyContainer#getPropertyValues(). Instead use
-    org.neo4j.graphdb.PropertyContainer#getPropertyKeys() and org.neo4j.graphdb.PropertyContainer#getProperty(String).
-  o BREAKING CHANGE: Removed deprecated methods from org.neo4j.kernel.GraphDatabaseAPI: #getDiagnosticsManager(),
-    #getMessageLog(), #getIdGeneratorFactory(), #getKernelData() and #getPersistenceSource(). These are internal
-    components which Kernel clients should not need to access. The entire org.neo4j.kernel.GraphDatabaseAPI interface is
-    deprecated and will be removed in future.
-  o BREAKING CHANGE: Deprecated constructors of EmbeddedReadOnlyDatabase and EmbeddedGraphDatabase have been removed,
-    in favor of the long-advertised alternative GraphDatabaseFactory.
-  o BREAKING CHANGE: All deprecated methods in GraphDatabaseAPI have been removed in favor of getDependencyResolver().
+o BREAKING CHANGE: Reference node has been removed.
+o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
+  those related to the traversal frameworks, are now deprecated and due to be moved
+  into internal packages. This includes well-known classes such as EmbeddedGraphDatabase
+  and HighlyAvailableGraphDatabase, both of which are replaced by GraphDatabaseFactory
+  and HighlyAvailableGraphDatabaseFactory, respectively.
+o BREAKING CHANGE: Removed deprecated settings from org.neo4j.graphdb.factory.GraphDatabaseSettings. These settings are
+  no longer effective and can be removed without any effect.
+o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.index.IndexProvider (and associated
+  org.neo4j.graphdb.index.IndexIterable and org.neo4j.graphdb.index.IndexProviderKernelExtensionFactory). This has been
+  replaced by the kernel extension mechanism.
+o BREAKING CHANGE: Removed deprecated org.neo4j.graphdb.PropertyContainer#getPropertyValues(). Instead use
+  org.neo4j.graphdb.PropertyContainer#getPropertyKeys() and org.neo4j.graphdb.PropertyContainer#getProperty(String).
+o BREAKING CHANGE: Removed deprecated methods from org.neo4j.kernel.GraphDatabaseAPI: #getDiagnosticsManager(),
+  #getMessageLog(), #getIdGeneratorFactory(), #getKernelData() and #getPersistenceSource(). These are internal
+  components which Kernel clients should not need to access. The entire org.neo4j.kernel.GraphDatabaseAPI interface is
+  deprecated and will be removed in future.
+o BREAKING CHANGE: Deprecated constructors of EmbeddedReadOnlyDatabase and EmbeddedGraphDatabase have been removed,
+  in favor of the long-advertised alternative GraphDatabaseFactory.
+o BREAKING CHANGE: All deprecated methods in GraphDatabaseAPI have been removed in favor of getDependencyResolver().
 
 Cypher:
-  o Add OPTIONAL MATCH to Cypher
-  o Remove question mark symbol from patterns in Cypher
-  o Fixes 1313
-  o Fixes problem with collection index types
-  o Changes behaviour of LAST/HEAD/TAIL and collection slice -
-    they now all return null for ranges outside a collection
-  o Fixed #1471 - SETting a relationship to a map value fails
+o Add OPTIONAL MATCH to Cypher
+o Remove question mark symbol from patterns in Cypher
+o Fixes 1313
+o Fixes problem with collection index types
+o Changes behaviour of LAST/HEAD/TAIL and collection slice -
+  they now all return null for ranges outside a collection
+o Fixed #1471 - SETting a relationship to a map value fails
 
 Shell:
-  o Add '-' as filename for piping stdin directly into the shell, behaves as a file import.
+o Add '-' as filename for piping stdin directly into the shell, behaves as a file import.
 
 Server:
-  o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#stopServerOnly(). To stop the server use
-    org.neo4j.server.AbstractNeoServer#stop(). If you would like to disconnect the database life cycle from server control
-    use org.neo4j.server.WrappingNeoServer.
-  o BREAKING CHANGE: org.neo4j.server.database.Database is now an interface. Direct uses of the class can be replaced by
-    one of its implementations.
-  o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was introduced
-    in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client code that depends
-    on the numeric status codes.
+o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#stopServerOnly(). To stop the server use
+  org.neo4j.server.AbstractNeoServer#stop(). If you would like to disconnect the database life cycle from server control
+  use org.neo4j.server.WrappingNeoServer.
+o BREAKING CHANGE: org.neo4j.server.database.Database is now an interface. Direct uses of the class can be replaced by
+  one of its implementations.
+o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was introduced
+  in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client code that depends
+  on the numeric status codes.
 
-2.0.0-M06
----------
+2.0.0-M06 (2013-10-15)
+----------------------
 o Windows desktop GUI added
 
 Cypher:
-  o Parenthesis around nodes are now mandatory if a label is used on the node
+o Parenthesis around nodes are now mandatory if a label is used on the node
 
-2.0.0-M05
----------
+2.0.0-M05 (2013-09-10)
+----------------------
 Kernel:
-  o BREAKING CHANGE: GraphDatabaseSettings now only exposes Setting, deprecated settings classes have been removed.
-  o Fixed problems with array properties being updated multiple times in a single transaction
-  o Adds label store as an index
-  o Transaction now implements AutoClosable
-  o Distinguish between data and schema transactions
-  o Unique constraint validation for new data
+o BREAKING CHANGE: GraphDatabaseSettings now only exposes Setting, deprecated settings classes have been removed.
+o Fixed problems with array properties being updated multiple times in a single transaction
+o Adds label store as an index
+o Transaction now implements AutoClosable
+o Distinguish between data and schema transactions
+o Unique constraint validation for new data
 
 Cypher:
-  o Promote the experimental parser to the default
-  o Added literal maps
-  o Makes RETURN only queries valid
-  o Labels on optional nodes no longer stop the whole MATCH
-    clause from returning results.
-  o Updated NOT precedence
-  o Added collection slice and collection index
-  o Added list comprehension documentation
+o Promote the experimental parser to the default
+o Added literal maps
+o Makes RETURN only queries valid
+o Labels on optional nodes no longer stop the whole MATCH
+  clause from returning results.
+o Updated NOT precedence
+o Added collection slice and collection index
+o Added list comprehension documentation
 
- Shell:
-  o Adds support for RETURN only Cypher queries
+Shell:
+o Adds support for RETURN only Cypher queries
 
-2.0.0-M04
----------
+2.0.0-M04 (2013-08-08)
+----------------------
 Kernel:
-  o BREAKING CHANGE: Require Java 7
-  o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
-    read operations as well as write operations
-  o Define proper equality for indexing of array properties
-  o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java type
+o BREAKING CHANGE: Require Java 7
+o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
+  read operations as well as write operations
+o Define proper equality for indexing of array properties
+o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java type
 
 Cypher:
-  o Fixes #844 - Label predicate do not work on optional nodes that are null
-  o Fixes #897 - Cypher start doesnt allow combining multiple starting points with start node sets
-  o BREAKING CHANGE: Removes "?", "!" syntax for accessing properties. Missing properties are now treated as null
-  o Introduced a new experimental and fast PEG parser
-  o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the user entered them
-  o BREAKING CHANGE: No longer possible to use expressions and params to identify nodes in patterns
-  o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avoid disambiguity with label syntax
+o Fixes #844 - Label predicate do not work on optional nodes that are null
+o Fixes #897 - Cypher start doesnt allow combining multiple starting points with start node sets
+o BREAKING CHANGE: Removes "?", "!" syntax for accessing properties. Missing properties are now treated as null
+o Introduced a new experimental and fast PEG parser
+o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the user entered them
+o BREAKING CHANGE: No longer possible to use expressions and params to identify nodes in patterns
+o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avoid disambiguity with label syntax
 
 Server:
-  o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
+o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
 
-2.0.0-M03
----------
+2.0.0-M03 (2013-05-29)
+----------------------
 Kernel:
-  o Read-only index results are closed properly
+o Read-only index results are closed properly
 
 Cypher:
-  o Make Cypher execution results closable
-  o Adds Cypher label scan hint
-  o Removes alternative WITH syntax in Cypher
-  o Fixes bug with UNION text output
-  o Added startNode()/endNode()
-  o Fixes #780 - Queries with literal collections fail against schema indexes
+o Make Cypher execution results closable
+o Adds Cypher label scan hint
+o Removes alternative WITH syntax in Cypher
+o Fixes bug with UNION text output
+o Added startNode()/endNode()
+o Fixes #780 - Queries with literal collections fail against schema indexes
 
 Server:
-  o Added support for transaction keep-alive
+o Added support for transaction keep-alive
 
-2.0.0-M02
----------
+2.0.0-M02 (2013-04-28)
+----------------------
 o In server, added REST transaction support
 o In cypher, added MERGE clause
 o In cypher, MATCH now supports single-node patterns
@@ -162,11 +162,21 @@ o BREAKING CHANGE: org.neo4j.graphdb.index.BatchInserterIndex and org.neo4j.grap
 o BREAKING CHANGE: The BatchInserter and the BatchGraphDatabase are not binary compatible with 1.9 due to some methods
   now taking a varargs array of labels as last argument.  Please recompile any code that depends on the BatchInserter.
 
-2.0.0-M01
----------
+2.0.0-M01 (2013-04-08)
+----------------------
 o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
+
+1.9.6 (2014-01-31)
+------------------
+Kernel:
+o Fixes issue with batch inserter which could lead to record not in use exception
+  when adding properties
+o Introduces monitoring for reads/writes to the logical log
+
+Server:
+o Fixes issue with transacions leaking when there is an exception while rendering the response
 
 1.9.5 (2013-11-11)
 ------------------
