@@ -59,7 +59,7 @@ class PrettifierParser extends Parser with Base with Strings {
     keyword("LIMIT") | keyword("ORDER") | keyword("BY") | keyword("ASC") | keyword("DESC") |
     keyword("ON") | keyword("WHEN") | keyword("CASE") | keyword("THEN") | keyword("ELSE") |
     keyword("DROP") | keyword("USING") | keyword("MERGE") | keyword("CONSTRAINT") | keyword("ASSERT") |
-    keyword("SCAN") | keyword("REMOVE") | keyword("UNION")
+    keyword("SCAN") | keyword("REMOVE") | keyword("UNION") | keyword("LOAD")
   }
 
   def nonBreakingKeyword: Rule0 = rule("nonBreakingKeyword") {
@@ -67,10 +67,12 @@ class PrettifierParser extends Parser with Base with Strings {
     keyword("END") | keyword("NOT") | keyword("HAS") | keyword("ANY") | keyword("NONE") | keyword("SINGLE") |
     keyword("OR") | keyword("XOR") | keyword("AND") | keyword("AS") | keyword("INDEX") | keyword("IN") |
     keyword("IS") | keyword("UNIQUE") | keyword("BY") | keyword("ASSERT") | keyword("ASC") | keyword("DESC") |
-    keyword("SCAN") | keyword("ON")
+    keyword("SCAN") | keyword("ON") | keyword("FROM") | keyword("HEADERS")| keyword("CSV")
   }
 
   def allKeywords: Rule1[KeywordToken] = rule("allKeywords") {
+    ( group( keyword("LOAD") ~~ keyword("CSV") ) ~> BreakingKeywords ) |
+    ( group( keyword("WITH") ~~ keyword("HEADERS") ) ~> NonBreakingKeywords ) |
     ( group( keyword("ON") ~~ keyword("CREATE") ) ~> BreakingKeywords ) |
     ( group( keyword("ON") ~~ keyword("MATCH") ) ~> BreakingKeywords ) |
     ( group( keyword("ORDER") ~~ keyword("BY") ) ~> BreakingKeywords ) |
