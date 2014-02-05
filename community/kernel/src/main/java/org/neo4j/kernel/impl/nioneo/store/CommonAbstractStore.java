@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,6 +38,8 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 /**
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
@@ -50,7 +50,7 @@ public abstract class CommonAbstractStore
     {
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-        
+
         public static final GraphDatabaseSetting.BooleanSetting read_only = GraphDatabaseSettings.read_only;
         public static final GraphDatabaseSetting.BooleanSetting backup_slave = GraphDatabaseSettings.backup_slave;
         public static final GraphDatabaseSetting.BooleanSetting use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
@@ -477,6 +477,20 @@ public abstract class CommonAbstractStore
         isRecovered = false;
     }
 
+    public boolean setRecoveredStatus( boolean status )
+    {
+        boolean previous = isRecovered;
+        if ( status )
+        {
+            setRecovered();
+        }
+        else
+        {
+            unsetRecovered();
+        }
+        return previous;
+    }
+
     /**
      * Returns the name of this store.
      *
@@ -504,7 +518,7 @@ public abstract class CommonAbstractStore
 
     protected IdGenerator openIdGenerator( File fileName, int grabSize, boolean firstTime )
     {
-        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
+        return idGeneratorFactory.open( fileSystemAbstraction, fileName, grabSize, getIdType(), 0 );
     }
 
     protected abstract long figureOutHighestIdInUse();
