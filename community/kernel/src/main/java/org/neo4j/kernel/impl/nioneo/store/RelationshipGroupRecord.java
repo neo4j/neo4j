@@ -108,11 +108,12 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     {
         return new StringBuilder( "RelationshipGroup[" + getId() )
                 .append( ",type=" + type )
-                .append( firstOut != Record.NO_NEXT_RELATIONSHIP.intValue() ? ",out=" + firstOut : "" )
-                .append( firstIn != Record.NO_NEXT_RELATIONSHIP.intValue() ? ",in=" + firstIn : "" )
-                .append( firstLoop != Record.NO_NEXT_RELATIONSHIP.intValue() ? ",loop=" + firstLoop : "" )
-                .append( prev != Record.NO_NEXT_RELATIONSHIP.intValue() ? ",prev=" + prev : "" )
-                .append( next != Record.NO_NEXT_RELATIONSHIP.intValue() ? ",next=" + next : "" )
+                .append( ",out=" + firstOut )
+                .append( ",in=" + firstIn )
+                .append( ",loop=" + firstLoop )
+                .append( ",prev=" + prev )
+                .append( ",next=" + next )
+                .append( ",inUse=" + inUse() )
                 .append( "]" ).toString();
     }
 }
