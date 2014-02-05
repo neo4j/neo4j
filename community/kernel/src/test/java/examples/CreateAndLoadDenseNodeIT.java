@@ -23,7 +23,6 @@ import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -65,7 +64,7 @@ public class CreateAndLoadDenseNodeIT
         loadRelationships( node, MyRelTypes.TEST_TRAVERSAL, INCOMING );
         System.out.println( "Done" );
     }
-    
+
     private int loadRelationships( Node node, RelationshipType type, Direction direction )
     {
         long t = System.currentTimeMillis();
@@ -85,7 +84,7 @@ public class CreateAndLoadDenseNodeIT
 
     private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( false );
     private GraphDatabaseService db;
-    
+
     @Before
     public void before()
     {

@@ -160,7 +160,9 @@ public class NodeRecordCheckTest
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 42, 0, 0 ) ) );
         relationship.setFirstPrevRel( 6 );
+        relationship.setFirstInFirstChain( false );
         relationship.setSecondPrevRel( 8 );
+        relationship.setFirstInSecondChain( false );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = check( node );
@@ -177,7 +179,9 @@ public class NodeRecordCheckTest
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 0, 42, 0 ) ) );
         relationship.setFirstPrevRel( 6 );
+        relationship.setFirstInFirstChain( false );
         relationship.setSecondPrevRel( 8 );
+        relationship.setFirstInSecondChain( false );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = check( node );
@@ -194,7 +198,9 @@ public class NodeRecordCheckTest
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
         RelationshipRecord relationship = add( inUse( new RelationshipRecord( 7, 42, 42, 0 ) ) );
         relationship.setFirstPrevRel( 8 );
+        relationship.setFirstInFirstChain( false );
         relationship.setSecondPrevRel( 8 );
+        relationship.setFirstInSecondChain( false );
 
         // when
         ConsistencyReport.NodeConsistencyReport report = check( node );
