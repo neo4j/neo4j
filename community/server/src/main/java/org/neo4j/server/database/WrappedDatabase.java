@@ -19,23 +19,35 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class WrappedDatabase extends CommunityDatabase
+public class WrappedDatabase extends LifecycleAdapter implements Database
 {
-    private final AbstractGraphDatabase db;
+    private final GraphDatabaseAPI graph;
 
-    public WrappedDatabase( AbstractGraphDatabase db )
+    public static Database.Factory wrappedDatabase( final GraphDatabaseAPI db )
     {
-        this( db, new ServerConfigurator( db ) );
+        return new Factory()
+        {
+            @Override
+            public Database newDatabase( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            {
+                return new WrappedDatabase( db );
+            }
+        };
     }
 
-    public WrappedDatabase( AbstractGraphDatabase db, Configurator configurator )
+    public WrappedDatabase( GraphDatabaseAPI graph )
     {
-        super( configurator );
-        this.db = db;
+        this.graph = graph;
         try
         {
             start();
@@ -47,14 +59,50 @@ public class WrappedDatabase extends CommunityDatabase
     }
 
     @Override
-    protected AbstractGraphDatabase createDb()
+    public String getLocation()
     {
-        return db;
+        return graph.getDependencyResolver().resolveDependency( Config.class )
+                .get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
     }
 
     @Override
-    public void stop() throws Throwable
+    public org.neo4j.graphdb.index.Index<Relationship> getRelationshipIndex( String name )
     {
-        // No-op
+        RelationshipIndex index = graph.index().forRelationships( name );
+        if ( index == null )
+        {
+            throw new RuntimeException( "No index for [" + name + "]" );
+        }
+        return index;
+    }
+
+    @Override
+    public org.neo4j.graphdb.index.Index<Node> getNodeIndex( String name )
+    {
+        org.neo4j.graphdb.index.Index<Node> index = graph.index()
+                .forNodes( name );
+        if ( index == null )
+        {
+            throw new RuntimeException( "No index for [" + name + "]" );
+        }
+        return index;
+    }
+
+    @Override
+    public IndexManager getIndexManager()
+    {
+        return graph.index();
+    }
+
+    @Override
+    public GraphDatabaseAPI getGraph()
+    {
+        return graph;
+    }
+
+    @Override
+    public boolean isRunning()
+    {
+        return true;
     }
 }

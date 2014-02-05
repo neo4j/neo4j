@@ -22,8 +22,6 @@ package org.neo4j.server.webadmin.rest;
 import javax.ws.rs.core.Response;
 
 import org.junit.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
@@ -31,14 +29,15 @@ import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.web.WebServer;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class VersionAndEditionServiceTest
 {
@@ -151,6 +150,11 @@ public class VersionAndEditionServiceTest
 
     private class FakeAdvancedNeoServer extends AbstractNeoServer
     {
+        public FakeAdvancedNeoServer( Configurator configurator, Database.Factory dbFactory )
+        {
+            super( configurator, dbFactory );
+        }
+
         @Override
         protected PreFlightTasks createPreflightTasks()
         {
@@ -159,12 +163,6 @@ public class VersionAndEditionServiceTest
 
         @Override
         protected Iterable<ServerModule> createServerModules()
-        {
-            throw new NotImplementedException();
-        }
-
-        @Override
-        protected Database createDatabase()
         {
             throw new NotImplementedException();
         }
@@ -184,6 +182,10 @@ public class VersionAndEditionServiceTest
 
     private class FakeEnterpriseNeoServer extends FakeAdvancedNeoServer
     {
+        public FakeEnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory )
+        {
+            super( configurator, dbFactory );
+        }
     }
 }
 

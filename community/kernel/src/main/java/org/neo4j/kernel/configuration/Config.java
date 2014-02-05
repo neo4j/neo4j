@@ -39,6 +39,7 @@ import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.kernel.logging.BufferingLogger;
 
 import static java.lang.Character.isDigit;
+import static java.util.Collections.emptyList;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors
@@ -52,16 +53,17 @@ import static java.lang.Character.isDigit;
  */
 public class Config implements DiagnosticsProvider
 {
-    private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<ConfigurationChangeListener>();
-    private final Map<String, String> params = new ConcurrentHashMap<String, String>(  );
-    private final ConfigurationMigrator migrator;
+    private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
+    private final Map<String, String> params = new ConcurrentHashMap<>(  );
+    private final Function<String, String> settingsFunction;
 
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
     private StringLogger log = new BufferingLogger();
-    private final ConfigurationValidator validator;
-    private final Function<String, String> settingsFunction;
-    private final Iterable<Class<?>> settingsClasses;
+
+    private Iterable<Class<?>> settingsClasses = emptyList();
+    private ConfigurationMigrator migrator;
+    private ConfigurationValidator validator;
 
     public Config()
     {
@@ -80,12 +82,23 @@ public class Config implements DiagnosticsProvider
 
     public Config( Map<String, String> inputParams, Iterable<Class<?>> settingsClasses )
     {
-        this.settingsClasses = settingsClasses;
-        settingsFunction = Functions.map( params );
+        this.settingsFunction = Functions.map( params );
+        registerSettingsClasses( settingsClasses );
 
+        this.applyChanges( inputParams );
+    }
+
+    /** Add more settings classes. */
+    public Config registerSettingsClasses( Iterable<Class<?>> settingsClasses )
+    {
+        this.settingsClasses = Iterables.concat( settingsClasses, this.settingsClasses );
         this.migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
         this.validator = new ConfigurationValidator( settingsClasses );
-        this.applyChanges( inputParams );
+
+        // Apply the requirements and changes the new settings classes introduce
+        this.applyChanges( getParams() );
+
+        return this;
     }
 
     // TODO: Get rid of this, to allow us to have something more
@@ -93,7 +106,7 @@ public class Config implements DiagnosticsProvider
     // properties).
     public Map<String, String> getParams()
     {
-        return new HashMap<String, String>( this.params );
+        return new HashMap<>( this.params );
     }
 
     /**
@@ -123,7 +136,7 @@ public class Config implements DiagnosticsProvider
         }
         else
         {
-            List<ConfigurationChange> configurationChanges = new ArrayList<ConfigurationChange>();
+            List<ConfigurationChange> configurationChanges = new ArrayList<>();
             for ( Map.Entry<String, String> stringStringEntry : newConfiguration.entrySet() )
             {
                 String oldValue = params.get( stringStringEntry.getKey() );
@@ -204,9 +217,9 @@ public class Config implements DiagnosticsProvider
     @Override
     public String toString()
     {
-        List<String> keys = new ArrayList<String>( params.keySet() );
+        List<String> keys = new ArrayList<>( params.keySet() );
         Collections.sort( keys );
-        LinkedHashMap<String, String> output = new LinkedHashMap<String, String>();
+        LinkedHashMap<String, String> output = new LinkedHashMap<>();
         for ( String key : keys )
         {
             output.put( key, params.get( key ) );

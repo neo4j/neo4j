@@ -28,6 +28,8 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 /**
  * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum amount
  * of required configuration on to the neo4j server.
@@ -67,7 +69,7 @@ public class ServerConfigurator extends Configurator.Adapter
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
-        return null;
+        return stringMap();
     }
 
     @Override

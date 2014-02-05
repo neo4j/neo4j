@@ -167,7 +167,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldResponseAndBeAbleToModifyDb()
+    public void shouldRespondAndBeAbleToModifyDb()
     {
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
         srv.start();

@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -49,6 +52,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
 @Deprecated
 public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
 {
+    private static final Iterable<Class<?>> SETTINGS_CLASSES = Arrays.<Class<?>>asList( GraphDatabaseSettings.class );
+
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
@@ -57,9 +62,20 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
                                   Iterable<CacheProvider> cacheProviders,
                                   Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class ),
-                kernelExtensions, cacheProviders, txInterceptorProviders );
+        super( storeDir, params, SETTINGS_CLASSES, kernelExtensions, cacheProviders, txInterceptorProviders );
+        run();
+    }
 
+    /**
+     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
+     */
+    public EmbeddedGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
+                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                  Iterable<CacheProvider> cacheProviders,
+                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    {
+        super( config.registerSettingsClasses( SETTINGS_CLASSES ),
+               loggingProvider, kernelExtensions, cacheProviders, txInterceptorProviders );
         run();
     }
 }

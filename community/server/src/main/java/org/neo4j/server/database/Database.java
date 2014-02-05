@@ -23,10 +23,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface Database extends Lifecycle
 {
+    interface Factory
+    {
+        Database newDatabase( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions );
+    }
+
     public String getLocation();
 
     public org.neo4j.graphdb.index.Index<Relationship> getRelationshipIndex( String name );
