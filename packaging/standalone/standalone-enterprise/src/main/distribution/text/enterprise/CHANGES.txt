@@ -1,7 +1,7 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
-2.0.1
------
+2.0.1 (2014-01-04)
+------------------
 HA:
 o Index delete now propagates properly across all cluster nodes
 o Slaves now retry switching, making possible overcoming temporary failures
@@ -13,6 +13,9 @@ o Fixes slave deadlock problem
 o Transactions now happen in the context of a master epoch, to solve issues
   with transactions wrongly propagating between masters
 o Introduces monitoring for remote calls between cluster instances
+
+Cypher:
+o Fixes a concurrency problem in query parser
 
 Kernel:
 o Improve speed of verifying unique constraints on constraint creation.
@@ -45,8 +48,8 @@ o Fixes a Paxos instance reuse issue
 o Cluster join denial now includes cluster configuration
 o Fixes issues with proper Payload values passed around
 
-2.0.0
------
+2.0.0 (2013-12-11)
+------------------
 Cypher:
 o Fix for problem with index lookups against properties
 o Fix: MERGE should work when finding multiple elements
@@ -56,8 +59,8 @@ o Fix problems with CREATE for relationships without declared nodes
 o Allow MERGE to run inside FOREACH
 o Prevent the use of parameter maps in MATCH and MERGE
 
-2.0.0-RC1
----------
+2.0.0-RC1 (2013-11-21)
+----------------------
 Kernel:
   o BREAKING CHANGE: Reference node has been removed.
   o BREAKING CHANGE: All classes under the org.neo4j.kernel package space, except
@@ -108,8 +111,8 @@ Backup:
   o BREAKING CHANGE: Removed deprecated org.neo4j.backup.check.ConsistencyCheck main class. This is replaced by
     org.neo4j.consistency.ConsistencyCheckTool.
 
-2.0.0-M06
----------
+2.0.0-M06 (2013-10-15)
+----------------------
 o Windows desktop GUI added
 
 HA:
@@ -118,8 +121,8 @@ HA:
 Cypher:
   o Parenthesis around nodes are now mandatory if a label is used on the node
 
-2.0.0-M05
----------
+2.0.0-M05 (2013-09-10)
+----------------------
 Kernel:
   o BREAKING CHANGE: GraphDatabaseSettings now only exposes Setting, deprecated settings classes have been removed.
   o Fixed problems with array properties being updated multiple times in a single transaction
@@ -141,8 +144,8 @@ Cypher:
  Shell:
   o Adds support for RETURN only Cypher queries
 
-2.0.0-M04
----------
+2.0.0-M04 (2013-08-08)
+----------------------
 Kernel:
   o BREAKING CHANGE: Require Java 7
   o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
@@ -162,8 +165,8 @@ Cypher:
 Server:
   o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
 
-2.0.0-M03
----------
+2.0.0-M03 (2013-05-29)
+----------------------
 Kernel:
   o Read-only index results are closed properly
 
@@ -178,8 +181,8 @@ Cypher:
 Server:
   o Added support for transaction keep-alive
 
-2.0.0-M02
----------
+2.0.0-M02 (2013-04-28)
+----------------------
 o In server, added REST transaction support
 o In cypher, added MERGE clause
 o In cypher, MATCH now supports single-node patterns
@@ -193,11 +196,42 @@ o BREAKING CHANGE: org.neo4j.graphdb.index.BatchInserterIndex and org.neo4j.grap
 o BREAKING CHANGE: The BatchInserter and the BatchGraphDatabase are not binary compatible with 1.9 due to some methods
   now taking a varargs array of labels as last argument.  Please recompile any code that depends on the BatchInserter.
 
-2.0.0-M01
----------
+2.0.0-M01 (2013-04-08)
+----------------------
 o Added support for labels across all APIs: Cypher, Core Java and REST
 o Added support for the new label-based indexes across all APIs: Cypher, Core Java and REST
 o Improvements to shell, including import/export of small graphs via cypher statements
+
+1.9.6 (2014-01-31)
+------------------
+HA:
+o Index delete now propagates properly across all cluster nodes
+o Slaves now retry switching, making possible overcoming temporary failures
+o Remote transaction initialization is now explicitly marked and tracked, solving
+  transaction leakage and reuse problems
+o HA instances no longer require a snapshot on cluster join
+o HA instances now properly switch to PENDING state when losing quorum
+o Fixes save deadlock problem
+o Transactions now happen in the context of a master epoch, to solve issues
+  with transactions wrongly propagating between masters
+o Introduces monitoring for remote calls between cluster instances
+
+Kernel:
+o Fixes issue with batch inserter which could lead to record not in use exception
+  when adding properties
+o Introduces monitoring for reads/writes to the logical log
+
+Server:
+o Fixes issue with transacions leaking when there is an exception while rendering the response
+
+Backup:
+o HA backup instances now are logged as backup instead of "-1"
+
+Cluster:
+o Fixes message reordering issue
+o Fixes a Paxos instance reuse issue
+o Cluster join denial now includes cluster configuration
+o Fixes issues with proper Payload values passed around
 
 1.9.5 (2013-11-11)
 ------------------
