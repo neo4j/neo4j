@@ -67,8 +67,9 @@ case class AggregationPreparationRewriter(cacheNamer: Option[Expression => Strin
       case Unsolved(ri) if returnColumnToRewrite(ri) => ri.asInstanceOf[ReturnItem]
     }
 
-    if (returnColumnsToRewrite.isEmpty)
+    if (returnColumnsToRewrite.isEmpty) {
       origQuery
+    }
     else {
       val expressionsToRewrite = returnColumnsToRewrite.map(ri => ri.expression)
       val childExpressionsToAddToWith = expressionsToRewrite.flatMap(e => e.arguments)
@@ -76,31 +77,46 @@ case class AggregationPreparationRewriter(cacheNamer: Option[Expression => Strin
         case QueryToken(rc@ReturnItem(e, _, _)) if !returnColumnToRewrite(rc) => e
       }
 
-      val cacheNameLookup = (childExpressionsToAddToWith ++ expressionsToKeep).map(e => e -> namer(e)).toMap
+      val initialCacheExpressions: Seq[Expression] = childExpressionsToAddToWith ++ expressionsToKeep
+
+      var sortedCacheExpressions: Seq[Expression] = Seq.empty
+      for (expr <- initialCacheExpressions) {
+        val len = sortedCacheExpressions.prefixLength(!_.contains(expr))
+        sortedCacheExpressions = (sortedCacheExpressions.take(len) :+ expr) ++ sortedCacheExpressions.drop(len)
+      }
+
+      val cacheNameLookup = sortedCacheExpressions.reverse.map(e => e -> namer(e))
 
       val subExpressionsAsReturnItems: Seq[ReturnColumn] = cacheNameLookup.map {
         case (e, name) => ReturnItem(e, name, renamed = true)
       }.toSeq
 
       val oldTail = origQuery.tail
+
       val newTail = PartiallySolvedQuery().
         copy(
-        slice = origQuery.slice,
-        sort = origQuery.sort,
-        tail = oldTail,
-        returns = origQuery.returns
-      ).rewrite {
-        case e if cacheNameLookup.contains(e) => Identifier(cacheNameLookup(e))
-        case e                                => e
+          slice = origQuery.slice,
+          sort = origQuery.sort,
+          tail = oldTail,
+          returns = origQuery.returns
+        )
+
+      val newNewTail = cacheNameLookup.foldLeft(newTail) {
+        case (psq, (cacheE, name)) => psq.rewrite {
+          case e if e == cacheE => Identifier(name)
+          case e => e
+        }
       }
 
-      val returnColumnsNotTouched: Seq[QueryToken[ReturnColumn]] = origQuery.returns.filter(!_.token.isInstanceOf[ReturnItem])
-      origQuery.copy(
+      val returnColumnsNotTouched: Seq[QueryToken[ReturnColumn]] = origQuery.returns.filter(!_.token
+        .isInstanceOf[ReturnItem])
+      val newQuery = origQuery.copy(
         slice = None,
         sort = Seq.empty,
-        tail = Some(newTail),
+        tail = Some(newNewTail),
         returns = subExpressionsAsReturnItems.map(Unsolved.apply) ++ returnColumnsNotTouched)
+
+      newQuery
     }
   }
-
 }

@@ -34,7 +34,6 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
     case e               => CoercedPredicate(e)
   }
 
-
   def subExpressions: Seq[Expression] = {
     def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)
     expandAll(this).collect {
