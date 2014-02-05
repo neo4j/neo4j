@@ -30,7 +30,7 @@ import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{ CypherException, ExecutionResult, ExecutionEngine }
-import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
+import org.neo4j.test.{ TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
@@ -53,8 +53,10 @@ trait DocumentationHelper extends GraphIcing {
 
   def simpleName: String = this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase
 
-  def createDir(folder: String): File = {
-    val dir = new File(path + nicefy(folder))
+  def createDir(folder: String): File = createDir(path, folder)
+
+  def createDir(where: File, folder: String): File = {
+    val dir = new File(where, nicefy(folder))
     if (!dir.exists()) {
       dir.mkdirs()
     }
@@ -102,7 +104,7 @@ trait DocumentationHelper extends GraphIcing {
     }
   }
   
-  val path: String = "target/docs/dev/ql/"
+  val path: File = new File("target/docs/dev/ql/")
 
   val graphvizFileName = "cypher-" + simpleName + "-graph"
 
@@ -244,7 +246,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
   var preparationQueries: List[String] = List()
 
   def section: String
-  val dir = createDir(section)
+  val dir: File = createDir(section)
 
   def graphDescription: List[String] = List()
 
