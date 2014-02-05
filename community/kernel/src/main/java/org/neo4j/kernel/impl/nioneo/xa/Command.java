@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -61,12 +66,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-import static java.util.Collections.unmodifiableCollection;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -753,6 +752,11 @@ public abstract class Command extends XaCommand
             record.setFirstIn( buffer.getLong() );
             record.setFirstLoop( buffer.getLong() );
             return new RelationshipGroupCommand( neoStore != null ? neoStore.getRelationshipGroupStore() : null, record );
+        }
+
+        public RelationshipGroupRecord getAfter()
+        {
+            return record;
         }
     }
     

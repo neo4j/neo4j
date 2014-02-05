@@ -45,7 +45,7 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
-@Ignore( "Here for show-off purposes" )
+//@Ignore( "Here for show-off purposes" )
 public class CreateAndLoadDenseNodeIT
 {
     @Test

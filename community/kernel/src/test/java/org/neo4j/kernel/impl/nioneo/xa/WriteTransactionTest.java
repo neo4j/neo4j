@@ -19,6 +19,42 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.lang.Integer.parseInt;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.IdType.NODE;
+import static org.neo4j.kernel.IdType.RELATIONSHIP;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,6 +65,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,7 +73,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -82,42 +118,6 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static java.lang.Integer.parseInt;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.IdType.NODE;
-import static org.neo4j.kernel.IdType.RELATIONSHIP;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class WriteTransactionTest
 {
@@ -208,7 +208,7 @@ public class WriteTransactionTest
 
         // WHEN
         // I then remove multiple labels
-        writeTransaction = newWriteTransaction( mockIndexing, commandCapture);
+        writeTransaction = newWriteTransaction( mockIndexing, commandCapture );
 
         writeTransaction.removeLabelFromNode( 11, nodeId );
         writeTransaction.removeLabelFromNode( 23, nodeId );
@@ -797,7 +797,7 @@ public class WriteTransactionTest
     }
 
     @Test
-    public void shouldConvertToDenseNodeRepresentationWhenHittingThreshold() throws Exception
+    public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes() throws Exception
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
         instantiateNeoStore( 50 );
@@ -821,34 +821,242 @@ public class WriteTransactionTest
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeC, INCOMING, 1 );
 
-        // THEN the node shouod have been converted into a dense node
+        // THEN the node should have been converted into a dense node
         assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
         assertDenseRelationshipCounts( tx, nodeId, typeA, 6, 7 );
         assertDenseRelationshipCounts( tx, nodeId, typeB, 8, 9 );
         assertDenseRelationshipCounts( tx, nodeId, typeC, 10, 11 );
     }
 
-    private void assertDenseRelationshipCounts( NeoStoreTransaction tx, long nodeId, int type, int outCount,
+    @Test
+    public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeDifferentDirection()
+            throws Exception
+    {
+        // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        instantiateNeoStore( 49 );
+        NeoStoreTransaction tx = newWriteTransaction();
+        int nodeId = (int) nextId( NODE ), typeA = 0;
+        tx.nodeCreate( nodeId );
+        tx.createRelationshipTypeToken( typeA, "A" );
+        createRelationships( tx, nodeId, typeA, OUTGOING, 24 );
+        createRelationships( tx, nodeId, typeA, INCOMING, 25 );
+
+        // here we're at the edge
+        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+
+        // WHEN creating the relationship that pushes us over the threshold
+        createRelationships( tx, nodeId, typeA, INCOMING, 1 );
+
+        // THEN the node should have been converted into a dense node
+        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertDenseRelationshipCounts( tx, nodeId, typeA, 24, 26 );
+    }
+
+    @Test
+    public void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeSameDirection()
+            throws Exception
+    {
+        // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        instantiateNeoStore( 8 );
+        NeoStoreTransaction tx = newWriteTransaction();
+        int nodeId = (int) nextId( NODE ), typeA = 0;
+        tx.nodeCreate( nodeId );
+        tx.createRelationshipTypeToken( typeA, "A" );
+        createRelationships( tx, nodeId, typeA, OUTGOING, 8 );
+
+        // here we're at the edge
+        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+
+        // WHEN creating the relationship that pushes us over the threshold
+        createRelationships( tx, nodeId, typeA, OUTGOING, 1 );
+
+        // THEN the node should have been converted into a dense node
+        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertDenseRelationshipCounts( tx, nodeId, typeA, 9, 0 );
+    }
+
+    @Test
+    public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithOneType() throws Exception
+    {
+        // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        instantiateNeoStore( 13 );
+        NeoStoreTransaction tx = newWriteTransaction();
+        int nodeId = (int) nextId( NODE ), typeA = 0;
+        tx.nodeCreate( nodeId );
+        tx.createRelationshipTypeToken( typeA, "A" );
+        long[] relationshipsCreated = createRelationships( tx, nodeId, typeA, INCOMING, 15 );
+
+        //WHEN
+        deleteRelationship( tx, relationshipsCreated[0] );
+
+        // THEN the node should have been converted into a dense node
+        assertDenseRelationshipCounts( tx, nodeId, typeA, 0, 14 );
+    }
+
+    @Test
+    public void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes() throws Exception
+    {
+        // GIVEN a node with a total of denseNodeThreshold-1 relationships
+        instantiateNeoStore( 1 );
+        NeoStoreTransaction tx = newWriteTransaction();
+        int nodeId = (int) nextId( NODE ), typeA = 0, typeB = 12, typeC = 600;
+        tx.nodeCreate( nodeId );
+        tx.createRelationshipTypeToken( typeA, "A" );
+        long[] relationshipsCreatedAIncoming = createRelationships( tx, nodeId, typeA, INCOMING, 1 );
+        long[] relationshipsCreatedAOutgoing = createRelationships( tx, nodeId, typeA, OUTGOING, 1 );
+
+        tx.createRelationshipTypeToken( typeB, "B" );
+        long[] relationshipsCreatedBIncoming = createRelationships( tx, nodeId, typeB, INCOMING, 1 );
+        long[] relationshipsCreatedBOutgoing = createRelationships( tx, nodeId, typeB, OUTGOING, 1 );
+
+        tx.createRelationshipTypeToken( typeC, "C" );
+        long[] relationshipsCreatedCIncoming = createRelationships( tx, nodeId, typeC, INCOMING, 1 );
+        long[] relationshipsCreatedCOutgoing = createRelationships( tx, nodeId, typeC, OUTGOING, 1 );
+
+        // WHEN
+        deleteRelationship( tx, relationshipsCreatedAIncoming[0] );
+
+        // THEN
+        assertDenseRelationshipCounts( tx, nodeId, typeA, 1, 0 );
+        assertDenseRelationshipCounts( tx, nodeId, typeB, 1, 1 );
+        assertDenseRelationshipCounts( tx, nodeId, typeC, 1, 1 );
+
+        // WHEN
+        deleteRelationship( tx, relationshipsCreatedAOutgoing[0] );
+
+        // THEN
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeA );
+        assertDenseRelationshipCounts( tx, nodeId, typeB, 1, 1 );
+        assertDenseRelationshipCounts( tx, nodeId, typeC, 1, 1 );
+
+        // WHEN
+        deleteRelationship( tx, relationshipsCreatedBIncoming[0] );
+
+        // THEN
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeA );
+        assertDenseRelationshipCounts( tx, nodeId, typeB, 1, 0 );
+        assertDenseRelationshipCounts( tx, nodeId, typeC, 1, 1 );
+
+        // WHEN
+        deleteRelationship( tx, relationshipsCreatedBOutgoing[0] );
+
+        // THEN
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeA );
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeB );
+        assertDenseRelationshipCounts( tx, nodeId, typeC, 1, 1 );
+
+        // WHEN
+        deleteRelationship( tx, relationshipsCreatedCIncoming[0] );
+
+        // THEN
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeA );
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeB );
+        assertDenseRelationshipCounts( tx, nodeId, typeC, 1, 0 );
+
+        // WHEN
+        deleteRelationship( tx, relationshipsCreatedCOutgoing[0] );
+
+        // THEN
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeA );
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeB );
+        assertRelationshipGroupDoesNotExist( tx, nodeId, typeC );
+    }
+
+    @Test
+    public void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
+    {
+        // GIVEN
+        instantiateNeoStore( 10 );
+        final long nodeId = neoStore.getNodeStore().nextId();
+
+        NeoStoreTransaction writeTransaction = newWriteTransaction();
+        writeTransaction.nodeCreate( nodeId );
+
+        int typeA = 0;
+        writeTransaction.createRelationshipTypeToken( typeA, "A" );
+        createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
+
+        writeTransaction.prepare();
+        writeTransaction.commit();
+
+        int typeB = 1;
+        writeTransaction.createRelationshipTypeToken( typeB, "B" );
+
+        // And given that I now start recording the commands in the log
+        CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
+        writeTransaction = newWriteTransaction( mockIndexing, commandCapture );
+
+        // WHEN
+        // i remove enough relationships to become dense and remove enough to become not dense
+        long[] relationshipsOfTypeB = createRelationships( writeTransaction, nodeId, typeB, OUTGOING, 5 );
+        for ( long relationshipToDelete : relationshipsOfTypeB )
+        {
+            deleteRelationship( writeTransaction, relationshipToDelete );
+        }
+
+        writeTransaction.prepare();
+        writeTransaction.commit();
+
+        // THEN
+        // The dynamic label record in before should be the same id as in after, and should be in use
+        final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
+        commandCapture.visitCapturedCommands( new Visitor<XaCommand, RuntimeException>()
+        {
+            @Override
+            public boolean visit( XaCommand element ) throws RuntimeException
+            {
+                if( element instanceof Command.RelationshipGroupCommand &&
+                        ( (Command.RelationshipGroupCommand) element).getAfter().inUse() )
+                {
+                    if ( !foundRelationshipGroupInUse.get() )
+                    {
+                        foundRelationshipGroupInUse.set( true );
+                    }
+                    else
+                    {
+                        fail();
+                    }
+                }
+                return true;
+            }
+        });
+        assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
+    }
+
+    private static void assertRelationshipGroupDoesNotExist( NeoStoreTransaction tx, long nodeId, int type )
+    {
+        assertNull( tx.getRelationshipGroup( tx.nodeLoadLight( nodeId ), type ) );
+    }
+
+
+    private static void assertDenseRelationshipCounts( NeoStoreTransaction tx, long nodeId, int type, int outCount,
             int inCount )
     {
         RelationshipGroupRecord group = tx.getRelationshipGroup( tx.nodeLoadLight( nodeId ), type ).forReadingData();
         assertNotNull( group );
 
+        RelationshipRecord rel;
         long relId = group.getFirstOut();
-        RelationshipRecord rel = tx.relLoadLight( relId );
-        // count is stored in the back pointer of the first relationship in the chain
-        assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
-        assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
-                manuallyCountRelationships( tx, nodeId, relId ) );
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            rel = tx.relLoadLight( relId );
+            // count is stored in the back pointer of the first relationship in the chain
+            assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
+            assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
+                    manuallyCountRelationships( tx, nodeId, relId ) );
+        }
 
         relId = group.getFirstIn();
-        rel = tx.relLoadLight( relId );
-        assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
-        assertEquals( "Manually counted relationships for INCOMING differs", inCount,
-                manuallyCountRelationships( tx, nodeId, relId ) );
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            rel = tx.relLoadLight( relId );
+            assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
+            assertEquals( "Manually counted relationships for INCOMING differs", inCount,
+                    manuallyCountRelationships( tx, nodeId, relId ) );
+        }
     }
 
-    private int manuallyCountRelationships( NeoStoreTransaction tx, long nodeId, long firstRelId )
+    private static int manuallyCountRelationships( NeoStoreTransaction tx, long nodeId, long firstRelId )
     {
         int count = 0;
         long relId = firstRelId;
@@ -866,16 +1074,25 @@ public class WriteTransactionTest
         return idGeneratorFactory.get( type ).nextId();
     }
 
-    private void createRelationships( NeoStoreTransaction tx, long nodeId, int type, Direction direction, int count )
+    private long[] createRelationships( NeoStoreTransaction tx, long nodeId, int type, Direction direction, int count )
     {
+        long[] result = new long[ count ];
         for ( int i = 0; i < count; i++ )
         {
             long otherNodeId = nextId( NODE );
             tx.nodeCreate( otherNodeId );
             long first = direction == OUTGOING ? nodeId : otherNodeId;
             long other = direction == INCOMING ? nodeId : otherNodeId;
-            tx.relationshipCreate( nextId( RELATIONSHIP ), type, first, other );
+            long relId = nextId( RELATIONSHIP );
+            result[i] = relId;
+            tx.relationshipCreate( relId, type, first, other );
         }
+        return result;
+    }
+
+    private void deleteRelationship( NeoStoreTransaction tx, long relId )
+    {
+        tx.relDelete( relId );
     }
 
     private String string( int length )
