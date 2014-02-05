@@ -173,10 +173,18 @@ public class NeoStore extends AbstractStore
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
          */
-        if ( getFileChannel().size() == RECORD_SIZE*5 )
+        boolean previous = setRecoveredStatus( true );
+        try
         {
-            insertRecord( 5, -1 );
-            registerIdFromUpdateRecord( 5 );
+            if ( getFileChannel().size() == RECORD_SIZE * 5 )
+            {
+                insertRecord( 5, -1 );
+                registerIdFromUpdateRecord( 5 );
+            }
+        }
+        finally
+        {
+            setRecoveredStatus( previous );
         }
     }
 
@@ -392,18 +400,6 @@ public class NeoStore extends AbstractStore
     public void setRandomNumber( long nr )
     {
         setRecord( 1, nr );
-    }
-
-    public void setRecoveredStatus( boolean status )
-    {
-        if ( status )
-        {
-            setRecovered();
-        }
-        else
-        {
-            unsetRecovered();
-        }
     }
 
     public long getVersion()
