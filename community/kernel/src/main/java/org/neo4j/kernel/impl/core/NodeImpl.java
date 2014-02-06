@@ -24,16 +24,12 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -657,21 +653,10 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     public int getDegree( NodeManager nm )
     {
-        int count = 0;
-        TransactionState state = nm.getTransactionState();
-        boolean hasStateChanges = state.hasChanges();
-        if ( !hasStateChanges || !state.getCreatedNodes().contains( getId() ) )
-        {
-            count = nm.getRelationshipCount( this, null, DirectionWrapper.BOTH );
-        }
-        if ( hasStateChanges )
-        {
-            count += degreeFromTxState( nm, DirectionWrapper.BOTH );
-        }
-        return count;
+        return nm.getRelationshipCount( this, -1, DirectionWrapper.BOTH );
     }
 
-    public int getDegree( NodeManager nm, RelationshipType type )
+    public int getDegree( NodeManager nm, int type )
     {
         return getDegree( nm, type, Direction.BOTH );
     }
@@ -696,133 +681,24 @@ public class NodeImpl extends ArrayBasedPrimitive
                 count += ids.length( direction );
             }
         }
-        count += degreeFromTxState( nm, direction );
         return count;
     }
 
-    protected int degreeFromTxState( NodeManager nm, DirectionWrapper direction )
-    {
-        int count = 0;
-        TransactionState transactionState = nm.getTransactionState();
-        ArrayMap<Integer, RelIdArray> add = transactionState.getCowRelationshipAddMap( this );
-        if ( add != null )
-        {
-            for ( RelIdArray addedIds : add.values() )
-            {
-                count += addedIds.length( direction );
-            }
-        }
-
-        ArrayMap<Integer, SetAndDirectionCounter> remove = transactionState.getCowRelationshipRemoveMap( this );
-        if ( remove != null )
-        {
-            for ( SetAndDirectionCounter removedIds : remove.values() )
-            {
-                count -= removedIds.getCount( direction.direction() );
-            }
-        }
-        return count;
-    }
-
-    protected int degreeFromTxState( NodeManager nm, DirectionWrapper direction, int type )
-    {
-        int count = 0;
-        TransactionState transactionState = nm.getTransactionState();
-        ArrayMap<Integer, RelIdArray> add = transactionState.getCowRelationshipAddMap( this );
-        if ( add != null )
-        {
-            RelIdArray added = add.get( type );
-            if ( added != null )
-            {
-                count += added.length( direction );
-            }
-        }
-
-        ArrayMap<Integer, SetAndDirectionCounter> remove = transactionState.getCowRelationshipRemoveMap( this );
-        if ( remove != null )
-        {
-            SetAndDirectionCounter removed = remove.get( type );
-            if ( removed != null )
-            {
-                count -= removed.getCount( direction.direction() );
-            }
-        }
-        return count;
-    }
-    
-    public int getDegree( NodeManager nm, RelationshipType type, Direction direction )
+    public int getDegree( NodeManager nm, int typeId, Direction direction )
     {
         ensureAllRelationshipsAreLoaded( nm );
-        int typeId = nm.getRelationshipTypeIdFor( type );
         RelIdArray ids = getRelationshipIds( typeId );
-        DirectionWrapper dir = wrap( direction );
-        int count = ids != null ? ids.length( dir ) : 0;
-        TransactionState transactionState = nm.getTransactionState();
-        ArrayMap<Integer, RelIdArray> addMap = transactionState.getCowRelationshipAddMap( this );
-        ArrayMap<Integer, SetAndDirectionCounter> removeMap = transactionState.getCowRelationshipRemoveMap( this );
-        if ( addMap != null )
-        {
-            RelIdArray add = addMap.get( typeId );
-            if ( add != null )
-            {
-                count += add.length( dir );
-            }
-        }
-        if ( removeMap != null )
-        {
-            SetAndDirectionCounter remove = removeMap.get( typeId );
-            if ( remove != null )
-            {
-                count -= remove.getCount( direction );
-            }
-        }
-        return count;
+        return ids != null ? ids.length( wrap( direction ) ) : 0;
     }
 
-    public Iterable<RelationshipType> getRelationshipTypes( final NodeManager nm )
+    public Iterator<Integer> getRelationshipTypes( final NodeManager nm )
     {
         ensureAllRelationshipsAreLoaded( nm );
         Set<Integer> types = new HashSet<>();
-        TransactionState transactionState = nm.getTransactionState();
-        ArrayMap<Integer, SetAndDirectionCounter> allRemoved = transactionState.getCowRelationshipRemoveMap( this );
         for ( RelIdArray ids : relationships )
         {
-            SetAndDirectionCounter removed = allRemoved != null ? allRemoved.get( ids.getType() ) : null;
-            if ( removed == null || removed.totalCount() < ids.length( DirectionWrapper.BOTH ) )
-            {   // If not all of these removed add it to the list
-                types.add( ids.getType() );
-            }
+            types.add( ids.getType() );
         }
-
-        ArrayMap<Integer, RelIdArray> add = transactionState.getCowRelationshipAddMap( this );
-        if ( add != null )
-        {
-            for ( Map.Entry<Integer, RelIdArray> addedType : add.entrySet() )
-            {
-                RelIdArray ids = addedType.getValue();
-                SetAndDirectionCounter removed = allRemoved != null ? allRemoved.get( ids.getType() ) : null;
-                if ( removed == null || removed.totalCount() < ids.length( DirectionWrapper.BOTH ) )
-                {
-                    types.add( addedType.getKey() );
-                }
-            }
-        }
-
-        return new IterableWrapper<RelationshipType, Integer>( types )
-        {
-            @Override
-            protected RelationshipType underlyingObjectToObject( Integer type )
-            {
-                try
-                {
-                    return nm.getRelationshipTypeById( type );
-                }
-                catch ( TokenNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError( "Mattias",
-                            "The relationship type should exist at this point" );
-                }
-            }
-        };
+        return types.iterator();
     }
 }

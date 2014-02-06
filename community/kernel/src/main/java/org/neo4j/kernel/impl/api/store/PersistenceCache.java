@@ -100,7 +100,7 @@ public class PersistenceCache
         return getNode( nodeId ).getLabels( state, loader );
     }
 
-    private NodeImpl getNode( long nodeId ) throws EntityNotFoundException
+    public NodeImpl getNode( long nodeId ) throws EntityNotFoundException
     {
         NodeImpl node = nodeCache.get( nodeId );
         if ( node == null )
@@ -110,7 +110,7 @@ public class PersistenceCache
         return node;
     }
 
-    private RelationshipImpl getRelationship( long relationshipId ) throws EntityNotFoundException
+    public RelationshipImpl getRelationship( long relationshipId ) throws EntityNotFoundException
     {
         RelationshipImpl relationship = relationshipCache.get( relationshipId );
         if ( relationship == null )

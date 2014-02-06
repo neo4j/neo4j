@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,8 +39,10 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.helpers.FunctionFromPrimitiveInt;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -64,6 +67,7 @@ import static java.lang.String.format;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
 public class NodeProxy implements Node
@@ -605,31 +609,70 @@ public class NodeProxy implements Node
     @Override
     public int getDegree()
     {
-        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager() );
+        try ( Statement statement = statementContextProvider.instance() )
+        {
+            return statement.readOperations().nodeGetDegree(nodeId, Direction.BOTH);
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found.", e );
+        }
     }
 
     @Override
     public int getDegree( RelationshipType type )
     {
-        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager(), type );
+        try ( Statement statement = statementContextProvider.instance() )
+        {
+            ReadOperations ops = statement.readOperations();
+            return ops.nodeGetDegree( nodeId, Direction.BOTH, ops.relationshipTypeGetForName( type.name() ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found.", e );
+        }
     }
 
     @Override
     public int getDegree( Direction direction )
     {
-        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager(), direction );
+        try ( Statement statement = statementContextProvider.instance() )
+        {
+            ReadOperations ops = statement.readOperations();
+            return ops.nodeGetDegree( nodeId, direction );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found.", e );
+        }
     }
 
     @Override
     public int getDegree( RelationshipType type, Direction direction )
     {
-        return nodeLookup.lookup( nodeId ).getDegree( nodeLookup.getNodeManager(), type, direction );
+        try ( Statement statement = statementContextProvider.instance() )
+        {
+            ReadOperations ops = statement.readOperations();
+            return ops.nodeGetDegree( nodeId, direction, ops.relationshipTypeGetForName( type.name() ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found.", e );
+        }
     }
 
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        return nodeLookup.lookup( nodeId ).getRelationshipTypes( nodeLookup.getNodeManager() );
+        try(Statement statement = statementContextProvider.instance())
+        {
+            ReadOperations ops = statement.readOperations();
+            return map2relTypes( statement, ops.nodeGetRelationshipTypes( nodeId ) );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Node not found.", e );
+        }
     }
 
     private int[] relTypeIds( RelationshipType[] types, Statement statement )
@@ -663,5 +706,25 @@ public class NodeProxy implements Node
                 return new RelationshipProxy( id, relLookup, statementContextProvider );
             }
         }, input ), statement ) );
+    }
+
+    private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )
+    {
+        return asList( map( new FunctionFromPrimitiveInt<RelationshipType>()
+        {
+            @Override
+            public RelationshipType apply( int id )
+            {
+                try
+                {
+                    return DynamicRelationshipType.withName( statement.readOperations().relationshipTypeGetName( id ) );
+                }
+                catch ( RelationshipTypeIdNotFoundKernelException e )
+                {
+                    throw new ThisShouldNotHappenError( "Jake",
+                            "Kernel API returned non-existent relationship type: " + id );
+                }
+            }
+        }, input ) );
     }
 }

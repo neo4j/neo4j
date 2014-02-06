@@ -328,4 +328,24 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     {
         return entityReadOperations.nodeGetRelationships( statement, nodeId, direction );
     }
+
+    @Override
+    public int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction, int relType )
+            throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetDegree( statement, nodeId, direction, relType );
+    }
+
+    @Override
+    public int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetDegree( statement, nodeId, direction );
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId )
+            throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetRelationshipTypes( statement, nodeId );
+    }
 }

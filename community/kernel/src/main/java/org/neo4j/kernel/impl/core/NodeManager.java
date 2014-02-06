@@ -39,7 +39,6 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
@@ -901,32 +900,13 @@ public class NodeManager implements Lifecycle, EntityFactory
         return transactionManager.getTransactionState();
     }
 
-    public int getRelationshipCount( NodeImpl nodeImpl, RelationshipType type, DirectionWrapper direction )
+    public int getRelationshipCount( NodeImpl nodeImpl, int type, DirectionWrapper direction )
     {
-        Integer typeId = null;
-        if ( type != null )
-        {
-            typeId = relTypeHolder.getIdByName( type.name() );
-            if ( typeId == null )
-            {
-                return 0;
-            }
-        }
-
-        return persistenceManager.getRelationshipCount( nodeImpl.getId(),
-                type == null ? -1 : typeId.intValue(), direction );
+        return persistenceManager.getRelationshipCount( nodeImpl.getId(), type, direction );
     }
 
-    public Iterable<RelationshipType> getRelationshipTypes( DenseNodeImpl node )
+    public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
     {
-        Integer[] types = persistenceManager.getRelationshipTypes( node.getId() );
-        return new IterableWrapper<RelationshipType, Integer>( asList( types ) )
-        {
-            @Override
-            protected RelationshipType underlyingObjectToObject( Integer type )
-            {
-                return relTypeHolder.getTokenByIdOrNull( type.intValue() );
-            }
-        };
+        return asList( persistenceManager.getRelationshipTypes( node.getId() ) ).iterator();
     }
 }

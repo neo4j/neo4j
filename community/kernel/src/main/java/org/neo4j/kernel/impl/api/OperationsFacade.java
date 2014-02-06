@@ -186,6 +186,27 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetDegree( statement, nodeId, direction, relType );
+    }
+
+    @Override
+    public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetDegree( statement, nodeId, direction );
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetRelationshipTypes( statement, nodeId );
+    }
+
+    @Override
     public Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
     {
         statement.assertOpen();

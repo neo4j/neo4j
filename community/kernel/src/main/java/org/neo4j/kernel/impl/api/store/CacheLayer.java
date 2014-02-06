@@ -60,6 +60,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -70,8 +72,16 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 
+/**
+ * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
+ * disk layer if there is no relevant caching.
+ *
+ * An important consideration when working on this is that there are plans to remove the object cache, which means that
+ * the aim for this layer is to disappear.
+ */
 public class CacheLayer implements StoreReadLayer
 {
     private static final Function<? super SchemaRule, IndexDescriptor> TO_INDEX_RULE =
@@ -122,17 +132,19 @@ public class CacheLayer implements StoreReadLayer
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
     private final IndexingService indexingService;
+    private final NodeManager nodeManager;
 
     public CacheLayer(
             DiskLayer diskLayer,
             PersistenceCache persistenceCache,
             IndexingService indexingService,
-            SchemaCache schemaCache )
+            SchemaCache schemaCache, NodeManager nodeManager )
     {
         this.diskLayer = diskLayer;
         this.persistenceCache = persistenceCache;
         this.indexingService = indexingService;
         this.schemaCache = schemaCache;
+        this.nodeManager = nodeManager;
     }
 
     @Override
@@ -424,5 +436,31 @@ public class CacheLayer implements StoreReadLayer
                                                         int[] relTypes ) throws EntityNotFoundException
     {
         return persistenceCache.nodeGetRelationships( nodeId, direction, relTypes );
+    }
+
+    @Override
+    public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        return persistenceCache.getNode( nodeId ).getDegree( nodeManager, direction );
+    }
+
+    @Override
+    public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
+    {
+        return persistenceCache.getNode( nodeId ).getDegree( nodeManager, relType, direction );
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
+    {
+        return toPrimitiveIntIterator( persistenceCache.getNode( nodeId ).getRelationshipTypes( nodeManager ) );
+    }
+
+    @Override
+    public void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException
+    {
+        RelationshipImpl relationship = persistenceCache.getRelationship( relationshipId );
+        relationshipVisitor.visit( relationshipId, relationship.getStartNodeId(), relationship.getEndNodeId(),
+                relationship.getTypeId());
     }
 }

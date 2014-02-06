@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Iterator;
+
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.util.RelIdArray;
-import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class DenseNodeImpl extends NodeImpl
 {
@@ -32,7 +32,7 @@ public class DenseNodeImpl extends NodeImpl
     }
 
     @Override
-    public int getDegree( NodeManager nm, RelationshipType type )
+    public int getDegree( NodeManager nm, int type )
     {
         return getDegree( nm, type, Direction.BOTH );
     }
@@ -40,41 +40,17 @@ public class DenseNodeImpl extends NodeImpl
     @Override
     public int getDegree( NodeManager nm, Direction direction )
     {
-        int count = 0;
-        TransactionState state = nm.getTransactionState();
-        DirectionWrapper dir = RelIdArray.wrap( direction );
-        boolean hasStateChanges = state.hasChanges();
-        if ( !hasStateChanges || !state.getCreatedNodes().contains( getId() ) )
-        {
-            count = nm.getRelationshipCount( this, null, dir );
-        }
-        if ( hasStateChanges )
-        {
-            count += degreeFromTxState( nm, dir );
-        }
-        return count;
+        return nm.getRelationshipCount( this, -1, RelIdArray.wrap( direction ) );
     }
     
     @Override
-    public int getDegree( NodeManager nm, RelationshipType type, Direction direction )
+    public int getDegree( NodeManager nm, int type, Direction direction )
     {
-        int count = 0;
-        TransactionState state = nm.getTransactionState();
-        DirectionWrapper dir = RelIdArray.wrap( direction );
-        boolean hasStateChanges = state.hasChanges();
-        if ( !hasStateChanges || !state.getCreatedNodes().contains( getId() ) )
-        {
-            count = nm.getRelationshipCount( this, type, dir );
-        }
-        if ( hasStateChanges )
-        {
-            count += degreeFromTxState( nm, dir, nm.getRelationshipTypeIdFor( type ) );
-        }
-        return count;
+        return nm.getRelationshipCount( this, type, RelIdArray.wrap( direction ) );
     }
 
     @Override
-    public Iterable<RelationshipType> getRelationshipTypes( NodeManager nm )
+    public Iterator<Integer> getRelationshipTypes( NodeManager nm )
     {
         return hasMoreRelationshipsToLoad() ? nm.getRelationshipTypes( this ) : super.getRelationshipTypes( nm );
     }

@@ -83,17 +83,17 @@ public class RelationshipImpl extends ArrayBasedPrimitive
         return idAndMore&0xFFFFFFFFFFL;
     }
 
-    long getStartNodeId()
+    public long getStartNodeId()
     {
         return (startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12);
     }
 
-    long getEndNodeId()
+    public long getEndNodeId()
     {
         return (endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8);
     }
 
-    int getTypeId()
+    public int getTypeId()
     {
         return (int)((idAndMore&0xFFFF000000000000L)>>>48);
     }
@@ -122,4 +122,5 @@ public class RelationshipImpl extends ArrayBasedPrimitive
     {
         return Property.noRelationshipProperty( getId(), key );
     }
+
 }

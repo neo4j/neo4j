@@ -24,10 +24,11 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 /**
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
  */
 public interface TxState
 {
-
     public enum UpdateTriState
     {
         ADDED
@@ -157,6 +157,8 @@ public interface TxState
 
     boolean nodeIsDeletedInThisTx( long nodeId );
 
+    boolean nodeModifiedInThisTx( long nodeId );
+
     DiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value );
 
     Map<Long, Object> nodesWithChangedProperty( int propertyKeyId );
@@ -167,7 +169,9 @@ public interface TxState
 
     UpdateTriState labelState( long nodeId, int labelId );
 
-    void relationshipDoDelete( long relationshipId );
+    void relationshipDoDelete( long relationshipId, long startNode, long endNode, int type );
+
+    void relationshipDoDeleteAddedInThisTx( long relationshipId );
 
     void nodeDoDelete( long nodeId );
 
@@ -192,6 +196,12 @@ public interface TxState
 
     PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
                                                 PrimitiveLongIterator stored );
+
+    int augmentNodeDegree( long node, int committedDegree, Direction direction );
+
+    int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
+
+    PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
 
     // SCHEMA RELATED
 

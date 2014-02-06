@@ -73,11 +73,16 @@ interface DataRead
      */
     boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
+    int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
+
     /**
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
+
+    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 

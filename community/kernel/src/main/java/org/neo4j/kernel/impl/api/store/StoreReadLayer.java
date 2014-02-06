@@ -56,6 +56,11 @@ public interface StoreReadLayer
 
     PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction, int[] relTypes) throws EntityNotFoundException;
 
+    int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+
+    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
+
     Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId );
 
     Iterator<IndexDescriptor> indexesGetAll( KernelStatement state );
@@ -137,4 +142,11 @@ public interface StoreReadLayer
     int labelGetOrCreateForName( String labelName ) throws TooManyLabelsException;
 
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
+
+    void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException;
+
+    public interface RelationshipVisitor
+    {
+        void visit( long relId, long startNode, long endNode, int type );
+    }
 }
