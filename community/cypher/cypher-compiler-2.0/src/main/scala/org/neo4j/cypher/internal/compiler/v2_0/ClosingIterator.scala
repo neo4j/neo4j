@@ -25,6 +25,7 @@ import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.TransactionFailureException
 import scala.collection
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
+import scala.collection.mutable
 
 trait CleanupTaskList {
   def cleanupTasks: Seq[() => Unit]
@@ -37,7 +38,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   def hasNext: Boolean = failIfThrows {
     val innerHasNext: Boolean = inner.hasNext
     if (!innerHasNext) {
-      close()
+      close(true)
     }
     innerHasNext
   }
@@ -46,7 +47,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
     val input: collection.Map[String, Any] = inner.next()
     val result: Map[String, Any] = Materialized.mapValues(input, materialize)
     if (!inner.hasNext) {
-      close()
+      close(true)
     }
     result
   }
@@ -59,11 +60,32 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   }
 
   def close() {
-    translateException {
-      if (!closed) {
-        closed = true
-        queryContext.close(success = true)
-        cleanupTaskList.cleanupTasks.foreach(_.apply())
+    close(true)
+  }
+
+  def close(success: Boolean) = translateException {
+    if (!closed) {
+      closed = true
+      val first = () =>
+        queryContext.close(success)
+      val taskFunctions = {
+        val builder: mutable.Builder[() => Unit, Seq[() => Unit]] = Seq.newBuilder
+        builder += first
+        builder ++= cleanupTaskList.cleanupTasks.map { task =>
+          () => task.apply()
+        }
+        builder.result
+      }
+      taskFunctions.flatMap { f =>
+        try {
+          f()
+          None
+        } catch {
+          case e: Throwable => Some(e)
+        }
+      }.headOption match {
+        case Some(e) => throw e
+        case None =>
       }
     }
   }
@@ -91,9 +113,8 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   private def failIfThrows[U](f: => U): U = try {
     f
   } catch {
-    case t: Throwable if !closed =>
-      queryContext.close(success = false)
-      cleanupTaskList.cleanupTasks.foreach(_.apply())
+    case t: Throwable =>
+      close(false)
       throw t
   }
 }
