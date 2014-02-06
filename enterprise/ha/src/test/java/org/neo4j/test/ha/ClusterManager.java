@@ -38,9 +38,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+
+import ch.qos.logback.classic.LoggerContext;
+import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -50,6 +52,8 @@ import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -74,10 +78,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
-import ch.qos.logback.classic.LoggerContext;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -326,6 +326,7 @@ public class ClusterManager
         private final Clusters.Cluster spec;
         private final String name;
         private final Map<Integer, HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
+        private final List<ClusterMembers> arbiters = new ArrayList<>( );
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
         {
@@ -376,6 +377,11 @@ public class ClusterManager
                     return from.get();
                 }
             }, members.values() );
+        }
+
+        public Iterable<ClusterMembers> getArbiters()
+        {
+            return arbiters;
         }
 
         /**
@@ -553,12 +559,28 @@ public class ClusterManager
                         ClusterSettings.cluster_server.name(), "0.0.0.0:"+clusterUri.getPort(),
                         GraphDatabaseSettings.store_dir.name(), new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config );
-                Logging clientLogging =life.add( new LogbackService(
-                        config1, (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory() ) );
+                Logging clientLogging =life.add( new LogbackService( config1, new LoggerContext()  ) );
                 ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-                life.add( new FutureLifecycleAdapter<>( new ClusterClient( ClusterClient.adapt( config1 ),
+                ClusterClient clusterClient = new ClusterClient( ClusterClient.adapt( config1 ),
                         clientLogging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
-                        objectStreamFactory ) ) );
+                        objectStreamFactory );
+
+                arbiters.add(new ClusterMembers(clusterClient, clusterClient, new ClusterMemberEvents()
+                {
+                    @Override
+                    public void addClusterMemberListener( ClusterMemberListener listener )
+                    {
+                        // noop
+                    }
+
+                    @Override
+                    public void removeClusterMemberListener( ClusterMemberListener listener )
+                    {
+                        // noop
+                    }
+                }, clusterClient.getServerId() ));
+
+                life.add( new FutureLifecycleAdapter<>( clusterClient ) );
             }
         }
 
@@ -912,6 +934,43 @@ public class ClusterManager
             public String toString()
             {
                 return "All instances should see all others as available";
+            }
+        };
+    }
+
+    public static Predicate<ManagedCluster> allSeesAllAsJoined( )
+    {
+        return new Predicate<ManagedCluster>()
+        {
+            @Override
+            public boolean accept( ManagedCluster cluster )
+            {
+                int nrOfMembers = cluster.size();
+
+                for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
+                {
+                    ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
+
+                    if (Iterables.count( members.getMembers() ) < nrOfMembers)
+                        return false;
+                }
+
+                for ( ClusterMembers clusterMembers : cluster.getArbiters() )
+                {
+                    if (Iterables.count(clusterMembers.getMembers()) < nrOfMembers)
+                    {
+                        return false;
+                    }
+                }
+
+                // Everyone sees everyone else as joined!
+                return true;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "All instances should see all others as joined";
             }
         };
     }

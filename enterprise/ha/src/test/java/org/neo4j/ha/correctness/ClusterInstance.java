@@ -48,8 +48,6 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.snapshot.SnapshotContext;
 import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.statemachine.StateMachine;
-import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
-import org.neo4j.cluster.timeout.LatencyCalculator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HighAvailabilityMemberInfoProvider;
@@ -106,7 +104,7 @@ class ClusterInstance
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),context.getLearnerContext());
 
         ProtocolServer ps = factory.newProtocolServer( id,
-                input, output, DIRECT_EXECUTOR, new LatencyCalculator( new FixedTimeoutStrategy( 1000 ), input ), new DelayedDirectExecutor(), timeouts, context, snapshotContext);
+                input, output, DIRECT_EXECUTOR, new DelayedDirectExecutor(), timeouts, context, snapshotContext);
 
         return new ClusterInstance( DIRECT_EXECUTOR, logging, factory, ps, context, acceptorInstances, timeouts, input, output, uri );
     }
@@ -279,8 +277,7 @@ class ClusterInstance
         }
 
         ProtocolServer snapshotProtocolServer = factory.constructSupportingInfrastructureFor( server.getServerId(),
-                input, output, executor, timeoutsSnapshot,
-                new LatencyCalculator( new FixedTimeoutStrategy( 10000 ), input ), stateMachineExecutor,
+                input, output, executor, timeoutsSnapshot, stateMachineExecutor,
                 snapshotCtx, snapshotMachines.toArray( new StateMachine[snapshotMachines.size()] ) );
 
         return new ClusterInstance( stateMachineExecutor, logging, factory, snapshotProtocolServer, snapshotCtx,
