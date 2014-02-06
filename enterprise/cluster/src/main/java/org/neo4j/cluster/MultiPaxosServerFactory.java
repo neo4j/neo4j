@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-
 import java.net.URI;
 import java.util.concurrent.Executor;
 
@@ -64,6 +62,8 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.cluster.com.message.Message.internal;
+
 /**
  * Factory for MultiPaxos {@link ProtocolServer}s.
  */
@@ -90,10 +90,8 @@ public class MultiPaxosServerFactory
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
 
         // Create state machines
-        StateMachines stateMachines = new StateMachines( input, output, latencyCalculator,
-                executor, stateMachineExecutor );
+        StateMachines stateMachines = new StateMachines( input, output, timeoutStrategy, executor, stateMachineExecutor );
         Timeouts timeouts = stateMachines.getTimeouts();
-        stateMachines.addMessageProcessor( latencyCalculator );
 
         final MultiPaxosContext context = new MultiPaxosContext( me,
                 Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(ClusterConfiguration.COORDINATOR )),

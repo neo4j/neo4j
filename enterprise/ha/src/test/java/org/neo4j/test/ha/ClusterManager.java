@@ -41,6 +41,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import ch.qos.logback.classic.LoggerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -76,12 +78,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-import org.w3c.dom.Document;
-import ch.qos.logback.classic.LoggerContext;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -511,7 +507,7 @@ public class ClusterManager
                     }
                 }, clusterClient.getServerId() ));
 
-                life.add( new FutureLifecycleAdapter<>( clusterClient ) );
+                life.add( new FutureLifecycleAdapter<ClusterClient>( clusterClient ) );
             }
         }
 

@@ -45,7 +45,7 @@ public class LifeSupport
     
     public LifeSupport()
     {
-        this( StringLogger.SYSTEM_ERR );
+        this( StringLogger.SYSTEM);
     }
     
     public LifeSupport( StringLogger log )
@@ -325,7 +325,7 @@ public class LifeSupport
         if ( instance instanceof Lifecycle )
         {
             LifecycleInstance newInstance = new LifecycleInstance( (Lifecycle) instance );
-            List<LifecycleInstance> tmp = new ArrayList<>( instances );
+            List<LifecycleInstance> tmp = new ArrayList<LifecycleInstance>( instances );
             tmp.add(newInstance);
             instances = tmp;
             bringToState( newInstance );
@@ -339,7 +339,7 @@ public class LifeSupport
         {
             if ( instances.get( i ).isInstance( instance ) )
             {
-                List<LifecycleInstance> tmp = new ArrayList<>( instances );
+                List<LifecycleInstance> tmp = new ArrayList<LifecycleInstance>( instances );
                 LifecycleInstance lifecycleInstance = tmp.remove( i );
                 lifecycleInstance.shutdown();
                 instances = tmp;
@@ -359,7 +359,7 @@ public class LifeSupport
             {
                 return lifecycleInstance.instance;
             }
-        }, new ArrayList<>(instances) );
+        }, new ArrayList<LifecycleInstance>(instances) );
     }
 
     /**
@@ -373,7 +373,7 @@ public class LifeSupport
         {
             instance.shutdown();
         }
-        instances = new ArrayList<>( );
+        instances = new ArrayList<LifecycleInstance>( );
     }
 
     public synchronized LifecycleStatus getStatus()
