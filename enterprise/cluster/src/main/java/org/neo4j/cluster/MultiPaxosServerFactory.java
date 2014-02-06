@@ -57,7 +57,6 @@ import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.protocol.snapshot.SnapshotState;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateMachineRules;
-import org.neo4j.cluster.timeout.LatencyCalculator;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
@@ -88,8 +87,6 @@ public class MultiPaxosServerFactory
                                              ObjectInputStreamFactory objectInputStreamFactory,
                                              ObjectOutputStreamFactory objectOutputStreamFactory )
     {
-        LatencyCalculator latencyCalculator = new LatencyCalculator( timeoutStrategy, input );
-
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
 
         // Create state machines
@@ -104,17 +101,15 @@ public class MultiPaxosServerFactory
 
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),context.getLearnerContext());
 
-        return newProtocolServer( me, input, output, stateMachineExecutor, latencyCalculator, executor, timeouts,
+        return newProtocolServer( me, input, output, stateMachineExecutor, executor, timeouts,
                 context, snapshotContext );
     }
 
     public ProtocolServer newProtocolServer( InstanceId me, MessageSource input, MessageSender output,
-                                              Executor stateMachineExecutor, LatencyCalculator latencyCalculator,
-                                              DelayedDirectExecutor executor, Timeouts timeouts,
+                                              Executor stateMachineExecutor, DelayedDirectExecutor executor, Timeouts timeouts,
                                               MultiPaxosContext context, SnapshotContext snapshotContext )
     {
-        return constructSupportingInfrastructureFor( me, input, output, executor, timeouts, latencyCalculator,
-                stateMachineExecutor, context, new StateMachine[]
+        return constructSupportingInfrastructureFor( me, input, output, executor, timeouts, stateMachineExecutor, context, new StateMachine[]
         {
                 new StateMachine( context.getAtomicBroadcastContext(), AtomicBroadcastMessage.class,
                         AtomicBroadcastState.start, logging ),
@@ -136,11 +131,10 @@ public class MultiPaxosServerFactory
      * */
     public ProtocolServer constructSupportingInfrastructureFor( InstanceId me, MessageSource input,
                     MessageSender output, DelayedDirectExecutor executor, Timeouts timeouts,
-                    LatencyCalculator latencyCalculator, Executor stateMachineExecutor, final MultiPaxosContext context,
+                    Executor stateMachineExecutor, final MultiPaxosContext context,
                     StateMachine[] machines )
     {
         StateMachines stateMachines = new StateMachines( input, output, timeouts, executor, stateMachineExecutor );
-        stateMachines.addMessageProcessor( latencyCalculator );
 
         for ( StateMachine machine : machines )
         {
