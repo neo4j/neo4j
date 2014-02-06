@@ -71,10 +71,10 @@ CodeMirror.defineMode "cypher", (config) ->
     state.context = state.context.prev
   indentUnit = config.indentUnit
   curPunc = undefined
-  funcs = wordRegexp(["str", "min", "labels", "max", "type", "lower", "upper", "length", "type", "id", "coalesce", "head", "last", "nodes", "relationships", "extract", "filter", "tail", "range", "reduce", "abs", "round", "sqrt", "sign", "replace", "substring", "left", "right", "ltrim", "rtrim", "trim", "collect", "distinct"])
-  preds = wordRegexp(["all", "any", "none", "single", "not", "in", "has", "and", "or"])
-  keywords = wordRegexp(["start", "merge", "using", "on create", "on match", "match", "index on", "drop", "where", "with", "limit", "skip", "order", "by", "return", "create", "delete", "set", "unique"])
-  operatorChars = /[*+\-<>=&|~]/
+  funcs = wordRegexp(["abs", "acos", "allShortestPaths", "asin", "atan", "atan2", "avg", "ceil", "coalesce", "collect", "cos", "cot", "count", "degrees", "e", "endnode", "exp", "extract", "filter", "floor", "haversin", "head", "id", "labels", "last", "left", "length", "log", "log10", "lower", "ltrim", "max", "min", "node", "nodes", "percentileCont", "percentileDisc", "pi", "radians", "rand", "range", "reduce", "rel", "relationship", "relationships", "replace", "right", "round", "rtrim", "shortestPath", "sign", "sin", "sqrt", "startnode", "stdev", "stdevp", "str", "substring", "sum", "tail", "tan", "timestamp", "trim", "type", "type", "upper"])
+  preds = wordRegexp(["all", "and", "any", "has", "in", "none", "not", "or", "single", "xor"])
+  keywords = wordRegexp(["as", "asc", "ascending", "assert", "by", "case", "constraint", "create", "cypher", "delete", "desc", "descending", "distinct", "drop", "else", "end", "false", "foreach", "in", "index", "is", "limit", "match", "merge", "null", "on", "optional", "order", "remove", "return", "scan", "set", "skip", "start", "then", "true", "union", "unique", "using", "when", "where", "with"])
+  operatorChars = /[*+\-<>=&|~%^]/
   startState: (base) ->
     tokenize: tokenBase
     context: null
