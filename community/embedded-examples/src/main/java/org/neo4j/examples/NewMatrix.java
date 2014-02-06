@@ -31,7 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
 
 public class NewMatrix
 {
@@ -152,10 +151,10 @@ public class NewMatrix
     }
 
     // START SNIPPET: get-friends
-    private static Traverser getFriends(
+    private Traverser getFriends(
             final Node person )
     {
-        TraversalDescription td = Traversal.description()
+        TraversalDescription td = graphDb.traversalDescription()
                 .breadthFirst()
                 .relationships( RelTypes.KNOWS, Direction.OUTGOING )
                 .evaluator( Evaluators.excludeStartPosition() );
@@ -185,9 +184,9 @@ public class NewMatrix
     }
 
     // START SNIPPET: find-hackers
-    private static Traverser findHackers( final Node startNode )
+    private Traverser findHackers( final Node startNode )
     {
-        TraversalDescription td = Traversal.description()
+        TraversalDescription td = graphDb.traversalDescription()
                 .breadthFirst()
                 .relationships( RelTypes.CODED_BY, Direction.OUTGOING )
                 .relationships( RelTypes.KNOWS, Direction.OUTGOING )
