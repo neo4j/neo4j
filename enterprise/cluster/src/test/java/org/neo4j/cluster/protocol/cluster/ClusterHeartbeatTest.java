@@ -41,7 +41,7 @@ public class ClusterHeartbeatTest
                 join( 100, 1 ).
                 join( 100, 2 ).
                 join( 100, 3 ).
-                verifyConfigurations( 3000 ).
+                verifyConfigurations( "after setup", 3000 ).
                 leave( 0, 1 ).
                 leave( 200, 2 ).
                 leave( 200, 3 ) );
@@ -56,13 +56,13 @@ public class ClusterHeartbeatTest
                 join( 100, 1 ).
                 join( 100, 2 ).
                 join( 100, 3 ).
-                verifyConfigurations( 3000 ).
+                verifyConfigurations( "after setup", 3000 ).
                 message( 100, "*** All nodes up and ok" ).
                 down( 100, 3 ).
                 message( 1000, "*** Should have seen failure by now" ).
                 up( 0, 3 ).
                 message( 200, "*** Should have recovered by now" ).
-                verifyConfigurations( 0 ).
+                verifyConfigurations( "after recovery", 0 ).
                 leave( 200, 1 ).
                 leave( 200, 2 ).
                 leave( 200, 3 ) );
@@ -82,12 +82,12 @@ public class ClusterHeartbeatTest
                 message( 1000, "*** Should have seen failure by now" ).
                 up( 0, 1 ).
                 message( 2000, "*** Should have recovered by now" ).
-                verifyConfigurations( 0 ).
+                verifyConfigurations( "after recovery", 0 ).
                 down( 0, 2 ).
                 message( 1400, "*** Should have seen failure by now" ).
                 up( 0, 2 ).
                 message( 800, "*** All nodes leave" ).
-                verifyConfigurations( 0 ).
+                verifyConfigurations( "before leave", 0 ).
                 leave( 0, 1 ).
                 leave( 300, 2 ).
                 leave( 300, 3 ) );

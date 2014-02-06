@@ -190,7 +190,7 @@ public class ClusterMockTest
         network.tick( 100 );
         if ( finalConfig == null )
         {
-            verifyConfigurations();
+            verifyConfigurations( "final config" );
         }
         else
         {
@@ -214,7 +214,7 @@ public class ClusterMockTest
         }
         else
         {
-            verifyConfigurations();
+            verifyConfigurations( "test over" );
         }
     }
 
@@ -320,7 +320,7 @@ public class ClusterMockTest
         }
     }
 
-    public void verifyConfigurations()
+    public void verifyConfigurations( String description )
     {
         logger.getLogger().debug( "Verify configurations" );
 
@@ -365,7 +365,7 @@ public class ClusterMockTest
             }
         }
 
-        assertEquals( "In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
+        assertEquals( description + ": In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
                 List<Cluster>>flatten( in, out ) ) );
 
 
@@ -652,14 +652,14 @@ public class ClusterMockTest
             }, time );
         }
 
-        public ClusterTestScriptDSL verifyConfigurations( long time )
+        public ClusterTestScriptDSL verifyConfigurations( final String description, long time )
         {
             return addAction( new ClusterAction()
             {
                 @Override
                 public void run()
                 {
-                    ClusterMockTest.this.verifyConfigurations();
+                    ClusterMockTest.this.verifyConfigurations( description );
                 }
             }, time );
         }

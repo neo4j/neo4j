@@ -57,9 +57,9 @@ public class ClusterMembershipTest
                 join( 100, 2 ).
                 join( 100, 3 ).
                 message( 100, "*** Cluster formed, now leave" ).
-                verifyConfigurations( 0 ).sleep( 100 ).
+                verifyConfigurations( "starting leave", 0 ).sleep( 100 ).
                 leave( 0, 1 ).
-                verifyConfigurations( 200 ).
+                verifyConfigurations( "after 1 left", 200 ).
                 leave( 0, 2 ).
                 leave( 200, 3 ) );
     }
@@ -73,7 +73,7 @@ public class ClusterMembershipTest
                 sleep( 10 ).
                 join( 0, 1 ).
                 message( 100, "*** Cluster formed, now leave" ).
-                leave( 0, 1 ).verifyConfigurations( 0 ) );
+                leave( 0, 1 ).verifyConfigurations( "after 1 left", 0 ) );
     }
 
     @Test
