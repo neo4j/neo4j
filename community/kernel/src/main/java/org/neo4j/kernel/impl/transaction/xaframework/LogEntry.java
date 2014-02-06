@@ -30,6 +30,7 @@ public abstract class LogEntry
     /* version 1 as of 2011-02-22
      * version 2 as of 2011-10-17
      * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
+     * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
      */
     static final byte CURRENT_VERSION = (byte) 3;
     // empty record due to memory mapped file
@@ -52,7 +53,7 @@ public abstract class LogEntry
     {
         return identifier;
     }
-    
+
     public String toString( TimeZone timeZone )
     {
         return toString();
@@ -84,7 +85,7 @@ public abstract class LogEntry
         {
             return xid;
         }
-        
+
         public int getMasterId()
         {
             return masterId;
@@ -104,7 +105,7 @@ public abstract class LogEntry
         {
             this.startPosition = position;
         }
-        
+
         public long getTimeWritten()
         {
             return timeWritten;
@@ -114,7 +115,7 @@ public abstract class LogEntry
         {
             return lastCommittedTxWhenTransactionStarted;
         }
-        
+
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
          */
@@ -131,7 +132,7 @@ public abstract class LogEntry
         {
             return toString( Format.DEFAULT_TIME_ZONE );
         }
-        
+
         @Override
         public String toString( TimeZone timeZone )
         {
@@ -140,7 +141,7 @@ public abstract class LogEntry
                     lastCommittedTxWhenTransactionStarted+"]";
         }
     }
-    
+
     static class Prepare extends LogEntry
     {
         private final long timeWritten;
@@ -150,7 +151,7 @@ public abstract class LogEntry
             super( identifier );
             this.timeWritten = timeWritten;
         }
-        
+
         public long getTimeWritten()
         {
             return timeWritten;
@@ -161,7 +162,7 @@ public abstract class LogEntry
         {
             return toString( Format.DEFAULT_TIME_ZONE );
         }
-        
+
         @Override
         public String toString( TimeZone timeZone )
         {
@@ -187,18 +188,18 @@ public abstract class LogEntry
         {
             return txId;
         }
-        
+
         public long getTimeWritten()
         {
             return timeWritten;
         }
-        
+
         @Override
         public String toString()
         {
             return toString( Format.DEFAULT_TIME_ZONE );
         }
-        
+
         @Override
         public String toString( TimeZone timeZone )
         {
@@ -235,7 +236,7 @@ public abstract class LogEntry
             return "Done[" + getIdentifier() + "]";
         }
     }
-    
+
     public static class Command extends LogEntry
     {
         private final XaCommand command;
