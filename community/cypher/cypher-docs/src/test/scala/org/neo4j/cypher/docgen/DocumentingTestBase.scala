@@ -201,7 +201,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
           case None => throw e
         }
     } finally {
-      tx1.finish()
+      tx1.close()
     }
 
     val tx2 = db.beginTx()
@@ -217,17 +217,15 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
         dumpGraphViz(dir, graphvizOptions.trim)
       }
     } catch {
-      case e: CypherException =>
-        expectedException match {
-          case Some(expectedExceptionType) => e match {
-            case expectedExceptionType(typedE) =>
-              dumpToFile(dir, writer, title, query, returns, text, typedE, consoleData)
-            case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
-          }
-          case None => throw e
+      case e: CypherException if expectedException.nonEmpty =>
+        val expectedExceptionType = expectedException.get
+        e match {
+          case expectedExceptionType(typedE) =>
+            dumpToFile(dir, writer, title, query, returns, text, typedE, consoleData)
+          case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
         }
     } finally {
-      tx2.finish()
+      tx2.close()
     }
   }
 
