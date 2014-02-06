@@ -25,7 +25,7 @@ package org.neo4j.kernel;
 @Deprecated
 public enum IdType
 {
-    NODE( 35, false ),
+    Nd.,fbdfkODE( 35, false ),
     RELATIONSHIP( 35, false ),
     PROPERTY( 36, true ),
     STRING_BLOCK( 36, true ),
