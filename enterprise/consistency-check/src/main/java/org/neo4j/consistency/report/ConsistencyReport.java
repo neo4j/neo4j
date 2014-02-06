@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -216,7 +217,7 @@ public interface ConsistencyReport
         @Documented
         void relationshipNotFirstInTargetChain( RelationshipRecord relationship );
 
-        /** The first relationship record reference has changed, but the previous first relationship record has not been updates. */
+        /** The first relationship record reference has changed, but the previous first relationship record has not been updated. */
         @Documented
         @IncrementalOnly
         void relationshipNotUpdated();
@@ -244,6 +245,15 @@ public interface ConsistencyReport
         /** There is another node in the unique index with the same property value. */
         @Documented
         void uniqueIndexNotUnique( IndexRule index, Object propertyValue, long duplicateNodeId );
+
+        /** The referenced relationship group record is not in use. */
+        @Documented
+        void relationshipGroupNotInUse( RelationshipGroupRecord group );
+
+        /** The first relationship group record reference has changed, but the previous first relationship group record has not been updated. */
+        @Documented
+        @IncrementalOnly
+        void relationshipGroupNotUpdated();
     }
 
     interface RelationshipConsistencyReport

@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 /**
@@ -61,4 +62,6 @@ public interface DiffRecordAccess extends RecordAccess
     DynamicRecord changedString( long id );
 
     DynamicRecord changedArray( long id );
+
+    RelationshipGroupRecord changedRelationshipGroup( long id );
 }

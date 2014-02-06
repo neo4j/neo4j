@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
@@ -57,4 +58,6 @@ public interface RecordAccess
     RecordReference<DynamicRecord> propertyKeyName( final int id );
 
     RecordReference<NeoStoreRecord> graph();
+
+    RecordReference<RelationshipGroupRecord> relationshipGroup( long id );
 }

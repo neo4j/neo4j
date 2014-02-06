@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -28,10 +32,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.neo4j.helpers.Settings.osIsWindows;
 
@@ -55,6 +55,7 @@ public class StoreAccess
     private final RecordStore<DynamicRecord> relationshipTypeNameStore;
     private final RecordStore<DynamicRecord> labelNameStore;
     private final RecordStore<DynamicRecord> propertyKeyNameStore;
+    private final RecordStore<RelationshipGroupRecord> relGroupStore;
     // internal state
     private boolean closeable;
     private NeoStore neoStore;
@@ -73,12 +74,13 @@ public class StoreAccess
     public StoreAccess( NeoStore store )
     {
         this( store.getSchemaStore(), store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
-                store.getRelationshipTypeStore(), store.getLabelTokenStore() );
+                store.getRelationshipTypeStore(), store.getLabelTokenStore(), store.getRelationshipGroupStore() );
         this.neoStore = store;
     }
 
     public StoreAccess( SchemaStore schemaStore, NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
-                        RelationshipTypeTokenStore typeStore, LabelTokenStore labelTokenStore )
+                        RelationshipTypeTokenStore typeStore, LabelTokenStore labelTokenStore,
+                        RelationshipGroupStore relGroupStore )
     {
         this.schemaStore = wrapStore( schemaStore );
         this.nodeStore = wrapStore( nodeStore );
@@ -93,6 +95,7 @@ public class StoreAccess
         this.relationshipTypeNameStore = wrapStore( typeStore.getNameStore() );
         this.labelNameStore = wrapStore( labelTokenStore.getNameStore() );
         this.propertyKeyNameStore = wrapStore( propStore.getPropertyKeyTokenStore().getNameStore() );
+        this.relGroupStore = wrapStore( relGroupStore );
     }
 
     public StoreAccess( String path )
@@ -104,12 +107,12 @@ public class StoreAccess
     {
         this( fileSystem, path, defaultParams() );
     }
-    
+
     public StoreAccess( String path, Map<String, String> params )
     {
         this( new DefaultFileSystemAbstraction(), path, params );
     }
-    
+
     public StoreAccess( FileSystemAbstraction fileSystem, String path, Map<String, String> params )
     {
         this( new StoreFactory( new Config( requiredParams( params, path ) ),
@@ -145,6 +148,11 @@ public class StoreAccess
     public RecordStore<RelationshipRecord> getRelationshipStore()
     {
         return relStore;
+    }
+
+    public RecordStore<RelationshipGroupRecord> getRelationshipGroupStore()
+    {
+        return relGroupStore;
     }
 
     public RecordStore<PropertyRecord> getPropertyStore()

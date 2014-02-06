@@ -220,7 +220,14 @@ enum NodeField implements
             {
                 if ( node.getNextRel() != relationship.getId() )
                 {
-                    noBackReference( engine.report(), node );
+                    if ( node.isDense() )
+                    {
+                        // TODO verify that the appropriate group refers back to the relationship
+                    }
+                    else
+                    {
+                        noBackReference( engine.report(), node );
+                    }
                 }
             }
             else

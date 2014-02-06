@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -39,7 +40,8 @@ import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
-    private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeChecker;
+    private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> sparseNodeChecker;
+    private final RecordCheck<NodeRecord, NodeConsistencyReport> denseNodeChecker;
     private final RecordCheck<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport> relationshipChecker;
     private final RecordCheck<PropertyRecord, ConsistencyReport.PropertyConsistencyReport> propertyChecker;
     private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
@@ -53,7 +55,8 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
 
     public AbstractStoreProcessor( CheckDecorator decorator )
     {
-        this.nodeChecker = decorator.decorateNodeChecker( new NodeRecordCheck() );
+        this.sparseNodeChecker = decorator.decorateNodeChecker( NodeRecordCheck.forSparseNodes() );
+        this.denseNodeChecker = decorator.decorateNodeChecker( NodeRecordCheck.forDenseNodes() );
         this.relationshipChecker = decorator.decorateRelationshipChecker( new RelationshipRecordCheck() );
         this.propertyChecker = decorator.decoratePropertyChecker( new PropertyRecordCheck() );
         this.propertyKeyTokenChecker = decorator.decoratePropertyKeyTokenChecker( new PropertyKeyTokenRecordCheck() );
@@ -97,6 +100,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
             RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker );
 
+    @Override
     public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
     {
         // cf. StoreProcessor
@@ -106,7 +110,14 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     @Override
     public final void processNode( RecordStore<NodeRecord> store, NodeRecord node )
     {
-        checkNode( store, node, nodeChecker );
+        if ( node.isDense() )
+        {
+            checkNode( store, node, denseNodeChecker );
+        }
+        else
+        {
+            checkNode( store, node, sparseNodeChecker );
+        }
     }
 
     @Override

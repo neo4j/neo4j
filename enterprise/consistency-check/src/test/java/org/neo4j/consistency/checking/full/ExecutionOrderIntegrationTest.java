@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -422,6 +423,12 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
+        public RelationshipGroupRecord changedRelationshipGroup( long id )
+        {
+            return access.changedRelationshipGroup( id );
+        }
+
+        @Override
         public PropertyRecord changedProperty( long id )
         {
             return access.changedProperty( id );
@@ -455,6 +462,12 @@ public class ExecutionOrderIntegrationTest
         public RecordReference<RelationshipRecord> relationship( long id )
         {
             return logging( access.relationship( id ) );
+        }
+
+        @Override
+        public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
+        {
+            return logging( access.relationshipGroup( id ) );
         }
 
         @Override
