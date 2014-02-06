@@ -762,6 +762,7 @@ public class TestBatchInsert
             for ( Relationship relationship : node.getRelationships() )
             {
                 relationship.delete();
+                System.out.println( "deleted " + relationship );
             }
             node.delete();
             tx.success();
