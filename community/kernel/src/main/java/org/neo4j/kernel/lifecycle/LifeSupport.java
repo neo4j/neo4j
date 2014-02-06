@@ -38,9 +38,20 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class LifeSupport
         implements Lifecycle
 {
-    List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
-    LifecycleStatus status = LifecycleStatus.NONE;
-    List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private volatile List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
+    private volatile LifecycleStatus status = LifecycleStatus.NONE;
+    private final List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
+    private final StringLogger log;
+    
+    public LifeSupport()
+    {
+        this( StringLogger.SYSTEM_ERR );
+    }
+    
+    public LifeSupport( StringLogger log )
+    {
+        this.log = log;
+    }
 
     /**
      * Initialize all registered instances, transitioning from status NONE to STOPPED.
@@ -314,7 +325,9 @@ public class LifeSupport
         if ( instance instanceof Lifecycle )
         {
             LifecycleInstance newInstance = new LifecycleInstance( (Lifecycle) instance );
-            instances.add( newInstance );
+            List<LifecycleInstance> tmp = new ArrayList<>( instances );
+            tmp.add(newInstance);
+            instances = tmp;
             bringToState( newInstance );
         }
         return instance;
@@ -326,8 +339,10 @@ public class LifeSupport
         {
             if ( instances.get( i ).isInstance( instance ) )
             {
-                LifecycleInstance lifecycleInstance = instances.remove( i );
+                List<LifecycleInstance> tmp = new ArrayList<>( instances );
+                LifecycleInstance lifecycleInstance = tmp.remove( i );
                 lifecycleInstance.shutdown();
+                instances = tmp;
                 return true;
             }
         }
@@ -335,7 +350,7 @@ public class LifeSupport
     }
 
 
-    public synchronized Iterable<Lifecycle> getLifecycleInstances()
+    public Iterable<Lifecycle> getLifecycleInstances()
     {
         return Iterables.map( new Function<LifecycleInstance, Lifecycle>()
         {
@@ -344,7 +359,7 @@ public class LifeSupport
             {
                 return lifecycleInstance.instance;
             }
-        }, instances );
+        }, new ArrayList<>(instances) );
     }
 
     /**
@@ -358,7 +373,7 @@ public class LifeSupport
         {
             instance.shutdown();
         }
-        instances.clear();
+        instances = new ArrayList<>( );
     }
 
     public synchronized LifecycleStatus getStatus()

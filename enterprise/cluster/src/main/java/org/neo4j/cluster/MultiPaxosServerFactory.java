@@ -59,7 +59,6 @@ import org.neo4j.cluster.protocol.snapshot.SnapshotMessage;
 import org.neo4j.cluster.protocol.snapshot.SnapshotState;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateMachineRules;
-import org.neo4j.cluster.timeout.LatencyCalculator;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
@@ -88,8 +87,6 @@ public class MultiPaxosServerFactory
                                              ObjectInputStreamFactory objectInputStreamFactory,
                                              ObjectOutputStreamFactory objectOutputStreamFactory )
     {
-        LatencyCalculator latencyCalculator = new LatencyCalculator( timeoutStrategy, input );
-
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
 
         // Create state machines
