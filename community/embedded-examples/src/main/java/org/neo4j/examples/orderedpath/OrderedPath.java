@@ -32,7 +32,7 @@ import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
@@ -101,7 +101,7 @@ public class OrderedPath
         orderedPathContext.add( REL1 );
         orderedPathContext.add( withName( "REL2" ) );
         orderedPathContext.add( withName( "REL3" ) );
-        TraversalDescription td = Traversal.description()
+        TraversalDescription td = db.traversalDescription()
                 .evaluator( new Evaluator()
                 {
                     @Override

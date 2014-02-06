@@ -37,12 +37,13 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.examples.socnet.RelTypes.FRIEND;
 import static org.neo4j.examples.socnet.RelTypes.NEXT;
 import static org.neo4j.examples.socnet.RelTypes.STATUS;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
 
 public class Person
 {
@@ -137,7 +138,7 @@ public class Person
     {
         // use graph algo to calculate a shortest path
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( FRIEND, Direction.BOTH ), maxDepth );
+                forTypeAndDirection(FRIEND, BOTH ), maxDepth );
 
         Path path = finder.findSinglePath( underlyingNode,
                 otherPerson.getUnderlyingNode() );
@@ -147,15 +148,15 @@ public class Person
     public Iterable<Person> getFriendRecommendation(
             int numberOfFriendsToReturn )
     {
-        HashSet<Person> friends = new HashSet<Person>();
+        HashSet<Person> friends = new HashSet<>();
         IteratorUtil.addToCollection( getFriends(), friends );
 
-        HashSet<Person> friendsOfFriends = new HashSet<Person>();
+        HashSet<Person> friendsOfFriends = new HashSet<>();
         IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriends );
 
         friendsOfFriends.removeAll( friends );
 
-        ArrayList<RankedPerson> rankedFriends = new ArrayList<RankedPerson>();
+        ArrayList<RankedPerson> rankedFriends = new ArrayList<>();
         for ( Person friend : friendsOfFriends )
         {
             int rank = getNumberOfPathsToPerson( friend );
@@ -178,9 +179,9 @@ public class Person
         }
 
         // START SNIPPET: getStatusTraversal
-        TraversalDescription traversal = Traversal.description().
-                depthFirst().
-                relationships( NEXT );
+        TraversalDescription traversal = graphDb().traversalDescription()
+                .depthFirst()
+                .relationships( NEXT );
         // END SNIPPET: getStatusTraversal
 
 
@@ -280,7 +281,7 @@ public class Person
 
     private Iterable<Person> onlyFriend( Iterable<RankedPerson> rankedFriends )
     {
-        ArrayList<Person> retVal = new ArrayList<Person>();
+        ArrayList<Person> retVal = new ArrayList<>();
         for ( RankedPerson person : rankedFriends )
         {
             retVal.add( person.getPerson() );
@@ -304,7 +305,7 @@ public class Person
     private Iterable<Person> getFriendsByDepth( int depth )
     {
         // return all my friends and their friends using new traversal API
-        TraversalDescription travDesc = Traversal.description()
+        TraversalDescription travDesc = graphDb().traversalDescription()
                 .breadthFirst()
                 .relationships( FRIEND )
                 .uniqueness( Uniqueness.NODE_GLOBAL )
@@ -329,7 +330,7 @@ public class Person
 
     private int getNumberOfPathsToPerson( Person otherPerson )
     {
-        PathFinder<Path> finder = GraphAlgoFactory.allPaths( Traversal.expanderForTypes( FRIEND, Direction.BOTH ), 2 );
+        PathFinder<Path> finder = GraphAlgoFactory.allPaths( forTypeAndDirection( FRIEND, BOTH ), 2 );
         Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
         return IteratorUtil.count( paths );
     }
@@ -345,5 +346,4 @@ public class Person
             }
         };
     }
-
 }

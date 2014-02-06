@@ -19,9 +19,6 @@
 
 package org.neo4j.examples.socnet;
 
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
-
 import java.util.Date;
 
 import org.neo4j.graphdb.Direction;
@@ -30,7 +27,9 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.Traversal;
+
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
 
 public class StatusUpdate
 {
@@ -56,11 +55,12 @@ public class StatusUpdate
 
     private Node getPersonNode()
     {
-        TraversalDescription traversalDescription = Traversal.description().
-                depthFirst().
-                relationships( NEXT, Direction.INCOMING ).
-                relationships( STATUS, Direction.INCOMING ).
-                evaluator( Evaluators.includeWhereLastRelationshipTypeIs( STATUS ) );
+        TraversalDescription traversalDescription = underlyingNode.getGraphDatabase()
+                .traversalDescription()
+                .depthFirst()
+                .relationships( NEXT, Direction.INCOMING )
+                .relationships( STATUS, Direction.INCOMING )
+                .evaluator( Evaluators.includeWhereLastRelationshipTypeIs( STATUS ) );
 
         Traverser traverser = traversalDescription.traverse( getUnderlyingNode() );
 
@@ -69,12 +69,12 @@ public class StatusUpdate
 
     public String getStatusText()
     {
-        return (String)underlyingNode.getProperty( TEXT );
+        return (String) underlyingNode.getProperty( TEXT );
     }
 
     public Date getDate()
     {
-        Long l = (Long)underlyingNode.getProperty( DATE );
+        Long l = (Long) underlyingNode.getProperty( DATE );
 
         return new Date( l );
     }
