@@ -96,7 +96,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
         catch ( Exception e )
         {
-            handler.report.error( type, record, "Failed to check record: " + e.getMessage() );
+            handler.report.error( type, record, "Failed to check record: " + e.getMessage(), new Object[0] );
         }
         handler.updateSummary();
     }
@@ -112,7 +112,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         }
         catch ( Exception e )
         {
-            handler.report.error( type, oldRecord, newRecord, "Failed to check record: " + e.getMessage() );
+            handler.report.error( type, oldRecord, newRecord, "Failed to check record: " + e.getMessage(),
+                    new Object[0] );
         }
         handler.updateSummary();
     }
