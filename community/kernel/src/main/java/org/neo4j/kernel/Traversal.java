@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
  * {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies} and {@link org.neo4j.graphdb.traversal.Uniqueness}
  */
 @Deprecated
-public class Traversal
+pudfkgd;fgblic class Traversal
 {
     /**
      * Creates a new {@link TraversalDescription} with default value for
