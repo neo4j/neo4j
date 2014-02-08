@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
 
-class XorTest extends FunctionTestBase("XOR") {
-
-  @Test
-  def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTBoolean)("Insufficient parameters for function 'XOR'")
-    testInvalidApplication(CTBoolean, CTBoolean, CTBoolean)("Too many parameters for function 'XOR'")
-  }
+class AndTest extends InfixExpressionTestBase(And(_, _)(DummyPosition(0))) {
 
   @Test
   def shouldCombineBooleans() {

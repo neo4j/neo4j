@@ -17,27 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import ast.convert.ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import commands.expressions.{Expression => CommandExpression}
 import symbols._
+import org.junit.Test
 
-case object RegularExpression extends PredicateFunction with SimpleTypedFunction {
-  def name = "=~"
+class LessThanTest extends InfixExpressionTestBase(LessThan(_, _)(DummyPosition(0))) {
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
-  )
+  @Test
+  def shouldSupportComparingIntegers() {
+    testValidTypes(CTInteger, CTInteger)(CTBoolean)
+  }
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
-    val left = invocation.arguments(0).asCommandExpression
-    val right = invocation.arguments(1).asCommandExpression
-    right match {
-      case literal: commandexpressions.Literal => commands.LiteralRegularExpression(left, literal)
-      case command                             => commands.RegularExpression(left, command)
-    }
+  @Test
+  def shouldSupportComparingDoubles() {
+    testValidTypes(CTDouble, CTDouble)(CTBoolean)
+  }
+
+  @Test
+  def shouldSupportComparingStrings() {
+    testValidTypes(CTString, CTString)(CTBoolean)
+  }
+
+  @Test
+  def shouldReturnErrorIfInvalidArgumentTypes() {
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Double, Integer or String but was Node")
+    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
   }
 }

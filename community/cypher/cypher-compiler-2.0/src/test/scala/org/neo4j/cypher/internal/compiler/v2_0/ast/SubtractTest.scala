@@ -17,38 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
 
-class GreaterThanOrEqualTest extends FunctionTestBase(">=") {
+class SubtractTest extends InfixExpressionTestBase(Subtract(_, _)(DummyPosition(0))) {
+
+  // Infix specializations:
+  // 1 - 1 => 0
+  // 1 - 1.1 => -0.1
+  // 1.1 - 1 => 0.1
+  // 1.1 - 1.1 => 0.0
 
   @Test
-  def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTInteger)("Insufficient parameters for function '>='")
-    testInvalidApplication(CTInteger, CTInteger, CTInteger)("Too many parameters for function '>='")
+  def shouldHandleAllSpecializations() {
+    testValidTypes(CTInteger, CTInteger)(CTInteger)
+    testValidTypes(CTInteger, CTDouble)(CTDouble)
+    testValidTypes(CTDouble, CTInteger)(CTDouble)
+    testValidTypes(CTDouble, CTDouble)(CTDouble)
   }
 
   @Test
-  def shouldSupportComparingIntegers() {
-    testValidTypes(CTInteger, CTInteger)(CTBoolean)
+  def shouldHandleCombinedSpecializations() {
+    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble | CTInteger)
   }
 
   @Test
-  def shouldSupportComparingDoubles() {
-    testValidTypes(CTDouble, CTDouble)(CTBoolean)
-  }
-
-  @Test
-  def shouldSupportComparingStrings() {
-    testValidTypes(CTString, CTString)(CTBoolean)
-  }
-
-  @Test
-  def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Double, Integer or String but was Node")
-    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
+  def shouldFailTypeCheckForIncompatibleArguments() {
+    testInvalidApplication(CTInteger, CTBoolean)(
+      "Type mismatch: expected Double or Integer but was Boolean"
+    )
+    testInvalidApplication(CTBoolean, CTInteger)(
+      "Type mismatch: expected Double or Integer but was Boolean"
+    )
   }
 }

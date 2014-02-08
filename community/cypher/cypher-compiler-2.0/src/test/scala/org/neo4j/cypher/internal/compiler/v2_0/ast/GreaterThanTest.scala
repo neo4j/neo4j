@@ -17,34 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
 
-class OrTest extends FunctionTestBase("OR") {
+class GreaterThanTest extends InfixExpressionTestBase(GreaterThan(_, _)(DummyPosition(0))) {
 
   @Test
-  def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTBoolean)("Insufficient parameters for function 'OR'")
-    testInvalidApplication(CTBoolean, CTBoolean, CTBoolean)("Too many parameters for function 'OR'")
+  def shouldSupportComparingIntegers() {
+    testValidTypes(CTInteger, CTInteger)(CTBoolean)
   }
 
   @Test
-  def shouldCombineBooleans() {
-    testValidTypes(CTBoolean, CTBoolean)(CTBoolean)
+  def shouldSupportComparingDoubles() {
+    testValidTypes(CTDouble, CTDouble)(CTBoolean)
   }
 
   @Test
-  def shouldCoerceArguments() {
-    testValidTypes(CTInteger, CTBoolean)(CTBoolean)
-    testValidTypes(CTBoolean, CTInteger)(CTBoolean)
+  def shouldSupportComparingStrings() {
+    testValidTypes(CTString, CTString)(CTBoolean)
   }
 
   @Test
   def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTNode, CTBoolean)("Type mismatch: expected Boolean but was Node")
-    testInvalidApplication(CTBoolean, CTNode)("Type mismatch: expected Boolean but was Node")
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Double, Integer or String but was Node")
+    testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
   }
 }

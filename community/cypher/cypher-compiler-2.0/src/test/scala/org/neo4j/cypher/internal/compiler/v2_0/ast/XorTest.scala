@@ -17,29 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import ast.convert.ExpressionConverters._
-import commands.{expressions => commandexpressions}
 import symbols._
+import org.junit.Test
 
-case object Multiply extends Function with SimpleTypedFunction {
-  val name = "*"
+class XorTest extends InfixExpressionTestBase(Xor(_, _)(DummyPosition(0))) {
 
-  // 1 % 1 => 0
-  // 1 % 1.1 => 1.0
-  // 1.1 % 1 => 0.1
-  // 1.1 % 1.1 => 0.0
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
-  )
+  @Test
+  def shouldCombineBooleans() {
+    testValidTypes(CTBoolean, CTBoolean)(CTBoolean)
+  }
 
-  def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.Multiply(
-      invocation.arguments(0).asCommandExpression,
-      invocation.arguments(1).asCommandExpression
-    )
+  @Test
+  def shouldCoerceArguments() {
+    testValidTypes(CTInteger, CTBoolean)(CTBoolean)
+    testValidTypes(CTBoolean, CTInteger)(CTBoolean)
+  }
+
+  @Test
+  def shouldReturnErrorIfInvalidArgumentTypes() {
+    testInvalidApplication(CTNode, CTBoolean)("Type mismatch: expected Boolean but was Node")
+    testInvalidApplication(CTBoolean, CTNode)("Type mismatch: expected Boolean but was Node")
+  }
 }

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Property(map: Expression, identifier: Identifier)(val position: InputPosition) extends Expression with SimpleTypedExpression {
+case class Property(map: Expression, identifier: Identifier)(val position: InputPosition) extends Expression with SimpleTyping {
   protected def possibleTypes = CTAny.covariant
 
   override def semanticCheck(ctx: SemanticContext) =

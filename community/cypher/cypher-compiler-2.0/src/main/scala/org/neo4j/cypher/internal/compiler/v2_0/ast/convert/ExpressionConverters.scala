@@ -30,11 +30,34 @@ object ExpressionConverters {
 
   implicit class ExpressionConverter(val expression: ast.Expression) extends AnyVal {
     def asCommandExpression: CommandExpression = expression match {
-      case e: ast.Literal => e.asCommandLiteral
-      case e: ast.Identifier => e.asCommandIdentifier
       case e: ast.Null => e.asCommandNull
       case e: ast.True => e.asCommandTrue
       case e: ast.False => e.asCommandFalse
+      case e: ast.Literal => e.asCommandLiteral
+      case e: ast.Identifier => e.asCommandIdentifier
+      case e: ast.Or => e.asCommandOr
+      case e: ast.Xor => e.asCommandXor
+      case e: ast.And => e.asCommandAnd
+      case e: ast.Not => e.asCommandNot
+      case e: ast.Equals => e.asCommandEquals
+      case e: ast.NotEquals => e.asCommandNotEquals
+      case e: ast.RegexMatch => e.asCommandRegex
+      case e: ast.In => e.asCommandIn
+      case e: ast.IsNull => e.asCommandIsNull
+      case e: ast.IsNotNull => e.asCommandIsNotNull
+      case e: ast.LessThan => e.asCommandLessThan
+      case e: ast.LessThanOrEqual => e.asCommandLessThanOrEqual
+      case e: ast.GreaterThan => e.asCommandGreaterThan
+      case e: ast.GreaterThanOrEqual => e.asCommandGreaterThanOrEqual
+      case e: ast.Add => e.asCommandAdd
+      case e: ast.UnaryAdd => e.asCommandAdd
+      case e: ast.Subtract => e.asCommandSubtract
+      case e: ast.UnarySubtract => e.asCommandSubtract
+      case e: ast.Multiply => e.asCommandMultiply
+      case e: ast.Divide => e.asCommandDivide
+      case e: ast.Modulo => e.asCommandModulo
+      case e: ast.Pow => e.asCommandPow
+      case e: ast.FunctionInvocation => e.asCommandFunction
       case e: ast.CountStar => e.asCommandCountStar
       case e: ast.Property => e.asCommandProperty
       case e: ast.Parameter => e.asCommandParameter
@@ -54,7 +77,6 @@ object ExpressionConverters {
       case e: ast.NoneIterablePredicate => e.asCommandNoneInCollection
       case e: ast.SingleIterablePredicate => e.asCommandSingleInCollection
       case e: ast.ReduceExpression => e.asCommandReduce
-      case e: ast.FunctionInvocation => e.asCommandFunction
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -119,6 +141,121 @@ object ExpressionConverters {
   implicit class ParameterConverter(val e: ast.Parameter) extends AnyVal {
     def asCommandParameter =
       commandexpressions.ParameterExpression(e.name)
+  }
+
+  implicit class OrConverter(val e: ast.Or) extends AnyVal {
+    def asCommandOr =
+      commands.Or(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
+  }
+
+  implicit class XorConverter(val e: ast.Xor) extends AnyVal {
+    def asCommandXor =
+      commands.Xor(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
+  }
+
+  implicit class AndConverter(val e: ast.And) extends AnyVal {
+    def asCommandAnd =
+      commands.And(e.lhs.asCommandPredicate, e.rhs.asCommandPredicate)
+  }
+
+  implicit class NotConverter(val e: ast.Not) extends AnyVal {
+    def asCommandNot =
+      commands.Not(e.rhs.asCommandPredicate)
+  }
+
+  implicit class EqualsConverter(val e: ast.Equals) extends AnyVal {
+    def asCommandEquals =
+      commands.Equals(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class NotEqualsConverter(val e: ast.NotEquals) extends AnyVal {
+    def asCommandNotEquals =
+      commands.Not(commands.Equals(e.lhs.asCommandExpression, e.rhs.asCommandExpression))
+  }
+
+  implicit class RegexMatchConverter(val e: ast.RegexMatch) extends AnyVal {
+    def asCommandRegex = e.rhs.asCommandExpression match {
+      case literal: commandexpressions.Literal =>
+        commands.LiteralRegularExpression(e.lhs.asCommandExpression, literal)
+      case command =>
+        commands.RegularExpression(e.lhs.asCommandExpression, command)
+    }
+  }
+
+  implicit class InConverter(val e: ast.In) extends AnyVal {
+    def asCommandIn =
+      commands.AnyInCollection(
+        e.rhs.asCommandExpression,
+        "-_-INNER-_-",
+        commands.Equals(
+          e.lhs.asCommandExpression,
+          commandexpressions.Identifier("-_-INNER-_-")
+        )
+      )
+  }
+
+  implicit class IsNullConverter(val e: ast.IsNull) extends AnyVal {
+    def asCommandIsNull =
+      commands.IsNull(e.lhs.asCommandExpression)
+  }
+
+  implicit class IsNotNullConverter(val e: ast.IsNotNull) extends AnyVal {
+    def asCommandIsNotNull =
+      commands.Not(commands.IsNull(e.lhs.asCommandExpression))
+  }
+
+  implicit class LessThanConverter(val e: ast.LessThan) extends AnyVal {
+    def asCommandLessThan =
+      commands.LessThan(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class LessThanOrEqualConverter(val e: ast.LessThanOrEqual) extends AnyVal {
+    def asCommandLessThanOrEqual =
+      commands.LessThanOrEqual(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class GreaterThanConverter(val e: ast.GreaterThan) extends AnyVal {
+    def asCommandGreaterThan =
+      commands.GreaterThan(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class GreaterThanOrEqualConverter(val e: ast.GreaterThanOrEqual) extends AnyVal {
+    def asCommandGreaterThanOrEqual =
+      commands.GreaterThanOrEqual(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class AddConverter(val e: ast.Add) extends AnyVal {
+    def asCommandAdd =
+      commandexpressions.Add(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class UnaryAddConverter(val e: ast.UnaryAdd) extends AnyVal {
+    def asCommandAdd = e.rhs.asCommandExpression
+  }
+
+  implicit class SubtractConverter(val e: ast.Subtract) extends AnyVal {
+    def asCommandSubtract =
+      commandexpressions.Subtract(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class UnarySubtactConverter(val e: ast.UnarySubtract) extends AnyVal {
+    def asCommandSubtract = commandexpressions.Subtract(commandexpressions.Literal(0), e.rhs.asCommandExpression)
+  }
+
+  implicit class MultiplyConverter(val e: ast.Multiply) extends AnyVal {
+    def asCommandMultiply = commandexpressions.Multiply(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class DivideConverter(val e: ast.Divide) extends AnyVal {
+    def asCommandDivide = commandexpressions.Divide(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class ModuloConverter(val e: ast.Modulo) extends AnyVal {
+    def asCommandModulo = commandexpressions.Modulo(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
+  }
+
+  implicit class PowConverter(val e: ast.Pow) extends AnyVal {
+    def asCommandPow = commandexpressions.Pow(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
   implicit class CaseExpressionConverter(val e: ast.CaseExpression) extends AnyVal {

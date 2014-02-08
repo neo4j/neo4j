@@ -23,11 +23,11 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-trait Literal extends Expression {
+sealed trait Literal extends Expression {
   def value: Any
 }
 
-sealed abstract class IntegerLiteral(stringVal: String) extends Literal with SimpleTypedExpression {
+sealed abstract class IntegerLiteral(stringVal: String) extends Literal with SimpleTyping {
   lazy val value = stringVal.toLong
 
   protected def possibleTypes = CTInteger
@@ -45,8 +45,7 @@ sealed abstract class IntegerLiteral(stringVal: String) extends Literal with Sim
 case class SignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 case class UnsignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 
-
-case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends Literal with SimpleTypedExpression {
+case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends Literal with SimpleTyping {
   val value = stringVal.toDouble
 
   protected def possibleTypes = CTDouble
@@ -57,12 +56,21 @@ case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends
     } then super.semanticCheck(ctx)
 }
 
-
-case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTypedExpression {
+case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTyping {
   protected def possibleTypes = CTString
 }
 
+case class Null()(val position: InputPosition) extends Literal with SimpleTyping {
+  val value = null
+  protected def possibleTypes = CTAny.covariant
+}
 
-case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val position: InputPosition) extends ASTNode {
-  def isSingleLength = lower.isDefined && upper.isDefined && lower.get.value == 1 && upper.get.value == 1
+case class True()(val position: InputPosition) extends Literal with SimpleTyping {
+  val value = true
+  protected def possibleTypes = CTBoolean
+}
+
+case class False()(val position: InputPosition) extends Literal with SimpleTyping {
+  val value = false
+  protected def possibleTypes = CTBoolean
 }

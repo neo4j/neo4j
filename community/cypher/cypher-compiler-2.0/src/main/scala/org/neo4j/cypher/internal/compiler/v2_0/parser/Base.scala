@@ -57,11 +57,6 @@ trait Base extends Parser {
   }
   def operator(string: String) = group(string ~ !OpChar)
 
-  def keywordIdentifier(string: String): Rule1[ast.Identifier] =
-    keyword(string) ~ push(ast.Identifier(string)(_))
-  def operatorIdentifier(string: String): Rule1[ast.Identifier] =
-    operator(string) ~ push(ast.Identifier(string)(_))
-
   def push[R](f: InputPosition => R): Rule1[R] = pushFromContext(ctx => f(ContextPosition(ctx)))
 
   def position = withContext((_: IndexRange, ctx: Context[Any]) => ContextPosition(ctx))
@@ -80,6 +75,10 @@ trait Base extends Parser {
     def ~~[A, B, C](other: ReductionRule2[A, B, C]): ReductionRule2[A, B, C] = r ~ WS ~ other
 
     def ~>>>[R](f: String => InputPosition => R): Rule1[R] = r ~> withContext((s: String, ctx) => f(s)(ContextPosition(ctx)))
+    def ~~>>[Z, R](f: (Z) => (InputPosition => R)): ReductionRule1[Z, R] =
+      r ~~> withContext((z: Z, ctx) => f(z)(ContextPosition(ctx)))
+    def ~~>>[Y, Z, R](f: (Y, Z) => (InputPosition => R)): ReductionRule2[Y, Z, R] =
+      r ~~> withContext((y: Y, z: Z, ctx) => f(y, z)(ContextPosition(ctx)))
   }
 
   implicit class RichString(s: String) {
