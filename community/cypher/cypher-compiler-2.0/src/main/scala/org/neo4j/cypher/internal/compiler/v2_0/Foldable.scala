@@ -17,20 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.internal.compiler.v2_0._
+object Foldable {
+  implicit class TreeAny(val any: Any) extends AnyVal {
+    def children: IndexedSeq[Any] = any match {
+      case p: Product => p.productIterator.toVector
+      case s: Seq[_] => s.toVector
+      case _ => Vector.empty
+    }
+  }
 
-trait ASTNode extends Product with Foldable with Rewritable {
-  def position: InputPosition
-
-  def dup(children: IndexedSeq[Any]): this.type = {
-    val constructor = this.getClass.getMethods.find(_.getName == "copy").get
-    val params = constructor.getParameterTypes
-    val args = if ((params.length == children.length + 1) && params.last.isAssignableFrom(classOf[InputPosition]))
-      children.map(_.asInstanceOf[AnyRef]) :+ this.position
-    else
-      children.map(_.asInstanceOf[AnyRef])
-    constructor.invoke(this, args: _*).asInstanceOf[this.type]
+  implicit class FoldableAny(val any: Any) extends AnyVal {
+    def fold[R](init: R)(f: PartialFunction[Any, R => R]): R = {
+      val acc = if (f.isDefinedAt(any))
+        f(any)(init)
+      else
+        init
+      any.children.foldLeft(acc)((a, t) => t.fold(a)(f))
+    }
   }
 }
+
+trait Foldable

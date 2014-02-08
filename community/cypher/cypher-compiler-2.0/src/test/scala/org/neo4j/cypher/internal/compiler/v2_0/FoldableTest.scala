@@ -17,20 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.internal.compiler.v2_0._
+import org.scalatest.FunSuite
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-trait ASTNode extends Product with Foldable with Rewritable {
-  def position: InputPosition
+object FoldableTest {
+  trait Exp extends Foldable
+  case class Val(int: Int) extends Exp
+  case class Add(lhs: Exp, rhs: Exp) extends Exp
+  case class Sum(args: Seq[Exp]) extends Exp
+}
 
-  def dup(children: IndexedSeq[Any]): this.type = {
-    val constructor = this.getClass.getMethods.find(_.getName == "copy").get
-    val params = constructor.getParameterTypes
-    val args = if ((params.length == children.length + 1) && params.last.isAssignableFrom(classOf[InputPosition]))
-      children.map(_.asInstanceOf[AnyRef]) :+ this.position
-    else
-      children.map(_.asInstanceOf[AnyRef])
-    constructor.invoke(this, args: _*).asInstanceOf[this.type]
+@RunWith(classOf[JUnitRunner])
+class FoldableTest extends FunSuite {
+  import FoldableTest._
+
+  test("should fold value depth first over object tree") {
+    val ast = Add(Val(55), Add(Val(43), Val(52)))
+
+    val result = ast.fold(50) {
+      case Val(x) => acc => acc + x
+    }
+
+    assert(result === 200)
   }
 }

@@ -1,0 +1,201 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.compiler.v2_0
+
+import org.scalatest.FunSuite
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+object RewritableTest {
+  trait Exp extends Product with Rewritable
+  case class Val(int: Int) extends Exp {
+    def dup(children: IndexedSeq[Any]): this.type =
+      Val(children(0).asInstanceOf[Int]).asInstanceOf[this.type]
+  }
+  case class Add(lhs: Exp, rhs: Exp) extends Exp {
+    def dup(children: IndexedSeq[Any]): this.type =
+      Add(children(0).asInstanceOf[Exp], children(1).asInstanceOf[Exp]).asInstanceOf[this.type]
+  }
+  case class Sum(args: Seq[Exp]) extends Exp {
+    def dup(children: IndexedSeq[Any]): this.type =
+      Sum(children(0).asInstanceOf[Seq[Exp]]).asInstanceOf[this.type]
+  }
+  case class Pos(latlng: (Exp, Exp)) extends Exp {
+    def dup(children: IndexedSeq[Any]): this.type =
+      Pos(children(0).asInstanceOf[(Exp, Exp)]).asInstanceOf[this.type]
+  }
+  case class Options(args: Seq[(Exp, Exp)]) extends Exp {
+    def dup(children: IndexedSeq[Any]): this.type =
+      Options(children(0).asInstanceOf[Seq[(Exp, Exp)]]).asInstanceOf[this.type]
+  }
+}
+
+@RunWith(classOf[JUnitRunner])
+class RewritableTest extends FunSuite {
+  import RewritableTest._
+
+  test("rewriteTopDown should be identical when no rule matches") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteTopDown({
+      case None => ???
+    })
+
+    assert(result === ast)
+  }
+
+  test("rewriteTopDown should be identical when using identity") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteTopDown({
+      case a => a
+    })
+
+    assert(result === ast)
+  }
+
+  test("rewriteTopDown should match and replace primitives") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteTopDown({
+      case _: Int => 99
+    })
+
+    assert(result === Add(Val(99), Add(Val(99), Val(99))))
+  }
+
+  test("rewriteTopDown should match and replace trees") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteTopDown({
+      case Add(Val(x), Val(y)) =>
+        Val(x + y)
+    })
+
+    assert(result === Add(Val(1), Val(5)))
+  }
+
+  test("rewriteTopDown should match and replace primitives and trees") {
+    val ast = Add(Val(8), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteTopDown({
+      case _: Int =>
+        1
+      case Add(Val(x), Val(y)) =>
+        Val(x + y)
+    })
+
+    assert(result === Add(Val(1), Val(5)))
+  }
+
+  test("rewriteTopDown should duplicate terms with pair parameters") {
+    val ast = Add(Val(1), Pos((Val(2), Val(3))))
+
+    val result = ast.rewriteTopDown({
+      case _: Int => 99
+    })
+
+    assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
+  }
+
+  test("rewriteTopDown should duplicate terms with sequence of pairs") {
+    val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
+
+    val result = ast.rewriteTopDown({
+      case _: Int => 99
+    })
+
+    assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
+  }
+
+  test("rewriteBottomUp should be identical when no rule matches") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteBottomUp({
+      case None => ???
+    })
+
+    assert(result === ast)
+  }
+
+  test("rewriteBottomUp should be identical when using identity") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteBottomUp({
+      case a => a
+    })
+
+    assert(result === ast)
+  }
+
+  test("rewriteBottomUp should match and replace primitives") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteBottomUp({
+      case _: Int => 99
+    })
+
+    assert(result === Add(Val(99), Add(Val(99), Val(99))))
+  }
+
+  test("rewriteBottomUp should match and replace trees") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteBottomUp({
+      case Add(Val(x), Val(y)) =>
+        Val(x + y)
+    })
+
+    assert(result === Val(6))
+  }
+
+  test("rewriteBottomUp should match and replace primitives and trees") {
+    val ast = Add(Val(8), Add(Val(2), Val(3)))
+
+    val result = ast.rewriteBottomUp({
+      case _: Int =>
+        1
+      case Add(Val(x), Val(y)) =>
+        Val(x + y)
+    })
+
+    assert(result === Val(3))
+  }
+
+  test("rewriteBottomUp should duplicate terms with pair parameters") {
+    val ast = Add(Val(1), Pos((Val(2), Val(3))))
+
+    val result = ast.rewriteBottomUp({
+      case _: Int => 99
+    })
+
+    assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
+  }
+
+  test("rewriteBottomUp should duplicate terms with sequence of pairs") {
+    val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
+
+    val result = ast.rewriteBottomUp({
+      case _: Int => 99
+    })
+
+    assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
+  }
+}
