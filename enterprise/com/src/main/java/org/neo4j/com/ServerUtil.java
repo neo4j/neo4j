@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.BackupMonitor;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -128,10 +129,11 @@ public class ServerUtil
     }
 
     public static RequestContext rotateLogsAndStreamStoreFiles( String storeDir, XaDataSourceManager dsManager, KernelPanicEventGenerator kernelPanicEventGenerator, StringLogger logger,
-                                                                boolean includeLogicalLogs, StoreWriter writer )
+                                                                boolean includeLogicalLogs, StoreWriter writer, BackupMonitor backupMonitor )
     {
         File baseDir = getBaseDir( storeDir );
         RequestContext context = RequestContext.anonymous( rotateLogs( dsManager, kernelPanicEventGenerator, logger ) );
+        backupMonitor.finishedRotatingLogicalLogs();
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
@@ -142,6 +144,7 @@ public class ServerUtil
                 {
                     for ( File storefile : files )
                     {
+                        backupMonitor.streamingFile( storefile );
                         FileInputStream stream = new FileInputStream( storefile );
                         try
                         {
@@ -151,6 +154,7 @@ public class ServerUtil
                         finally
                         {
                             stream.close();
+                            backupMonitor.streamedFile( storefile );
                         }
                     }
                 }
