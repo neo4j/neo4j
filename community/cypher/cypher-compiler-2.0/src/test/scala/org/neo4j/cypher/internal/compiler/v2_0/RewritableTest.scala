@@ -51,150 +51,163 @@ object RewritableTest {
 class RewritableTest extends FunSuite {
   import RewritableTest._
 
-  test("rewriteTopDown should be identical when no rule matches") {
+  test("topDown should be identical when no rule matches") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case None => ???
-    })
+    }))
 
     assert(result === ast)
   }
 
-  test("rewriteTopDown should be identical when using identity") {
+  test("topDown should be identical when using identity") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case a => a
-    })
+    }))
 
     assert(result === ast)
   }
 
-  test("rewriteTopDown should match and replace primitives") {
+  test("topDown should match and replace primitives") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case _: Int => 99
-    })
+    }))
 
     assert(result === Add(Val(99), Add(Val(99), Val(99))))
   }
 
-  test("rewriteTopDown should match and replace trees") {
+  test("topDown should match and replace trees") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case Add(Val(x), Val(y)) =>
         Val(x + y)
-    })
+    }))
 
     assert(result === Add(Val(1), Val(5)))
   }
 
-  test("rewriteTopDown should match and replace primitives and trees") {
+  test("topDown should match and replace primitives and trees") {
     val ast = Add(Val(8), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case _: Int =>
         1
       case Add(Val(x), Val(y)) =>
         Val(x + y)
-    })
+    }))
 
-    assert(result === Add(Val(1), Val(5)))
+    assert(result === Add(Val(1), Val(1)))
   }
 
-  test("rewriteTopDown should duplicate terms with pair parameters") {
+  test("topDown should duplicate terms with pair parameters") {
     val ast = Add(Val(1), Pos((Val(2), Val(3))))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case _: Int => 99
-    })
+    }))
 
     assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
   }
 
-  test("rewriteTopDown should duplicate terms with sequence of pairs") {
+  test("topDown should duplicate terms with sequence of pairs") {
     val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
 
-    val result = ast.rewriteTopDown({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case _: Int => 99
-    })
+    }))
 
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
   }
 
-  test("rewriteBottomUp should be identical when no rule matches") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewriteBottomUp({
-      case None => ???
-    })
-
-    assert(result === ast)
-  }
-
-  test("rewriteBottomUp should be identical when using identity") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewriteBottomUp({
-      case a => a
-    })
-
-    assert(result === ast)
-  }
-
-  test("rewriteBottomUp should match and replace primitives") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewriteBottomUp({
-      case _: Int => 99
-    })
-
-    assert(result === Add(Val(99), Add(Val(99), Val(99))))
-  }
-
-  test("rewriteBottomUp should match and replace trees") {
-    val ast = Add(Val(1), Add(Val(2), Val(3)))
-
-    val result = ast.rewriteBottomUp({
-      case Add(Val(x), Val(y)) =>
-        Val(x + y)
-    })
-
-    assert(result === Val(6))
-  }
-
-  test("rewriteBottomUp should match and replace primitives and trees") {
+  test("untilMatch should match and replace primitives and trees") {
     val ast = Add(Val(8), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteBottomUp({
+    val result = ast.rewrite(untilMatched(Rewriter.lift {
       case _: Int =>
         1
       case Add(Val(x), Val(y)) =>
         Val(x + y)
-    })
+    }))
+
+    assert(result === Add(Val(1), Val(5)))
+  }
+
+  test("bottomUp should be identical when no rule matches") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
+      case None => ???
+    }))
+
+    assert(result === ast)
+  }
+
+  test("bottomUp should be identical when using identity") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
+      case a => a
+    }))
+
+    assert(result === ast)
+  }
+
+  test("bottomUp should match and replace primitives") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
+      case _: Int => 99
+    }))
+
+    assert(result === Add(Val(99), Add(Val(99), Val(99))))
+  }
+
+  test("bottomUp should match and replace trees") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
+      case Add(Val(x), Val(y)) =>
+        Val(x + y)
+    }))
+
+    assert(result === Val(6))
+  }
+
+  test("bottomUp should match and replace primitives and trees") {
+    val ast = Add(Val(8), Add(Val(2), Val(3)))
+
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
+      case _: Int =>
+        1
+      case Add(Val(x), Val(y)) =>
+        Val(x + y)
+    }))
 
     assert(result === Val(3))
   }
 
-  test("rewriteBottomUp should duplicate terms with pair parameters") {
+  test("bottomUp should duplicate terms with pair parameters") {
     val ast = Add(Val(1), Pos((Val(2), Val(3))))
 
-    val result = ast.rewriteBottomUp({
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
       case _: Int => 99
-    })
+    }))
 
     assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
   }
 
-  test("rewriteBottomUp should duplicate terms with sequence of pairs") {
+  test("bottomUp should duplicate terms with sequence of pairs") {
     val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
 
-    val result = ast.rewriteBottomUp({
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
       case _: Int => 99
-    })
+    }))
 
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
   }

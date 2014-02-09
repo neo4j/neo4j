@@ -41,10 +41,10 @@ class ASTNodeTest extends FunSuite {
   test("rewrite should match and replace expressions") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteBottomUp({
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
       case Add(Val(x), Val(y)) =>
         Val(x + y)
-    })
+    }))
 
     assert(result === Val(6))
   }
@@ -52,12 +52,12 @@ class ASTNodeTest extends FunSuite {
   test("rewrite should match and replace primitives and expressions") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    val result = ast.rewriteBottomUp({
+    val result = ast.rewrite(bottomUp(Rewriter.lift {
       case i: Int =>
         i * i
       case Add(Val(x), Val(y)) =>
         Val(x + y)
-    })
+    }))
 
     assert(result === Val(14))
   }
@@ -67,9 +67,9 @@ class ASTNodeTest extends FunSuite {
 
     val ast = Add(Val(1), AddWithPos(Val(2), Val(3))(DummyPosition(0)))
 
-    val result = ast.rewriteBottomUp({
+    val result = ast.rewrite(topDown(Rewriter.lift {
       case _: Int => 99
-    })
+    }))
 
     assert(result === Add(Val(99), AddWithPos(Val(99), Val(99))(DummyPosition(0))))
   }

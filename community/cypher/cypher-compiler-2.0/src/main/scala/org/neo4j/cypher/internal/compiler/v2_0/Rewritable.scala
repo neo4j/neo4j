@@ -19,6 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
+object Rewriter {
+  implicit class LiftedRewriter(f: (Any => Option[Any])) extends Rewriter {
+    def apply(term: Any): Option[Any] = f.apply(term)
+  }
+  def lift(f: PartialFunction[Any, Any]): Rewriter = f.lift
+}
+
+trait Rewriter extends (Any => Option[Any])
+
+
 object Rewritable {
   import Foldable._
 
@@ -51,29 +61,58 @@ object Rewritable {
   }
 
   implicit class RewritableAny(val any: Any) extends AnyVal {
-    def rewriteTopDown(fs: PartialFunction[Any, Any]*): Any =
-      fs.indexWhere(_.isDefinedAt(any)) match {
-        case -1 => any.dup(_.rewriteTopDown(fs:_*))
-        case idx => fs.drop(idx+1).foldLeft(fs(idx).apply(any)) {
-          (t, f) => if (f.isDefinedAt(t))
-            f.apply(t)
-          else
-            t
-        }
-      }
-
-    def rewriteBottomUp(fs: PartialFunction[Any, Any]*): Any = {
-      val term = any.dup(_.rewriteBottomUp(fs:_*))
-      fs.foldLeft(term) {
-        (t, f) => if (f.isDefinedAt(t))
-          f.apply(t)
-        else
-          t
-      }
-    }
+    def rewrite(rewriter: Rewriter): Any = rewriter.apply(any).getOrElse(any)
   }
 }
 
 trait Rewritable {
   def dup(children: IndexedSeq[Any]): this.type
+}
+
+case class topDown(rewriters: Rewriter*) extends Rewriter {
+  import Rewritable._
+  def apply(term: Any): Some[Any] = {
+    val rewrittenTerm = rewriters.foldLeft(term) {
+      (t, r) => t.rewrite(r)
+    }
+    Some(rewrittenTerm.dup(t => this.apply(t).get))
+  }
+}
+
+case class untilMatched(rewriter: Rewriter) extends Rewriter {
+  import Rewritable._
+  def apply(term: Any): Some[Any] =
+    Some(rewriter.apply(term).getOrElse(term.dup(t => this.apply(t).get)))
+}
+
+case class bottomUp(rewriters: Rewriter*) extends Rewriter {
+  import Rewritable._
+  def apply(term: Any): Some[Any] =
+    Some(rewriters.foldLeft(term.dup(t => this.apply(t).get)) {
+      (t, r) => t.rewrite(r)
+    })
+}
+
+case class bottomUpRepeated(rewriter: Rewriter) extends Rewriter {
+  import Rewritable._
+  def apply(term: Any): Some[Any] = {
+    val rewrittenTerm = term.dup(t => this.apply(t).get)
+    rewriter.apply(rewrittenTerm).fold(Some(rewrittenTerm)) {
+      t => if (t == term)
+        Some(t)
+      else
+        Some(t.rewrite(this))
+    }
+  }
+}
+
+case class repeat(rewriter: Rewriter) extends Rewriter {
+  import Rewritable._
+  def apply(term: Any): Option[Any] =
+    rewriter.apply(term).map {
+      t => if (t == term)
+        term
+      else
+        t.rewrite(this)
+    }
 }
