@@ -118,6 +118,7 @@ import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -1253,7 +1254,14 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( LockManager.class.isAssignableFrom( type ) && type.isInstance( lockManager ) )
             {
+                // Locks used to ensure pessimistic concurrency control between transactions
                 return type.cast( lockManager );
+            }
+            else if ( LockService.class.isAssignableFrom( type )
+                    && type.isInstance( neoDataSource.getLockService() ) )
+            {
+                // Locks used to control concurrent access to the store files
+                return type.cast( neoDataSource.getLockService() );
             }
             else if( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
             {
@@ -1342,7 +1350,7 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( Monitors.class.isAssignableFrom( type ) )
             {
-                return (T) monitors;
+                return type.cast( monitors );
             }
             else if ( PersistenceManager.class.isAssignableFrom( type ) && type.isInstance( persistenceManager ) )
             {
