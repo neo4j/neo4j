@@ -23,7 +23,8 @@ import org.junit.Test
 
 class AggregationAcceptanceTest extends ExecutionEngineHelper {
   @Test def should_handle_aggregates_inside_non_aggregate_expressions() {
-    val result = execute("MATCH (a { name: 'Andres' })<-[:FATHER_OF]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}")
-    println(result.dumpToString())
+    execute(
+      "MATCH (a { name: 'Andres' })<-[:FATHER_OF]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"
+    ).toList
   }
 }
