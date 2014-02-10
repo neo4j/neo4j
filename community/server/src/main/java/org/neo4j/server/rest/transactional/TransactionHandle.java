@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -254,6 +255,10 @@ public class TransactionHandle
                 {
                     errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
                     break;
+                }
+                catch( DeadlockDetectedException e )
+                {
+                    errors.add( new Neo4jError( Status.Transaction.DeadlockDetected, e ));
                 }
                 catch ( IOException e )
                 {

@@ -104,6 +104,9 @@ public interface Status
                 "perform data operations, and vice versa." ),
 
         ReleaseLocksFailed( DatabaseError, "The transaction was unable to release one or more of its locks." ),
+        DeadlockDetected( TransientError, "This transaction, and at least one more transaction, has acquired locks " +
+                "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
+                "will most likely be successful."),
 
         ;
         private final Code code;
