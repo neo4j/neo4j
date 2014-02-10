@@ -19,18 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,7 +40,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -74,7 +65,6 @@ import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipGroupTranslator;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
@@ -103,6 +93,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestNeoStore
 {
@@ -365,14 +359,11 @@ public class TestNeoStore
 
         initializeStores();
         startTx();
-        GroupTranslator groupTranslator = new GroupTranslator();
-        groupTranslator.add( relType1, typeName1 );
-        groupTranslator.add( relType2, typeName2 );
         // validate node
         validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2,
-                relType1, relType2, groupTranslator );
+                relType1, relType2 );
         validateNodeRel2( node2, n2prop1, n2prop2, n2prop3, rel1, rel2,
-                relType1, relType2, groupTranslator );
+                relType1, relType2 );
         // validate rels
         validateRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
         validateRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2 );
@@ -385,11 +376,11 @@ public class TestNeoStore
         initializeStores();
         startTx();
         // validate and delete rels
-        deleteRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1, groupTranslator );
-        deleteRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2, groupTranslator );
+        deleteRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
+        deleteRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2 );
         // validate and delete nodes
-        deleteNode1( node1, n1prop1, n1prop2, n1prop3, groupTranslator );
-        deleteNode2( node2, n2prop1, n2prop2, n2prop3, groupTranslator );
+        deleteNode1( node1, n1prop1, n1prop2, n1prop3 );
+        deleteNode2( node2, n2prop1, n2prop2, n2prop3 );
         commitTx();
         ds.stop();
 
@@ -418,7 +409,7 @@ public class TestNeoStore
         }
         for ( int i = 0; i < 3; i++ )
         {
-            MutableRelationshipLoadingPosition pos = getPosition( xaCon, nodeIds[i], groupTranslator );
+            MutableRelationshipLoadingPosition pos = getPosition( xaCon, nodeIds[i] );
             for ( RelationshipRecord rel : getMore( xaCon, nodeIds[i], pos ) )
             {
                 xaCon.getTransaction().relDelete( rel.getId() );
@@ -429,11 +420,10 @@ public class TestNeoStore
         ds.stop();
     }
 
-    private MutableRelationshipLoadingPosition getPosition( NeoStoreXaConnection xaCon, long node,
-            RelationshipGroupTranslator translator )
+    private MutableRelationshipLoadingPosition getPosition( NeoStoreXaConnection xaCon, long node )
     {
         return new MutableRelationshipLoadingPosition(
-                xaCon.getTransaction().getRelationshipChainPosition( node ).build( translator ) );
+                xaCon.getTransaction().getRelationshipChainPosition( node ));
     }
     
     private static class MutableRelationshipLoadingPosition implements RelationshipLoadingPosition
@@ -457,19 +447,19 @@ public class TestNeoStore
         }
 
         @Override
-        public long position( DirectionWrapper direction, RelationshipType[] types )
+        public long position( DirectionWrapper direction, int[] types )
         {
             return actual.position( direction, types );
         }
 
         @Override
-        public long nextPosition( long position, DirectionWrapper direction, RelationshipType[] types )
+        public long nextPosition( long position, DirectionWrapper direction, int[] types )
         {
             return actual.nextPosition( position, direction, types );
         }
 
         @Override
-        public boolean hasMore( DirectionWrapper direction, RelationshipType[] types )
+        public boolean hasMore( DirectionWrapper direction, int[] types )
         {
             return actual.hasMore( direction, types );
         }
@@ -492,7 +482,7 @@ public class TestNeoStore
     {
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> rels =
                 xaCon.getTransaction().getMoreRelationships( node, position, DirectionWrapper.BOTH,
-                        new RelationshipType[0] );
+                        new int[0] );
         List<Iterable<RelationshipRecord>> list = new ArrayList<>();
         for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
         {
@@ -504,7 +494,7 @@ public class TestNeoStore
 
     private void validateNodeRel1( long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3, long rel1, long rel2,
-            int relType1, int relType2, GroupTranslator groupTranslator ) throws IOException
+            int relType1, int relType2 ) throws IOException
     {
         NodeRecord nodeRecord = xaCon.getTransaction().nodeLoadLight( node );
         assertTrue( nodeRecord != null );
@@ -547,7 +537,7 @@ public class TestNeoStore
         }
         assertEquals( 3, count );
         count = 0;
-        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node, groupTranslator );
+        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node );
         while ( true )
         {
             Iterable<RelationshipRecord> relData = getMore( xaCon, node, pos );
@@ -591,7 +581,7 @@ public class TestNeoStore
 
     private void validateNodeRel2( long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3,
-            long rel1, long rel2, int relType1, int relType2, GroupTranslator groupTranslator ) throws IOException
+            long rel1, long rel2, int relType1, int relType2 ) throws IOException
     {
         NodeRecord nodeRecord = xaCon.getTransaction().nodeLoadLight( node );
         assertTrue( nodeRecord != null );
@@ -634,7 +624,7 @@ public class TestNeoStore
         assertEquals( 3, count );
         count = 0;
 
-        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node, groupTranslator );
+        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node );
         while ( true )
         {
             Iterable<RelationshipRecord> relData = getMore( xaCon, node, pos );
@@ -789,7 +779,7 @@ public class TestNeoStore
     }
 
     private void deleteRel1( long rel, DefinedProperty prop1, DefinedProperty prop2,
-            DefinedProperty prop3, long firstNode, long secondNode, int relType, GroupTranslator groupTranslator )
+            DefinedProperty prop3, long firstNode, long secondNode, int relType )
                     throws IOException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
@@ -835,10 +825,10 @@ public class TestNeoStore
         assertEquals( secondNode, relData.getSecondNode() );
         assertEquals( relType, relData.getType() );
         xaCon.getTransaction().relDelete( rel );
-        MutableRelationshipLoadingPosition firstPos = getPosition( xaCon, firstNode, groupTranslator );
+        MutableRelationshipLoadingPosition firstPos = getPosition( xaCon, firstNode );
         Iterator<RelationshipRecord> first = getMore( xaCon, firstNode, firstPos ).iterator();
         first.next();
-        MutableRelationshipLoadingPosition secondPos = getPosition( xaCon, secondNode, groupTranslator );
+        MutableRelationshipLoadingPosition secondPos = getPosition( xaCon, secondNode );
         Iterator<RelationshipRecord> second = getMore( xaCon, secondNode, secondPos ).iterator();
         second.next();
         assertTrue( first.hasNext() );
@@ -857,7 +847,7 @@ public class TestNeoStore
     }
 
     private void deleteRel2( long rel, DefinedProperty prop1, DefinedProperty prop2,
-            DefinedProperty prop3, long firstNode, long secondNode, int relType, GroupTranslator groupTranslator ) throws IOException
+            DefinedProperty prop3, long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         xaCon.getTransaction().relLoadProperties( rel, false, newPropertyReceiver( props ) );
@@ -902,16 +892,16 @@ public class TestNeoStore
         assertEquals( secondNode, relData.getSecondNode() );
         assertEquals( relType, relData.getType() );
         xaCon.getTransaction().relDelete( rel );
-        MutableRelationshipLoadingPosition firstPos = getPosition( xaCon, firstNode, groupTranslator );
+        MutableRelationshipLoadingPosition firstPos = getPosition( xaCon, firstNode );
         Iterator<RelationshipRecord> first = getMore( xaCon, firstNode, firstPos ).iterator();
-        MutableRelationshipLoadingPosition secondPos = getPosition( xaCon, secondNode, groupTranslator );
+        MutableRelationshipLoadingPosition secondPos = getPosition( xaCon, secondNode );
         Iterator<RelationshipRecord> second = getMore( xaCon, secondNode, secondPos ).iterator();
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
     }
 
     private void deleteNode1( long node, DefinedProperty prop1,
-            DefinedProperty prop2, DefinedProperty prop3, GroupTranslator groupTranslator )
+            DefinedProperty prop2, DefinedProperty prop3 )
             throws IOException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
@@ -952,14 +942,14 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         xaCon.getTransaction().nodeLoadProperties( node, false, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node, groupTranslator );
+        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node );
         Iterator<RelationshipRecord> rels = getMore( xaCon, node, pos ).iterator();
         assertTrue( rels.hasNext() );
         xaCon.getTransaction().nodeDelete( node );
     }
 
     private void deleteNode2( long node, DefinedProperty prop1,
-            DefinedProperty prop2, DefinedProperty prop3, GroupTranslator groupTranslator )
+            DefinedProperty prop2, DefinedProperty prop3 )
             throws IOException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
@@ -1000,7 +990,7 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         xaCon.getTransaction().nodeLoadProperties( node, false, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node, groupTranslator );
+        MutableRelationshipLoadingPosition pos = getPosition( xaCon, node );
         Iterator<RelationshipRecord> rels = getMore( xaCon, node, pos ).iterator();
         assertTrue( rels.hasNext() );
         xaCon.getTransaction().nodeDelete( node );
@@ -1022,8 +1012,6 @@ public class TestNeoStore
         int relType1 = (int) ds.nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
         xaCon.getTransaction().createRelationshipTypeToken( relType1, typeName );
-        GroupTranslator groupTranslator = new GroupTranslator();
-        groupTranslator.add( relType1, typeName );
         long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
@@ -1041,7 +1029,7 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i += 2 )
         {
-            MutableRelationshipLoadingPosition pos = getPosition( xaCon, nodeIds[i], groupTranslator );
+            MutableRelationshipLoadingPosition pos = getPosition( xaCon, nodeIds[i] );
             for ( RelationshipRecord rel : getMore( xaCon, nodeIds[i], pos ) )
             {
                 xaCon.getTransaction().relDelete( rel.getId() );
@@ -1061,8 +1049,6 @@ public class TestNeoStore
         int relType1 = (int) ds.nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
         xaCon.getTransaction().createRelationshipTypeToken( relType1, typeName );
-        GroupTranslator groupTranslator = new GroupTranslator();
-        groupTranslator.add( relType1, typeName );
         long nodeIds[] = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
@@ -1082,7 +1068,7 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i++ )
         {
-            MutableRelationshipLoadingPosition pos = getPosition( xaCon, nodeIds[i], groupTranslator );
+            MutableRelationshipLoadingPosition pos = getPosition( xaCon, nodeIds[i] );
             for ( RelationshipRecord rel : getMore( xaCon, nodeIds[i], pos ) )
             {
                 xaCon.getTransaction().relDelete( rel.getId() );
@@ -1229,28 +1215,4 @@ public class TestNeoStore
         neoStore.close();
     }
 
-    class GroupTranslator implements RelationshipGroupTranslator
-    {
-        private final Map<Integer, RelationshipType> types = new HashMap<>();
-
-        void add( int typeId, String name )
-        {
-            types.put( typeId, DynamicRelationshipType.withName( name ) );
-        }
-
-        @Override
-        public Pair<RelationshipType[], Map<String, RelationshipGroupRecord>> translateRelationshipGroups(
-                Map<Integer, RelationshipGroupRecord> rawGroups )
-        {
-            Collection<RelationshipType> types = new ArrayList<>();
-            Map<String, RelationshipGroupRecord> map = new HashMap<>();
-            for ( Map.Entry<Integer, RelationshipGroupRecord> entry : rawGroups.entrySet() )
-            {
-                RelationshipType type = this.types.get( entry.getKey() );
-                types.add( type );
-                map.put( type.name(), entry.getValue() );
-            }
-            return Pair.of( types.toArray( new RelationshipType[types.size()] ), map );
-        }
-    }
 }

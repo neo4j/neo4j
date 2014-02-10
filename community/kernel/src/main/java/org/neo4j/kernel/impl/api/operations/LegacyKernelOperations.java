@@ -20,13 +20,8 @@
 package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 
 public interface LegacyKernelOperations
 {
     long nodeCreate( Statement state );
-
-    long relationshipCreate( Statement state, long relationshipTypeId, long startNodeId, long endNodeId )
-            throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException;
 }

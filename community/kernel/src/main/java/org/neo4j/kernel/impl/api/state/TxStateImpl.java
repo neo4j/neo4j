@@ -24,15 +24,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -53,7 +57,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
  *
  * So, in ascii art, the current implementation is:
  *
- *      StateHandlingTransactionContext-------TransactionStateStatementContext
+ *      StateHandlingTransactionContext-------StateHandlingStatementContext
  *                   \                                      /
  *                    ---------------------|----------------
  *                                         |
@@ -64,7 +68,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
  *
  * We want it to look like:
  *
- *      StateHandlingTransactionContext-------TransactionStateStatementContext
+ *      StateHandlingTransactionContext-------StateHandlingStatementContext
  *                   \                                      /
  *                    ---------------------|----------------
  *                                         |
@@ -114,6 +118,7 @@ public final class TxStateImpl implements TxState
     private DiffSets<UniquenessConstraint> constraintsChanges;
     private DiffSets<Long> deletedNodes;
     private DiffSets<Long> deletedRelationships;
+
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
     private final OldTxStateBridge legacyState;
@@ -122,9 +127,7 @@ public final class TxStateImpl implements TxState
 
     private boolean hasChanges;
 
-    public TxStateImpl( OldTxStateBridge legacyState,
-                    PersistenceManager legacyTransaction,
-                    IdGeneration idGeneration )
+    public TxStateImpl( OldTxStateBridge legacyState, PersistenceManager legacyTransaction, IdGeneration idGeneration )
     {
         this.legacyState = legacyState;
         this.persistenceManager = legacyTransaction;
@@ -253,17 +256,62 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
+    public long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        long id = legacyState.relationshipCreate( relationshipTypeId, startNodeId, endNodeId );
+
+        if(startNodeId == endNodeId)
+        {
+            getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, Direction.BOTH );
+        }
+        else
+        {
+            getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, Direction.OUTGOING );
+            getOrCreateNodeState( endNodeId ).addRelationship( id, relationshipTypeId, Direction.INCOMING );
+        }
+
+        getOrCreateRelationshipState( id ).setMetaData( startNodeId, endNodeId, relationshipTypeId );
+
+        hasChanges = true;
+        return id;
+    }
+
+    @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
         return hasDeletedNodesDiffSets() && nodesDeletedInTx().isRemoved( nodeId );
     }
 
     @Override
-    public void relationshipDoDelete( long relationshipId )
+    public boolean nodeModifiedInThisTx( long nodeId )
     {
-        legacyState.deleteRelationship( relationshipId );
-        deletedRelationships().remove( relationshipId );
+        return nodeIsAddedInThisTx( nodeId ) || nodeIsDeletedInThisTx( nodeId ) || hasNodeState( nodeId );
+    }
+
+    @Override
+    public void relationshipDoDelete( long id, long startNodeId, long endNodeId, int type )
+    {
+        legacyState.deleteRelationship( id );
+        deletedRelationships().remove( id );
+
+        if(startNodeId == endNodeId)
+        {
+            getOrCreateNodeState( startNodeId ).removeRelationship( id, type, Direction.BOTH );
+        }
+        else
+        {
+            getOrCreateNodeState( startNodeId ).removeRelationship( id, type, Direction.OUTGOING );
+            getOrCreateNodeState( endNodeId ).removeRelationship( id, type, Direction.INCOMING );
+        }
+
         hasChanges = true;
+    }
+
+    @Override
+    public void relationshipDoDeleteAddedInThisTx( long relationshipId )
+    {
+        RelationshipState state = getOrCreateRelationshipState( relationshipId );
+        relationshipDoDelete( relationshipId, state.startNode(), state.endNode(), state.type() );
     }
 
     @Override
@@ -335,7 +383,7 @@ public final class TxStateImpl implements TxState
         if ( removedProperty.isDefined() )
         {
             nodePropertyDiffSets( nodeId ).remove( (DefinedProperty)removedProperty );
-            legacyState.nodeRemoveProperty( nodeId, (DefinedProperty)removedProperty );
+            legacyState.nodeRemoveProperty( nodeId, (DefinedProperty) removedProperty );
             hasChanges = true;
         }
     }
@@ -553,7 +601,67 @@ public final class TxStateImpl implements TxState
         return deletedNodes != null;
     }
 
-    public DiffSets<Long> deletedRelationships()
+    @Override
+    public PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, PrimitiveLongIterator rels )
+    {
+        if(hasNodeState( nodeId ))
+        {
+            rels = getOrCreateNodeState( nodeId ).augmentRelationships( direction, rels );
+            // TODO: This should be handled by the augment call above
+            if(hasDeletedRelationshipsDiffSets())
+            {
+                rels = deletedRelationships().applyPrimitiveLongIterator( rels );
+            }
+        }
+        return rels;
+    }
+
+    @Override
+    public PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] types, PrimitiveLongIterator rels )
+    {
+        if(hasNodeState( nodeId ))
+        {
+            rels = getOrCreateNodeState( nodeId ).augmentRelationships( direction, types, rels );
+            // TODO: This should be handled by the augment call above
+            if(hasDeletedRelationshipsDiffSets())
+            {
+                rels = deletedRelationships().applyPrimitiveLongIterator( rels );
+            }
+        }
+        return rels;
+    }
+
+    @Override
+    public int augmentNodeDegree( long nodeId, int degree, Direction direction )
+    {
+        if(hasNodeState( nodeId ))
+        {
+            return getOrCreateNodeState( nodeId ).augmentDegree( direction, degree );
+        }
+        return degree;
+    }
+
+    @Override
+    public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
+    {
+        if(hasNodeState( nodeId ))
+        {
+            return getOrCreateNodeState( nodeId ).augmentDegree( direction, degree, typeId );
+        }
+        return degree;
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeRelationshipTypes( long nodeId )
+    {
+        if(hasNodeState( nodeId ))
+        {
+            return getOrCreateNodeState( nodeId ).relationshipTypes();
+        }
+        return IteratorUtil.emptyPrimitiveIntIterator();
+    }
+
+    private DiffSets<Long> deletedRelationships()
     {
         if ( !hasDeletedRelationshipsDiffSets() )
         {
@@ -729,6 +837,11 @@ public final class TxStateImpl implements TxState
     private boolean hasCreatedConstraintIndexesMap()
     {
         return null != createdConstraintIndexesByConstraint;
+    }
+
+    private boolean hasNodeState(long nodeId)
+    {
+        return hasNodeStatesMap() && nodeStatesMap().containsKey( nodeId );
     }
 
     private Map<Long, NodeState> nodeStatesMap()

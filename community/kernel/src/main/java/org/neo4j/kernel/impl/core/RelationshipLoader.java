@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -46,7 +45,7 @@ public class RelationshipLoader
     }
 
     public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
-            getMoreRelationships( NodeImpl node, DirectionWrapper direction, RelationshipType[] types )
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types )
     {
         long nodeId = node.getId();
         RelationshipLoadingPosition position = node.getRelChainPosition();

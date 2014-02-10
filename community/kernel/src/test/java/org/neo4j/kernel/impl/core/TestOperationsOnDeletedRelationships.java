@@ -20,17 +20,14 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class TestOperationsOnDeletedRelationships
 {
@@ -47,7 +44,7 @@ public class TestOperationsOnDeletedRelationships
         when( nodeManager.getRelationshipChainPosition( any( NodeImpl.class ) ) ).thenReturn(
                 new SingleChainPosition( 1 ) );
         when( nodeManager.getMoreRelationships( any( NodeImpl.class ), any( DirectionWrapper.class ),
-                any( RelationshipType[].class ) ) ).thenThrow( new InvalidRecordException( "LURING!" ) );
+                any( int[].class ) ) ).thenThrow( new InvalidRecordException( "LURING!" ) );
 
         // When
         try
@@ -70,13 +67,13 @@ public class TestOperationsOnDeletedRelationships
 
         // This makes nodeManager pretend that relationships have been deleted
         when( nodeManager.getMoreRelationships( any( NodeImpl.class ), any( DirectionWrapper.class ),
-                any( RelationshipType[].class ) ) ).thenThrow( new InvalidRecordException( "LURING!" ) );
+                any( int[].class ) ) ).thenThrow( new InvalidRecordException( "LURING!" ) );
         fromNode.setRelChainPosition( new SingleChainPosition( 1 ) );
 
         // When
         try
         {
-            fromNode.getMoreRelationships( nodeManager, DirectionWrapper.BOTH, new RelationshipType[0] );
+            fromNode.getMoreRelationships( nodeManager, DirectionWrapper.BOTH, new int[0] );
             fail( "Should throw exception" );
         }
         catch ( NotFoundException e )

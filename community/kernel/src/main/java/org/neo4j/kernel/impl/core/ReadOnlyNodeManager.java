@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -40,11 +41,11 @@ public class ReadOnlyNodeManager extends NodeManager
                                 CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                                 NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                                 Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
-                                ThreadToStatementContextBridge statementCtxProvider )
+                                ThreadToStatementContextBridge statementCtxProvider, CleanupService cleanupService )
     {
         super( logger, graphDb, transactionManager, persistenceManager, idGenerator,
                 relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
-                nodeCache, relCache, xaDsm, statementCtxProvider );
+                nodeCache, relCache, xaDsm, statementCtxProvider, cleanupService );
     }
 
     @Override

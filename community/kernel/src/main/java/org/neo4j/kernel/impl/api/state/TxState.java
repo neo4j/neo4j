@@ -22,11 +22,14 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 /**
  * Kernel transaction state, please see {@link TxStateImpl} for details.
@@ -82,28 +85,29 @@ public interface TxState
             }
         };
 
-
         public abstract boolean isTouched();
+
+
         public abstract boolean isAdded();
     }
-
     public interface Holder
     {
-        TxState txState();
 
+        TxState txState();
         boolean hasTxState();
 
         boolean hasTxStateWithChanges();
-    }
 
+    }
     /**
      * Ability to generate the leaking id types (node ids and relationship ids).
      */
     public interface IdGeneration
     {
-        long newNodeId();
 
+        long newNodeId();
         long newRelationshipId();
+
     }
 
     public interface Visitor
@@ -119,103 +123,118 @@ public interface TxState
         void visitRemovedConstraint( UniquenessConstraint element );
     }
 
-    public abstract boolean hasChanges();
+    boolean hasChanges();
 
-    public abstract void accept( Visitor visitor );
+    void accept( Visitor visitor );
 
 
     // ENTITY RELATED
 
-    public abstract Iterable<NodeState> nodeStates();
+    long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId );
 
-    public abstract DiffSets<Long> labelStateNodeDiffSets( int labelId );
+    Iterable<NodeState> nodeStates();
 
-    public abstract DiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
+    DiffSets<Long> labelStateNodeDiffSets( int labelId );
 
-    public abstract DiffSets<DefinedProperty> nodePropertyDiffSets( long nodeId );
+    DiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
 
-    public abstract DiffSets<DefinedProperty> relationshipPropertyDiffSets( long relationshipId );
+    DiffSets<DefinedProperty> nodePropertyDiffSets( long nodeId );
 
-    public abstract DiffSets<DefinedProperty> graphPropertyDiffSets();
+    DiffSets<DefinedProperty> relationshipPropertyDiffSets( long relationshipId );
+
+    DiffSets<DefinedProperty> graphPropertyDiffSets();
 
     /** Returns all nodes that, in this tx, have had labelId added. */
-    public abstract Set<Long> nodesWithLabelAdded( int labelId );
+    Set<Long> nodesWithLabelAdded( int labelId );
 
     /** Returns all nodes that, in this tx, have had labelId removed.  */
-    public abstract DiffSets<Long> nodesWithLabelChanged( int labelId );
+    DiffSets<Long> nodesWithLabelChanged( int labelId );
 
     // Temporary: Should become DiffSets<Long> of all node changes, not just deletions
-    public abstract DiffSets<Long> nodesDeletedInTx();
+    DiffSets<Long> nodesDeletedInTx();
 
-    public abstract boolean nodeIsAddedInThisTx( long nodeId );
+    boolean nodeIsAddedInThisTx( long nodeId );
 
-    public abstract boolean nodeIsDeletedInThisTx( long nodeId );
+    boolean nodeIsDeletedInThisTx( long nodeId );
 
-    public abstract DiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value );
+    boolean nodeModifiedInThisTx( long nodeId );
 
-    public abstract Map<Long, Object> nodesWithChangedProperty( int propertyKeyId );
+    DiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value );
 
-    public abstract boolean relationshipIsAddedInThisTx( long relationshipId );
+    Map<Long, Object> nodesWithChangedProperty( int propertyKeyId );
 
-    public abstract boolean relationshipIsDeletedInThisTx( long relationshipId );
+    boolean relationshipIsAddedInThisTx( long relationshipId );
 
-    public abstract UpdateTriState labelState( long nodeId, int labelId );
+    boolean relationshipIsDeletedInThisTx( long relationshipId );
 
-    public abstract void relationshipDoDelete( long relationshipId );
+    UpdateTriState labelState( long nodeId, int labelId );
 
-    public abstract void nodeDoDelete( long nodeId );
+    void relationshipDoDelete( long relationshipId, long startNode, long endNode, int type );
 
-    public abstract void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty );
+    void relationshipDoDeleteAddedInThisTx( long relationshipId );
 
-    public abstract void relationshipDoReplaceProperty( long relationshipId,
-                                                        Property replacedProperty, DefinedProperty newProperty );
+    void nodeDoDelete( long nodeId );
 
-    public abstract void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty );
+    void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty );
 
-    public abstract void nodeDoRemoveProperty( long nodeId, Property removedProperty );
+    void relationshipDoReplaceProperty( long relationshipId,
+                                        Property replacedProperty, DefinedProperty newProperty );
 
-    public abstract void relationshipDoRemoveProperty( long relationshipId, Property removedProperty );
+    void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty );
 
-    public abstract void graphDoRemoveProperty( Property removedProperty );
+    void nodeDoRemoveProperty( long nodeId, Property removedProperty );
 
-    public abstract void nodeDoAddLabel( int labelId, long nodeId );
+    void relationshipDoRemoveProperty( long relationshipId, Property removedProperty );
 
-    public abstract void nodeDoRemoveLabel( int labelId, long nodeId );
+    void graphDoRemoveProperty( Property removedProperty );
 
+    void nodeDoAddLabel( int labelId, long nodeId );
 
+    void nodeDoRemoveLabel( int labelId, long nodeId );
+
+    PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, PrimitiveLongIterator stored );
+
+    PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
+                                                PrimitiveLongIterator stored );
+
+    int augmentNodeDegree( long node, int committedDegree, Direction direction );
+
+    int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
+
+    PrimitiveIntIterator nodeRelationshipTypes( long nodeId );
 
     // SCHEMA RELATED
 
-    public abstract DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    public abstract DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( int labelId );
+    DiffSets<IndexDescriptor> constraintIndexDiffSetsByLabel( int labelId );
 
-    public abstract DiffSets<IndexDescriptor> indexChanges();
+    DiffSets<IndexDescriptor> indexChanges();
 
-    public abstract DiffSets<IndexDescriptor> constraintIndexChanges();
+    DiffSets<IndexDescriptor> constraintIndexChanges();
 
-    public abstract Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
 
-    public abstract DiffSets<UniquenessConstraint> constraintsChanges();
+    DiffSets<UniquenessConstraint> constraintsChanges();
 
-    public abstract DiffSets<UniquenessConstraint> constraintsChangesForLabel( int labelId );
+    DiffSets<UniquenessConstraint> constraintsChangesForLabel( int labelId );
 
-    public abstract DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( int labelId,
-                                                                                          int propertyKey );
+    DiffSets<UniquenessConstraint> constraintsChangesForLabelAndProperty( int labelId,
+                                                                          int propertyKey );
 
-    public abstract void indexRuleDoAdd( IndexDescriptor descriptor );
+    void indexRuleDoAdd( IndexDescriptor descriptor );
 
-    public abstract void constraintIndexRuleDoAdd( IndexDescriptor descriptor );
+    void constraintIndexRuleDoAdd( IndexDescriptor descriptor );
 
-    public abstract void indexDoDrop( IndexDescriptor descriptor );
+    void indexDoDrop( IndexDescriptor descriptor );
 
-    public abstract void constraintIndexDoDrop( IndexDescriptor descriptor );
+    void constraintIndexDoDrop( IndexDescriptor descriptor );
 
-    public abstract void constraintDoAdd( UniquenessConstraint constraint, long indexId );
+    void constraintDoAdd( UniquenessConstraint constraint, long indexId );
 
-    public abstract void constraintDoDrop( UniquenessConstraint constraint );
+    void constraintDoDrop( UniquenessConstraint constraint );
 
-    public abstract boolean constraintDoUnRemove( UniquenessConstraint constraint );
+    boolean constraintDoUnRemove( UniquenessConstraint constraint );
 
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
 

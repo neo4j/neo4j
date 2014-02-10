@@ -19,11 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+
+import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 
 public final class NodeState extends PropertyContainerState
 {
     private DiffSets<Integer> labelDiffSets;
+    private RelationshipChangesForNode relationshipsAdded;
+    private RelationshipChangesForNode relationshipsRemoved;
 
     public NodeState( long id )
     {
@@ -37,5 +45,96 @@ public final class NodeState extends PropertyContainerState
             labelDiffSets = new DiffSets<>();
         }
         return labelDiffSets;
+    }
+
+    public void addRelationship( long relId, int typeId, Direction direction )
+    {
+        if( !hasAddedRelationships() )
+        {
+            relationshipsAdded = new RelationshipChangesForNode( DiffStrategy.ADD );
+        }
+        relationshipsAdded.addRelationship( relId, typeId, direction );
+    }
+
+    public void removeRelationship( long relId, int typeId, Direction direction )
+    {
+        if(hasAddedRelationships())
+        {
+            if(relationshipsAdded.removeRelationship( relId, typeId, direction ))
+            {
+                // This was a rel that was added in this tx, no need to add it to the remove list, instead we just
+                // remove it from added relationships.
+                return;
+            }
+        }
+        if(!hasRemovedRelationships())
+        {
+            relationshipsRemoved = new RelationshipChangesForNode( DiffStrategy.REMOVE );
+        }
+        relationshipsRemoved.addRelationship( relId, typeId, direction );
+
+    }
+
+    public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels )
+    {
+        if( hasAddedRelationships())
+        {
+            return relationshipsAdded.augmentRelationships( direction, rels );
+        }
+        return rels;
+    }
+
+    public PrimitiveLongIterator augmentRelationships( Direction direction, int[] types, PrimitiveLongIterator rels )
+    {
+        if( hasAddedRelationships())
+        {
+            return relationshipsAdded.augmentRelationships( direction, types, rels );
+        }
+        return rels;
+    }
+
+    public int augmentDegree( Direction direction, int degree )
+    {
+        if( hasAddedRelationships() )
+        {
+            degree = relationshipsAdded.augmentDegree( direction, degree );
+        }
+        if( hasRemovedRelationships() )
+        {
+            degree = relationshipsRemoved.augmentDegree( direction, degree );
+        }
+        return degree;
+    }
+
+    public int augmentDegree( Direction direction, int degree, int typeId )
+    {
+        if( hasAddedRelationships() )
+        {
+            degree = relationshipsAdded.augmentDegree( direction, degree, typeId );
+        }
+        if( hasRemovedRelationships() )
+        {
+            degree = relationshipsRemoved.augmentDegree( direction, degree, typeId );
+        }
+        return degree;
+    }
+
+    private boolean hasAddedRelationships()
+    {
+        return relationshipsAdded != null;
+    }
+
+    private boolean hasRemovedRelationships()
+    {
+        return relationshipsRemoved != null;
+    }
+
+    public PrimitiveIntIterator relationshipTypes()
+    {
+        if(hasAddedRelationships())
+        {
+            return relationshipsAdded.relationshipTypes();
+        }
+        return IteratorUtil.emptyPrimitiveIntIterator();
     }
 }

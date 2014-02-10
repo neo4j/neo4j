@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -47,6 +48,10 @@ interface DataRead
     PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
+    PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes ) throws EntityNotFoundException;
+
+    PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
+
     /**
      * Returns node id of unique node found in the given unique index for value or
      * {@link StatementConstants#NO_SUCH_NODE} if the index does not contain a
@@ -68,11 +73,16 @@ interface DataRead
      */
     boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
+    int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
+
     /**
      * Returns all labels set on node with id {@code nodeId}.
      * If the node has no labels an empty {@link Iterable} will be returned.
      */
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
+
+    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 

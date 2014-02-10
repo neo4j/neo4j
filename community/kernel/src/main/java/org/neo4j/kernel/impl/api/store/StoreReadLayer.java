@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -50,6 +51,15 @@ public interface StoreReadLayer
     boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
 
     PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+
+    PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction) throws EntityNotFoundException;
+
+    PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction, int[] relTypes) throws EntityNotFoundException;
+
+    int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+
+    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
     Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId );
 
@@ -132,4 +142,11 @@ public interface StoreReadLayer
     int labelGetOrCreateForName( String labelName ) throws TooManyLabelsException;
 
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
+
+    void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException;
+
+    public interface RelationshipVisitor
+    {
+        void visit( long relId, long startNode, long endNode, int type );
+    }
 }

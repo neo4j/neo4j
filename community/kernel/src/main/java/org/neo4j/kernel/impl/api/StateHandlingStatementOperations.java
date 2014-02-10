@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -61,9 +64,9 @@ import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
@@ -98,10 +101,44 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
+    {
+        long id = state.txState().relationshipDoCreate( relationshipTypeId, startNodeId, endNodeId );
+        state.neoStoreTransaction.relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        return id;
+    }
+
+    @Override
     public void relationshipDelete( KernelStatement state, long relationshipId )
     {
+        // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
+        // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
+        // once we've removed legacy tx state.
         legacyPropertyTrackers.relationshipDelete( relationshipId );
-        state.txState().relationshipDoDelete( relationshipId );
+        final TxState txState = state.txState();
+        if(txState.relationshipIsAddedInThisTx( relationshipId ))
+        {
+            txState.relationshipDoDeleteAddedInThisTx( relationshipId );
+        }
+        else
+        {
+            try
+            {
+                storeLayer.visit( relationshipId, new StoreReadLayer.RelationshipVisitor()
+                {
+                    @Override
+                    public void visit( long relId, long startNode, long endNode, int type )
+                    {
+                        txState.relationshipDoDelete( relId, startNode, endNode, type );
+                    }
+                });
+            }
+            catch ( EntityNotFoundException e )
+            {
+                // If it doesn't exist, it doesn't exist, and the user got what she wanted.
+                return;
+            }
+        }
     }
 
     @Override
@@ -852,6 +889,144 @@ public class StateHandlingStatementOperations implements
         }
     }
 
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
+                                                       int[] relTypes ) throws EntityNotFoundException
+    {
+        relTypes = deduplicate( relTypes );
+
+        if ( state.hasTxStateWithChanges() )
+        {
+            TxState txState = state.txState();
+            PrimitiveLongIterator stored;
+            if( txState.nodeIsAddedInThisTx( nodeId ) )
+            {
+                stored = emptyPrimitiveLongIterator();
+            }
+            else
+            {
+                stored = storeLayer.nodeListRelationships( state, nodeId, direction, relTypes );
+            }
+            return txState.augmentRelationships( nodeId, direction, relTypes, stored );
+        }
+        return storeLayer.nodeListRelationships( state, nodeId, direction, relTypes );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            TxState txState = state.txState();
+            PrimitiveLongIterator stored;
+            if( txState.nodeIsAddedInThisTx( nodeId ) )
+            {
+                stored = emptyPrimitiveLongIterator();
+            }
+            else
+            {
+                stored = storeLayer.nodeListRelationships( state, nodeId, direction );
+            }
+            return txState.augmentRelationships( nodeId, direction, stored );
+        }
+        return storeLayer.nodeListRelationships( state, nodeId, direction );
+    }
+
+    @Override
+    public int nodeGetDegree( KernelStatement state, long nodeId, Direction direction, int relType ) throws EntityNotFoundException
+
+    {
+        if( state.hasTxStateWithChanges() )
+        {
+            int degree = 0;
+            if(state.txState().nodeIsDeletedInThisTx( nodeId ))
+            {
+                return 0;
+            }
+
+            if( !state.txState().nodeIsAddedInThisTx( nodeId ))
+            {
+                degree = storeLayer.nodeGetDegree( nodeId, direction, relType );
+            }
+
+            return state.txState().augmentNodeDegree( nodeId, degree, direction, relType );
+        }
+        else
+        {
+            return storeLayer.nodeGetDegree( nodeId, direction, relType );
+        }
+    }
+
+    @Override
+    public int nodeGetDegree( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
+    {
+        if( state.hasTxStateWithChanges() )
+        {
+            int degree = 0;
+            if(state.txState().nodeIsDeletedInThisTx( nodeId ))
+            {
+                return 0;
+            }
+
+            if( !state.txState().nodeIsAddedInThisTx( nodeId ))
+            {
+                degree = storeLayer.nodeGetDegree( nodeId, direction );
+            }
+
+            return state.txState().augmentNodeDegree( nodeId, degree, direction );
+        }
+        else
+        {
+            return storeLayer.nodeGetDegree( nodeId, direction );
+        }
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId )
+            throws EntityNotFoundException
+    {
+        if(statement.hasTxStateWithChanges() && statement.txState().nodeModifiedInThisTx(nodeId))
+        {
+            TxState tx = statement.txState();
+            if(tx.nodeIsDeletedInThisTx( nodeId ))
+            {
+                return IteratorUtil.emptyPrimitiveIntIterator();
+            }
+
+            if(tx.nodeIsAddedInThisTx( nodeId ))
+            {
+                return tx.nodeRelationshipTypes(nodeId);
+            }
+
+            Set<Integer> types = new HashSet<>();
+
+            // Add types in the current transaction
+            PrimitiveIntIterator typesInTx = tx.nodeRelationshipTypes( nodeId );
+            while(typesInTx.hasNext())
+            {
+                types.add( typesInTx.next() );
+            }
+
+            // Augment with types stored on disk, minus any types where all rels of that type are deleted
+            // in current tx.
+            PrimitiveIntIterator committedTypes = storeLayer.nodeGetRelationshipTypes( nodeId );
+            while(committedTypes.hasNext())
+            {
+                int current = committedTypes.next();
+                if(!types.contains( current ) && nodeGetDegree( statement, nodeId, Direction.BOTH, current ) > 0)
+                {
+                    types.add( current );
+                }
+            }
+
+            return IteratorUtil.toPrimitiveIntIterator( types.iterator() );
+        }
+        else
+        {
+            return storeLayer.nodeGetRelationshipTypes( nodeId );
+        }
+    }
+
     //
     // Methods that delegate directly to storage
     //
@@ -943,5 +1118,31 @@ public class StateHandlingStatementOperations implements
     public int relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName ) throws IllegalTokenNameException
     {
         return storeLayer.relationshipTypeGetOrCreateForName( relationshipTypeName );
+    }
+
+    private static int[] deduplicate( int[] types )
+    {
+        int unique = 0;
+        for ( int i = 0; i < types.length; i++ )
+        {
+            int type = types[i];
+            for ( int j = 0; j < unique; j++ )
+            {
+                if ( type == types[j] )
+                {
+                    type = -1; // signal that this relationship is not unique
+                    break; // we will not find more than one conflict
+                }
+            }
+            if ( type != -1 )
+            { // this has to be done outside the inner loop, otherwise we'd never accept a single one...
+                types[unique++] = types[i];
+            }
+        }
+        if ( unique < types.length )
+        {
+            types = Arrays.copyOf( types, unique );
+        }
+        return types;
     }
 }

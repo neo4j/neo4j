@@ -20,22 +20,16 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
-import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
-import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-class RelationshipIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
+class RelationshipIterator implements PrimitiveLongIterator
 {
     private RelIdIterator[] rels;
     private int currentTypeIndex;
@@ -45,10 +39,14 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
     
     private boolean lastTimeILookedThereWasMoreToLoad;
     private final boolean allTypes;
-    private final RelationshipType[] types;
+    private final int[] types;
+
+    private boolean nextHasBeenComputed = false;
+    private boolean hasNext;
+    private long nextElement;
 
     RelationshipIterator( RelIdIterator[] rels, NodeImpl fromNode,
-        DirectionWrapper direction, RelationshipType[] types, NodeManager nodeManager,
+        DirectionWrapper direction, int[] types, NodeManager nodeManager,
         boolean hasMoreToLoad, boolean allTypes )
     {
         initializeRels( rels );
@@ -67,13 +65,28 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
     }
 
     @Override
-    public Iterator<Relationship> iterator()
+    public boolean hasNext()
     {
-        return this;
+        if(!nextHasBeenComputed)
+        {
+            nextHasBeenComputed = true;
+            computeNext();
+        }
+        return hasNext;
     }
 
     @Override
-    protected Relationship fetchNextOrNull()
+    public long next()
+    {
+        if(!hasNext())
+        {
+            throw new NoSuchElementException();
+        }
+        nextHasBeenComputed = false;
+        return nextElement;
+    }
+
+    protected void computeNext()
     {
         RelIdIterator currentTypeIterator = rels[currentTypeIndex];
         do
@@ -81,14 +94,9 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
             if ( currentTypeIterator.hasNext() )
             {
                 // There are more relationships loaded of this relationship type, let's return it
-                long nextId = currentTypeIterator.next();
-                try
-                {
-                    return nodeManager.newRelationshipProxyById( nextId );
-                }
-                catch ( NotFoundException e )
-                { // OK, deleted. Skip it and move on
-                }
+                nextElement = currentTypeIterator.next();
+                hasNext = true;
+                return;
             }
             
             LoadStatus status;
@@ -130,19 +138,13 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
                     // initiate iterators for them
                     if ( allTypes )
                     {
-                        ArrayMap<Integer, SetAndDirectionCounter> skipMap = nodeManager.getTransactionState().
-                                getCowRelationshipRemoveMap( fromNode );
                         for ( RelIdArray ids : fromNode.getRelationshipIds() )
                         {
                             int type = ids.getType();
                             RelIdIterator itr = newRels.get( type );
                             if ( itr == null )
                             {
-                                SetAndDirectionCounter remove = skipMap != null ? skipMap.get( type ) : null;
-                                itr = remove == null ?
-                                        ids.iterator( direction ) :
-//                                        from( ids, null, remove.set ).iterator( direction );
-                                        new CombinedRelIdIterator( type, direction, ids, null, remove.set );
+                                itr = ids.iterator( direction );
                                 newRels.put( type, itr );
                             }
                             else
@@ -165,7 +167,6 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
             }
         } while ( currentTypeIterator.hasNext() );
 
-        // Denotes the end of the iterator
-        return null;
+        hasNext = false;
     }
 }

@@ -19,27 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.DiffSets;
 
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs;
 
 public class TxStateTest
 {
@@ -265,6 +266,99 @@ public class TxStateTest
         assertEquals( Collections.singleton( constraint2 ), state.constraintsChangesForLabel( 2 ).getAdded() );
     }
 
+    @Test
+    public void shouldListRelationshipsAsCreatedIfCreated() throws Exception
+    {
+        // When
+        long relId = state.relationshipDoCreate( 0, 1, 2 );
+        when(legacyState.relationshipIsAddedInThisTx( relId )).thenReturn( true ); // Temp until we move this out of legacy
+
+        // Then
+        assertTrue( state.hasChanges() );
+        assertTrue( state.relationshipIsAddedInThisTx( relId ) );
+    }
+
+    @Test
+    public void shouldAugmentWithAddedRelationships() throws Exception
+    {
+        // When
+        int startNode = 1, endNode = 2, relType = 0;
+        long relId = state.relationshipDoCreate( relType, startNode, endNode );
+
+        // Then
+        long otherRel = relId + 1;
+        assertTrue( state.hasChanges() );
+        assertThat( state.augmentRelationships( startNode, OUTGOING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+        assertThat( state.augmentRelationships( startNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+        assertThat( state.augmentRelationships( endNode, INCOMING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+        assertThat( state.augmentRelationships( endNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( relId, otherRel ) );
+    }
+
+    @Test
+    public void addedAndThenRemovedRelShouldNotShowUp() throws Exception
+    {
+        // Given
+        int startNode = 1, endNode = 2, relType = 0;
+        long relId = state.relationshipDoCreate( relType, startNode, endNode );
+
+        // When
+        state.relationshipDoDelete( relId, startNode, endNode, relType );
+
+        // Then
+        long otherRel = relId + 1;
+        assertThat( state.augmentRelationships( startNode, OUTGOING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+        assertThat( state.augmentRelationships( startNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+        assertThat( state.augmentRelationships( endNode, INCOMING, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+        assertThat( state.augmentRelationships( endNode, BOTH, asPrimitiveIterator( otherRel ) ),
+                containsLongs( otherRel ) );
+    }
+
+    @Test
+    public void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships() throws Exception
+    {
+        // Given
+        int startNode = 1, endNode = 2, relType = 0;
+
+        // When
+        state.relationshipDoCreate( relType, startNode, endNode );
+        state.relationshipDoCreate( relType, startNode, endNode );
+        state.relationshipDoCreate( relType + 1, startNode, endNode );
+        state.relationshipDoCreate( relType + 1, endNode, startNode );
+
+        state.relationshipDoDelete( 1337, startNode, endNode, relType );
+        state.relationshipDoDelete( 1338, startNode, startNode, relType + 1 );
+
+        // Then
+        assertEquals( 12, state.augmentNodeDegree( startNode, 10, Direction.BOTH ) );
+        assertEquals( 10, state.augmentNodeDegree( startNode, 10, Direction.INCOMING ) );
+        assertEquals( 11, state.augmentNodeDegree( startNode, 10, Direction.BOTH, relType ) );
+    }
+
+    @Test
+    public void shouldGiveCorrectRelationshipTypesForNode() throws Exception
+    {
+        // Given
+        int startNode = 1, endNode = 2, relType = 0;
+
+        // When
+        long relA = state.relationshipDoCreate( relType, startNode, endNode );
+        long relB = state.relationshipDoCreate( relType, startNode, endNode );
+        long relC = state.relationshipDoCreate( relType + 1, startNode, endNode );
+
+        state.relationshipDoDelete( relB, startNode, endNode, relType );
+        state.relationshipDoDelete( relC, startNode, endNode, relType + 1 );
+
+        // Then
+        assertThat( IteratorUtil.asList( state.nodeRelationshipTypes( startNode ) ), equalTo( Arrays.asList(relType)));
+    }
+
     private TxState state;
     private OldTxStateBridge legacyState;
     private final Set<Long> emptySet = Collections.emptySet();
@@ -273,6 +367,8 @@ public class TxStateTest
     public void before() throws Exception
     {
         legacyState = mock( OldTxStateBridge.class );
+        when(legacyState.relationshipCreate( anyInt(), anyLong(), anyLong() ))
+                .thenReturn( 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l );
         persistenceManager = mock( PersistenceManager.class );
         state = new TxStateImpl( legacyState,
                 persistenceManager, mock( TxState.IdGeneration.class )

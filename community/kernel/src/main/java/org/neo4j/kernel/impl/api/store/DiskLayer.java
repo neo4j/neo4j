@@ -106,9 +106,10 @@ public class DiskLayer
                       RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
                       NeoStore neoStore, IndexingService indexService )
     {
+        assert neoStore != null : "No neoStore provided";
+
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
-        assert neoStore != null : "No neoStore provided";
 
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;

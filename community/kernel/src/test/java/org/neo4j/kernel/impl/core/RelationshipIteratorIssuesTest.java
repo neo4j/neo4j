@@ -29,21 +29,16 @@ import java.util.Queue;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 /**
@@ -62,12 +57,12 @@ public class RelationshipIteratorIssuesTest
         // -- a node that says it cannot load any more relationships
         NodeImpl node = mock( NodeImpl.class );
         when( node.getMoreRelationships( eq( nodeManager ), any( DirectionWrapper.class ),
-                any( RelationshipType[].class )) ).thenReturn( LoadStatus.NOTHING );
+                any( int[].class )) ).thenReturn( LoadStatus.NOTHING );
         
         // -- a type iterator that at this point contains one relationship (0)
         ControlledRelIdIterator typeIterator = new ControlledRelIdIterator( 0L );
         RelationshipIterator iterator = new RelationshipIterator( new RelIdIterator[] { typeIterator },
-                node, OUTGOING, new RelationshipType[0], nodeManager, false, false );
+                node, OUTGOING, new int[0], nodeManager, false, false );
         // -- go forth one step in the iterator
         iterator.next();
         
@@ -85,10 +80,10 @@ public class RelationshipIteratorIssuesTest
         
         // -- call next() again, where the first thing happening is to get the RelIdIterator with the
         //    now invalid type index, causing ArrayIndexOutOfBoundsException
-        Relationship returnedThirdRelationship = iterator.next();
+        long returnedThirdRelationship = iterator.next();
         
         // THEN
-        assertEquals( thirdRelationship, returnedThirdRelationship.getId() );
+        assertEquals( thirdRelationship, returnedThirdRelationship );
     }
 
     private Answer<RelationshipProxy> relationshipProxyWithId()

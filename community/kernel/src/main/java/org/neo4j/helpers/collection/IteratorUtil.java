@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
-
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -670,6 +669,26 @@ public abstract class IteratorUtil
         return addToCollection( iterator, new ArrayList<T>() );
     }
 
+    public static List<Long> asList( PrimitiveLongIterator iterator )
+    {
+        List<Long> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
+    public static List<Integer> asList( PrimitiveIntIterator iterator )
+    {
+        List<Integer> out = new ArrayList<>();
+        while(iterator.hasNext())
+        {
+            out.add(iterator.next());
+        }
+        return out;
+    }
+
     /**
      * Creates a {@link Set} from an {@link Iterable}.
      *
@@ -1273,7 +1292,7 @@ public abstract class IteratorUtil
             }
         };
     }
-    
+
     public static PrimitiveLongResourceIterator resourceIterator( final PrimitiveLongIterator iterator,
             final Resource resource )
     {
@@ -1297,5 +1316,36 @@ public abstract class IteratorUtil
                 return iterator.hasNext();
             }
         };
+    }
+
+    public static PrimitiveLongIterator primitiveLongIterator(final long ... values)
+    {
+        return new PrimitiveLongIterator()
+        {
+            private int cursor = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return cursor < values.length;
+            }
+
+            @Override
+            public long next()
+            {
+                return values[cursor++];
+            }
+        };
+    }
+
+    public static int[] toPrimitiveArray( Collection<Integer> integers )
+    {
+        int[] out = new int[integers.size()];
+        Iterator<Integer> iter = integers.iterator();
+        for ( int i = 0; i < out.length; i++ )
+        {
+            out[i] = iter.next();
+        }
+        return out;
     }
 }

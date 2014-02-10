@@ -21,8 +21,34 @@ package org.neo4j.kernel.impl.api.state;
 
 public final class RelationshipState extends PropertyContainerState
 {
+    private long startNode = -1;
+    private long endNode = -1;
+    private int type = -1;
+
     public RelationshipState( long id )
     {
         super( id );
+    }
+
+    public void setMetaData( long startNode, long endNode, int type )
+    {
+        this.startNode = startNode;
+        this.endNode = endNode;
+        this.type = type;
+    }
+
+    public long startNode()
+    {
+        return startNode;
+    }
+
+    public long endNode()
+    {
+        return endNode;
+    }
+
+    public int type()
+    {
+        return type;
     }
 }

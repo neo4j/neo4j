@@ -58,6 +58,18 @@ public class LockingStatementOperationsTest
     }
 
     @Test
+    public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
+    {
+        // when
+        lockingOps.relationshipCreate( state, 1, 2, 3);
+
+        // then
+        order.verify( locks ).acquireNodeWriteLock( 2 );
+        order.verify( locks ).acquireNodeWriteLock( 3 );
+        order.verify( entityWriteOps ).relationshipCreate( state, 1, 2, 3 );
+    }
+
+    @Test
     public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
     {
         // when

@@ -213,7 +213,6 @@ public class WritableTransactionState implements TransactionState
             super( id );
         }
 
-        private long firstRel = Record.NO_NEXT_RELATIONSHIP.intValue();
         private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
 
         private ArrayMap<Integer, RelIdArray> relationshipAddMap;
@@ -383,7 +382,6 @@ public class WritableTransactionState implements TransactionState
     public void setFirstIds( long nodeId, long firstRel, long firstProp )
     {
         CowNodeElement nodeElement = getPrimitiveElement( true ).nodeElement( nodeId, true );
-        nodeElement.firstRel = firstRel;
         nodeElement.firstProp = firstProp;
     }
 
@@ -422,12 +420,6 @@ public class WritableTransactionState implements TransactionState
     {
         releaseCows( Status.STATUS_ROLLEDBACK );
         releaseLocks();
-    }
-
-    @Override
-    public boolean hasLocks()
-    {
-        return lockElements != null && !lockElements.isEmpty();
     }
 
     private void releaseLocks()
@@ -605,8 +597,7 @@ public class WritableTransactionState implements TransactionState
         return result;
     }
 
-    private void populateRelationshipPropertyEvents( PrimitiveElement element,
-                                                     TransactionDataImpl result )
+    private void populateRelationshipPropertyEvents( PrimitiveElement element, TransactionDataImpl result )
     {
         for ( long relId : element.relationships.keySet() )
         {
@@ -648,14 +639,13 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    private void populateNodeRelEvent( PrimitiveElement element,
-                                       TransactionDataImpl result )
+    private void populateNodeRelEvent( PrimitiveElement element, TransactionDataImpl result )
     {
         for ( long nodeId : element.nodes.keySet() )
         {
             CowNodeElement nodeElement = element.nodes.get( nodeId );
             NodeProxy node = nodeManager.newNodeProxyById( nodeId );
-            NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId, null );
+            NodeImpl nodeImpl = nodeManager.getNodeForProxy( nodeId );
             if ( nodeElement.isDeleted() )
             {
                 if ( primitiveElement.createdNodes.contains( nodeId ) )

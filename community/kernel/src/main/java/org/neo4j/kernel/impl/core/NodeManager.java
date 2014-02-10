@@ -20,12 +20,10 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
@@ -36,13 +34,11 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
@@ -50,17 +46,15 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -71,10 +65,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.cast;
 
-public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupTranslator
+public class NodeManager implements Lifecycle, EntityFactory
 {
     private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
@@ -100,6 +93,8 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
 
     private GraphPropertiesImpl graphProperties;
 
+    private final CleanupService cleanupService;
+
     private final AutoLoadingCache.Loader<NodeImpl> nodeLoader = new AutoLoadingCache.Loader<NodeImpl>()
     {
         @Override
@@ -113,7 +108,6 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
             return record.isCommittedDense() ? new DenseNodeImpl( id ) : new NodeImpl( id );
         }
     };
-
     private final AutoLoadingCache.Loader<RelationshipImpl> relLoader = new AutoLoadingCache.Loader<RelationshipImpl>()
     {
         @Override
@@ -138,7 +132,8 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
                         PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                         NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                         Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
-                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider )
+                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider,
+                        CleanupService cleanupService )
     {
         this.logger = logger;
         this.graphDbService = graphDb;
@@ -153,6 +148,7 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
 
         this.cacheProvider = cacheProvider;
         this.statementCtxProvider = statementCtxProvider;
+        this.cleanupService = cleanupService;
         this.nodeCache = new AutoLoadingCache<>( nodeCache, nodeLoader );
         this.relCache = new AutoLoadingCache<>( relCache, relLoader );
         this.xaDsm = xaDsm;
@@ -216,7 +212,7 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
     {
         long id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, true );
-        NodeProxy proxy = new NodeProxy( id, nodeLookup, statementCtxProvider );
+        NodeProxy proxy = new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider, cleanupService );
         TransactionState transactionState = getTransactionState();
         transactionState.acquireWriteLock( proxy );
         boolean success = false;
@@ -240,7 +236,7 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
     @Override
     public NodeProxy newNodeProxyById( long id )
     {
-        return new NodeProxy( id, nodeLookup, statementCtxProvider );
+        return new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider, cleanupService );
     }
 
     public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
@@ -270,9 +266,6 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
         boolean success = false;
         try
         {
-            tx.acquireWriteLock( startNodeProxy );
-            tx.acquireWriteLock( endNode );
-            persistenceManager.relationshipCreate( id, typeId, startNodeId, endNodeId );
             tx.createRelationship( id );
             if ( startNodeId == endNodeId )
             {
@@ -283,7 +276,6 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
                 tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.OUTGOING );
                 tx.getOrCreateCowRelationshipAddMap( secondNode, typeId ).add( id, DirectionWrapper.INCOMING );
             }
-            // relCache.put( rel.getId(), rel );
             relCache.put( rel );
             success = true;
             return proxy;
@@ -301,7 +293,8 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
     {
         transactionManager.assertInTransaction();
         NodeImpl node = getLightNode( nodeId );
-        return node != null ? new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) : null;
+        return node != null ?
+                new NodeProxy( nodeId, nodeLookup, relationshipLookups, statementCtxProvider, cleanupService ) : null;
     }
 
     public Node getNodeById( long nodeId ) throws NotFoundException
@@ -413,20 +406,8 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
                 } ) );
     }
 
-    /**
-     * TODO: We only grab this lock in one single place, from inside the kernel:
-     * {@link org.neo4j.kernel.impl.api.DefaultLegacyKernelOperations#relationshipCreate(org.neo4j.kernel.api.Statement, long, long, long)}.
-     * We should move that code around such that this lock is grabbed through the locking layer in the kernel cake, and
-     * then we should remove this locking code. It is dangerous to have it here, because it allows grabbing a lock
-     * before the kernel is registered as a data source. If that happens in HA, we will attempt to grab locks on the
-     * master before the transaction is started on the master.
-     */
-    public NodeImpl getNodeForProxy( long nodeId, LockType lock )
+    public NodeImpl getNodeForProxy( long nodeId )
     {
-        if ( lock != null )
-        {
-            lock.acquire( getTransactionState(), new NodeProxy( nodeId, nodeLookup, statementCtxProvider ) );
-        }
         NodeImpl node = getLightNode( nodeId );
         if ( node == null )
         {
@@ -589,7 +570,7 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
 
     RelationshipLoadingPosition getRelationshipChainPosition( NodeImpl node )
     {
-        return persistenceManager.getRelationshipChainPosition( node.getId() ).build( this );
+        return persistenceManager.getRelationshipChainPosition( node.getId() );
     }
 
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
@@ -789,7 +770,7 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
     }
 
     Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
-            getMoreRelationships( NodeImpl node, DirectionWrapper direction, RelationshipType[] types )
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types )
     {
         return relationshipLoader.getMoreRelationships( node, direction, types );
     }
@@ -919,56 +900,13 @@ public class NodeManager implements Lifecycle, EntityFactory, RelationshipGroupT
         return transactionManager.getTransactionState();
     }
 
-    public int getRelationshipCount( NodeImpl nodeImpl, RelationshipType type, DirectionWrapper direction )
+    public int getRelationshipCount( NodeImpl nodeImpl, int type, DirectionWrapper direction )
     {
-        Integer typeId = null;
-        if ( type != null )
-        {
-            typeId = relTypeHolder.getIdByName( type.name() );
-            if ( typeId == null )
-            {
-                return 0;
-            }
-        }
-
-        return persistenceManager.getRelationshipCount( nodeImpl.getId(),
-                type == null ? -1 : typeId.intValue(), direction );
+        return persistenceManager.getRelationshipCount( nodeImpl.getId(), type, direction );
     }
 
-    public Iterable<RelationshipType> getRelationshipTypes( DenseNodeImpl node )
+    public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
     {
-        Integer[] types = persistenceManager.getRelationshipTypes( node.getId() );
-        return new IterableWrapper<RelationshipType, Integer>( asList( types ) )
-        {
-            @Override
-            protected RelationshipType underlyingObjectToObject( Integer type )
-            {
-                return relTypeHolder.getTokenByIdOrNull( type.intValue() );
-            }
-        };
-    }
-
-    @Override
-    public Pair<RelationshipType[], Map<String, RelationshipGroupRecord>> translateRelationshipGroups(
-            Map<Integer, RelationshipGroupRecord> rawGroups )
-    {
-        Map<String, RelationshipGroupRecord> groups = new HashMap<String, RelationshipGroupRecord>();
-        RelationshipType[] types = new RelationshipType[rawGroups.size()];
-        int i = 0;
-        for ( Map.Entry<Integer, RelationshipGroupRecord> entry : rawGroups.entrySet() )
-        {
-            RelationshipType type;
-            try
-            {
-                type = getRelationshipTypeById( entry.getKey() );
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new InvalidRecordException( entry.getValue() + " refers to missing relationship type " + entry.getKey() );
-            }
-            groups.put( type.name(), entry.getValue() );
-            types[i++] = type;
-        }
-        return Pair.of( types, groups );
+        return asList( persistenceManager.getRelationshipTypes( node.getId() ) ).iterator();
     }
 }
