@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.shell.kernel.apps.cypher;
 
-import org.junit.Test
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 
-class AggregationAcceptanceTest extends ExecutionEngineHelper {
-  @Test def should_handle_aggregates_inside_non_aggregate_expressions() {
-    execute(
-      "MATCH (a { name: 'Andres' })<-[:FATHER_OF]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"
-    ).toList
-  }
+@Service.Implementation( App.class )
+public class Load extends Start
+{
 }
