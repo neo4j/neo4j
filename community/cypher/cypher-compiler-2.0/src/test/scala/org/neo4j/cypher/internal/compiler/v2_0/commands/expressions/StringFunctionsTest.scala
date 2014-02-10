@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.commands
+package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import expressions._
 import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryStateHelper
 import org.junit.Test
@@ -27,6 +26,9 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
 
 class StringFunctionsTest extends Assertions {
+
+  // TODO Move these tests into individual classes, at least for the more complex ones
+
   @Test def replaceTests() {
     def replace(orig: Any, from: Any, to: Any) =
       ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)(QueryStateHelper.empty)

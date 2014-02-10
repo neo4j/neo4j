@@ -95,6 +95,7 @@ object Function {
     functions.Sin,
     functions.Size,
     functions.Sqrt,
+    functions.Split,
     functions.StartNode,
     functions.StdDev,
     functions.StdDevP,
