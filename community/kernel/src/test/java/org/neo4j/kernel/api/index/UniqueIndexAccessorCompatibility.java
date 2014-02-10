@@ -88,8 +88,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
 
     private List<Long> getAllNodes( String propertyValue ) throws IOException
     {
-        IndexReader reader = accessor.newReader();
-        try
+        try ( IndexReader reader = accessor.newReader() )
         {
             List<Long> list = new LinkedList<>();
             for ( PrimitiveLongIterator iterator = reader.lookup( propertyValue ); iterator.hasNext(); )
@@ -98,10 +97,6 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
             }
             Collections.sort( list );
             return list;
-        }
-        finally
-        {
-            reader.close();
         }
     }
 

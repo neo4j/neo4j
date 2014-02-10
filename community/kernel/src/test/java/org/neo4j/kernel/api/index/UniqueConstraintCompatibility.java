@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,11 +48,11 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.LockServiceTestUtil;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -238,6 +239,21 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 fail( "Changing a property to an already indexed value should have thrown" ) );
     }
 
+    // Replaces UniqueIPC: should*EnforceUnqieConstraintsAgainstDataAddedInSameTx
+    @Test( expected = ConstraintViolationException.class)
+    public void onlineConstraintShouldRejectConflictsInTheSameTransaction() throws Exception
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // Then
+        transaction(
+                setProperty( a, "x" ),
+                setProperty( b, "x" ),
+                success,
+                fail( "Should have rejected changes of two node/properties to the same index value" ) );
+    }
+
     @Test
     public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValueThatOtherTransactionsAreRemoving()
             throws Exception
@@ -343,6 +359,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     // Replaces UniqueIAC: shouldAddUniqueEntries
+    // Replaces UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedOnline
     @Test
     public void onlineConstraintShouldAcceptUniqueEntries()
     {
@@ -391,6 +408,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     // Replaces UniqueIPC: should*EnforceUniqueConstraints
+    // Replaces UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedThroughPopulator
     @Test
     public void populatingConstraintMustAcceptDatasetOfUniqueEntries()
     {
@@ -428,31 +446,180 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         createUniqueConstraint();
     }
 
-    // TODO populating constraint must accept dataset that gets updated with unique entries
     @Test
     public void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithUniqueEntries() throws Exception
     {
         // Given
         givenUniqueDataset();
 
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "d1" ) );
+
+        // Then observe that our constraint was created successfully:
+        createConstraintTransaction.get();
+        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectEntryWithAlreadyIndexedValue
+    @Test
+    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicateAddition() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), createNode( "b" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectChangingEntryToAlreadyIndexedValue
+    @Test
+    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicates() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "b" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    @Test
+    public void populatingConstraintMustAcceptDatasetThatGestUpdatedWithFalseIndexCollisions() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+        transaction( setProperty( a, COLLISION_X ), success );
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, COLLISION_Y ) );
+
+        // Then observe that our constraint was created successfully:
+        createConstraintTransaction.get();
+        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues
+    @Test
+    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicatesInSameTransaction() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "x" ), setProperty( c, "x" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    @Test
+    public void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithDuplicatesThatAreLaterResolved() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(),
+                a.getId(),
+                setProperty( d, "b" ), // Cannot touch node 'a' because that one is locked
+                setProperty( b, "c" ),
+                setProperty( c, "d" ) );
+
+        // Then observe that our constraint was created successfully:
+        createConstraintTransaction.get();
+        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
+    @Test
+    public void populatingUpdaterMustRejectDatasetWhereAdditionsConflictsWithPriorChanges() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "x" ), createNode( "x" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    /**
+     * NOTE the tests using this will currently succeed for the wrong reasons,
+     * because the data-changing transaction does not actually release the
+     * schema read lock early enough for the PopulatingUpdater to come into
+     * play.
+     */
+    private Future<?> applyChangesToPopulatingUpdater(
+            long blockDataChangeTransactionOnLockOnId,
+            long blockPopulatorOnLockOnId,
+            final Action... actions ) throws InterruptedException, ExecutionException
+    {
         // We want to issue an update to an index populator for a constraint.
         // However, creating a constraint takes a schema write lock, while
         // creating nodes and setting their properties takes a schema read
         // lock. We need to sneak past these locks.
-
         final CountDownLatch createNodeReadyLatch = new CountDownLatch( 1 );
         final CountDownLatch createNodeCommitLatch = new CountDownLatch( 1 );
-        Future<?> creatingNodeTransaction = executor.submit( new Runnable()
+        Future<?> updatingTransaction = executor.submit( new Runnable()
         {
             @Override
             public void run()
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    a.setProperty( property, "a1" );
-//                    final Node n = db.createNode( label );
-//                    createdNodeId.set( n.getId() );
-//                    n.setProperty( property, "n" );
+                    for ( Action action : actions )
+                    {
+                        action.apply( tx );
+                    }
                     tx.success();
                     createNodeReadyLatch.countDown();
                     awaitUninterruptibly( createNodeCommitLatch );
@@ -461,88 +628,57 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         } );
         createNodeReadyLatch.await();
 
-        // The above transaction now contain the changes we wan't to expose to
+        // The above transaction now contain the changes we want to expose to
         // the IndexUpdater as updates. This will happen when we commit the
         // transaction. The transaction now also holds the schema read lock,
         // so we can't begin creating our constraint just yet.
         // We first have to unlock the schema, and then block just before we
         // send off our updates. We can do that by making another thread take a
         // read lock on the node we just created, and then initiate our commit.
-
-        final CountDownLatch readLockAcquireLatch = new CountDownLatch( 1 );
-        final CountDownLatch readLockReleaseLatch = new CountDownLatch( 1 );
-        Future<?> readLockHolder = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                // TODO this test success for the wrong reasons, because the
-                // data-changing transaction above does not actually release
-                // the schema read lock early enough for the PopulatingUpdater
-                // to come into play. I think.
-                Lock nodeReadLock = getLockService().acquireNodeLock(
-                        a.getId(),
-                        LockType.READ_LOCK );
-                readLockAcquireLatch.countDown();
-                awaitUninterruptibly( readLockReleaseLatch );
-                nodeReadLock.release();
-            }
-        } );
-        readLockAcquireLatch.await();
-
-        // Now we can initiate the commit that creates node 'n'. It should then
-        // release the schema read lock, and block on the read lock for node 'n'.
-        createNodeCommitLatch.countDown();
+        Lock lockBlockingDataChangeTransaction = getLockService().acquireNodeLock(
+                blockDataChangeTransactionOnLockOnId,
+                LockType.WRITE_LOCK );
 
         // Before we begin creating the constraint, we take a write lock on an
-        // earlier node, to hold up the populator for the constraint index.
-        Lock nodeWriteLock = getLockService().acquireNodeLock(
-                d.getId(),
+        // "earlier" node, to hold up the populator for the constraint index.
+        Lock lockBlockingIndexPopulator = getLockService().acquireNodeLock(
+                blockPopulatorOnLockOnId,
                 LockType.WRITE_LOCK );
 
         // This thread tries to create a constraint. It should block, waiting for it's
         // population job to finish, and it's population job should in turn be blocked
-        // on the nodeWriteLock above:
+        // on the lockBlockingIndexPopulator above:
+        final CountDownLatch createConstraintTransactionStarted = new CountDownLatch( 1 );
         Future<?> createConstraintTransaction = executor.submit( new Runnable()
         {
             @Override
             public void run()
             {
-                createUniqueConstraint();
+
+                createUniqueConstraint( createConstraintTransactionStarted );
             }
         } );
+        createConstraintTransactionStarted.await();
 
+        // Now we can initiate the data-changing commit. It should then
+        // release the schema read lock, and block on the
+        // lockBlockingDataChangeTransaction.
+        createNodeCommitLatch.countDown();
 
         // Now we can issue updates to the populator in the still ongoing population job.
-        // We do that by releasing the read lock that is currently preventing our
-        // create-node transaction from committing.
-        readLockReleaseLatch.countDown();
-        // We observe that the release of the read-lock has completed successfully:
-        readLockHolder.get();
-        // And we observe that our create-node transaction has completed as well:
-        creatingNodeTransaction.get();
-        // Now we observe that the population job hits our write lock:
-        LockServiceTestUtil.spinFindThreadBlockedByNodeLock( d.getId(), 10000 );
-        // Now we can release our write-lock:
-        nodeWriteLock.release();
-        // And observe that our constraint was created successfully:
-        createConstraintTransaction.get();
-        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+        // We do that by releasing the lock that is currently preventing our
+        // data-changing transaction from committing.
+        lockBlockingDataChangeTransaction.release();
+
+        // And we observe that our updating transaction has completed as well:
+        updatingTransaction.get();
+
+        // Now we can release the lock blocking the populator, allowing it to finish:
+        lockBlockingIndexPopulator.release();
+
+        // And return the future for examination:
+        return createConstraintTransaction;
     }
-    // TODO populating constraint must reject dataset that gets updated with duplicates
-    // TODO populating constraint must accept dataset that gets updated with false index collisions
-    // TODO populating constraint must accept dataset that gets updated with intermediate duplicates that are later resolved
-
-
-    // TODO equiv. of UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedOnline
-    // TODO equiv. of UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedThroughPopulator
-    // TODO equiv. of UniqueIPC: should*EnforceUnqieConstraintsAgainstDataAddedInSameTx
-
-    // TODO equiv. of UniqueLucIAT: shouldRejectChangingEntryToAlreadyIndexedValue
-    // TODO equiv. of UniqueLucIAT: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
-    // TODO equiv. of UniqueLucIAT: shouldRejectEntryWithAlreadyIndexedValue
-    // TODO equiv. of UniqueLucIAT: shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues
-
 
     // -- Set Up: Data parts
 
@@ -627,8 +763,27 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      */
     private void createUniqueConstraint()
     {
+        createUniqueConstraint( null );
+    }
+
+    /**
+     * Effectively:
+     *
+     * <pre><code>
+     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     ;
+     * </code></pre>
+     *
+     * Also counts down the given latch prior to creating the constraint.
+     */
+    private void createUniqueConstraint( CountDownLatch preCreateLatch )
+    {
         try ( Transaction tx = db.beginTx() )
         {
+            if ( preCreateLatch != null )
+            {
+                preCreateLatch.countDown();
+            }
             db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
             tx.success();
         }
@@ -699,6 +854,21 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             return null;
         }
     };
+
+    private Action createNode( final Object propertyValue )
+    {
+        return new Action( "Node node = db.createNode( label ); " +
+                "node.setProperty( property, " + reprValue( propertyValue ) + " );" )
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                Node node = db.createNode( label );
+                node.setProperty( property, propertyValue );
+                return null;
+            }
+        };
+    }
 
     private Action setProperty( final Node node, final Object value )
     {
@@ -812,6 +982,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private <T> T resolveInternalDependency( Class<T> type )
     {
+        @SuppressWarnings("deprecation")
         GraphDatabaseAPI api = (GraphDatabaseAPI) db;
         DependencyResolver resolver = api.getDependencyResolver();
         return resolver.resolveDependency( type );
@@ -828,8 +999,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             throw new AssertionError( "Interrupted", e );
         }
     }
-
-
 
     // -- Set Up: Environment parts
 
