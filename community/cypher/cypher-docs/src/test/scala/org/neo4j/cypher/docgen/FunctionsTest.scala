@@ -599,6 +599,23 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def split() {
+    testThis(
+      title = "SPLIT",
+      syntax = "SPLIT( original, splitPattern )",
+      arguments = List("original" -> "An expression that returns a string",
+        "splitRegex" -> "An expression that returns a pattern to split with"),
+      text = "`SPLIT` returns the sequence of strings witch are delimited by split patterns.",
+      queryText = "return split(\"one,two\", \",\")",
+      returns = "[\"one\", \"two\"]",
+      assertions = (p) => {
+        assert(List(Map(
+          "split(\"one,two\", \",\")" -> List("one", "two")
+        )) === p.toList)
+      }
+    )
+  }
+
   @Test def left() {
     testThis(
       title = "LEFT",
