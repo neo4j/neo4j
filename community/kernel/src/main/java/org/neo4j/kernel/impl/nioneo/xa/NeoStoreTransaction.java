@@ -876,7 +876,7 @@ public class NeoStoreTransaction extends XaTransaction
                     command.execute();
                     if ( removeFromCache )
                     {
-                        command.removeFromCache( cacheAccess );
+                        command.applyToCache( cacheAccess );
                     }
                 }
             }
@@ -897,7 +897,7 @@ public class NeoStoreTransaction extends XaTransaction
                     command.execute();
                     if ( removeFromCache )
                     {
-                        command.removeFromCache( cacheAccess );
+                        command.applyToCache( cacheAccess );
                     }
                 }
             }
@@ -920,7 +920,7 @@ public class NeoStoreTransaction extends XaTransaction
                  */
                     lockEntity( lockGroup, command );
                     command.execute();
-                    command.removeFromCache( cacheAccess );
+                    command.applyToCache( cacheAccess );
                 }
             }
         }

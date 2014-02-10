@@ -27,12 +27,13 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.state.TxState.IdGeneration;
+import org.neo4j.kernel.api.TxState.IdGeneration;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
@@ -91,9 +92,8 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
         TxState txState = mock( TxState.class );
         when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( DiffSets.<Long>emptyDiffSets() );
-        when( txState.nodesWithChangedProperty( anyInt() ) ).thenReturn( Collections.<Long, Object>emptyMap() );
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( asList( constraint ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
@@ -112,7 +112,7 @@ public class StateHandlingStatementOperationsTest
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
@@ -135,13 +135,13 @@ public class StateHandlingStatementOperationsTest
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( inner.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( inner.constraintsGetForLabel( state, 10 ) )
+        when( inner.constraintsGetForLabel( 10 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( inner.constraintsGetForLabel( state, 11 ) )
+        when( inner.constraintsGetForLabel( 11 ) )
             .thenAnswer( asAnswer( asIterable( constraint1 ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
@@ -164,11 +164,11 @@ public class StateHandlingStatementOperationsTest
         TxState txState = new TxStateImpl( mock( OldTxStateBridge.class ), mock( PersistenceManager.class ),
                 mock( IdGeneration.class ) );
         KernelStatement state = mockedState( txState );
-        when( inner.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( inner.constraintsGetForLabelAndPropertyKey( state, 11, 99 ) )
+        when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
-        when( inner.constraintsGetAll( state ) ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
+        when( inner.constraintsGetAll() ).thenAnswer( asAnswer( asIterable( constraint2 ) ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquenessConstraintCreate( state, 10, 66 );
 

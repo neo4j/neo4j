@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
@@ -58,11 +57,11 @@ public class CacheLayerTest
         // GIVEN
         long nodeId = 3;
         int[] labels = new int[] {1, 2, 3};
-        when( persistenceCache.nodeGetLabels( any( KernelStatement.class ), eq( nodeId ), any( CacheLoader.class ) ) )
+        when( persistenceCache.nodeGetLabels( eq( nodeId ), any( CacheLoader.class ) ) )
                 .thenReturn( labels );
 
         // WHEN
-        PrimitiveIntIterator receivedLabels = context.nodeGetLabels( mockedState(), nodeId );
+        PrimitiveIntIterator receivedLabels = context.nodeGetLabels( nodeId );
 
         // THEN
         assertArrayEquals( labels, primitiveIntIteratorToIntArray( receivedLabels ) );
@@ -76,7 +75,7 @@ public class CacheLayerTest
         when(schemaCache.constraints()).thenReturn( constraints.iterator() );
 
         // When & Then
-        assertThat( asSet( context.constraintsGetAll( mockedState() ) ), equalTo( constraints ) );
+        assertThat( asSet( context.constraintsGetAll() ), equalTo( constraints ) );
     }
 
     @Test
@@ -88,7 +87,7 @@ public class CacheLayerTest
         when(schemaCache.constraintsForLabel(labelId)).thenReturn( constraints.iterator() );
 
         // When & Then
-        assertThat( asSet( context.constraintsGetForLabel( mockedState(), labelId ) ), equalTo( constraints ) );
+        assertThat( asSet( context.constraintsGetForLabel( labelId ) ), equalTo( constraints ) );
     }
 
     @Test
@@ -100,7 +99,7 @@ public class CacheLayerTest
         when(schemaCache.constraintsForLabelAndProperty(labelId, propertyId)).thenReturn( constraints.iterator() );
 
         // When & Then
-        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( mockedState(), labelId, propertyId ) ),
+        assertThat( asSet( context.constraintsGetForLabelAndPropertyKey( labelId, propertyId ) ),
                 equalTo( constraints ) );
     }
 
@@ -115,7 +114,7 @@ public class CacheLayerTest
                 .thenReturn( rels );
 
         // WHEN
-        PrimitiveLongIterator recievedRels = context.nodeListRelationships( mockedState(), nodeId, Direction.BOTH, relTypes );
+        PrimitiveLongIterator recievedRels = context.nodeListRelationships( nodeId, Direction.BOTH, relTypes );
 
         // THEN
         assertEquals(rels, recievedRels);

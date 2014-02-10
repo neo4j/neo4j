@@ -487,6 +487,11 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                     case XAException.XA_RBINTEGRITY:
 
                     /*
+                     * Prepare failed and requested rollback due to a reason not on the standard XAException error list.
+                     */
+                    case XAException.XA_RBOTHER:
+
+                    /*
                      *  A network error occurred.
                      */
                     case XAException.XA_HEURCOM:

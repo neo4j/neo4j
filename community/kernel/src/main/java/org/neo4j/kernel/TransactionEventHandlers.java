@@ -20,14 +20,25 @@
 package org.neo4j.kernel;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import javax.transaction.Status;
-import javax.transaction.TransactionManager;
-
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.event.LabelEntry;
+import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.TransactionHook;
+import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.impl.cleanup.CleanupService;
+import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -37,16 +48,22 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 @Deprecated
 public class TransactionEventHandlers
-    implements Lifecycle
+    implements Lifecycle, TransactionHook<TransactionEventHandlers.TransactionHandlerState>
 {
-    protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<TransactionEventHandler>();
-    private final TransactionManager txManager;
+    protected final Collection<TransactionEventHandler> transactionEventHandlers = new CopyOnWriteArraySet<>();
 
-    public TransactionEventHandlers(
-        TransactionManager txManager
-    )
+    private final NodeProxy.NodeLookup nodeLookup;
+    private final RelationshipProxy.RelationshipLookups relationshipLookups;
+    private final ThreadToStatementContextBridge bridge;
+    private final CleanupService cleanupService;
+
+    public TransactionEventHandlers( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups
+            relationshipLookups, ThreadToStatementContextBridge bridge, CleanupService cleanupService )
     {
-        this.txManager = txManager;
+        this.nodeLookup = nodeLookup;
+        this.relationshipLookups = relationshipLookups;
+        this.bridge = bridge;
+        this.cleanupService = cleanupService;
     }
 
     @Override
@@ -100,66 +117,66 @@ public class TransactionEventHandlers
         return !transactionEventHandlers.isEmpty();
     }
 
-    public void beforeCompletion( TransactionData transactionData,
-                                  List<HandlerAndState> states
-    )
+    @Override
+    public TransactionHandlerState beforeCommit( TxState state, KernelTransaction transaction )
     {
+        if(transactionEventHandlers.isEmpty())
+        {
+            return null;
+        }
+
+        TransactionData txData = state == null ? EMPTY_DATA :
+                new TxStateTransactionDataSnapshot( state, nodeLookup, relationshipLookups, bridge, cleanupService );
+
+        TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )
         {
             try
             {
-                Object state = handler.beforeCommit( transactionData );
-                states.add( new HandlerAndState( handler, state ) );
+                handlerStates.add( handler, handler.beforeCommit( txData ) );
             }
             catch ( Throwable t )
             {
-                // TODO Do something more than calling failure and
-                // throw exception?
-                try
-                {
-                    txManager.setRollbackOnly();
-                }
-                catch ( Exception e )
-                {
-                    // TODO Correct?
-                    e.printStackTrace();
-                }
-
-                // This will cause the transaction to throw a
-                // TransactionFailureException
-                throw new RuntimeException( t );
+                handlerStates.failed( t );
             }
+        }
+
+        return handlerStates;
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void afterCommit( TxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
+    {
+        if(transactionEventHandlers.isEmpty())
+        {
+            return;
+        }
+
+        for ( HandlerAndState handlerAndState : handlerState.states )
+        {
+            handlerAndState.handler.afterCommit( handlerState.txData, handlerAndState.state );
         }
     }
 
-    public void afterCompletion( TransactionData transactionData,
-                                 int status,
-                                 List<HandlerAndState> states
-    )
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public void afterRollback( TxState state, KernelTransaction transaction, TransactionHandlerState handlerState )
     {
-        if ( status == Status.STATUS_COMMITTED )
+        if(transactionEventHandlers.isEmpty())
         {
-            for ( HandlerAndState state : states )
-            {
-                state.handler.afterCommit( transactionData, state.state );
-            }
+            return;
         }
-        else if ( status == Status.STATUS_ROLLEDBACK )
-        {
-            if ( states == null )
-            {
-                // This means that the transaction was never successful
-                return;
-            }
 
-            for ( HandlerAndState state : states )
-            {
-                state.handler.afterRollback( transactionData, state.state );
-            }
-        }
-        else
+        if(handlerState == null)
         {
-            throw new RuntimeException( "Unknown status " + status );
+            // For legacy reasons, we don't call transaction handlers on implicit rollback.
+            return;
+        }
+
+        for ( HandlerAndState handlerAndState : handlerState.states )
+        {
+            handlerAndState.handler.afterRollback( handlerState.txData, handlerAndState.state );
         }
     }
 
@@ -174,4 +191,114 @@ public class TransactionEventHandlers
             this.state = state;
         }
     }
+
+    public static class TransactionHandlerState implements TransactionHook.Outcome
+    {
+        private final TransactionData txData;
+        private final List<HandlerAndState> states = new LinkedList<>();
+        private Throwable error;
+
+        public TransactionHandlerState( TransactionData txData )
+        {
+            this.txData = txData;
+        }
+
+        public void failed( Throwable error )
+        {
+            this.error = error;
+        }
+
+        @Override
+        public boolean isSuccessful()
+        {
+            return error == null;
+        }
+
+        @Override
+        public Throwable failure()
+        {
+            return error;
+        }
+
+        public void add( TransactionEventHandler<?> handler, Object state )
+        {
+            states.add( new HandlerAndState( handler, state ) );
+        }
+    }
+
+    private static final TransactionData EMPTY_DATA = new TransactionData()
+    {
+
+        @Override
+        public Iterable<Node> createdNodes()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<Node> deletedNodes()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public boolean isDeleted( Node node )
+        {
+            return false;
+        }
+
+        @Override
+        public Iterable<PropertyEntry<Node>> assignedNodeProperties()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<PropertyEntry<Node>> removedNodeProperties()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<LabelEntry> assignedLabels()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<LabelEntry> removedLabels()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<Relationship> createdRelationships()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<Relationship> deletedRelationships()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public boolean isDeleted( Relationship relationship )
+        {
+            return false;
+        }
+
+        @Override
+        public Iterable<PropertyEntry<Relationship>> assignedRelationshipProperties()
+        {
+            return Iterables.empty();
+        }
+
+        @Override
+        public Iterable<PropertyEntry<Relationship>> removedRelationshipProperties()
+        {
+            return Iterables.empty();
+        }
+    };
 }

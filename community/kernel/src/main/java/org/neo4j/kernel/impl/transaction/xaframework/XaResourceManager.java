@@ -891,7 +891,14 @@ public class XaResourceManager
             return;
         }
 
-        ((NeoStoreTransaction)xaTransaction).kernelTransaction().prepare();
+        try
+        {
+            ((NeoStoreTransaction)xaTransaction).kernelTransaction().prepare();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw e.unBoxedForCommit();
+        }
     }
 
     private void commitKernelTx( XaTransaction xaTransaction ) throws XAException

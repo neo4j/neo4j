@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.kernel.api;
 
-import org.neo4j.kernel.api.EntityType;
-
-public class EntityNotFoundException extends KernelException
+/**
+ * A mechanism to augment and monitor transactions before and after commit/rollback.
+ */
+public interface TransactionHook<OUTCOME extends TransactionHook.Outcome>
 {
-    public EntityNotFoundException( EntityType entityType, long entityId, Throwable cause )
+    public interface Outcome
     {
-        super( Status.Statement.EntityNotFound, cause, "Unable to load %s with id %s.", entityType.name(), entityId );
+        boolean isSuccessful();
+        Throwable failure();
     }
 
-    public EntityNotFoundException( EntityType entityType, long entityId )
-    {
-        super( Status.Statement.EntityNotFound, "Unable to load %s with id %s.", entityType.name(), entityId );
-    }
-
-    public EntityNotFoundException( String msg )
-    {
-        super( Status.Statement.EntityNotFound, msg );
-    }
+    OUTCOME beforeCommit( TxState state, KernelTransaction transaction );
+    void afterCommit( TxState state, KernelTransaction transaction, OUTCOME outcome );
+    void afterRollback( TxState state, KernelTransaction transaction, OUTCOME outcome );
 }

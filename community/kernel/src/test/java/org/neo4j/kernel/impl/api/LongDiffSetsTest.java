@@ -49,7 +49,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1l, 2l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.applyPrimitiveLongIterator( primitiveSource( 1l, 2l ) );
+        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 1l, 2l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -65,7 +65,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17l, 3l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.applyPrimitiveLongIterator( primitiveSource( 1l, 17l, 3l ) );
+        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 1l, 17l, 3l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -81,7 +81,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17l, 3l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.applyPrimitiveLongIterator( primitiveSource( 1l, 17l, 3l ) );
+        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 1l, 17l, 3l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -97,7 +97,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 19l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.applyPrimitiveLongIterator( primitiveSource( 19l ) );
+        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 19l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );

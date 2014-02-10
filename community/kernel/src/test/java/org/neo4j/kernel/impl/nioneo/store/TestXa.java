@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -58,6 +49,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -93,6 +85,11 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestXa
 {
@@ -386,7 +383,7 @@ public class TestXa
                 dependencyResolverForNoIndexProvider( nodeManager ), txManager,
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(LockManager.class),
-                mock( SchemaWriteGuard.class));
+                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class ) );
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;

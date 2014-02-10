@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.kernel.api;
 
-import java.util.Map;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
@@ -27,16 +27,18 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 /**
- * Kernel transaction state, please see {@link TxStateImpl} for details.
+ * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxStateImpl} for details.
  *
  * The naming of methods in this class roughly follows the naming of {@link org.neo4j.kernel.api.Statement}
  * with one exception: All transaction state mutators must include the particle "Do" in their name, e.g.
- * nodeDoAdd. This helps deciding where to set "hasChanges" in the main implementation class {@link TxStateImpl}.
+ * nodeDoAdd. This helps deciding where to set "hasChanges" in the main implementation class {@link org.neo4j.kernel.impl.api.state.TxStateImpl}.
  */
 public interface TxState
 {
@@ -87,9 +89,9 @@ public interface TxState
 
         public abstract boolean isTouched();
 
-
         public abstract boolean isAdded();
     }
+
     public interface Holder
     {
 
@@ -112,7 +114,16 @@ public interface TxState
 
     public interface Visitor
     {
-        void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed );
+        void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                                       Iterator<Integer> removed );
+
+        void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                                      Iterator<Integer> removed );
+
+        void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                                        Iterator<Integer> removed );
+
+        void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed );
 
         void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex );
 
@@ -132,17 +143,21 @@ public interface TxState
 
     long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId );
 
-    Iterable<NodeState> nodeStates();
+    long nodeDoCreate();
 
     DiffSets<Long> labelStateNodeDiffSets( int labelId );
 
     DiffSets<Integer> nodeStateLabelDiffSets( long nodeId );
 
-    DiffSets<DefinedProperty> nodePropertyDiffSets( long nodeId );
+    Iterator<DefinedProperty> augmentNodeProperties( long nodeId, Iterator<DefinedProperty> original );
 
-    DiffSets<DefinedProperty> relationshipPropertyDiffSets( long relationshipId );
+    Iterator<DefinedProperty> augmentRelProperties( long relId, Iterator<DefinedProperty> original );
 
-    DiffSets<DefinedProperty> graphPropertyDiffSets();
+    Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original );
+
+    Iterator<DefinedProperty> addedAndChangedNodeProperties( long nodeId );
+
+    Iterator<DefinedProperty> addedAndChangedRelProperties( long relId );
 
     /** Returns all nodes that, in this tx, have had labelId added. */
     Set<Long> nodesWithLabelAdded( int labelId );
@@ -150,8 +165,17 @@ public interface TxState
     /** Returns all nodes that, in this tx, have had labelId removed.  */
     DiffSets<Long> nodesWithLabelChanged( int labelId );
 
-    // Temporary: Should become DiffSets<Long> of all node changes, not just deletions
-    DiffSets<Long> nodesDeletedInTx();
+    /** Returns nodes that have been added and removed in this tx. */
+    DiffSets<Long> addedAndRemovedNodes();
+
+    /** Returns rels that have been added and removed in this tx. */
+    DiffSets<Long> addedAndRemovedRels();
+
+    /** Nodes that have had labels, relationships, or properties modified in this tx. */
+    Iterable<NodeState> modifiedNodes();
+
+    /** Rels that have properties modified in this tx. */
+    Iterable<RelationshipState> modifiedRelationships();
 
     boolean nodeIsAddedInThisTx( long nodeId );
 
@@ -160,8 +184,6 @@ public interface TxState
     boolean nodeModifiedInThisTx( long nodeId );
 
     DiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value );
-
-    Map<Long, Object> nodesWithChangedProperty( int propertyKeyId );
 
     boolean relationshipIsAddedInThisTx( long relationshipId );
 
@@ -182,11 +204,11 @@ public interface TxState
 
     void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty );
 
-    void nodeDoRemoveProperty( long nodeId, Property removedProperty );
+    void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty );
 
-    void relationshipDoRemoveProperty( long relationshipId, Property removedProperty );
+    void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty );
 
-    void graphDoRemoveProperty( Property removedProperty );
+    void graphDoRemoveProperty( DefinedProperty removedProperty );
 
     void nodeDoAddLabel( int labelId, long nodeId );
 

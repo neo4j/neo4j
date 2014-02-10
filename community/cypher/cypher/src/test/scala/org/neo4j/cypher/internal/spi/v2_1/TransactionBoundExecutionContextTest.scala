@@ -40,7 +40,7 @@ class TransactionBoundExecutionContextTest extends JUnitSuite with Assertions wi
   def init() {
     graph = new ImpermanentGraphDatabase
     outerTx = mock[Transaction]
-    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null, null)
+    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, null, null)
   }
 
   @Test def should_mark_transaction_successful_if_successful() {

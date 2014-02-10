@@ -60,4 +60,6 @@ public interface OldTxStateBridge
     Map<Long, Object> getNodesWithChangedProperty( int propertyKeyId );
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId );
+
+    long nodeCreate();
 }

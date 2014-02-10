@@ -19,22 +19,10 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.EntityType;
-
-public class EntityNotFoundException extends KernelException
+public class TransactionHookException extends KernelException
 {
-    public EntityNotFoundException( EntityType entityType, long entityId, Throwable cause )
+    public TransactionHookException( Throwable cause, String message, Object... parameters )
     {
-        super( Status.Statement.EntityNotFound, cause, "Unable to load %s with id %s.", entityType.name(), entityId );
-    }
-
-    public EntityNotFoundException( EntityType entityType, long entityId )
-    {
-        super( Status.Statement.EntityNotFound, "Unable to load %s with id %s.", entityType.name(), entityId );
-    }
-
-    public EntityNotFoundException( String msg )
-    {
-        super( Status.Statement.EntityNotFound, msg );
+        super( Status.Transaction.EventHandlerThrewException, cause, message, parameters );
     }
 }

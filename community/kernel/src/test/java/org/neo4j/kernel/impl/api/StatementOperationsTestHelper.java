@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.api.TxState;
 
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;

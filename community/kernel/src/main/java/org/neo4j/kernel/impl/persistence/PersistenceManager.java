@@ -35,9 +35,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
-import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -67,16 +65,13 @@ public class PersistenceManager
     private final PersistenceSource persistenceSource;
     private final StringLogger msgLog;
     private final AbstractTransactionManager transactionManager;
-    private final TxEventSyncHookFactory syncHookFactory;
 
     public PersistenceManager( StringLogger msgLog, AbstractTransactionManager transactionManager,
-            PersistenceSource persistenceSource,
-            TxEventSyncHookFactory syncHookFactory )
+                               PersistenceSource persistenceSource )
     {
         this.msgLog = msgLog;
         this.transactionManager = transactionManager;
         this.persistenceSource = persistenceSource;
-        this.syncHookFactory = syncHookFactory;
     }
 
     public NodeRecord loadLightNode( long id )
@@ -268,7 +263,7 @@ public class PersistenceManager
         {
             XaConnection xaConnection = persistenceSource.getXaDataSource().getXaConnection();
             NeoStoreTransaction resource = persistenceSource.createTransaction( xaConnection );
-            ResourceHolder result = new ResourceHolder( syncHookFactory, tx, xaConnection, resource );
+            ResourceHolder result = new ResourceHolder( tx, xaConnection, resource );
 
             TransactionState state = transactionManager.getTransactionState();
             tx.registerSynchronization( new ResourceCleanupHook( tx, state, result ) );
@@ -381,16 +376,13 @@ public class PersistenceManager
     
     public static class ResourceHolder
     {
-        private final TxEventSyncHookFactory syncHookFactory;
         private final Transaction tx;
         private final XaConnection connection;
         private final NeoStoreTransaction resource;
         private boolean enlisted;
         
-        ResourceHolder( TxEventSyncHookFactory syncHookFactory,
-                Transaction tx, XaConnection connection, NeoStoreTransaction resource )
+        ResourceHolder( Transaction tx, XaConnection connection, NeoStoreTransaction resource )
         {
-            this.syncHookFactory = syncHookFactory;
             this.tx = tx;
             this.connection = connection;
             this.resource = resource;
@@ -419,12 +411,6 @@ public class PersistenceManager
                 if ( !tx.enlistResource( xaResource ) )
                 {
                     throw new ResourceAcquisitionFailedException( xaResource );
-                }
-                
-                TransactionEventsSyncHook hook = syncHookFactory.create();
-                if ( hook != null )
-                {
-                    tx.registerSynchronization( hook );
                 }
             }
             catch ( RollbackException | SystemException re )

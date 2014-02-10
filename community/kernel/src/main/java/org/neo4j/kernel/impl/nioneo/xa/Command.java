@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Collections.unmodifiableCollection;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -66,6 +61,11 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -359,7 +359,7 @@ public abstract class Command extends XaCommand
     private static final byte LABEL_KEY_COMMAND = (byte) 8;
     private static final byte REL_GROUP_COMMAND = (byte) 9;
     
-    abstract void removeFromCache( CacheAccessBackDoor cacheAccess );
+    abstract void applyToCache( CacheAccessBackDoor cacheAccess );
 
     static class NodeCommand extends Command
     {
@@ -388,7 +388,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeNodeFromCache( getKey() );
         }
@@ -560,7 +560,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeRelationshipFromCache( getKey() );
             /*
@@ -705,7 +705,7 @@ public abstract class Command extends XaCommand
         }
         
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
         }    
 
@@ -791,7 +791,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             // no-op
         }
@@ -843,7 +843,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             // no-op
         }
@@ -946,7 +946,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             long nodeId = this.getNodeId();
             long relId = this.getRelId();
@@ -1188,7 +1188,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             // no-op
         }
@@ -1275,7 +1275,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             // no-op
         }
@@ -1378,7 +1378,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        void removeFromCache( CacheAccessBackDoor cacheAccess )
+        void applyToCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeSchemaRuleFromCache( getKey() );
         }
