@@ -42,6 +42,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.test.ha.ClusterManager.fromXml;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TestSlaveOnlyCluster
 {
@@ -135,10 +136,11 @@ public class TestSlaveOnlyCluster
         {
             clusterManager.start();
 
-            clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
+            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            cluster.await( masterAvailable( cluster.getMemberByServerId( 1 ), cluster.getMemberByServerId( 2 ) ) );
 
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            assertThat( clusterManager.getDefaultCluster().getServerId( master ), CoreMatchers.equalTo( 3 ) );
+            HighlyAvailableGraphDatabase master = cluster.getMaster();
+            assertThat( cluster.getServerId( master ), CoreMatchers.equalTo( 3 ) );
         }
         finally
         {
