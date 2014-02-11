@@ -23,13 +23,14 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.validation.Validator;
 
@@ -115,7 +116,7 @@ public class ConfiguratorTest
 
         Configurator configurator = new PropertyFileConfigurator( file );
 
-        Set<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.getThirdpartyJaxRsPackages();
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = configurator.getThirdpartyJaxRsPackages();
         assertNotNull( thirdpartyJaxRsPackages );
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
     }

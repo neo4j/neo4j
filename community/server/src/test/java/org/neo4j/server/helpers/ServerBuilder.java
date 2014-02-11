@@ -25,7 +25,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -60,7 +60,7 @@ public class ServerBuilder
     private String webAdminUri = "/db/manage/";
     private String webAdminDataUri = "/db/data/";
     protected PreFlightTasks preflightTasks;
-    private final HashMap<String, String> thirdPartyPackages = new HashMap<String, String>();
+    private final LinkedHashMap<String, String> thirdPartyPackages = new LinkedHashMap<String, String>();
     private final Properties arbitraryProperties = new Properties();
 
     private static enum WhatToDo
@@ -445,4 +445,5 @@ public class ServerBuilder
         this.preflightTasks = new PreFlightTasks( tasks );
         return this;
     }
+
 }

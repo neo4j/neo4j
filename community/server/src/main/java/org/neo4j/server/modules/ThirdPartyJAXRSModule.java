@@ -23,7 +23,6 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServer;
@@ -41,7 +40,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
 	private final WebServer webServer;
 
     private ExtensionInitializer extensionInitializer;
-	private Set<ThirdPartyJaxRsPackage> packages;
+	private List<ThirdPartyJaxRsPackage> packages;
 
 
     public ThirdPartyJAXRSModule( WebServer webServer, Configurator configurator, NeoServer neoServer )

@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.configuration;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 
@@ -51,7 +51,7 @@ public class ServerConfigurator extends Configurator.Adapter
 {
 
     private MapBasedConfiguration config = new MapBasedConfiguration();
-    private Set<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
+    private List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
 
     public ServerConfigurator( GraphDatabaseAPI db )
     {
@@ -71,7 +71,7 @@ public class ServerConfigurator extends Configurator.Adapter
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
         return jaxRsPackages;
     }

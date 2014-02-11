@@ -26,6 +26,7 @@ import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,4 +97,24 @@ public class PropertyFileConfiguratorTest
                 "INFO: No database tuning file explicitly set, defaulting to [%s]",
                 tuningPropertiesFile.getAbsolutePath() ) ) );
     }
+
+    @Test
+    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
+    {
+        File propertyFile = PropertyFileBuilder.builder( folder.newFile() )
+                .withNameValue( Configurator.THIRD_PARTY_PACKAGES_KEY,
+                        "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
+                                "org.neo4j.extension.extension3=/extension3" )
+                .build();
+        PropertyFileConfigurator propertyFileConfigurator = new PropertyFileConfigurator( propertyFile );
+
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = propertyFileConfigurator.getThirdpartyJaxRsPackages();
+
+        assertEquals( 3, thirdpartyJaxRsPackages.size() );
+        assertEquals( "/extension1", thirdpartyJaxRsPackages.get( 0 ).getMountPoint() );
+        assertEquals( "/extension2", thirdpartyJaxRsPackages.get( 1 ).getMountPoint() );
+        assertEquals( "/extension3", thirdpartyJaxRsPackages.get( 2 ).getMountPoint() );
+
+    }
+
 }
