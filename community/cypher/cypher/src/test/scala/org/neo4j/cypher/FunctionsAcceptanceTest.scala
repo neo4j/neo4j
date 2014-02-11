@@ -40,4 +40,32 @@ class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
     assert(result === 2)
   }
 
+  @Test
+  def toInt_should_work_as_expected() {
+    // When
+    val result = executeScalar[Int](
+      "CREATE (p:Person { age: \"42\" })" +
+      "WITH * " +
+      "MATCH (n) " +
+      "RETURN toInt(n.age)"
+    )
+
+    // Then
+    assert(result === 42)
+  }
+
+  @Test
+  def toFloat_should_work_as_expected() {
+    // When
+    val result = executeScalar[Double](
+      "CREATE (m:Movie { rating: 4 })" +
+        "WITH * " +
+        "MATCH (n) " +
+        "RETURN toFloat(n.rating)"
+    )
+
+    // Then
+    assert(result === 4.0)
+  }
+
 }

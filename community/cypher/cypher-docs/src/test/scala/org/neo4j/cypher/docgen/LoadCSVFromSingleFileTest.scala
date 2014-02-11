@@ -90,8 +90,11 @@ class LoadCSVFromSingleFileTest extends ArticleTest with StatisticsChecker {
                        |LOAD CSV WITH HEADERS FROM "file://$movie_productions" AS csvLine
                        |MERGE (c:Country {name: csvLine.country})
                        |MERGE (m:Movie {title: csvLine.movie})
-                       |CREATE (p)-[:PRODUCED {year: csvLine.year}]->(m)
+                       |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)
                        |###
+                       |
+                       |+LOAD CSV+ produces values that are collections (or maps when +WITH HEADERS+ is used) of strings.
+                       |In order to convert them to appropriate types, use the built-in +toInt+ and +toFloat+ functions.
                        |""".stripMargin
 
 }

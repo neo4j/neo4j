@@ -21,36 +21,26 @@ package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import scala.languageFeature.existentials
 
-class SplitTest extends FunctionTestBase("split")  {
+class ToFloatTest extends FunctionTestBase("toFloat")  {
 
   @Test
   def shouldAcceptCorrectTypes() {
-    testValidTypes(CTString,CTString)(CTCollection(CTString))
+    testValidTypes(CTAny)(CTDouble)
   }
 
   @Test
-  def shouldFailTypeCheckForIncompatibleArguments() {
-    testInvalidApplication(CTString, CTBoolean)(
-      "Type mismatch: expected String but was Boolean"
-    )
-
-    testInvalidApplication(CTInteger, CTString)(
-      "Type mismatch: expected String but was Integer"
-    )
+  def shouldAcceptMoreSpecificTypes() {
+    testValidTypes(CTString)(CTDouble)
   }
 
   @Test
   def shouldFailIfWrongNumberOfArguments() {
     testInvalidApplication()(
-      "Insufficient parameters for function 'split'"
+      "Insufficient parameters for function 'toFloat'"
     )
-    testInvalidApplication(CTString)(
-      "Insufficient parameters for function 'split'"
-    )
-    testInvalidApplication(CTString,CTString,CTString)(
-      "Too many parameters for function 'split'"
+    testInvalidApplication(CTAny, CTAny)(
+      "Too many parameters for function 'toFloat'"
     )
   }
 }
