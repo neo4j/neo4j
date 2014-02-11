@@ -38,7 +38,7 @@ class LimitTest extends DocumentingTestBase {
       title = "Return first part",
       text = "To return a subset of the result, starting from the top, use this syntax:",
       queryText = "match (n) return n limit 3",
-      returns = "The top three items are returned by the example query.",
+      optionalResultExplanation = "The top three items are returned by the example query.",
       assertions = (p) => assertEquals(List(node("D"), node("E"), node("A")), p.columnAs[Node]("n").toList))
   }
 }

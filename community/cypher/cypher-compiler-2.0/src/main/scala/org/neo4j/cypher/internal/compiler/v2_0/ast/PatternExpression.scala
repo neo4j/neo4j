@@ -23,7 +23,7 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 
-case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTypedExpression {
+case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTyping {
   def position = pattern.position
   protected def possibleTypes = CTCollection(CTPath)
 

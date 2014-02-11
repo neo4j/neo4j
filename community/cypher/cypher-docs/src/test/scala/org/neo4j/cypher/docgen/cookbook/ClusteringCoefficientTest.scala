@@ -72,7 +72,7 @@ WITH a, count(distinct b) as n
 MATCH (a)--()-[r]-()--(a)
 RETURN n, count(distinct r) as r
 """,
-      returns = "This returns `n` and `r` for the above calculations.",
+      optionalResultExplanation = "This returns `n` and `r` for the above calculations.",
       assertions = (p) => assertEquals(List(
         Map("n" -> 4, "r" -> 1)), p.toList))
   }

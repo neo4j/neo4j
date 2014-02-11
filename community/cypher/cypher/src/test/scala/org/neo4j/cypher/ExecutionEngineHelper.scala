@@ -63,7 +63,8 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
     case m :: Nil =>
       if (m.size!=1)
         fail("expected scalar value: " + m)
-      else m.head._2.asInstanceOf[T]
+      else
+        m.head._2.asInstanceOf[T]
     case _ => fail("expected to get a single row back")
   }
 

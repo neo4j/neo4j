@@ -56,7 +56,7 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
           WHERE place.name = 'CoffeeShop1'
       		RETURN stuff.name, count(*)
       		ORDER BY count(*) DESC, stuff.name""",
-      returns = "The list of places that are favorited by people that favorited the start place.",
+      optionalResultExplanation = "The list of places that are favorited by people that favorited the start place.",
       assertions = (p) => assertEquals(List(Map("stuff.name" -> "MelsPlace", "count(*)" -> 2),
         Map("stuff.name" -> "CoffeShop2", "count(*)" -> 1),
         Map("stuff.name" -> "SaunaX", "count(*)" -> 1)), p.toList))
@@ -73,7 +73,7 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 WHERE place.name = 'CoffeeShop1'
 RETURN otherPlace.name, collect(tag.name)
 ORDER BY length(collect(tag.name)) DESC, otherPlace.name""",
-      returns = "This query returns other places than CoffeeShop1 which share the same tags; they are ranked by the number of tags.",
+      optionalResultExplanation = "This query returns other places than CoffeeShop1 which share the same tags; they are ranked by the number of tags.",
       assertions = (p) => {
         assertEquals(List(Map("otherPlace.name" -> "MelsPlace", "collect(tag.name)" -> List("Cool", "Cosy")),
           Map("otherPlace.name" -> "CoffeeShop2", "collect(tag.name)" -> List("Cool")),

@@ -48,7 +48,7 @@ CREATE (me)-[:STATUS]->(latest_update {text:'Status',date:123})
 WITH latest_update, collect(secondlatestupdate) as seconds
 FOREACH(x in seconds | CREATE latest_update-[:NEXT]->x)
 RETURN latest_update.text as new_status""",
-      returns =
+      optionalResultExplanation =
         """
 Dividing the query into steps, this query resembles adding new item in middle of a doubly linked list:
 

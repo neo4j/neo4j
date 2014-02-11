@@ -45,7 +45,7 @@ class CollabFilteringTest extends DocumentingTestBase {
           "where not (joe)-[:knows]-(friend_of_friend) " +
           "return friend_of_friend.name, COUNT(*) " +
           "order by COUNT(*) DESC, friend_of_friend.name",
-      returns = "This returns a list of friends-of-friends ordered by the number of connections to them, and secondly by their name.",
+      optionalResultExplanation = "This returns a list of friends-of-friends ordered by the number of connections to them, and secondly by their name.",
       assertions = (p) => assertEquals(List(
         Map("friend_of_friend.name" -> "Ian", "COUNT(*)" -> 2),
         Map("friend_of_friend.name" -> "Derrick", "COUNT(*)" -> 1),

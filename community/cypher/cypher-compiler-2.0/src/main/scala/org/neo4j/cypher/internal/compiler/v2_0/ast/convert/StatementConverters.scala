@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast.convert
 import ExpressionConverters._
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.{expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{expressions => commandexpressions, values => commandvalues, StartItem}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {
@@ -63,6 +63,7 @@ object StatementConverters {
           val b = tail.foldLeft(commands.QueryBuilder())((b, t) => b.tail(t))
 
           val builder = group.foldLeft(b)((b, clause) => clause match {
+            case c: ast.LoadCSV      => c.addToQueryBuilder(b)
             case c: ast.Start        => c.addToQueryBuilder(b)
             case c: ast.Match        => c.addToQueryBuilder(b)
             case c: ast.Merge        => c.addToQueryBuilder(b)
@@ -111,6 +112,13 @@ object StatementConverters {
           }
       }
       groups :+ last
+    }
+  }
+
+  implicit class LoadCsvConverter(inner: ast.LoadCSV) {
+    def addToQueryBuilder(builder: commands.QueryBuilder) = {
+      val items: Seq[StartItem] = builder.startItems :+ commands.LoadCSV(inner.withHeaders, inner.urlString.asURL, inner.identifier.name)
+      builder.startItems(items: _*)
     }
   }
 

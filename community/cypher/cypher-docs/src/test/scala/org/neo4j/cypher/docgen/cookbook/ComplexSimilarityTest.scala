@@ -22,7 +22,6 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.junit.Ignore
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
@@ -45,7 +44,7 @@ class ComplexSimilarityTest extends DocumentingTestBase {
 WITH me,count(distinct r1) as H1,count(distinct r2) as H2,you
 MATCH (me)-[r1:ATE]->(food)<-[r2:ATE]-(you)
 RETURN sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2)) as similarity""",
-      returns = "The two players and their similarity measure.",
+      optionalResultExplanation = "The two players and their similarity measure.",
       assertions = (p) => assertEquals(List(Map("similarity" -> -30.0)),p.toList))
   } 
 }

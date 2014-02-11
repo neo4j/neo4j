@@ -45,7 +45,7 @@ foreach( x in range(1,3) |
    CREATE (leaf1), (leaf2), (center)-[:X]->(leaf1), (center)-[:X]->(leaf2), (leaf1)-[:X]->(leaf2)
 )
 RETURN ID(center) as id""",
-      returns =
+      optionalResultExplanation =
 """The id of the center node is returned by the query.""",
       assertions = { (p) =>
         assertEquals(List(Map("id" -> 0)), p.toList)

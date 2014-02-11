@@ -46,7 +46,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Filter on node label",
       text = "To filter nodes by label, write a label predicate after the `WHERE` keyword using `WHERE n:foo`.",
       queryText = """match (n) where n:Swedish return n""",
-      returns = """The "+Andres+" node will be returned.""",
+      optionalResultExplanation = """The "+Andres+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -55,7 +55,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Filter on node property",
       text = "To filter on a property, write your clause after the `WHERE` keyword. Filtering on relationship properties works just the same way.",
       queryText = """match (n) where n.age < 30 return n""",
-      returns = """The "+Tobias+" node will be returned.""",
+      optionalResultExplanation = """The "+Tobias+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -65,7 +65,7 @@ class WhereTest extends DocumentingTestBase {
       text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT`. " +
         "See <<cypher-working-with-null>> for more information on how this works with +NULL+.",
       queryText = """match (n) where n.name = 'Peter' xor (n.age < 30 and n.name = "Tobias") or not (n.name = "Tobias" or n.name="Peter") return n""",
-      returns = "This query shows how boolean operators can be used.",
+      optionalResultExplanation = "This query shows how boolean operators can be used.",
       assertions = (p) => assertEquals(nodes("Andres", "Tobias", "Peter").toSet, p.columnAs[Node]("n").toSet))
   }
 
@@ -74,7 +74,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Regular expressions",
       text = "You can match on regular expressions by using `=~ \"regexp\"`, like this:",
       queryText = """match (n) where n.name =~ 'Tob.*' return n""",
-      returns = """The "+Tobias+" node will be returned.""",
+      optionalResultExplanation = """The "+Tobias+" node will be returned.""",
       assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -84,7 +84,7 @@ class WhereTest extends DocumentingTestBase {
       text = "If you need a forward slash inside of your regular expression, escape it. Remember that back slash needs " +
              "to be escaped in string literals",
       queryText = """match (n) where n.name =~ 'Some\\/thing' return n""",
-      returns = """No nodes match this regular expression.""",
+      optionalResultExplanation = """No nodes match this regular expression.""",
       assertions = (p) => assertEquals(List(), p.toList))
   }
 
@@ -93,7 +93,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Case insensitive regular expressions",
       text = "By pre-pending a regular expression with `(?i)`, the whole expression becomes case insensitive.",
       queryText = """match (n) where n.name =~ '(?i)ANDR.*' return n""",
-      returns = """The node with name "+Andres+" is returned.""",
+      optionalResultExplanation = """The node with name "+Andres+" is returned.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
@@ -102,7 +102,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Property exists",
       text = "To only include nodes/relationships that have a property, use the `HAS()` function and just write out the identifier and the property you expect it to have.",
       queryText = """match (n) where has(n.belt) return n""",
-      returns = """The node named "+Andres+" is returned.""",
+      optionalResultExplanation = """The node named "+Andres+" is returned.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -112,7 +112,7 @@ class WhereTest extends DocumentingTestBase {
       text = "If you want to compare a property on a graph element, but only if it exists, you can compare the " +
         "property against both the value you are looking for and +NULL+, like:",
       queryText = """match (n) where n.belt = 'white' or n.belt IS NULL return n order by n.name""",
-      returns = "This returns all nodes, even those without the belt property.",
+      optionalResultExplanation = "This returns all nodes, even those without the belt property.",
       assertions = (p) => assertEquals(List(node("Andres"), node("Peter"), node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
@@ -121,7 +121,7 @@ class WhereTest extends DocumentingTestBase {
       title = "Default to false if property is missing",
       text = "As missing properties evaluate to +NULL+, the comparision in the example will evaluate to +FALSE+ for nodes without the +belt+ property.",
       queryText = """match (n) where n.belt = 'white' return n""",
-      returns = "Only nodes with the belt property are returned.",
+      optionalResultExplanation = "Only nodes with the belt property are returned.",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
@@ -132,7 +132,7 @@ class WhereTest extends DocumentingTestBase {
         "advanced filtering on the type. You can use the special property `TYPE` to compare the type with something else. " +
         "In this example, the query does a regular expression comparison with the name of the relationship type.",
       queryText = """match (n)-[r]->() where n.name='Andres' and type(r) =~ 'K.*' return r""",
-      returns = """This returns relationships that has a type whose name starts with K.""",
+      optionalResultExplanation = """This returns relationships that has a type whose name starts with K.""",
       assertions = (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }
 
@@ -142,7 +142,7 @@ class WhereTest extends DocumentingTestBase {
       text = "Sometimes you might want to test if a value or an identifier is +NULL+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """match (person) where person.name = 'Peter' AND person.belt is null return person""",
-      returns = "Nodes that Tobias is not connected to are returned.",
+      optionalResultExplanation = "Nodes that Tobias is not connected to are returned.",
       assertions = (p) => assertEquals(List(Map("person" -> node("Peter"))), p.toList))
   }
 
@@ -162,7 +162,7 @@ first will produce a subgraph for every path it can find between `a` and `b`, an
 subgraphs where `a` and `b` do not have a directed relationship chain between them.
              """,
       queryText = """match (tobias {name: 'Tobias'}), (others) where others.name IN ['Andres', 'Peter'] and (tobias)<--(others) return others""",
-      returns = "Nodes that have an outgoing relationship to the \"+Tobias+\" node are returned.",
+      optionalResultExplanation = "Nodes that have an outgoing relationship to the \"+Tobias+\" node are returned.",
       assertions = (p) => assertEquals(List(Map("others" -> node("Andres"))), p.toList))
   }
 
@@ -171,7 +171,7 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       title = "Filter on patterns with properties",
       text = """You can also add properties to your patterns:""",
       queryText = """match (n) where (n)-[:KNOWS]-({name:'Tobias'}) return n""",
-      returns = "Finds all nodes that have a +KNOWS+ relationship to a node with the name +Tobias+.",
+      optionalResultExplanation = "Finds all nodes that have a +KNOWS+ relationship to a node with the name +Tobias+.",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
@@ -180,7 +180,7 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       title = "Filter on patterns using NOT",
       text = """The `NOT` function can be used to exclude a pattern. """,
       queryText = """MATCH (persons), (peter {name: 'Peter'}) where not (persons)-->(peter) return persons""",
-      returns = "Nodes that do not have an outgoing relationship to the \"+Peter+\" node are returned.",
+      optionalResultExplanation = "Nodes that do not have an outgoing relationship to the \"+Peter+\" node are returned.",
       assertions = (p) => assertEquals(List(Map("persons" -> node("Tobias")),Map("persons" -> node("Peter"))), p.toList))
   }
 
@@ -189,7 +189,7 @@ subgraphs where `a` and `b` do not have a directed relationship chain between th
       title = "IN operator",
       text = "To check if an element exists in a collection, you can use the `IN` operator.",
       queryText = """match (a) where a.name IN ["Peter", "Tobias"] return a""",
-      returns = "This query shows how to check if a property exists in a literal collection.",
+      optionalResultExplanation = "This query shows how to check if a property exists in a literal collection.",
       assertions = (p) => assertEquals(List(node("Tobias"),node("Peter")), p.columnAs[Node]("a").toList))
   }
 }

@@ -41,7 +41,7 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
         "Note that the index is not immediately available, but will be created in the background. " +
         "See <<graphdb-neo4j-schema-indexes>> for details.",
       queryText = "create index on :Person(name)",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
     )
   }
@@ -52,7 +52,7 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
       text = "To drop an index on all nodes that have a label, use the +DROP+ +INDEX+ clause.",
       prepare = executePreparationQueries(List("create index on :Person(name)")),
       queryText = "drop index on :Person(name)",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List())
     )
   }
@@ -64,7 +64,7 @@ class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with Gr
         "For example the query below will use the `Person(name)` index, if it exists. " +
         "If you for some reason want to hint to specific indexes, see <<query-using>>.",
       queryText = "match (n:Person {name: 'Andres'}) return n",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertEquals(0, p.size)
     )
   }

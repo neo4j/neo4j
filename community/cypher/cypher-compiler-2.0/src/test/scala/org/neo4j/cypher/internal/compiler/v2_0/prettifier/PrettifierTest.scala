@@ -108,6 +108,20 @@ class PrettifierTest extends Assertions {
       "optional MATCH (n)-->(x) return n, x")
   }
 
+  @Test
+  def shouldPrettifyLoadCsv() {
+    assertIsPrettified("LOAD CSV FROM \"f\" AS line", "LOAD CSV FROM \"f\" AS line")
+  }
+
+  @Test
+  def shouldPrettifyLoadCsvWithHeaders() {
+    assertIsPrettified("LOAD CSV WITH HEADERS FROM \"f\" AS line", "LOAD CSV wiTh HEADERS FROM \"f\" AS line")
+  }
+
+  @Test
+  def shouldPrettifyAndBreakLoadCsv() {
+    assertIsPrettified("MATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)", "MATCH (n) LOAD CSV FROM \"f\" AS line return (n)")
+  }
 
   @Test
   def shouldPrettifyWithCorrectStringQuotes() {

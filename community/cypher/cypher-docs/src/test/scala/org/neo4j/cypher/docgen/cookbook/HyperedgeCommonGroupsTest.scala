@@ -85,7 +85,7 @@ To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common
           "where u1.name = 'User1' and u2.name = 'User2' " +
           "return group.name, count(role) " +
           "order by group.name ASC",
-        returns = "The groups where +User1+ and +User2+ share at least one common role:",
+        optionalResultExplanation = "The groups where +User1+ and +User2+ share at least one common role:",
         assertions = (p) => assertEquals(List(Map("group.name" -> "Group1", "count(role)" -> 1), Map("group.name" -> "Group2", "count(role)" -> 1)), p.toList))
     }
 

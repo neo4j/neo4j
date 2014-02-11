@@ -21,32 +21,27 @@ package org.neo4j.test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.progress.ProgressListener;
 
-public class BatchTransaction
+public class BatchTransaction implements AutoCloseable
 {
-    private static final int MAX_SIZE = 10000;
+    private static final int DEFAULT_INTERMEDIARY_SIZE = 10000;
 
     public static BatchTransaction beginBatchTx( GraphDatabaseService db )
     {
-        return new BatchTransaction( db, MAX_SIZE );
+        return new BatchTransaction( db );
     }
-    
-    public static BatchTransaction beginBatchTx( GraphDatabaseService db, int maxSize )
-    {
-        return new BatchTransaction( db, maxSize );
-    }
-    
+
     private final GraphDatabaseService db;
     private Transaction tx;
     private int txSize;
     private int total;
-    private boolean printProgress;
-    private final int maxSize;
-    
-    private BatchTransaction( GraphDatabaseService db, int maxSize )
+    private int intermediarySize = DEFAULT_INTERMEDIARY_SIZE;
+    private ProgressListener progressListener = ProgressListener.NONE;
+
+    private BatchTransaction( GraphDatabaseService db )
     {
         this.db = db;
-        this.maxSize = maxSize;
         beginTx();
     }
 
@@ -54,65 +49,65 @@ public class BatchTransaction
     {
         this.tx = db.beginTx();
     }
-    
+
     public GraphDatabaseService getDb()
     {
         return db;
     }
-    
+
     public boolean increment()
     {
         return increment( 1 );
     }
-    
+
     public boolean increment( int count )
     {
         txSize += count;
-        total++;
-        if ( txSize >= MAX_SIZE )
+        total += count;
+        progressListener.add( count );
+        if ( txSize >= intermediarySize )
         {
-            if ( printProgress )
-            {
-                System.out.println( total );
-            }
             txSize = 0;
-            finish();
-            beginTx();
+            intermediaryCommit();
             return true;
         }
         return false;
     }
-    
-    public void restart()
+
+    public void intermediaryCommit()
     {
-        finish();
+        closeTx();
         beginTx();
     }
-    
-    public void finish()
+
+    private void closeTx()
     {
         tx.success();
-        tx.finish();
+        tx.close();
     }
-    
-    public int size()
+
+    @Override
+    public void close()
     {
-        return txSize;
+        closeTx();
+        progressListener.done();
     }
-    
-    public int limit()
-    {
-        return MAX_SIZE;
-    }
-    
+
     public int total()
     {
         return total;
     }
-    
-    public BatchTransaction printProgress( boolean value )
+
+    public BatchTransaction withIntermediarySize( int intermediarySize )
     {
-        printProgress = value;
+        this.intermediarySize = intermediarySize;
+        return this;
+    }
+
+    public BatchTransaction withProgress( ProgressListener progressListener )
+    {
+        this.progressListener = progressListener;
+        this.progressListener.started();
         return this;
     }
 }

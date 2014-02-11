@@ -46,7 +46,7 @@ class DocumentationTestBaseTest extends DocumentingTestBase with StatisticsCheck
       title = "Test DocumentationTestBase",
       text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
       queryText = """match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
-      returns = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
+      optionalResultExplanation = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList))
 
     // ensure that the result/graph is actually printed to the file and not empty.
@@ -82,7 +82,7 @@ _When you do this, you can't create anything else in the same +CREATE+ statement
           Map("name" -> "Michael", "position" -> "Developer"))))
       ,
       queryText = "create ({props})",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
 
     // ensure that the parameters are printed

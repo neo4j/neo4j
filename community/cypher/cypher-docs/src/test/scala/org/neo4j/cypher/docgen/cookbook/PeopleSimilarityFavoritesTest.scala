@@ -50,7 +50,7 @@ class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
                   "WHERE NOT (me)-[:friend]-(person) " +
                   "RETURN person.name, count(stuff) " +
                   "ORDER BY count(stuff) DESC",
-      returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends is returned.",
+      optionalResultExplanation = "The list of possible friends ranked by them liking similar stuff that are not yet friends is returned.",
       assertions = (p) => assertEquals(List(Map("person.name" -> "Derrick", "count(stuff)" -> 2),
         Map("person.name" -> "Jill", "count(stuff)" -> 1)), p.toList))
   }

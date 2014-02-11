@@ -58,7 +58,7 @@ WITH myfriend
 MATCH (myfriend)-[:STATUS]-(latestupdate)-[:NEXT*0..1]-(statusupdates) 
 RETURN myfriend.name as name, statusupdates.date as date, statusupdates.text as text
 ORDER BY statusupdates.date DESC LIMIT 3""",
-      returns =
+      optionalResultExplanation =
 """
 To understand the strategy, let's divide the query into five steps:
 

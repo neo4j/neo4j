@@ -42,7 +42,7 @@ class StartTest extends DocumentingTestBase {
         "which means it's bad practice to refer to them this way. " +
         "Instead, use application generated ids.",
       queryText = "start n=node(%A%) return n",
-      returns = "The corresponding node is returned.",
+      optionalResultExplanation = "The corresponding node is returned.",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
   }
 
@@ -52,7 +52,7 @@ class StartTest extends DocumentingTestBase {
       text = "Binding a relationship as a starting point is done with the `relationship(*)` function, which can also be abbreviated `rel(*)`." +
         " See <<start-node-by-id>> for more information on Neo4j ids.",
       queryText = "start r=relationship(0) return r",
-      returns = "The relationship with id +0+ is returned.",
+      optionalResultExplanation = "The relationship with id +0+ is returned.",
       (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
   }
 
@@ -61,7 +61,7 @@ class StartTest extends DocumentingTestBase {
       title = "Multiple nodes by id",
       text = "Multiple nodes are selected by listing them separated by commas.",
       queryText = "start n=node(%A%, %B%, %C%) return n",
-      returns = "This returns the nodes listed in the `START` statement.",
+      optionalResultExplanation = "This returns the nodes listed in the `START` statement.",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 
@@ -75,7 +75,7 @@ This can be done with relationships as well.
 TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-all-nodes>> in <<query-match>> for how to do that.
 """,
       queryText = "start n=node(*) return n",
-      returns = "This query returns all the nodes in the graph.",
+      optionalResultExplanation = "This query returns all the nodes in the graph.",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 
@@ -85,7 +85,7 @@ TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-al
       title = "Node by index lookup",
       text = "When the starting point can be found by using index lookups, it can be done like this: `node:index-name(key = \"value\")`. In this example, there exists a node index named `nodes`.",
       queryText = """start n=node:nodes(name = "A") return n""",
-      returns = """The query returns the node indexed with the name "+A+".""",
+      optionalResultExplanation = """The query returns the node indexed with the name "+A+".""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
@@ -105,7 +105,7 @@ TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-al
       title = "Relationship by index lookup",
       text = "When the starting point can be found by using index lookups, it can be done like this: `relationship:index-name(key = \"value\")`.",
       queryText = """start r=relationship:rels(name = "Andrés") return r""",
-      returns = """The relationship indexed with the +name+ property set to "+Andrés+" is returned by the query.""",
+      optionalResultExplanation = """The relationship indexed with the +name+ property set to "+Andrés+" is returned by the query.""",
       (p) => assertEquals(List(Map("r" -> rel(0))), p.toList))
   }
 
@@ -116,7 +116,7 @@ TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-al
       text = "When the starting point can be found by more complex Lucene queries, this is the syntax to use: `node:index-name(\"query\")`." +
         "This allows you to write more advanced index queries.",
       queryText = """start n=node:nodes("name:A") return n""",
-      returns = """The node indexed with name "A" is returned by the query.""",
+      optionalResultExplanation = """The node indexed with name "A" is returned by the query.""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
@@ -125,7 +125,7 @@ TIP: The preferred way to do this is to use a `MATCH` clause, see <<match-get-al
       title = "Multiple starting points",
       text = "Sometimes you want to bind multiple starting points. Just list them separated by commas.",
       queryText = """start a=node(%A%), b=node(%B%) return a,b""",
-      returns = """Both the nodes +A+ and the +B+  are returned.""",
+      optionalResultExplanation = """Both the nodes +A+ and the +B+  are returned.""",
       p => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"))), p.toList))
   }
 }

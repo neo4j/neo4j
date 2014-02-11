@@ -53,6 +53,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -68,14 +69,17 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
+        <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-matching</artifactId>
+        <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
+        <scope>provided</scope>
     </dependency>
 
     <!-- neo4j-cypher -->
@@ -90,8 +94,13 @@
     <!-- other -->
 
     <dependency>
-        <groupId>org.parboiled</groupId>
-        <artifactId>parboiled-scala_2.10</artifactId>
+      <groupId>org.parboiled</groupId>
+      <artifactId>parboiled-scala_2.10</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.opencsv</groupId>
+      <artifactId>opencsv</artifactId>
+      <version>2.0</version>
     </dependency>
 
   </dependencies>

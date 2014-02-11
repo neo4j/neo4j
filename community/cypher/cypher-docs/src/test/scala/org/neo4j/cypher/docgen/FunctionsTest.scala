@@ -441,7 +441,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
 "(at lat 52.5, lon 13.4) and San Mateo in California (at lat 37.5, lon -122.3) is calculated using an average " +
 "earth radius of 6371 km.",
       queryText = """CREATE (ber:City {lat: 52.5, lon: 13.4}), (sm:City {lat: 37.5, lon: -122.3}) RETURN 2 * 6371 * asin(sqrt(haversin(radians( sm.lat - ber.lat )) + cos(radians( sm.lat )) * cos(radians( ber.lat )) * haversin(radians( sm.lon - ber.lon )))) AS dist""",
-      returns = "The distance between Berlin and San Mateo is returned (about 9129 km).",
+      optionalResultExplanation = "The distance between Berlin and San Mateo is returned (about 9129 km).",
       assertions = (p) => assertEquals(9129, p.toList.head("dist").asInstanceOf[Double], 1)
     )
   }
@@ -596,6 +596,23 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       queryText = "return replace(\"hello\", \"l\", \"w\")",
       returns = "",
       assertions = (p) => assert(Seq("hewwo") === p.columnAs[String]("replace(\"hello\", \"l\", \"w\")").toSeq)
+    )
+  }
+
+  @Test def split() {
+    testThis(
+      title = "SPLIT",
+      syntax = "SPLIT( original, splitPattern )",
+      arguments = List("original" -> "An expression that returns a string",
+        "splitRegex" -> "An expression that returns a pattern to split with"),
+      text = "`SPLIT` returns the sequence of strings witch are delimited by split patterns.",
+      queryText = "return split(\"one,two\", \",\")",
+      returns = "[\"one\", \"two\"]",
+      assertions = (p) => {
+        assert(List(Map(
+          "split(\"one,two\", \",\")" -> List("one", "two")
+        )) === p.toList)
+      }
     )
   }
 

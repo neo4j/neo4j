@@ -30,7 +30,7 @@ abstract class FunctionTestBase(funcName: String) extends Assertions {
 
   protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec) {
     val (result, invocation) = evaluateWithTypes(argumentTypes.toIndexedSeq)
-    assert(result.errors.isEmpty)
+    assert(result.errors.isEmpty, s"type check has errors: ${result.errors.mkString(",")}")
     assert(invocation.types(result.state) === expected)
   }
 

@@ -49,7 +49,7 @@ create (ah:Actor{name: 'Anthony Hopkins'}),
         """match (n:Actor) return n.name as name
            UNION ALL
            match (n:Movie) return n.title as name""",
-      returns = "The combined result is returned, including duplicates.",
+      optionalResultExplanation = "The combined result is returned, including duplicates.",
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 4)
@@ -66,7 +66,7 @@ create (ah:Actor{name: 'Anthony Hopkins'}),
         """match (n:Actor) return n.name as name
 UNION
 match (n:Movie) return n.title as name""",
-      returns = "The combined result is returned, without duplicates.",
+      optionalResultExplanation = "The combined result is returned, without duplicates.",
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 3)

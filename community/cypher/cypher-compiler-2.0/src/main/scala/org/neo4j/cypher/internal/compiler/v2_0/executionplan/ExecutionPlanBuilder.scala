@@ -147,7 +147,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       val decorator = if (profile) new Profiler() else NullDecorator
       val state = new QueryState(graph, queryContext, params, decorator)
       val results: Iterator[collection.Map[String, Any]] = pipe.createResults(state)
-      val closingIterator = new ClosingIterator(results, queryContext)
+      val closingIterator = new ClosingIterator(results, queryContext, state)
       val descriptor = { () =>
         val result = decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
         result
@@ -194,7 +194,7 @@ The Neo4j Team""")
       new PredicateRewriter, 
       new KeyTokenResolver,  
       new AggregationPreparationRewriter(), 
-      new IndexLookupBuilder, 
+      new IndexLookupBuilder,
       new StartPointChoosingBuilder, 
       new MergeStartPointBuilder,
       new OptionalMatchBuilder(matching)
@@ -205,7 +205,8 @@ The Neo4j Team""")
     def myBuilders: Seq[PlanBuilder] = Seq(
       new TraversalMatcherBuilder,
       new FilterBuilder, 
-      new NamedPathBuilder, 
+      new NamedPathBuilder,
+      new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder, 
       new ShortestPathBuilder 

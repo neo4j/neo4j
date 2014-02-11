@@ -67,7 +67,7 @@ AND type(r1)=type(r2) AND NOT (origin)-[:KNOWS]-(candidate)
 RETURN origin.name as origin, candidate.name as candidate, 
     SUM(ROUND(r2.weight + (COALESCE(r2.activity, 0) * 2))) as boost
 ORDER BY boost desc limit 10""",
-      returns =
+      optionalResultExplanation =
 """This returns the recommended friends for the origin nodes and their recommendation score.""",
       assertions = (p) => assertEquals(List(
           Map("origin" -> "Clark Kent","candidate" -> "Perry White","boost" -> 22),

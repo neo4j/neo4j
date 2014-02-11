@@ -63,7 +63,7 @@ class MealTestIgnored extends DocumentingTestBase {
                   "path=meal-[r:composed_of*0..]->ingredient " +
                   "WHERE me.name='Peter' and not(ingredient --> ())" +
                   "RETURN ingredient.name ",
-      returns = "The activity stream for Jane is returned.",
+      optionalResultExplanation = "The activity stream for Jane is returned.",
       assertions = (p) => assertEquals(List(Map("ingredient.name" -> "Potatoes"),
         Map("ingredient.name" -> "Meat"),
         Map("ingredient.name" -> "Salt"),
