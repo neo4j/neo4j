@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 import org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.parboiled.Context
 import org.parboiled.scala._
+import org.neo4j.cypher.internal.compiler.v2_0.ast.StringLiteral
 
 trait Literals extends Parser
   with Base with Strings {

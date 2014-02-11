@@ -30,6 +30,10 @@ include::write.asciidoc[]
 
 :leveloffset: 1
 
+include::ql/import/index.asciidoc[]
+
+:leveloffset: 1
+
 include::ql/functions/index.asciidoc[]
 
 :leveloffset: 1

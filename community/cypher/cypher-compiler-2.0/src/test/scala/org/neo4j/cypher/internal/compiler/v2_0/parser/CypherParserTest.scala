@@ -33,6 +33,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.scalatest.junit.JUnitSuite
+import java.net.URL
 
 object CypherParserTest {
   val cypherParser = CypherParser()
@@ -2943,6 +2944,25 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Identifier("n"), "n"))
     )
   }
+
+  @Test def should_handle_load_and_return_as_map() {
+    test(
+      "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",
+      Query.
+        start(LoadCSV(withHeaders = true, new URL("file:///tmp/file.cvs"), "line")).
+        returns(ReturnItem(Property(Identifier("line"), PropertyKey("key")), "line.key"))
+    )
+  }
+
+  @Test def should_handle_load_and_return() {
+    test(
+      "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
+      Query.
+        start(LoadCSV(withHeaders = false, new URL("file:///tmp/file.cvs"), "line")).
+        returns(ReturnItem(Identifier("line"), "line"))
+    )
+  }
+
 
   private def test(query: String, expectedQuery: AbstractQuery) {
     val ast = cypherParser.parseToQuery(query)

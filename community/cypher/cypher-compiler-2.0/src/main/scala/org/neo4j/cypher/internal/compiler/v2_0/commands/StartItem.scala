@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
 import org.neo4j.cypher.internal.compiler.v2_0.data.SeqVal
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateRelationship
+import java.net.URL
 
 trait NodeStartItemIdentifiers extends StartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTNode)
@@ -112,6 +113,11 @@ case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty)
 
 case class AllRelationships(columnName: String) extends StartItem(columnName, Map.empty)
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers
+
+case class LoadCSV(withHeaders: Boolean, fileUrl: URL, identifier: String) extends StartItem(identifier, Map.empty)
+  with ReadOnlyStartItem {
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> (if (withHeaders) CTMap else CTCollection(CTAny)))
+}
 
 //We need to wrap the inner classes to be able to have two different rewrite methods
 abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Map.empty) {

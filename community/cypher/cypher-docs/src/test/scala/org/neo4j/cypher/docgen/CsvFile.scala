@@ -17,14 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.docgen
 
-import org.junit.Test
+import java.io.{PrintWriter, File}
 
-class AggregationAcceptanceTest extends ExecutionEngineHelper {
-  @Test def should_handle_aggregates_inside_non_aggregate_expressions() {
-    execute(
-      "MATCH (a { name: 'Andres' })<-[:FATHER_OF]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"
-    ).toList
+class CsvFile(fileName: String)(implicit csvFilesDir: File) {
+  def withContents(lines: Seq[String]*): String = {
+    val csvFile = new File(csvFilesDir, fileName)
+    val writer = new PrintWriter(csvFile, "UTF-8")
+    lines.foreach(line => writer.println(line.mkString("\"", "\",\"", "\"")))
+    writer.flush()
+    writer.close()
+
+    csvFile.getAbsolutePath
   }
 }
