@@ -22,7 +22,6 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.junit.Ignore
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
@@ -65,7 +64,7 @@ To find the activity stream for a person, just follow the linked list of the fri
         "(friend)-[:has]->(status) " +
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",
-      returns = "The returns the activity stream for Jane.",
+      optionalResultExplanation = "The returns the activity stream for Jane.",
       assertions = (p) => assertEquals(List(Map("status.name" -> "Bill_s1", "friend.name" -> "Bill", "me.name" -> "Jane", "length(p)" -> 1),
           Map("status.name" -> "Joe_s1", "friend.name" -> "Joe", "me.name" -> "Jane", "length(p)" -> 2),
           Map("status.name" -> "Bob_s1", "friend.name" -> "Bob", "me.name" -> "Jane", "length(p)" -> 3)

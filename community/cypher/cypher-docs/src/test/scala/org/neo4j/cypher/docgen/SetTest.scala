@@ -46,7 +46,7 @@ class SetTest extends DocumentingTestBase with StatisticsChecker {
       title = "Set a property",
       text = "To set a property on a node or relationship, use +SET+.",
       queryText = "match (n {name: 'Andres'}) set n.surname = 'Taylor' return n",
-      returns = "The newly changed node is returned by the query.",
+      optionalResultExplanation = "The newly changed node is returned by the query.",
       assertions = (p) => assert(node("Andres").getProperty("surname") === "Taylor"))
   }
 
@@ -56,7 +56,7 @@ class SetTest extends DocumentingTestBase with StatisticsChecker {
       text = """Normally you remove a property by using +<<query-remove,REMOVE>>+, but it's sometimes handy to do
 it using the +SET+ command. One example is if the property comes from a parameter.""",
       queryText = "match (n {name: 'Andres'}) set n.name = null return n",
-      returns = "The node is returned by the query, and the name property is now missing.",
+      optionalResultExplanation = "The node is returned by the query, and the name property is now missing.",
       assertions = (p) => assertFalse(node("Andres").hasProperty("name")))
   }
 
@@ -67,7 +67,7 @@ it using the +SET+ command. One example is if the property comes from a paramete
         """You can also use +SET+ to copy all properties from one graph element to another. Remember that doing this
 will remove all other properties on the receiving graph element.""".stripMargin,
       queryText = "match (at {name: 'Andres'}), (pn {name: 'Peter'}) set at = pn return at, pn",
-      returns = "The Andres node has had all it's properties replaced by the properties in the Peter node.",
+      optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the Peter node.",
       assertions = (p) => {
         assert(node("Andres").getProperty("name") === "Peter")
         assertFalse("Didn't expect the Andres node to have an awesome property", node("Andres").hasProperty("awesome"))
@@ -82,7 +82,7 @@ Use a parameter to give the value of a property.
 """,
       prepare = setParameters(Map("surname" -> "Taylor")),
       queryText = "match (n {name: 'Andres'}) set n.surname = {surname} return n",
-      returns = "The Andres node has got an surname added.",
+      optionalResultExplanation = "The Andres node has got an surname added.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 1))
   }
 
@@ -94,7 +94,7 @@ This will replace all existing properties on the node with the new set provided 
 """,
       prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
       queryText = "match (n {name: 'Andres'}) set n = {props} return n",
-      returns = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
+      optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
   }
 
@@ -103,7 +103,7 @@ This will replace all existing properties on the node with the new set provided 
       title = "Set a label on a node",
       text = "To set a label on a node, use +SET+.",
       queryText = "match (n {name: 'Stefan'}) set n :German return n",
-      returns = "The newly labeled node is returned by the query.",
+      optionalResultExplanation = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("German")))
   }
 
@@ -112,7 +112,7 @@ This will replace all existing properties on the node with the new set provided 
       title = "Set multiple labels on a node",
       text = "To set multiple labels on a node, use +SET+ and separate the different labels using +:+.",
       queryText = "match (n {name: 'Emil'}) set n :Swedish:Bossman return n",
-      returns = "The newly labeled node is returned by the query.",
+      optionalResultExplanation = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Bossman")))
   }
 

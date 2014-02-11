@@ -43,7 +43,7 @@ class DeleteTest extends DocumentingTestBase with StatisticsChecker {
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
       queryText = "match (n {name: 'Peter'}) delete n",
-      returns = "Nothing is returned from this query, except the count of affected nodes.",
+      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(node("Peter")))
   }
 
@@ -52,7 +52,7 @@ class DeleteTest extends DocumentingTestBase with StatisticsChecker {
       title = "Delete a node and connected relationships",
       text = "If you are trying to delete a node with relationships on it, you have to delete these as well.",
       queryText = "match (n {name: 'Andres'})-[r]-() delete n, r",
-      returns = "Nothing is returned from this query, except the count of affected nodes.",
+      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertIsDeleted(node("Andres")))
   }
 
@@ -61,7 +61,7 @@ class DeleteTest extends DocumentingTestBase with StatisticsChecker {
       title = "Delete all nodes and relationships",
       text = "This query isn't for deleting large amounts of data, but is nice when playing around with small example data sets.",
       queryText = "MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n,r",
-      returns = "Nothing is returned from this query, except the count of affected nodes.",
+      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 3))
   }
 }

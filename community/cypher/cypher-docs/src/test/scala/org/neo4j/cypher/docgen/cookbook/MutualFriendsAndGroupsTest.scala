@@ -47,7 +47,7 @@ between persons. If no mutual groups or friends are found, there should be a `0`
           "OPTIONAL MATCH pMutualFriends=(me)-[:knows]->(mf)<-[:knows]-(other) " +
           "RETURN other.name as name, \n count(distinct pGroups) AS mutualGroups, \n count(distinct pMutualFriends) AS mutualFriends " +
             "ORDER BY mutualFriends DESC",
-      returns =
+      optionalResultExplanation =
 """The question we are asking is -- how many unique paths are there between me and Jill, the paths being common group memberships, and common friends.
 If the paths are mandatory, no results will be returned if me and Bob lack any common friends, and we don't want that. To make a path optional,
 you have to make at least one of it's relationships optional. That makes the whole path optional.""",

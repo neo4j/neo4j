@@ -63,7 +63,7 @@ include::includes/path-tree-layout-full-range.asciidoc[]
                 "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
-      returns = "Returning all events between 2010-12-31 and 2011-01-03, in this case all events.",
+      optionalResultExplanation = "Returning all events between 2010-12-31 and 2011-01-03, in this case all events.",
       assertions = (p) => assertEquals(List(Map("event.name" -> "Event1"),
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event2"),
@@ -86,7 +86,7 @@ include::includes/path-tree-layout-zero-range.asciidoc[]
                 "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
-      returns = "Returning all events on the date 2010-12-31, in this case +Event1+ and +Event2+",
+      optionalResultExplanation = "Returning all events on the date 2010-12-31, in this case +Event1+ and +Event2+",
       assertions = (p) => assertEquals(List(Map("event.name" -> "Event1"),
           Map("event.name" -> "Event2")
           ),p.toList))
@@ -112,7 +112,7 @@ include::includes/path-tree-layout-shared-root-path.asciidoc[]
                 "WHERE root.name = 'Root'" +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
-      returns = "Returning all events between 2011-01-01 and 2011-01-03, in this case +Event2+ and +Event3+.",
+      optionalResultExplanation = "Returning all events between 2011-01-01 and 2011-01-03, in this case +Event2+ and +Event3+.",
       assertions = (p) => assertEquals(List(
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event3")

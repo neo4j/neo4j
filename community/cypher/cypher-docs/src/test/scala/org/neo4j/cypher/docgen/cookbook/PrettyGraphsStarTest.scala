@@ -45,7 +45,7 @@ foreach( x in range(1,6) |
    create (leaf), (center)-[:X]->(leaf)
 )
 return id(center) as id;""",
-      returns =
+      optionalResultExplanation =
 """The query returns the id of the center node.""",
       assertions = { (p) =>
         assertStats(p, nodesCreated = 7, relationshipsCreated = 6)

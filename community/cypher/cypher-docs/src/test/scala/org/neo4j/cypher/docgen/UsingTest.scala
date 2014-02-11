@@ -44,7 +44,7 @@ class UsingTest extends DocumentingTestBase {
       title = "Query using an index hint",
       text = "To query using an index hint, use +USING+ +INDEX+.",
       queryText = "match (n:Swedish) using index n:Swedish(surname) where n.surname = 'Taylor' return n",
-      returns = "The query result is returned as usual.",
+      optionalResultExplanation = "The query result is returned as usual.",
       assertions = (p) => assert(p.toList === List(Map("n" -> node("Andres"))))
     )
   }
@@ -57,7 +57,7 @@ class UsingTest extends DocumentingTestBase {
       title = "Query using multiple index hints",
       text = "To query using multiple index hints, use +USING+ +INDEX+.",
       queryText = "match (m:German)-->(n:Swedish) using index m:German(surname) using index n:Swedish(surname) where m.surname = 'Plantikow' and n.surname = 'Taylor' return m",
-      returns = "The query result is returned as usual.",
+      optionalResultExplanation = "The query result is returned as usual.",
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }
@@ -67,7 +67,7 @@ class UsingTest extends DocumentingTestBase {
       title = "Hinting a label scan",
       text = "If the best performance is to be had by scanning all nodes in a label and then filtering on that set, use +USING+ +SCAN+.",
       queryText = "match (m:German) using scan m:German where m.surname = 'Plantikow' return m",
-      returns = "This query does its work by finding all `:German` labeled nodes and filtering them by the surname property.",
+      optionalResultExplanation = "This query does its work by finding all `:German` labeled nodes and filtering them by the surname property.",
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }

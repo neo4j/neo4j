@@ -49,7 +49,7 @@ class HyperedgeTest extends DocumentingTestBase {
         "match ({name: 'User1'})-[:hasRoleInGroup]->(hyperEdge)-[:hasGroup]->({name: 'Group2'}), " +
         "(hyperEdge)-[:hasRole]->(role) " +
         "return role.name",
-      returns = "The role of +User1+ is returned:",
+      optionalResultExplanation = "The role of +User1+ is returned:",
       (p) => assertEquals(Map("role.name" -> "Role1"), p.toList.head))
   }
 
@@ -62,7 +62,7 @@ class HyperedgeTest extends DocumentingTestBase {
         "(hyperEdge)-[:hasRole]->(role) " +
         "return role.name, group.name " +
         "order by role.name asc",
-      returns = "The groups and roles of +User1+ are returned:",
+      optionalResultExplanation = "The groups and roles of +User1+ are returned:",
       (p) => {
         val result = p.toList
         assertEquals(Map("role.name" -> "Role1", "group.name" -> "Group2"), result.head)

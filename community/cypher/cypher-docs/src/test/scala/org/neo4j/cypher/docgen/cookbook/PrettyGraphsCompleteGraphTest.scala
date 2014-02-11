@@ -46,7 +46,7 @@ WITH *
 MATCH (leaf1:Leaf), (leaf2:Leaf)
 WHERE id(leaf1) < id(leaf2)
 CREATE (leaf1)-[:X]->(leaf2);""",
-      returns =
+      optionalResultExplanation =
 """Nothing is returned by this query.""",
       assertions = (p) => assertStats(p, nodesCreated = 6, propertiesSet = 6, relationshipsCreated = 15, labelsAdded = 6)
     )
