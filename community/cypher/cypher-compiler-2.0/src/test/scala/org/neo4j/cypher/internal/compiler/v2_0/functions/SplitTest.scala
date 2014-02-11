@@ -42,7 +42,7 @@ class SplitTest extends FunctionTestBase("split")  {
   }
 
   @Test
-  def shouldFailIfWrongArguments() {
+  def shouldFailIfWrongNumberOfArguments() {
     testInvalidApplication()(
       "Insufficient parameters for function 'split'"
     )

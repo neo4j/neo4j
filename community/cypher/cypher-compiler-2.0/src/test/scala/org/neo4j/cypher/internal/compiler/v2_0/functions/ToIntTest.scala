@@ -17,41 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_0.functions
 
 import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_0.symbols._
 
-class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class ToIntTest extends FunctionTestBase("toInt")  {
 
   @Test
-  def split_should_work_as_expected() {
-    // When
-    val result = executeScalar[Long](
-      "FOREACH (y in split(\"one1two\",\"1\")| "  +
-      "  CREATE (x:y)" +
-      ") " +
-      "WITH * " +
-      "MATCH (n) " +
-      "RETURN count(n)"
-    )
-
-    // Then
-    assert(result === 2)
+  def shouldAcceptCorrectTypes() {
+    testValidTypes(CTAny)(CTInteger)
   }
 
   @Test
-  def toInt_should_work_as_expected() {
-    // When
-    val result = executeScalar[Int](
-      "CREATE (p:Person { age: \"42\" })" +
-      "WITH * " +
-      "MATCH (n) " +
-      "RETURN toInt(n.age)"
-    )
-
-    // Then
-    assert(result === 42)
+  def shouldAcceptMoreSpecificTypes() {
+    testValidTypes(CTString)(CTInteger)
   }
 
+  @Test
+  def shouldFailIfWrongNumberOfArguments() {
+    testInvalidApplication()(
+      "Insufficient parameters for function 'toInt'"
+    )
+    testInvalidApplication(CTAny,CTAny)(
+      "Too many parameters for function 'toInt'"
+    )
+  }
 }
