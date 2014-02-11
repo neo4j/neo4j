@@ -19,29 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.{symbols, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_0._
+import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.ParameterWrongTypeException
+import java.lang.NumberFormatException
 
 case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
-  /*When calculating the type of an expression, the expression should also
-    make sure to check the types of any downstream expressions*/
   protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
-  // Expressions that do not get anything in their context from this expression.
   def arguments: Seq[Expression] = Seq(a)
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToIntFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
-    a(m) match {
-      case v: String => Integer.parseInt(v)
-      case v: Number => v.intValue()
-      case v: Boolean => if (v) 1 else 0
-      case v => throw new ParameterWrongTypeException("Expected a string, number or boolean, got: " + v.toString)
-    }
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = a(m) match {
+    case v: Number =>
+      v.longValue()
+    case v: String =>
+      try {
+        v.toLong
+      } catch {
+        case e: NumberFormatException =>
+          throw new ParameterWrongTypeException("Failed to parse String as Integer", e)
+      }
+    case v =>
+      throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
   }
 }

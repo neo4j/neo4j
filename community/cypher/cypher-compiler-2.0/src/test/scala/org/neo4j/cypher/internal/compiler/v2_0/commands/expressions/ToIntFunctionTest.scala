@@ -30,7 +30,7 @@ import org.neo4j.cypher.ParameterWrongTypeException
 class ToIntFunctionTest extends FunSuite with Matchers {
 
   test("should return null if argument is null") {
-    toInt(null.asInstanceOf[Any]) should be(null.asInstanceOf[Int])
+    toInt(null.asInstanceOf[Any]) should be(null.asInstanceOf[Long])
   }
 
   test("should convert a string to an integer") {
@@ -42,15 +42,15 @@ class ToIntFunctionTest extends FunSuite with Matchers {
   }
 
   test("should throw an exception if the argument is a double literal") {
-    evaluating { toInt("20.5") } should produce[IllegalArgumentException]
+    evaluating { toInt("20.5") } should produce[ParameterWrongTypeException]
   }
 
   test("should throw an exception if the argument is a non-numeric string") {
-    evaluating { toInt("20foobar2") } should produce[IllegalArgumentException]
+    evaluating { toInt("20foobar2") } should produce[ParameterWrongTypeException]
   }
 
   test("should throw an exception if the argument is a hexadecimal string") {
-    evaluating { toInt("0x20") } should produce[IllegalArgumentException]
+    evaluating { toInt("0x20") } should produce[ParameterWrongTypeException]
   }
 
   test("should convert a string with leading zeros to an integer") {
@@ -71,16 +71,6 @@ class ToIntFunctionTest extends FunSuite with Matchers {
 
   test("given an integer should give the same value back") {
     toInt(50) should be(50)
-  }
-
-  test("given a boolean should return the numeric value") {
-    toInt(false) should be(0)
-    toInt(true) should be(1)
-  }
-
-  test("should throw an exception if the argument is a boolean string literal") {
-    evaluating { toInt("false") } should produce[IllegalArgumentException]
-    evaluating { toInt("true") } should produce[IllegalArgumentException]
   }
 
   private def toInt(orig: Any) = {

@@ -28,7 +28,9 @@ case object ToInt extends Function with SimpleTypedFunction {
   def name = "toInt"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTAny), outputType = CTInteger)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTString), outputType = CTInteger)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
