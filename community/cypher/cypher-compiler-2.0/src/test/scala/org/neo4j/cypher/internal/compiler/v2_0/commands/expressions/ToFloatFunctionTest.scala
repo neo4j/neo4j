@@ -24,6 +24,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.{Matchers, FunSuite}
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
+import org.neo4j.cypher.ParameterWrongTypeException
 
 @RunWith(classOf[JUnitRunner])
 class ToFloatFunctionTest extends FunSuite with Matchers {
@@ -65,7 +66,7 @@ class ToFloatFunctionTest extends FunSuite with Matchers {
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
-    evaluating { toFloat(new Object) } should produce[IllegalArgumentException]
+    evaluating { toFloat(new Object) } should produce[ParameterWrongTypeException]
   }
 
   test("given a float should give the same value back") {

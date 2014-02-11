@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.helpers.TypeSafeMathSupport
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CypherType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.{symbols, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 import symbols._
+import org.neo4j.cypher.ParameterWrongTypeException
 
 case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
@@ -42,7 +41,7 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
       case v: String => Integer.parseInt(v)
       case v: Number => v.intValue()
       case v: Boolean => if (v) 1 else 0
-      case _ => throw new IllegalArgumentException()
+      case v => throw new ParameterWrongTypeException("Expected a string, number or boolean, got: " + v.toString)
     }
   }
 }
