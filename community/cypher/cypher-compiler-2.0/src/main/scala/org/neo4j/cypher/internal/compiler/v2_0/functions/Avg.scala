@@ -30,7 +30,7 @@ case object Avg extends AggregatingFunction with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = {

@@ -24,7 +24,7 @@ package object symbols {
   val CTBoolean = BooleanType.instance
   val CTString = StringType.instance
   val CTNumber = NumberType.instance
-  val CTDouble = DoubleType.instance
+  val CTFloat = FloatType.instance
   val CTInteger = IntegerType.instance
   val CTMap = MapType.instance
   val CTNode = NodeType.instance

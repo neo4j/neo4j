@@ -28,7 +28,7 @@ case object Atan2 extends Function with SimpleTypedFunction {
   def name = "atan2"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

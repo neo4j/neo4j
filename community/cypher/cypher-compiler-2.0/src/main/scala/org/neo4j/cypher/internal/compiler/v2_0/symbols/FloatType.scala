@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.symbols
 
-object DoubleType {
-  val instance = new DoubleType() {
+object FloatType {
+  val instance = new FloatType() {
     val parentType = CTNumber
     override lazy val coercibleTo: Set[CypherType] = Set(CTBoolean)
-    override val toString = "Double"
+    override val toString = "Float"
   }
 }
 
-sealed abstract class DoubleType extends CypherType
+sealed abstract class FloatType extends CypherType

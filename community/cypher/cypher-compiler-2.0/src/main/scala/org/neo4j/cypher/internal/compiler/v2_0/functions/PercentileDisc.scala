@@ -29,8 +29,8 @@ case object PercentileDisc extends AggregatingFunction with SimpleTypedFunction 
   def name = "percentileDisc"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTInteger),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = {

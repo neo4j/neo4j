@@ -34,13 +34,13 @@ class CaseExpressionTest extends Assertions {
       alternatives = Seq(
         (
           DummyExpression(CTString),
-          DummyExpression(CTDouble)
+          DummyExpression(CTFloat)
         ), (
           DummyExpression(CTString),
           DummyExpression(CTInteger)
         )
       ),
-      default = Some(DummyExpression(CTDouble))
+      default = Some(DummyExpression(CTFloat))
     )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -55,13 +55,13 @@ class CaseExpressionTest extends Assertions {
       Seq(
         (
           DummyExpression(CTBoolean),
-          DummyExpression(CTDouble | CTString)
+          DummyExpression(CTFloat | CTString)
         ), (
           DummyExpression(CTBoolean),
           DummyExpression(CTInteger)
         )
       ),
-      Some(DummyExpression(CTDouble | CTNode))
+      Some(DummyExpression(CTFloat | CTNode))
     )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -76,13 +76,13 @@ class CaseExpressionTest extends Assertions {
       Seq(
         (
           DummyExpression(CTBoolean),
-          DummyExpression(CTDouble)
+          DummyExpression(CTFloat)
         ), (
           DummyExpression(CTString, DummyPosition(12)),
           DummyExpression(CTInteger)
         )
       ),
-      Some(DummyExpression(CTDouble))
+      Some(DummyExpression(CTFloat))
     )(DummyPosition(2))
 
     val result = caseExpression.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)

@@ -34,24 +34,24 @@ class PowTest extends InfixExpressionTestBase(Pow(_, _)(DummyPosition(0))) {
 
   @Test
   def shouldHandleAllSpecializations() {
-    testValidTypes(CTInteger, CTInteger)(CTDouble)
-    testValidTypes(CTInteger, CTDouble)(CTDouble)
-    testValidTypes(CTDouble, CTInteger)(CTDouble)
-    testValidTypes(CTDouble, CTDouble)(CTDouble)
+    testValidTypes(CTInteger, CTInteger)(CTFloat)
+    testValidTypes(CTInteger, CTFloat)(CTFloat)
+    testValidTypes(CTFloat, CTInteger)(CTFloat)
+    testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble)
+    testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat)
   }
 
   @Test
   def shouldFailTypeCheckWhenAddingIncompatible() {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double but was Boolean"
+      "Type mismatch: expected Float but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Double but was Boolean"
+      "Type mismatch: expected Float but was Boolean"
     )
   }
 }

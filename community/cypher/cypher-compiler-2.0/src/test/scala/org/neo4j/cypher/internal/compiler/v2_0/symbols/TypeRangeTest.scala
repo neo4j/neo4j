@@ -29,14 +29,14 @@ class TypeRangeTest extends Assertions {
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
     assertTrue(rangeOfInteger.contains(CTInteger))
     assertFalse(rangeOfInteger.contains(CTNumber))
-    assertFalse(rangeOfInteger.contains(CTDouble))
+    assertFalse(rangeOfInteger.contains(CTFloat))
     assertFalse(rangeOfInteger.contains(CTString))
     assertFalse(rangeOfInteger.contains(CTAny))
 
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
     assertFalse(rangeOfNumber.contains(CTInteger))
     assertTrue(rangeOfNumber.contains(CTNumber))
-    assertFalse(rangeOfNumber.contains(CTDouble))
+    assertFalse(rangeOfNumber.contains(CTFloat))
     assertFalse(rangeOfNumber.contains(CTString))
     assertFalse(rangeOfNumber.contains(CTAny))
 
@@ -57,11 +57,11 @@ class TypeRangeTest extends Assertions {
     assertTrue(rangeRootedAtAny.contains(CTString))
     assertTrue(rangeRootedAtAny.contains(CTNumber))
     assertTrue(rangeRootedAtAny.contains(CTInteger))
-    assertTrue(rangeRootedAtAny.contains(CTDouble))
+    assertTrue(rangeRootedAtAny.contains(CTFloat))
     assertTrue(rangeRootedAtAny.contains(CTNode))
     assertTrue(rangeRootedAtAny.contains(CTCollection(CTAny)))
-    assertTrue(rangeRootedAtAny.contains(CTCollection(CTDouble)))
-    assertTrue(rangeRootedAtAny.contains(CTCollection(CTCollection(CTDouble))))
+    assertTrue(rangeRootedAtAny.contains(CTCollection(CTFloat)))
+    assertTrue(rangeRootedAtAny.contains(CTCollection(CTCollection(CTFloat))))
   }
 
   @Test
@@ -69,12 +69,12 @@ class TypeRangeTest extends Assertions {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     assertTrue(rangeRootedAtInteger.contains(CTInteger))
     assertFalse(rangeRootedAtInteger.contains(CTNumber))
-    assertFalse(rangeRootedAtInteger.contains(CTDouble))
+    assertFalse(rangeRootedAtInteger.contains(CTFloat))
     assertFalse(rangeRootedAtInteger.contains(CTAny))
 
     val rangeRootedAtCollectionOfNumber = TypeRange(CTCollection(CTNumber), None)
     assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTInteger)))
-    assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTDouble)))
+    assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTFloat)))
     assertTrue(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTNumber)))
     assertFalse(rangeRootedAtCollectionOfNumber.contains(CTCollection(CTString)))
     assertFalse(rangeRootedAtCollectionOfNumber.contains(CTAny))
@@ -84,7 +84,7 @@ class TypeRangeTest extends Assertions {
   def unboundedTypeRangeRootedAtBranchTypeShouldContainAllMoreSpecificTypes() {
     val rangeRootedAtInteger = TypeRange(CTNumber, None)
     assertTrue(rangeRootedAtInteger.contains(CTInteger))
-    assertTrue(rangeRootedAtInteger.contains(CTDouble))
+    assertTrue(rangeRootedAtInteger.contains(CTFloat))
     assertTrue(rangeRootedAtInteger.contains(CTNumber))
     assertFalse(rangeRootedAtInteger.contains(CTString))
     assertFalse(rangeRootedAtInteger.contains(CTAny))
@@ -104,18 +104,18 @@ class TypeRangeTest extends Assertions {
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     assertTrue(rangeRootedAtNumber.contains(rangeRootedAtInteger))
 
-    val rangeOfNumberToDouble = TypeRange(CTNumber, CTDouble)
+    val rangeOfNumberToDouble = TypeRange(CTNumber, CTFloat)
     assertFalse(rangeOfNumberToDouble.contains(rangeRootedAtInteger))
     assertFalse(rangeOfNumberToDouble.contains(rangeRootedAtNumber))
 
-    val rangeOfDouble = TypeRange(CTDouble, CTDouble)
+    val rangeOfDouble = TypeRange(CTFloat, CTFloat)
     val rangeOfNumber = TypeRange(CTNumber, CTNumber)
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
     assertTrue(rangeOfNumberToDouble.contains(rangeOfDouble))
     assertTrue(rangeOfNumberToDouble.contains(rangeOfNumber))
     assertFalse(rangeOfNumberToDouble.contains(rangeOfInteger))
 
-    val rangeRootedAtDouble = TypeRange(CTDouble, None)
+    val rangeRootedAtDouble = TypeRange(CTFloat, None)
     assertFalse(rangeOfNumberToDouble.contains(rangeRootedAtDouble))
     assertTrue(rangeRootedAtDouble.contains(rangeOfDouble))
 

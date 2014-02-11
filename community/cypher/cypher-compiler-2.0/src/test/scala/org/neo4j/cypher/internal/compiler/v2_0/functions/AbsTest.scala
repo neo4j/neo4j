@@ -28,22 +28,22 @@ class AbsTest extends FunctionTestBase("abs") {
   @Test
   def shouldFailIfWrongArguments() {
     testInvalidApplication()("Insufficient parameters for function 'abs'")
-    testInvalidApplication(CTDouble, CTDouble)("Too many parameters for function 'abs'")
+    testInvalidApplication(CTFloat, CTFloat)("Too many parameters for function 'abs'")
   }
 
   @Test
   def shouldHandleAllSpecializations() {
     testValidTypes(CTInteger)(CTInteger)
-    testValidTypes(CTDouble)(CTDouble)
+    testValidTypes(CTFloat)(CTFloat)
   }
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTInteger)(CTDouble | CTInteger)
+    testValidTypes(CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
   @Test
   def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTNode)("Type mismatch: expected Double or Integer but was Node")
+    testInvalidApplication(CTNode)("Type mismatch: expected Float or Integer but was Node")
   }
 }

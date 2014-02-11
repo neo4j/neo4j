@@ -31,29 +31,29 @@ class PercentileDiscTest extends FunctionTestBase("percentileDisc") {
   @Test
   def shouldHandleAllSpecializations() {
     testValidTypes(CTInteger, CTInteger)(CTInteger)
-    testValidTypes(CTInteger, CTDouble)(CTInteger)
-    testValidTypes(CTDouble, CTInteger)(CTDouble)
-    testValidTypes(CTDouble, CTDouble)(CTDouble)
+    testValidTypes(CTInteger, CTFloat)(CTInteger)
+    testValidTypes(CTFloat, CTInteger)(CTFloat)
+    testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTInteger | CTDouble)
+    testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTInteger | CTFloat)
   }
 
   @Test
   def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTDouble)("Insufficient parameters for function 'percentileDisc'")
-    testInvalidApplication(CTDouble, CTDouble, CTDouble)("Too many parameters for function 'percentileDisc'")
+    testInvalidApplication(CTFloat)("Insufficient parameters for function 'percentileDisc'")
+    testInvalidApplication(CTFloat, CTFloat, CTFloat)("Too many parameters for function 'percentileDisc'")
   }
 
   @Test
   def shouldFailTypeCheckWhenAddingIncompatible() {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double but was Boolean"
+      "Type mismatch: expected Float but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Double or Integer but was Boolean"
+      "Type mismatch: expected Float or Integer but was Boolean"
     )
   }
 }
