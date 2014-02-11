@@ -740,6 +740,18 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def toFloat() {
+    testThis(
+      title = "TOFLOAT",
+      syntax = "TOFLOAT( expression )",
+      arguments = List("expression" -> "An expression that returns anything"),
+      text = "`TOFLOAT` converts the argument to a float.",
+      queryText = "return toFloat(\"11.5\")",
+      returns = "",
+      assertions = (p) => assert(List(Map("toFloat(\"11.5\")" -> 11.5)) === p.toList)
+    )
+  }
+
   @Test def now() {
     testThis(
       title = "TIMESTAMP",
