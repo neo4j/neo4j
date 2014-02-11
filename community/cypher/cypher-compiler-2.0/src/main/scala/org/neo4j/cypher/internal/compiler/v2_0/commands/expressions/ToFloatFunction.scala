@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CypherType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_0.{symbols, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 import symbols._
+import org.neo4j.cypher.ParameterWrongTypeException
 
 case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def symbolTableDependencies: Set[String] = a.symbolTableDependencies
@@ -42,7 +42,7 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
       case v: String => java.lang.Double.parseDouble(v)
       case v: Number => v.doubleValue()
       case v: Boolean => if (v) 1.0 else 0.0
-      case _ => throw new IllegalArgumentException("argument cannot be converted to a floating point number")
+      case v => throw new ParameterWrongTypeException("Expected a string, number or boolean, got: " + v.toString)
     }
   }
 }
