@@ -9,10 +9,6 @@ define ['lib/amd/Backbone','neo4j/webadmin/modules/databrowser/views/PropertyCon
       expect(pcv.shouldBeConvertedToString "a").toBe(true)
       expect(pcv.shouldBeConvertedToString "abcd123 ").toBe(true)
 
-    it "recognizes swedish characters as strings", ->
-      expect(pcv.shouldBeConvertedToString "åäö").toBe(true)
-      expect(pcv.shouldBeConvertedToString "åäö #$ asd  ").toBe(true)
-
     it "recognizes strings containing odd characters as strings", ->
       expect(pcv.shouldBeConvertedToString ";åäö #$ asd  ").toBe(true)
 
