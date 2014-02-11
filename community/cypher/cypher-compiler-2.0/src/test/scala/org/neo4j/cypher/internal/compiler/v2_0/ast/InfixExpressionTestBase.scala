@@ -17,40 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import ast.Expression.SemanticContext
 import symbols._
 import org.scalatest.Assertions
 
-abstract class FunctionTestBase(funcName: String) extends Assertions {
+abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends Assertions {
 
   protected val context: SemanticContext = SemanticContext.Simple
 
-  protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec) {
-    val (result, invocation) = evaluateWithTypes(argumentTypes.toIndexedSeq)
+  protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(expected: TypeSpec) {
+    val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes)
     assert(result.errors.isEmpty, s"type check has errors: ${result.errors.mkString(",")}")
-    assert(invocation.types(result.state) === expected)
+    assert(expression.types(result.state) === expected)
   }
 
-  protected def testInvalidApplication(argumentTypes: TypeSpec*)(message: String) {
-    val (result, _) = evaluateWithTypes(argumentTypes.toIndexedSeq)
-    assert(result.errors.nonEmpty)
+  protected def testInvalidApplication(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(message: String) {
+    val (result, _) = evaluateWithTypes(lhsTypes, rhsTypes)
+    assert(result.errors.nonEmpty, "type check had no errors")
     assert(result.errors.head.msg === message)
   }
 
-  protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, ast.FunctionInvocation) = {
-    val arguments = argumentTypes.map(DummyExpression(_))
+  protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec): (SemanticCheckResult, ast.Expression) = {
+    val lhs = DummyExpression(lhsTypes)
+    val rhs = DummyExpression(rhsTypes)
 
-    val invocation = ast.FunctionInvocation(
-      ast.Identifier(funcName)(DummyPosition(6)),
-      distinct = false,
-      arguments
-    )(DummyPosition(5))
+    val expression = ctr(lhs, rhs)
 
-    val state = arguments.semanticCheck(context)(SemanticState.clean).state
-    (invocation.semanticCheck(context)(state), invocation)
+    val state = Seq(lhs, rhs).semanticCheck(context)(SemanticState.clean).state
+    (expression.semanticCheck(context)(state), expression)
   }
 
 }

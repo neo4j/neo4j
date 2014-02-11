@@ -32,18 +32,5 @@ class BaseRulesTest extends ParserTest[Any, Any] with Base {
     parsing("a　b") shouldGive true
   }
 
-  @Test def testKeywordIdentifierWhitespaceHandling() {
-    implicit val parserToTest = keywordIdentifier("IS NOT NULL")
-    val t = DummyPosition(0)
-
-    parsing("IS NOT NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-    parsing("IS  NOT NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-    parsing("IS NOT  NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-    parsing("IS NOT　NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-    parsing("IS NOT\nNULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-    parsing("IS\t\tNOT\nNULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-    parsing("IS /* comment */ NOT NULL") shouldGive ast.Identifier("IS NOT NULL")(t)
-  }
-
   def convert(result: Any): Any = result
 }

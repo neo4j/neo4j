@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.functions.FunctionTestBase
 
-class DivideTest extends FunctionTestBase("/") {
+class DivideTest extends InfixExpressionTestBase(Divide(_, _)(DummyPosition(0))) {
 
   // Infix specializations:
   // 1 / 1 => 1
@@ -42,12 +43,6 @@ class DivideTest extends FunctionTestBase("/") {
   @Test
   def shouldHandleCombinedSpecializations() {
     testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble | CTInteger)
-  }
-
-  @Test
-  def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTDouble)("Insufficient parameters for function '/'")
-    testInvalidApplication(CTDouble, CTDouble, CTDouble)("Too many parameters for function '/'")
   }
 
   @Test

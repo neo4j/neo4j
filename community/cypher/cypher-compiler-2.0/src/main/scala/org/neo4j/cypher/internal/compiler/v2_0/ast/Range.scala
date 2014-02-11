@@ -17,24 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import ast.convert.ExpressionConverters._
-import symbols._
 
-case object GreaterThan extends PredicateFunction with SimpleTypedFunction {
-  def name = ">"
-
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
-  )
-
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) =
-    commands.GreaterThan(
-      invocation.arguments(0).asCommandExpression,
-      invocation.arguments(1).asCommandExpression
-    )
+case class Range(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(val position: InputPosition) extends ASTNode {
+  def isSingleLength = lower.isDefined && upper.isDefined && lower.get.value == 1 && upper.get.value == 1
 }

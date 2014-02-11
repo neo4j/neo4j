@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
 
-class AddTest extends FunctionTestBase("+") {
+class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
   // Infix specializations:
   // "a" + "b" => "ab"
@@ -41,9 +41,6 @@ class AddTest extends FunctionTestBase("+") {
 
   @Test
   def shouldHandleAllSpecializations() {
-    testValidTypes(CTInteger)(CTInteger)
-    testValidTypes(CTDouble)(CTDouble)
-
     testValidTypes(CTString, CTString)(CTString)
     testValidTypes(CTString, CTInteger)(CTString)
     testValidTypes(CTString, CTDouble)(CTString)
@@ -78,17 +75,7 @@ class AddTest extends FunctionTestBase("+") {
   }
 
   @Test
-  def shouldFailIfWrongArguments() {
-    testInvalidApplication()("Insufficient parameters for function '+'")
-    testInvalidApplication(CTDouble, CTDouble, CTDouble)("Too many parameters for function '+'")
-  }
-
-  @Test
   def shouldFailTypeCheckForIncompatibleArguments() {
-    testInvalidApplication(CTBoolean)(
-      "Type mismatch: expected Double or Integer but was Boolean"
-    )
-
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Double, Integer, String or Collection<Integer> but was Boolean"
     )

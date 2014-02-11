@@ -28,8 +28,6 @@ object Function {
   private val knownFunctions: Seq[Function] = Vector(
     functions.Abs,
     functions.Acos,
-    functions.Add,
-    functions.And,
     functions.Asin,
     functions.Atan,
     functions.Atan2,
@@ -42,49 +40,32 @@ object Function {
     functions.Cot,
     functions.Count,
     functions.Degrees,
-    functions.Divide,
     functions.E,
-    functions.Equals,
     functions.EndNode,
     functions.Exp,
     functions.Floor,
-    functions.GreaterThan,
-    functions.GreaterThanOrEqual,
     functions.Has,
     functions.Haversin,
     functions.Head,
     functions.Id,
-    functions.In,
-    functions.InvalidNotEquals,
-    functions.IsNotNull,
-    functions.IsNull,
     functions.Labels,
     functions.Last,
     functions.Left,
     functions.Length,
-    functions.LessThan,
-    functions.LessThanOrEqual,
     functions.Log,
     functions.Log10,
     functions.Lower,
     functions.LTrim,
     functions.Max,
     functions.Min,
-    functions.Modulo,
-    functions.Multiply,
     functions.Nodes,
-    functions.Not,
-    functions.NotEquals,
-    functions.Or,
     functions.Pi,
     functions.PercentileCont,
     functions.PercentileDisc,
-    functions.Pow,
     functions.Radians,
     functions.Rand,
     functions.Range,
     functions.Reduce,
-    functions.RegularExpression,
     functions.Relationships,
     functions.Rels,
     functions.Replace,
@@ -101,15 +82,13 @@ object Function {
     functions.StdDevP,
     functions.Str,
     functions.Substring,
-    functions.Subtract,
     functions.Sum,
     functions.Tail,
     functions.Tan,
     functions.Timestamp,
     functions.Trim,
     functions.Type,
-    functions.Upper,
-    functions.Xor
+    functions.Upper
   )
 
   val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
@@ -141,9 +120,6 @@ abstract class Function extends SemanticChecking {
       None
 
   def asCommandExpression(invocation: ast.FunctionInvocation): CommandExpression
-
-  def asPredicateExpression(invocation: ast.FunctionInvocation): CommandPredicate =
-    throw new SyntaxException(s"Expression must return a boolean")
 }
 
 
@@ -186,15 +162,6 @@ trait SimpleTypedFunction { self: Function =>
       case Right(state) => SemanticCheckResult(state, result.errors)
     }
   }
-}
-
-
-abstract class PredicateFunction extends Function {
-  def asCommandExpression(invocation: ast.FunctionInvocation): CommandExpression = internalToPredicate(invocation)
-
-  protected def internalToPredicate(invocation: ast.FunctionInvocation): CommandPredicate
-
-  override def asPredicateExpression(invocation: ast.FunctionInvocation): CommandPredicate = internalToPredicate(invocation)
 }
 
 

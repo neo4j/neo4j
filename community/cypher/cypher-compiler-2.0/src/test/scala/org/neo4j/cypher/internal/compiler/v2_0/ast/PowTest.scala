@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.functions
+package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
 import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_0.functions.FunctionTestBase
 
-class PowTest extends FunctionTestBase("^") {
+class PowTest extends InfixExpressionTestBase(Pow(_, _)(DummyPosition(0))) {
 
   // Infix specializations:
   // 1 ^ 1 => 1
@@ -33,7 +34,7 @@ class PowTest extends FunctionTestBase("^") {
 
   @Test
   def shouldHandleAllSpecializations() {
-    testValidTypes(CTInteger, CTInteger)(CTInteger)
+    testValidTypes(CTInteger, CTInteger)(CTDouble)
     testValidTypes(CTInteger, CTDouble)(CTDouble)
     testValidTypes(CTDouble, CTInteger)(CTDouble)
     testValidTypes(CTDouble, CTDouble)(CTDouble)
@@ -41,22 +42,16 @@ class PowTest extends FunctionTestBase("^") {
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble | CTInteger)
-  }
-
-  @Test
-  def shouldFailIfWrongArguments() {
-    testInvalidApplication(CTDouble)("Insufficient parameters for function '^'")
-    testInvalidApplication(CTDouble, CTDouble, CTDouble)("Too many parameters for function '^'")
+    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble)
   }
 
   @Test
   def shouldFailTypeCheckWhenAddingIncompatible() {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double or Integer but was Boolean"
+      "Type mismatch: expected Double but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Double or Integer but was Boolean"
+      "Type mismatch: expected Double but was Boolean"
     )
   }
 }
