@@ -17,41 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_0.functions
 
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_0._
+import ast.convert.ExpressionConverters._
+import commands.{expressions => commandexpressions}
+import symbols._
 
-class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
+case object ToInt extends Function with SimpleTypedFunction {
+  def name = "toInt"
 
-  @Test
-  def split_should_work_as_expected() {
-    // When
-    val result = executeScalar[Long](
-      "FOREACH (y in split(\"one1two\",\"1\")| "  +
-      "  CREATE (x:y)" +
-      ") " +
-      "WITH * " +
-      "MATCH (n) " +
-      "RETURN count(n)"
-    )
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTAny), outputType = CTInteger)
+  )
 
-    // Then
-    assert(result === 2)
-  }
-
-  @Test
-  def toInt_should_work_as_expected() {
-    // When
-    val result = executeScalar[Int](
-      "CREATE (p:Person { age: \"42\" })" +
-      "WITH * " +
-      "MATCH (n) " +
-      "RETURN toInt(n.age)"
-    )
-
-    // Then
-    assert(result === 42)
-  }
-
+  def asCommandExpression(invocation: ast.FunctionInvocation) =
+    commandexpressions.ToIntFunction(invocation.arguments(0).asCommandExpression)
 }

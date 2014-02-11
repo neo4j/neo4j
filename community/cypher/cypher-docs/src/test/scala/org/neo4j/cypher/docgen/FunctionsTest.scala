@@ -728,6 +728,18 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def toInt() {
+    testThis(
+      title = "TOINT",
+      syntax = "TOINT( expression )",
+      arguments = List("expression" -> "An expression that returns anything"),
+      text = "`TOINT` converts the argument to an integer.",
+      queryText = "return toInt(\"42\")",
+      returns = "",
+      assertions = (p) => assert(List(Map("toInt(\"42\")" -> 42)) === p.toList)
+    )
+  }
+
   @Test def now() {
     testThis(
       title = "TIMESTAMP",
