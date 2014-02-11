@@ -23,6 +23,7 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.compiler.v2_0.CleanupTask
 
 
 class QueryStateTest extends Assertions with MockitoSugar {
@@ -70,5 +71,34 @@ class QueryStateTest extends Assertions with MockitoSugar {
 
     //THEN
     assert(ts1 === stateCopy.readTimeStamp(), "Time has changed")
+  }
+
+  @Test
+  def add_cleanup_task() {
+    //GIVEN
+    val state = QueryStateHelper.empty
+    val cleanupTask = mock[CleanupTask]
+
+    //WHEN
+    state.addCleanupTask(cleanupTask)
+
+    //THEN
+    assert(state.getCleanupTasks == Seq(cleanupTask))
+  }
+
+  @Test
+  def add_cleanup_task_copy() {
+    //GIVEN
+    val state = QueryStateHelper.empty
+    val cleanupTask = mock[CleanupTask]
+    val newCleanupTask = mock[CleanupTask]
+
+    //WHEN
+    state.addCleanupTask(cleanupTask)
+    val copiedState = state.copy()
+    state.addCleanupTask(newCleanupTask)
+
+    //THEN
+    assert(copiedState.getCleanupTasks == Seq(cleanupTask, newCleanupTask))
   }
 }

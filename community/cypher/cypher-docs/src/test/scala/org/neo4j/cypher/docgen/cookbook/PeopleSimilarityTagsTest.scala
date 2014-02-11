@@ -22,7 +22,6 @@ package org.neo4j.cypher.docgen.cookbook
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.junit.Ignore
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
@@ -60,7 +59,7 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
       		"WHERE me.name = 'Joe' AND NOT me=people " +
       		"RETURN people.name as name, count(*) as similar_favs " +
       		"ORDER BY similar_favs DESC",
-      returns = "The query returns the list of possible friends ranked by them liking similar stuff that are not yet friends.",
+      optionalResultExplanation = "The query returns the list of possible friends ranked by them liking similar stuff that are not yet friends.",
       assertions = (p) => assertEquals(List(
         Map("name" -> "Sara", "similar_favs" -> 2),
         Map("name" -> "Derrick", "similar_favs" -> 1)), p.toList))

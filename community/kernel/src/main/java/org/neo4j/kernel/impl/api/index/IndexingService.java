@@ -33,9 +33,11 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -45,9 +47,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -312,6 +312,7 @@ public class IndexingService extends LifecycleAdapter
         }
         else
         {
+            logger.debug( "Updating indexes while " + state + ": " + updates.changedNodeIds() );
             if( state == State.NOT_STARTED )
             {
                 recoveredNodeIds.addAll( updates.changedNodeIds() );
@@ -329,9 +330,10 @@ public class IndexingService extends LifecycleAdapter
 
     private void applyRecoveredUpdates() throws IOException
     {
-        try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
+        logger.debug( "Applying recovered updates: " + recoveredNodeIds );
+        if ( !recoveredNodeIds.isEmpty() )
         {
-            if ( !recoveredNodeIds.isEmpty() )
+            try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
             {
                 for ( IndexUpdater updater : updaterMap )
                 {
@@ -351,7 +353,7 @@ public class IndexingService extends LifecycleAdapter
         for ( NodePropertyUpdate update : updates )
         {
             int propertyKeyId = update.getPropertyKeyId();
-            switch (update.getUpdateMode())
+            switch ( update.getUpdateMode() )
             {
             case ADDED:
                 for ( int len = update.getNumberOfLabelsAfter(), i = 0; i < len; i++ )

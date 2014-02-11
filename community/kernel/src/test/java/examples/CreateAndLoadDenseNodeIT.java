@@ -102,7 +102,7 @@ public class CreateAndLoadDenseNodeIT
         {
             System.out.println( "Creating db" );
             db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-            BatchTransaction tx = beginBatchTx( db ).printProgress( true );
+            BatchTransaction tx = beginBatchTx( db );
             try
             {
                 Node node = db.createNode();
@@ -115,7 +115,7 @@ public class CreateAndLoadDenseNodeIT
             }
             finally
             {
-                tx.finish();
+                tx.close();
                 db.shutdown();
             }
         }

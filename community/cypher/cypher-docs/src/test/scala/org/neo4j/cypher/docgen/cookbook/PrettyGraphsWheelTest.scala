@@ -61,7 +61,7 @@ WHERE first_leaf.count = min AND last_leaf.count = max
 CREATE (last_leaf)-[:X]->(first_leaf)
 
 RETURN id(center) as id""",
-      returns =
+      optionalResultExplanation =
 """The query returns the id of the center node.""",
       assertions = { (p) =>
         assertEquals(List(Map("id" -> 0)), p.toList)

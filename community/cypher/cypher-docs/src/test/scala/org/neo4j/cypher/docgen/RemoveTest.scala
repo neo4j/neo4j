@@ -48,7 +48,7 @@ class RemoveTest extends DocumentingTestBase {
       text = "Neo4j doesn't allow storing +null+ in properties. Instead, if no value exists, the property is " +
         "just not there. So, to remove a property value on a node or a relationship, is also done with +REMOVE+.",
       queryText = "match (andres {name: 'Andres'}) remove andres.age return andres",
-      returns = "The node is returned, and no property `age` exists on it.",
+      optionalResultExplanation = "The node is returned, and no property `age` exists on it.",
       assertions = (p) => assertFalse("Property was not removed as expected.", node("Andres").hasProperty("age")) )
   }
 
@@ -57,7 +57,7 @@ class RemoveTest extends DocumentingTestBase {
       title = "Remove a label from a node",
       text = "To remove labels, you use +REMOVE+.",
       queryText = "match (n {name: 'Peter'}) remove n:German return n",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish"))
     )
   }
@@ -67,7 +67,7 @@ class RemoveTest extends DocumentingTestBase {
       title = "Removing multiple labels",
       text = "To remove multiple labels, you use +REMOVE+.",
       queryText = "match (n {name: 'Peter'}) remove n:German:Swedish return n",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assert(getLabelsFromNode(p).isEmpty)
     )
   }

@@ -30,7 +30,21 @@ import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
  * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
  * the inner iterator is empty.
  */
-class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext: QueryContext) extends Iterator[Map[String, Any]] {
+trait CleanupTask {
+  def close()
+}
+
+object CleanupTask {
+  implicit class CloseableCleanupTask(closeable: AutoCloseable) extends CleanupTask {
+    def close() { closeable.close() }
+  }
+}
+
+trait CleanupTaskList {
+  def getCleanupTasks: Seq[CleanupTask]
+}
+
+class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext: QueryContext, cleanupTaskList: CleanupTaskList) extends Iterator[Map[String, Any]] {
   private var closed: Boolean = false
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
 
@@ -63,6 +77,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
       if (!closed) {
         closed = true
         queryContext.close(success = true)
+        cleanupTaskList.getCleanupTasks.foreach(_.close())
       }
     }
   }
@@ -92,6 +107,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   } catch {
     case t: Throwable if !closed =>
       queryContext.close(success = false)
+      cleanupTaskList.getCleanupTasks.foreach(_.close())
       throw t
   }
 }

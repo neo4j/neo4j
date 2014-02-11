@@ -33,43 +33,43 @@ trait Expressions extends Parser
 
   private def Expression14: Rule1[ast.Expression] = rule("an expression") {
     Expression13 ~ zeroOrMore(WS ~ (
-        keywordIdentifier("OR") ~~ Expression13 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(keyword("OR") ~~ Expression13) ~~>> (ast.Or(_: ast.Expression, _))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
   private def Expression13: Rule1[ast.Expression] = rule("an expression") {
     Expression12 ~ zeroOrMore(WS ~ (
-        keywordIdentifier("XOR") ~~ Expression12 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(keyword("XOR") ~~ Expression12) ~~>> (ast.Xor(_: ast.Expression, _))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
   private def Expression12: Rule1[ast.Expression] = rule("an expression") {
     Expression11 ~ zeroOrMore(WS ~ (
-        keywordIdentifier("AND") ~~ Expression11 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(keyword("AND") ~~ Expression11) ~~>> (ast.And(_: ast.Expression, _))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
 
   private def Expression11 = Expression10
 
   private def Expression10: Rule1[ast.Expression] = rule("an expression") (
-      group(keywordIdentifier("NOT") ~~ Expression9) ~~>> (ast.FunctionInvocation(_, _))
+      group(keyword("NOT") ~~ Expression9) ~~>> (ast.Not(_))
     | Expression9
   )
 
   private def Expression9: Rule1[ast.Expression] = rule("an expression") {
     Expression8 ~ zeroOrMore(WS ~ (
-        operatorIdentifier("=") ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("<>") ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("!=") ~~ Expression8 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(operator("=") ~~ Expression8) ~~>> (ast.Equals(_: ast.Expression, _))
+      | group(operator("<>") ~~ Expression8) ~~>> (ast.NotEquals(_: ast.Expression, _))
+      | group(operator("!=") ~~ Expression8) ~~>> (ast.InvalidNotEquals(_: ast.Expression, _))
     ))
   }
 
   private def Expression8: Rule1[ast.Expression] = rule("an expression") {
     Expression7 ~ zeroOrMore(WS ~ (
-        operatorIdentifier("<") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier(">") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("<=") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier(">=") ~~ Expression7 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(operator("<") ~~ Expression7) ~~>> (ast.LessThan(_: ast.Expression, _))
+      | group(operator(">") ~~ Expression7) ~~>> (ast.GreaterThan(_: ast.Expression, _))
+      | group(operator("<=") ~~ Expression7) ~~>> (ast.LessThanOrEqual(_: ast.Expression, _))
+      | group(operator(">=") ~~ Expression7) ~~>> (ast.GreaterThanOrEqual(_: ast.Expression, _))
     ))
   }
 
@@ -77,34 +77,34 @@ trait Expressions extends Parser
 
   private def Expression6: Rule1[ast.Expression] = rule("an expression") {
     Expression5 ~ zeroOrMore(WS ~ (
-        operatorIdentifier("+") ~~ Expression5 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("-") ~~ Expression5 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(operator("+") ~~ Expression5) ~~>> (ast.Add(_: ast.Expression, _))
+      | group(operator("-") ~~ Expression5) ~~>> (ast.Subtract(_: ast.Expression, _))
     ))
   }
 
   private def Expression5: Rule1[ast.Expression] = rule("an expression") {
     Expression4 ~ zeroOrMore(WS ~ (
-        operatorIdentifier("*") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("/") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("%") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | operatorIdentifier("^") ~~ Expression4 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
+        group(operator("*") ~~ Expression4) ~~>> (ast.Multiply(_: ast.Expression, _))
+      | group(operator("/") ~~ Expression4) ~~>> (ast.Divide(_: ast.Expression, _))
+      | group(operator("%") ~~ Expression4) ~~>> (ast.Modulo(_: ast.Expression, _))
+      | group(operator("^") ~~ Expression4) ~~>> (ast.Pow(_: ast.Expression, _))
     ))
   }
 
   private def Expression4: Rule1[ast.Expression] = rule("an expression") (
       Expression3
-    | operatorIdentifier("+") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.position))
-    | operatorIdentifier("-") ~~ Expression ~~> ((i, e) => ast.FunctionInvocation(i, e)(i.position))
+    | group(operator("+") ~~ Expression) ~~>> (ast.UnaryAdd(_))
+    | group(operator("-") ~~ Expression) ~~>> (ast.UnarySubtract(_))
   )
 
   private def Expression3: Rule1[ast.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (
         "[" ~~ Expression ~~ "]" ~~>> (ast.CollectionIndex(_: ast.Expression, _))
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.CollectionSlice(_: ast.Expression, _, _))
-      | operatorIdentifier("=~") ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | keywordIdentifier("IN") ~~ Expression2 ~~> (ast.FunctionInvocation(_: ast.Expression, _, _))
-      | keywordIdentifier("IS NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
-      | keywordIdentifier("IS NOT NULL") ~~> (ast.FunctionInvocation(_: ast.Expression, _))
+      | group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: ast.Expression, _))
+      | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: ast.Expression, _))
+      | keyword("IS NULL") ~~>> (ast.IsNull(_: ast.Expression))
+      | keyword("IS NOT NULL") ~~>> (ast.IsNotNull(_: ast.Expression))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
 

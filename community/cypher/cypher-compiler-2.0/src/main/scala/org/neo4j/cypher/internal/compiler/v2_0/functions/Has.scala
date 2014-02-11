@@ -24,7 +24,7 @@ import ast.convert.ExpressionConverters._
 import commands.values.TokenType.PropertyKey
 import symbols._
 
-case object Has extends PredicateFunction {
+case object Has extends Function {
   def name = "HAS"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
@@ -36,7 +36,7 @@ case object Has extends PredicateFunction {
       })
     } then invocation.specifyType(CTBoolean)
 
-  protected def internalToPredicate(invocation: ast.FunctionInvocation) = {
+  def asCommandExpression(invocation: ast.FunctionInvocation) = {
     val property = invocation.arguments(0).asInstanceOf[ast.Property]
     commands.Has(property.map.asCommandExpression, PropertyKey(property.identifier.name))
   }

@@ -30,7 +30,7 @@ import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher.{ CypherException, ExecutionResult, ExecutionEngine }
-import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
+import org.neo4j.test.{ TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
@@ -53,8 +53,10 @@ trait DocumentationHelper extends GraphIcing {
 
   def simpleName: String = this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase
 
-  def createDir(folder: String): File = {
-    val dir = new File(path + nicefy(folder))
+  def createDir(folder: String): File = createDir(path, folder)
+
+  def createDir(where: File, folder: String): File = {
+    val dir = new File(where, nicefy(folder))
     if (!dir.exists()) {
       dir.mkdirs()
     }
@@ -102,7 +104,7 @@ trait DocumentationHelper extends GraphIcing {
     }
   }
   
-  val path: String = "target/docs/dev/ql/"
+  val path: File = new File("target/docs/dev/ql/")
 
   val graphvizFileName = "cypher-" + simpleName + "-graph"
 
@@ -137,20 +139,20 @@ trait DocumentationHelper extends GraphIcing {
 
 abstract class DocumentingTestBase extends JUnitSuite with Assertions with DocumentationHelper with GraphIcing {
 
-  def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
-    internalTestQuery(title, text, queryText, returns, None, None, assertions: _*)
+  def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, assertions: _*)
   }
 
-  def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, returns: String) {
+  def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, optionalResultExplanation: String) {
     val classTag = implicitly[ClassTag[T]]
-    internalTestQuery(title, text, queryText, returns, Some(classTag), None)
+    internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None)
   }
 
-  def prepareAndTestQuery(title: String, text: String, queryText: String, returns: String, prepare: => Any, assertions: (ExecutionResult => Unit)*) {
-    internalTestQuery(title, text, queryText, returns, None, Some(() => prepare), assertions: _*)
+  def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, prepare: => Any, assertions: (ExecutionResult => Unit)*) {
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions: _*)
   }
 
-  def internalTestQuery(title: String, text: String, queryText: String, returns: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+  def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()
     //dumpGraphViz(dir, graphvizOptions.trim)
@@ -201,7 +203,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
           case None => throw e
         }
     } finally {
-      tx1.finish()
+      tx1.close()
     }
 
     val tx2 = db.beginTx()
@@ -212,22 +214,20 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
       }
-      dumpToFile(dir, writer, title, query, returns, text, result, consoleData)
+      dumpToFile(dir, writer, title, query, optionalResultExplanation, text, result, consoleData)
       if (graphvizExecutedAfter) {
         dumpGraphViz(dir, graphvizOptions.trim)
       }
     } catch {
-      case e: CypherException =>
-        expectedException match {
-          case Some(expectedExceptionType) => e match {
-            case expectedExceptionType(typedE) =>
-              dumpToFile(dir, writer, title, query, returns, text, typedE, consoleData)
-            case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
-          }
-          case None => throw e
+      case e: CypherException if expectedException.nonEmpty =>
+        val expectedExceptionType = expectedException.get
+        e match {
+          case expectedExceptionType(typedE) =>
+            dumpToFile(dir, writer, title, query, optionalResultExplanation, text, typedE, consoleData)
+          case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
         }
     } finally {
-      tx2.finish()
+      tx2.close()
     }
   }
 
@@ -246,7 +246,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
   var preparationQueries: List[String] = List()
 
   def section: String
-  val dir = createDir(section)
+  val dir: File = createDir(section)
 
   def graphDescription: List[String] = List()
 

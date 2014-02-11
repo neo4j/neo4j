@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
+import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_0._
-import Expression._
 
 object FunctionInvocation {
   def apply(identifier: Identifier, argument: Expression)(position: InputPosition): FunctionInvocation =

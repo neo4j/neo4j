@@ -20,10 +20,9 @@
 package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.{MergeConstraintConflictException, StatisticsChecker}
-import org.junit.{Before, Test}
+import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
-import org.neo4j.graphdb.DynamicLabel
 
 class MergeTest extends DocumentingTestBase with StatisticsChecker {
 
@@ -61,7 +60,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       title = "Merge single node with a label",
       text = "Merging a single node with a given label.",
       queryText = "merge (robert:Critic)\nreturn robert, labels(robert)",
-      returns = "Because there are no nodes labeled +Critic+ in the database, a new node is created.",
+      optionalResultExplanation = "Because there are no nodes labeled +Critic+ in the database, a new node is created.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1)
     )
   }
@@ -71,7 +70,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       title = "Merge single node with properties",
       text = "Merging a single node with properties where not all properties match any existing node.",
       queryText = "merge (charlie {name:'Charlie Sheen', age:10})\nreturn charlie",
-      returns = "A new node with the name Charlie Sheen will be created since not all properties " +
+      optionalResultExplanation = "A new node with the name Charlie Sheen will be created since not all properties " +
         "matched the existing Charlie Sheen node.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2)
     )
@@ -82,7 +81,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       title = "Merge single node specifying both label and property",
       text = "Merging a single node with both label and property matching an existing node.",
       queryText = "merge (michael:Person {name:'Michael Douglas'})\nreturn michael",
-      returns = "Michael Douglas will be matched and returned.",
+      optionalResultExplanation = "Michael Douglas will be matched and returned.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0)
     )
   }
@@ -94,7 +93,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
       queryText = """merge (keanu:Person {name:'Keanu Reeves'})
 on create set keanu.created = timestamp()
 return keanu""",
-      returns = "Creates the Keanu node, and sets a timestamp on creation time.",
+      optionalResultExplanation = "Creates the Keanu node, and sets a timestamp on creation time.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }
@@ -104,7 +103,7 @@ return keanu""",
       title = "Merge with ON MATCH",
       text = "Merging nodes and setting properties on found nodes.",
       queryText = "merge (person:Person)\non match set person.found = true\nreturn person",
-      returns = "Finds all the +Person+ nodes, sets a property on them, and returns them.",
+      optionalResultExplanation = "Finds all the +Person+ nodes, sets a property on them, and returns them.",
       assertions = (p) => assertStats(p, propertiesSet = 5)
     )
   }
@@ -118,7 +117,7 @@ return keanu""",
 on create set keanu.created = timestamp()
 on match set keanu.lastSeen = timestamp()
 return keanu""",
-      returns = "The query creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
+      optionalResultExplanation = "The query creates the Keanu node, and sets a timestamp on creation time. If Keanu already existed, a " +
         "different property would have been set.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
@@ -129,7 +128,7 @@ return keanu""",
       title = "Merge using unique constraints creates a new node if no node is found",
       text = "Merge using unique constraints creates a new node if no node is found.",
       queryText = """merge (laurence:Person {name: 'Laurence Fishburne'}) return laurence""",
-      returns = "The query creates the laurence node. If laurence already existed, merge would " +
+      optionalResultExplanation = "The query creates the laurence node. If laurence already existed, merge would " +
         "just return the existing node.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1)
     )
@@ -140,7 +139,7 @@ return keanu""",
       title = "Merge using unique constraints matches an existing node",
       text = "Merge using unique constraints matches an existing node.",
       queryText = """merge (oliver:Person {name:'Oliver Stone'}) return oliver""",
-      returns = "The oliver node already exists, so merge just returns it.",
+      optionalResultExplanation = "The oliver node already exists, so merge just returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 0, labelsAdded = 0)
     )
   }
@@ -151,7 +150,7 @@ return keanu""",
       title = "Merge with unique constraints and partial matches",
       text = "Merge using unique constraints fails when finding partial matches.",
       queryText = """merge (michael:Person {name:'Michael Douglas', role:'Gordon Gekko'}) return michael""",
-      returns = "While there is a matching unique michael node with the name 'Michael Douglas', there is no " +
+      optionalResultExplanation = "While there is a matching unique michael node with the name 'Michael Douglas', there is no " +
         "unique node with the role of 'Gordon Gekko' and merge fails to match."
     )
   }
@@ -162,7 +161,7 @@ return keanu""",
       title = "Merge with unique constraints and conflicting matches",
       text = "Merge using unique constraints fails when finding conflicting matches.",
       queryText = """merge (oliver:Person {name:'Oliver Stone', role:'Gordon Gekko'}) return oliver""",
-      returns = "While there is a matching unique oliver node with the name 'Oliver Stone', there is also another " +
+      optionalResultExplanation = "While there is a matching unique oliver node with the name 'Oliver Stone', there is also another " +
         "unique node with the role of 'Gordon Gekko' and merge fails to match."
     )
   }
@@ -175,7 +174,7 @@ To use map parameters with +MERGE+, it is necessary to explicitly use the expect
 For more information on parameters, see <<cypher-parameters>>.""",
       prepare = setParameters(Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo"))),
       queryText = "merge (oliver:Person {name:{param}.name, role:{param}.role}) return oliver",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }
@@ -188,7 +187,7 @@ For more information on parameters, see <<cypher-parameters>>.""",
         """match (charlie:Person {name:'Charlie Sheen'}), (wallStreet:Movie {title:'Wall Street'})
 merge (charlie)-[r:ACTED_IN]->(wallStreet)
 return r""",
-      returns = "Charlie Sheen had already been marked as acting on Wall Street, so the existing relationship is found " +
+      optionalResultExplanation = "Charlie Sheen had already been marked as acting on Wall Street, so the existing relationship is found " +
         "and returned. Note that in order to match or create a relationship when using +MERGE+, at least one bound node " +
         "must be specified, which is done via the +MATCH+ clause in the above example.",
       assertions = (p) => assertStats(p, relationshipsCreated = 0)
@@ -203,7 +202,7 @@ return r""",
         """match (oliver:Person {name:'Oliver Stone'}), (reiner:Person {name:'Rob Reiner'})
 merge (oliver)-[:DIRECTED]->(movie:Movie)<-[:ACTED_IN]-(reiner)
 return movie""",
-      returns = "In our example graph, Oliver Stone and Rob Reiner have never worked together. When we try to +MERGE+ a " +
+      optionalResultExplanation = "In our example graph, Oliver Stone and Rob Reiner have never worked together. When we try to +MERGE+ a " +
         "movie between them, Cypher will not use any of the existing movies already connected to either person. Instead, " +
         "a new movie node is created.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1, propertiesSet = 0, labelsAdded = 1)

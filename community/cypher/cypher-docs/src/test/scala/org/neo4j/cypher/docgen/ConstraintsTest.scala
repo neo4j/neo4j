@@ -34,7 +34,7 @@ class ConstraintsTest extends DocumentingTestBase {
       text = "To create a constraint that makes sure that your database will never contain more than one node with a specific " +
         "label and one property value, use the +IS+ +UNIQUE+ syntax.",
       queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertConstraintExist("Book", "isbn")
     )
   }
@@ -47,7 +47,7 @@ class ConstraintsTest extends DocumentingTestBase {
       title = "Drop uniqueness constraint",
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
       queryText = "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertConstraintDoesNotExist("Book", "isbn")
     )
   }
@@ -60,7 +60,7 @@ class ConstraintsTest extends DocumentingTestBase {
       title = "Create a node that complies with constraints",
       text = "Create a `Book` node with an `isbn` that isn't already in the database.",
       queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertConstraintExist("Book", "isbn")
     )
   }
@@ -74,7 +74,7 @@ class ConstraintsTest extends DocumentingTestBase {
       title = "Create a node that breaks a constraint",
       text = "Create a `Book` node with an `isbn` that is already used in the database.",
       queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
-      returns = ""
+      optionalResultExplanation = ""
     )
   }
   

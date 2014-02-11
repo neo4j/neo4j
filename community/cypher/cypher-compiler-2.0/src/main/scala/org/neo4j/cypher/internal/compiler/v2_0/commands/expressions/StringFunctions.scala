@@ -190,6 +190,46 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
                                 search.symbolTableDependencies ++
                                 replaceWith.symbolTableDependencies
 }
+case class SplitFunction(orig: Expression, splitPattern: Expression)
+  extends NullInNullOutExpression(orig) with StringHelper {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
+    val origVal = asString(orig(m))
+    val splitPatternVal = asString(splitPattern(m))
+
+    if (origVal == null || splitPatternVal == null) {
+      null
+    } else {
+      if (splitPatternVal.length > 0) {
+        split(origVal, splitPatternVal)
+      } else {
+        throw new IllegalArgumentException("The split pattern must not be an empty string")
+      }
+    }
+  }
+
+  private def split(orig: String, splitPattern: String): Seq[String] = {
+    val parts = Seq.newBuilder[String]
+    val splitPatternLen = splitPattern.length
+    var remainder = orig
+    var index = remainder.indexOf(splitPattern)
+    while (index >= 0) {
+      parts += remainder.substring(0, index)
+      remainder = remainder.substring(index + splitPatternLen)
+      index = remainder.indexOf(splitPattern)
+    }
+
+    parts += remainder
+    parts.result()
+  }
+
+  def arguments = Seq(orig, splitPattern)
+
+  def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), splitPattern.rewrite(f)))
+
+  def calculateType(symbols: SymbolTable) = CTCollection(CTString)
+
+  def symbolTableDependencies = orig.symbolTableDependencies ++ splitPattern.symbolTableDependencies
+}
 
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with StringHelper with NumericHelper {

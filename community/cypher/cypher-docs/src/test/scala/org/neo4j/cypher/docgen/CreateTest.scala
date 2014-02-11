@@ -32,7 +32,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create single node",
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (n)",
-      returns = "Nothing is returned from this query, except the count of affected nodes.",
+      optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => {})
   }
 
@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create a node with a label",
       text = "To add a label when creating a node, use the syntax below.",
       queryText = "create (n:Person)",
-      returns = "Nothing is returned from this query.",
+      optionalResultExplanation = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1))
   }
 
@@ -50,7 +50,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create a node with multiple labels",
       text = "To add labels when creating a node, use the syntax below. In this case, we add two labels.",
       queryText = "create (n:Person:Swedish)",
-      returns = "Nothing is returned from this query.",
+      optionalResultExplanation = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 2))
   }
 
@@ -59,7 +59,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Create node and add labels and properties",
       text = "When creating a new node with labels, you can add properties at the same time.",
       queryText = "create (n:Person {name : 'Andres', title : 'Developer'})",
-      returns = "Nothing is returned from this query.",
+      optionalResultExplanation = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
   }
 
@@ -68,7 +68,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
       queryText = "create (a {name : 'Andres'}) return a",
-      returns = "The newly created node is returned.",
+      optionalResultExplanation = "The newly created node is returned.",
       assertions = (p) => assert(p.size === 1))
   }
 
@@ -90,7 +90,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
       queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE]->(b) return r",
-      returns = "The created relationship is returned by the query.",
+      optionalResultExplanation = "The created relationship is returned by the query.",
       assertions = (p) => assert(p.size === 1))
   }
 
@@ -109,7 +109,7 @@ class CreateTest extends DocumentingTestBase with StatisticsChecker {
 Cypher will turn that into an array. All the elements in the collection must be of the same type
 for this to work.""",
       queryText = "match (n) where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
-      returns = "A node with an array property named name is returned.",
+      optionalResultExplanation = "A node with an array property named name is returned.",
       assertions = (p) => {
         val createdNode = p.toList.head("new").asInstanceOf[Node]
         assert(createdNode.getProperty("name") === Array("Andres", "Michael"))
@@ -123,7 +123,7 @@ for this to work.""",
         """When you use `CREATE` and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
       queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
-      returns = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
+      optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path identifier, " +
         "and returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesSet = 2))
   }
@@ -136,7 +136,7 @@ will be created. """,
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes. " +
         "Note that the values can be any expression.",
       queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE {name : a.name + '<->' + b.name }]->(b) return r",
-      returns = "The newly created relationship is returned by the example query.",
+      optionalResultExplanation = "The newly created relationship is returned by the example query.",
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 1)
@@ -155,7 +155,7 @@ In this case we add a +Person+ label to the node as well.
 """,
       prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
       queryText = "create (n:Person {props}) return n",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
   }
 
@@ -170,7 +170,7 @@ NOTE: When you do this, you can't create anything else in the same +CREATE+ clau
       prepare = setParameters(Map("props" -> List(Map("name" -> "Andres", "position" -> "Developer"),
         Map("name" -> "Michael", "position" -> "Developer")))),
       queryText = "create (n {props}) return n",
-      returns = "",
+      optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
   }
 }
