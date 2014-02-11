@@ -39,7 +39,7 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
     // "a" + 1.1 => "a1.1"
     val stringTypes =
       if (lhsTypes containsAny CTString.covariant)
-        CTString.covariant | CTInteger.covariant | CTDouble.covariant
+        CTString.covariant | CTInteger.covariant | CTFloat.covariant
       else
         TypeSpec.none
 
@@ -50,8 +50,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
     // 1.1 + 1 => 2.1
     // 1.1 + 1.1 => 2.2
     val numberTypes =
-      if (lhsTypes containsAny (CTInteger.covariant | CTDouble.covariant))
-        CTString.covariant | CTInteger.covariant | CTDouble.covariant
+      if (lhsTypes containsAny (CTInteger.covariant | CTFloat.covariant))
+        CTString.covariant | CTInteger.covariant | CTFloat.covariant
       else
         TypeSpec.none
 
@@ -81,7 +81,7 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
     // 1 + "b" => "1b"
     // 1.1 + "b" => "1.1b"
     val stringTypes: TypeSpec =
-      when(CTString.covariant, CTInteger.covariant | CTDouble.covariant | CTString.covariant)(CTString)
+      when(CTString.covariant, CTInteger.covariant | CTFloat.covariant | CTString.covariant)(CTString)
 
     // 1 + 1 => 2
     // 1 + 1.1 => 2.1
@@ -89,7 +89,7 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
     // 1.1 + 1.1 => 2.2
     val numberTypes: TypeSpec =
       when(CTInteger.covariant, CTInteger.covariant)(CTInteger) |
-        when(CTDouble.covariant, CTDouble.covariant | CTInteger.covariant)(CTDouble)
+        when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
     // [a] + [b] => [a, b]
     // [a] + b => [a, b]
@@ -112,22 +112,22 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
 case class UnaryAdd(rhs: Expression)(val position: InputPosition) extends Expression with PrefixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 }
 
 case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 }
 
 case class UnarySubtract(rhs: Expression)(val position: InputPosition) extends Expression with PrefixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 }
 
@@ -138,8 +138,8 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
   // 1.1 * 1.1 => 1.21
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 }
 
@@ -150,8 +150,8 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 / 1.1 => 1.0
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 }
 
@@ -162,8 +162,8 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 % 1.1 => 0.0
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTInteger, CTDouble), outputType = CTDouble),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 }
 
@@ -173,6 +173,6 @@ case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
   // 1.1 ^ 1 => 1.1
   // 1.1 ^ 1.1 => 1.1105
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 }

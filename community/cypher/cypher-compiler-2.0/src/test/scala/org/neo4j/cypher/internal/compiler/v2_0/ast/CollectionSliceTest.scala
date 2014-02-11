@@ -62,6 +62,6 @@ class CollectionSliceTest extends Assertions {
     )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", to.position)), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Float", to.position)), result.errors)
   }
 }

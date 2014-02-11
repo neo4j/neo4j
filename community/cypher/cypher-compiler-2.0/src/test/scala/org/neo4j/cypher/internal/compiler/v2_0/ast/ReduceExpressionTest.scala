@@ -55,14 +55,14 @@ class ReduceExpressionTest extends Assertions {
 
   @Test
   def shouldReturnMinimalTypeOfAccumulatorAndReduceFunction() {
-    val initType = CTString.covariant | CTDouble.covariant
+    val initType = CTString.covariant | CTFloat.covariant
     val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === (CTString | CTDouble))
+        assert(s.symbolTypes("x") === (CTString | CTFloat))
         assert(s.symbolTypes("y") === collectionType.innerType.invariant)
-        (this.specifyType(CTDouble) then SemanticCheckResult.success)(s)
+        (this.specifyType(CTFloat) then SemanticCheckResult.success)(s)
       }
     }
 
@@ -76,7 +76,7 @@ class ReduceExpressionTest extends Assertions {
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Seq())
-    assert(filter.types(result.state) === (CTAny | CTDouble))
+    assert(filter.types(result.state) === (CTAny | CTFloat))
   }
 
   @Test

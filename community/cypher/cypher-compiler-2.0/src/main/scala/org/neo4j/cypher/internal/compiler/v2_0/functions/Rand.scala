@@ -27,7 +27,7 @@ case object Rand extends Function with SimpleTypedFunction {
   def name = "rand"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(), outputType = CTDouble)
+    Signature(argumentTypes = Vector(), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

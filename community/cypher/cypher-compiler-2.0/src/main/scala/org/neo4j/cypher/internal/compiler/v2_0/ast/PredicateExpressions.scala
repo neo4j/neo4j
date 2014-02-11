@@ -95,7 +95,7 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expre
 case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTBoolean),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
@@ -103,7 +103,7 @@ case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPositio
 case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTBoolean),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
@@ -111,7 +111,7 @@ case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: Input
 case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTBoolean),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
@@ -119,7 +119,7 @@ case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosi
 case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTBoolean),
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }

@@ -28,7 +28,7 @@ object TypeSpec {
   private val simpleTypes = Vector(
     CTAny,
     CTBoolean,
-    CTDouble,
+    CTFloat,
     CTInteger,
     CTMap,
     CTNode,

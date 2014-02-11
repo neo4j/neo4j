@@ -28,7 +28,7 @@ case object Log extends Function with SimpleTypedFunction {
   def name = "log"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

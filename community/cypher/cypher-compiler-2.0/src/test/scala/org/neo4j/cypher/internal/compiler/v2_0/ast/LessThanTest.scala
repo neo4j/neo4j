@@ -32,7 +32,7 @@ class LessThanTest extends InfixExpressionTestBase(LessThan(_, _)(DummyPosition(
 
   @Test
   def shouldSupportComparingDoubles() {
-    testValidTypes(CTDouble, CTDouble)(CTBoolean)
+    testValidTypes(CTFloat, CTFloat)(CTBoolean)
   }
 
   @Test
@@ -42,7 +42,7 @@ class LessThanTest extends InfixExpressionTestBase(LessThan(_, _)(DummyPosition(
 
   @Test
   def shouldReturnErrorIfInvalidArgumentTypes() {
-    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Double, Integer or String but was Node")
+    testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer or String but was Node")
     testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
   }
 }

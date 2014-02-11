@@ -29,7 +29,7 @@ case object Sign extends Function with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTInteger)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTInteger)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

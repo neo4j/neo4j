@@ -43,41 +43,41 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
   def shouldHandleAllSpecializations() {
     testValidTypes(CTString, CTString)(CTString)
     testValidTypes(CTString, CTInteger)(CTString)
-    testValidTypes(CTString, CTDouble)(CTString)
+    testValidTypes(CTString, CTFloat)(CTString)
     testValidTypes(CTInteger, CTString)(CTString)
     testValidTypes(CTInteger, CTInteger)(CTInteger)
-    testValidTypes(CTInteger, CTDouble)(CTDouble)
-    testValidTypes(CTDouble, CTString)(CTString)
-    testValidTypes(CTDouble, CTInteger)(CTDouble)
-    testValidTypes(CTDouble, CTDouble)(CTDouble)
+    testValidTypes(CTInteger, CTFloat)(CTFloat)
+    testValidTypes(CTFloat, CTString)(CTString)
+    testValidTypes(CTFloat, CTInteger)(CTFloat)
+    testValidTypes(CTFloat, CTFloat)(CTFloat)
 
     testValidTypes(CTCollection(CTNode), CTCollection(CTNode))(CTCollection(CTNode))
-    testValidTypes(CTCollection(CTDouble), CTCollection(CTDouble))(CTCollection(CTDouble))
+    testValidTypes(CTCollection(CTFloat), CTCollection(CTFloat))(CTCollection(CTFloat))
 
     testValidTypes(CTCollection(CTNode), CTNode)(CTCollection(CTNode))
-    testValidTypes(CTCollection(CTDouble), CTDouble)(CTCollection(CTDouble))
+    testValidTypes(CTCollection(CTFloat), CTFloat)(CTCollection(CTFloat))
 
     testValidTypes(CTNode, CTCollection(CTNode))(CTCollection(CTNode))
-    testValidTypes(CTDouble, CTCollection(CTDouble))(CTCollection(CTDouble))
+    testValidTypes(CTFloat, CTCollection(CTFloat))(CTCollection(CTFloat))
   }
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTString, CTInteger)(CTDouble | CTString)
-    testValidTypes(CTDouble | CTCollection(CTDouble), CTDouble)(CTDouble | CTCollection(CTDouble))
-    testValidTypes(CTDouble, CTDouble | CTCollection(CTDouble))(CTDouble | CTCollection(CTDouble))
+    testValidTypes(CTFloat | CTString, CTInteger)(CTFloat | CTString)
+    testValidTypes(CTFloat | CTCollection(CTFloat), CTFloat)(CTFloat | CTCollection(CTFloat))
+    testValidTypes(CTFloat, CTFloat | CTCollection(CTFloat))(CTFloat | CTCollection(CTFloat))
   }
 
   @Test
   def shouldHandleCoercions() {
-    testValidTypes(CTCollection(CTDouble), CTInteger)(CTCollection(CTDouble))
-    testValidTypes(CTDouble | CTCollection(CTDouble), CTInteger)(CTDouble | CTCollection(CTDouble))
+    testValidTypes(CTCollection(CTFloat), CTInteger)(CTCollection(CTFloat))
+    testValidTypes(CTFloat | CTCollection(CTFloat), CTInteger)(CTFloat | CTCollection(CTFloat))
   }
 
   @Test
   def shouldFailTypeCheckForIncompatibleArguments() {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double, Integer, String or Collection<Integer> but was Boolean"
+      "Type mismatch: expected Float, Integer, String or Collection<Integer> but was Boolean"
     )
     testInvalidApplication(CTCollection(CTInteger), CTString)(
       "Type mismatch: expected Integer, Collection<Integer> or Collection<Collection<Integer>> but was String"

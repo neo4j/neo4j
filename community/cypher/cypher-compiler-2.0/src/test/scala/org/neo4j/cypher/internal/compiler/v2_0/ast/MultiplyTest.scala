@@ -34,23 +34,23 @@ class MultiplyTest extends InfixExpressionTestBase(Multiply(_, _)(DummyPosition(
   @Test
   def shouldHandleAllSpecializations() {
     testValidTypes(CTInteger, CTInteger)(CTInteger)
-    testValidTypes(CTInteger, CTDouble)(CTDouble)
-    testValidTypes(CTDouble, CTInteger)(CTDouble)
-    testValidTypes(CTDouble, CTDouble)(CTDouble)
+    testValidTypes(CTInteger, CTFloat)(CTFloat)
+    testValidTypes(CTFloat, CTInteger)(CTFloat)
+    testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
   @Test
   def shouldHandleCombinedSpecializations() {
-    testValidTypes(CTDouble | CTInteger, CTDouble | CTInteger)(CTDouble | CTInteger)
+    testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
   @Test
   def shouldFailTypeCheckWhenAddingIncompatible() {
     testInvalidApplication(CTInteger, CTBoolean)(
-      "Type mismatch: expected Double or Integer but was Boolean"
+      "Type mismatch: expected Float or Integer but was Boolean"
     )
     testInvalidApplication(CTBoolean, CTInteger)(
-      "Type mismatch: expected Double or Integer but was Boolean"
+      "Type mismatch: expected Float or Integer but was Boolean"
     )
   }
 }

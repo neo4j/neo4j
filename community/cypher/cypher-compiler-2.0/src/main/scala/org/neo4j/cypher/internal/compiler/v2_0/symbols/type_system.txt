@@ -8,14 +8,14 @@ To do this, it has a hierarchy of types, with Any as the root of it all.
         /           /               \         \        \            \
        /         Number             Map        \        \            \
       /        /       \          /     \       \        \            \
- CTString  CTInteger CTDouble  CTNode  CTRel  CTPath   CTBoolean  CTCollection<T>
+ CTString  CTInteger CTFloat   CTNode  CTRel  CTPath   CTBoolean  CTCollection<T>
 
 All expressions have a type. Some expressions type depend on other expressions types -
 e.g. LAST(x) will have type T, given that x has type Collection<T>.
 
 An expression can also have an expectation about inner expressions type, LENGTH(X)
 expects that X is an Collection<T>. These expectations are met by any subtype of the
-expected type - e.g. if the expectation is a Number, Double and Integer are fine, but
+expected type - e.g. if the expectation is a Number, Float and Integer are fine, but
 not a String.
 
 An expression has dependencies on what identifiers exists in the symbol table,

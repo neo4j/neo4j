@@ -29,7 +29,7 @@ case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anI
 
   def rewrite(f: (Expression) => Expression) = f(Stdev(anInner.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = CTDouble
+  def calculateType(symbols: SymbolTable): CypherType = CTFloat
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
@@ -39,6 +39,6 @@ case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(an
 
   def rewrite(f: (Expression) => Expression) = f(StdevP(anInner.rewrite(f)))
 
-  def calculateType(symbols: SymbolTable): CypherType = CTDouble
+  def calculateType(symbols: SymbolTable): CypherType = CTFloat
 }
 

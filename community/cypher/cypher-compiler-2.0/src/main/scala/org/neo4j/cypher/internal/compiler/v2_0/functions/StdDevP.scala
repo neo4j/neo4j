@@ -29,7 +29,7 @@ case object StdDevP extends AggregatingFunction with SimpleTypedFunction {
   def name = "stdevp"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = {
