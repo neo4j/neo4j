@@ -86,6 +86,7 @@ object Function {
     functions.Tail,
     functions.Tan,
     functions.Timestamp,
+    functions.ToInt,
     functions.Trim,
     functions.Type,
     functions.Upper
