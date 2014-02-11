@@ -28,7 +28,9 @@ case object ToFloat extends Function with SimpleTypedFunction {
   def name = "toFloat"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTAny), outputType = CTFloat)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTInteger), outputType = CTFloat),
+    Signature(argumentTypes = Vector(CTString), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

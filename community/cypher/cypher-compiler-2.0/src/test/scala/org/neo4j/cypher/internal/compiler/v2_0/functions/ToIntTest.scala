@@ -26,12 +26,20 @@ class ToIntTest extends FunctionTestBase("toInt")  {
 
   @Test
   def shouldAcceptCorrectTypes() {
-    testValidTypes(CTAny)(CTInteger)
+    testValidTypes(CTString)(CTInteger)
+    testValidTypes(CTFloat)(CTInteger)
+    testValidTypes(CTInteger)(CTInteger)
   }
 
   @Test
-  def shouldAcceptMoreSpecificTypes() {
-    testValidTypes(CTString)(CTInteger)
+  def shouldFailTypeCheckForIncompatibleArguments() {
+    testInvalidApplication(CTCollection(CTAny))(
+      "Type mismatch: expected Float, Integer or String but was Collection<Any>"
+    )
+
+    testInvalidApplication(CTNode)(
+      "Type mismatch: expected Float, Integer or String but was Node"
+    )
   }
 
   @Test
@@ -39,7 +47,7 @@ class ToIntTest extends FunctionTestBase("toInt")  {
     testInvalidApplication()(
       "Insufficient parameters for function 'toInt'"
     )
-    testInvalidApplication(CTAny,CTAny)(
+    testInvalidApplication(CTString, CTString)(
       "Too many parameters for function 'toInt'"
     )
   }

@@ -26,12 +26,20 @@ class ToFloatTest extends FunctionTestBase("toFloat")  {
 
   @Test
   def shouldAcceptCorrectTypes() {
-    testValidTypes(CTAny)(CTFloat)
+    testValidTypes(CTString)(CTFloat)
+    testValidTypes(CTFloat)(CTFloat)
+    testValidTypes(CTInteger)(CTFloat)
   }
 
   @Test
-  def shouldAcceptMoreSpecificTypes() {
-    testValidTypes(CTString)(CTFloat)
+  def shouldFailTypeCheckForIncompatibleArguments() {
+    testInvalidApplication(CTCollection(CTAny))(
+      "Type mismatch: expected Float, Integer or String but was Collection<Any>"
+    )
+
+    testInvalidApplication(CTNode)(
+      "Type mismatch: expected Float, Integer or String but was Node"
+    )
   }
 
   @Test
@@ -39,7 +47,7 @@ class ToFloatTest extends FunctionTestBase("toFloat")  {
     testInvalidApplication()(
       "Insufficient parameters for function 'toFloat'"
     )
-    testInvalidApplication(CTAny, CTAny)(
+    testInvalidApplication(CTString, CTString)(
       "Too many parameters for function 'toFloat'"
     )
   }

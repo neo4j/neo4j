@@ -30,7 +30,7 @@ import org.neo4j.cypher.ParameterWrongTypeException
 class ToFloatFunctionTest extends FunSuite with Matchers {
 
   test("should return null if argument is null") {
-    toFloat(null.asInstanceOf[Any]) should be(null.asInstanceOf[Int])
+    toFloat(null.asInstanceOf[Any]) should be(null.asInstanceOf[Double])
   }
 
   test("should convert a string to a float") {
@@ -46,11 +46,11 @@ class ToFloatFunctionTest extends FunSuite with Matchers {
   }
 
   test("should throw an exception if the argument is a non-numeric string") {
-    evaluating { toFloat("20foobar2") } should produce[IllegalArgumentException]
+    evaluating { toFloat("20foobar2") } should produce[ParameterWrongTypeException]
   }
 
   test("should throw an exception if the argument is a hexadecimal string") {
-    evaluating { toFloat("0x20") } should produce[IllegalArgumentException]
+    evaluating { toFloat("0x20") } should produce[ParameterWrongTypeException]
   }
 
   test("should convert a string with leading zeros to a float") {
@@ -71,16 +71,6 @@ class ToFloatFunctionTest extends FunSuite with Matchers {
 
   test("given a float should give the same value back") {
     toFloat(50.5) should be(50.5)
-  }
-
-  test("given a boolean should return the numeric value") {
-    toFloat(false) should be(0.0)
-    toFloat(true) should be(1.0)
-  }
-
-  test("should throw an exception if the argument is a boolean string literal") {
-    evaluating { toFloat("false") } should produce[IllegalArgumentException]
-    evaluating { toFloat("true") } should produce[IllegalArgumentException]
   }
 
   private def toFloat(orig: Any) = {

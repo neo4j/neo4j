@@ -43,7 +43,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
   @Test
   def toInt_should_work_as_expected() {
     // When
-    val result = executeScalar[Int](
+    val result = executeScalar[Long](
       "CREATE (p:Person { age: \"42\" })" +
       "WITH * " +
       "MATCH (n) " +
