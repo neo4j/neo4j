@@ -74,14 +74,14 @@ class LoadCSVWithExplicitJoinTableTest extends ArticleTest with StatisticsChecke
                        |
                        |###
                        |LOAD CSV FROM "file://$movies" AS csvLine
-                       |CREATE (m:Movie {id: csvLine[0], title: csvLine[1]})
+                       |CREATE (m:Movie {id: toInt(csvLine[0]), title: csvLine[1]})
                        |###
                        |
                        |Second, we do the same for the persons.csv file.
                        |
                        |###
                        |LOAD CSV FROM "file://$persons" AS csvLine
-                       |CREATE (p:Person {id: csvLine[0], name: csvLine[1]})
+                       |CREATE (p:Person {id: toInt(csvLine[0]), name: csvLine[1]})
                        |###
                        |
                        |The last step is to create the relationships between nodes we've just created. Given a
@@ -90,7 +90,7 @@ class LoadCSVWithExplicitJoinTableTest extends ArticleTest with StatisticsChecke
                        |
                        |###
                        |LOAD CSV FROM "file://$directors" AS csvLine
-                       |MATCH (p:Person {id: csvLine[0]}), (m:Movie {id: csvLine[1]})
+                       |MATCH (p:Person {id: toInt(csvLine[0])}), (m:Movie {id: csvLine[1]})
                        |CREATE (p)-[:DIRECTED]->(m)
                        |###
                        |
