@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.scalatest.FunSuite
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.neo4j.cypher.internal.commons.CypherTestSuite
 
 object RewritableTest {
   trait Exp extends Product with Rewritable
@@ -47,8 +45,7 @@ object RewritableTest {
   }
 }
 
-@RunWith(classOf[JUnitRunner])
-class RewritableTest extends FunSuite {
+class RewritableTest extends CypherTestSuite {
   import RewritableTest._
 
   test("topDown should be identical when no rule matches") {

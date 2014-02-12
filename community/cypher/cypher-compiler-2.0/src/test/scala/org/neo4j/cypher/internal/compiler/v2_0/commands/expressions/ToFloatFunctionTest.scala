@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{Matchers, FunSuite}
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
 import org.neo4j.cypher.ParameterWrongTypeException
+import org.neo4j.cypher.internal.commons.CypherTestSuite
 
-@RunWith(classOf[JUnitRunner])
-class ToFloatFunctionTest extends FunSuite with Matchers {
+class ToFloatFunctionTest extends CypherTestSuite {
 
   test("should return null if argument is null") {
     assert(toFloat(null) === null)
