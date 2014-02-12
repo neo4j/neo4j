@@ -60,7 +60,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: I
   def semanticCheck: SemanticCheck =
     urlString.semanticCheck(Expression.SemanticContext.Simple) then
     urlString.expectType(CTString) then
-    urlString.checkURL then
+    urlString.checkURL ifOkThen
     checkProtocolSupported then
     typeCheck
 
