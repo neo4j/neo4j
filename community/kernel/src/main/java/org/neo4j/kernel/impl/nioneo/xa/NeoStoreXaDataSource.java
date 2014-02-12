@@ -115,6 +115,7 @@ import org.neo4j.kernel.logging.Logging;
 public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoStoreProvider
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+    private NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
 
     @SuppressWarnings("deprecation")
     public static abstract class Configuration extends LogBackedXaDataSource.Configuration
@@ -322,6 +323,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         }
         neoStore = storeFactory.newNeoStore( store );
 
+        neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
+
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
         final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
@@ -506,26 +509,16 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         }
     }
 
-    private class InterceptingTransactionFactory extends TransactionFactory
-    {
-        @Override
-        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state )
-        {
-            TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
-            return new InterceptingWriteTransaction( lastCommittedTxWhenTransactionStarted, getLogicalLog(),
-                    neoStore, state, cacheAccess, indexingService, labelScanStore, first, integrityValidator,
-                    (KernelTransactionImplementation)kernel.newTransaction(), locks );
-        }
-    }
-
     private class TransactionFactory extends XaTransactionFactory
     {
         @Override
         public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state )
         {
-            return new NeoStoreTransaction( lastCommittedTxWhenTransactionStarted, getLogicalLog(), state,
+            NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
+            context.bind( state );
+            return new NeoStoreTransaction( lastCommittedTxWhenTransactionStarted, getLogicalLog(),
                 neoStore, cacheAccess, indexingService, labelScanStore, integrityValidator,
-                (KernelTransactionImplementation)kernel.newTransaction(), locks );
+                (KernelTransactionImplementation)kernel.newTransaction(), locks, context );
         }
 
         @Override
@@ -569,6 +562,20 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         public long getLastCommittedTx()
         {
             return neoStore.getLastCommittedTx();
+        }
+    }
+
+    private class InterceptingTransactionFactory extends TransactionFactory
+    {
+        @Override
+        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state )
+        {
+            TransactionInterceptor first = providers.resolveChain( NeoStoreXaDataSource.this );
+            NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
+            context.bind( state );
+            return new InterceptingWriteTransaction( lastCommittedTxWhenTransactionStarted, getLogicalLog(),
+                    neoStore, cacheAccess, indexingService, labelScanStore, first, integrityValidator,
+                    (KernelTransactionImplementation)kernel.newTransaction(), locks, context );
         }
     }
 

@@ -36,13 +36,14 @@ public class InterceptingWriteTransaction extends NeoStoreTransaction
     private final TransactionInterceptor interceptor;
 
     InterceptingWriteTransaction( long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
-                                  NeoStore neoStore, TransactionState state, CacheAccessBackDoor cacheAccess,
+                                  NeoStore neoStore, CacheAccessBackDoor cacheAccess,
                                   IndexingService indexingService, LabelScanStore labelScanStore,
                                   TransactionInterceptor interceptor, IntegrityValidator validator,
-                                  KernelTransactionImplementation kernelTransaction, LockService locks )
+                                  KernelTransactionImplementation kernelTransaction, LockService locks,
+                                  NeoStoreTransactionContext context )
     {
-        super( lastCommittedTxWhenTransactionStarted, log, state, neoStore, cacheAccess, indexingService,
-                labelScanStore, validator, kernelTransaction, locks );
+        super( lastCommittedTxWhenTransactionStarted, log, neoStore, cacheAccess, indexingService,
+                labelScanStore, validator, kernelTransaction, locks, context );
         this.interceptor = interceptor;
     }
 

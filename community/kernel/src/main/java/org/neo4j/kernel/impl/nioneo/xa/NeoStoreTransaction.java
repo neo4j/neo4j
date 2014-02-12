@@ -28,18 +28,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 import javax.transaction.xa.XAException;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
@@ -56,7 +50,6 @@ import org.neo4j.kernel.impl.core.DenseNodeChainPosition;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.SingleChainPosition;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
@@ -129,184 +122,16 @@ import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
  */
 public class NeoStoreTransaction extends XaTransaction
 {
-    private final RecordChanges<Long, NodeRecord, Void> nodeRecords =
-            new RecordChanges<>( new RecordChanges.Loader<Long, NodeRecord, Void>()
-            {
-                @Override
-                public NodeRecord newUnused( Long key, Void additionalData )
-                {
-                    return new NodeRecord( key, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                                           Record.NO_NEXT_PROPERTY.intValue() );
-                }
-
-                @Override
-                public NodeRecord load( Long key, Void additionalData )
-                {
-                    return getNodeStore().getRecord( key );
-                }
-
-                @Override
-                public void ensureHeavy( NodeRecord record )
-                {
-                    getNodeStore().ensureHeavy( record );
-                }
-
-                @Override
-                public NodeRecord clone(NodeRecord nodeRecord)
-                {
-                    return nodeRecord.clone();
-                }
-            }, true );
-    private final RecordChanges<Long, PropertyRecord, PrimitiveRecord> propertyRecords =
-            new RecordChanges<>( new RecordChanges.Loader<Long, PropertyRecord, PrimitiveRecord>()
-            {
-                @Override
-                public PropertyRecord newUnused( Long key, PrimitiveRecord additionalData )
-                {
-                    PropertyRecord record = new PropertyRecord( key );
-                    setOwner( record, additionalData );
-                    return record;
-                }
-
-                private void setOwner( PropertyRecord record, PrimitiveRecord owner )
-                {
-                    if ( owner != null )
-                    {
-                        owner.setIdTo( record );
-                    }
-                }
-
-                @Override
-                public PropertyRecord load( Long key, PrimitiveRecord additionalData )
-                {
-                    PropertyRecord record = getPropertyStore().getRecord( key.longValue() );
-                    setOwner( record, additionalData );
-                    return record;
-                }
-
-                @Override
-                public void ensureHeavy( PropertyRecord record )
-                {
-                    for ( PropertyBlock block : record.getPropertyBlocks() )
-                    {
-                        getPropertyStore().ensureHeavy( block );
-                    }
-                }
-
-                @Override
-                public PropertyRecord clone(PropertyRecord propertyRecord)
-                {
-                    return propertyRecord.clone();
-                }
-            }, true );
-    private final RecordChanges<Long, RelationshipRecord, Void> relRecords =
-            new RecordChanges<>( new RecordChanges.Loader<Long, RelationshipRecord, Void>()
-            {
-                @Override
-                public RelationshipRecord newUnused( Long key, Void additionalData )
-                {
-                    return new RelationshipRecord( key );
-                }
-
-                @Override
-                public RelationshipRecord load( Long key, Void additionalData )
-                {
-                    return getRelationshipStore().getRecord( key );
-                }
-
-                @Override
-                public void ensureHeavy( RelationshipRecord record )
-                {
-                }
-
-                @Override
-                public RelationshipRecord clone(RelationshipRecord relationshipRecord) {
-                    // Not needed because we don't manage before state for relationship records.
-                    throw new UnsupportedOperationException("Unexpected call to clone on a relationshipRecord");
-                }
-            }, false );
-    private final RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords =
-            new RecordChanges<>( new RecordChanges.Loader<Long, RelationshipGroupRecord, Integer>()
-            {
-                @Override
-                public RelationshipGroupRecord newUnused( Long key, Integer type )
-                {
-                    return new RelationshipGroupRecord( key, type );
-                }
-
-                @Override
-                public RelationshipGroupRecord load( Long key, Integer type )
-                {
-                    return neoStore.getRelationshipGroupStore().getRecord( key );
-                }
-
-                @Override
-                public void ensureHeavy( RelationshipGroupRecord record )
-                {   // Not needed
-                }
-
-                @Override
-                public RelationshipGroupRecord clone( RelationshipGroupRecord record )
-                {
-                    throw new UnsupportedOperationException();
-                }
-            }, false );
-    private final RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges =
-            new RecordChanges<>(new RecordChanges.Loader<Long, Collection<DynamicRecord>, SchemaRule>()
-            {
-            @Override
-            public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
-            {
-                return getSchemaStore().allocateFrom(additionalData);
-            }
-    
-            @Override
-            public Collection<DynamicRecord> load(Long key, SchemaRule additionalData)
-            {
-                return getSchemaStore().getRecords( key );
-            }
-    
-            @Override
-            public void ensureHeavy(Collection<DynamicRecord> dynamicRecords)
-            {
-                SchemaStore schemaStore = getSchemaStore();
-                for ( DynamicRecord record : dynamicRecords)
-                {
-                    schemaStore.ensureHeavy(record);
-                }
-            }
-    
-            @Override
-            public Collection<DynamicRecord> clone(Collection<DynamicRecord> dynamicRecords) {
-                Collection<DynamicRecord> list = new ArrayList<>( dynamicRecords.size() );
-                for ( DynamicRecord record : dynamicRecords)
-                {
-                    list.add( record.clone() );
-                }
-                return list;
-            }
-        }, true);
     private Map<Integer, RelationshipTypeTokenRecord> relationshipTypeTokenRecords;
     private Map<Integer, LabelTokenRecord> labelTokenRecords;
     private Map<Integer, PropertyKeyTokenRecord> propertyKeyTokenRecords;
     private final Map<Long, Map<Integer, RelationshipGroupRecord>> relGroupCache = new HashMap<>();
     private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
 
-    private final Map<Long, Command.NodeCommand> nodeCommands = new TreeMap<>();
-    private final ArrayList<Command.PropertyCommand> propCommands = new ArrayList<>();
-    private final ArrayList<Command.RelationshipCommand> relCommands = new ArrayList<>();
-    private final ArrayList<Command.SchemaRuleCommand> schemaRuleCommands = new ArrayList<>();
-    private final ArrayList<Command.RelationshipGroupCommand> relGroupCommands = new ArrayList<>();
-    private ArrayList<Command.RelationshipTypeTokenCommand> relationshipTypeTokenCommands;
-    private ArrayList<Command.LabelTokenCommand> labelTokenCommands;
-    private ArrayList<Command.PropertyKeyTokenCommand> propertyKeyTokenCommands;
-    private Command.NeoStoreCommand neoStoreCommand;
-
     private boolean committed = false;
     private boolean prepared = false;
 
     private final long lastCommittedTxWhenTransactionStarted;
-    private final TransactionState state;
     private final CacheAccessBackDoor cacheAccess;
     private final IndexingService indexes;
     private final NeoStore neoStore;
@@ -314,7 +139,8 @@ public class NeoStoreTransaction extends XaTransaction
     private final IntegrityValidator integrityValidator;
     private final KernelTransactionImplementation kernelTransaction;
     private final LockService locks;
-    private Collection<NodeRecord> upgradedDenseNodes;
+
+    private final NeoStoreTransactionContext context;
 
     /**
      * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
@@ -326,23 +152,24 @@ public class NeoStoreTransaction extends XaTransaction
      *                                              this value to, 0 is a safe choice. That will ensure all
      *                                              constraints are checked.
      * @param kernelTransaction is the vanilla sauce to the WriteTransaction apple pie.
+     * @param context
      */
     NeoStoreTransaction( long lastCommittedTxWhenTransactionStarted, XaLogicalLog log,
-                      TransactionState state, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
-                      IndexingService indexingService, LabelScanStore labelScanStore,
-                      IntegrityValidator integrityValidator, KernelTransactionImplementation kernelTransaction,
-                      LockService locks )
+                         NeoStore neoStore, CacheAccessBackDoor cacheAccess,
+                         IndexingService indexingService, LabelScanStore labelScanStore,
+                         IntegrityValidator integrityValidator, KernelTransactionImplementation kernelTransaction,
+                         LockService locks, NeoStoreTransactionContext context )
     {
-        super( log, state );
+        super( log, context.getTransactionState() );
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.neoStore = neoStore;
-        this.state = state;
         this.cacheAccess = cacheAccess;
         this.indexes = indexingService;
         this.labelScanStore = labelScanStore;
         this.integrityValidator = integrityValidator;
         this.kernelTransaction = kernelTransaction;
         this.locks = locks;
+        this.context = context;
     }
 
     /**
@@ -361,13 +188,16 @@ public class NeoStoreTransaction extends XaTransaction
     {
         if ( isRecovered() )
         {
-            return nodeCommands.size() == 0 && propCommands.size() == 0 &&
-                   relCommands.size() == 0 && schemaRuleCommands.size() == 0 && relationshipTypeTokenCommands == null &&
-                   labelTokenCommands == null && propertyKeyTokenCommands == null && kernelTransaction.isReadOnly();
+            return context.getNodeCommands().isEmpty() && context.getPropCommands().isEmpty() &&
+                   context.getRelCommands().isEmpty() && context.getSchemaRuleCommands().isEmpty() &&
+                    context.getRelationshipTypeTokenCommands().isEmpty() &&
+                   context.getLabelTokenCommands().isEmpty() &&
+                    context.getPropertyKeyTokenCommands().isEmpty() && kernelTransaction.isReadOnly();
         }
-        return nodeRecords.changeSize() == 0 && relRecords.changeSize() == 0 && schemaRuleChanges.changeSize() == 0 &&
-               propertyRecords.changeSize() == 0 && relationshipTypeTokenRecords == null && labelTokenRecords == null &&
-               propertyKeyTokenRecords == null && kernelTransaction.isReadOnly();
+        return context.getNodeRecords().changeSize() == 0 && context.getRelRecords().changeSize() == 0 &&
+                context.getSchemaRuleChanges().changeSize() == 0 &&
+               context.getPropertyRecords().changeSize() == 0 && relationshipTypeTokenRecords == null &&
+               labelTokenRecords == null && propertyKeyTokenRecords == null && kernelTransaction.isReadOnly();
     }
 
     // Make this accessible in this package
@@ -399,90 +229,87 @@ public class NeoStoreTransaction extends XaTransaction
 
         prepared = true;
 
-        int noOfCommands = nodeRecords.changeSize() +
-                           relRecords.changeSize() +
-                           propertyRecords.changeSize() +
-                           schemaRuleChanges.changeSize() +
+        int noOfCommands = context.getNodeRecords().changeSize() +
+                           context.getRelRecords().changeSize() +
+                           context.getPropertyRecords().changeSize() +
+                           context.getSchemaRuleChanges().changeSize() +
                            (propertyKeyTokenRecords != null ? propertyKeyTokenRecords.size() : 0) +
                            (relationshipTypeTokenRecords != null ? relationshipTypeTokenRecords.size() : 0) +
                            (labelTokenRecords != null ? labelTokenRecords.size() : 0) +
-                           relGroupRecords.changeSize();
+                           context.getRelGroupRecords().changeSize();
         List<Command> commands = new ArrayList<>( noOfCommands );
         if ( relationshipTypeTokenRecords != null )
         {
-            relationshipTypeTokenCommands = new ArrayList<>();
             for ( RelationshipTypeTokenRecord record : relationshipTypeTokenRecords.values() )
             {
                 Command.RelationshipTypeTokenCommand command =
                         new Command.RelationshipTypeTokenCommand(
                                 neoStore.getRelationshipTypeStore(), record );
-                relationshipTypeTokenCommands.add( command );
+                context.getRelationshipTypeTokenCommands().add( command );
                 commands.add( command );
             }
         }
         if ( labelTokenRecords != null )
         {
-            labelTokenCommands = new ArrayList<>();
             for ( LabelTokenRecord record : labelTokenRecords.values() )
             {
                 Command.LabelTokenCommand command =
                         new Command.LabelTokenCommand(
                                 neoStore.getLabelTokenStore(), record );
-                labelTokenCommands.add( command );
+                context.getLabelTokenCommands().add( command );
                 commands.add( command );
             }
         }
-        for ( RecordChange<Long, NodeRecord, Void> change : nodeRecords.changes() )
+        for ( RecordChange<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
         {
             NodeRecord record = change.forReadingLinkage();
             integrityValidator.validateNodeRecord( record );
             Command.NodeCommand command = new Command.NodeCommand(
                     neoStore.getNodeStore(), change.getBefore(), record );
-            nodeCommands.put( record.getId(), command );
+            context.getNodeCommands().put( record.getId(), command );
             commands.add( command );
         }
-        if ( upgradedDenseNodes != null )
+        if ( context.getUpgradedDenseNodes() != null )
         {
-            for ( NodeRecord node : upgradedDenseNodes )
+            for ( NodeRecord node : context.getUpgradedDenseNodes() )
             {
                 removeNodeFromCache( node.getId() );
             }
         }
-        for ( RecordChange<Long, RelationshipRecord, Void> record : relRecords.changes() )
+        for ( RecordChange<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
         {
             Command.RelationshipCommand command = new Command.RelationshipCommand(
                     neoStore.getRelationshipStore(), record.forReadingLinkage() );
-            relCommands.add( command );
+            context.getRelCommands().add( command );
             commands.add( command );
         }
         if ( neoStoreRecord != null )
         {
             for ( RecordChange<Long, NeoStoreRecord, Void> change : neoStoreRecord.changes() )
             {
-                neoStoreCommand = new Command.NeoStoreCommand( neoStore, change.forReadingData() );
-                addCommand( neoStoreCommand );
+                context.generateNeoStoreCommand( change.forReadingData() );
+                addCommand( context.getNeoStoreCommand() );
             }
         }
         if ( propertyKeyTokenRecords != null )
         {
-            propertyKeyTokenCommands = new ArrayList<>();
             for ( PropertyKeyTokenRecord record : propertyKeyTokenRecords.values() )
             {
                 Command.PropertyKeyTokenCommand command =
                         new Command.PropertyKeyTokenCommand(
                                 neoStore.getPropertyStore().getPropertyKeyTokenStore(), record );
-                propertyKeyTokenCommands.add( command );
+                context.getPropertyKeyTokenCommands().add( command );
                 commands.add( command );
             }
         }
-        for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : propertyRecords.changes() )
+        for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
             Command.PropertyCommand command = new Command.PropertyCommand(
                     neoStore.getPropertyStore(), change.getBefore(), change.forReadingLinkage() );
-            propCommands.add( command );
+            context.getPropCommands().add( command );
             commands.add( command );
         }
-        for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change : schemaRuleChanges.changes() )
+        for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change : context.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
             Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
@@ -493,15 +320,15 @@ public class NeoStoreTransaction extends XaTransaction
                     change.forChangingData(),
                     change.getAdditionalData(),
                     -1 );
-            schemaRuleCommands.add( command );
+            context.getSchemaRuleCommands().add( command );
             commands.add( command );
         }
-        for ( RecordChange<Long, RelationshipGroupRecord, Integer> change : relGroupRecords.changes() )
+        for ( RecordChange<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
         {
             Command.RelationshipGroupCommand command =
                     new Command.RelationshipGroupCommand( neoStore.getRelationshipGroupStore(),
                             change.forReadingData() );
-            relGroupCommands.add( command );
+            context.getRelGroupCommands().add( command );
             commands.add( command );
         }
         assert commands.size() == noOfCommands : "Expected " + noOfCommands
@@ -528,52 +355,40 @@ public class NeoStoreTransaction extends XaTransaction
         if ( xaCommand instanceof Command.NodeCommand )
         {
             NodeCommand nodeCommand = (Command.NodeCommand) xaCommand;
-            nodeCommands.put( nodeCommand.getKey(), nodeCommand );
+            context.getNodeCommands().put( nodeCommand.getKey(), nodeCommand );
         }
         else if ( xaCommand instanceof Command.RelationshipCommand )
         {
-            relCommands.add( (Command.RelationshipCommand) xaCommand );
+            context.getRelCommands().add( (Command.RelationshipCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.PropertyCommand )
         {
-            propCommands.add( (Command.PropertyCommand) xaCommand );
+            context.getPropCommands().add( (Command.PropertyCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.PropertyKeyTokenCommand )
         {
-            if ( propertyKeyTokenCommands == null )
-            {
-                propertyKeyTokenCommands = new ArrayList<>();
-            }
-            propertyKeyTokenCommands.add( (Command.PropertyKeyTokenCommand) xaCommand );
+            context.getPropertyKeyTokenCommands().add( (Command.PropertyKeyTokenCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.RelationshipTypeTokenCommand )
         {
-            if ( relationshipTypeTokenCommands == null )
-            {
-                relationshipTypeTokenCommands = new ArrayList<>();
-            }
-            relationshipTypeTokenCommands.add( (Command.RelationshipTypeTokenCommand) xaCommand );
+            context.getRelationshipTypeTokenCommands().add( (Command.RelationshipTypeTokenCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.LabelTokenCommand )
         {
-            if ( labelTokenCommands == null )
-            {
-                labelTokenCommands = new ArrayList<>();
-            }
-            labelTokenCommands.add( (Command.LabelTokenCommand) xaCommand );
+            context.getLabelTokenCommands().add( (Command.LabelTokenCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.NeoStoreCommand )
         {
-            assert neoStoreCommand == null;
-            neoStoreCommand = (Command.NeoStoreCommand) xaCommand;
+            assert context.getNeoStoreCommand() == null;
+            context.setNeoStoreCommand( (Command.NeoStoreCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.SchemaRuleCommand )
         {
-            schemaRuleCommands.add( (Command.SchemaRuleCommand) xaCommand );
+            context.getSchemaRuleCommands().add( (Command.SchemaRuleCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.RelationshipGroupCommand )
         {
-            relGroupCommands.add( (RelationshipGroupCommand) xaCommand );
+            context.getRelGroupCommands().add( (RelationshipGroupCommand) xaCommand );
         }
         else
         {
@@ -615,7 +430,7 @@ public class NeoStoreTransaction extends XaTransaction
                     removeRelationshipTypeFromCache( record.getId() );
                 }
             }
-            for ( RecordChange<Long, NodeRecord, Void> change : nodeRecords.changes() )
+            for ( RecordChange<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
             {
                 NodeRecord record = change.forReadingLinkage();
                 if ( freeIds && record.isCreated() )
@@ -624,7 +439,7 @@ public class NeoStoreTransaction extends XaTransaction
                 }
                 removeNodeFromCache( record.getId() );
             }
-            for ( RecordChange<Long, RelationshipRecord, Void> change : relRecords.changes() )
+            for ( RecordChange<Long, RelationshipRecord, Void> change : context.getRelRecords().changes() )
             {
                 long id = change.getKey();
                 RelationshipRecord record = change.forReadingLinkage();
@@ -661,7 +476,7 @@ public class NeoStoreTransaction extends XaTransaction
                     }
                 }
             }
-            for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : propertyRecords.changes() )
+            for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
             {
                 PropertyRecord record = change.forReadingLinkage();
                 if ( record.getNodeId() != -1 )
@@ -704,7 +519,7 @@ public class NeoStoreTransaction extends XaTransaction
                     }
                 }
             }
-            for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> records : schemaRuleChanges.changes() )
+            for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> records : context.getSchemaRuleChanges().changes() )
             {
                 long id = -1;
                 for ( DynamicRecord record : records.forChangingData() )
@@ -719,7 +534,7 @@ public class NeoStoreTransaction extends XaTransaction
                     }
                 }
             }
-            for ( RecordChange<Long, RelationshipGroupRecord, Integer> change : relGroupRecords.changes() )
+            for ( RecordChange<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
             {
                 RelationshipGroupRecord record = change.forReadingData();
                 if ( freeIds && record.isCreated() )
@@ -822,10 +637,10 @@ public class NeoStoreTransaction extends XaTransaction
             committed = true;
             CommandSorter sorter = new CommandSorter();
             // reltypes
-            if ( relationshipTypeTokenCommands != null )
+            if ( context.getRelationshipTypeTokenCommands().size() != 0 )
             {
-                java.util.Collections.sort( relationshipTypeTokenCommands, sorter );
-                for ( Command.RelationshipTypeTokenCommand command : relationshipTypeTokenCommands )
+                java.util.Collections.sort( context.getRelationshipTypeTokenCommands(), sorter );
+                for ( Command.RelationshipTypeTokenCommand command : context.getRelationshipTypeTokenCommands() )
                 {
                     command.execute();
                     if ( isRecovered )
@@ -835,10 +650,10 @@ public class NeoStoreTransaction extends XaTransaction
                 }
             }
             // label keys
-            if ( labelTokenCommands != null )
+            if ( context.getLabelTokenCommands().size() != 0 )
             {
-                java.util.Collections.sort( labelTokenCommands, sorter );
-                for ( Command.LabelTokenCommand command : labelTokenCommands )
+                java.util.Collections.sort( context.getLabelTokenCommands(), sorter );
+                for ( Command.LabelTokenCommand command : context.getLabelTokenCommands() )
                 {
                     command.execute();
                     if ( isRecovered )
@@ -848,10 +663,10 @@ public class NeoStoreTransaction extends XaTransaction
                 }
             }
             // property keys
-            if ( propertyKeyTokenCommands != null )
+            if ( context.getPropertyKeyTokenCommands().size() != 0 )
             {
-                java.util.Collections.sort( propertyKeyTokenCommands, sorter );
-                for ( Command.PropertyKeyTokenCommand command : propertyKeyTokenCommands )
+                java.util.Collections.sort( context.getPropertyKeyTokenCommands(), sorter );
+                for ( Command.PropertyKeyTokenCommand command : context.getPropertyKeyTokenCommands() )
                 {
                     command.execute();
                     if ( isRecovered )
@@ -862,11 +677,14 @@ public class NeoStoreTransaction extends XaTransaction
             }
 
             // primitives
-            java.util.Collections.sort( relCommands, sorter );
-            java.util.Collections.sort( propCommands, sorter );
-            executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values(), relGroupCommands );
-            executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values(), relGroupCommands );
-            executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values(), relGroupCommands );
+            java.util.Collections.sort( context.getRelCommands(), sorter );
+            java.util.Collections.sort( context.getPropCommands(), sorter );
+            executeCreated( lockGroup, isRecovered, context.getPropCommands(), context.getRelCommands(),
+                    context.getNodeCommands().values(), context.getRelGroupCommands() );
+            executeModified( lockGroup, isRecovered, context.getPropCommands(), context.getRelCommands(),
+                    context.getNodeCommands().values(), context.getRelGroupCommands() );
+            executeDeleted( lockGroup, context.getPropCommands(), context.getRelCommands(),
+                    context.getNodeCommands().values(), context.getRelGroupCommands() );
 
             // property change set for index updates
             Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
@@ -876,11 +694,11 @@ public class NeoStoreTransaction extends XaTransaction
                 cacheAccess.applyLabelUpdates( labelUpdates );
             }
 
-            if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
+            if ( !context.getNodeCommands().isEmpty() || !context.getPropCommands().isEmpty() )
             {
                 indexes.updateIndexes( new LazyIndexUpdates(
                         getNodeStore(), getPropertyStore(),
-                        new ArrayList<>( propCommands ), new HashMap<>( nodeCommands ) ) );
+                        new ArrayList<>( context.getPropCommands() ), new HashMap<>( context.getNodeCommands() ) ) );
             }
 
             // schema rules. Execute these after generating the property updates so. If executed
@@ -892,7 +710,7 @@ public class NeoStoreTransaction extends XaTransaction
             //    job might get those as updates
             // 4) the population job will apply those updates as added properties, and might end up with duplicate
             //    entries for the same property
-            for ( SchemaRuleCommand command : schemaRuleCommands )
+            for ( SchemaRuleCommand command : context.getSchemaRuleCommands() )
             {
                 command.setTxId( getCommitTxId() );
                 command.execute();
@@ -906,9 +724,9 @@ public class NeoStoreTransaction extends XaTransaction
                 }
             }
 
-            if ( neoStoreCommand != null )
+            if ( context.getNeoStoreCommand() != null )
             {
-                neoStoreCommand.execute();
+                context.getNeoStoreCommand().execute();
                 if ( isRecovered )
                 {
                     removeGraphPropertiesFromCache();
@@ -916,8 +734,8 @@ public class NeoStoreTransaction extends XaTransaction
             }
             if ( !isRecovered )
             {
-                updateFirstRelationships();
-                state.commitCows(); // updates the cached primitives
+                context.updateFirstRelationships();
+                context.commitCows(); // updates the cached primitives
             }
             neoStore.setLastCommittedTx( getCommitTxId() );
             if ( isRecovered )
@@ -934,7 +752,7 @@ public class NeoStoreTransaction extends XaTransaction
     private Collection<NodeLabelUpdate> gatherLabelUpdatesSortedByNodeId()
     {
         List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
-        for ( NodeCommand nodeCommand : nodeCommands.values() )
+        for ( NodeCommand nodeCommand : context.getNodeCommands().values() )
         {
             NodeLabels labelFieldBefore = parseLabelsField( nodeCommand.getBefore() );
             NodeLabels labelFieldAfter = parseLabelsField( nodeCommand.getAfter() );
@@ -970,6 +788,17 @@ public class NeoStoreTransaction extends XaTransaction
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
+    {
+
+        context.relationshipCreate( id, typeId, startNodeId, endNodeId );
+    }
+
+    public ArrayMap<Integer, DefinedProperty> relDelete( long relId )
+    {
+        return context.relationshipDelete( relId );
     }
 
     static class LabelChangeSummary
@@ -1035,14 +864,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
     }
 
-    private void updateFirstRelationships()
-    {
-        for ( RecordChange<Long, NodeRecord, Void> change : nodeRecords.changes() )
-        {
-            NodeRecord record = change.forReadingLinkage();
-            state.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
-        }
-    }
+
 
     @SafeVarargs
     private final void executeCreated( LockGroup lockGroup, boolean removeFromCache,
@@ -1126,25 +948,11 @@ public class NeoStoreTransaction extends XaTransaction
 
     private void clear()
     {
-        nodeRecords.clear();
-        propertyRecords.clear();
-        relRecords.clear();
-        schemaRuleChanges.clear();
+        context.close();
         relationshipTypeTokenRecords = null;
         propertyKeyTokenRecords = null;
-        relGroupRecords.clear();
         relGroupCache.clear();
         neoStoreRecord = null;
-
-        nodeCommands.clear();
-        propCommands.clear();
-        propertyKeyTokenCommands = null;
-        relCommands.clear();
-        schemaRuleCommands.clear();
-        relationshipTypeTokenCommands = null;
-        labelTokenCommands = null;
-        relGroupCommands.clear();
-        neoStoreCommand = null;
     }
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()
@@ -1197,7 +1005,7 @@ public class NeoStoreTransaction extends XaTransaction
     {
         try
         {
-            return nodeRecords.getOrLoad( nodeId, null ).forReadingLinkage();
+            return context.getNodeRecords().getOrLoad( nodeId, null ).forReadingLinkage();
         }
         catch ( InvalidRecordException e )
         {
@@ -1216,7 +1024,7 @@ public class NeoStoreTransaction extends XaTransaction
     {
         try
         {
-            return relRecords.getOrLoad( id, null ).forReadingLinkage();
+            return context.getRelRecords().getOrLoad( id, null ).forReadingLinkage();
         }
         catch ( InvalidRecordException e )
         {
@@ -1232,7 +1040,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public ArrayMap<Integer, DefinedProperty> nodeDelete( long nodeId )
     {
-        NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         if ( !nodeRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete Node[" + nodeId +
@@ -1243,106 +1051,9 @@ public class NeoStoreTransaction extends XaTransaction
         return getAndDeletePropertyChain( nodeRecord );
     }
 
-    /**
-     * Deletes a relationship by its id, returning its properties which are now
-     * removed. It is assumed that the nodes it connects have already been
-     * deleted in this
-     * transaction.
-     *
-     * @param id The id of the relationship to delete.
-     * @return The properties of the relationship that were removed during the
-     *         delete.
-     */
-    public ArrayMap<Integer, DefinedProperty> relDelete( long id )
+    private ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
-        RelationshipRecord record = relRecords.getOrLoad( id, null ).forChangingLinkage();
-        if ( !record.inUse() )
-        {
-            throw new IllegalStateException( "Unable to delete relationship[" +
-                                             id + "] since it is already deleted." );
-        }
-        ArrayMap<Integer, DefinedProperty> propertyMap = getAndDeletePropertyChain( record );
-        disconnectRelationship( record );
-        updateNodesForDeletedRelationship( record );
-        record.setInUse( false );
-        return propertyMap;
-    }
-
-    private ArrayMap<Integer, DefinedProperty> getAndDeletePropertyChain( PrimitiveRecord primitive )
-    {
-        ArrayMap<Integer, DefinedProperty> result = new ArrayMap<>( (byte) 9, false, true );
-        long nextProp = primitive.getNextProp();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            RecordChange<Long, PropertyRecord, PrimitiveRecord> propertyChange =
-                    propertyRecords.getOrLoad( nextProp, primitive );
-
-            // TODO forChanging/forReading piggy-backing
-            PropertyRecord propRecord = propertyChange.forChangingData();
-            PropertyRecord before = propertyChange.getBefore();
-            for ( PropertyBlock block : before.getPropertyBlocks() )
-            {
-                result.put( block.getKeyIndexId(), block.newPropertyData( getPropertyStore() ) );
-            }
-            for ( PropertyBlock block : propRecord.getPropertyBlocks() )
-            {
-                for ( DynamicRecord valueRecord : block.getValueRecords() )
-                {
-                    assert valueRecord.inUse();
-                    valueRecord.setInUse( false );
-                    propRecord.addDeletedRecord( valueRecord );
-                }
-            }
-            nextProp = propRecord.getNextProp();
-            propRecord.setInUse( false );
-            propRecord.setChanged( primitive );
-            // We do not remove them individually, but all together here
-            propRecord.getPropertyBlocks().clear();
-        }
-        return result;
-    }
-    
-    private void disconnect( RelationshipRecord rel, RelationshipConnection pointer )
-    {
-        long otherRelId = pointer.otherSide().get( rel );
-        if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            return;
-        }
-
-        Relationship lockableRel = new LockableRelationship( otherRelId );
-        getWriteLock( lockableRel );
-        RelationshipRecord otherRel = relRecords.getOrLoad( otherRelId, null ).forChangingLinkage();
-        boolean changed = false;
-        long newId = pointer.get( rel );
-        boolean newIsFirst = pointer.isFirstInChain( rel );
-        if ( otherRel.getFirstNode() == pointer.compareNode( rel ) )
-        {
-            pointer.start().set( otherRel, newId, newIsFirst );
-            changed = true;
-        }
-        if ( otherRel.getSecondNode() == pointer.compareNode( rel ) )
-        {
-            pointer.end().set( otherRel, newId, newIsFirst );
-            changed = true;
-        }
-        if ( !changed )
-        {
-            throw new InvalidRecordException( otherRel + " don't match " + rel );
-        }
-    }
-
-    private void disconnectRelationship( RelationshipRecord rel )
-    {
-        disconnect( rel, RelationshipConnection.START_NEXT );
-        disconnect( rel, RelationshipConnection.START_PREV );
-        disconnect( rel, RelationshipConnection.END_NEXT );
-        disconnect( rel, RelationshipConnection.END_PREV );
-    }
-
-    private void getWriteLock( Relationship lockableRel )
-    {
-        state.acquireWriteLock( lockableRel );
+        return context.getAndDeletePropertyChain( nodeRecord );
     }
 
     /*
@@ -1358,206 +1069,6 @@ public class NeoStoreTransaction extends XaTransaction
         return getMoreRelationships( nodeId, position, getRelGrabSize(), direction, types, getRelationshipStore() );
     }
     
-    private boolean decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId )
-    {
-        if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
-        {
-            return true;
-        }
-        boolean firstInChain = relIsFirstInChain( nodeId, rel );
-        if ( !firstInChain )
-        {
-            getWriteLock( new LockableRelationship( firstRelId ) );
-        }
-        RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
-        if ( nodeId == firstRel.getFirstNode() )
-        {
-            firstRel.setFirstPrevRel( firstInChain ?
-                    relCount( nodeId, rel )-1 : relCount( nodeId, firstRel )-1 );
-            firstRel.setFirstInFirstChain( true );
-        }
-        if ( nodeId == firstRel.getSecondNode() )
-        {
-            firstRel.setSecondPrevRel( firstInChain ?
-                    relCount( nodeId, rel )-1 : relCount( nodeId, firstRel )-1 );
-            firstRel.setFirstInSecondChain( true );
-        }
-        return false;
-    }
-    
-    private boolean relIsFirstInChain( long nodeId, RelationshipRecord rel )
-    {
-        return (nodeId == rel.getFirstNode() && rel.isFirstInFirstChain()) ||
-               (nodeId == rel.getSecondNode() && rel.isFirstInSecondChain());
-    }
-    
-    private int relCount( long nodeId, RelationshipRecord rel )
-    {
-        return (int) (nodeId == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
-    }
-    
-    private DirectionWrapper wrapDirection( RelationshipRecord rel, NodeRecord startNode )
-    {
-        boolean isOut = rel.getFirstNode() == startNode.getId();
-        boolean isIn = rel.getSecondNode() == startNode.getId();
-        assert isOut|isIn;
-        if ( isOut&isIn )
-        {
-            return DirectionWrapper.BOTH;
-        }
-        return isOut ? DirectionWrapper.OUTGOING : DirectionWrapper.INCOMING;
-    }
-    
-    private boolean groupIsEmpty( RelationshipGroupRecord group )
-    {
-        return group.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
-               group.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() &&
-               group.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue();
-    }
-    
-    private void deleteGroup( RecordChange<Long,NodeRecord,Void> nodeChange, RelationshipGroupRecord group )
-    {
-        long previous = group.getPrev();
-        long next = group.getNext();
-        if ( previous == Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {   // This is the first one, just point the node to the next group
-            nodeChange.forChangingLinkage().setNextRel( next );
-        }
-        else
-        {   // There are others before it, point the previous to the next group
-            RelationshipGroupRecord previousRecord = relGroupRecords.getOrLoad( previous, null ).forChangingLinkage();
-            previousRecord.setNext( next );
-        }
-
-        if ( next != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {   // There are groups after this one, point that next group to the previous of the group to be deleted
-            RelationshipGroupRecord nextRecord = relGroupRecords.getOrLoad( next, null ).forChangingLinkage();
-            nextRecord.setPrev( previous );
-        }
-        group.setInUse( false );
-    }
-
-    private void updateNodesForDeletedRelationship( RelationshipRecord rel )
-    {
-        RecordChange<Long, NodeRecord, Void> startNodeChange = nodeRecords.getOrLoad( rel.getFirstNode(), null );
-        RecordChange<Long, NodeRecord, Void> endNodeChange = nodeRecords.getOrLoad( rel.getSecondNode(), null );
-        
-        NodeRecord startNode = nodeRecords.getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
-        NodeRecord endNode = nodeRecords.getOrLoad( rel.getSecondNode(), null ).forReadingLinkage();
-        boolean loop = startNode.getId() == endNode.getId();
-        
-        if ( !startNode.isDense() )
-        {
-            if ( rel.isFirstInFirstChain() )
-            {
-                startNode = startNodeChange.forChangingLinkage();
-                startNode.setNextRel( rel.getFirstNextRel() );
-            }
-            decrementTotalRelationshipCount( startNode.getId(), rel, startNode.getNextRel() );
-        }
-        else
-        {
-            RecordChange<Long, RelationshipGroupRecord, Integer> groupChange =
-                    getRelationshipGroup( startNode, rel.getType() );
-            assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
-            RelationshipGroupRecord group = groupChange.forReadingData();
-            DirectionWrapper dir = wrapDirection( rel, startNode );
-            if ( rel.isFirstInFirstChain() )
-            {
-                group = groupChange.forChangingData();
-                dir.setNextRel( group, rel.getFirstNextRel() );
-                if ( groupIsEmpty( group ) )
-                {
-                    deleteGroup( startNodeChange, group );
-                }
-            }
-            decrementTotalRelationshipCount( startNode.getId(), rel, dir.getNextRel( group ) );
-        }
-
-        if ( !endNode.isDense() )
-        {
-            if ( rel.isFirstInSecondChain() )
-            {
-                endNode = endNodeChange.forChangingLinkage();
-                endNode.setNextRel( rel.getSecondNextRel() );
-            }
-            if ( !loop )
-            {
-                decrementTotalRelationshipCount( endNode.getId(), rel, endNode.getNextRel() );
-            }
-        }
-        else
-        {
-            RecordChange<Long, RelationshipGroupRecord, Integer> groupChange =
-                    getRelationshipGroup( endNode, rel.getType() );
-            DirectionWrapper dir = wrapDirection( rel, endNode );
-            assert groupChange != null || loop : "Group has been deleted";
-            if ( groupChange != null )
-            {
-                RelationshipGroupRecord group = groupChange.forReadingData();
-                if ( rel.isFirstInSecondChain() )
-                {
-                    group = groupChange.forChangingData();
-                    dir.setNextRel( group, rel.getSecondNextRel() );
-                    if ( groupIsEmpty( group ) )
-                    {
-                        deleteGroup( endNodeChange, group );
-                    }
-                }
-            } // Else this is a loop-rel and the group was deleted when dealing with the start node
-            if ( !loop )
-            {
-                decrementTotalRelationshipCount( endNode.getId(), rel, dir.getNextRel( groupChange.forChangingData() ) );
-            }
-        }        
-    }
-
-    RecordChange<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
-    {
-        long groupId = node.getNextRel();
-        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        Set<Integer> allTypes = new HashSet<>();
-        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RecordChange<Long, RelationshipGroupRecord, Integer> change = relGroupRecords.getOrLoad( groupId, type );
-            RelationshipGroupRecord record = change.forReadingData();
-            record.setPrev( previousGroupId ); // not persistent so not a "change"
-            allTypes.add( record.getType() );
-            if ( record.getType() == type )
-            {
-                return change;
-            }
-            previousGroupId = groupId;
-            groupId = record.getNext();
-        }
-        return null;
-    }
-
-    private RecordChange<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
-            NodeRecord node, int type )
-    {
-        RecordChange<Long, RelationshipGroupRecord, Integer> change = getRelationshipGroup( node, type );
-        if ( change == null )
-        {
-            assert node.isDense();
-            long id = neoStore.getRelationshipGroupStore().nextId();
-            long firstGroupId = node.getNextRel();
-            change = relGroupRecords.create( id, type );
-            RelationshipGroupRecord record = change.forChangingData();
-            record.setInUse( true );
-            record.setCreated();
-            if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {   // There are others, make way for this new group
-                RelationshipGroupRecord previousFirstRecord =
-                        relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
-                record.setNext( previousFirstRecord.getId() );
-                previousFirstRecord.setPrev( id );
-            }
-            node.setNextRel( id );
-        }
-        return change;
-    }
-    
     /**
      * Removes the given property identified by its index from the relationship
      * with the given id.
@@ -1568,7 +1079,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void relRemoveProperty( long relId, int propertyKey )
     {
-        RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getOrLoad( relId, null );
+        RecordChange<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
         RelationshipRecord relRecord = rel.forReadingLinkage();
         if ( !relRecord.inUse() )
         {
@@ -1589,7 +1100,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void relLoadProperties( long relId, boolean light, PropertyReceiver receiver )
     {
-        RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getIfLoaded( relId );
+        RecordChange<Long, RelationshipRecord, Void> rel = context.getRelRecords().getIfLoaded( relId );
         if ( rel != null )
         {
             if ( rel.isCreated() )
@@ -1620,7 +1131,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void nodeLoadProperties( long nodeId, boolean light, PropertyReceiver receiver )
     {
-        RecordChange<Long, NodeRecord, Void> node = nodeRecords.getIfLoaded( nodeId );
+        RecordChange<Long, NodeRecord, Void> node = context.getNodeRecords().getIfLoaded( nodeId );
         if ( node != null )
         {
             if ( node.isCreated() )
@@ -1650,7 +1161,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void nodeRemoveProperty( long nodeId, int propertyKey )
     {
-        RecordChange<Long, NodeRecord, Void> node = nodeRecords.getOrLoad( nodeId, null );
+        RecordChange<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null );
         NodeRecord nodeRecord = node.forReadingLinkage();
         if ( !nodeRecord.inUse() )
         {
@@ -1668,7 +1179,7 @@ public class NeoStoreTransaction extends XaTransaction
         long propertyId = // propertyData.getId();
                 findPropertyRecordContaining( primitive, propertyKey );
         RecordChange<Long, PropertyRecord, PrimitiveRecord> recordChange =
-                propertyRecords.getOrLoad( propertyId, primitiveRecordChange.forReadingLinkage() );
+                context.getPropertyRecords().getOrLoad( propertyId, primitiveRecordChange.forReadingLinkage() );
         PropertyRecord propRecord = recordChange.forChangingData();
         if ( !propRecord.inUse() )
         {
@@ -1722,7 +1233,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
         {
-            PropertyRecord prevPropRecord = propertyRecords.getOrLoad( prevProp, primitive ).forChangingLinkage();
+            PropertyRecord prevPropRecord = context.getPropertyRecords().getOrLoad( prevProp, primitive ).forChangingLinkage();
             assert prevPropRecord.inUse() : prevPropRecord + "->" + propRecord
                                             + " for " + primitive;
             prevPropRecord.setNextProp( nextProp );
@@ -1730,7 +1241,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord nextPropRecord = propertyRecords.getOrLoad( nextProp, primitive ).forChangingLinkage();
+            PropertyRecord nextPropRecord = context.getPropertyRecords().getOrLoad( nextProp, primitive ).forChangingLinkage();
             assert nextPropRecord.inUse() : propRecord + "->" + nextPropRecord
                                             + " for " + primitive;
             nextPropRecord.setPrevProp( prevProp );
@@ -1760,7 +1271,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public DefinedProperty relChangeProperty( long relId, int propertyKey, Object value )
     {
-        RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getOrLoad( relId, null );
+        RecordChange<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
         if ( !rel.forReadingLinkage().inUse() )
         {
             throw new IllegalStateException( "Property change on relationship[" +
@@ -1780,7 +1291,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public DefinedProperty nodeChangeProperty( long nodeId, int propertyKey, Object value )
     {
-        RecordChange<Long, NodeRecord, Void> node = nodeRecords.getOrLoad( nodeId, null ); //getNodeRecord( nodeId );
+        RecordChange<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null ); //getNodeRecord( nodeId );
         if ( !node.forReadingLinkage().inUse() )
         {
             throw new IllegalStateException( "Property change on node[" +
@@ -1801,7 +1312,7 @@ public class NeoStoreTransaction extends XaTransaction
         while ( !Record.NO_NEXT_PROPERTY.is( propertyRecordId ) )
         {
             PropertyRecord propertyRecord =
-                    propertyRecords.getOrLoad( propertyRecordId, primitive ).forReadingLinkage();
+                    context.getPropertyRecords().getOrLoad( propertyRecordId, primitive ).forReadingLinkage();
             if ( propertyRecord.getPropertyBlock( propertyKey ) != null )
             {
                 return propertyRecordId;
@@ -1819,7 +1330,7 @@ public class NeoStoreTransaction extends XaTransaction
         assert assertPropertyChain( primitive );
         long propertyId = // propertyData.getId();
                 findPropertyRecordContaining( primitive, propertyKey );
-        PropertyRecord propertyRecord = propertyRecords.getOrLoad( propertyId, primitive ).forChangingData();
+        PropertyRecord propertyRecord = context.getPropertyRecords().getOrLoad( propertyId, primitive ).forChangingData();
         if ( !propertyRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to change property["
@@ -1884,7 +1395,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public DefinedProperty relAddProperty( long relId, int propertyKey, Object value )
     {
-        RecordChange<Long, RelationshipRecord, Void> rel = relRecords.getOrLoad( relId, null );
+        RecordChange<Long, RelationshipRecord, Void> rel = context.getRelRecords().getOrLoad( relId, null );
         RelationshipRecord relRecord = rel.forReadingLinkage();
         if ( !relRecord.inUse() )
         {
@@ -1904,7 +1415,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public DefinedProperty nodeAddProperty( long nodeId, int propertyKey, Object value )
     {
-        RecordChange<Long, NodeRecord, Void> node = nodeRecords.getOrLoad( nodeId, null );
+        RecordChange<Long, NodeRecord, Void> node = context.getNodeRecords().getOrLoad( nodeId, null );
         NodeRecord nodeRecord = node.forReadingLinkage();
         if ( !nodeRecord.inUse() )
         {
@@ -1930,7 +1441,7 @@ public class NeoStoreTransaction extends XaTransaction
         if ( firstProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             // We do not store in map - might not have enough space
-            RecordChange<Long, PropertyRecord, PrimitiveRecord> change = propertyRecords
+            RecordChange<Long, PropertyRecord, PrimitiveRecord> change = context.getPropertyRecords()
                     .getOrLoad( firstProp, primitive );
             PropertyRecord propRecord = change.forReadingLinkage();
             assert propRecord.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue() : propRecord
@@ -1950,11 +1461,11 @@ public class NeoStoreTransaction extends XaTransaction
         if ( host == null )
         {
             // First record in chain didn't fit, make new one
-            host = propertyRecords.create( getPropertyStore().nextId(), primitive ).forChangingData();
+            host = context.getPropertyRecords().create( getPropertyStore().nextId(), primitive ).forChangingData();
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(), primitive )
-                                                         .forChangingLinkage();
+                PropertyRecord prevProp = context.getPropertyRecords().getOrLoad( primitive.getNextProp(),
+                        primitive ).forChangingLinkage();
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( host.getId() );
                 host.setNextProp( prevProp.getId() );
@@ -1968,192 +1479,7 @@ public class NeoStoreTransaction extends XaTransaction
         assert assertPropertyChain( primitive );
     }
 
-    /**
-     * Creates a relationship with the given id, from the nodes identified by id
-     * and of type typeId
-     *
-     * @param id The id of the relationship to create.
-     * @param type The id of the relationship type this relationship will
-     *            have.
-     * @param firstNodeId The id of the start node.
-     * @param secondNodeId The id of the end node.
-     */
-    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId )
-    {
-        // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
-        NodeRecord firstNode = nodeRecords.getOrLoad( firstNodeId, null ).forChangingLinkage();
-        if ( !firstNode.inUse() )
-        {
-            throw new IllegalStateException( "First node[" + firstNodeId +
-                                             "] is deleted and cannot be used to create a relationship" );
-        }
-        NodeRecord secondNode = nodeRecords.getOrLoad( secondNodeId, null ).forChangingLinkage();
-        if ( !secondNode.inUse() )
-        {
-            throw new IllegalStateException( "Second node[" + secondNodeId +
-                                             "] is deleted and cannot be used to create a relationship" );
-        }
-        convertNodeToDenseIfNecessary( firstNode );
-        convertNodeToDenseIfNecessary( secondNode );
-        RelationshipRecord record = relRecords.create( id, null ).forChangingLinkage();
-        record.setLinks( firstNodeId, secondNodeId, type );
-        record.setInUse( true );
-        record.setCreated();
-        connectRelationship( firstNode, secondNode, record );
-    }
-    
-    private void convertNodeToDenseIfNecessary( NodeRecord node )
-    {
-        if ( node.isDense() )
-        {
-            return;
-        }
-        long relId = node.getNextRel();
-        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RecordChange<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
-            RelationshipRecord rel = relChange.forReadingLinkage();
-            if ( relCount( node.getId(), rel ) >= neoStore.getDenseNodeThreshold() )
-            {
-                convertNodeToDenseNode( node, relChange.forChangingLinkage() );
-            }
-        }
-    }
 
-    private void convertNodeToDenseNode( NodeRecord node, RelationshipRecord firstRel )
-    {
-        firstRel = relRecords.getOrLoad( firstRel.getId(), null ).forChangingLinkage();
-        node.setDense( true );
-        node.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-        long relId = firstRel.getId();
-        RelationshipRecord relRecord = firstRel;
-        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            getWriteLock( new LockableRelationship( relId ) );
-            relId = relChain( relRecord, node.getId() ).get( relRecord );
-            connectRelationshipToDenseNode( node, relRecord );
-            if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                break;
-            }
-            relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
-        }
-        if ( upgradedDenseNodes == null )
-        {
-            upgradedDenseNodes = new ArrayList<>();
-        }
-        upgradedDenseNodes.add( node );
-    }
-
-    private void connectRelationship( NodeRecord firstNode,
-                                      NodeRecord secondNode, RelationshipRecord rel )
-    {
-        // Assertion interpreted: if node is a normal node and we're trying to create a
-        // relationship that we already have as first rel for that node --> error
-        assert firstNode.getNextRel() != rel.getId() || firstNode.isDense();
-        assert secondNode.getNextRel() != rel.getId() || secondNode.isDense();
-
-        if ( !firstNode.isDense() )
-        {
-            rel.setFirstNextRel( firstNode.getNextRel() );
-        }
-        if ( !secondNode.isDense() )
-        {
-            rel.setSecondNextRel( secondNode.getNextRel() );
-        }
-
-        if ( !firstNode.isDense() )
-        {
-            connect( firstNode, rel );
-        }
-        else
-        {
-            connectRelationshipToDenseNode( firstNode, rel );
-        }
-
-        if ( !secondNode.isDense() )
-        {
-            if ( firstNode.getId() != secondNode.getId() )
-            {
-                connect( secondNode, rel );
-            }
-            else
-            {
-                rel.setFirstInFirstChain( true );
-                rel.setSecondPrevRel( rel.getFirstPrevRel() );
-            }
-        }
-        else if ( firstNode.getId() != secondNode.getId() )
-        {
-            connectRelationshipToDenseNode( secondNode, rel );
-        }
-
-        if ( !firstNode.isDense() )
-        {
-            firstNode.setNextRel( rel.getId() );
-        }
-        if ( !secondNode.isDense() )
-        {
-            secondNode.setNextRel( rel.getId() );
-        }
-    }
-    
-    private void connectRelationshipToDenseNode( NodeRecord node, RelationshipRecord rel )
-    {
-        RelationshipGroupRecord group = getOrCreateRelationshipGroup( node, rel.getType() ).forChangingData();
-        DirectionWrapper dir = wrapDirection( rel, node );
-        long nextRel = dir.getNextRel( group );
-        setCorrectNextRel( node, rel, nextRel );
-        connect( node.getId(), nextRel, rel );
-        dir.setNextRel( group, rel.getId() );
-    }
-
-    private void connect( NodeRecord node, RelationshipRecord rel )
-    {
-        connect( node.getId(), node.getNextRel(), rel );
-    }
-
-    private void connect( long nodeId, long firstRelId, RelationshipRecord rel )
-    {
-        long newCount = 1;
-        if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            Relationship lockableRel = new LockableRelationship( firstRelId );
-            getWriteLock( lockableRel );
-            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
-            boolean changed = false;
-            if ( firstRel.getFirstNode() == nodeId )
-            {
-                newCount = firstRel.getFirstPrevRel()+1;
-                firstRel.setFirstPrevRel( rel.getId() );
-                firstRel.setFirstInFirstChain( false );
-                changed = true;
-            }
-            if ( firstRel.getSecondNode() == nodeId )
-            {
-                newCount = firstRel.getSecondPrevRel()+1;
-                firstRel.setSecondPrevRel( rel.getId() );
-                firstRel.setFirstInSecondChain( false );
-                changed = true;
-            }
-            if ( !changed )
-            {
-                throw new InvalidRecordException( nodeId + " doesn't match " + firstRel );
-            }
-        }
-
-        // Set the relationship count
-        if ( rel.getFirstNode() == nodeId )
-        {
-            rel.setFirstPrevRel( newCount );
-            rel.setFirstInFirstChain( true );
-        }
-        if ( rel.getSecondNode() == nodeId )
-        {
-            rel.setSecondPrevRel( newCount );
-            rel.setFirstInSecondChain( true );
-        }
-    }    
 
     /**
      * Creates a node for the given id
@@ -2162,7 +1488,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void nodeCreate( long nodeId )
     {
-        NodeRecord nodeRecord = nodeRecords.create( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = context.getNodeRecords().create( nodeId, null ).forChangingData();
         nodeRecord.setInUse( true );
         nodeRecord.setCreated();
     }
@@ -2286,123 +1612,6 @@ public class NeoStoreTransaction extends XaTransaction
         propertyKeyTokenRecords.put( record.getId(), record );
     }
 
-    private static class LockableRelationship implements Relationship
-    {
-        private final long id;
-
-        LockableRelationship( long id )
-        {
-            this.id = id;
-        }
-
-        @Override
-        public void delete()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Node getEndNode()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public long getId()
-        {
-            return this.id;
-        }
-
-        @Override
-        public GraphDatabaseService getGraphDatabase()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Node[] getNodes()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Node getOtherNode( Node node )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Object getProperty( String key )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Object getProperty( String key, Object defaultValue )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Iterable<String> getPropertyKeys()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Node getStartNode()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public RelationshipType getType()
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public boolean isType( RelationshipType type )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public boolean hasProperty( String key )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public Object removeProperty( String key )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public void setProperty( String key, Object value )
-        {
-            throw new UnsupportedOperationException( "Lockable rel" );
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return (int) ((id >>> 32) ^ id);
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Lockable relationship #" + this.getId();
-        }
-    }
 
     private boolean assertPropertyChain( PrimitiveRecord primitive )
     {
@@ -2410,7 +1619,7 @@ public class NeoStoreTransaction extends XaTransaction
         long nextIdToFetch = primitive.getNextProp();
         while ( nextIdToFetch != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propertyRecords.getOrLoad( nextIdToFetch, primitive ).forReadingLinkage();
+            PropertyRecord propRecord = context.getPropertyRecords().getOrLoad( nextIdToFetch, primitive ).forReadingLinkage();
             toCheck.add( propRecord );
             assert propRecord.inUse() : primitive + "->"
                                         + Arrays.toString( toCheck.toArray() );
@@ -2538,7 +1747,7 @@ public class NeoStoreTransaction extends XaTransaction
 
     public void createSchemaRule( SchemaRule schemaRule )
     {
-        for(DynamicRecord change : schemaRuleChanges.create( schemaRule.getId(), schemaRule ).forChangingData())
+        for(DynamicRecord change : context.getSchemaRuleChanges().create( schemaRule.getId(), schemaRule ).forChangingData())
         {
             change.setInUse( true );
             change.setCreated();
@@ -2548,7 +1757,7 @@ public class NeoStoreTransaction extends XaTransaction
     public void dropSchemaRule( SchemaRule rule )
     {
         RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change =
-                schemaRuleChanges.getOrLoad(rule.getId(), rule);
+                context.getSchemaRuleChanges().getOrLoad( rule.getId(), rule );
         Collection<DynamicRecord> records = change.forChangingData();
         for ( DynamicRecord record : records )
         {
@@ -2558,13 +1767,13 @@ public class NeoStoreTransaction extends XaTransaction
 
     public void addLabelToNode( int labelId, long nodeId )
     {
-        NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).add( labelId, getNodeStore() );
     }
 
     public void removeLabelFromNode( int labelId, long nodeId )
     {
-        NodeRecord nodeRecord = nodeRecords.getOrLoad( nodeId, null ).forChangingData();
+        NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
         parseLabelsField( nodeRecord ).remove( labelId, getNodeStore() );
     }
 
@@ -2578,7 +1787,7 @@ public class NeoStoreTransaction extends XaTransaction
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
         RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change =
-                schemaRuleChanges.getOrLoad( indexRule.getId(), indexRule );
+                context.getSchemaRuleChanges().getOrLoad( indexRule.getId(), indexRule );
         Collection<DynamicRecord> records = change.forChangingData();
 
         indexRule = indexRule.withOwningConstraint( constraintId );
@@ -2774,11 +1983,11 @@ public class NeoStoreTransaction extends XaTransaction
                     getRelationshipCount( node, DirectionWrapper.INCOMING.getNextRel( group ) ) +
                     getRelationshipCount( node, DirectionWrapper.BOTH.getNextRel( group ) );
         }
-        
+
         return getRelationshipCount( node, direction.getNextRel( group ) ) +
                 getRelationshipCount( node, DirectionWrapper.BOTH.getNextRel( group ) );
     }
-    
+
     private int getRelationshipCount( NodeRecord node, long relId )
     {   // Relationship count is in a PREV field of the first record in a chain
         if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -2788,7 +1997,6 @@ public class NeoStoreTransaction extends XaTransaction
         RelationshipRecord rel = getRelationshipStore().getRecord( relId );
         return (int) (node.getId() == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
     }
-
 
     public Integer[] getRelationshipTypes( long id )
     {
@@ -2804,7 +2012,7 @@ public class NeoStoreTransaction extends XaTransaction
 
     public RelationshipLoadingPosition getRelationshipChainPosition( long id )
     {
-        RecordChange<Long, NodeRecord, Void> nodeChange = nodeRecords.getIfLoaded( id );
+        RecordChange<Long, NodeRecord, Void> nodeChange = context.getNodeRecords().getIfLoaded( id );
         if ( nodeChange != null && nodeChange.isCreated() )
         {
             return RelationshipLoadingPosition.EMPTY;
@@ -2827,32 +2035,7 @@ public class NeoStoreTransaction extends XaTransaction
         return firstRel == Record.NO_NEXT_RELATIONSHIP.intValue() ?
                 RelationshipLoadingPosition.EMPTY : new SingleChainPosition( firstRel );
     }
-    
-    private static RelationshipConnection relChain( RelationshipRecord rel, long nodeId )
-    {
-        if ( rel.getFirstNode() == nodeId )
-        {
-            return RelationshipConnection.START_NEXT;
-        }
-        if ( rel.getSecondNode() == nodeId )
-        {
-            return RelationshipConnection.END_NEXT;
-        }
-        throw new RuntimeException( nodeId + " neither start not end node in " + rel );
-    }
-    
-    private void setCorrectNextRel( NodeRecord node, RelationshipRecord rel, long nextRel )
-    {
-        if ( node.getId() == rel.getFirstNode() )
-        {
-            rel.setFirstNextRel( nextRel );
-        }
-        if ( node.getId() == rel.getSecondNode() )
-        {
-            rel.setSecondNextRel( nextRel );
-        }
-    }
-    
+
     public interface PropertyReceiver
     {
         void receive( DefinedProperty property, long propertyRecordId );
