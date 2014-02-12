@@ -34,7 +34,7 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Double = a(m) match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = a(m) match {
     case v: Number =>
       v.doubleValue()
     case v: String =>
@@ -42,7 +42,7 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
         v.toDouble
       } catch {
         case e: NumberFormatException =>
-          throw new ParameterWrongTypeException("Failed to parse String as Double", e)
+          null.asInstanceOf[Double]
       }
     case v =>
       throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)

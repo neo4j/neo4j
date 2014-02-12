@@ -30,7 +30,7 @@ import org.neo4j.cypher.ParameterWrongTypeException
 class ToIntFunctionTest extends FunSuite with Matchers {
 
   test("should return null if argument is null") {
-    toInt(null.asInstanceOf[Any]) should be(null.asInstanceOf[Long])
+    assert(toInt(null) === null)
   }
 
   test("should convert a string to an integer") {
@@ -41,16 +41,16 @@ class ToIntFunctionTest extends FunSuite with Matchers {
     toInt(23.5d) should be(23)
   }
 
-  test("should throw an exception if the argument is a double literal") {
-    evaluating { toInt("20.5") } should produce[ParameterWrongTypeException]
+  test("should return null if the argument is a float literal") {
+    assert(toInt("20.5") === null)
   }
 
-  test("should throw an exception if the argument is a non-numeric string") {
-    evaluating { toInt("20foobar2") } should produce[ParameterWrongTypeException]
+  test("should return null if the argument is a partially numeric string") {
+    assert(toInt("20foobar2") === null)
   }
 
-  test("should throw an exception if the argument is a hexadecimal string") {
-    evaluating { toInt("0x20") } should produce[ParameterWrongTypeException]
+  test("should return null if the argument is a hexadecimal string") {
+    assert(toInt("0x20") === null)
   }
 
   test("should convert a string with leading zeros to an integer") {
