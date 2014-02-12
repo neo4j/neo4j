@@ -70,7 +70,7 @@ public class LegacyNodeStoreReader implements Closeable
             protected NodeRecord fetchNextOrNull()
             {
                 NodeRecord nodeRecord = null;
-                while ( nodeRecord == null && id <= maxId )
+                while ( nodeRecord == null && id < maxId )
                 {
                     readIntoBuffer( fileChannel, buffer, RECORD_SIZE );
                     long inUseByte = buffer.get();
