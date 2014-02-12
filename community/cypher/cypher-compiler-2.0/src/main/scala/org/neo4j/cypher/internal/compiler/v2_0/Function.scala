@@ -88,6 +88,7 @@ object Function {
     functions.Timestamp,
     functions.ToFloat,
     functions.ToInt,
+    functions.ToStr,
     functions.Trim,
     functions.Type,
     functions.Upper
