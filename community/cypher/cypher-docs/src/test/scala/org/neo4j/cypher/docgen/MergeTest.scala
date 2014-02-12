@@ -51,7 +51,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
 
-  override val setupContraintQueries = List(
+  override val setupConstraintQueries = List(
     "CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE",
     "CREATE CONSTRAINT ON (n:Person) ASSERT n.role IS UNIQUE")
 
