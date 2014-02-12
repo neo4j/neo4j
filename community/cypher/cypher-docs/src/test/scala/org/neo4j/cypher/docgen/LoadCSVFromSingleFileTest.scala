@@ -20,10 +20,14 @@
 package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.{ExecutionResult, StatisticsChecker}
-import java.io.{PrintWriter, File}
+import java.io.File
 
 class LoadCSVFromSingleFileTest extends ArticleTest with StatisticsChecker {
-  implicit val csvFilesDir: File = createDir(dir, "csv-files")
+  implicit var csvFilesDir: File = _
+
+  override def doThisBefore() {
+    csvFilesDir = createDir(dir, "csv-files")
+  }
 
   def title: String = "Importing data from a single CSV file"
   def section: String = "Import"
@@ -98,5 +102,9 @@ class LoadCSVFromSingleFileTest extends ArticleTest with StatisticsChecker {
                        |""".stripMargin
 
 }
+
+//object CSVFiles {
+//  def implicit val csvFilesDir: File = createDir(dir, "target/csv-files")
+//}
 
 

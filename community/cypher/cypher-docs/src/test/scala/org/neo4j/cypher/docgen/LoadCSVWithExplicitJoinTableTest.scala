@@ -20,10 +20,14 @@
 package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.{ExecutionResult, StatisticsChecker}
-import java.io.{PrintWriter, File}
+import java.io.File
 
 class LoadCSVWithExplicitJoinTableTest extends ArticleTest with StatisticsChecker {
-  implicit val csvFilesDir: File = createDir(dir, "csv-files")
+  implicit var csvFilesDir: File = _
+
+  override def doThisBefore() {
+    csvFilesDir = createDir(dir, "csv-files")
+  }
 
   def title: String = "Importing data from multiple CSV files"
   def section: String = "Import"
@@ -108,7 +112,4 @@ class LoadCSVWithExplicitJoinTableTest extends ArticleTest with StatisticsChecke
                        |REMOVE n.id
                        |###
                        |""".stripMargin
-
 }
-
-
