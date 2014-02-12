@@ -19,20 +19,43 @@
  */
 package org.neo4j.test;
 
-import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.LinkedList;
 
 import org.junit.rules.ExternalResource;
 
+/**
+ * Simple means of cleaning up after a test. It has two purposes:
+ * o remove try-finally blocks from tests, which looks mostly like clutter
+ * o remove @After code needing to clean up after a test
+ *
+ * Usage:
+ * <pre><code>
+ * public final @Rule CleanupRule cleanup = new CleanupRule();
+ * ...
+ * @Test
+ * public void shouldAssertSomething()
+ * {
+ *     SomeObjectThatNeedsClosing dirt = cleanup.add( new SomeObjectThatNeedsClosing() );
+ *     ...
+ * }
+ * </code></pre>
+ *
+ * It accepts {@link AutoCloseable} objects, since it's the lowest denominator for closeables.
+ * And it accepts just about any object, where it tries to spot an appropriate close method, like "close" or "shutdown"
+ * and calls it via reflection.
+ */
 public class CleanupRule extends ExternalResource
 {
-    private final List<Closeable> toCloseAfterwards = new ArrayList<>();
-    
+    private static final String[] COMMON_CLOSE_METHOD_NAMES = { "close", "shutdown", "shutDown" };
+    private final LinkedList<AutoCloseable> toCloseAfterwards = new LinkedList<>();
+
     @Override
     protected void after()
     {
-        for ( Closeable toClose : toCloseAfterwards )
+        for ( AutoCloseable toClose : toCloseAfterwards )
         {
             try
             {
@@ -44,10 +67,54 @@ public class CleanupRule extends ExternalResource
             }
         }
     }
-    
-    public <T extends Closeable> T add( T toClose )
+
+    public <T extends AutoCloseable> T add( T toClose )
     {
-        toCloseAfterwards.add( toClose );
+        toCloseAfterwards.addFirst( toClose );
         return toClose;
+    }
+
+    public <T> T add( T toClose )
+    {
+        Class<?> cls = toClose.getClass();
+        for ( String methodName : COMMON_CLOSE_METHOD_NAMES )
+        {
+            try
+            {
+                Method method = cls.getMethod( methodName );
+                add( closeable( method, toClose ) );
+                return toClose;
+            }
+            catch ( NoSuchMethodException e )
+            {
+                // Try the next method
+                continue;
+            }
+            catch ( SecurityException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+        throw new IllegalArgumentException( "No suitable close method found on " + toClose +
+                ", which is a " + cls );
+    }
+
+    private AutoCloseable closeable( final Method method, final Object target )
+    {
+        return new AutoCloseable()
+        {
+            @Override
+            public void close() throws IOException
+            {
+                try
+                {
+                    method.invoke( target );
+                }
+                catch ( IllegalAccessException | IllegalArgumentException | InvocationTargetException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
     }
 }

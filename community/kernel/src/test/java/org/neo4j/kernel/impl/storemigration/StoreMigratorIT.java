@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -84,7 +86,7 @@ public class StoreMigratorIT
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
 
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService database = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
 
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
         verifier.verifyNodes();
@@ -94,11 +96,9 @@ public class StoreMigratorIT
 
         database.shutdown();
 
-        NeoStore neoStore = storeFactory.newNeoStore( storeFileName );
+        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( storeFileName ) );
         verifyNeoStore( neoStore );
         neoStore.close();
-
-        // CLEANUP
     }
 
     @Test
@@ -115,7 +115,7 @@ public class StoreMigratorIT
 
         // THEN
         // verify that the "name" property for both the involved nodes
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
         Node nodeA = getNodeWithName( db, "A" );
         assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
 
@@ -130,11 +130,27 @@ public class StoreMigratorIT
 
         // THEN
         // verify that there are no duplicate keys in the store
-        PropertyKeyTokenStore tokenStore =
-                storeFactory.newPropertyKeyTokenStore( new File( storeFileName + PROPERTY_KEY_TOKEN_STORE_NAME ) );
+        PropertyKeyTokenStore tokenStore = cleanup.add(
+                storeFactory.newPropertyKeyTokenStore( new File( storeFileName + PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
         Token[] tokens = tokenStore.getTokens( MAX_VALUE );
         tokenStore.close();
         assertNuDuplicates( tokens );
+    }
+
+    @Test
+    public void shouldMigrateEmptyDb() throws Exception
+    {
+        // GIVEN a store that is merely created, no additional data at all
+        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "emptydb.zip" );
+
+        // WHEN migrating that to the new version
+        new StoreMigrator( monitor ).migrate( new LegacyStore( fs,
+                new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) ),
+                storeFactory.createNeoStore( storeFileName ) );
+
+        // THEN it should result in an updated database with the new store format
+        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        // TODO assert stuff
     }
 
     private void assertNuDuplicates( Token[] tokens )
@@ -320,4 +336,6 @@ public class StoreMigratorIT
             finished = true;
         }
     }
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
 }

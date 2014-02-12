@@ -47,7 +47,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 /**
  * Migrates a neo4j database from one version to the next. Instantiated with a {@link LegacyStore}
  * representing the old version and a {@link NeoStore} representing the new version.
- * 
+ *
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
  */
@@ -66,7 +66,7 @@ public class StoreMigrator
         new Migration( legacyStore, neoStore ).migrate();
         progressMonitor.finished();
     }
-    
+
     protected class Migration
     {
         private final LegacyStore legacyStore;
@@ -104,7 +104,7 @@ public class StoreMigrator
             legacyStore.copyNodeLabelStore( neoStore );
             legacyStore.copySchemaStore( neoStore );
         }
-        
+
         private void migrateNodesAndRelationships() throws IOException
         {
             /* For each node
@@ -113,9 +113,9 @@ public class StoreMigrator
              *      store in dense node way
              *   else
              *      store in normal way
-             * 
+             *
              * Keep ids */
-            
+
             NodeStore nodeStore = neoStore.getNodeStore();
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             RelationshipGroupStore relGroupStore = neoStore.getRelationshipGroupStore();
@@ -195,7 +195,7 @@ public class StoreMigrator
                     groupRecord.setFirstLoop( first( relationships.loop ).getId() );
                 }
             }
-            
+
             RelationshipGroupRecord previousGroup = null;
             for ( int i = 0; i < groupRecords.size(); i++ )
             {
@@ -215,7 +215,7 @@ public class StoreMigrator
             {
                 relGroupStore.forceUpdateRecord( groupRecord );
             }
-            
+
             node.setNextRel( groupRecords.get( 0 ).getId() );
             node.setDense( true );
             nodeStore.forceUpdateRecord( node );
@@ -242,7 +242,7 @@ public class StoreMigrator
                 {
                     setDegree( nodeId, record, records.size() );
                 }
-                
+
                 if ( i < records.size()-1 )
                 {   // link next
                     long next = records.get( i+1 ).getId();
@@ -341,10 +341,10 @@ public class StoreMigrator
             }
             return result;
         }
-        
+
         private void reportProgress( long id )
         {
-            int newPercent = (int) (id * 100 / totalEntities);
+            int newPercent = totalEntities == 0 ? 100 : (int) ((id+1) * 100 / totalEntities);
             if ( newPercent > percentComplete )
             {
                 percentComplete = newPercent;
@@ -359,12 +359,12 @@ public class StoreMigrator
         final List<RelationshipRecord> out = new ArrayList<>();
         final List<RelationshipRecord> in = new ArrayList<>();
         final List<RelationshipRecord> loop = new ArrayList<>();
-        
+
         Relationships( long nodeId )
         {
             this.nodeId = nodeId;
         }
-        
+
         void add( RelationshipRecord record )
         {
             if ( record.getFirstNode() == nodeId )
@@ -383,7 +383,7 @@ public class StoreMigrator
                 in.add( record );
             }
         }
-        
+
         @Override
         public String toString()
         {
