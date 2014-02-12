@@ -34,7 +34,7 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToIntFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = a(m) match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = a(m) match {
     case v: Number =>
       v.longValue()
     case v: String =>
@@ -42,7 +42,7 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
         v.toLong
       } catch {
         case e: NumberFormatException =>
-          throw new ParameterWrongTypeException("Failed to parse String as Integer", e)
+          null
       }
     case v =>
       throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
