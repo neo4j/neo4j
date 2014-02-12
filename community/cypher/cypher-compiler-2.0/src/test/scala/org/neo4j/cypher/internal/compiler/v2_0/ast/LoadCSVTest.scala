@@ -49,7 +49,7 @@ class LoadCSVTest extends FunSuite {
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(identifier).actual
 
-    assert(expressionType === CTCollection(CTAny).invariant)
+    assert(expressionType === CTCollection(CTString).invariant)
   }
 
   test("should reject URLs that are not file://, http://, https://, ftp://") {
