@@ -25,10 +25,12 @@ import org.neo4j.graphdb.Direction
 
 object Pattern {
   sealed trait SemanticContext
+
   object SemanticContext {
     case object Match extends SemanticContext
     case object Merge extends SemanticContext
     case object Create extends SemanticContext
+    case object CreateUnique extends SemanticContext
     case object Expression extends SemanticContext
   }
 }
@@ -93,9 +95,12 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
-    case SemanticContext.Merge  => SemanticError(s"$name(...) cannot be used to MERGE", position, element.position)
-    case SemanticContext.Create => SemanticError(s"$name(...) cannot be used to CREATE", position, element.position)
-    case _                      => None
+    case SemanticContext.Merge =>
+      SemanticError(s"$name(...) cannot be used to MERGE", position, element.position)
+    case SemanticContext.Create | SemanticContext.CreateUnique =>
+      SemanticError(s"$name(...) cannot be used to CREATE", position, element.position)
+    case _ =>
+      None
   }
 
   private def checkContainsSingle: SemanticCheck = element match {
@@ -212,7 +217,17 @@ case class RelationshipPattern(
     checkNoVarLengthWhenUpdating(ctx) then
     checkNoLegacyOptionals(ctx) then
     checkNoParamMapsWhenMatching(ctx) then
-    checkProperties(ctx)
+    checkProperties(ctx) then
+    checkNotUndirectedWhenCreating(ctx)
+
+  private def checkNotUndirectedWhenCreating(ctx: SemanticContext): SemanticCheck = {
+    ctx match {
+      case SemanticContext.Create if direction == Direction.BOTH =>
+        SemanticError("Only directed relationships are supported in CREATE", position)
+      case _ =>
+        SemanticCheckResult.success
+    }
+  }
 
   private def checkNoLegacyOptionals(ctx: SemanticContext): SemanticCheck =
     when (optional) {
@@ -227,9 +242,11 @@ case class RelationshipPattern(
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
     when (!isSingleLength) {
       ctx match {
-        case SemanticContext.Merge  => SemanticError("Variable length relationships cannot be used in MERGE", position)
-        case SemanticContext.Create => SemanticError("Variable length relationships cannot be used in CREATE", position)
-        case _                      => None
+        case SemanticContext.Merge =>
+          SemanticError("Variable length relationships cannot be used in MERGE", position)
+        case SemanticContext.Create | SemanticContext.CreateUnique =>
+          SemanticError("Variable length relationships cannot be used in CREATE", position)
+        case _                          => None
       }
     }
 

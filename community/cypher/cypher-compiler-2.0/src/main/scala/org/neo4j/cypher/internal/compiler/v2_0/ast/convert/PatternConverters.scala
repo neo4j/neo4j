@@ -276,9 +276,9 @@ object PatternConverters {
 
     def asLegacyCreates(fromEnd: mutation.RelationshipEndpoint, toEnd: mutation.RelationshipEndpoint): mutation.CreateRelationship = {
       val (from, to) = relationship.direction match {
-        case Direction.OUTGOING => (fromEnd, toEnd)
         case Direction.INCOMING => (toEnd, fromEnd)
-        case Direction.BOTH     => throw new PatternException("Only directed relationships are supported in CREATE, while MATCH allows to ignore direction.")
+        // Direction.{OUTGOING|BOTH}
+        case _                  => (fromEnd, toEnd)
       }
       val typeName = relationship.types match {
         case Seq(i) => i.name

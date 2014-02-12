@@ -209,4 +209,19 @@ return movie""",
     )
   }
 
+  @Test def merging_on_undirected_relationship() {
+    testQuery(
+      title = "Merge on an undirected relationship",
+      text = "+MERGE+ can also be used with an undirected relationship. When it needs to create a new one, it will pick a direction.",
+      queryText =
+        """match (charlie:Person {name:'Charlie Sheen'}), (oliver:Person {name:'Oliver Stone'})
+merge (charlie)-[r:KNOWS]-(oliver)
+return r""",
+      optionalResultExplanation = "Assume that Charlie Sheen and Oliver Stone do not know each other then " +
+        "this +MERGE+ query will create a +:KNOWS+ relationship between them. " +
+        "The direction of the created relationship is arbitrary.",
+      assertions = (p) => assertStats(p, relationshipsCreated = 1)
+    )
+  }
+
 }

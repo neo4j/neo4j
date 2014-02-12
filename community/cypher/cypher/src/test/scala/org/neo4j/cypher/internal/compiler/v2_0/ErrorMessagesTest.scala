@@ -299,14 +299,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def create_without_specifying_direction_should_fail() {
     expectError(
       "CREATE (a)-[:FOO]-(b) RETURN a,b",
-      "Only directed relationships are supported in CREATE, while MATCH allows to ignore direction."
+      "Only directed relationships are supported in CREATE"
     )
   }
 
   @Test def create_without_specifying_direction_should_fail2() {
     expectError(
       "CREATE (a)<-[:FOO]->(b) RETURN a,b",
-      "Only directed relationships are supported in CREATE, while MATCH allows to ignore direction."
+      "Only directed relationships are supported in CREATE"
     )
   }
 

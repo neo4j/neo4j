@@ -114,7 +114,7 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   def name = "CREATE UNIQUE"
 
-  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create)
+  def semanticCheck = pattern.semanticCheck(Pattern.SemanticContext.CreateUnique)
 }
 
 case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {
