@@ -22,7 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_0.{SemanticError, SemanticState, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class StringLiteralTest extends FunSuite {
   val literal = StringLiteral("yo mama")(DummyPosition(4))
 

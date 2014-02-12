@@ -29,7 +29,7 @@ case object PercentileCont extends AggregatingFunction with SimpleTypedFunction 
   def name = "percentileCont"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTDouble, CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = {

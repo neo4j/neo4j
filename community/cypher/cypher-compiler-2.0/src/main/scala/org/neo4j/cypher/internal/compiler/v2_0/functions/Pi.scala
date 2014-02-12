@@ -27,7 +27,7 @@ case object Pi extends Function with SimpleTypedFunction {
   def name = "pi"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(), outputType = CTDouble)
+    Signature(argumentTypes = Vector(), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) = commandexpressions.PiFunction()

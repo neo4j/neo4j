@@ -47,8 +47,8 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMergeUp(CTNumber, CTAny, CTAny)
     assertCorrectTypeMergeUp(CTNumber, CTString, CTAny)
     assertCorrectTypeMergeUp(CTNumber, CTCollection(CTAny), CTAny)
-    assertCorrectTypeMergeUp(CTInteger, CTDouble, CTNumber)
-    assertCorrectTypeMergeUp(CTMap, CTDouble, CTAny)
+    assertCorrectTypeMergeUp(CTInteger, CTFloat, CTNumber)
+    assertCorrectTypeMergeUp(CTMap, CTFloat, CTAny)
   }
 
   @Test
@@ -58,8 +58,8 @@ class CypherTypeTest extends Assertions {
     assertCorrectTypeMergeDown(CTCollection(CTNumber), CTCollection(CTInteger), Some(CTCollection(CTInteger)))
     assertCorrectTypeMergeDown(CTNumber, CTString, None)
     assertCorrectTypeMergeDown(CTNumber, CTCollection(CTAny), None)
-    assertCorrectTypeMergeDown(CTInteger, CTDouble, None)
-    assertCorrectTypeMergeDown(CTMap, CTDouble, None)
+    assertCorrectTypeMergeDown(CTInteger, CTFloat, None)
+    assertCorrectTypeMergeDown(CTMap, CTFloat, None)
     assertCorrectTypeMergeDown(CTBoolean, CTCollection(CTAny), None)
   }
 

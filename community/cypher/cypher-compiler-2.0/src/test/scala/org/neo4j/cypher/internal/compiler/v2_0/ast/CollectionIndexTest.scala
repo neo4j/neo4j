@@ -47,6 +47,6 @@ class CollectionIndexTest extends Assertions {
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Double", index.idx.position)), result.errors)
+    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)), result.errors)
   }
 }

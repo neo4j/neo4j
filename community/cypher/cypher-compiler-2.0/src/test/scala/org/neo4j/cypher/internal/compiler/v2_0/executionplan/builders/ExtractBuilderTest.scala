@@ -105,7 +105,7 @@ class ExtractBuilderTest extends BuilderTest {
 
     val returnItems = result.query.returns.toSet
     assertEquals( Set(
-      Solved(ReturnItem(CachedExpression("bar", CTDouble), "bar")),
+      Solved(ReturnItem(CachedExpression("bar", CTFloat), "bar")),
       Solved(ReturnItem(CachedExpression("foo", CTNumber), "foo"))
     ), returnItems )
   }

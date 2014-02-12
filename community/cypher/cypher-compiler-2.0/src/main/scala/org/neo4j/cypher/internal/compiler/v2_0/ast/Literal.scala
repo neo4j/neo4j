@@ -49,7 +49,7 @@ case class UnsignedIntegerLiteral(stringVal: String)(val position: InputPosition
 case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends Literal with SimpleTyping {
   val value = stringVal.toDouble
 
-  protected def possibleTypes = CTDouble
+  protected def possibleTypes = CTFloat
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     when(value.isInfinite) {

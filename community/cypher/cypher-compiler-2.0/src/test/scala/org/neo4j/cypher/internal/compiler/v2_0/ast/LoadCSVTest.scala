@@ -22,9 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_0.{SemanticError, SemanticState, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class LoadCSVTest extends FunSuite {
-  val literalURL = StringLiteral("yo mama")(DummyPosition(4))
+  val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4))
   val identifier = Identifier("a")(DummyPosition(4))
 
   test("cannot overwrite existing identifier") {
@@ -53,7 +56,7 @@ class LoadCSVTest extends FunSuite {
     val literal = StringLiteral("morsecorba://sos")(DummyPosition(4))
     val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
-    assert(result.errors === Vector(SemanticError("Unsupported URL protocol: morsecorba", DummyPosition(4))))
+    assert(result.errors === Vector(SemanticError("invalid URL specified (unknown protocol: morsecorba)", DummyPosition(4))))
   }
 
   test("should accept http:// URLs") {

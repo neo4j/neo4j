@@ -28,7 +28,7 @@ case object Ceil extends Function with SimpleTypedFunction {
   def name = "ceil"
 
   val signatures = Vector(
-    Signature(argumentTypes = Vector(CTDouble), outputType = CTDouble)
+    Signature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
