@@ -76,7 +76,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: I
     val typ = if (withHeaders)
       CTMap
     else
-      CTCollection(CTAny)
+      CTCollection(CTString)
 
     identifier.declare(typ)
   }
