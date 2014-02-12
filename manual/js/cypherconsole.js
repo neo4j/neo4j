@@ -44,9 +44,9 @@ function createCypherConsoles( $ )
     var context = $( this );
     var title = $.trim( context.find( '> b, > strong' ).eq(0).text() ) || 'Live Cypher Console';
     title = title.replace( /\.$/, '' );
-    var database = context.find( 'span.database' ).eq(0).text();
+    var database = $.trim( context.find( 'span.database' ).eq(0).text() );
     if ( !database ) return;
-    var command = context.find( 'span.command > strong' ).eq(0).text();
+    var command = $.trim( context.find( 'span.command > strong' ).eq(0).text() );
     if ( !command ) return;
     var button = $( '<button class="cypherconsole" type="button" title="Show a console" id="console-iframe-button"><img src="css/utilities-terminal.svg" /><span> ' + title + '</span></button>' );
     var url = getUrl( database, command );
