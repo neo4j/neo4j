@@ -168,7 +168,7 @@ public class WriteTransactionCommandOrderingTest
         context.bind( TransactionState.NO_STATE );
         NeoStoreTransaction tx = new NeoStoreTransaction( 0l, mock( XaLogicalLog.class ),
                 store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class ),
-                WriteTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
+                NeoStoreTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
                 mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ),
                 context
         );

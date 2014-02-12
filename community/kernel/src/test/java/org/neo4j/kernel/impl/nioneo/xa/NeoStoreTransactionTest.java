@@ -69,7 +69,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -122,8 +121,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-@Ignore
-public class WriteTransactionTest
+public class NeoStoreTransactionTest
 {
     public static final String LONG_STRING = "string value long enough not to be stored as a short string";
 
