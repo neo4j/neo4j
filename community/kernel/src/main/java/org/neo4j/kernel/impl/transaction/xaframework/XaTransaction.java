@@ -166,21 +166,21 @@ public abstract class XaTransaction
 
     private int identifier = -1;
     private final XaLogicalLog log;
-    private final TransactionState state;
+    private final TxIdGenerator txIdGenerator;
     private boolean isRecovered = false;
     private boolean committed = false;
     private boolean rolledback = false;
     private boolean prepared = false;
     private long commitTxId = -1;
     
-    public XaTransaction( XaLogicalLog log, TransactionState state )
+    public XaTransaction( XaLogicalLog log, TransactionState txState )
     {
         if ( log == null )
         {
             throw new IllegalArgumentException( "LogicalLog is null" );
         }
         this.log = log;
-        this.state = state;
+        this.txIdGenerator = txState.getTxIdGenerator();
     }
 
     /**
@@ -344,6 +344,6 @@ public abstract class XaTransaction
     
     public final TxIdGenerator getTxIdGenerator()
     {
-        return state.getTxIdGenerator();
+        return txIdGenerator;
     }
 }

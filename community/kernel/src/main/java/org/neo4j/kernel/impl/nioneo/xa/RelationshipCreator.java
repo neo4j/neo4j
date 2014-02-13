@@ -1,0 +1,305 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.nioneo.xa;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.util.RelIdArray;
+
+public class RelationshipCreator
+{
+    private final RelationshipGroupGetter relGroupGetter;
+    private final NeoStore neoStore;
+    private final RelationshipLocker locker;
+
+    private Collection<NodeRecord> upgradedDenseNodes;
+
+    public RelationshipCreator( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter, NeoStore neoStore )
+    {
+        this.locker = locker;
+        this.relGroupGetter = relGroupGetter;
+        this.neoStore = neoStore;
+    }
+
+    public Collection<NodeRecord> getUpgradedDenseNodes()
+    {
+        return upgradedDenseNodes;
+    }
+
+    /**
+     * Creates a relationship with the given id, from the nodes identified by id
+     * and of type typeId
+     *
+     * @param id The id of the relationship to create.
+     * @param type The id of the relationship type this relationship will
+     *            have.
+     * @param firstNodeId The id of the start node.
+     * @param secondNodeId The id of the end node.
+     */
+    public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId,
+                                    RecordChangeSet recordChangeSet )
+    {
+        // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
+        NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
+        if ( !firstNode.inUse() )
+        {
+            throw new IllegalStateException( "First node[" + firstNodeId +
+                    "] is deleted and cannot be used to create a relationship" );
+        }
+        NodeRecord secondNode = recordChangeSet.getNodeRecords().getOrLoad( secondNodeId, null ).forChangingLinkage();
+        if ( !secondNode.inUse() )
+        {
+            throw new IllegalStateException( "Second node[" + secondNodeId +
+                    "] is deleted and cannot be used to create a relationship" );
+        }
+        convertNodeToDenseIfNecessary( firstNode, recordChangeSet.getRelRecords(),
+                recordChangeSet.getRelGroupRecords() );
+        convertNodeToDenseIfNecessary( secondNode, recordChangeSet.getRelRecords(),
+                recordChangeSet.getRelGroupRecords() );
+        RelationshipRecord record = recordChangeSet.getRelRecords().create( id, null ).forChangingLinkage();
+        record.setLinks( firstNodeId, secondNodeId, type );
+        record.setInUse( true );
+        record.setCreated();
+        connectRelationship( firstNode, secondNode, record, recordChangeSet.getRelRecords(),
+                recordChangeSet.getRelGroupRecords() );
+    }
+
+    private void convertNodeToDenseIfNecessary( NodeRecord node,
+                                                RecordChanges<Long, RelationshipRecord, Void> relRecords,
+                                                RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+    {
+        if ( node.isDense() )
+        {
+            return;
+        }
+        long relId = node.getNextRel();
+        if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RecordChanges.RecordChange<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
+            RelationshipRecord rel = relChange.forReadingLinkage();
+            if ( RelationshipCounter.relCount( node.getId(), rel ) >= neoStore.getDenseNodeThreshold() )
+            {
+                convertNodeToDenseNode( node, relChange.forChangingLinkage(), relRecords, relGroupRecords );
+            }
+        }
+    }
+
+
+    private void connectRelationship( NodeRecord firstNode,
+                                      NodeRecord secondNode, RelationshipRecord rel,
+                                      RecordChanges<Long, RelationshipRecord, Void> relRecords,
+                                      RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+    {
+        // Assertion interpreted: if node is a normal node and we're trying to create a
+        // relationship that we already have as first rel for that node --> error
+        assert firstNode.getNextRel() != rel.getId() || firstNode.isDense();
+        assert secondNode.getNextRel() != rel.getId() || secondNode.isDense();
+
+        if ( !firstNode.isDense() )
+        {
+            rel.setFirstNextRel( firstNode.getNextRel() );
+        }
+        if ( !secondNode.isDense() )
+        {
+            rel.setSecondNextRel( secondNode.getNextRel() );
+        }
+
+        if ( !firstNode.isDense() )
+        {
+            connect( firstNode, rel, relRecords );
+        }
+        else
+        {
+            connectRelationshipToDenseNode( firstNode, rel, relRecords, relGroupRecords );
+        }
+
+        if ( !secondNode.isDense() )
+        {
+            if ( firstNode.getId() != secondNode.getId() )
+            {
+                connect( secondNode, rel, relRecords );
+            }
+            else
+            {
+                rel.setFirstInFirstChain( true );
+                rel.setSecondPrevRel( rel.getFirstPrevRel() );
+            }
+        }
+        else if ( firstNode.getId() != secondNode.getId() )
+        {
+            connectRelationshipToDenseNode( secondNode, rel, relRecords, relGroupRecords );
+        }
+
+        if ( !firstNode.isDense() )
+        {
+            firstNode.setNextRel( rel.getId() );
+        }
+        if ( !secondNode.isDense() )
+        {
+            secondNode.setNextRel( rel.getId() );
+        }
+    }
+
+    private void connectRelationshipToDenseNode( NodeRecord node, RelationshipRecord rel,
+                                                 RecordChanges<Long, RelationshipRecord, Void> relRecords,
+                                                 RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+    {
+        RelationshipGroupRecord group =
+                getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
+        RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
+        long nextRel = dir.getNextRel( group );
+        setCorrectNextRel( node, rel, nextRel );
+        connect( node.getId(), nextRel, rel, relRecords );
+        dir.setNextRel( group, rel.getId() );
+    }
+
+    private void connect( NodeRecord node, RelationshipRecord rel,
+                          RecordChanges<Long, RelationshipRecord, Void> relRecords )
+    {
+        connect( node.getId(), node.getNextRel(), rel, relRecords );
+    }
+
+    private void convertNodeToDenseNode( NodeRecord node, RelationshipRecord firstRel,
+                                         RecordChanges<Long, RelationshipRecord, Void> relRecords,
+                                         RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+    {
+        firstRel = relRecords.getOrLoad( firstRel.getId(), null ).forChangingLinkage();
+        node.setDense( true );
+        node.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
+        long relId = firstRel.getId();
+        RelationshipRecord relRecord = firstRel;
+        while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            locker.getWriteLock( relId );
+            relId = relChain( relRecord, node.getId() ).get( relRecord );
+            connectRelationshipToDenseNode( node, relRecord, relRecords, relGroupRecords );
+            if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                break;
+            }
+            relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
+        }
+        if ( upgradedDenseNodes == null )
+        {
+            upgradedDenseNodes = new ArrayList<>();
+        }
+        upgradedDenseNodes.add( node );
+    }
+
+    private void connect( long nodeId, long firstRelId, RelationshipRecord rel,
+                          RecordChanges<Long, RelationshipRecord, Void> relRecords )
+    {
+        long newCount = 1;
+        if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            locker.getWriteLock( firstRelId );
+            RelationshipRecord firstRel = relRecords.getOrLoad( firstRelId, null ).forChangingLinkage();
+            boolean changed = false;
+            if ( firstRel.getFirstNode() == nodeId )
+            {
+                newCount = firstRel.getFirstPrevRel()+1;
+                firstRel.setFirstPrevRel( rel.getId() );
+                firstRel.setFirstInFirstChain( false );
+                changed = true;
+            }
+            if ( firstRel.getSecondNode() == nodeId )
+            {
+                newCount = firstRel.getSecondPrevRel()+1;
+                firstRel.setSecondPrevRel( rel.getId() );
+                firstRel.setFirstInSecondChain( false );
+                changed = true;
+            }
+            if ( !changed )
+            {
+                throw new InvalidRecordException( nodeId + " doesn't match " + firstRel );
+            }
+        }
+
+        // Set the relationship count
+        if ( rel.getFirstNode() == nodeId )
+        {
+            rel.setFirstPrevRel( newCount );
+            rel.setFirstInFirstChain( true );
+        }
+        if ( rel.getSecondNode() == nodeId )
+        {
+            rel.setSecondPrevRel( newCount );
+            rel.setFirstInSecondChain( true );
+        }
+    }
+
+    private RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
+            NodeRecord node, int type, RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords  )
+    {
+        RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> change =
+                relGroupGetter.getRelationshipGroup( node, type );
+        if ( change == null )
+        {
+            assert node.isDense();
+            long id = neoStore.getRelationshipGroupStore().nextId();
+            long firstGroupId = node.getNextRel();
+            change = relGroupRecords.create( id, type );
+            RelationshipGroupRecord record = change.forChangingData();
+            record.setInUse( true );
+            record.setCreated();
+            if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {   // There are others, make way for this new group
+                RelationshipGroupRecord previousFirstRecord =
+                        relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
+                record.setNext( previousFirstRecord.getId() );
+                previousFirstRecord.setPrev( id );
+            }
+            node.setNextRel( id );
+        }
+        return change;
+    }
+
+    private void setCorrectNextRel( NodeRecord node, RelationshipRecord rel, long nextRel )
+    {
+        if ( node.getId() == rel.getFirstNode() )
+        {
+            rel.setFirstNextRel( nextRel );
+        }
+        if ( node.getId() == rel.getSecondNode() )
+        {
+            rel.setSecondNextRel( nextRel );
+        }
+    }
+
+    private static RelationshipConnection relChain( RelationshipRecord rel, long nodeId )
+    {
+        if ( rel.getFirstNode() == nodeId )
+        {
+            return RelationshipConnection.START_NEXT;
+        }
+        if ( rel.getSecondNode() == nodeId )
+        {
+            return RelationshipConnection.END_NEXT;
+        }
+        throw new RuntimeException( nodeId + " neither start not end node in " + rel );
+    }
+}

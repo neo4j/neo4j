@@ -19,13 +19,19 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -40,13 +46,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -164,10 +163,15 @@ public class WriteTransactionCommandOrderingTest
     }
 
     private NeoStoreTransaction newWriteTransaction() {
-        NeoStoreTransaction tx = new NeoStoreTransaction( 0l, mock( XaLogicalLog.class ), TransactionState.NO_STATE,
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( mock( NeoStoreTransactionContextSupplier.class ),
+                store );
+        context.bind( TransactionState.NO_STATE );
+        NeoStoreTransaction tx = new NeoStoreTransaction( 0l, mock( XaLogicalLog.class ),
                 store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class ),
-                WriteTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
-                mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ) );
+                NeoStoreTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
+                mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ),
+                context
+        );
         tx.setCommitTxId( store.getLastCommittedTx() + 1 );
         return tx;
     }
