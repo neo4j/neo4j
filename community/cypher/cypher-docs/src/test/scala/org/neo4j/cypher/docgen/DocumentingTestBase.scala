@@ -172,7 +172,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
         }
       }
       if (consoleData.isEmpty) {
-        consoleData = "(0)"
+        consoleData = "none"
       }
     }
 
