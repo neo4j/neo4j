@@ -74,7 +74,12 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     public Lifecycle newKernelExtension( UdcKernelExtensionFactory.Dependencies dependencies ) throws Throwable
     {
         return new UdcKernelExtension( loadConfig( dependencies.getConfig() ), dependencies.getXaDataSourceManager(),
-                dependencies.getKernelData(), new Timer( "Neo4j UDC Timer", /*isDaemon=*/true ) );
+                dependencies.getKernelData(), new Timer( "Neo4j UDC Timer", isAlwaysDaemon() ) );
+    }
+
+    private boolean isAlwaysDaemon()
+    {
+        return true;
     }
 
     private Config loadConfig( Config config )
