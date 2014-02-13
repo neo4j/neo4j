@@ -30,10 +30,10 @@ class StringFunctionsTest extends RefcardTest with StatisticsChecker {
     name match {
       case "returns-one" =>
         assertStats(result, nodesCreated = 0)
-        assert(result.toList.size === 1)
+        assert(result.size === 1)
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
-        assert(result.toList.size === 0)
+        assert(result.size === 0)
     }
   }
 
@@ -47,6 +47,8 @@ class StringFunctionsTest extends RefcardTest with StatisticsChecker {
         Map("original" -> "Hi", "search" -> "i", "replacement" -> "ello")
       case "parameters=sub" =>
         Map("original" -> "String", "begin" -> 3, "substring_length" -> 2, "sub_length" -> 2)
+      case "parameters=split" =>
+        Map("original" -> "A,B,C", "delimiter" -> ",")
       case "" =>
         Map()
     }
@@ -59,7 +61,6 @@ class StringFunctionsTest extends RefcardTest with StatisticsChecker {
 
   def text = """
 ###assertion=returns-one parameters=expression
-START n=node(%ROOT%)
 RETURN
 
 str({expression})
@@ -68,7 +69,6 @@ str({expression})
 String representation of the expression.
 
 ###assertion=returns-one parameters=replace
-START n=node(%ROOT%)
 RETURN
 
 replace({original}, {search}, {replacement})
@@ -78,7 +78,6 @@ Replace all occurrences of `search` with `replacement`.
 All arguments are be expressions.
 
 ###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
 RETURN
 
 substring({original}, {begin}, {sub_length})
@@ -88,7 +87,6 @@ Get part of a string.
 The `sub_length` argument is optional.
 
 ###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
 RETURN
 
 left({original}, {sub_length}),
@@ -98,7 +96,6 @@ left({original}, {sub_length}),
 The first part of a string. The last part of the string.
 
 ###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
 RETURN
 
 trim({original}), ltrim({original}),
@@ -108,12 +105,19 @@ trim({original}), ltrim({original}),
 Trim all whitespace, or on left or right side.
 
 ###assertion=returns-one parameters=sub
-START n=node(%ROOT%)
 RETURN
 
 upper({original}), lower({original})
 ###
 
 UPPERCASE and lowercase.
-             """
+
+###assertion=returns-one parameters=split
+RETURN
+
+split({original}, {delimiter})
+###
+
+Split a string into a collection of strings.
+"""
 }
