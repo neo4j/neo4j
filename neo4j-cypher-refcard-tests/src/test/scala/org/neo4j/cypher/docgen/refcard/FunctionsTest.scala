@@ -34,6 +34,10 @@ class FunctionsTest extends RefcardTest with StatisticsChecker {
       case "returns-none" =>
         assertStats(result, nodesCreated = 0)
         assert(result.toList.size === 0)
+      case "toInt" =>
+        assert(result.toList === List(Map("toInt({expr})" -> 10)))
+      case "toFloat" =>
+        assert(result.toList === List(Map("toFloat({expr})" -> 10.1)))
     }
   }
 
@@ -41,6 +45,10 @@ class FunctionsTest extends RefcardTest with StatisticsChecker {
     name match {
       case "parameters=default" =>
         Map("defaultValue" -> "Bob")
+      case "parameters=toInt" =>
+        Map("expr" -> "10")
+      case "parameters=toFloat" =>
+        Map("expr" -> "10.1")
       case "" =>
         Map()
     }
@@ -74,5 +82,18 @@ RETURN
 id(node_or_relationship)###
 
 The internal id of the relationship or node.
-"""
+
+###assertion=toInt parameters=toInt
+RETURN
+
+toInt({expr})###
+
+Convert the given input in an integer if possible otherwise it returns null.
+
+###assertion=toFloat parameters=toFloat
+RETURN
+
+toFloat({expr})###
+
+Convert the given input in a floating point number if possible otherwise it returns null."""
 }
