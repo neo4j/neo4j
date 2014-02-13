@@ -29,9 +29,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
@@ -134,7 +134,7 @@ public class OrderedPath
             PathPrinter pathPrinter = new PathPrinter( "name" );
             for ( Path path : traverser )
             {
-                output += Traversal.pathToString( path, pathPrinter );
+                output += Paths.pathToString( path, pathPrinter );
             }
             // END SNIPPET: printPath
             output += "\n";
@@ -143,7 +143,7 @@ public class OrderedPath
     }
 
     // START SNIPPET: pathPrinter
-    static class PathPrinter implements Traversal.PathDescriptor<Path>
+    static class PathPrinter implements Paths.PathDescriptor<Path>
     {
         private final String nodePropertyKey;
 

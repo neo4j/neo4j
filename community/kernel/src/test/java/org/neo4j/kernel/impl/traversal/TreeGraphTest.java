@@ -27,7 +27,6 @@ import java.util.Stack;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -35,13 +34,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 
 import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.Traversal.postorderBreadthFirst;
-import static org.neo4j.kernel.Traversal.postorderDepthFirst;
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.traversal.BranchOrderingPolicies.POSTORDER_BREADTH_FIRST;
+import static org.neo4j.graphdb.traversal.BranchOrderingPolicies.POSTORDER_DEPTH_FIRST;
 import static org.neo4j.kernel.Traversal.traversal;
 
 public class TreeGraphTest extends TraversalTestBase
@@ -177,7 +172,7 @@ public class TreeGraphTest extends TraversalTestBase
     @Test
     public void testPostorderDepthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = traversal().order( postorderDepthFirst() ).traverse( node( "1" ) );
+        Traverser traverser = traversal().order( POSTORDER_DEPTH_FIRST ).traverse( node( "1" ) );
         int i = 0;
         List<String> encounteredNodes = new ArrayList<String>();
         Transaction tx = beginTx();
@@ -207,11 +202,11 @@ public class TreeGraphTest extends TraversalTestBase
     @Test
     public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
     {
-        Traverser traverser = traversal().order( postorderBreadthFirst() ).traverse( node( "1" ) );
-        Stack<Set<String>> levels = new Stack<Set<String>>();
-        levels.push( new HashSet<String>( asList( "1" ) ) );
-        levels.push( new HashSet<String>( asList( "2", "3", "4" ) ) );
-        levels.push( new HashSet<String>( asList( "5", "6", "7", "8",
+        Traverser traverser = traversal().order( POSTORDER_BREADTH_FIRST ).traverse( node( "1" ) );
+        Stack<Set<String>> levels = new Stack<>();
+        levels.push( new HashSet<>( asList( "1" ) ) );
+        levels.push( new HashSet<>( asList( "2", "3", "4" ) ) );
+        levels.push( new HashSet<>( asList( "5", "6", "7", "8",
                 "9", "A", "B", "C", "D" ) ) );
         Transaction tx = beginTx();
         try

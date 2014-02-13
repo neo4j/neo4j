@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.kernel.Traversal.expanderForTypes;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,12 +31,16 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchState;
 
+import static org.neo4j.kernel.Traversal.expanderForTypes;
+
 /**
  * Experimental and very crude utility for building a slightly more powerful
  * expander to use in a traversal.
  * 
  * @author Mattias Persson
+ * @deprecated This was an experimental feature which we have rolled back.
  */
+@Deprecated
 public class PathDescription
 {
     private final List<Expander> steps;

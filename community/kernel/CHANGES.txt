@@ -1,3 +1,10 @@
+2.1-SNAPSHOT
+------------
+o Introduces utility methods for printing paths into a new class, org.neo4j.graphdb.traveral.Paths
+o Deprecates several methods in the old traversal framework (org.neo4j.kernel.Traversal) that have been replaced by
+  new utilities in the org.neo4j.graphdb.traversal library. No breaking changes made, but this flags for these features
+  being removed in the next major version, 3.0.
+
 2.0.1
 -----
 o Improve speed of verifying unique constraints on constraint creation.

@@ -41,6 +41,7 @@ import org.neo4j.graphalgo.impl.path.TraversalAStar;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
@@ -55,8 +56,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
-import static org.neo4j.kernel.Traversal.pathExpanderForAllTypes;
 
 @RunWith( Parameterized.class )
 public class TestAStar extends Neo4jAlgoTestCase
@@ -298,7 +297,7 @@ public class TestAStar extends Neo4jAlgoTestCase
                 return ((Double)node.getProperty( "estimate" ));
             }
         };
-        PathFinder<WeightedPath> finder = aStar( pathExpanderForAllTypes(),
+        PathFinder<WeightedPath> finder = aStar( PathExpanders.allTypesAndDirections(),
                 doubleCostEvaluator( "weight", 0d ), estimator );
 
         final Node node1 = graph.makeNode( "1", "estimate", 0.003d );
@@ -340,10 +339,10 @@ public class TestAStar extends Neo4jAlgoTestCase
         return Arrays.asList( new Object[][]
         {
             {
-                GraphAlgoFactory.aStar( expanderForAllTypes(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
+                GraphAlgoFactory.aStar( PathExpanders.allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
             },
             {
-                new TraversalAStar( pathExpanderForAllTypes(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
+                new TraversalAStar( PathExpanders.allTypesAndDirections(), doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR )
             }
         } );
     }

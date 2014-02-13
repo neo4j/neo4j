@@ -28,9 +28,11 @@ import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
@@ -43,7 +45,6 @@ import org.neo4j.graphdb.traversal.UniquenessFactory;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.StandardExpander;
-import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
 public final class MonoDirectionalTraversalDescription implements TraversalDescription
@@ -79,8 +80,8 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
 
     public MonoDirectionalTraversalDescription( Provider<? extends Resource> statementProvider )
     {
-        this( Traversal.emptyPathExpander(), Uniqueness.NODE_GLOBAL, null,
-                Evaluators.all(), InitialBranchState.NO_STATE, Traversal.preorderDepthFirst(), null, null,
+        this( PathExpanders.allTypesAndDirections(), Uniqueness.NODE_GLOBAL, null,
+                Evaluators.all(), InitialBranchState.NO_STATE, BranchOrderingPolicies.PREORDER_DEPTH_FIRST, null, null,
                 statementProvider );
     }
 
@@ -207,12 +208,12 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
 
     public TraversalDescription depthFirst()
     {
-        return order( Traversal.preorderDepthFirst() );
+        return order( BranchOrderingPolicies.PREORDER_DEPTH_FIRST);
     }
 
     public TraversalDescription breadthFirst()
     {
-        return order( Traversal.preorderBreadthFirst() );
+        return order( BranchOrderingPolicies.PREORDER_BREADTH_FIRST );
     }
 
     /* (non-Javadoc)

@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.Traversal.expanderForTypes;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+
+import static org.junit.Assert.*;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestMultiRelTypesAndDirections extends TraversalTestBase
 {
@@ -59,7 +59,7 @@ public class TestMultiRelTypesAndDirections extends TraversalTestBase
         Transaction transaction = beginTx();
         try
         {
-            description = description.expand( expanderForTypes( ONE, OUTGOING ) );
+            description = description.expand( PathExpanders.forTypeAndDirection( ONE, OUTGOING ) );
             int i = 0;
             for ( Path position : description.traverse( node( "A" ) ) )
             {

@@ -50,7 +50,6 @@ import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.pathExpanderForTypes;
 import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.kernel.Uniqueness.NODE_PATH;
 import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_PATH;
@@ -117,7 +116,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO b", "a TO c", "c TO b", "a TO d", "d TO e", "e TO b", "e TO f", "f TO b" );
         
-        PathExpander<Void> expander = pathExpanderForTypes( to, OUTGOING );
+        PathExpander<Void> expander = PathExpanders.forTypeAndDirection( to, OUTGOING );
         BidirectionalTraversalDescription traversal = bidirectionalTraversal()
                 .mirroredSides( traversal().uniqueness( NODE_PATH ).expand( expander ) );
         expectPaths( traversal

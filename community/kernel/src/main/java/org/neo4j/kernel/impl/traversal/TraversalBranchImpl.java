@@ -28,10 +28,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.Traversal;
 
 class TraversalBranchImpl implements TraversalBranch
 {
@@ -379,7 +379,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public String toString()
     {
-        return Traversal.defaultPathToString( this );
+        return Paths.defaultPathToString( this );
     }
     
     @Override
