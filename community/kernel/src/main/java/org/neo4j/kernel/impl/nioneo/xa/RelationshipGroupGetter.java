@@ -19,11 +19,42 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import java.util.HashSet;
+import java.util.Set;
 
-public interface RelationshipGroupGetter
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
+
+public class RelationshipGroupGetter
 {
-    RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node,
-                                                                                             int type );
+    private final RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords;
+
+    public RelationshipGroupGetter( RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+    {
+        this.relGroupRecords = relGroupRecords;
+    }
+
+    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
+    {
+        long groupId = node.getNextRel();
+        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
+        Set<Integer> allTypes = new HashSet<>();
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RecordProxy<Long, RelationshipGroupRecord, Integer> change =
+                    relGroupRecords.getOrLoad( groupId, type );
+            RelationshipGroupRecord record = change.forReadingData();
+            record.setPrev( previousGroupId ); // not persistent so not a "change"
+            allTypes.add( record.getType() );
+            if ( record.getType() == type )
+            {
+                return change;
+            }
+            previousGroupId = groupId;
+            groupId = record.getNext();
+        }
+        return null;
+    }
 }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class RelationshipCreator
@@ -61,7 +62,7 @@ public class RelationshipCreator
      * @param secondNodeId The id of the end node.
      */
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId,
-                                    RecordChangeSet recordChangeSet )
+            RecordAccessSet recordChangeSet )
     {
         // TODO could be unnecessary to mark as changed here already, dense nodes may not need to change
         NodeRecord firstNode = recordChangeSet.getNodeRecords().getOrLoad( firstNodeId, null ).forChangingLinkage();
@@ -89,8 +90,8 @@ public class RelationshipCreator
     }
 
     private void convertNodeToDenseIfNecessary( NodeRecord node,
-                                                RecordChanges<Long, RelationshipRecord, Void> relRecords,
-                                                RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+                                                RecordAccess<Long, RelationshipRecord, Void> relRecords,
+                                                RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         if ( node.isDense() )
         {
@@ -99,7 +100,7 @@ public class RelationshipCreator
         long relId = node.getNextRel();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordChanges.RecordChange<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
+            RecordProxy<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
             RelationshipRecord rel = relChange.forReadingLinkage();
             if ( RelationshipCounter.relCount( node.getId(), rel ) >= neoStore.getDenseNodeThreshold() )
             {
@@ -111,8 +112,8 @@ public class RelationshipCreator
 
     private void connectRelationship( NodeRecord firstNode,
                                       NodeRecord secondNode, RelationshipRecord rel,
-                                      RecordChanges<Long, RelationshipRecord, Void> relRecords,
-                                      RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+                                      RecordAccess<Long, RelationshipRecord, Void> relRecords,
+                                      RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         // Assertion interpreted: if node is a normal node and we're trying to create a
         // relationship that we already have as first rel for that node --> error
@@ -165,8 +166,8 @@ public class RelationshipCreator
     }
 
     private void connectRelationshipToDenseNode( NodeRecord node, RelationshipRecord rel,
-                                                 RecordChanges<Long, RelationshipRecord, Void> relRecords,
-                                                 RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+                                                 RecordAccess<Long, RelationshipRecord, Void> relRecords,
+                                                 RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         RelationshipGroupRecord group =
                 getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
@@ -178,14 +179,14 @@ public class RelationshipCreator
     }
 
     private void connect( NodeRecord node, RelationshipRecord rel,
-                          RecordChanges<Long, RelationshipRecord, Void> relRecords )
+                          RecordAccess<Long, RelationshipRecord, Void> relRecords )
     {
         connect( node.getId(), node.getNextRel(), rel, relRecords );
     }
 
     private void convertNodeToDenseNode( NodeRecord node, RelationshipRecord firstRel,
-                                         RecordChanges<Long, RelationshipRecord, Void> relRecords,
-                                         RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+                                         RecordAccess<Long, RelationshipRecord, Void> relRecords,
+                                         RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         firstRel = relRecords.getOrLoad( firstRel.getId(), null ).forChangingLinkage();
         node.setDense( true );
@@ -211,7 +212,7 @@ public class RelationshipCreator
     }
 
     private void connect( long nodeId, long firstRelId, RelationshipRecord rel,
-                          RecordChanges<Long, RelationshipRecord, Void> relRecords )
+                          RecordAccess<Long, RelationshipRecord, Void> relRecords )
     {
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -252,10 +253,10 @@ public class RelationshipCreator
         }
     }
 
-    private RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
-            NodeRecord node, int type, RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords  )
+    private RecordProxy<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
+            NodeRecord node, int type, RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords  )
     {
-        RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> change =
+        RecordProxy<Long, RelationshipGroupRecord, Integer> change =
                 relGroupGetter.getRelationshipGroup( node, type );
         if ( change == null )
         {

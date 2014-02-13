@@ -34,6 +34,7 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -50,6 +51,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -63,12 +65,18 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -376,8 +384,7 @@ public class TestBatchInsert
             assertTrue( inserter.nodeHasProperty( theNode, key ) );
             assertFalse( inserter.nodeHasProperty( theNode, key + "-" ) );
             assertTrue( inserter.relationshipHasProperty( relationship, key ) );
-            assertFalse( inserter.relationshipHasProperty( relationship, key
-                                                                         + "-" ) );
+            assertFalse( inserter.relationshipHasProperty( relationship, key + "-" ) );
         }
 
         inserter.shutdown();
@@ -718,8 +725,8 @@ public class TestBatchInsert
         }
         for ( int i = 0; i < 5; i++ )
         {
-            assertTrue( startNode.getSingleRelationship(
-                relTypeArray[i], Direction.OUTGOING ) != null );
+            assertTrue( format( "Expected a relationship of type %s on node %s", relTypeArray[i], startNode ),
+                    startNode.getSingleRelationship( relTypeArray[i], Direction.OUTGOING ) != null );
         }
         for ( int i = 0; i < 5; i++ )
         {
@@ -1183,6 +1190,38 @@ public class TestBatchInsert
         // THEN
         assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
         batchInserter.shutdown();
+    }
+
+    @Test
+    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        inserter.createNode( 1, null );
+        inserter.createNode( 2, null );
+
+        for ( int i = 0; i < 1000; i++ )
+        {
+            for ( MyRelTypes relType : MyRelTypes.values() )
+            {
+                inserter.createRelationship( 1, 2, relType, null );
+            }
+        }
+
+        GraphDatabaseAPI db = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
+        try
+        {
+            DependencyResolver dependencyResolver = db.getDependencyResolver();
+            NeoStoreProvider neoStoreProvider = dependencyResolver.resolveDependency( NeoStoreProvider.class );
+            NeoStore neoStore = neoStoreProvider.evaluate();
+            NodeStore nodeStore = neoStore.getNodeStore();
+            NodeRecord record = nodeStore.getRecord( 1 );
+            assertTrue( "Node " + record + " should have been dense", record.isDense() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private static class UpdateTrackingLabelScanStore implements LabelScanStore
