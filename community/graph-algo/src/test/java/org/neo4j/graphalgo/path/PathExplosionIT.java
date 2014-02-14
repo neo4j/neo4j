@@ -34,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -47,7 +48,6 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.kernel.Traversal.pathExpanderForAllTypes;
 
 @Ignore( "Not a test, merely a performance measurement. Convert into a proper performance benchmark at some point" )
 public class PathExplosionIT
@@ -187,7 +187,7 @@ public class PathExplosionIT
         SomeRelType
     }
     
-    private final PathExpander<?> expander = pathExpanderForAllTypes( Direction.BOTH );
+    private final PathExpander<?> expander = PathExpanders.forDirection(Direction.BOTH );
     private final CostEvaluator<Double> constantEvaluator = new CostEvaluator<Double>()
     {
         @Override

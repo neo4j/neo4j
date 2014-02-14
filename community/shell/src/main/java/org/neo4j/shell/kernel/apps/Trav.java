@@ -19,10 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import static java.lang.Integer.parseInt;
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
-
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +30,7 @@ import java.util.regex.Pattern;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Traverser;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
@@ -51,6 +48,10 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+
+import static java.lang.Integer.parseInt;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.shell.kernel.apps.ScriptEngineViaReflection.decorateWithImports;
 
 /**
  * Traverses the graph using {@link Traverser}.
@@ -248,11 +249,11 @@ public class Trav extends TransactionProvidingApp
     {
         if ( order.equals( "depth first" ) || "depth first".startsWith( order.toLowerCase() ) )
         {
-            return Traversal.preorderDepthFirst();
+            return BranchOrderingPolicies.PREORDER_DEPTH_FIRST;
         }
         if ( order.equals( "breadth first" ) || "breadth first".startsWith( order.toLowerCase() ) )
         {
-            return Traversal.preorderBreadthFirst();
+            return BranchOrderingPolicies.PREORDER_BREADTH_FIRST;
         }
         
         return (BranchOrderingPolicy) parseEnum( CommonBranchOrdering.class, order, null );

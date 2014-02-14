@@ -27,11 +27,12 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.Traversal;
+import org.neo4j.graphdb.traversal.Paths;
 
 public class CalculateShortestPath
 {
@@ -71,10 +72,10 @@ public class CalculateShortestPath
         Node agentSmith = getOrCreateNode( "Agent Smith" );
         // START SNIPPET: shortestPathUsage
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                Traversal.expanderForTypes( KNOWS, Direction.BOTH ), 4 );
+                PathExpanders.forTypeAndDirection( KNOWS, Direction.BOTH ), 4 );
         Path foundPath = finder.findSinglePath( neo, agentSmith );
         System.out.println( "Path from Neo to Agent Smith: "
-                            + Traversal.simplePathToString( foundPath, NAME_KEY ) );
+                            + Paths.simplePathToString( foundPath, NAME_KEY ) );
         // END SNIPPET: shortestPathUsage
 
         System.out.println( "Shutting down database ..." );

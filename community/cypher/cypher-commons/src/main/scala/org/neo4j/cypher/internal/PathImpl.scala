@@ -23,7 +23,7 @@ import java.util.{Iterator => JavaIterator}
 import java.lang.{Iterable => JavaIterable}
 import collection.JavaConverters._
 import collection.mutable
-import org.neo4j.kernel.Traversal
+import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 
 case class PathImpl(pathEntities: PropertyContainer*)
@@ -74,7 +74,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
     pathEntities.foreach(f(_))
   }
 
-  override def toString(): String = Traversal.defaultPathToString(this)
+  override def toString(): String = Paths.defaultPathToString(this)
 
   override def canEqual(that: Any) = that != null && that.isInstanceOf[Path]
 

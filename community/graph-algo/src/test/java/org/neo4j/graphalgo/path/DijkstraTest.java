@@ -19,25 +19,21 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import common.Neo4jAlgoTestCase;
 import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.Traversal;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.*;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
@@ -51,7 +47,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "B", "C", "length", 3d );
         graph.makeEdge( "A", "C", "length", 10d );
 
-        Dijkstra algo = new Dijkstra( Traversal.expanderForAllTypes(),
+        Dijkstra algo = new Dijkstra( PathExpanders.allTypesAndDirections(),
                 CommonEvaluators.doubleCostEvaluator( "length" ) );
 
         Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
@@ -74,7 +70,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2d );
         graph.makeEdge( "A", "C", "length", 5d );
 
-        Dijkstra algo = new Dijkstra( Traversal.expanderForAllTypes(),
+        Dijkstra algo = new Dijkstra( PathExpanders.allTypesAndDirections(),
                 CommonEvaluators.doubleCostEvaluator( "length" ) );
 
         Iterator<WeightedPath> paths = algo.findAllPaths( nodeA, nodeC ).iterator();
@@ -117,7 +113,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         graph.makeEdge( "C", "F", "length", 12d );
         graph.makeEdge( "A", "F", "length", 25d );
 
-        Dijkstra algo = new Dijkstra( Traversal.expanderForAllTypes(),
+        Dijkstra algo = new Dijkstra( PathExpanders.allTypesAndDirections(),
                 CommonEvaluators.doubleCostEvaluator( "length" ) );
 
         // Try the search in both directions.

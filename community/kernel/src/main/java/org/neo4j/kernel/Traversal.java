@@ -24,6 +24,7 @@ import org.neo4j.graphdb.Expander;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
@@ -49,7 +50,8 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
  * {@link org.neo4j.graphdb.GraphDatabaseService#bidirectionalTraversalDescription} plus
  * {@link org.neo4j.graphdb.PathExpanders}, {@link org.neo4j.graphdb.traversal.SideSelectorPolicies},
  * {@link org.neo4j.graphdb.traversal.BranchOrderingPolicies},
- * {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies} and {@link org.neo4j.graphdb.traversal.Uniqueness}
+ * {@link org.neo4j.graphdb.traversal.BranchCollisionPolicies},
+ * {@link org.neo4j.graphdb.traversal.Paths} and {@link org.neo4j.graphdb.traversal.Uniqueness}
  */
 @Deprecated
 public class Traversal
@@ -331,7 +333,7 @@ public class Traversal
     @Deprecated
     public static <STATE> PathExpander<STATE> pathExpanderForAllTypes()
     {
-        return pathExpanderForAllTypes( Direction.BOTH );
+        return PathExpanders.allTypesAndDirections();
     }
 
     /**
@@ -363,6 +365,10 @@ public class Traversal
         return StandardExpander.create( direction );
     }
 
+    /**
+     * @deprecated Because {@link RelationshipExpander} is deprecated. Use {@link PathExpander} instead.
+     */
+    @Deprecated
     public static Expander expander( PathExpander expander )
     {
         if ( expander instanceof Expander )
@@ -376,7 +382,9 @@ public class Traversal
      * Returns a {@link RelationshipExpander} wrapped as an {@link Expander}.
      * @param expander {@link RelationshipExpander} to wrap.
      * @return a {@link RelationshipExpander} wrapped as an {@link Expander}.
+     * @deprecated Because {@link RelationshipExpander} is deprecated. Use {@link PathExpander} instead.
      */
+    @Deprecated
     public static Expander expander( RelationshipExpander expander )
     {
         if ( expander instanceof Expander )
@@ -482,7 +490,9 @@ public class Traversal
     /**
      * Provides hooks to help build a string representation of a {@link Path}.
      * @param <T> the type of {@link Path}.
+     * @deprecated Use {@link org.neo4j.graphdb.traversal.Paths.PathDescriptor} instead
      */
+    @Deprecated
     public interface PathDescriptor<T extends Path>
     {
         /**
@@ -511,7 +521,9 @@ public class Traversal
      * The default {@link PathDescriptor} used in common toString()
      * representations in classes implementing {@link Path}.
      * @param <T> the type of {@link Path}.
+     * @deprecated Use {@link org.neo4j.graphdb.traversal.Paths.DefaultPathDescriptor} instead.
      */
+    @Deprecated
     public static class DefaultPathDescriptor<T extends Path> implements PathDescriptor<T>
     {
         @Override
@@ -546,7 +558,10 @@ public class Traversal
      * @param builder the {@link PathDescriptor} to get
      * {@link Node} and {@link Relationship} representations from.
      * @return a string representation of a {@link Path}.
+     * @deprecated Use {@link org.neo4j.graphdb.traversal.Paths#pathToString(org.neo4j.graphdb.Path,
+     *             org.neo4j.graphdb.traversal.Paths.PathDescriptor)} instead.
      */
+    @Deprecated
     public static <T extends Path> String pathToString( T path, PathDescriptor<T> builder )
     {
         Node current = path.startNode();
@@ -568,7 +583,9 @@ public class Traversal
      * the {@link DefaultPathDescriptor} to get representations.
      * @param path the {@link Path} to build a string representation of.
      * @return the default string representation of a {@link Path}.
+     * @deprecated Use {@link org.neo4j.graphdb.traversal.Paths#defaultPathToString(org.neo4j.graphdb.Path)} instead.
      */
+    @Deprecated
     public static String defaultPathToString( Path path )
     {
         return pathToString( path, new DefaultPathDescriptor<Path>() );
@@ -579,7 +596,9 @@ public class Traversal
      * doesn't print relationship types or ids, just directions.
      * @param path the {@link Path} to build a string representation of.
      * @return a quite simple representation of a {@link Path}.
+     * @deprecated Use {@link org.neo4j.graphdb.traversal.Paths#simplePathToString(org.neo4j.graphdb.Path)} instead.
      */
+    @Deprecated
     public static String simplePathToString( Path path )
     {
         return pathToString( path, new DefaultPathDescriptor<Path>()
@@ -601,7 +620,10 @@ public class Traversal
      * exist, the id is used.
      * @param path the {@link Path} to build a string representation of.
      * @return a quite simple representation of a {@link Path}.
+     * @deprecated Use {@link org.neo4j.graphdb.traversal.Paths#simplePathToString(org.neo4j.graphdb.Path, String)}
+     *             instead.
      */
+    @Deprecated
     public static String simplePathToString( Path path, final String nodePropertyKey )
     {
         return pathToString( path, new DefaultPathDescriptor<Path>()
@@ -621,6 +643,10 @@ public class Traversal
         } );
     }
 
+    /**
+     * @deprecated This was an experimental feature which we have rolled back.
+     */
+    @Deprecated
     public static PathDescription path()
     {
         return new PathDescription();

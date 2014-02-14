@@ -24,7 +24,6 @@ import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,10 +32,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
-import static org.neo4j.kernel.Traversal.pathExpanderForAllTypes;
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 @Ignore( "Not a test, just nice to have" )
@@ -70,7 +68,7 @@ public class AStarPerformanceIT
                 new long[] {188345, 158468}
         };
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );
-        PathFinder<WeightedPath> algo = aStar( pathExpanderForAllTypes(),
+        PathFinder<WeightedPath> algo = aStar( allTypesAndDirections(),
                 doubleCostEvaluator( "weight", 0 ), GeoDataGenerator.estimateEvaluator() );
         for ( int i = 0; i < 10; i++ )
         {

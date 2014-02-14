@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchState;
@@ -57,9 +58,8 @@ import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.Traversal.expanderForAllTypes;
-import static org.neo4j.kernel.Traversal.expanderForTypes;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
 {
@@ -95,7 +95,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 assertPaths( paths, "s,t", "s,t" );
                 assertPaths( asList( finder.findSinglePath( graph.getNode( "s" ), graph.getNode( "t" ) ) ), "s,t" );
             }
-        }, expanderForTypes( R1, BOTH ), 1 );
+        }, PathExpanders.forTypeAndDirection( R1, BOTH ), 1 );
     }
 
     @Test
@@ -124,7 +124,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
                 assertPaths( paths, "s,m,o,t", "s,n,o,t" );
             }
-        }, expanderForTypes( R1, BOTH ), 6 );
+        }, PathExpanders.forTypeAndDirection( R1, BOTH ), 6 );
     }
 
     @Test
@@ -156,7 +156,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 assertPaths( finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) ),
                         "s,1,2,t", "s,1,4,t", "s,3,2,t", "s,3,4,t" );
             }
-        }, expanderForTypes( R1, BOTH ), 3 );
+        }, PathExpanders.forTypeAndDirection( R1, BOTH ), 3 );
     }
 
     @Test
@@ -178,7 +178,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "j" ) ), "a,g,h,i,j" );
             }
-        }, expanderForTypes( R1, OUTGOING ), 4 );
+        }, PathExpanders.forTypeAndDirection( R1, OUTGOING ), 4 );
     }
 
     @Test
@@ -229,7 +229,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 Node e = graph.getNode( "e" );
                 assertPaths( finder.findAllPaths( a, e ), "a,b,c,e", "a,b,c,e" );
             }
-        }, expanderForTypes( R1, BOTH ), 6 );
+        }, PathExpanders.forTypeAndDirection( R1, BOTH ), 6 );
     }
 
     @Test
@@ -287,7 +287,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 assertPaths( finder.findAllPaths( a, d ), "a,g,h,d" );
             }
-        }, Traversal.expanderForAllTypes().addNodeFilter( filter ), 10 );
+        }, ((StandardExpander)PathExpanders.allTypesAndDirections()).addNodeFilter( filter ), 10 );
     }
 
     @Test
@@ -306,7 +306,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "b" ) ) );
             }
-        }, Traversal.emptyExpander(), 0 );
+        }, PathExpanders.allTypesAndDirections(), 0 );
 
         testShortestPathFinder( new PathFinderTester()
         {
@@ -316,7 +316,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "c" ) ) );
                 assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
             }
-        }, Traversal.emptyExpander(), 1 );
+        }, PathExpanders.allTypesAndDirections(), 1 );
 
         testShortestPathFinder( new PathFinderTester()
         {
@@ -326,7 +326,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
                 assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
             }
-        }, Traversal.emptyExpander(), 2 );
+        }, PathExpanders.allTypesAndDirections(), 2 );
     }
 
     @Test
@@ -390,7 +390,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 Node end = graph.getNode( "i" );
                 assertPaths( finder.findAllPaths( start, end ), "a,b,c,d,e,f,g,i", "a,b,c,d,e,f,h,i" );
             }
-        }, expanderForTypes( R1, INCOMING ), 10 );
+        }, PathExpanders.forTypeAndDirection( R1, INCOMING ), 10 );
     }
 
     @Test
@@ -419,7 +419,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 assertPaths( finder.findAllPaths( graph.getNode( "m" ), graph.getNode( "p" ) ), "m,s,n,p", "m,o,n,p" );
             }
-        }, expanderForTypes( R1, BOTH ), 3 );
+        }, PathExpanders.forTypeAndDirection( R1, BOTH ), 3 );
     }
 
     @Test
@@ -442,7 +442,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
 
         final Node a = graph.getNode( "a" );
         final Node e = graph.getNode( "e" );
-        RelationshipExpander expander = expanderForTypes( R1, OUTGOING );
+        PathExpander expander = PathExpanders.forTypeAndDirection( R1, OUTGOING );
 
         testShortestPathFinder( new PathFinderTester()
         {
@@ -491,7 +491,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 assertPathDef( finder.findSinglePath( a, c ), "a", "c" );
             }
-        }, expanderForTypes( R1, OUTGOING ), 2 );
+        }, PathExpanders.forTypeAndDirection( R1, OUTGOING ), 2 );
 
         testShortestPathFinder( new PathFinderTester()
         {
@@ -500,7 +500,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             {
                 assertPathDef( finder.findSinglePath( c, a ), "c", "a" );
             }
-        }, expanderForTypes( R1, INCOMING ), 2 );
+        }, PathExpanders.forTypeAndDirection( R1, INCOMING ), 2 );
     }
 
     @Ignore("Exposes a problem where the expected path isn't returned")
@@ -524,7 +524,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node a = graph.getNode( "a" );
         Node c = graph.getNode( "c" );
 
-        assertPaths( new ShortestPath( 3, expanderForTypes( R1 ), 10, true ).findAllPaths( a, c ), "a,d,b,c" );
+        assertPaths( new ShortestPath( 3, PathExpanders.forType( R1 ), 10, true ).findAllPaths( a, c ), "a,d,b,c" );
     }
 
     @Test
@@ -546,21 +546,21 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node start = graph.getNode( "start" );
         Node end = graph.getNode( "end" );
 
-        assertThat( new ShortestPath( 2, expanderForAllTypes(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
-        assertThat( new ShortestPath( 3, expanderForAllTypes(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+        assertThat( new ShortestPath( 2, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+        assertThat( new ShortestPath( 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
     }
     
-    private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth )
+    private void testShortestPathFinder( PathFinderTester tester, PathExpander expander, int maxDepth )
     {
         testShortestPathFinder( tester, expander, maxDepth, null );
     }
 
-    private void testShortestPathFinder( PathFinderTester tester, RelationshipExpander expander, int maxDepth,
+    private void testShortestPathFinder( PathFinderTester tester, PathExpander expander, int maxDepth,
                                          Integer maxResultCount )
     {
-        LengthCheckingExpanderWrapper lengthChecker = new LengthCheckingExpanderWrapper( StandardExpander.toPathExpander( expander ) );
+        LengthCheckingExpanderWrapper lengthChecker = new LengthCheckingExpanderWrapper( expander );
         
-        List<PathFinder<Path>> finders = new ArrayList<PathFinder<Path>>();
+        List<PathFinder<Path>> finders = new ArrayList<>();
         finders.add( maxResultCount != null ? shortestPath( lengthChecker, maxDepth, maxResultCount ) : shortestPath(
                 lengthChecker, maxDepth ) );
         finders.add( maxResultCount != null ? new TraversalShortestPath( lengthChecker, maxDepth,
