@@ -36,11 +36,12 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (Object, => O
   @throws(classOf[SyntaxException])
   def prepare(query: String, context: PlanContext): ExecutionPlan = {
     val statement = parser.parse(query)
-    statement.semanticCheck(SemanticState.clean).errors.map { error =>
-      throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
-    }
 
     queryCache(statement, {
+      statement.semanticCheck(SemanticState.clean).errors.map { error =>
+        throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
+      }
+
       val parsedQuery = ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
       parsedQuery.verifySemantics()
       verify(parsedQuery)
