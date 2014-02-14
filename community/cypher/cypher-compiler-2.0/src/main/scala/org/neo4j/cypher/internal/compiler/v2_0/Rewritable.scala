@@ -19,86 +19,110 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
+import java.lang.reflect.Method
+import scala.collection.mutable.{HashMap => MutableHashMap}
+import scala.collection.{GenIterable, IterableLike}
+
 object Rewriter {
-  implicit class LiftedRewriter(f: (Any => Option[Any])) extends Rewriter {
-    def apply(term: Any): Option[Any] = f.apply(term)
+  implicit class LiftedRewriter(f: (AnyRef => Option[AnyRef])) extends Rewriter {
+    def apply(that: AnyRef): Option[AnyRef] = f.apply(that)
   }
-  def lift(f: PartialFunction[Any, Any]): Rewriter = f.lift
+  def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.lift
 }
 
-trait Rewriter extends (Any => Option[Any])
+trait Rewriter extends (AnyRef => Option[AnyRef])
 
 
 object Rewritable {
   import Foldable._
 
-  implicit class DuplicatableAny(val any: Any) extends AnyVal {
-    def dup(rewriter: Any => Any): Any = any match {
-      case p: Product =>
-        val terms = p.children
-        val rewrittenTerms = terms.map(rewriter)
-        if (terms == rewrittenTerms)
+  implicit class IterableLikeEq[A <: AnyRef](val iterable: IterableLike[A, _]) {
+    def eqElements[B <: AnyRef](that: GenIterable[B]): Boolean = {
+      val these = iterable.iterator
+      val those = that.iterator
+      while (these.hasNext && those.hasNext) {
+        if (!(these.next eq those.next))
+          return false
+      }
+      !these.hasNext && !those.hasNext
+    }
+  }
+
+  implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
+    def dup(rewriter: AnyRef => AnyRef): AnyRef = that match {
+      case p: Product with AnyRef =>
+        val children = p.children.toSeq
+        val rewrittenChildren = children.map(rewriter)
+        if (children eqElements rewrittenChildren)
           p
         else
-          p.dup(rewrittenTerms)
+          p.dup(rewrittenChildren).asInstanceOf[AnyRef]
       case s: IndexedSeq[_] =>
-        s.map(rewriter)
+        s.asInstanceOf[IndexedSeq[AnyRef]].map(rewriter)
       case s: Seq[_] =>
-        s.map(rewriter)
+        s.asInstanceOf[Seq[AnyRef]].map(rewriter)
       case t =>
         t
     }
   }
 
+  private val productCopyConstructors = new ThreadLocal[MutableHashMap[Class[_], Method]]() {
+    override def initialValue: MutableHashMap[Class[_], Method] = new MutableHashMap[Class[_], Method]
+  }
+
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
-    def dup(children: IndexedSeq[Any]): Product = product match {
+    def dup(children: Seq[AnyRef]): Product = product match {
       case a: Rewritable =>
         a.dup(children)
       case _ =>
-        val constructor = product.getClass.getMethods.find(_.getName == "copy").get
-        constructor.invoke(product, children.map(_.asInstanceOf[AnyRef]): _*).asInstanceOf[Product]
+        copyConstructor.invoke(product, children.toSeq: _*).asInstanceOf[Product]
+    }
+
+    def copyConstructor: Method = {
+      val productClass = product.getClass
+      productCopyConstructors.get.getOrElseUpdate(productClass, productClass.getMethods.find(_.getName == "copy").get)
     }
   }
 
-  implicit class RewritableAny(val any: Any) extends AnyVal {
-    def rewrite(rewriter: Rewriter): Any = rewriter.apply(any).getOrElse(any)
+  implicit class RewritableAny(val that: AnyRef) extends AnyVal {
+    def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that).getOrElse(that)
   }
 }
 
 trait Rewritable {
-  def dup(children: IndexedSeq[Any]): this.type
+  def dup(children: Seq[AnyRef]): this.type
 }
 
 case class topDown(rewriters: Rewriter*) extends Rewriter {
   import Rewritable._
-  def apply(term: Any): Some[Any] = {
-    val rewrittenTerm = rewriters.foldLeft(term) {
+  def apply(that: AnyRef): Some[AnyRef] = {
+    val rewrittenThat = rewriters.foldLeft(that) {
       (t, r) => t.rewrite(r)
     }
-    Some(rewrittenTerm.dup(t => this.apply(t).get))
+    Some(rewrittenThat.dup(t => this.apply(t).get))
   }
 }
 
 case class untilMatched(rewriter: Rewriter) extends Rewriter {
   import Rewritable._
-  def apply(term: Any): Some[Any] =
-    Some(rewriter.apply(term).getOrElse(term.dup(t => this.apply(t).get)))
+  def apply(that: AnyRef): Some[AnyRef] =
+    Some(rewriter.apply(that).getOrElse(that.dup(t => this.apply(t).get)))
 }
 
 case class bottomUp(rewriters: Rewriter*) extends Rewriter {
   import Rewritable._
-  def apply(term: Any): Some[Any] =
-    Some(rewriters.foldLeft(term.dup(t => this.apply(t).get)) {
+  def apply(that: AnyRef): Some[AnyRef] =
+    Some(rewriters.foldLeft(that.dup(t => this.apply(t).get)) {
       (t, r) => t.rewrite(r)
     })
 }
 
 case class bottomUpRepeated(rewriter: Rewriter) extends Rewriter {
   import Rewritable._
-  def apply(term: Any): Some[Any] = {
-    val rewrittenTerm = term.dup(t => this.apply(t).get)
-    rewriter.apply(rewrittenTerm).fold(Some(rewrittenTerm)) {
-      t => if (t == term)
+  def apply(that: AnyRef): Some[AnyRef] = {
+    val rewrittenThat = that.dup(t => this.apply(t).get)
+    rewriter.apply(rewrittenThat).fold(Some(rewrittenThat)) {
+      t => if (t eq that)
         Some(t)
       else
         Some(t.rewrite(this))
@@ -108,10 +132,10 @@ case class bottomUpRepeated(rewriter: Rewriter) extends Rewriter {
 
 case class repeat(rewriter: Rewriter) extends Rewriter {
   import Rewritable._
-  def apply(term: Any): Option[Any] =
-    rewriter.apply(term).map {
-      t => if (t == term)
-        term
+  def apply(that: AnyRef): Option[AnyRef] =
+    rewriter.apply(that).map {
+      t => if (t eq that)
+        that
       else
         t.rewrite(this)
     }

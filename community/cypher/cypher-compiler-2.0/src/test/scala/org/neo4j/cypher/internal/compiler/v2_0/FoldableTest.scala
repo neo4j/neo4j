@@ -40,4 +40,25 @@ class FoldableTest extends CypherTestSuite {
 
     assert(result === 200)
   }
+
+  test("should tree fold over all objects") {
+    val ast = Add(Val(55), Add(Val(43), Val(52)))
+
+    val result = ast.foldt(50) {
+      case Val(x) => (acc, r) => r(acc + x)
+    }
+
+    assert(result === 200)
+  }
+
+  test("should be able to stop-recursion in tree fold") {
+    val ast = Add(Val(55), Add(Val(43), Val(52)))
+
+    val result = ast.foldt(50) {
+      case Val(x) => (acc, r) => r(acc + x)
+      case Add(Val(43), _) => (acc, _) => acc + 20
+    }
+
+    assert(result === 125)
+  }
 }

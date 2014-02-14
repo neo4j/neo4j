@@ -50,8 +50,8 @@ class ASTNodeTest extends CypherTestSuite {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
     val result = ast.rewrite(bottomUp(Rewriter.lift {
-      case i: Int =>
-        i * i
+      case Val(i) =>
+        Val(i * i)
       case Add(Val(x), Val(y)) =>
         Val(x + y)
     }))
@@ -65,7 +65,7 @@ class ASTNodeTest extends CypherTestSuite {
     val ast = Add(Val(1), AddWithPos(Val(2), Val(3))(DummyPosition(0)))
 
     val result = ast.rewrite(topDown(Rewriter.lift {
-      case _: Int => 99
+      case Val(_) => Val(99)
     }))
 
     assert(result === Add(Val(99), AddWithPos(Val(99), Val(99))(DummyPosition(0))))
