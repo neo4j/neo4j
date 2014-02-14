@@ -442,6 +442,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         return labelScanStore;
     }
 
+    public LockService getLockService()
+    {
+        return locks;
+    }
+
     @Override
     public void stop()
     {

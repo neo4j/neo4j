@@ -108,7 +108,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
     }
 
-    @Test(timeout = 300)
+    @Test(timeout = 1000)
     public void shouldBlockUniqueNodeLookupFromCompetingTransaction() throws Exception
     {
         // This is the interleaving that we are trying to verify works correctly:
@@ -185,6 +185,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
                                 equalTo( "IndexEntryLock{labelId=0, propertyKeyId=0, propertyValue=value}" ) );
                         break spinUntilBlocking;
                     }
+                    Thread.yield();
                 }
             }
 

@@ -31,19 +31,8 @@ import org.neo4j.kernel.impl.util.DiffSets;
 
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
-    public interface Lookup
-    {
-        Long currentlyIndexedNode( Object value ) throws IOException;
-    }
-
-    private final Lookup lookup;
     private final Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
     private final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
-
-    public UniquePropertyIndexUpdater( Lookup lookup )
-    {
-        this.lookup = lookup;
-    }
 
     @Override
     public void process( NodePropertyUpdate update )
@@ -52,14 +41,14 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
         switch ( update.getUpdateMode() )
         {
             case ADDED:
-                propertyValueDiffSet( referenceCount, update.getValueAfter() ).add( update.getNodeId() );
+                propertyValueDiffSet( update.getValueAfter() ).add( update.getNodeId() );
                 break;
             case CHANGED:
-                propertyValueDiffSet( referenceCount, update.getValueBefore() ).remove( update.getNodeId() );
-                propertyValueDiffSet( referenceCount, update.getValueAfter() ).add( update.getNodeId() );
+                propertyValueDiffSet( update.getValueBefore() ).remove( update.getNodeId() );
+                propertyValueDiffSet( update.getValueAfter() ).add( update.getNodeId() );
                 break;
             case REMOVED:
-                propertyValueDiffSet( referenceCount, update.getValueBefore() ).remove( update.getNodeId() );
+                propertyValueDiffSet( update.getValueBefore() ).remove( update.getNodeId() );
                 break;
             default:
                 throw new UnsupportedOperationException();
@@ -72,30 +61,6 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        // This has been commented out for now. See trello card #1039.
-
-//        // verify uniqueness
-//        for ( Map.Entry<Object, DiffSets<Long>> entry : referenceCount.entrySet() )
-//        {
-//            Object value = entry.getKey();
-//            int delta = entry.getValue().delta();
-//            if ( delta > 1 )
-//            {
-//                throw new DuplicateIndexEntryConflictException( value, asSet( entry.getValue().getAdded() ) );
-//            }
-//            if ( delta == 1 )
-//            {
-//                Long addedNode = single( entry.getValue().getAdded() );
-//
-//                Long existingNode = lookup.currentlyIndexedNode( value );
-//
-//                if ( existingNode != null && !addedNode.equals( existingNode ) )
-//                {
-//                    throw new PreexistingIndexEntryConflictException( value, existingNode, addedNode );
-//                }
-//            }
-//        }
-
         // flush updates
         flushUpdates( updates );
     }
@@ -103,7 +68,7 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     protected abstract void flushUpdates( Iterable<NodePropertyUpdate> updates )
             throws IOException, IndexEntryConflictException;
 
-    private static DiffSets<Long> propertyValueDiffSet( Map<Object, DiffSets<Long>> referenceCount, Object value )
+    private DiffSets<Long> propertyValueDiffSet( Object value )
     {
         DiffSets<Long> diffSets = referenceCount.get( value );
         if ( diffSets == null )

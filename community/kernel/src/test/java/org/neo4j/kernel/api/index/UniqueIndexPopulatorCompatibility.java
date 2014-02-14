@@ -19,22 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.junit.Ignore;
 import org.junit.Test;
-
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-
-import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -49,6 +41,9 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
         super( testSuite );
     }
 
+    /**
+     * This is also checked by the UniqueConstraintCompatibility test, only not on this abstraction level.
+     */
     @Test
     public void shouldProvidePopulatorThatEnforcesUniqueConstraints() throws Exception
     {
@@ -80,101 +75,6 @@ public class UniqueIndexPopulatorCompatibility extends IndexProviderCompatibilit
             assertEquals( nodeId1, conflict.getExistingNodeId() );
             assertEquals( value, conflict.getPropertyValue() );
             assertEquals( nodeId2, conflict.getAddedNodeId() );
-        }
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldProvideAccessorThatEnforcesUniqueConstraintsAgainstDataAddedOnline() throws Exception
-    {
-        // given
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( true ) );
-        populator.create();
-        populator.close( true );
-
-        // when
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( true ) );
-        updateAccessor( accessor, asList( NodePropertyUpdate.add( 1, 11, "value1",
-                new long[]{4} ) ) );
-        try
-        {
-            updateAccessor( accessor, asList( NodePropertyUpdate.add( 2, 11, "value1", new long[]{4} ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( "value1", conflict.getPropertyValue() );
-            assertEquals( 2, conflict.getAddedNodeId() );
-        }
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldProvideAccessorThatEnforcesUniqueConstraintsAgainstDataAddedThroughPopulator() throws Exception
-    {
-        // given
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( true ) );
-        populator.create();
-        populator.add( 1, "value1" );
-        populator.close( true );
-
-        // when
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( true ) );
-        try
-        {
-            updateAccessor( accessor, asList( NodePropertyUpdate.add( 2, 11, "value1", new long[]{4} ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( "value1", conflict.getPropertyValue() );
-            assertEquals( 2, conflict.getAddedNodeId() );
-        }
-    }
-
-    @Ignore("Needs to be rephrased in UniqueConstraintCompatibility")
-    @Test
-    public void shouldProvideAccessorThatEnforcesUniqueConstraintsAgainstDataAddedInSameTx() throws Exception
-    {
-        // given
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, new IndexConfiguration( true ) );
-        populator.create();
-        populator.close( true );
-
-        // when
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, new IndexConfiguration( true ) );
-        try
-        {
-           updateAccessor( accessor, asList(
-                   NodePropertyUpdate.add( 1, 11, "value1", new long[]{4} ),
-                   NodePropertyUpdate.add( 2, 11, "value1", new long[]{4} ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( DuplicateIndexEntryConflictException conflict )
-        {
-            assertEquals( "value1", conflict.getPropertyValue() );
-            assertEquals( asSet( 1l, 2l ), conflict.getConflictingNodeIds() );
-        }
-    }
-
-
-    private static void updateAccessor( IndexAccessor accessor, List<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException
-    {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            for ( NodePropertyUpdate update : updates )
-            {
-                updater.process( update );
-            }
         }
     }
 }

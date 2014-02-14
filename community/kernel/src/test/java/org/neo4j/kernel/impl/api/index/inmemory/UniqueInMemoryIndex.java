@@ -32,9 +32,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUpdater.Lookup
+class UniqueInMemoryIndex extends InMemoryIndex
 {
     private final int propertyKeyId;
 
@@ -46,7 +45,7 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
     @Override
     protected IndexUpdater newUpdater( final IndexUpdateMode mode, final boolean populating )
     {
-        return new UniquePropertyIndexUpdater( UniqueInMemoryIndex.this )
+        return new UniquePropertyIndexUpdater()
         {
             @Override
             protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
@@ -81,13 +80,6 @@ class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUp
                 }
             }
         };
-    }
-
-    @Override
-    public Long currentlyIndexedNode( Object value ) throws IOException
-    {
-        PrimitiveLongIterator nodes = lookup( value );
-        return nodes.hasNext() ? nodes.next() : null;
     }
 
     @Override

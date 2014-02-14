@@ -23,23 +23,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.index.DuplicateIndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
@@ -122,99 +117,6 @@ public class UniqueLuceneIndexAccessorTest
         assertEquals( asList( 1l ), getAllNodes( "value2" ) );
     }
 
-    @Ignore("Rephrase in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectChangingEntryToAlreadyIndexedValue() throws Exception
-    {
-        // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
-
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
-
-        // when
-        try
-        {
-            updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value2", 2l, 1l );
-        }
-    }
-
-    @Ignore("Rephrase in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange() throws Exception
-    {
-        // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
-
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor,  asList( change( 1l, "value1", "value2" ) ) );
-
-        // when
-        try
-        {
-            updateAndCommit( accessor,  asList( add( 2l, "value2" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value2", 1l, 2l );
-        }
-    }
-
-    @Ignore("Rephrase in UniqueConstriaintCompatibility")
-    @Test
-    public void shouldRejectEntryWithAlreadyIndexedValue() throws Exception
-    {
-        // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
-
-        updateAndCommit( accessor,  asList( add( 1l, "value1" ) ) );
-
-        // when
-        try
-        {
-            updateAndCommit( accessor,  asList( add( 2l, "value1" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( PreexistingIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value1", 1l, 2l );
-        }
-    }
-
-    @Ignore("Rephrase in UniqueConstraintCompatibility")
-    @Test
-    public void shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues() throws Exception
-    {
-        // given
-        UniqueLuceneIndexAccessor accessor = createAccessor();
-
-        // when
-        try
-        {
-            updateAndCommit( accessor,  asList( add( 1l, "value1" ),
-                    add( 2l, "value1" ) ) );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( DuplicateIndexEntryConflictException conflict )
-        {
-            assertConflict( conflict, "value1", 1l, 2l );
-        }
-    }
-
     private UniqueLuceneIndexAccessor createAccessor() throws IOException
     {
         return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(), new IndexWriterStatus(),
@@ -240,20 +142,6 @@ public class UniqueLuceneIndexAccessorTest
     {
         return AllNodesCollector.getAllNodes( directoryFactory, indexDirectory, propertyValue );
     }
-
-    private void assertConflict( PreexistingIndexEntryConflictException conflict, String propertyValue,
-                                 long existingNode, long addedNode )
-    {
-        assertEquals( propertyValue, conflict.getPropertyValue() );
-        assertEquals( existingNode, conflict.getExistingNodeId() );
-        assertEquals( addedNode, conflict.getAddedNodeId() );
-    }
-
-    private void assertConflict( DuplicateIndexEntryConflictException conflict, String propertyValue, Long... nodes )
-    {
-        assertEquals( propertyValue, conflict.getPropertyValue() );
-        assertEquals( asSet( nodes ), conflict.getConflictingNodeIds() );
-    }
     
     private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
             throws IOException, IndexEntryConflictException
@@ -266,6 +154,4 @@ public class UniqueLuceneIndexAccessorTest
             }
         }
     }
-
-
 }

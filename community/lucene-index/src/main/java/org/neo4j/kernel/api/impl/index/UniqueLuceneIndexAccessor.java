@@ -22,17 +22,13 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TopDocs;
-
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
-class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePropertyIndexUpdater.Lookup
+class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                       LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
@@ -53,26 +49,6 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
             /* If we are in recovery, don't handle the business logic of validating uniqueness. */
             return super.newUpdater( mode );
         }
-    }
-
-    @Override
-    public Long currentlyIndexedNode( Object value ) throws IOException
-    {
-        IndexSearcher searcher = searcherManager.acquire();
-        try
-        {
-            TopDocs docs = searcher.search( documentStructure.newQuery( value ), 1 );
-            if ( docs.scoreDocs.length > 0 )
-            {
-                Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
-                return documentStructure.getNodeId( doc );
-            }
-        }
-        finally
-        {
-            searcherManager.release( searcher );
-        }
-        return null;
     }
 
     /* The fact that this is here is a sign of a design error, and we should revisit and
@@ -110,7 +86,6 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePro
 
         public LuceneUniquePropertyIndexUpdater( IndexUpdater delegate )
         {
-            super( UniqueLuceneIndexAccessor.this );
             this.delegate = delegate;
         }
 
