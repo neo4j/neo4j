@@ -40,6 +40,13 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
   def symbolTableDependencies = arg.symbolTableDependencies
 }
 
+object StringHelper {
+  implicit class RichString(val text: String) extends AnyVal {
+    def stripLinesAndMargins: String =
+      text.stripMargin.filter( (ch: Char) => Character.isDefined(ch) && !Character.isISOControl(ch) )
+  }
+}
+
 trait StringHelper {
   protected def asString(a: Any): String = a match {
     case null      => null
