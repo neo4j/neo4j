@@ -39,8 +39,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    val (plan, tx) = prepare(query)
-    plan.profile(graphAPI, tx, txBridge.instance(), params)
+    val (plan, extractedParams, tx) = prepare(query)
+    plan.profile(graphAPI, tx, txBridge.instance(), params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
@@ -56,15 +56,15 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    val (plan, tx) = prepare(query)
-    plan.execute(graphAPI, tx, txBridge.instance(), params)
+    val (plan, extractedParams, tx) = prepare(query)
+    plan.execute(graphAPI, tx, txBridge.instance(), params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, Transaction)=  {
+  private def prepare(query: String): (ExecutionPlan, Map[String, Any], Transaction)=  {
 
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
@@ -72,10 +72,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       var touched = false
       val tx = graph.beginTx()
       val statement = txBridge.instance()
-      val plan = try {
+      val (plan, extractedParameters) = try {
         // fetch plan cache
         val (planCache, compiler) = getOrCreateFromSchemaState(statement,
-          (new LRUCache[String, ExecutionPlan](getPlanCacheSize), createCompiler())
+          (new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize), createCompiler())
         )
 
         // get plan or build it
@@ -101,7 +101,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
         statement.close()
-        return (plan, tx)
+        return (plan, extractedParameters, tx)
       }
 
       n += 1

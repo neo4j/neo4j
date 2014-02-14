@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import ast.convert.StatementConverters._
+import ast.rewriters._
 import commands.AbstractQuery
 import executionplan.{ExecutionPlanBuilder, ExecutionPlan}
 import executionplan.verifiers.HintVerifier
@@ -28,26 +29,51 @@ import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 
-
 case class CypherCompiler(graph: GraphDatabaseService, queryCache: (Object, => Object) => Object) {
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String, context: PlanContext): ExecutionPlan = {
-    val statement = parser.parse(query)
+  def prepare(query: String, context: PlanContext): (ExecutionPlan, Map[String,Any]) = {
 
-    queryCache(statement, {
+    def semanticCheck(statement: ast.Statement): Unit =
       statement.semanticCheck(SemanticState.clean).errors.map { error =>
         throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
       }
 
-      val parsedQuery = ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
-      parsedQuery.verifySemantics()
-      verify(parsedQuery)
-      val planBuilder = new ExecutionPlanBuilder(graph)
-      planBuilder.build(context, parsedQuery)
-    }).asInstanceOf[ExecutionPlan]
+    val statement = parser.parse(query)
+
+    val (rewrittenStatement, extractedParameters) = try {
+      rewriteStatement(statement)
+    } catch {
+      case e: Exception =>
+        semanticCheck(statement)
+        throw e
+    }
+
+    val plan = queryCache(rewrittenStatement, checkAndBuildPlan(statement, query, rewrittenStatement, context)).asInstanceOf[ExecutionPlan]
+
+    (plan, extractedParameters)
+  }
+
+  def rewriteStatement(statement: ast.Statement) = {
+    val (extractParameters, extractedParameters) = literalReplacement(statement)
+    val result = statement.rewrite(bottomUpExpressions(extractParameters)).asInstanceOf[ast.Statement]
+
+    (result, extractedParameters)
+  }
+
+  def checkAndBuildPlan(statement: ast.Statement, query: String, rewrittenStatement: ast.Statement, context: PlanContext): ExecutionPlan = {
+    // check original statement, not rewritten one
+    statement.semanticCheck(SemanticState.clean).errors.map {
+      error =>
+        throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
+    }
+    val parsedQuery = ReattachAliasedExpressions(rewrittenStatement.asQuery.setQueryText(query))
+    parsedQuery.verifySemantics()
+    verify(parsedQuery)
+    val planBuilder = new ExecutionPlanBuilder(graph)
+    planBuilder.build(context, parsedQuery)
   }
 
   def verify(query: AbstractQuery) {
