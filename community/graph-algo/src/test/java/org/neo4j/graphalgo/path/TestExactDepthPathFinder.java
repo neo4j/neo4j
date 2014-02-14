@@ -19,17 +19,16 @@
  */
 package org.neo4j.graphalgo.path;
 
-import static org.junit.Assert.assertNotNull;
-
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
-import org.neo4j.kernel.Traversal;
 
 import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertNotNull;
 
 public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
 {
@@ -53,19 +52,19 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "SUPER,7,8" );
         graph.makeEdgeChain( "SOURCE,z,9,0,TARGET" );
     }
-    
+
     private PathFinder<Path> newFinder()
     {
         return new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 4, 4 );
     }
-    
+
     @Test
     public void testSingle()
     {
         PathFinder<Path> finder = newFinder();
         Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
         assertNotNull( path );
-        assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" ); 
+        assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
     }
 
     @Test

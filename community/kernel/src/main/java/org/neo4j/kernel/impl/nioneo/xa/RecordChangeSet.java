@@ -40,11 +40,11 @@ public class RecordChangeSet implements RecordAccessSet
 
     public RecordChangeSet( NeoStore neoStore )
     {
-        this.nodeRecords = new RecordChanges<>( Loaders.nodeLoader( neoStore ), true );
-        this.propertyRecords = new RecordChanges<>( Loaders.propertyLoader( neoStore ), true );
-        this.relRecords = new RecordChanges<>( Loaders.relationshipLoader( neoStore ), false );
-        this.relGroupRecords = new RecordChanges<>( Loaders.relationshipGroupLoader( neoStore ), false );
-        this.schemaRuleChanges = new RecordChanges<>( Loaders.schemaRuleLoader( neoStore ), true );
+        this.nodeRecords = new RecordChanges<>( Loaders.nodeLoader( neoStore.getNodeStore() ), true );
+        this.propertyRecords = new RecordChanges<>( Loaders.propertyLoader( neoStore.getPropertyStore() ), true );
+        this.relRecords = new RecordChanges<>( Loaders.relationshipLoader( neoStore.getRelationshipStore() ), false );
+        this.relGroupRecords = new RecordChanges<>( Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ), false );
+        this.schemaRuleChanges = new RecordChanges<>( Loaders.schemaRuleLoader( neoStore.getSchemaStore() ), true );
     }
 
     @Override

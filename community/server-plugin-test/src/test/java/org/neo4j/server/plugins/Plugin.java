@@ -35,7 +35,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
-import org.neo4j.kernel.Traversal;
 
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class Plugin extends ServerPlugin
