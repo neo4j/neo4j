@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.scalatest.FunSuite
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.neo4j.cypher.internal.commons.CypherTestSuite
 
 object ASTNodeTest {
   trait Exp extends ASTNode
@@ -34,8 +32,7 @@ object ASTNodeTest {
   }
 }
 
-@RunWith(classOf[JUnitRunner])
-class ASTNodeTest extends FunSuite {
+class ASTNodeTest extends CypherTestSuite {
   import ASTNodeTest._
 
   test("rewrite should match and replace expressions") {

@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.neo4j.cypher.internal.commons.CypherTestSuite
 
-@RunWith(classOf[JUnitRunner])
-class SplitFunctionTest extends FunSuite with Matchers {
+class SplitFunctionTest extends CypherTestSuite {
 
   val nullSeq = null.asInstanceOf[Seq[String]]
   val nullString = null.asInstanceOf[String]

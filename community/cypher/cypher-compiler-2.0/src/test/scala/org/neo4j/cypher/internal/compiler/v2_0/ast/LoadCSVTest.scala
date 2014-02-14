@@ -19,14 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
-import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_0.{SemanticError, SemanticState, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_0.symbols._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.neo4j.cypher.internal.commons.CypherTestSuite
 
-@RunWith(classOf[JUnitRunner])
-class LoadCSVTest extends FunSuite {
+class LoadCSVTest extends CypherTestSuite {
   val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4))
   val identifier = Identifier("a")(DummyPosition(4))
 

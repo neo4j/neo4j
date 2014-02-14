@@ -17,27 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0
+package org.neo4j.cypher.internal.commons
 
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.scalatest.{Matchers, FunSuite}
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-object FoldableTest {
-  trait Exp extends Foldable
-  case class Val(int: Int) extends Exp
-  case class Add(lhs: Exp, rhs: Exp) extends Exp
-  case class Sum(args: Seq[Exp]) extends Exp
-}
-
-class FoldableTest extends CypherTestSuite {
-  import FoldableTest._
-
-  test("should fold value depth first over object tree") {
-    val ast = Add(Val(55), Add(Val(43), Val(52)))
-
-    val result = ast.fold(50) {
-      case Val(x) => acc => acc + x
-    }
-
-    assert(result === 200)
-  }
-}
+@RunWith(classOf[JUnitRunner])
+abstract class CypherTestSuite extends FunSuite with Matchers

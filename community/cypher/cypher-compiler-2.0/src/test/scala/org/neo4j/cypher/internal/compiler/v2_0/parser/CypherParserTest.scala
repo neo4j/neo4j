@@ -30,18 +30,16 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
-import org.scalatest.{Matchers, FunSuite}
+import org.scalatest.Matchers
 import java.net.URL
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.neo4j.cypher.internal.commons.CypherTestSuite
 
 object CypherParserTest {
   val cypherParser = CypherParser()
 }
 import CypherParserTest._
 
-@RunWith(classOf[JUnitRunner])
-class CypherParserTest extends FunSuite with Matchers {
+class CypherParserTest extends CypherTestSuite {
   test("shouldParseEasiestPossibleQuery") {
     expectAST(
       "start s = NODE(1) return s",
