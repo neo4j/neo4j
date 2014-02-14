@@ -24,7 +24,7 @@ import commands.{GreaterThan, True}
 import pipes._
 import pipes.matching._
 import symbols.CTInteger
-import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache}
+import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache, CypherCompiler => GeneralCypherCompiler}
 import org.neo4j.cypher._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.Traverser.Order
@@ -191,7 +191,8 @@ class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
     when(bridge.instance()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
-    when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,LRUCache[String, ExecutionPlan]](anyObject(), anyObject())).thenReturn(new LRUCache[String, ExecutionPlan](1))
+    when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,(LRUCache[String, ExecutionPlan], GeneralCypherCompiler.VersionProxy)](anyObject(), anyObject())).thenReturn(
+      (new LRUCache[String, ExecutionPlan](1), GeneralCypherCompiler(fakeGraph)))
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
