@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 import org.junit.Test
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_0.CleanupTask
-
 
 class QueryStateTest extends Assertions with MockitoSugar {
   @Test
@@ -45,7 +42,6 @@ class QueryStateTest extends Assertions with MockitoSugar {
   def case_class_copying_should_still_see_same_time() {
     //GIVEN
     val state = QueryStateHelper.empty
-    val mockDb = mock[GraphDatabaseService]
 
     //WHEN
     val ts1 = state.readTimeStamp()
@@ -61,7 +57,6 @@ class QueryStateTest extends Assertions with MockitoSugar {
   def if_state_is_copied_and_time_seen_in_one_querystate_it_should_be_reflected_in_copies() {
     //GIVEN
     val state = QueryStateHelper.empty
-    val mockDb = mock[GraphDatabaseService]
 
     //WHEN
     val stateCopy = state.copy(params = Map.empty)
@@ -77,21 +72,21 @@ class QueryStateTest extends Assertions with MockitoSugar {
   def add_cleanup_task() {
     //GIVEN
     val state = QueryStateHelper.empty
-    val cleanupTask = mock[CleanupTask]
+    val cleanupTask = mock[() => Unit]
 
     //WHEN
     state.addCleanupTask(cleanupTask)
 
     //THEN
-    assert(state.getCleanupTasks == Seq(cleanupTask))
+    assert(state.cleanupTasks == Seq(cleanupTask))
   }
 
   @Test
   def add_cleanup_task_copy() {
     //GIVEN
     val state = QueryStateHelper.empty
-    val cleanupTask = mock[CleanupTask]
-    val newCleanupTask = mock[CleanupTask]
+    val cleanupTask = mock[() => Unit]
+    val newCleanupTask = mock[() => Unit]
 
     //WHEN
     state.addCleanupTask(cleanupTask)
@@ -99,6 +94,6 @@ class QueryStateTest extends Assertions with MockitoSugar {
     state.addCleanupTask(newCleanupTask)
 
     //THEN
-    assert(copiedState.getCleanupTasks == Seq(cleanupTask, newCleanupTask))
+    assert(copiedState.cleanupTasks == Seq(cleanupTask, newCleanupTask))
   }
 }
