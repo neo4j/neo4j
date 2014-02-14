@@ -26,7 +26,7 @@ import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 
 class UniqueConstraintValidationAcceptanceTest
-  extends ExecutionEngineHelper with StatisticsChecker with Assertions with CollectionSupport {
+  extends ExecutionEngineJUnitSuite with StatisticsChecker with  CollectionSupport {
 
   @Test
   def should_enforce_uniqueness_constraint_on_create_node_with_label_and_property() {

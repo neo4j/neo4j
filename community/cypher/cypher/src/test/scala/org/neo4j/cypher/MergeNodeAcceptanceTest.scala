@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Node
 import org.scalautils.LegacyTripleEquals
 
 class MergeNodeAcceptanceTest
-  extends ExecutionEngineHelper with Assertions with StatisticsChecker with LegacyTripleEquals {
+  extends ExecutionEngineJUnitSuite with StatisticsChecker {
 
   @Test
   def merge_node_when_no_nodes_exist() {

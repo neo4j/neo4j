@@ -21,9 +21,10 @@ package org.neo4j.cypher
 
 import org.junit.{Before, Test}
 
-class ColumnNameTest extends ExecutionEngineHelper {
+class ColumnNameTest extends ExecutionEngineJUnitSuite {
 
-  @Before def init() {
+  override def initTest() {
+    super.initTest()
     createNode()
   }
 

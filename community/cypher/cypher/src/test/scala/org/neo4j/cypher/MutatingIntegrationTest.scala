@@ -31,8 +31,8 @@ import org.neo4j.tooling.GlobalGraphOperations
 import org.scalautils.LegacyTripleEquals
 import javax.transaction.TransactionManager
 
-class MutatingIntegrationTest extends ExecutionEngineHelper
-  with Assertions with StatisticsChecker with LegacyTripleEquals {
+class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
+  with Assertions with StatisticsChecker {
 
   val stats = QueryStatistics()
 

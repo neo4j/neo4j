@@ -23,9 +23,9 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.{ExecutionEngineHelper, CypherException}
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport, CypherException}
 
-class SyntaxExceptionTest extends ExecutionEngineHelper with Assertions {
+class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
     test(
       "start s = node:index(key=) return s",

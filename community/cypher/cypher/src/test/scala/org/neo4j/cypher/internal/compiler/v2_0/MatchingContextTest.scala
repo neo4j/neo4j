@@ -26,14 +26,13 @@ import commands.values.TokenType.PropertyKey
 import executionplan.builders.PatternGraphBuilder
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb.{Node, Direction}
 import org.junit.{After, Before, Test}
-import org.scalatest.Assertions
 import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.MatchingContext
 
-class MatchingContextTest extends GraphDatabaseTestBase with Assertions with PatternGraphBuilder {
+class MatchingContextTest extends GraphDatabaseJUnitSuite with PatternGraphBuilder {
   var a: Node = null
   var b: Node = null
   var c: Node = null

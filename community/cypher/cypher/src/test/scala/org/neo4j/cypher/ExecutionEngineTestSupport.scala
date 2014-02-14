@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import internal.helpers.GraphIcing
-import org.junit.Before
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
@@ -30,18 +28,20 @@ import org.junit.Assert._
 import java.io.PrintWriter
 import org.neo4j.graphdb.ResourceIterator
 import java.util
+import org.scalatest.{Suite, BeforeAndAfterEach, Assertions}
 
 
 case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
 }
 
-trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
+trait ExecutionEngineTestSupport extends TestSupport {
+  self: TestSuite with GraphDatabaseTestSupport =>
 
   var engine: ExecutionEngine = null
 
-  @Before
-  def executionEngineHelperInit() {
+  override protected def initTest() {
+    super.initTest()
     engine = new ExecutionEngine(graph)
   }
 
@@ -62,10 +62,10 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase with GraphIcing {
   def executeScalar[T](q: String, params: (String, Any)*):T = engine.execute(q, params.toMap).toList match {
     case m :: Nil =>
       if (m.size!=1)
-        fail("expected scalar value: " + m)
+        fail(s"expected scalar value: $m")
       else
         m.head._2.asInstanceOf[T]
-    case _ => fail("expected to get a single row back")
+    case _ => fail(s"expected to get a single row back")
   }
 
   protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {

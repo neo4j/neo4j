@@ -26,7 +26,7 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 
 @RunWith(value = classOf[Parameterized])
-class TernaryLogicAcceptanceTest(expectedResult: Any, comparison: String) extends ExecutionEngineHelper with Assertions {
+class TernaryLogicAcceptanceTest(expectedResult: Any, comparison: String) extends ExecutionEngineJUnitSuite {
 
   @Test def test() {
     assert(expectedResult === executeScalar[Any]("RETURN " + comparison))

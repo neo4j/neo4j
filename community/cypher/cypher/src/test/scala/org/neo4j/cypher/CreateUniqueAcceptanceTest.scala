@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{Path, Node, Relationship}
 import org.scalautils.LegacyTripleEquals
 
 class CreateUniqueAcceptanceTest
-  extends ExecutionEngineHelper with Assertions with StatisticsChecker with LegacyTripleEquals {
+  extends ExecutionEngineJUnitSuite with StatisticsChecker {
 
   val stats = QueryStatistics()
 

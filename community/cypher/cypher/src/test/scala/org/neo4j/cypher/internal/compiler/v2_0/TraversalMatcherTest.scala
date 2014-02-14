@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.True
 import pipes._
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb.{Direction, Node, Path}
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher, SingleStep}
 
-class TraversalMatcherTest extends GraphDatabaseTestBase {
+class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
 
   val A = "A"
   val B = "B"

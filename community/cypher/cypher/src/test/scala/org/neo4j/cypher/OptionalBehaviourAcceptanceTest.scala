@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.junit.Test
 import org.neo4j.graphdb.Node
 
-class OptionalBehaviourAcceptanceTest extends ExecutionEngineHelper {
+class OptionalBehaviourAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test def optional_nodes_with_labels_in_match_clause_should_return_null_when_where_is_no_match() {
     createNode()
     val result = execute("start n = node(0) optional match n-[r]-(m:Person) return r")

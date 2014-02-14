@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.Literal
 import pipes.QueryState
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb.{PropertyContainer, Transaction}
 import org.junit.{After, Before, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.MapPropertySetAction
 
-class MapPropertySetActionTest extends GraphDatabaseTestBase {
+class MapPropertySetActionTest extends GraphDatabaseJUnitSuite {
 
   var tx: Transaction = null
   var state: QueryState = null

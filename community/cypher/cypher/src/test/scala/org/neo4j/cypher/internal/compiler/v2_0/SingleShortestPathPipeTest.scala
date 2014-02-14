@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands._
 import pipes.{ShortestPathPipe, FakePipe}
 import symbols._
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb.{Direction, Node, Path}
-import org.scalatest.Assertions
 import org.junit.Test
 import collection.mutable.Map
 
-class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
+class SingleShortestPathPipeTest extends GraphDatabaseJUnitSuite {
 
   val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
 

@@ -22,13 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands.True
 import pipes.matching.{VariableLengthStepTrail, SingleStepTrail, EndPoint}
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.scalatest.Assertions
-import org.scalautils.LegacyTripleEquals
 
-class TrailDecomposeTest extends GraphDatabaseTestBase with Assertions with LegacyTripleEquals {
+class TrailDecomposeTest extends GraphDatabaseJUnitSuite {
   @Test def decompose_simple_path() {
     val nodeA = createNode("A")
     val nodeB = createNode("B")

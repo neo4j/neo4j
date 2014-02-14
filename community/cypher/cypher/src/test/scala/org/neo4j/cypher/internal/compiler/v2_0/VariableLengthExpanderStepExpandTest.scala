@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.True
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb.Direction
 import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{VarLengthStep, SingleStep, ExpanderStep}
 
-class VariableLengthExpanderStepExpandTest extends GraphDatabaseTestBase {
+class VariableLengthExpanderStepExpandTest extends GraphDatabaseJUnitSuite {
 
   private def step(id: Int,
                    typ: Seq[String],

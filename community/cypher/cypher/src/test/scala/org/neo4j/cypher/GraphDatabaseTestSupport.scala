@@ -19,40 +19,44 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{After, Before}
 import scala.collection.JavaConverters._
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.scalatest.Assertions
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.DataWriteOperations
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.scalatest.junit.JUnitSuite
 
-class GraphDatabaseTestBase extends JUnitSuite with GraphIcing with Assertions {
+trait GraphDatabaseTestSupport extends TestSupport with GraphIcing {
+  self: TestSuite  =>
 
   var graph: GraphDatabaseAPI with Snitch = null
   var nodes: List[Node] = null
 
-  @Before
-  def baseInit() {
+  override protected def initTest() {
+    super.initTest()
     graph = new ImpermanentGraphDatabase() with Snitch
   }
 
-  def assertInTx(f: => Option[String]) {
-    graph.inTx {
-      assert(f)
+  override protected def stopTest() {
+    try {
+      super.stopTest()
+    }
+    finally {
+      if (graph != null) graph.shutdown()
     }
   }
 
-  @After
-  def cleanUp() {
-    if (graph != null) graph.shutdown()
+  def assertInTx(f: => Option[String]) {
+    graph.inTx { f match {
+        case Some(error) => fail(error)
+        case _           =>
+      }
+    }
   }
 
   def indexNode(n: Node, idxName: String, key: String, value: String) {

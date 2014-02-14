@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.graphdb.{Path, Relationship}
 
 class MergeRelationshipAcceptanceTest
-  extends ExecutionEngineHelper with Assertions with StatisticsChecker {
+  extends ExecutionEngineJUnitSuite with StatisticsChecker {
 
   @Test
   def should_be_able_to_create_relationship() {

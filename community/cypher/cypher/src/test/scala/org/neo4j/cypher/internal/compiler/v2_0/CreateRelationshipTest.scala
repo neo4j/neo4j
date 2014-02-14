@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.{ParameterExpression, Identifier}
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.junit.Test
 import java.util
 import collection.JavaConverters._
-import org.scalatest.Assertions
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.{CreateRelationship, RelationshipEndpoint}
 
-class CreateRelationshipTest extends GraphDatabaseTestBase with Assertions {
+class CreateRelationshipTest extends GraphDatabaseJUnitSuite {
   @Test
   def shouldAcceptJavaArraysAsPropertiesForRelationships() {
     //given

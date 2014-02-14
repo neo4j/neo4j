@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.junit.Test
 
-class CypherTypeAcceptanceTest extends ExecutionEngineHelper {
+class CypherTypeAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test def does_not_loose_precision() {
     // Given
     execute("CREATE (:Label { id: 4611686018427387905 })")

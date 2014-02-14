@@ -43,14 +43,17 @@ import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.kernel.impl.api.OperationsFacade
 
-class LazyTest extends ExecutionEngineHelper with Assertions with MockitoSugar {
+class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
 
   var a: Node = null
   var b: Node = null
   var c: Node = null
 
 
-  @Before def my_init() {
+
+  override protected def initTest() {
+    super.initTest()
+
     a = createNode()
     b = createNode()
     c = createNode()
