@@ -452,4 +452,36 @@ class MergeRelationshipAcceptanceTest
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 0)
   }
+
+  @Test def should_use_left_to_right_direction_when_creating_based_on_pattern_with_undirected_relationship() {
+    val result = executeScalar[Relationship]("merge (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
+
+    graph.inTx {
+      assert( 1 === result.getEndNode.getProperty("id") )
+      assert( 2 === result.getStartNode.getProperty("id") )
+    }
+  }
+
+  @Test def should_find_existing_right_to_left_relationship_when_matching_with_undirected_relationship() {
+    val r = relate(createNode("id" -> 1), createNode("id" -> 2), "KNOWS")
+    val result = executeScalar[Relationship]("merge (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
+
+    assert(r === result)
+  }
+
+  @Test def should_find_existing_left_to_right_relationship_when_matching_with_undirected_relationship() {
+    val r = relate(createNode("id" -> 2), createNode("id" -> 1), "KNOWS")
+    val result = executeScalar[Relationship]("merge (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
+
+    assert(r === result)
+  }
+
+  @Test def should_find_existing_relationships_when_matching_with_undirected_relationship() {
+    val r1 = relate(createNode("id" -> 2), createNode("id" -> 1), "KNOWS")
+    val r2 = relate(createNode("id" -> 1), createNode("id" -> 2), "KNOWS")
+    val result = execute("merge (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r").columnAs[Relationship]("r").toSet
+
+    assert(Set(r1, r2) === result)
+  }
+
 }

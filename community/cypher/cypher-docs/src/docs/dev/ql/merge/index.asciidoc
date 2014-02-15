@@ -68,6 +68,8 @@ include::merge-on-a-relationship.asciidoc[]
 
 include::merge-on-multiple-relationships.asciidoc[]
 
+include::merge-on-an-undirected-relationship.asciidoc[]
+
 :leveloffset: 2
 
 == Using unique constraints with MERGE ==
