@@ -17,21 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.ast
+package org.neo4j.cypher.internal.compiler.v2_0.parser
 
-import org.neo4j.cypher.internal.compiler.v2_0._
-
-trait ASTNode extends Product with Foldable with Rewritable {
-  import Rewritable._
-  def position: InputPosition
-
-  def dup(children: Seq[AnyRef]): this.type = {
-    val constructor = this.copyConstructor
-    val params = constructor.getParameterTypes
-    val args = children.toVector
-    if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[InputPosition]))
-      constructor.invoke(this, args :+ this.position: _*).asInstanceOf[this.type]
-    else
-      constructor.invoke(this, args: _*).asInstanceOf[this.type]
-  }
+object ParserFixture {
+  val parser = CypherParser()
 }

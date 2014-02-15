@@ -24,23 +24,23 @@ import org.neo4j.cypher.internal.commons.CypherTestSuite
 object RewritableTest {
   trait Exp extends Product with Rewritable
   case class Val(int: Int) extends Exp {
-    def dup(children: IndexedSeq[Any]): this.type =
+    def dup(children: Seq[AnyRef]): this.type =
       Val(children(0).asInstanceOf[Int]).asInstanceOf[this.type]
   }
   case class Add(lhs: Exp, rhs: Exp) extends Exp {
-    def dup(children: IndexedSeq[Any]): this.type =
+    def dup(children: Seq[AnyRef]): this.type =
       Add(children(0).asInstanceOf[Exp], children(1).asInstanceOf[Exp]).asInstanceOf[this.type]
   }
   case class Sum(args: Seq[Exp]) extends Exp {
-    def dup(children: IndexedSeq[Any]): this.type =
+    def dup(children: Seq[AnyRef]): this.type =
       Sum(children(0).asInstanceOf[Seq[Exp]]).asInstanceOf[this.type]
   }
   case class Pos(latlng: (Exp, Exp)) extends Exp {
-    def dup(children: IndexedSeq[Any]): this.type =
+    def dup(children: Seq[AnyRef]): this.type =
       Pos(children(0).asInstanceOf[(Exp, Exp)]).asInstanceOf[this.type]
   }
   case class Options(args: Seq[(Exp, Exp)]) extends Exp {
-    def dup(children: IndexedSeq[Any]): this.type =
+    def dup(children: Seq[AnyRef]): this.type =
       Options(children(0).asInstanceOf[Seq[(Exp, Exp)]]).asInstanceOf[this.type]
   }
 }
@@ -72,7 +72,7 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
     val result = ast.rewrite(topDown(Rewriter.lift {
-      case _: Int => 99
+      case _: java.lang.Integer => 99: java.lang.Integer
     }))
 
     assert(result === Add(Val(99), Add(Val(99), Val(99))))
@@ -93,20 +93,20 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(8), Add(Val(2), Val(3)))
 
     val result = ast.rewrite(topDown(Rewriter.lift {
-      case _: Int =>
-        1
+      case Val(_) =>
+        Val(1)
       case Add(Val(x), Val(y)) =>
         Val(x + y)
     }))
 
-    assert(result === Add(Val(1), Val(1)))
+    assert(result === Add(Val(1), Val(5)))
   }
 
   test("topDown should duplicate terms with pair parameters") {
     val ast = Add(Val(1), Pos((Val(2), Val(3))))
 
     val result = ast.rewrite(topDown(Rewriter.lift {
-      case _: Int => 99
+      case Val(_) => Val(99)
     }))
 
     assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
@@ -116,7 +116,7 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
 
     val result = ast.rewrite(topDown(Rewriter.lift {
-      case _: Int => 99
+      case Val(_) => Val(99)
     }))
 
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
@@ -126,8 +126,8 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(8), Add(Val(2), Val(3)))
 
     val result = ast.rewrite(untilMatched(Rewriter.lift {
-      case _: Int =>
-        1
+      case Val(_) =>
+        Val(1)
       case Add(Val(x), Val(y)) =>
         Val(x + y)
     }))
@@ -159,7 +159,7 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
     val result = ast.rewrite(bottomUp(Rewriter.lift {
-      case _: Int => 99
+      case _: java.lang.Integer => 99: java.lang.Integer
     }))
 
     assert(result === Add(Val(99), Add(Val(99), Val(99))))
@@ -180,8 +180,8 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(8), Add(Val(2), Val(3)))
 
     val result = ast.rewrite(bottomUp(Rewriter.lift {
-      case _: Int =>
-        1
+      case Val(_) =>
+        Val(1)
       case Add(Val(x), Val(y)) =>
         Val(x + y)
     }))
@@ -193,7 +193,7 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(1), Pos((Val(2), Val(3))))
 
     val result = ast.rewrite(bottomUp(Rewriter.lift {
-      case _: Int => 99
+      case Val(_) => Val(99)
     }))
 
     assert(result === Add(Val(99), Pos((Val(99), Val(99)))))
@@ -203,7 +203,7 @@ class RewritableTest extends CypherTestSuite {
     val ast = Add(Val(1), Options(Seq((Val(2), Val(3)), (Val(4), Val(5)))))
 
     val result = ast.rewrite(bottomUp(Rewriter.lift {
-      case _: Int => 99
+      case Val(_) => Val(99)
     }))
 
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))

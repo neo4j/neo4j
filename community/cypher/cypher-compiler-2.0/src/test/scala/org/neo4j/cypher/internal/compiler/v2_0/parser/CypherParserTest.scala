@@ -34,14 +34,11 @@ import org.scalatest.Matchers
 import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherTestSuite
 
-object CypherParserTest {
-  val cypherParser = CypherParser()
-}
-import CypherParserTest._
-
 class CypherParserTest extends CypherTestSuite {
+  import ParserFixture._
+
   test("shouldParseEasiestPossibleQuery") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return s",
       Query.
         start(NodeById("s", 1)).
@@ -49,7 +46,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should return string literal") {
-    expectAST(
+    expectQuery(
       "start s = node(1) return \"apa\"",
       Query.
         start(NodeById("s", 1)).
@@ -57,13 +54,13 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should return string literal with escaped sequence in") {
-    expectAST(
+    expectQuery(
       "start s = node(1) return \"a\\tp\\\"a\\\'b\"",
       Query.
         start(NodeById("s", 1)).
         returns(ReturnItem(Literal("a\tp\"a\'b"), "\"a\\tp\\\"a\\\'b\"")))
 
-    expectAST(
+    expectQuery(
       "start s = node(1) return \'a\\tp\\\'a\\\"b\'",
       Query.
         start(NodeById("s", 1)).
@@ -71,7 +68,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("allTheNodes") {
-    expectAST(
+    expectQuery(
       "start s = NODE(*) return s",
       Query.
         start(AllNodes("s")).
@@ -79,7 +76,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("allTheRels") {
-    expectAST(
+    expectQuery(
       "start r = relationship(*) return r",
       Query.
         start(AllRelationships("r")).
@@ -87,7 +84,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleAliasingOfColumnNames") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return s as somethingElse",
       Query.
         start(NodeById("s", 1)).
@@ -95,7 +92,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("sourceIsAnIndex") {
-    expectAST(
+    expectQuery(
       """start a = node:index(key = "value") return a""",
       Query.
         start(NodeByIndex("a", "index", Literal("key"), Literal("value"))).
@@ -103,7 +100,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("sourceIsAnNonParsedIndexQuery") {
-    expectAST(
+    expectQuery(
       """start a = node:index("key:value") return a""",
       Query.
         start(NodeByIndexQuery("a", "index", Literal("key:value"))).
@@ -111,7 +108,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldParseEasiestPossibleRelationshipQuery") {
-    expectAST(
+    expectQuery(
       "start s = relationship(1) return s",
       Query.
         start(RelationshipById("s", 1)).
@@ -119,7 +116,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldParseEasiestPossibleRelationshipQueryShort") {
-    expectAST(
+    expectQuery(
       "start s = rel(1) return s",
       Query.
         start(RelationshipById("s", 1)).
@@ -127,7 +124,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("sourceIsARelationshipIndex") {
-    expectAST(
+    expectQuery(
       """start a = rel:index(key = "value") return a""",
       Query.
         start(RelationshipByIndex("a", "index", Literal("key"), Literal("value"))).
@@ -135,7 +132,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("keywordsShouldBeCaseInsensitive") {
-    expectAST(
+    expectQuery(
       "START s = NODE(1) RETURN s",
       Query.
         start(NodeById("s", 1)).
@@ -143,7 +140,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldParseMultipleNodes") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1,2,3) return s",
       Query.
         start(NodeById("s", 1, 2, 3)).
@@ -151,7 +148,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldParseMultipleInputs") {
-    expectAST(
+    expectQuery(
       "start a = node(1), b = NODE(2) return a,b",
       Query.
         start(NodeById("a", 1), NodeById("b", 2)).
@@ -159,7 +156,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldFilterOnProp") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where a.name = \"andres\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -168,7 +165,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldReturnLiterals") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return 12",
       Query.
         start(NodeById("a", 1)).
@@ -176,7 +173,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldReturnAdditions") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return 12+2",
       Query.
         start(NodeById("a", 1)).
@@ -184,7 +181,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("arithmeticsPrecedence") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return 12/4*3-2*4",
       Query.
         start(NodeById("a", 1)).
@@ -202,7 +199,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldFilterOnPropWithDecimals") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where a.extractReturnItems = 3.1415 return a",
       Query.
         start(NodeById("a", 1)).
@@ -211,7 +208,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleNot") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where not(a.name = \"andres\") return a",
       Query.
         start(NodeById("a", 1)).
@@ -220,7 +217,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleNotEqualTo") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where a.name <> \"andres\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -229,7 +226,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleLessThan") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where a.name < \"andres\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -238,7 +235,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleGreaterThan") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where a.name > \"andres\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -247,7 +244,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleLessThanOrEqual") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where a.name <= \"andres\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -257,7 +254,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("shouldHandleRegularComparison") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where \"Andres\" =~ 'And.*' return a",
       Query.
         start(NodeById("a", 1)).
@@ -268,7 +265,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("shouldHandleMultipleRegularComparison") {
-    expectAST(
+    expectQuery(
       """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
       Query.
         start(NodeById("a", 1)).
@@ -278,7 +275,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleEscapedRegexs") {
-    expectAST(
+    expectQuery(
       """start a = node(1) where a.name =~ 'And\\/.*' return a""",
       Query.
         start(NodeById("a", 1)).
@@ -288,7 +285,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleGreaterThanOrEqual") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where a.name >= \"andres\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -297,7 +294,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("booleanLiterals") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where true = false return a",
       Query.
         start(NodeById("a", 1)).
@@ -306,7 +303,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldFilterOnNumericProp") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where 35 = a.age return a",
       Query.
         start(NodeById("a", 1)).
@@ -316,7 +313,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("shouldHandleNegativeLiteralsAsExpected") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where -35 = a.age AND a.age > -1.2 return a",
       Query.
         start(NodeById("a", 1)).
@@ -328,7 +325,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldCreateNotEqualsQuery") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where 35 <> a.age return a",
       Query.
         start(NodeById("a", 1)).
@@ -337,7 +334,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("multipleFilters") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where a.name = \"andres\" or a.name = \"mattias\" return a",
       Query.
         start(NodeById("a", 1)).
@@ -348,7 +345,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldCreateXorQuery") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where a.name = 'andres' xor a.name = 'mattias' return a",
       Query.
         start(NodeById("a", 1)).
@@ -359,7 +356,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relatedTo") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[:KNOWS]-> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
@@ -369,7 +366,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relatedToWithoutRelType") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a --> (b) return a, b",
       Query.
         start(NodeById("a", 1)).
@@ -379,7 +376,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relatedToWithoutRelTypeButWithRelVariable") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a-[r]->b return r",
       Query.
         start(NodeById("a", 1)).
@@ -388,7 +385,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relatedToTheOtherWay") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
       Query.
         start(NodeById("a", 1)).
@@ -398,7 +395,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("twoDoubleOptionalWithFourHalfs") {
-    expectAST(
+    expectQuery(
       "START a=node(1), b=node(2) OPTIONAL MATCH a-[r1]->X<-[r2]-b, a<-[r3]-Z-[r4]->b return r1,r2,r3,r4 order by id(r1),id(r2),id(r3),id(r4)",
       Query.
       start(NodeById("a", 1), NodeById("b", 2)).
@@ -423,7 +420,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldOutputVariables") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a.name",
       Query.
         start(NodeById("a", 1)).
@@ -431,7 +428,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldReadPropertiesOnExpressions") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return (a).name",
       Query.
         start(NodeById("a", 1)).
@@ -439,7 +436,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleAndPredicates") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query.
         start(NodeById("a", 1)).
@@ -450,7 +447,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relatedToWithRelationOutput") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[rel:KNOWS]-> (b) return rel",
       Query.
         start(NodeById("a", 1)).
@@ -460,7 +457,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("relatedToWithoutEndName") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
@@ -470,7 +467,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relatedInTwoSteps") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[:KNOWS]-> b -[:FRIEND]-> (c) return c",
       Query.
         start(NodeById("a", 1)).
@@ -482,7 +479,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("djangoCTRelationship") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[r:`<<KNOWS>>`]-> b return b",
       Query.
         start(NodeById("a", 1)).
@@ -491,7 +488,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("countTheNumberOfHits") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a --> b return a, b, count(*)",
       Query.
         start(NodeById("a", 1)).
@@ -502,7 +499,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("countStar") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return count(*) order by count(*)",
       Query.
         start(NodeById("a", 1)).
@@ -513,7 +510,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("distinct") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[r]-> b return distinct a, b",
       Query.
         start(NodeById("a", 1)).
@@ -523,7 +520,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("sumTheAgesOfPeople") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a -[r]-> b return a, b, sum(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -534,7 +531,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("avgTheAgesOfPeople") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a --> b return a, b, avg(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -545,7 +542,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("minTheAgesOfPeople") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match (a) --> b return a, b, min(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -557,7 +554,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("maxTheAgesOfPeople") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match a --> b return a, b, max(a.age)",
       Query.
         start(NodeById("a", 1)).
@@ -572,7 +569,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("singleColumnSorting") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a order by a.name",
       Query.
         start(NodeById("a", 1)).
@@ -581,7 +578,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("sortOnAggregatedColumn") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a order by avg(a.name)",
       Query.
         start(NodeById("a", 1)).
@@ -590,7 +587,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("sortOnAliasedAggregatedColumn") {
-    expectAST(
+    expectQuery(
       "start n = node(0) match (n)-[r:KNOWS]-(c) return n, count(c) as cnt order by cnt",
       Query.
         start(NodeById("n", 0)).
@@ -601,7 +598,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleTwoSortColumns") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a order by a.name, a.age",
       Query.
         start(NodeById("a", 1)).
@@ -612,7 +609,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleTwoSortColumnsAscending") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a order by a.name ASCENDING, a.age ASC",
       Query.
         start(NodeById("a", 1)).
@@ -624,7 +621,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("orderByDescending") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a order by a.name DESCENDING",
       Query.
         start(NodeById("a", 1)).
@@ -634,7 +631,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("orderByDesc") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a order by a.name desc",
       Query.
         start(NodeById("a", 1)).
@@ -643,7 +640,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("nestedBooleanOperatorsAndParentesis") {
-    expectAST(
+    expectQuery(
       """start n = NODE(1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n
       .food="grass") return n""",
       Query.
@@ -659,7 +656,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("nestedBooleanOperatorsAndParentesisXor") {
-    expectAST(
+    expectQuery(
       """start n = NODE(1,2,3) where (n.animal = "monkey" and n.food = "banana") xor (n.animal = "cow" and n
       .food="grass") return n""",
       Query.
@@ -675,7 +672,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("limit5") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) return n limit 5",
       Query.
         start(NodeById("n", 1)).
@@ -684,7 +681,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("skip5") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) return n skip 5",
       Query.
         start(NodeById("n", 1)).
@@ -693,7 +690,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("skip5limit5") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) return n skip 5 limit 5",
       Query.
         start(NodeById("n", 1)).
@@ -703,7 +700,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relationshipType") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) match n-[r]->(x) where type(r) = \"something\" return r",
       Query.
         start(NodeById("n", 1)).
@@ -713,7 +710,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("pathLength") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) match p=(n-[r]->x) where LENGTH(p) = 10 return p",
       Query.
         start(NodeById("n", 1)).
@@ -724,7 +721,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("stringLength") {
-    expectAST(
+    expectQuery(
       "return LENGTH('foo') = 10 as n",
       Query.
         matches().
@@ -732,7 +729,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("collectionSize") {
-    expectAST(
+    expectQuery(
       "return SIZE([1, 2]) = 10 as n",
       Query.
         matches().
@@ -740,7 +737,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relationshipTypeOut") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) match n-[r]->(x) return TYPE(r)",
 
       Query.
@@ -751,7 +748,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("shouldBeAbleToParseCoalesce") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) match n-[r]->(x) return COALESCE(r.name,x.name)",
       Query.
         start(NodeById("n", 1)).
@@ -760,7 +757,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relationshipsFromPathOutput") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) match p=n-[r]->x return RELATIONSHIPS(p)",
 
       Query.
@@ -771,7 +768,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("makeDirectionOutgoing") {
-    expectAST(
+    expectQuery(
       "START a=node(1) match b<-[r]-a return b",
       Query.
         start(NodeById("a", 1)).
@@ -780,7 +777,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("keepDirectionForNamedPaths") {
-    expectAST(
+    expectQuery(
       "START a=node(1) match p=b<-[r]-a return p",
       Query.
         start(NodeById("a", 1)).
@@ -790,7 +787,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relationshipsFromPathInWhere") {
-    expectAST(
+    expectQuery(
       "start n=NODE(1) match p=n-[r]->x where length(rels(p))=1 return p",
 
       Query.
@@ -802,7 +799,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("countNonNullValues") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) return a, count(a)",
       Query.
         start(NodeById("a", 1)).
@@ -812,7 +809,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleIdBothInReturnAndWhere") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) where id(a) = 0 return ID(a)",
       Query.
         start(NodeById("a", 1)).
@@ -821,7 +818,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldBeAbleToHandleStringLiteralsWithApostrophe") {
-    expectAST(
+    expectQuery(
       "start a = node:index(key = 'value') return a",
       Query.
         start(NodeByIndex("a", "index", Literal("key"), Literal("value"))).
@@ -829,7 +826,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleQuotationsInsideApostrophes") {
-    expectAST(
+    expectQuery(
       "start a = node:index(key = 'val\"ue') return a",
       Query.
         start(NodeByIndex("a", "index", Literal("key"), Literal("val\"ue"))).
@@ -837,7 +834,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simplePathExample") {
-    expectAST(
+    expectQuery(
       "start a = node(0) match p = a-->b return a",
       Query.
         start(NodeById("a", 0)).
@@ -848,7 +845,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("threeStepsPath") {
-    expectAST(
+    expectQuery(
       "start a = node(0) match p = ( a-[r1]->b-[r2]->c ) return a",
       Query.
         start(NodeById("a", 0)).
@@ -862,7 +859,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("pathsShouldBePossibleWithoutParenthesis") {
-    expectAST(
+    expectQuery(
       "start a = node(0) match p = a-[r]->b return a",
       Query.
         start(NodeById("a", 0)).
@@ -872,7 +869,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variableLengthPath") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[:knows*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -882,7 +879,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variableLengthPathWithRelsIterable") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[r:knows*1..3]-> x return length(r)",
       Query.
         start(NodeById("a", 0)).
@@ -892,7 +889,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("fixedVarLengthPath") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[*3]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -903,7 +900,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variableLengthPathWithoutMinDepth") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[:knows*..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -913,7 +910,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variableLengthPathWithRelationshipIdentifier") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[r:knows*2..]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -923,7 +920,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variableLengthPathWithoutMaxDepth") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[:knows*2..]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -933,7 +930,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("unboundVariableLengthPath") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match a -[:knows*]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -943,7 +940,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("optionalRelationship") {
-    expectAST(
+    expectQuery(
       "start a = node(1) optional match a --> (b) return b",
       Query.
         start(NodeById("a", 1)).
@@ -954,7 +951,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("optionalTypedRelationship") {
-    expectAST(
+    expectQuery(
       "start a = node(1) optional match a -[:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
@@ -965,7 +962,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("optionalTypedAndNamedRelationship") {
-    expectAST(
+    expectQuery(
       "start a = node(1) optional match a -[r:KNOWS]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
@@ -976,7 +973,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("optionalNamedRelationship") {
-    expectAST(
+    expectQuery(
       "start a = node(1) optional match a -[r]-> (b) return b",
       Query.
         start(NodeById("a", 1)).
@@ -987,7 +984,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testAllIterablePredicate") {
-    expectAST(
+    expectQuery(
       """start a = node(1) match p=(a-[r]->b) where all(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
@@ -999,7 +996,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testAnyIterablePredicate") {
-    expectAST(
+    expectQuery(
       """start a = node(1) match p=(a-[r]->b) where any(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
@@ -1012,7 +1009,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testNoneIterablePredicate") {
-    expectAST(
+    expectQuery(
       """start a = node(1) match p=(a-[r]->b) where none(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
@@ -1024,7 +1021,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testSingleIterablePredicate") {
-    expectAST(
+    expectQuery(
       """start a = node(1) match p=(a-[r]->b) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
@@ -1036,7 +1033,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamAsStartNode") {
-    expectAST(
+    expectQuery(
       """start pA = node({a}) return pA""",
       Query.
         start(NodeById("pA", ParameterExpression("a"))).
@@ -1045,7 +1042,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamAsStartRel") {
-    expectAST(
+    expectQuery(
       """start pA = relationship({a}) return pA""",
       Query.
         start(RelationshipById("pA", ParameterExpression("a"))).
@@ -1054,7 +1051,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testNumericParamNameAsStartNode") {
-    expectAST(
+    expectQuery(
       """start pA = node({0}) return pA""",
       Query.
         start(NodeById("pA", ParameterExpression("0"))).
@@ -1063,7 +1060,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForWhereLiteral") {
-    expectAST(
+    expectQuery(
       """start pA = node(1) where pA.name = {name} return pA""",
       Query.
         start(NodeById("pA", 1)).
@@ -1073,7 +1070,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForIndexValue") {
-    expectAST(
+    expectQuery(
       """start pA = node:idx(key = {Value}) return pA""",
       Query.
         start(NodeByIndex("pA", "idx", Literal("key"), ParameterExpression("Value"))).
@@ -1082,7 +1079,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForIndexQuery") {
-    expectAST(
+    expectQuery(
       """start pA = node:idx({query}) return pA""",
       Query.
         start(NodeByIndexQuery("pA", "idx", ParameterExpression("query"))).
@@ -1091,7 +1088,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForSkip") {
-    expectAST(
+    expectQuery(
       """start pA = node(0) return pA skip {skipper}""",
       Query.
         start(NodeById("pA", 0)).
@@ -1101,7 +1098,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForLimit") {
-    expectAST(
+    expectQuery(
       """start pA = node(0) return pA limit {stop}""",
       Query.
         start(NodeById("pA", 0)).
@@ -1111,7 +1108,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForLimitAndSkip") {
-    expectAST(
+    expectQuery(
       """start pA = node(0) return pA skip {skipper} limit {stop}""",
       Query.
         start(NodeById("pA", 0)).
@@ -1122,7 +1119,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testQuotedParams") {
-    expectAST(
+    expectQuery(
       """start pA = node({`id`}) where pA.name =~ {`regex`} return pA skip {`ski``pper`} limit {`stop`}""",
       Query.
         start(NodeById("pA", ParameterExpression("id"))).
@@ -1134,7 +1131,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testParamForRegex") {
-    expectAST(
+    expectQuery(
       """start pA = node(0) where pA.name =~ {regex} return pA""",
       Query.
         start(NodeById("pA", 0)).
@@ -1144,7 +1141,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testShortestPathWithMaxDepth") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) match p = shortestPath( a-[*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1154,7 +1151,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testShortestPathWithType") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1164,7 +1161,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testAllShortestPathsWithType") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) match p = allShortestPaths( a-[:KNOWS*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1174,7 +1171,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testShortestPathWithoutStart") {
-    expectAST(
+    expectQuery(
       """match p = shortestPath( a-[*..3]->b ) WHERE a.name = 'John' AND b.name = 'Sarah' return p""",
       Query.
         matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, Some(3), single = true, None)).
@@ -1186,7 +1183,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testShortestPathExpression") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) return shortestPath(a-[:KNOWS*..3]->b) AS path""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1196,7 +1193,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testForNull") {
-    expectAST(
+    expectQuery(
       """start a=node(0) where a is null return a""",
       Query.
         start(NodeById("a", 0)).
@@ -1206,7 +1203,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testForNotNull") {
-    expectAST(
+    expectQuery(
       """start a=node(0) where a is not null return a""",
       Query.
         start(NodeById("a", 0)).
@@ -1216,7 +1213,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("testCountDistinct") {
-    expectAST(
+    expectQuery(
       """start a=node(0) return count(distinct a)""",
       Query.
         start(NodeById("a", 0)).
@@ -1228,7 +1225,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("supportsHasRelationshipInTheWhereClause") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1238,7 +1235,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("supportsNotHasRelationshipInTheWhereClause") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1248,7 +1245,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleLFAsWhiteSpace") {
-    expectAST(
+    expectQuery(
       "start\na=node(0)\nwhere\na.prop=12\nreturn\na",
       Query.
         start(NodeById("a", 0)).
@@ -1258,7 +1255,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleUpperCaseDistinct") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return DISTINCT s",
       Query.
         start(NodeById("s", 1)).
@@ -1268,7 +1265,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldParseMathFunctions") {
-    expectAST(
+    expectQuery(
       "start s = NODE(0) return 5 % 4, abs(-1), round(3.1415), 2 ^ 8, sqrt(16), sign(1)",
       Query.
         start(NodeById("s", 0)).
@@ -1284,7 +1281,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldAllowCommentAtEnd") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return s // COMMENT",
       Query.
         start(NodeById("s", 1)).
@@ -1293,7 +1290,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldAllowCommentAlone") {
-    expectAST(
+    expectQuery(
       """start s = NODE(1) return s
       // COMMENT""",
       Query.
@@ -1303,7 +1300,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldAllowCommentsInsideStrings") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1) where s.apa = '//NOT A COMMENT' return s",
       Query.
         start(NodeById("s", 1)).
@@ -1313,7 +1310,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldHandleCommentsFollowedByWhiteSpace") {
-    expectAST(
+    expectQuery(
       """start s = NODE(1)
       //I can haz more comment?
       return s""",
@@ -1324,7 +1321,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("first last and rest") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match p=x-[r]->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
       Query.
         start(NodeById("x", 1)).
@@ -1338,7 +1335,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("filter") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match p=x-[r]->z return filter(x in nodes(p) WHERE x.prop = 123)",
       Query.
         start(NodeById("x", 1)).
@@ -1348,7 +1345,7 @@ class CypherParserTest extends CypherTestSuite {
         ReturnItem(FilterFunction(NodesFunction(Identifier("p")), "x", Equals(Property(Identifier("x"), PropertyKey("prop")), Literal(123))), "filter(x in nodes(p) WHERE x.prop = 123)"))
     )
 
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match p=x-[r]->z return [x in nodes(p) WHERE x.prop = 123]",
       Query.
         start(NodeById("x", 1)).
@@ -1360,7 +1357,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("extract") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match p=x-[r]->z return [x in nodes(p) | x.prop]",
       Query.
         start(NodeById("x", 1)).
@@ -1372,7 +1369,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("listComprehension") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match p=x-[r]->z return [x in rels(p) WHERE x.prop > 123 | x.prop]",
       Query.
         start(NodeById("x", 1)).
@@ -1388,7 +1385,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("collection literal") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) return ['a','b','c']",
       Query.
         start(NodeById("x", 1)).
@@ -1397,7 +1394,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("collection literal2") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) return []",
       Query.
         start(NodeById("x", 1)).
@@ -1406,7 +1403,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("collection literal3") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) return [1,2,3]",
       Query.
         start(NodeById("x", 1)).
@@ -1415,7 +1412,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("collection literal4") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) return ['a',2]",
       Query.
         start(NodeById("x", 1)).
@@ -1424,7 +1421,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("in with collection literal") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) where x.prop in ['a','b'] return x",
       Query.
         start(NodeById("x", 1)).
@@ -1434,7 +1431,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("in with collection prop") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) where x.prop in x.props return x",
       Query.
         start(NodeById("x", 1)).
@@ -1444,7 +1441,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("multiple relationship type in match") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
@@ -1454,7 +1451,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("multiple relationship type in varlength rel") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
@@ -1464,7 +1461,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("multiple relationship type in shortest path") {
-    expectAST(
+    expectQuery(
       "start x = NODE(1) match x-[:REL1|:REL2|:REL3]->z return x",
       Query.
         start(NodeById("x", 1)).
@@ -1474,7 +1471,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("multiple relationship type in relationship predicate") {
-    expectAST(
+    expectQuery(
       """start a=node(0), b=node(1) where a-[:KNOWS|:BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
@@ -1485,7 +1482,7 @@ class CypherParserTest extends CypherTestSuite {
 
 
   test("first parsed pipe query") {
-    expectAST(
+    expectQuery(
       "START x = node(1) WITH x WHERE x.foo = 42 RETURN x", {
       val secondQ = Query.
         start().
@@ -1500,7 +1497,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("read first and update next") {
-    expectAST(
+    expectQuery(
       "start a = node(1) with a create (b {age : a.age * 2}) return b", {
       val secondQ = Query.
         start(CreateNodeStartItem(CreateNode("b", Map("age" -> Multiply(Property(Identifier("a"), PropertyKey("age")), Literal(2.0))), Seq.empty))).
@@ -1514,7 +1511,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variable length path with collection for relationships") {
-    expectAST(
+    expectQuery(
       "start a=node(0) optional match a -[r*1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
@@ -1525,7 +1522,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("binary precedence") {
-    expectAST(
+    expectQuery(
       """start n=node(0) where n.a = 'x' and n.b = 'x' xor n.c = 'x' or n.d = 'x' return n""",
       Query.
         start(NodeById("n", 0)).
@@ -1545,7 +1542,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node") {
-    expectAST(
+    expectQuery(
       "create a",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), Seq.empty))).
@@ -1554,7 +1551,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node from param") {
-    expectAST(
+    expectQuery(
       "create ({param})",
       Query.
         start(CreateNodeStartItem(CreateNode("  UNNAMED8", Map("*" -> ParameterExpression("param")), Seq.empty))).
@@ -1563,7 +1560,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node with a property") {
-    expectAST(
+    expectQuery(
       "create (a {name : 'Andres'})",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Seq.empty))).
@@ -1572,7 +1569,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node with a property and return it") {
-    expectAST(
+    expectQuery(
       "create (a {name : 'Andres'}) return a",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("name" -> Literal("Andres")), Seq.empty))).
@@ -1581,7 +1578,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node from map expression") {
-    expectAST(
+    expectQuery(
       "create (a {param})",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map("*" -> ParameterExpression("param")), Seq.empty))).
@@ -1590,7 +1587,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node with a label") {
-    expectAST(
+    expectQuery(
       "create (a:FOO)",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO")))).
@@ -1599,7 +1596,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node with multiple labels") {
-    expectAST(
+    expectQuery(
       "create (a:FOO:BAR)",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO", "BAR")))).
@@ -1608,7 +1605,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create node with multiple labels with spaces") {
-    expectAST(
+    expectQuery(
       "create (a :FOO :BAR)",
       Query.
         start(CreateNodeStartItem(CreateNode("a", Map(), LabelSupport.labelCollection("FOO", "BAR")))).
@@ -1617,7 +1614,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create nodes with labels and a rel") {
-    expectAST(
+    expectQuery(
       "CREATE (n:Person:Husband)-[:FOO]->(x:Person)",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED25",
@@ -1628,7 +1625,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("start with two nodes and create relationship") {
-    expectAST(
+    expectQuery(
       "start a=node(0), b=node(1) with a,b create a-[r:REL]->b", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -1644,7 +1641,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("start with two nodes and create relationship make outgoing") {
-    expectAST(
+    expectQuery(
       "start a=node(0), b=node(1) create a<-[r:REL]-b", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -1660,7 +1657,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("start with two nodes and create relationship make outgoing named") {
-    expectAST(
+    expectQuery(
       "start a=node(0), b=node(1) create p=a<-[r:REL]-b return p", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -1677,7 +1674,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create relationship with properties") {
-    expectAST(
+    expectQuery(
       "start a=node(0), b=node(1) with a,b create a-[r:REL {why : 42, foo : 'bar'}]->b", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -1693,7 +1690,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create relationship without identifier") {
-    expectAST(
+    expectQuery(
       "create (a {a})-[:REL]->(b {b})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED14",
@@ -1705,7 +1702,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create relationship with properties from map") {
-    expectAST(
+    expectQuery(
       "create (a {a})-[:REL {param}]->(b {b})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED14",
@@ -1717,7 +1714,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create relationship without identifier2") {
-    expectAST(
+    expectQuery(
       "create (a {a})-[:REL]->(b {b})",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("  UNNAMED14",
@@ -1729,7 +1726,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("delete node") {
-    expectAST(
+    expectQuery(
       "start a=node(0) with a delete a", {
       val secondQ = Query.
         updates(DeleteEntityAction(Identifier("a"))).
@@ -1743,7 +1740,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple delete node") {
-    expectAST(
+    expectQuery(
       "start a=node(0) delete a", {
       val secondQ = Query.
         updates(DeleteEntityAction(Identifier("a"))).
@@ -1757,7 +1754,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("delete rel") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match (a)-[r:REL]->(b) delete r", {
       val secondQ = Query.
         updates(DeleteEntityAction(Identifier("r"))).
@@ -1772,7 +1769,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("delete path") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match p=(a)-[r:REL]->(b) delete p", {
       val secondQ = Query.
         updates(DeleteEntityAction(Identifier("p"))).
@@ -1788,7 +1785,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("set property on node") {
-    expectAST(
+    expectQuery(
       "start a=node(0) with a set a.hello = 'world'", {
       val secondQ = Query.
         updates(PropertySetAction(Property(Identifier("a"), PropertyKey("hello")), Literal("world"))).
@@ -1802,7 +1799,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("set property on node from expression") {
-    expectAST(
+    expectQuery(
       "start a=node(0) with a set (a).hello = 'world'", {
       val secondQ = Query.
         updates(PropertySetAction(Property(Identifier("a"), PropertyKey("hello")), Literal("world"))).
@@ -1816,7 +1813,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("set multiple properties on node") {
-    expectAST(
+    expectQuery(
       "start a=node(0) with a set a.hello = 'world', a.foo = 'bar'", {
       val secondQ = Query.
         updates(
@@ -1832,7 +1829,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("update property with expression") {
-    expectAST(
+    expectQuery(
       "start a=node(0) with a set a.salary = a.salary * 2 ", {
       val secondQ = Query.
         updates(PropertySetAction(Property(Identifier("a"), PropertyKey("salary")), Multiply(Property(Identifier("a"), PropertyKey("salary")), Literal(2.0)))).
@@ -1846,7 +1843,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("remove property") {
-    expectAST(
+    expectQuery(
       "start a=node(0) remove a.salary", {
       val secondQ = Query.
         updates(DeletePropertyAction(Identifier("a"), PropertyKey("salary"))).
@@ -1860,7 +1857,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("foreach on path") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match p = a-[r:REL]->b with p foreach(n in nodes(p) | set n.touched = true ) ", {
       val secondQ = Query.
         updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), PropertyKey("touched")), True())))).
@@ -1876,7 +1873,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("foreach on path with multiple updates") {
-    expectAST(
+    expectQuery(
       "match n foreach(n in [1,2,3] | create (x)-[r1:HAS]->(z) create (x)-[r2:HAS]->(z2) )", {
       val secondQ = Query.
         updates(ForeachAction(Collection(Literal(1), Literal(2), Literal(3)), "n", Seq(
@@ -1893,7 +1890,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple read first and update next") {
-    expectAST(
+    expectQuery(
       "start a = node(1) create (b {age : a.age * 2}) return b", {
       val secondQ = Query.
         start(CreateNodeStartItem(CreateNode("b", Map("age" -> Multiply(Property(Identifier("a"), PropertyKey("age")), Literal(2.0))), Seq.empty))).
@@ -1907,7 +1904,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple start with two nodes and create relationship") {
-    expectAST(
+    expectQuery(
       "start a=node(0), b=node(1) create a-[r:REL]->b", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -1923,7 +1920,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple create relationship with properties") {
-    expectAST(
+    expectQuery(
       "start a=node(0), b=node(1) create a<-[r:REL {why : 42, foo : 'bar'}]-b", {
       val secondQ = Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -1940,7 +1937,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple set property on node") {
-    expectAST(
+    expectQuery(
       "start a=node(0) set a.hello = 'world'", {
       val secondQ = Query.
         updates(PropertySetAction(Property(Identifier("a"), PropertyKey("hello")), Literal("world"))).
@@ -1954,7 +1951,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple update property with expression") {
-    expectAST(
+    expectQuery(
       "start a=node(0) set a.salary = a.salary * 2 ", {
       val secondQ = Query.
         updates(PropertySetAction(Property(Identifier("a"), PropertyKey("salary")), Multiply(Property(Identifier("a"),PropertyKey( "salary")), Literal(2.0)))).
@@ -1968,7 +1965,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple foreach on path") {
-    expectAST(
+    expectQuery(
       "start a=node(0) match p = a-[r:REL]->b foreach(n in nodes(p) | set n.touched = true ) ", {
       val secondQ = Query.
         updates(ForeachAction(NodesFunction(Identifier("p")), "n", Seq(PropertySetAction(Property(Identifier("n"), PropertyKey("touched")), True())))).
@@ -1984,7 +1981,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("returnAll") {
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return *",
       Query.
         start(NodeById("s", 1)).
@@ -1992,7 +1989,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("single create unique") {
-    expectAST(
+    expectQuery(
       "start a = node(1), b=node(2) create unique a-[:reltype]->b", {
       val secondQ = Query.
         unique(UniqueLink("a", "b", "  UNNAMED44", "reltype", Direction.OUTGOING)).
@@ -2006,7 +2003,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("single create unique with rel") {
-    expectAST(
+    expectQuery(
       "start a = node(1), b=node(2) create unique a-[r:reltype]->b", {
       val secondQ = Query.
         unique(UniqueLink("a", "b", "r", "reltype", Direction.OUTGOING)).
@@ -2020,7 +2017,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("single relate with empty parenthesis") {
-    expectAST(
+    expectQuery(
       "start a = node(1), b=node(2) create unique a-[:reltype]->()", {
       val secondQ = Query.
         unique(UniqueLink("a", "  UNNAMED58", "  UNNAMED44", "reltype", Direction.OUTGOING)).
@@ -2034,7 +2031,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create unique with two patterns") {
-    expectAST(
+    expectQuery(
       "start a = node(1) create unique a-[:X]->b<-[:X]-c", {
       val secondQ = Query.
         unique(
@@ -2050,7 +2047,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relate with initial values for node") {
-    expectAST(
+    expectQuery(
       "start a = node(1) create unique a-[:X]->(b {name:'Andres'})", {
       val secondQ = Query.
         unique(
@@ -2068,7 +2065,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create unique with initial values for rel") {
-    expectAST(
+    expectQuery(
       "start a = node(1) create unique a-[:X {name:'Andres'}]->b", {
       val secondQ = Query.
         unique(
@@ -2086,7 +2083,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("foreach with literal collection") {
-    expectAST(
+    expectQuery(
       "create root foreach(x in [1,2,3] | create (a {number:x}))",
       Query.
         start(CreateNodeStartItem(CreateNode("root", Map.empty, Seq.empty))).
@@ -2096,7 +2093,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("string literals should not be mistaken for identifiers") {
-    expectAST(
+    expectQuery(
       "create (tag1 {name:'tag2'}), (tag2 {name:'tag1'})",
       Query.
         start(
@@ -2107,7 +2104,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relate with two rels to same node") {
-    expectAST(
+    expectQuery(
       "start root=node(0) create unique x<-[r1:X]-root-[r2:Y]->x return x", {
       val returns = Query.
         start(CreateUniqueStartItem(CreateUniqueAction(
@@ -2120,7 +2117,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("optional shortest path") {
-    expectAST(
+    expectQuery(
       """start a  = node(1), x = node(2,3)
          optional match p = shortestPath(a -[*]-> x)
          return *""",
@@ -2133,7 +2130,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("return paths") {
-    expectAST(
+    expectQuery(
       "start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
@@ -2142,7 +2139,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("not with parenthesis") {
-    expectAST(
+    expectQuery(
       "start a  = node(1) where not(1=2) or 2=3 return a",
       Query.
         start(NodeById("a", 1)).
@@ -2152,14 +2149,14 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("precedence of not without parenthesis") {
-    expectAST(
+    expectQuery(
       "start a = node(1) where not true or false return a",
       Query.
         start(NodeById("a", 1)).
         where(Or(Not(True()), Not(True()))).
         returns(ReturnItem(Identifier("a"), "a"))
     )
-    expectAST(
+    expectQuery(
       "start a = node(1) where not 1 < 2 return a",
       Query.
         start(NodeById("a", 1)).
@@ -2174,17 +2171,17 @@ class CypherParserTest extends CypherTestSuite {
       where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED" + offset2), "  UNNAMED" + offset1, Seq("MEMBER_OF"), Direction.OUTGOING, Map.empty)))))).
       returns(ReturnItem(Identifier("admin"), "admin"))
 
-    expectAST(
+    expectQuery(
       "MATCH (admin) WHERE NOT (admin)-[:MEMBER_OF]->() RETURN admin",
       parsedQueryWithOffsets(31, 47))
 
-    expectAST(
+    expectQuery(
       "MATCH (admin) WHERE NOT ((admin)-[:MEMBER_OF]->()) RETURN admin",
       parsedQueryWithOffsets(32, 48))
   }
 
   test("full path in create") {
-    expectAST(
+    expectQuery(
       "start a=node(1), b=node(2) create a-[r1:KNOWS]->()-[r2:LOVES]->b", {
       val secondQ = Query.
         start(
@@ -2204,7 +2201,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create and assign to path identifier") {
-    expectAST(
+    expectQuery(
       "create p = a-[r:KNOWS]->() return p",
       Query.
         start(CreateRelationshipStartItem(CreateRelationship("r",
@@ -2215,7 +2212,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("relate and assign to path identifier") {
-    expectAST(
+    expectQuery(
       "start a=node(0) create unique p = a-[r:KNOWS]->() return p", {
       val q2 = Query.
         start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink("a", "  UNNAMED48", "r", "KNOWS", Direction.OUTGOING)))).
@@ -2230,7 +2227,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("use predicate as expression") {
-    expectAST(
+    expectQuery(
       "start n=node(0) return id(n) = 0, n is null",
       Query.
         start(NodeById("n", 0)).
@@ -2241,7 +2238,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create unique should support parameter maps") {
-    expectAST(
+    expectQuery(
       "START n=node(0) CREATE UNIQUE n-[:foo]->({param}) RETURN *", {
       val start = NamedExpectation("n")
       val rel = NamedExpectation("  UNNAMED31")
@@ -2258,7 +2255,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("with limit") {
-    expectAST(
+    expectQuery(
       "start n=node(0,1,2) with n limit 2 where ID(n) = 1 return n",
       Query.
         start(NodeById("n", 0, 1, 2)).
@@ -2274,7 +2271,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("with sort limit") {
-    expectAST(
+    expectQuery(
       "start n=node(0,1,2) with n order by ID(n) desc limit 2 where ID(n) = 1 return n",
       Query.
         start(NodeById("n", 0, 1, 2)).
@@ -2296,7 +2293,7 @@ class CypherParserTest extends CypherTestSuite {
       updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
       returns()
 
-    expectAST(
+    expectQuery(
       "start n=node(0) set n = {prop}",
       Query.
         start(NodeById("n", 0)).
@@ -2305,7 +2302,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("set to map") {
-    expectAST(
+    expectQuery(
       "start n=node(0) set n = {key: 'value', foo: 1}", {
       val q2 = Query.
         start().
@@ -2320,7 +2317,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("add label") {
-    expectAST(
+    expectQuery(
       "START n=node(0) set n:LabelName", {
       val q2 = Query.
         start().
@@ -2335,7 +2332,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("add short label") {
-    expectAST(
+    expectQuery(
       "START n=node(0) SET n:LabelName", {
       val q2 = Query.
         start().
@@ -2350,7 +2347,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("add multiple labels") {
-    expectAST(
+    expectQuery(
       "START n=node(0) set n :LabelName2 :LabelName3", {
       val coll = LabelSupport.labelCollection("LabelName2", "LabelName3")
       val q2   = Query.
@@ -2366,7 +2363,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("add multiple short labels") {
-    expectAST(
+    expectQuery(
       "START n=node(0) set n:LabelName2:LabelName3", {
       val coll = LabelSupport.labelCollection("LabelName2", "LabelName3")
       val q2   = Query.
@@ -2382,7 +2379,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("add multiple short labels2") {
-    expectAST(
+    expectQuery(
       "START n=node(0) SET n :LabelName2 :LabelName3", {
       val coll = LabelSupport.labelCollection("LabelName2", "LabelName3")
       val q2   = Query.
@@ -2398,7 +2395,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("remove label") {
-    expectAST(
+    expectQuery(
       "START n=node(0) REMOVE n:LabelName", {
       val q2 = Query.
         start().
@@ -2413,7 +2410,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("remove multiple labels") {
-    expectAST(
+    expectQuery(
       "START n=node(0) REMOVE n:LabelName2:LabelName3", {
       val coll = LabelSupport.labelCollection("LabelName2", "LabelName3")
       val q2   = Query.
@@ -2429,7 +2426,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("filter by label in where") {
-    expectAST(
+    expectQuery(
       "START n=node(0) WHERE (n):Foo RETURN n",
       Query.
         start(NodeById("n", 0)).
@@ -2439,7 +2436,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("filter by label in where with expression") {
-    expectAST(
+    expectQuery(
       "START n=node(0) WHERE (n):Foo RETURN n",
       Query.
         start(NodeById("n", 0)).
@@ -2449,7 +2446,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("filter by labels in where") {
-    expectAST(
+    expectQuery(
       "START n=node(0) WHERE n:Foo:Bar RETURN n",
       Query.
         start(NodeById("n", 0)).
@@ -2460,28 +2457,28 @@ class CypherParserTest extends CypherTestSuite {
 
   test("create no index without properties") {
     evaluating {
-      expectAST(
+      expectQuery(
         "create index on :MyLabel",
         CreateIndex("MyLabel", Seq()))
     } should produce[SyntaxException]
   }
 
   test("create index on single property") {
-    expectAST(
+    expectQuery(
       "create index on :MyLabel(prop1)",
       CreateIndex("MyLabel", Seq("prop1")))
   }
 
   test("create index on multiple properties") {
     evaluating {
-      expectAST(
+      expectQuery(
         "create index on :MyLabel(prop1, prop2)",
         CreateIndex("MyLabel", Seq("prop1", "prop2")))
     } should produce[SyntaxException]
   }
 
   test("match left with single label") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match (a:foo) -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
@@ -2491,7 +2488,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("match left with multiple labels") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match (a:foo:bar) -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
@@ -2501,7 +2498,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("match right with multiple labels") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match () -[r:MARRIED]-> (a:foo:bar) return a",
       Query.
         start(NodeById("a", 1)).
@@ -2511,7 +2508,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("match both with labels") {
-    expectAST(
+    expectQuery(
       "start a = NODE(1) match (b:foo) -[r:MARRIED]-> (a:bar) return a",
       Query.
         start(NodeById("a", 1)).
@@ -2531,7 +2528,7 @@ class CypherParserTest extends CypherTestSuite {
       start(NodeById("u", 1)).
       returns(ReturnItem(Identifier("u"), "u"))
 
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return s UNION all start t = NODE(1) return t UNION all start u = NODE(1) return u",
       Union(Seq(q1, q2, q3), QueryString.empty, distinct = false)
     )
@@ -2542,7 +2539,7 @@ class CypherParserTest extends CypherTestSuite {
       start(NodeById("s", 1)).
       returns(ReturnItem(Identifier("s"), "s"))
 
-    expectAST(
+    expectQuery(
       "start s = NODE(1) return s UNION start s = NODE(1) return s UNION start s = NODE(1) return s",
       Union(Seq(q, q, q), QueryString.empty, distinct = true)
     )
@@ -2554,14 +2551,14 @@ class CypherParserTest extends CypherTestSuite {
       limit(1).
       returns(ReturnItem(Identifier("n"), "n"))
 
-    expectAST(
+    expectQuery(
       "MATCH (n) RETURN (n) LIMIT 1 UNION MATCH (n) RETURN (n) LIMIT 1 UNION MATCH (n) RETURN (n) LIMIT 1",
       Union(Seq(q, q, q), QueryString.empty, distinct = true)
     )
   }
 
   test("keywords in reltype and label") {
-    expectAST(
+    expectQuery(
       "START n=node(0) MATCH (n:On)-[:WHERE]->() RETURN n",
       Query.
         start(NodeById("n", 0)).
@@ -2571,14 +2568,14 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("remove index on single property") {
-    expectAST(
+    expectQuery(
       "drop index on :MyLabel(prop1)",
       DropIndex("MyLabel", Seq("prop1"))
     )
   }
 
   test("simple query with index hint") {
-    expectAST(
+    expectQuery(
       "match (n:Person)-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
         where(Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres"))).
@@ -2588,7 +2585,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("single node match pattern") {
-    expectAST(
+    expectQuery(
       "start s = node(*) match s return s",
       Query.
         start(AllNodes("s")).
@@ -2598,7 +2595,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("awesome single labeled node match pattern") {
-    expectAST(
+    expectQuery(
       "match (s:nostart) return s",
       Query.
         matches(SingleNode("s", Seq(UnresolvedLabel("nostart")))).
@@ -2607,7 +2604,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("single node match pattern path") {
-    expectAST(
+    expectQuery(
       "start s = node(*) match p = s return s",
       Query.
         start(AllNodes("s")).
@@ -2618,7 +2615,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("label scan hint") {
-    expectAST(
+    expectQuery(
       "match (p:Person) using scan p:Person return p",
       Query.
         matches(SingleNode("p", Seq(UnresolvedLabel("Person")))).
@@ -2628,7 +2625,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("varlength named path") {
-    expectAST(
+    expectQuery(
       "start n=node(1) match p=n-[:KNOWS*..2]->x return p",
       Query.
         start(NodeById("n", 1)).
@@ -2641,7 +2638,7 @@ class CypherParserTest extends CypherTestSuite {
   test("reduce function") {
     val collection = Collection(Literal(1), Literal(2), Literal(3))
     val expression = Add(Identifier("acc"), Identifier("x"))
-    expectAST(
+    expectQuery(
       "start n=node(1) return reduce(acc = 0, x in [1,2,3] | acc + x)",
       Query.
         start(NodeById("n", 1)).
@@ -2650,7 +2647,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("start and endNode") {
-    expectAST(
+    expectQuery(
       "start r=rel(1) return startNode(r), endNode(r)",
       Query.
         start(RelationshipById("r", 1)).
@@ -2666,7 +2663,7 @@ class CypherParserTest extends CypherTestSuite {
     val percentileDisc = PercentileDisc(property, Literal(0.5))
     val stdev = Stdev(property)
     val stdevP = StdevP(property)
-    expectAST(
+    expectQuery(
       "match n return percentileCont(n.property, 0.4), percentileDisc(n.property, 0.5), stdev(n.property), stdevp(n.property)",
       Query.
         matches(SingleNode("n")).
@@ -2680,7 +2677,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("escaped identifier") {
-    expectAST(
+    expectQuery(
       "match `Unusual identifier` return `Unusual identifier`.propertyName",
       Query.
         matches(SingleNode("Unusual identifier")).
@@ -2690,7 +2687,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("aliased column does not keep escape symbols") {
-    expectAST(
+    expectQuery(
       "match a return a as `Escaped alias`",
       Query.
         matches(SingleNode("a")).
@@ -2700,7 +2697,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("create with labels and props with parens") {
-    expectAST(
+    expectQuery(
       "CREATE (node :FOO:BAR {name: 'Stefan'})",
       Query.
         start(CreateNodeStartItem(CreateNode("node", Map("name"->Literal("Stefan")),
@@ -2710,14 +2707,14 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("constraint creation") {
-    expectAST(
+    expectQuery(
       "CREATE CONSTRAINT ON (id:Label) ASSERT id.property IS UNIQUE",
       CreateUniqueConstraint("id", "Label", "id", "property")
     )
   }
 
   test("named path with variable length path and named relationships collection") {
-    expectAST(
+    expectQuery(
       "match p = (a)-[r*]->(b) return p",
       Query.
         matches(VarLengthRelatedTo("  UNNAMED13", SingleNode("a"), SingleNode("b"), None, None, Seq.empty, Direction.OUTGOING, Some("r"), Map.empty)).
@@ -2727,7 +2724,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("variable length relationship with rel collection") {
-    expectAST(
+    expectQuery(
       "MATCH (a)-[rels*]->(b) WHERE ALL(r in rels WHERE r.prop = 42) RETURN rels",
       Query.
         matches(VarLengthRelatedTo("  UNNAMED9", SingleNode("a"), SingleNode("b"), None, None, Seq.empty, Direction.OUTGOING, Some("rels"), Map.empty)).
@@ -2737,7 +2734,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("simple case statement") {
-    expectAST(
+    expectQuery(
       "MATCH (a) RETURN CASE a.prop WHEN 1 THEN 'hello' ELSE 'goodbye' END AS result",
       Query.
         matches(SingleNode("a")).
@@ -2749,7 +2746,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("generic case statement") {
-    expectAST(
+    expectQuery(
       "MATCH (a) RETURN CASE WHEN a.prop = 1 THEN 'hello' ELSE 'goodbye' END AS result",
       Query.
         matches(SingleNode("a")).
@@ -2761,7 +2758,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("genericCaseCoercesInWhen") {
-    expectAST(
+    expectQuery(
       """MATCH (a) RETURN CASE WHEN (a)-[:LOVES]->() THEN 1 ELSE 0 END AS result""".stripMargin,
       Query.
         matches(SingleNode("a")).
@@ -2775,7 +2772,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("shouldGroupCreateAndCreateUpdate") {
-    expectAST(
+    expectQuery(
       """START me=node(0) MATCH p1 = me-[*2]-friendOfFriend CREATE p2 = me-[:MARRIED_TO]->(wife {name:"Gunhild"}) CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend RETURN p1,p2,p3""", {
       val thirdQ = Query.
         start(CreateUniqueStartItem(CreateUniqueAction(UniqueLink("wife", "friendOfFriend", "  UNNAMED128", "KNOWS", Direction.BOTH)))).
@@ -2803,7 +2800,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("return only query with literal map") {
-    expectAST(
+    expectQuery(
       "RETURN { key: 'value' }",
       Query.
         matches().
@@ -2819,7 +2816,7 @@ class CypherParserTest extends CypherTestSuite {
         ReturnItem(Property(Property(Identifier("person"), PropertyKey("address")), PropertyKey("city")), "person.address.city")
       )
 
-    expectAST(
+    expectQuery(
       "WITH { name:'Alice', address: { city:'London', residential:true }} AS person RETURN person.address.city",
       Query.
         matches().
@@ -2835,7 +2832,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("long match chain") {
-    expectAST("match (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c) return a, b, c",
+    expectQuery("match (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c) return a, b, c",
       Query.
         matches(
         RelatedTo("b", "a", "r1", Seq("REL1"), Direction.OUTGOING),
@@ -2845,7 +2842,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("long create chain") {
-    expectAST("create (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c)",
+    expectQuery("create (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c)",
       Query.
         start(
         CreateRelationshipStartItem(CreateRelationship("r1",
@@ -2861,7 +2858,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("test literal numbers") {
-    expectAST(
+    expectQuery(
       "RETURN 0.5, .5, 50",
       Query.
         matches().
@@ -2870,7 +2867,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("test unary plus minus") {
-    expectAST(
+    expectQuery(
       "MATCH n RETURN -n.prop, +n.foo, 1 + -n.bar",
       Query.
         matches(SingleNode("n")).
@@ -2881,7 +2878,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("compile query integration test") {
-    val q = cypherParser.parseToQuery("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[commands.Query]
+    val q = parser.parseToQuery("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asInstanceOf[commands.Query]
     assert(q.tail.nonEmpty, "wasn't compacted enough")
     val compacted = q.compact
 
@@ -2890,7 +2887,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should handle optional match") {
-    expectAST(
+    expectQuery(
       "OPTIONAL MATCH n RETURN n",
       Query.
         optionalMatches(SingleNode("n")).
@@ -2898,7 +2895,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("compile query integration test 2") {
-    val q = cypherParser.parseToQuery("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[commands.Query]
+    val q = parser.parseToQuery("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asInstanceOf[commands.Query]
     val compacted = q.compact
     var lastQ = compacted
 
@@ -2913,14 +2910,14 @@ class CypherParserTest extends CypherTestSuite {
     val second = Query.matches(RelatedTo("n", "b", "r1", Seq.empty, Direction.OUTGOING)).makeOptional().tail(last).returns(AllIdentifiers())
     val first = Query.matches(SingleNode("n")).tail(second).returns(AllIdentifiers())
 
-    expectAST(
+    expectQuery(
       "MATCH (n) OPTIONAL MATCH (n)-[r1]->(b) OPTIONAL MATCH (n)<-[r2]-(c) RETURN *",
       first)
   }
 
   test("should handle match properties pointing to other parts of pattern") {
     val nodeA = SingleNode("a", Seq.empty, Map("foo" -> Property(Identifier("x"), PropertyKey("bar"))))
-    expectAST(
+    expectQuery(
       "MATCH (a { foo:x.bar })-->(x) RETURN *",
       Query.
         matches(RelatedTo(nodeA, SingleNode("x"), "  UNNAMED23", Seq.empty, Direction.OUTGOING, Map.empty)).
@@ -2928,7 +2925,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should allow both relationships and nodes to be set with maps") {
-    expectAST(
+    expectQuery(
       "MATCH (a)-[r:KNOWS]->(b) SET r = { id: 42 }",
       Query.
         matches(RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)).
@@ -2937,7 +2934,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should allow whitespace in multiple word operators") {
-    expectAST(
+    expectQuery(
       "OPTIONAL\t MATCH (n) WHERE n  IS   NOT\n /* possibly */ NULL    RETURN n",
       Query.
         optionalMatches(SingleNode("n")).
@@ -2947,7 +2944,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should handle load and return as map") {
-    expectAST(
+    expectQuery(
       "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",
       Query.
         start(LoadCSV(withHeaders = true, new URL("file:///tmp/file.cvs"), "line")).
@@ -2956,7 +2953,7 @@ class CypherParserTest extends CypherTestSuite {
   }
 
   test("should handle load and return") {
-    expectAST(
+    expectQuery(
       "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
       Query.
         start(LoadCSV(withHeaders = false, new URL("file:///tmp/file.cvs"), "line")).
@@ -2965,8 +2962,8 @@ class CypherParserTest extends CypherTestSuite {
   }
 
 
-  private def expectAST(query: String, expectedQuery: AbstractQuery) {
-    val ast = cypherParser.parseToQuery(query)
+  private def expectQuery(query: String, expectedQuery: AbstractQuery) {
+    val ast = parser.parseToQuery(query)
     try {
       assertThat(query, ast, equalTo(expectedQuery))
     } catch {

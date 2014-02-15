@@ -19,23 +19,42 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
+import scala.annotation.tailrec
+
 object Foldable {
-  implicit class TreeAny(val any: Any) extends AnyVal {
-    def children: IndexedSeq[Any] = any match {
-      case p: Product => p.productIterator.toVector
-      case s: Seq[_] => s.toVector
-      case _ => Vector.empty
+  implicit class TreeAny(val that: Any) extends AnyVal {
+    def children: Iterator[AnyRef] = that match {
+      case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Seq[_] => s.toIterator.asInstanceOf[Iterator[AnyRef]]
+      case _ => Iterator.empty
     }
   }
 
-  implicit class FoldableAny(val any: Any) extends AnyVal {
-    def fold[R](init: R)(f: PartialFunction[Any, R => R]): R = {
-      val acc = if (f.isDefinedAt(any))
-        f(any)(init)
+  implicit class FoldableAny(val that: Any) extends AnyVal {
+    def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
+      foldAcc(List(that), init, f.lift)
+
+    def foldt[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
+      foldtAcc(List(that), init, f)
+  }
+
+  @tailrec
+  private def foldAcc[R](those: List[Any], acc: R, f: Any => Option[R => R]): R = those match {
+    case Nil =>
+      acc
+    case that :: rs =>
+      foldAcc(that.children.toList ++ rs, f(that).fold(acc)(_(acc)), f)
+  }
+
+  // partially tail-recursive (recursion is unavoidable for partial function matches)
+  private def foldtAcc[R](those: List[Any], acc: R, f: PartialFunction[Any, (R, R => R) => R]): R = those match {
+    case Nil =>
+      acc
+    case that :: rs =>
+      if (f.isDefinedAt(that))
+        foldtAcc(rs, f(that)(acc, foldtAcc(that.children.toList, _, f)), f)
       else
-        init
-      any.children.foldLeft(acc)((a, t) => t.fold(a)(f))
-    }
+        foldtAcc(that.children.toList ++ rs, acc, f)
   }
 }
 
