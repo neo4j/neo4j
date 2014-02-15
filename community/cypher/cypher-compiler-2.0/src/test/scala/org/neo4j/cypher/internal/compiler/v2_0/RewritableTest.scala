@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 object RewritableTest {
   trait Exp extends Product with Rewritable
@@ -45,7 +45,7 @@ object RewritableTest {
   }
 }
 
-class RewritableTest extends CypherTestSuite {
+class RewritableTest extends CypherFunSuite {
   import RewritableTest._
 
   test("topDown should be identical when no rule matches") {

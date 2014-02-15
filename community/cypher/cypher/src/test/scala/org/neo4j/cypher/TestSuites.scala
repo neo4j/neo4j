@@ -19,18 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.{FunSuite, Matchers}
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import org.neo4j.graphdb.Relationship
+import org.neo4j.cypher.internal.commons.{CypherJUnitSuite, CypherFunSuite}
 
-@RunWith(classOf[JUnitRunner])
-class CreateAcceptanceTest extends ExecutionEngineFunSuite {
+abstract class GraphDatabaseJUnitSuite
+  extends CypherJUnitSuite with GraphDatabaseTestSupport
 
-  test("using an undirected relationship pattern should fail on create") {
-    evaluating {
-      executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
-    }  should produce[SyntaxException]
-  }
+abstract class ExecutionEngineJUnitSuite
+  extends CypherJUnitSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
 
-}
+abstract class ExecutionEngineFunSuite
+  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport

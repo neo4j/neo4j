@@ -29,6 +29,7 @@ import java.io.PrintWriter
 import org.neo4j.graphdb.ResourceIterator
 import java.util
 import org.scalatest.{Suite, BeforeAndAfterEach, Assertions}
+import org.neo4j.cypher.internal.commons.{CypherTestSuite, TestSupport}
 
 
 case class ExpectedException[T <: Throwable](e: T) {
@@ -36,7 +37,7 @@ case class ExpectedException[T <: Throwable](e: T) {
 }
 
 trait ExecutionEngineTestSupport extends TestSupport {
-  self: TestSuite with GraphDatabaseTestSupport =>
+  self: CypherTestSuite with GraphDatabaseTestSupport =>
 
   var engine: ExecutionEngine = null
 

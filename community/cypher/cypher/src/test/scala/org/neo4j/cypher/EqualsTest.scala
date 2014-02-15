@@ -25,7 +25,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class EqualsTest extends ExecutionEngineFunSuite {
 
-  test("should_prohibit_equals_between_node_and_parameter") {
+  test("should prohibit equals between node and parameter") {
     // given
     createLabeledNode("Person")
 
@@ -34,7 +34,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     } should produce[IncomparableValuesException]
   }
 
-  test("should_prohibit_equals_between_parameter_and_node") {
+  test("should prohibit equals between parameter and node") {
     // given
     createLabeledNode("Person")
 
@@ -43,7 +43,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     } should produce[IncomparableValuesException]
   }
 
-  test("should_allow_equals_between_node_and_node") {
+  test("should allow equals between node and node") {
     // given
     createLabeledNode("Person")
 
@@ -54,7 +54,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     result should be (1)
   }
 
-  test("should_reject_equals_between_node_and_property") {
+  test("should reject equals between node and property") {
     // given
     createLabeledNode(Map("val"->17), "Person")
 
@@ -64,7 +64,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
   }
 
 
-  test("should_allow_equals_between_relationship_and_relationship") {
+  test("should allow equals between relationship and relationship") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
@@ -75,7 +75,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     result should be (1)
   }
 
-  test("should_reject_equals_between_node_and_relationship") {
+  test("should reject equals between node and relationship") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
@@ -84,7 +84,7 @@ class EqualsTest extends ExecutionEngineFunSuite {
     } should produce[IncomparableValuesException]
   }
 
-  test("should_reject_equals_between_relationship_and_node") {
+  test("should reject equals between relationship and node") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
