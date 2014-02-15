@@ -29,14 +29,14 @@ import java.io.PrintWriter
 import org.neo4j.graphdb.ResourceIterator
 import java.util
 import org.scalatest.{Suite, BeforeAndAfterEach, Assertions}
-import org.neo4j.cypher.internal.commons.{CypherTestSuite, TestSupport}
+import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 
 
 case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
 }
 
-trait ExecutionEngineTestSupport extends TestSupport {
+trait ExecutionEngineTestSupport extends CypherTestSupport {
   self: CypherTestSuite with GraphDatabaseTestSupport =>
 
   var engine: ExecutionEngine = null

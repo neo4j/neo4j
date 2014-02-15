@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 import org.scalautils.LegacyTripleEquals
 
-class ExecutionEngineTest extends ExecutionEngineJUnitSuite with StatisticsChecker {
+class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
   @Test def shouldSupportMultipleDivisionsInAggregateFunction() {
     createNode()

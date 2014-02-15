@@ -23,9 +23,9 @@ import org.junit.Test
 import org.neo4j.cypher.docgen.DocumentingTestBase
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
-import org.neo4j.cypher.StatisticsChecker
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class PrettyGraphsCompleteGraphTest extends DocumentingTestBase with StatisticsChecker {
+class PrettyGraphsCompleteGraphTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   def section = "cookbook"
   generateInitialGraphForConsole = false
   override val graphvizOptions = "graph [layout=circo]"

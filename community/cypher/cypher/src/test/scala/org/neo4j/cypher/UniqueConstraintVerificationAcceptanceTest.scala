@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.impl.api.OperationsFacade
 
 class UniqueConstraintVerificationAcceptanceTest
-  extends ExecutionEngineJUnitSuite with StatisticsChecker with CollectionSupport {
+  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CollectionSupport {
 
   @Test
   def should_add_constraint_with_no_existing_data() {

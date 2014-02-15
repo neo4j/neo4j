@@ -26,7 +26,7 @@ import java.io.{FileOutputStream, File}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.GraphDatabaseService
 
-class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with StatisticsChecker {
+class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
   @Test def createIndex() {
     // WHEN

@@ -21,9 +21,9 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.graphdb.{ DynamicLabel, Node, Relationship }
-import org.neo4j.cypher.StatisticsChecker
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class CreateTest extends DocumentingTestBase with StatisticsChecker {
+class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
   def section = "Create"
 

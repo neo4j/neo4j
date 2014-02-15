@@ -32,7 +32,7 @@ import org.scalautils.LegacyTripleEquals
 import javax.transaction.TransactionManager
 
 class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
-  with Assertions with StatisticsChecker {
+  with Assertions with QueryStatisticsTestSupport {
 
   val stats = QueryStatistics()
 
@@ -126,7 +126,7 @@ class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
     relate(a, d)
 
     val result = execute("start a = node(0) match a-[r]->() delete r")
-    assertStats(result, relationshipsDeleted = 3    )
+    assertStats( result, relationshipsDeleted = 3  )
 
     assertInTx(a.getRelationships.asScala.size === 0)
   }
@@ -563,21 +563,5 @@ return distinct center""")
                  DELETE center,r""")
 
     assertStats(result, nodesCreated = 7, propertiesSet = 7, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
-  }
-}
-
-trait StatisticsChecker extends Assertions {
-  def assertStats(result: ExecutionResult,
-                  nodesCreated: Int = 0,
-                  relationshipsCreated: Int = 0,
-                  propertiesSet: Int = 0,
-                  nodesDeleted: Int = 0,
-                  relationshipsDeleted: Int = 0,
-                  labelsAdded: Int = 0,
-                  labelsRemoved: Int = 0) {
-    val statistics = result.queryStatistics()
-    assert(statistics === QueryStatistics(nodesCreated, relationshipsCreated, propertiesSet, nodesDeleted,
-                                relationshipsDeleted, labelsAdded, labelsRemoved)
-    )
   }
 }

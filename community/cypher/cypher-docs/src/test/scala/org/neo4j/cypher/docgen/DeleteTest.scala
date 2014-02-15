@@ -22,9 +22,9 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
-import org.neo4j.cypher.StatisticsChecker
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class DeleteTest extends DocumentingTestBase with StatisticsChecker {
+class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(

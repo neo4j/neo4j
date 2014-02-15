@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.{ExecutionResult, StatisticsChecker}
+import org.neo4j.cypher.{ExecutionResult, QueryStatisticsTestSupport}
 import java.io.File
 
-class LoadCSVFromSingleFileTest extends ArticleTest with StatisticsChecker {
+class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupport {
   implicit var csvFilesDir: File = _
 
   override def doThisBefore() {
