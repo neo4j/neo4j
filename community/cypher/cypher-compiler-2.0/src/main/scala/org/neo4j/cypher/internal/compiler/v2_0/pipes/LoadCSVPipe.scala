@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, MapType, SymbolTable}
-import org.neo4j.cypher.internal.compiler.v2_0.{CleanupTask, ExecutionContext, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescription}
 import java.io.{InputStreamReader, BufferedReader}
 import au.com.bytecode.opencsv.CSVReader
 import java.net.URL
@@ -54,11 +54,12 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
   }
 
   private def getCSVReader(state: QueryState): CSVReader = {
-    import CleanupTask.CloseableCleanupTask
 
     val reader = new BufferedReader(new InputStreamReader(url.openStream()))
     val csvReader = new CSVReader(reader)
-    state.addCleanupTask(csvReader)
+
+    state.addCleanupTask(() => csvReader.close())
+
     csvReader
   }
 

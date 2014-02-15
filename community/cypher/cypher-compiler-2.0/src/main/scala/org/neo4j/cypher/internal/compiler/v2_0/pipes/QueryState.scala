@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_0.spi.{QueryContext, UpdateCounting
 import org.neo4j.cypher.ParameterNotFoundException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
-import collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class QueryState(db: GraphDatabaseService,
@@ -33,7 +32,7 @@ case class QueryState(db: GraphDatabaseService,
                       decorator: PipeDecorator,
                       timeReader: TimeReader = new TimeReader,
                       var initialContext: Option[ExecutionContext] = None,
-                      cleanupTasks: ListBuffer[CleanupTask] = ListBuffer.empty) extends CleanupTaskList {
+                      _cleanupTasks: ListBuffer[() => Unit] = ListBuffer.empty) extends CleanupTaskList {
   def readTimeStamp(): Long = timeReader.getTime
 
   private val updateTrackingQryCtx: UpdateCountingQueryContext = new UpdateCountingQueryContext(inner)
@@ -49,10 +48,10 @@ case class QueryState(db: GraphDatabaseService,
 
   def getStatistics = updateTrackingQryCtx.getStatistics
 
-  def getCleanupTasks: Seq[CleanupTask] = cleanupTasks.toSeq
+  def cleanupTasks: Seq[() => Unit] = _cleanupTasks.toSeq
 
-  def addCleanupTask(task: CleanupTask) {
-    cleanupTasks += task
+  def addCleanupTask(task: () => Unit) {
+    _cleanupTasks += task
   }
 }
 
