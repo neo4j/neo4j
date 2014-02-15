@@ -19,24 +19,18 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Map;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
 import org.neo4j.server.rest.batch.BatchOperationResults;
 import org.neo4j.server.rest.batch.NonStreamingBatchOperations;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -126,7 +120,6 @@ public class BatchOperationService {
             BatchOperationResults results = batchOperations.performBatchJobs( uriInfo, httpHeaders, body );
 
             Response res = Response.ok().entity(results.toJSON())
-                    .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
                     .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE)).build();
             representationWriteHandler.onRepresentationWritten();
             return res;
