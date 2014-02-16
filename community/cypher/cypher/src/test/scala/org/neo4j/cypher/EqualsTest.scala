@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_0.commands
+package org.neo4j.cypher
 
-import org.junit.Test
-import org.scalatest._
-import org.neo4j.cypher.{IncomparableValuesException, ExecutionEngineHelper}
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
-class EqualsTest extends ExecutionEngineHelper with Matchers {
+@RunWith(classOf[JUnitRunner])
+class EqualsTest extends ExecutionEngineFunSuite {
 
-  @Test
-  def should_prohibit_equals_between_node_and_parameter() {
+  test("should prohibit equals between node and parameter") {
     // given
     createLabeledNode("Person")
 
@@ -35,8 +34,7 @@ class EqualsTest extends ExecutionEngineHelper with Matchers {
     } should produce[IncomparableValuesException]
   }
 
-  @Test
-  def should_prohibit_equals_between_parameter_and_node() {
+  test("should prohibit equals between parameter and node") {
     // given
     createLabeledNode("Person")
 
@@ -45,8 +43,7 @@ class EqualsTest extends ExecutionEngineHelper with Matchers {
     } should produce[IncomparableValuesException]
   }
 
-  @Test
-  def should_allow_equals_between_node_and_node() {
+  test("should allow equals between node and node") {
     // given
     createLabeledNode("Person")
 
@@ -57,8 +54,7 @@ class EqualsTest extends ExecutionEngineHelper with Matchers {
     result should be (1)
   }
 
-  @Test
-  def should_reject_equals_between_node_and_property() {
+  test("should reject equals between node and property") {
     // given
     createLabeledNode(Map("val"->17), "Person")
 
@@ -67,8 +63,8 @@ class EqualsTest extends ExecutionEngineHelper with Matchers {
     } should produce[IncomparableValuesException]
   }
 
-  @Test
-  def should_allow_equals_between_relationship_and_relationship() {
+
+  test("should allow equals between relationship and relationship") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
@@ -79,9 +75,7 @@ class EqualsTest extends ExecutionEngineHelper with Matchers {
     result should be (1)
   }
 
-
-  @Test
-  def should_reject_equals_between_node_and_relationship() {
+  test("should reject equals between node and relationship") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
@@ -90,8 +84,7 @@ class EqualsTest extends ExecutionEngineHelper with Matchers {
     } should produce[IncomparableValuesException]
   }
 
-  @Test
-  def should_reject_equals_between_relationship_and_node() {
+  test("should reject equals between relationship and node") {
     // given
     relate(createLabeledNode("Person"), createLabeledNode("Person"))
 

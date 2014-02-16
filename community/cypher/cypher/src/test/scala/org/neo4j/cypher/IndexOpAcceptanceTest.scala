@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.kernel.api.exceptions.schema.{NoSuchIndexException, DropIndexFailureException}
 import java.util.concurrent.TimeUnit
 import java.io.{FileOutputStream, File}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.GraphDatabaseService
-import org.scalautils.LegacyTripleEquals
 
-class IndexOpAcceptanceTest extends ExecutionEngineHelper
-  with StatisticsChecker with Assertions with LegacyTripleEquals {
+class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
   @Test def createIndex() {
     // WHEN

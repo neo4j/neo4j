@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class SplitFunctionTest extends CypherTestSuite {
+class SplitFunctionTest extends CypherFunSuite {
 
   val nullSeq = null.asInstanceOf[Seq[String]]
   val nullString = null.asInstanceOf[String]

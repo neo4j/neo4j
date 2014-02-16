@@ -32,9 +32,10 @@ import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
 import org.scalatest.Matchers
 import java.net.URL
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class CypherParserTest extends CypherTestSuite {
+class CypherParserTest extends CypherFunSuite {
+  
   import ParserFixture._
 
   test("shouldParseEasiestPossibleQuery") {
@@ -2960,7 +2961,6 @@ class CypherParserTest extends CypherTestSuite {
         returns(ReturnItem(Identifier("line"), "line"))
     )
   }
-
 
   private def expectQuery(query: String, expectedQuery: AbstractQuery) {
     val ast = parser.parseToQuery(query)

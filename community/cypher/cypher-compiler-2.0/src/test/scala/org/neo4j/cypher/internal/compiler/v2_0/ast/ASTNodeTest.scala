@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 object ASTNodeTest {
   trait Exp extends ASTNode
@@ -32,7 +32,7 @@ object ASTNodeTest {
   }
 }
 
-class ASTNodeTest extends CypherTestSuite {
+class ASTNodeTest extends CypherFunSuite {
   import ASTNodeTest._
 
   test("rewrite should match and replace expressions") {

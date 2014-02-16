@@ -41,7 +41,7 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   @Test def delete_node() {
     context.nodeOps.delete(nodeA)
 
-    assert(context.getStatistics === QueryStatistics(deletedNodes = 1))
+    assert(context.getStatistics === QueryStatistics(nodesDeleted = 1))
   }
 
   @Test def create_relationship() {
@@ -53,7 +53,7 @@ class UpdateCountingQueryContextTest extends MockitoSugar with Assertions {
   @Test def delete_relationship() {
     context.relationshipOps.delete(rel)
 
-    assert(context.getStatistics === QueryStatistics(deletedRelationships = 1))
+    assert(context.getStatistics === QueryStatistics(relationshipsDeleted = 1))
   }
 
   @Test def set_property() {

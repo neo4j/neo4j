@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.StatisticsChecker
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
-class SchemaIndexTest extends DocumentingTestBase with StatisticsChecker with GraphIcing {
+class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
   override def graphDescription = List(
     "root X A",
     "root X B",

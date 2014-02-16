@@ -29,11 +29,11 @@ import org.neo4j.graphdb.Transaction
 import org.junit.{After, Before, Test}
 import org.scalatest.Assertions
 import org.junit.Assert._
-import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders.{Solved, Unsolved, TraversalMatcherBuilder, BuilderTest}
 import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundPlanContext
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 
-class TraversalMatcherBuilderTest extends GraphDatabaseTestBase with Assertions with BuilderTest {
+class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTest {
   var builder: TraversalMatcherBuilder = null
   var ctx: PlanContext = null
   var tx: Transaction = null

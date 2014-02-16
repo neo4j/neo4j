@@ -23,7 +23,7 @@ import internal.helpers.GraphIcing
 import org.junit.Test
 import org.scalatest.Assertions
 
-class UsingAcceptanceTest extends ExecutionEngineHelper with Assertions with GraphIcing {
+class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
 
   @Test
   def failIfUsingIndexWithStartClause() {

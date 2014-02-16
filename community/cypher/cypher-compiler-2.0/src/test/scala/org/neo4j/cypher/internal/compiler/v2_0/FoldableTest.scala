@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 object FoldableTest {
   trait Exp extends Foldable
@@ -28,7 +28,7 @@ object FoldableTest {
   case class Sum(args: Seq[Exp]) extends Exp
 }
 
-class FoldableTest extends CypherTestSuite {
+class FoldableTest extends CypherFunSuite {
   import FoldableTest._
 
   test("should fold value depth first over object tree") {

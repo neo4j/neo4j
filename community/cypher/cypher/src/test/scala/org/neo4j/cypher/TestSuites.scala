@@ -19,19 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.{CypherJUnitSuite, CypherFunSuite}
 
-class IndexUsageAcceptanceTest extends ExecutionEngineJUnitSuite{
-  @Test
-  def should_not_forget_predicates() {
-    // Given
-    execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
-    execute("CREATE INDEX ON :Crew(name)")
+abstract class GraphDatabaseJUnitSuite
+  extends CypherJUnitSuite with GraphDatabaseTestSupport
 
-    // When
-    val result = execute("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name= 'Morpheus' RETURN n")
+abstract class ExecutionEngineJUnitSuite
+  extends CypherJUnitSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
 
-    // Then
-    assert(result.isEmpty, "Should not find anything here")
-  }
-}
+abstract class ExecutionEngineFunSuite
+  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport

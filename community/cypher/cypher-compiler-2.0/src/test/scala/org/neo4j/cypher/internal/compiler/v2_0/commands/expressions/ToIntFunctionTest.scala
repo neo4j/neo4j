@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
 import org.neo4j.cypher.ParameterWrongTypeException
-import org.neo4j.cypher.internal.commons.CypherTestSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class ToIntFunctionTest extends CypherTestSuite {
+class ToIntFunctionTest extends CypherFunSuite {
 
   test("should return null if argument is null") {
     assert(toInt(null) === null)

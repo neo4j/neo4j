@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands.expressions.{Expression, Literal}
 import mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
 import symbols._
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineHelper}
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, CypherTypeException, ExecutionEngineTestSupport}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.scalatest.Assertions
 import org.junit.{After, Test}
@@ -30,7 +30,7 @@ import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.{QueryState, ExecuteUpdateCommandsPipe, NullPipe}
 import org.scalautils.LegacyTripleEquals
 
-class MutationTest extends ExecutionEngineHelper with Assertions with LegacyTripleEquals {
+class MutationTest extends ExecutionEngineJUnitSuite {
 
   var tx : org.neo4j.graphdb.Transaction = null
 

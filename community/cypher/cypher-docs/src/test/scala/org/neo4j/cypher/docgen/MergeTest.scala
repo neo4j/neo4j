@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.{MergeConstraintConflictException, StatisticsChecker}
+import org.neo4j.cypher.{MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class MergeTest extends DocumentingTestBase with StatisticsChecker {
+class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

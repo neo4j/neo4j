@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 
 
-class UnionAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class UnionAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test
   def should_be_able_to_create_text_output_from_union_queries() {
 

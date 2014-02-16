@@ -23,7 +23,7 @@ import org.scalatest.Matchers
 import org.junit.Test
 import org.neo4j.graphdb.Node
 
-class PatternPredicateAcceptanceTest extends ExecutionEngineHelper with Matchers {
+class PatternPredicateAcceptanceTest extends ExecutionEngineJUnitSuite with Matchers {
   
   @Test
   def should_filter_relationships_with_properties() {

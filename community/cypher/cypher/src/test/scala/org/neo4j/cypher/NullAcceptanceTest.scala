@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.junit.Test
 
-class NullAcceptanceTest extends ExecutionEngineHelper {
+class NullAcceptanceTest extends ExecutionEngineJUnitSuite{
 
   @Test def null_nodes_should_be_silently_ignored() {
     // Given empty database

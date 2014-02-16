@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.junit.Test
 import org.scalatest.Assertions
 
-class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
 
   @Test
   def split_should_work_as_expected() {

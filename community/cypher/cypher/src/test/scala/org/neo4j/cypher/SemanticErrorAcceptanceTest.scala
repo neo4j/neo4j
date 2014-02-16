@@ -24,7 +24,7 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 
-class SemanticErrorAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test def returnNodeThatsNotThere() {
     test(
       "start x=node(0) return bar",

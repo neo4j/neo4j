@@ -19,36 +19,9 @@
  */
 package org.neo4j.cypher.internal.commons
 
-import org.scalatest._
-import org.junit.runner.RunWith
-import org.scalatest.junit.{JUnitSuiteLike, JUnitRunner}
-import org.scalautils.LegacyTripleEquals
-import org.junit.{After, Before}
-
-// Shared between all TestSuite variants
-abstract class CypherTestSuite extends Suite with Assertions with CypherTestSupport
-
-abstract class CypherJUnitSuite extends CypherTestSuite with JUnitSuiteLike with LegacyTripleEquals {
-
-  @Before
-  final def beforeTest() {
-    initTest()
-  }
-
-  @After
-  final def afterTest() {
-    stopTest()
-  }
+// Inherited by test mixin classes that need to manage resources
+trait CypherTestSupport  {
+  protected def initTest() {}
+  protected def stopTest() {}
 }
 
-@RunWith(classOf[JUnitRunner])
-abstract class CypherFunSuite extends CypherTestSuite with FunSuiteLike with Matchers with BeforeAndAfterEach {
-
-  override protected def beforeEach() {
-    initTest()
-  }
-
-  override protected def afterEach() {
-    stopTest()
-  }
-}

@@ -25,16 +25,11 @@ import org.junit.runner.RunWith
 import org.neo4j.graphdb.Relationship
 
 @RunWith(classOf[JUnitRunner])
-class CreateAcceptanceTest extends FunSuite with Matchers {
+class CreateAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("using an undirected relationship pattern should fail on create") {
-    // TODO: Fix this
-    object engine extends ExecutionEngineHelper
-    engine.baseInit()
-    engine.executionEngineHelperInit()
-
     evaluating {
-      engine.executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
+      executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
     }  should produce[SyntaxException]
   }
 

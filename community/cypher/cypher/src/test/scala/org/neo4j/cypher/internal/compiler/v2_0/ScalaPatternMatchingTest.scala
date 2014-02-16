@@ -24,11 +24,11 @@ import commands.expressions.Literal
 import executionplan.builders.PatternGraphBuilder
 import pipes.matching.PatternMatchingBuilder
 import symbols._
-import org.neo4j.cypher.ExecutionEngineHelper
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport}
 import org.neo4j.graphdb.Direction
 import org.junit.{After, Test}
 
-class ScalaPatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
+class ScalaPatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBuilder {
   val symbols = new SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, Direction.OUTGOING)
   val rightNode = patternRelationship.right

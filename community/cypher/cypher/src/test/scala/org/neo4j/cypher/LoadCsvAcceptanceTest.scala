@@ -23,7 +23,7 @@ import org.junit.{After, Test}
 import java.io.PrintWriter
 import scala.reflect.io.File
 
-class LoadCsvAcceptanceTest extends ExecutionEngineHelper with StatisticsChecker {
+class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
   @Test def import_three_strings() {
     val fileName = createFile {
       writer =>

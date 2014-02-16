@@ -26,8 +26,8 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.graphdb.Node
 import org.scalautils.LegacyTripleEquals
 
-class LabelsAcceptanceTest extends ExecutionEngineHelper
-  with StatisticsChecker with Assertions with CollectionSupport with LegacyTripleEquals {
+class LabelsAcceptanceTest extends ExecutionEngineJUnitSuite
+  with QueryStatisticsTestSupport with Assertions with CollectionSupport with LegacyTripleEquals {
 
   @Test def Adding_single_literal_label() {
     assertThat("create (n {}) set n:FOO", List("FOO"))
@@ -125,10 +125,8 @@ class LabelsAcceptanceTest extends ExecutionEngineHelper
 
 
   private def insertNewCleanDatabase() {
-    graph.shutdown()
-
-    graph = new ImpermanentGraphDatabase() with Snitch
-    executionEngineHelperInit()
+    stopTest()
+    initTest()
   }
 
   def assertDoesNotWork(s: String) {

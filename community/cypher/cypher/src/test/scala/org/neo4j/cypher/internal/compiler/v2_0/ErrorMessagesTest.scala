@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.StringHelper
-import org.neo4j.cypher.{ExecutionEngineHelper, CypherException, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport, CypherException, SyntaxException}
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 
-class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringHelper {
+class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
   @Test def noReturnColumns() {
     expectError(
       "start s = node(0) return",
