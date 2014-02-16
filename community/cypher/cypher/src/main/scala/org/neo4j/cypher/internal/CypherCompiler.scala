@@ -43,10 +43,9 @@ object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 100
 
   case class VersionProxy(graph: GraphDatabaseService, defaultVersion: CypherVersion) {
-    private val queryCache = new LRUCache[(CypherVersion, String), Object](getQueryCacheSize)
+    private val queryCache = new LRUCache[(CypherVersion, Object), Object](getQueryCacheSize)
     private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
     private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
-
 
     @throws(classOf[SyntaxException])
     def prepare(query: String, context: GraphDatabaseService, statement: Statement): ExecutionPlan = {
