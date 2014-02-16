@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.commons
 
 import org.scalatest._
-import org.junit.runner.RunWith
+import org.junit.runner.{Runner, RunWith}
 import org.scalatest.junit.{JUnitSuiteLike, JUnitRunner}
 import org.scalautils.LegacyTripleEquals
-import org.junit.{After, Before}
+import org.junit.{BeforeClass, After, Before}
 
 // Shared between all TestSuite variants
 abstract class CypherTestSuite extends Suite with Assertions with CypherTestSupport
@@ -42,7 +42,12 @@ abstract class CypherJUnitSuite extends CypherTestSuite with JUnitSuiteLike with
 }
 
 @RunWith(classOf[JUnitRunner])
-abstract class CypherFunSuite extends CypherTestSuite with FunSuiteLike with Matchers with BeforeAndAfterEach {
+abstract class CypherFunSuite extends CypherTestSuite
+  with FunSuiteLike with Matchers with BeforeAndAfterEach {
+
+  // calling ensureReady in an initializer block makes it work when run
+  // from either the JUnit or the scala test plugin in IDEA
+  ensureReady()
 
   override protected def beforeEach() {
     initTest()
@@ -50,5 +55,17 @@ abstract class CypherFunSuite extends CypherTestSuite with FunSuiteLike with Mat
 
   override protected def afterEach() {
     stopTest()
+  }
+
+  protected def ensureReady() = {
+    val runnerClass = runWith.getOrElse( throw new IllegalStateException("Scala test not annotated with @RunWith") )
+    if (classOf[JUnitRunner].isAssignableFrom(runnerClass.value())) {
+      throw new IllegalStateException("Scala test not annotated to be executed by JUnit")
+    }
+  }
+
+  protected def runWith: Option[RunWith] = {
+    val annotation = getClass.getAnnotation(classOf[RunWith])
+    if (annotation == null) Some(annotation) else None
   }
 }
