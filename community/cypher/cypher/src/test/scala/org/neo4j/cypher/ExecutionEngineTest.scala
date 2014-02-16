@@ -30,7 +30,6 @@ import util.Random
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
-import org.scalautils.LegacyTripleEquals
 
 class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
@@ -214,20 +213,6 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     assertEquals(List(Map("n.name" -> null)), result.toList)
   }
 
-  @Test def shouldBeAbleToCountNodes() {
-    val a = createNode()
-    val b1 = createNode() //start a = (0) match (a) --> (b) return a, count(*)
-    val b2 = createNode()
-    relate(a, b1, "A")
-    relate(a, b2, "A")
-
-    val result = execute(
-      s"start a=node(${a.getId}) match (a)-[rel]->(b) return a, count(*)"
-    )
-
-    assertEquals(List(Map("a" -> a, "count(*)" -> 2)), result.toList)
-  }
-
   @Test def shouldAcceptSkipZero() {
     val result = execute("start n=node(0) where 1 = 0 return n skip 0")
 
@@ -293,25 +278,6 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     assertEquals(List("Germany", "Sweden", "England"), result.columnAs[String]("n.division").toList)
   }
 
-  @Test def shouldSortOnAggregatedFunctionAndNormalProperty() {
-    val n1 = createNode(Map("name" -> "andres", "division" -> "Sweden"))
-    val n2 = createNode(Map("name" -> "michael", "division" -> "Germany"))
-    val n3 = createNode(Map("name" -> "jim", "division" -> "England"))
-    val n4 = createNode(Map("name" -> "mattias", "division" -> "Sweden"))
-
-    val result = execute(
-      s"start n=node(${n1.getId}, ${n2.getId}, ${n3.getId}, ${n4.getId})" +
-        """return n.division, count(*)
-        order by count(*) DESC, n.division ASC
-        """
-    )
-
-    assertEquals(List(
-      Map("n.division" -> "Sweden", "count(*)" -> 2),
-      Map("n.division" -> "England", "count(*)" -> 1),
-      Map("n.division" -> "Germany", "count(*)" -> 1)), result.toList)
-  }
-
   @Test def magicRelTypeOutput() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
@@ -320,42 +286,6 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     val result = execute("start n = node(0) match n-[r]->x return type(r)")
 
     assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("type(r)").toList)
-  }
-
-  @Test def shouldAggregateOnProperties() {
-    val n1 = createNode(Map("x" -> 33))
-    val n2 = createNode(Map("x" -> 33))
-    val n3 = createNode(Map("x" -> 42))
-
-    val result = execute(
-      s"start n=node(${n1.getId}, ${n2.getId}, ${n3.getId}) return n.x, count(*)"
-    )
-
-    assertThat(result.toList.asJava, hasItems[Map[String, Any]](Map("n.x" -> 33, "count(*)" -> 2), Map("n.x" -> 42, "count(*)" -> 1)))
-  }
-
-  @Test def shouldCountNonNullValues() {
-    createNode(Map("y" -> "a", "x" -> 33))
-    createNode(Map("y" -> "a"))
-    createNode(Map("y" -> "b", "x" -> 42))
-
-    val result = execute("start n=node(0,1,2) return n.y, count(n.x)")
-
-    assertThat(result.toList.asJava,
-      hasItems[Map[String, Any]](
-        Map("n.y" -> "a", "count(n.x)" -> 1),
-        Map("n.y" -> "b", "count(n.x)" -> 1)))
-  }
-
-  @Test def shouldSumNonNullValues() {
-    createNode(Map("y" -> "a", "x" -> 33))
-    createNode(Map("y" -> "a"))
-    createNode(Map("y" -> "a", "x" -> 42))
-
-    val result = execute("start n = node(0,1,2) return n.y, sum(n.x)")
-
-    assertThat(result.toList.asJava,
-      hasItems[Map[String, Any]](Map("n.y" -> "a", "sum(n.x)" -> 75)))
   }
 
   @Test def shouldReturnPathLength() {
@@ -458,21 +388,6 @@ return distinct a
 order by a.name""")
 
     assert(List(a, b, c) === result.columnAs[Node]("a").toList)
-  }
-
-  @Test def shouldHandleAggregationOnFunctions() {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-    relate(a, b, "X")
-    relate(a, c, "X")
-
-    val result = execute( """
-start a  = node(0)
-match p = a -[*]-> b
-return b, avg(length(p))""")
-
-    assert(Set(b, c) === result.columnAs[Node]("b").toSet)
   }
 
   @Test def shouldSupportMultipleRegexes() {
@@ -698,41 +613,10 @@ order by a.COL1""")
     assert(List(Map("abs(-1)" -> 1)) === result.toList)
   }
 
-  @Test def shouldBeAbleToDoDistinctOnUnboundNode() {
-    createNode()
-
-    val result = execute("start a=node(0) optional match a-->b return count(distinct b)")
-    assert(List(Map("count(distinct b)" -> 0)) === result.toList)
-  }
-
-  @Test def shouldBeAbleToDoDistinctOnNull() {
-    createNode()
-
-    val result = execute("start a=node(0) return count(distinct a.foo)")
-    assert(List(Map("count(distinct a.foo)" -> 0)) === result.toList)
-  }
-
   @Test def exposesIssue198() {
     createNode()
 
     execute("start a=node(*) return a, count(*) order by COUNT(*)").toList
-  }
-
-  @Test def shouldAggregateOnArrayValues() {
-    createNode("color" -> Array("red"))
-    createNode("color" -> Array("blue"))
-    createNode("color" -> Array("red"))
-
-    val result = execute("start a=node(0,1,2) return distinct a.color, count(*)").toList
-    result.foreach { x =>
-      val c = x("a.color").asInstanceOf[Array[_]]
-
-      c.toList match {
-        case List("red")  => assert(2 === x("count(*)"))
-        case List("blue") => assert(1 === x("count(*)"))
-        case _            => fail("wut?")
-      }
-    }
   }
 
   @Test def functions_should_return_null_if_they_get_path_containing_unbound() {
@@ -751,33 +635,11 @@ order by a.COL1""")
     assert(List(Map("length(rels(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
   }
 
-  @Test def aggregates_in_aggregates_should_fail() {
-    createNode()
-
-    intercept[SyntaxException](execute("start a=node(0) return count(count(*))").toList)
-  }
-
   @Test def aggregates_inside_normal_functions_should_work() {
     createNode()
 
     val result = execute("start a=node(0) return length(collect(a))").toList
     assert(List(Map("length(collect(a))" -> 1)) === result)
-  }
-
-  @Test def aggregates_should_be_possible_to_use_with_arithmetics() {
-    createNode()
-
-    val result = execute("start a=node(0) return count(*) * 10").toList
-    assert(List(Map("count(*) * 10" -> 10)) === result)
-  }
-
-  @Test def aggregates_should_be_possible_to_order_by_arithmetics() {
-    createNode()
-    createNode()
-    createNode()
-
-    val result = execute("start a=node(0),b=node(1,2) return count(a) * 10 + count(b) * 5 as X order by X").toList
-    assert(List(Map("X" -> 30)) === result)
   }
 
   @Test def tests_that_filterfunction_works_as_expected() {
@@ -824,8 +686,7 @@ order by a.COL1""")
     assert(List(Map("apa" -> 1)) === result.toList)
   }
 
-  @Test def shouldReturnASimplePath
-  () {
+  @Test def shouldReturnASimplePath() {
     intercept[MissingIndexException](execute("start a=node:missingIndex(key='value') return a").toList)
     intercept[MissingIndexException](execute("start a=node:missingIndex('value') return a").toList)
     intercept[MissingIndexException](execute("start a=relationship:missingIndex(key='value') return a").toList)
@@ -1471,16 +1332,6 @@ order by a.COL1""")
 
     // THEN PASS
     result.executionPlanDescription()
-  }
-
-  @Test
-  def should_handle_multiple_aggregates_on_the_same_node() {
-    //WHEN
-    val a = createNode()
-    val result = execute("start n=node(*) return count(n), collect(n)")
-
-    //THEN
-    assert(result.toList === List(Map("count(n)" -> 1, "collect(n)" -> Seq(a))))
   }
 
   @Test
