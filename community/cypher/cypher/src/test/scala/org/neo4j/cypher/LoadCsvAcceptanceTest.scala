@@ -76,6 +76,19 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
   }
 
+  @Test def import_three_rows_with_headers_messy_data() {
+    val url = createFile {
+      writer =>
+        writer.println("id,name,x")
+        writer.println("1,'Aadvark',0")
+        writer.println("2,'Babs'")
+        writer.println("3,'Cash',1")
+    }
+
+    val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line RETURN line.x")
+    assert(result.toList === List(Map("line.x" -> "0"), Map("line.x" -> null), Map("line.x" -> "1")))
+  }
+
   @Test def should_handle_quotes() {
     val url = createFile {
       writer =>
