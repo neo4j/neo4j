@@ -26,19 +26,12 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.Assert._
 import scala.collection.JavaConverters._
 import org.junit.Test
-import util.Random
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 
 class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
-  @Test def shouldSupportMultipleDivisionsInAggregateFunction() {
-    createNode()
-    val result = executeScalar[Number]("match (n) return count(n)/60/60 as count").intValue()
-
-    assertEquals(0, result)
-  }
 
   @Test def shouldGetRelationshipById() {
     val n = createNode()
@@ -213,71 +206,6 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     assertEquals(List(Map("n.name" -> null)), result.toList)
   }
 
-  @Test def shouldAcceptSkipZero() {
-    val result = execute("start n=node(0) where 1 = 0 return n skip 0")
-
-    assertEquals(List(), result.columnAs[Node]("n").toList)
-  }
-
-  @Test def shouldLimitToTwoHits() {
-    createNodes("A", "B", "C", "D", "E")
-
-    val result = execute(
-      s"start n=node(${nodeIds.mkString(",")}) return n limit 2"
-    )
-
-    assertEquals("Result was not trimmed down", 2, result.size)
-  }
-
-  @Test def shouldStartTheResultFromSecondRow() {
-    val nodes = createNodes("A", "B", "C", "D", "E")
-
-    val result = execute(
-      s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip 2"
-    )
-
-    assertEquals(nodes.drop(2).toList, result.columnAs[Node]("n").toList)
-  }
-
-  @Test def shouldStartTheResultFromSecondRowByParam() {
-    val nodes = createNodes("A", "B", "C", "D", "E")
-
-    val query = s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip {skippa}"
-    val result = execute(query, "skippa" -> 2)
-
-    assertEquals(nodes.drop(2).toList, result.columnAs[Node]("n").toList)
-  }
-
-  @Test def shouldGetStuffInTheMiddle() {
-    val nodes = createNodes("A", "B", "C", "D", "E")
-
-    val result = execute(
-      s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip 2 limit 2"
-    )
-
-    assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("n").toList)
-  }
-
-  @Test def shouldGetStuffInTheMiddleByParam() {
-    val nodes = createNodes("A", "B", "C", "D", "E")
-
-    val query = s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip {s} limit {l}"
-    val result = execute(query, "l" -> 2, "s" -> 2)
-
-    assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("n").toList)
-  }
-
-  @Test def shouldSortOnAggregatedFunction() {
-    createNode(Map("name" -> "andres", "division" -> "Sweden", "age" -> 33))
-    createNode(Map("name" -> "michael", "division" -> "Germany", "age" -> 22))
-    createNode(Map("name" -> "jim", "division" -> "England", "age" -> 55))
-    createNode(Map("name" -> "anders", "division" -> "Sweden", "age" -> 35))
-
-    val result = execute("start n=node(0,1,2,3) return n.division, max(n.age) order by max(n.age) ")
-
-    assertEquals(List("Germany", "Sweden", "England"), result.columnAs[String]("n.division").toList)
-  }
-
   @Test def magicRelTypeOutput() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
@@ -295,11 +223,6 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     val result = execute("start n = node(0) match p = n-->x return length(p)")
 
     assertEquals(List(1), result.columnAs[Int]("length(p)").toList)
-  }
-
-  @Test def shouldReturnCollectionSize() {
-    val result = execute("return size([1,2,3]) as n")
-    assertEquals(List(3), result.columnAs[Int]("n").toList)
   }
 
   @Test def testZeroLengthVarLenPathInTheMiddle() {
@@ -377,19 +300,6 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     execute("start pA=node({a}) return pA").toList
   }
 
-  @Test def shouldSupportSortAndDistinct() {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-
-    val result = execute( """
-start a  = node(0,1,2,0)
-return distinct a
-order by a.name""")
-
-    assert(List(a, b, c) === result.columnAs[Node]("a").toList)
-  }
-
   @Test def shouldSupportMultipleRegexes() {
     val a = createNode(Map("name" -> "Andreas"))
 
@@ -401,63 +311,7 @@ return a""")
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
 
-  @Test def shouldSupportColumnRenaming() {
-    val a = createNode(Map("name" -> "Andreas"))
 
-    val result = execute("start a = node(0) return a as OneLove")
-
-    assert(List(a) === result.columnAs[Node]("OneLove").toList)
-  }
-
-  @Test def shouldSupportColumnRenamingForAggregatesAsWell() {
-    createNode(Map("name" -> "Andreas"))
-
-    val result = execute( """
-start a  = node(0)
-return count(*) as OneLove""")
-
-    assert(List(1) === result.columnAs[Node]("OneLove").toList)
-  }
-
-  @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
-    createNode("name" -> "A", "age" -> 13)
-    createNode("name" -> "B", "age" -> 12)
-    createNode("name" -> "C", "age" -> 11)
-
-    val result = execute( """
-start a  = node(1,2,3,1)
-return distinct a.name
-order by a.age""")
-
-    result.toList
-  }
-
-  @Test def shouldSupportOrderingByAPropertyAfterBeingDistinctified() {
-    val a = createNode("name" -> "A")
-    val b = createNode("name" -> "B")
-    val c = createNode("name" -> "C")
-
-    relate(a, b)
-    relate(a, c)
-
-    val result = execute( """
-start a  = node(0)
-match a-->b
-return distinct b
-order by b.name""")
-
-    assert(List(b, c) === result.columnAs[Node]("b").toList)
-  }
-
-  @Test def shouldBeAbleToRunCoalesce() {
-    createNode("name" -> "A")
-
-    val result = execute( """
-start a  = node(0)
-return coalesce(a.title, a.name)""")
-
-    assert(List(Map("coalesce(a.title, a.name)" -> "A")) === result.toList)
-  }
 
   @Test def shouldReturnAnInterableWithAllRelationshipsFromAVarLength() {
     val a = createNode()
@@ -531,19 +385,7 @@ order by a.COL1""")
     assertThat(string, containsString( """["one","two"]"""))
   }
 
-  @Test def shouldAllowOrderingOnAggregateFunction() {
-    createNode()
 
-    val result = execute("start n = node(0) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by cnt")
-    assert(List() === result.toList)
-  }
-
-  @Test def shouldNotAllowOrderingOnNodes() {
-    createNode()
-    createNode()
-
-    intercept[SyntaxException](execute("start n = node(0,1) return n order by n").toList)
-  }
 
   @Test def shouldIgnoreNodesInParameters() {
     val x = createNode()
@@ -590,75 +432,6 @@ order by a.COL1""")
     assert(List() === result.toList)
   }
 
-  @Test def arithmeticsPrecedenceTest() {
-    val result = execute("return 12/4*3-2*4")
-    assert(List(Map("12/4*3-2*4" -> 1)) === result.toList)
-  }
-
-  @Test def arithmeticsPrecedenceWithParenthesisTest() {
-    val result = execute("return 12/4*(3-2*4)")
-    assert(List(Map("12/4*(3-2*4)" -> -15)) === result.toList)
-  }
-
-  @Test def shouldAllowAddition() {
-    createNode("age" -> 36)
-
-    val result = execute("start a=node(0) return a.age + 5 as newAge")
-    assert(List(Map("newAge" -> 41)) === result.toList)
-  }
-
-  @Test def absFunction() {
-    createNode()
-    val result = execute("start a=node(0) return abs(-1)")
-    assert(List(Map("abs(-1)" -> 1)) === result.toList)
-  }
-
-  @Test def exposesIssue198() {
-    createNode()
-
-    execute("start a=node(*) return a, count(*) order by COUNT(*)").toList
-  }
-
-  @Test def functions_should_return_null_if_they_get_path_containing_unbound() {
-    createNode()
-
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(nodes(p)), id(r), type(r), nodes(p), rels(p)").toList
-
-    assert(List(Map("length(nodes(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
-  }
-
-  @Test def functions_should_return_null_if_they_get_path_containing_null() {
-    createNode()
-
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(rels(p)), id(r), type(r), nodes(p), rels(p)").toList
-
-    assert(List(Map("length(rels(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
-  }
-
-  @Test def aggregates_inside_normal_functions_should_work() {
-    createNode()
-
-    val result = execute("start a=node(0) return length(collect(a))").toList
-    assert(List(Map("length(collect(a))" -> 1)) === result)
-  }
-
-  @Test def tests_that_filterfunction_works_as_expected() {
-    val a = createNode("foo" -> 1)
-    val b = createNode("foo" -> 3)
-    relate(a, b, "rel", Map("foo" -> 2))
-
-    val result = execute("start a=node(0) match p=a-->() return filter(x in nodes(p) WHERE x.foo > 2) as n").toList
-
-    val resultingCollection = result.head("n").asInstanceOf[Seq[_]].toList
-
-    assert(List(b) == resultingCollection)
-  }
-
-  @Test def expose_problem_with_aliasing() {
-    createNode("nisse")
-    execute("start n = node(0) return n.name, count(*) as foo order by n.name")
-  }
-
   @Test def start_with_node_and_relationship() {
     val a = createNode()
     val b = createNode()
@@ -693,16 +466,6 @@ order by a.COL1""")
     intercept[MissingIndexException](execute("start a=relationship:missingIndex('value') return a").toList)
   }
 
-  @Test def distinct_on_nullable_values() {
-    createNode("name" -> "Florescu")
-    createNode()
-    createNode()
-
-    val result = execute("start a=node(0,1,2) return distinct a.name").toList
-
-    assert(result === List(Map("a.name" -> "Florescu"), Map("a.name" -> null)))
-  }
-
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.9").asJava)
     val engine = new ExecutionEngine(db)
@@ -718,18 +481,6 @@ order by a.COL1""")
     }
   }
 
-  @Test def return_all_identifiers() {
-    val a = createNode()
-    val b = createNode()
-    val r = relate(a, b)
-
-    val q = "start a=node(0) match p=a-->b return *"
-
-    val result = execute(q).toList
-    val first = result.head
-    assert(first.keys === Set("a", "b", "p"))
-    assert(first("p").asInstanceOf[Path] == PathImpl(a, r, b))
-  }
 
   @Test def issue_446() {
     val a = createNode()
@@ -755,56 +506,6 @@ order by a.COL1""")
     assert(execute(q).size === 1)
   }
 
-  @Test def issue_508() {
-    createNode()
-
-    val q = "start n=node(0) set n.x=[1,2,3] return length(n.x)"
-
-    assert(execute(q).toList === List(Map("length(n.x)" -> 3)))
-  }
-
-  @Test def long_or_double() {
-    val result = execute("return 1, 1.5").toList.head
-
-    assert(result("1").getClass === classOf[java.lang.Long])
-    assert(result("1.5").getClass === classOf[java.lang.Double])
-  }
-
-  @Test def square_function_returns_decimals() {
-    val result = execute("return sqrt(12.96)").toList
-
-    assert(result === List(Map("sqrt(12.96)"->3.6)))
-  }
-
-  @Test def maths_inside_aggregation() {
-    val andres = createNode("name"->"Andres")
-    val michael = createNode("name"->"Michael")
-    val peter = createNode("name"->"Peter")
-    val bread = createNode("type"->"Bread")
-    val veg = createNode("type"->"Veggies")
-    val meat = createNode("type"->"Meat")
-
-    relate(andres, bread, "ATE", Map("times"->10))
-    relate(andres, veg, "ATE", Map("times"->8))
-
-    relate(michael, veg, "ATE", Map("times"->4))
-    relate(michael, bread, "ATE", Map("times"->6))
-    relate(michael, meat, "ATE", Map("times"->9))
-
-    relate(peter, veg, "ATE", Map("times"->7))
-    relate(peter, bread, "ATE", Map("times"->7))
-    relate(peter, meat, "ATE", Map("times"->4))
-
-    execute(
-      """    start me=node(1)
-    match me-[r1:ATE]->food<-[r2:ATE]-you
-
-    with me,count(distinct r1) as H1,count(distinct r2) as H2,you
-    match me-[r1:ATE]->food<-[r2:ATE]-you
-
-    return me,you,sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2))""").dumpToString()
-  }
-
   @Test def zero_matching_subgraphs_yield_correct_count_star() {
     val result = execute("start n=node(*) where 1 = 0 return count(*)").toList
     assert(List(Map("count(*)" -> 0)) === result)
@@ -824,39 +525,6 @@ order by a.COL1""")
     assert(result === List(b, c, d))
   }
 
-  @Test def should_return_shortest_paths_if_using_a_ridiculously_unhip_cypher() {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    relate(a, b)
-    relate(b, c)
-
-    val result = execute("cypher 1.9 start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
-    assertEquals(result.endNode(), c)
-    assertEquals(result.startNode(), a)
-    assertEquals(result.length(), 2)
-  }
-
-  @Test def should_return_shortest_path() {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    relate(a, b)
-    relate(b, c)
-
-    val result = execute("start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
-    assertEquals(result.endNode(), c)
-    assertEquals(result.startNode(), a)
-    assertEquals(result.length(), 2)
-  }
-
-  @Test
-  def array_prop_output() {
-    createNode("foo"->Array(1,2,3))
-    val result = executeLazy("start n = node(0) return n").dumpToString()
-    assertThat(result, containsString("[1,2,3]"))
-  }
-
   @Test
   def var_length_expression_on_1_9() {
     val a = createNode()
@@ -871,17 +539,6 @@ order by a.COL1""")
     assert(resultPath.lastRelationship() === r)
   }
 
-  @Test
-  def var_length_predicate() {
-    val a = createNode()
-    val b = createNode()
-    relate(a, b)
-
-    val resultPath = execute("START a=node(0), b=node(1) RETURN a-[*]->b as path")
-      .toList.head("path").asInstanceOf[Seq[_]]
-
-    assert(resultPath.size === 1)
-  }
 
   @Test
   def optional_expression_used_to_be_supported() {
@@ -937,18 +594,6 @@ order by a.COL1""")
   }
 
   @Test
-  def should_be_able_to_return_predicate_result() {
-    createNode()
-    val result = execute("START a=node(0) return id(a) = 0, a is null").toList
-    assert(result === List(Map("id(a) = 0" -> true, "a is null" -> false)))
-  }
-
-  @Test def literal_collection() {
-    val result = execute("return length([[],[]]+[[]]) as l").toList
-    assert(result === List(Map("l" -> 3)))
-  }
-
-  @Test
   def shouldAllowArrayComparison() {
     val node = createNode("lotteryNumbers" -> Array(42, 87))
 
@@ -964,17 +609,6 @@ order by a.COL1""")
     val result = execute("start n = node(0) where n.lotteryNumbers in [[42, 87], [13], [42]] return n")
 
     assert(result.toList === List(Map("n" -> node)))
-  }
-
-  @Test
-  def array_property_should_be_accessible_as_collection() {
-    createNode()
-    val result = execute("START n=node(0) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
-      toList.
-      head("tail(tail(n.array))").
-      asInstanceOf[Iterable[_]]
-
-    assert(result.toList === List(3,4,5))
   }
 
   @Test
@@ -1016,36 +650,12 @@ order by a.COL1""")
   }
 
   @Test
-  def getting_top_x_when_we_have_less_than_x_left() {
-    val r = new Random(1337)
-    val nodes = (0 to 15).map(x => createNode("count" -> x)).sortBy(x => r.nextInt(100))
-
-    val result = execute("START a=node({nodes}) RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
-
-    assert(result.toList === List(
-      Map("a.count" -> 10),
-      Map("a.count" -> 11),
-      Map("a.count" -> 12),
-      Map("a.count" -> 13),
-      Map("a.count" -> 14),
-      Map("a.count" -> 15)
-    ))
-  }
-
-  @Test
   def extract_string_from_node_collection() {
     createNode("name"->"a")
 
     val result = execute("""START n = node(0) with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
 
     assert(result.toList === List(Map("test" -> "atest")))
-  }
-
-  @Test
-  def substring_with_default_length() {
-    val result = execute("return substring('0123456789', 1) as s")
-
-    assert(result.toList === List(Map("s" -> "123456789")))
   }
 
   @Test
@@ -1153,26 +763,6 @@ order by a.COL1""")
     assert(result.toList === List(Map("n" -> b)))
   }
 
-  @Test def should_handle_path_predicates_with_labels() {
-    // GIVEN
-    val a = createNode()
-
-    val b1 = createLabeledNode("A")
-    val b2 = createLabeledNode("B")
-    val b3 = createLabeledNode("C")
-
-    relate(a, b1)
-    relate(a, b2)
-    relate(a, b3)
-
-    // WHEN
-    val result = execute("START n = node(0) RETURN n-->(:A)")
-
-    val x = result.toList.head("n-->(:A)").asInstanceOf[Seq[_]]
-
-    assert(x.size === 1)
-  }
-
   @Test def should_create_index() {
     // GIVEN
     val labelName = "Person"
@@ -1211,14 +801,6 @@ order by a.COL1""")
     assert(result.toList === List(Map("x" -> 1)))
   }
 
-  @Test
-  def sort_columns_do_not_leak() {
-    //GIVEN
-    val result = execute("start n=node(*) return * order by id(n)")
-
-    //THEN
-    assert(result.columns === List("n"))
-  }
 
   @Test
   def read_only_database_can_process_has_label_predicates() {
@@ -1306,20 +888,6 @@ order by a.COL1""")
   }
 
   @Test
-  def should_allow_expression_alias_in_order_by_with_distinct() {
-    createNode()
-
-    //WHEN
-    val result = execute(
-      """START n=node(*)
-        RETURN distinct ID(n) as id
-        ORDER BY id DESC""")
-
-    //THEN DOESN'T THROW EXCEPTION
-    assert(result.toList === List(Map("id" -> 0)))
-  }
-
-  @Test
   def shouldProduceProfileWhenUsingLimit() {
     // GIVEN
     createNode()
@@ -1382,14 +950,6 @@ order by a.COL1""")
   }
 
   @Test
-  def columns_should_not_change_when_using_order_by_and_distinct() {
-    val n = createNode()
-    val result = execute("start n=node(*) return distinct n order by id(n)")
-
-    assert(result.toList === List(Map("n" -> n)))
-  }
-
-  @Test
   def should_iterate_all_node_id_sets_from_start_during_matching() {
     // given
     val nodes: List[Node] =
@@ -1408,13 +968,6 @@ order by a.COL1""")
   }
 
   @Test
-  def allow_queries_with_only_return() {
-    val result = execute("RETURN 'Andres'").toList
-
-    assert(result === List(Map("'Andres'"->"Andres")))
-  }
-
-  @Test
   def merge_should_support_single_parameter() {
     //WHEN
     val result = execute("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
@@ -1426,15 +979,6 @@ order by a.COL1""")
   @Test
   def merge_should_not_support_map_parameters_for_defining_properties() {
     intercept[SyntaxException](execute("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
-  }
-
-  @Test
-  def should_allow_distinct_followed_by_order_by() {
-    // given a database with one node
-    createNode()
-
-    // then shouldn't throw
-    execute("START x=node(0) RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
 
   def should_not_hang() {
@@ -1461,18 +1005,6 @@ order by a.COL1""")
 
     // then
     assert(result.toList === List(Map("A" -> null, "B" -> null, "C" -> null, "D" -> null, "E" -> null, "F" -> null)))
-  }
-
-  @Test
-  def should_propagate_null_through_math_funcs() {
-    val result = execute("return 1 + (2 - (3 * (4 / (5 ^ (6 % null))))) as A")
-    assert(result.toList === List(Map("A" -> null)))
-  }
-
-  @Test
-  def should_be_able_to_index_into_nested_literal_lists() {
-    execute("RETURN [[1]][0][0]").toList
-    // should not throw an exception
   }
 
   @Test
@@ -1542,19 +1074,5 @@ order by a.COL1""")
     createLabeledNode(Map("x" -> 1), "Label")
     val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
     assert(result("A") === 1)
-  }
-
-  @Test
-  def should_be_able_to_alias_expressions() {
-    createNode("id" -> 42)
-    val result = execute("match (a) return a.id as a, a.id")
-    assert(result.toList === List(Map("a" -> 42, "a.id" -> 42)))
-  }
-
-  @Test
-  def should_not_get_into_a_neverending_loop() {
-    val n = createNode("id" -> 42)
-    val result = execute("MATCH n RETURN n, count(n) + 3")
-    assert(result.toList === List(Map("n" -> n, "count(n) + 3" -> 4)))
   }
 }
