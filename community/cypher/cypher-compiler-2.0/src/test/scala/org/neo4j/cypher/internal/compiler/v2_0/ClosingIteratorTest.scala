@@ -142,11 +142,11 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43), Map("k" -> 44))
     cleanupTaskList = mock[CleanupTaskList]
-    val cleanupTask1 = mock[CleanupTask]
-    val cleanupTask2 = mock[CleanupTask]
-    when(cleanupTaskList.getCleanupTasks).thenReturn(Seq(cleanupTask1, cleanupTask2))
+    val cleanupTask1 = mock[() => Unit]
+    val cleanupTask2 = mock[() => Unit]
+    when(cleanupTaskList.cleanupTasks).thenReturn(Seq(cleanupTask1, cleanupTask2))
     val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
-    when(cleanupTask1.close).thenThrow(new RuntimeException("error"))
+    when(cleanupTask1.apply).thenThrow(new RuntimeException("error"))
 
     //When
     iterator.next()
@@ -155,6 +155,6 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx).close(success = true)
-    verify(cleanupTask2, times(1)).close()
+    verify(cleanupTask2, times(1)).apply()
   }
 }
