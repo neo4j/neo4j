@@ -40,6 +40,7 @@ import org.neo4j.shell.Variables;
 import org.neo4j.shell.Welcome;
 import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
+import org.neo4j.shell.kernel.apps.NodeOrRelationship;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 
 import static org.neo4j.shell.Variables.PROMPT_KEY;
@@ -144,10 +145,11 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     protected String getPrompt( Session session ) throws ShellException
     {
+        Object rawCustomPrompt = session.get( PROMPT_KEY );
+        String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
+        if (customPrompt == null || customPrompt.isEmpty()) return "";
         try ( org.neo4j.graphdb.Transaction transaction = this.getDb().beginTx() )
         {
-            Object rawCustomPrompt = session.get( PROMPT_KEY );
-            String customPrompt = rawCustomPrompt != null ? rawCustomPrompt.toString() : getDefaultPrompt();
             String output = bashInterpreter.interpret( customPrompt, this, session );
             transaction.success();
             return output;
@@ -206,16 +208,19 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         {
             try
             {
-                return TransactionProvidingApp.getDisplayName(
-                        (GraphDatabaseShellServer) server, session,
-                        TransactionProvidingApp.getCurrent(
-                                (GraphDatabaseShellServer) server, session ),
-                        false );
+                NodeOrRelationship current = TransactionProvidingApp.getCurrent(
+                        (GraphDatabaseShellServer) server, session);
+                if (current != null)
+                    return TransactionProvidingApp.getDisplayName(
+                            (GraphDatabaseShellServer) server, session,
+                            current,
+                            false );
             }
             catch ( ShellException e )
             {
-                return TransactionProvidingApp.getDisplayNameForNonExistent();
+                // non existent
             }
+            return TransactionProvidingApp.getDisplayNameForNonExistent();
         }
     }
 

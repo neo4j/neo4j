@@ -570,7 +570,7 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canDisableWelcomeMessage() throws Exception
     {
-        Map<String, Serializable> values = genericMap( "quiet", "true" );
+        Map<String, Serializable> values = genericMap( Variables.QUIET_KEY, "true" );
         final CollectingOutput out = new CollectingOutput();
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
@@ -600,6 +600,16 @@ public class TestApps extends AbstractShellTest
             tx.success();
         }
         executeCommand( client, "start n=node({id}) return n;", "1 row" );
+    }
+
+    @Test
+    public void canExecuteCypherSilently() throws Exception
+    {
+        Map<String, Serializable> values = genericMap( Variables.SILENT_KEY, "true" );
+        final CollectingOutput out = new CollectingOutput();
+        ShellClient client = new SameJvmClient( values, shellServer );
+        client.evaluate("create (n:Person {name:'Peter'}) return n.name;",out);
+        assertEquals(false,out.iterator().hasNext());
     }
 
     @Test
