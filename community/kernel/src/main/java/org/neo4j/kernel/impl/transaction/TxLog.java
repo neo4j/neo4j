@@ -104,11 +104,8 @@ public class TxLog
      * 
      * @param fileName
      *            Filename of file to use
-<<<<<<< HEAD
      * @param fileSystem
      *            The concrete FileSystemAbstraction to use.
-=======
->>>>>>> 1.9-maint
      * @throws IOException
      *             If unable to open file
      */
