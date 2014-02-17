@@ -66,7 +66,6 @@ public class CypherExceptionMappingTest
         assertEquals( ConstraintViolation, map( new CypherExecutionException( "message", new UniqueConstraintViolationKernelException(1, 2, "value", 12))));
     }
 
-
     private Status map( CypherException cypherException )
     {
         return new CypherExceptionMapping().apply( cypherException );
