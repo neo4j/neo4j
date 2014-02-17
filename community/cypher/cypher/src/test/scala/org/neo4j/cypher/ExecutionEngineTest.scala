@@ -2727,7 +2727,7 @@ RETURN x0.name""")
 
   @Test
   def should_handle_cypher_version_and_autocommit() {
-    val result = execute("cypher 2.0 using autocommit create () with * match n return n")
+    val result = execute("cypher 2.1 using autocommit create () with * match n return n")
     assert(result.size === 1)
   }
 }

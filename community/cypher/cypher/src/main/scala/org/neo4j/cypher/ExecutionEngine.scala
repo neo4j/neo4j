@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.api.Statement
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
-import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {

@@ -29,9 +29,8 @@ import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter, GraphSt
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{ CypherException, ExecutionResult, ExecutionEngine }
+import org.neo4j.cypher.{ CypherException, ExecutionResult }
 import org.neo4j.test.{ TestGraphDatabaseFactory, GraphDescription }
-import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
@@ -41,9 +40,8 @@ import org.neo4j.helpers.Settings
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
-import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.NodeManager
-import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.internal.ServerExecutionEngine
 import org.neo4j.kernel.impl.transaction.TxManager
 import org.neo4j.cypher.internal.commons.CypherJUnitSuite

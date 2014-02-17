@@ -24,8 +24,8 @@ import org.scalatest.Assertions
 import org.junit.Test
 import scala.collection.JavaConverters._
 import java.lang.{Iterable => JIterable}
-import org.neo4j.cypher.internal.compiler.v2_0
-import org.neo4j.cypher.internal.compiler.v2_0.data.{SimpleVal, MapVal, SeqVal}
+import org.neo4j.cypher.internal.compiler.v2_1
+import org.neo4j.cypher.internal.compiler.v2_1.data.{SimpleVal, MapVal, SeqVal}
 
 class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test
@@ -119,7 +119,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     val result: ExecutionResult = engine.profile("merge (n:Person {id: 1})")
 
     //WHEN THEN
-    val planDescription = result.executionPlanDescription().asInstanceOf[v2_0.PlanDescription]
+    val planDescription = result.executionPlanDescription().asInstanceOf[v2_1.PlanDescription]
 
     val commands = planDescription.cd("UpdateGraph").arguments("commands").asInstanceOf[SeqVal]
     assert( 1 === commands.v.size )

@@ -262,12 +262,4 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
-
-  override def commitAndRestartTx() {
-    tx.success()
-    tx.close()
-
-    tx = graph.beginTx()
-    statement = txBridge.instance()
-  }
 }

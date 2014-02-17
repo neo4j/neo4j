@@ -22,16 +22,22 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher._
 import CypherVersion._
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
-import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
-import org.neo4j.cypher.internal.compiler.v2_0.spi.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.internal.spi.v1_9.GDSBackedQueryContext
+import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundExecutionContext => QueryContext_v2_1}
+import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundExecutionContext => QueryContext_v2_0}
+import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
+import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundPlanContext => PlanContext_v2_1}
+import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
+import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 100
@@ -43,6 +49,7 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
   def this(graph: GraphDatabaseService, versionName: String) = this(graph, CypherVersion(versionName))
 
   private val queryCache = new LRUCache[(CypherVersion, String), Object](getQueryCacheSize)
+  private val compiler2_1 = new CypherCompiler2_1(graph, (q, f) => queryCache.getOrElseUpdate((v2_1, q), f))
   private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
   private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
 
@@ -51,8 +58,12 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
     val (version, remainingQuery) = versionedQuery(query)
 
     version match {
+      case CypherVersion.v2_1 =>
+        val plan = compiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, context))
+        new ExecutionPlanWrapperForV2_1(plan)
+
       case CypherVersion.v2_0 =>
-        val plan = compiler2_0.prepare(remainingQuery, new TransactionBoundPlanContext(statement, context))
+        val plan = compiler2_0.prepare(remainingQuery, new PlanContext_v2_0(statement, context))
         new ExecutionPlanWrapperForV2_0(plan)
 
       case CypherVersion.v1_9 =>
@@ -66,7 +77,7 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
     val (version, remainingQuery) = versionedQuery(query)
 
     version match  {
-      case CypherVersion.v2_0 => compiler2_0.isAutoCommit(remainingQuery)
+      case CypherVersion.v2_1 => compiler2_1.isAutoCommit(remainingQuery)
       case _                  => false
     }
   }
@@ -90,11 +101,25 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
   }
 }
 
+class ExecutionPlanWrapperForV2_1(inner: ExecutionPlan_v2_1) extends ExecutionPlan {
+
+  private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
+    val ctx = new QueryContext_v2_1(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+    new ExceptionTranslatingQueryContext_v2_1(ctx)
+  }
+
+  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    inner.profile(queryContext(graph, txInfo), params)
+
+  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
+    inner.execute(queryContext(graph, txInfo), params)
+}
+
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
 
   private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
-    val ctx = new TransactionBoundExecutionContext(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
-    new ExceptionTranslatingQueryContext(ctx)
+    val ctx = new QueryContext_v2_0(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+    new ExceptionTranslatingQueryContext_v2_0(ctx)
   }
 
   def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
@@ -107,7 +132,7 @@ class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPl
 class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
 
   private def queryContext(graph: GraphDatabaseAPI) =
-    new GDSBackedQueryContext(graph)
+    new QueryContext_v1_9(graph)
 
   def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.profile(queryContext(graph), txInfo.tx, params)
