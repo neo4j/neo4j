@@ -136,4 +136,25 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     verify(cleanupTask, times(1)).apply()
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
+
+  @Test
+  def close_runs_all_cleanup_tasks_despite_exception_in_one_of_them() {
+    //Given
+    val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43), Map("k" -> 44))
+    cleanupTaskList = mock[CleanupTaskList]
+    val cleanupTask1 = mock[() => Unit]
+    val cleanupTask2 = mock[() => Unit]
+    when(cleanupTaskList.cleanupTasks).thenReturn(Seq(cleanupTask1, cleanupTask2))
+    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    when(cleanupTask1.apply).thenThrow(new RuntimeException("error"))
+
+    //When
+    iterator.next()
+    iterator.next()
+    intercept[RuntimeException](iterator.next())
+
+    //Then
+    verify(ctx).close(success = true)
+    verify(cleanupTask2, times(1)).apply()
+  }
 }
