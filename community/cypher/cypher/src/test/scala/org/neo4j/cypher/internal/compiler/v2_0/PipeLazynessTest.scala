@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands.expressions.Identifier
 import pipes.matching._
 import symbols._
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb._
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -44,7 +44,7 @@ in fact are lazy. Every Pipe should be represented here
  */
 
 @RunWith(value = classOf[Parameterized])
-class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseTestBase {
+class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseJUnitSuite {
   @Test def test() {
     iter.db = Some(graph)
     val resultIterator = pipe.createResults(queryState)

@@ -43,7 +43,7 @@ class EagerPipeExecutionResult(result: ClosingIterator[Map[String, Any]],
       nodesCreated = state.createdNodes.count,
       relationshipsCreated = state.createdRelationships.count,
       propertiesSet = state.propertySet.count,
-      deletedNodes = state.deletedNodes.count,
-      deletedRelationships = state.deletedRelationships.count)
+      nodesDeleted = state.deletedNodes.count,
+      relationshipsDeleted = state.deletedRelationships.count)
   }
 }

@@ -21,7 +21,8 @@ package org.neo4j.cypher
 
 import org.junit.Test
 
-class UniquenessAcceptanceTest extends ExecutionEngineHelper {
+class UniquenessAcceptanceTest extends ExecutionEngineJUnitSuite {
+
   @Test def should_not_reuse_the_relationship_that_has_just_been_traversed() {
     // Given
     relate(createNode("Me"), createNode("Bob"))

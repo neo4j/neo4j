@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.StringHelper
-import org.neo4j.cypher.{ExecutionEngineHelper, CypherException, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport, CypherException, SyntaxException}
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 
-class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringHelper {
+class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
   @Test def noReturnColumns() {
     expectError(
       "start s = node(0) return",
@@ -299,14 +299,14 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def create_without_specifying_direction_should_fail() {
     expectError(
       "CREATE (a)-[:FOO]-(b) RETURN a,b",
-      "Only directed relationships are supported in CREATE, while MATCH allows to ignore direction."
+      "Only directed relationships are supported in CREATE"
     )
   }
 
   @Test def create_without_specifying_direction_should_fail2() {
     expectError(
       "CREATE (a)<-[:FOO]->(b) RETURN a,b",
-      "Only directed relationships are supported in CREATE, while MATCH allows to ignore direction."
+      "Only directed relationships are supported in CREATE"
     )
   }
 
@@ -329,6 +329,20 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "start n = node(0) delete n:Person",
       "DELETE doesn't support removing labels from a node. Try REMOVE."
     )
+  }
+
+  @Test def report_wrong_usage_of_index_hint() {
+    graph.createConstraint("Person", "id")
+    expectError(
+      "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.id = 12 OR n.id = 14 RETURN n",
+      "Cannot use index hint in this context. Index hints require using a simple equality comparison in WHERE (either directly or as part of a top-level AND). Note that the label and property comparison must be specified on a non-optional node"
+    )
+  }
+
+  @Test def report_wrong_usage_of_label_scan_hint() {
+    expectError(
+      "MATCH (n) USING SCAN n:Person WHERE n:Person OR n:Bird RETURN n",
+      "Cannot use label scan hint in this context. Label scan hints require using a simple label test in WHERE (either directly or as part of a top-level AND). Note that the label must be specified on a non-optional node")
   }
 
   def expectError(query: String, expectedError: String) {

@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands.{SingleNode, ShortestPath}
 import pipes.{ShortestPathPipe, FakePipe}
 import symbols._
-import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Direction, Node, Path}
 import org.junit.Test
 import org.scalatest.Assertions
 import collection.mutable.Map
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 
-class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
+class AllShortestPathsPipeTest extends GraphDatabaseJUnitSuite {
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 

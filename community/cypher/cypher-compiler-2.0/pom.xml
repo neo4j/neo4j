@@ -90,6 +90,13 @@
       <scope>provided</scope>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-commons</artifactId>
+      <scope>provided</scope>
+      <type>test-jar</type>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- other -->
 

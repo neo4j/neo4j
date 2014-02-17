@@ -25,6 +25,7 @@ import org.neo4j.cypher.{LabelScanHintException, IndexHintException, SyntaxExcep
 import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_0.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.StringHelper.RichString
 
 object HintVerifier extends Verifier {
   override val verifyFunction: PartialFunction[AbstractQuery, Unit] = {
@@ -63,13 +64,18 @@ object HintVerifier extends Verifier {
       query.hints.foreach {
         case NodeByLabel(hintIdentifier, hintLabel) if !containsLabel(hintIdentifier, hintLabel) =>
           throw new LabelScanHintException(hintIdentifier, hintLabel,
-            "Cannot use label scan hint in this context. The label must be specified on a non-optional node")
+            """|Cannot use label scan hint in this context.
+               | Label scan hints require using a simple label test in WHERE (either directly or as part of a
+               | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins)
 
         case SchemaIndex(id, label, prop, _, _) if !hasExpectedPredicate(id, prop) || !containsLabel(id, label) =>
           throw new IndexHintException(id, label, prop,
-            "Cannot use index hint in this context. The label and property comparison must be specified on a non-optional node")
-
-        case _ => {}
+            """|Cannot use index hint in this context.
+               | Index hints require using a simple equality comparison in WHERE (either directly or as part of a
+               | top-level AND).
+               | Note that the label and property comparison must be specified on a
+               | non-optional node""".stripLinesAndMargins)
+        case _ =>
       }
   }
 

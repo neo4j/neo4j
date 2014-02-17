@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.{MatchingPair, PatternNode}
 
-class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
+class PatternNodeTest extends GraphDatabaseJUnitSuite {
   @Test def returnsPatternRelationships() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")

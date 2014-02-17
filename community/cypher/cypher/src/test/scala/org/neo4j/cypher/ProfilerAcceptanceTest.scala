@@ -27,7 +27,7 @@ import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_0
 import org.neo4j.cypher.internal.compiler.v2_0.data.{SimpleVal, MapVal, SeqVal}
 
-class ProfilerAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test
   def unfinished_profiler_complains() {
     //GIVEN

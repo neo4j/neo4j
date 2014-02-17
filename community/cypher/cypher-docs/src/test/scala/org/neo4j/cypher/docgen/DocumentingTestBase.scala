@@ -159,7 +159,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
     if (!graphvizExecutedAfter) {
       dumpGraphViz(dir, graphvizOptions.trim)
     }
-    dumpSetupConstraintsQueries(setupContraintQueries, dir)
+    dumpSetupConstraintsQueries(setupConstraintQueries, dir)
     dumpSetupQueries(setupQueries, dir)
 
     var consoleData: String = ""
@@ -172,7 +172,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
         }
       }
       if (consoleData.isEmpty) {
-        consoleData = "(0)"
+        consoleData = "none"
       }
     }
 
@@ -251,7 +251,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
   def graphDescription: List[String] = List()
 
   val setupQueries: List[String] = List()
-  val setupContraintQueries: List[String] = List()
+  val setupConstraintQueries: List[String] = List()
 
   def indexProps: List[String] = List()
 
@@ -342,7 +342,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
 
     cleanDatabaseContent( db )
 
-    setupContraintQueries.foreach(engine.execute)
+    setupConstraintQueries.foreach(engine.execute)
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodes")

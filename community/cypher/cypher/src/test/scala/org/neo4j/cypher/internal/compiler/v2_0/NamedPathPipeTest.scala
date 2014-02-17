@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb._
 import org.junit.{Before, Test}
-import org.scalatest.Assertions
 
-class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
+class NamedPathPipeTest extends GraphDatabaseJUnitSuite {
   var a: Node = null
   var b: Node = null
   var c: Node = null

@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_0
 import commands.RelatedTo
 import executionplan.builders.PatternGraphBuilder
 import symbols._
-import org.neo4j.cypher.ExecutionEngineHelper
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport}
 import org.neo4j.graphdb.Direction
 import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.matching.SimplePatternMatcherBuilder
 
-class SimplePatternMatchingTest extends ExecutionEngineHelper with PatternGraphBuilder {
+class SimplePatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBuilder {
   val symbols = new SymbolTable(Map("a" -> CTNode))
 
   var tx : org.neo4j.graphdb.Transaction = null

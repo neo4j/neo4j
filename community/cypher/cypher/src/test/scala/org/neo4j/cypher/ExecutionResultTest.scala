@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.Assert._
 import java.util.regex.Pattern
 
-class ExecutionResultTest extends ExecutionEngineHelper with Assertions {
+class ExecutionResultTest extends ExecutionEngineJUnitSuite {
   @Test def columnOrderIsPreserved() {
     val columns = List("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 

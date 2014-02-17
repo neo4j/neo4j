@@ -26,22 +26,8 @@ import org.neo4j.graphdb.TransactionFailureException
 import scala.collection
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
 
-/**
- * An iterator that decorates an inner iterator, and calls close() on the QueryContext once
- * the inner iterator is empty.
- */
-trait CleanupTask {
-  def close()
-}
-
-object CleanupTask {
-  implicit class CloseableCleanupTask(closeable: AutoCloseable) extends CleanupTask {
-    def close() { closeable.close() }
-  }
-}
-
 trait CleanupTaskList {
-  def getCleanupTasks: Seq[CleanupTask]
+  def cleanupTasks: Seq[() => Unit]
 }
 
 class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext: QueryContext, cleanupTaskList: CleanupTaskList) extends Iterator[Map[String, Any]] {
@@ -77,7 +63,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
       if (!closed) {
         closed = true
         queryContext.close(success = true)
-        cleanupTaskList.getCleanupTasks.foreach(_.close())
+        cleanupTaskList.cleanupTasks.foreach(_.apply())
       }
     }
   }
@@ -107,7 +93,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   } catch {
     case t: Throwable if !closed =>
       queryContext.close(success = false)
-      cleanupTaskList.getCleanupTasks.foreach(_.close())
+      cleanupTaskList.cleanupTasks.foreach(_.apply())
       throw t
   }
 }

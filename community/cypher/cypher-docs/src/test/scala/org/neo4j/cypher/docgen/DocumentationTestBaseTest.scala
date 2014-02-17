@@ -24,9 +24,9 @@ import org.neo4j.graphdb.Node
 import org.junit.Assert._
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
-import org.neo4j.cypher.StatisticsChecker
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class DocumentationTestBaseTest extends DocumentingTestBase with StatisticsChecker {
+class DocumentationTestBaseTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   override def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
 
   override protected def getGraphvizStyle: GraphStyle =

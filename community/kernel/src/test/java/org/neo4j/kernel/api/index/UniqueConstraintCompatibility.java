@@ -19,26 +19,46 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import javax.transaction.TransactionManager;
+
+import org.hamcrest.Matcher;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -64,7 +84,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *  - ONLINE: the index is in active duty
      *  - POPULATING: the index is in the process of being created and filled with data
      *
-     * Further more, indexes that are POPULATING have two ways of injesting data:
+     * Further more, indexes that are POPULATING have two ways of ingesting data:
      *  - Through add()'ing existing data
      *  - Through NodePropertyUpdates sent to a "populating udpater"
      *
@@ -112,137 +132,875 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     // -- Tests:
 
     @Test
-    public void shouldAcceptDistinctValuesInDifferentTransactionsWhenOnline()
+    public void onlineConstraintShouldAcceptDistinctValuesInDifferentTransactions()
     {
         // Given
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-            tx.success();
-        }
-        Node a, b;
-        Object va = "a", vb = "b";
-        try ( Transaction tx = db.beginTx() )
-        {
-            a = db.createNode( label );
-            a.setProperty( property, va );
-            tx.success();
-        }
+        givenOnlineConstraint();
 
         // When
+        Node n;
         try ( Transaction tx = db.beginTx() )
         {
-            b = db.createNode( label );
-            b.setProperty( property, vb );
+            n = db.createNode( label );
+            n.setProperty( property, "n" );
             tx.success();
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( single( db.findNodesByLabelAndProperty( label, property, va ) ).getProperty( property ),
-                    is( va ) );
-            assertThat( single( db.findNodesByLabelAndProperty( label, property, vb ) ).getProperty( property ),
-                    is( vb ) );
-            tx.success();
-        }
-    }
-
-    // TODO equiv. of UniqueIAC: shouldConsiderWholeTransactionForValidatingUniqueness
-    // TODO equiv. of UniqueIAC: shouldRejectChangingEntryToAlreadyIndexedValue
-    // TODO equiv. of UniqueIAC: shouldRemoveAndAddEntries
-    // TODO equiv. of UniqueIAC: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
-    // TODO equiv. of UniqueIAC: shouldRejectEntryWithAlreadyIndexedValue
-    // TODO equiv. of UniqueIAC: shouldAddUniqueEntries
-    // TODO equiv. of UniqueIAC: shoouldRejectEntriesInSameTransactionWithDuplicateIndexedValue
-    // TODO equiv. of UniqueIAC: shouldUpdateUniqueEntries
-    // TODO equiv. of UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedOnline
-    // TODO equiv. of UniqueIPC: should*EnforceUniqueConstraints
-    // TODO equiv. of UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedThroughPopulator
-    // TODO equiv. of UniqueIPC: should*EnforceUnqieConstraintsAgainstDataAddedInSameTx
-
-    // TODO equiv. of UniqueLucIAT: shouldRejectChangingEntryToAlreadyIndexedValue
-    // TODO equiv. of UniqueLucIAT: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
-    // TODO equiv. of UniqueLucIAT: shouldRejectEntryWithAlreadyIndexedValue
-    // TODO equiv. of UniqueLucIAT: shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues
-
-    @Test
-    public void shouldAcceptDistinctValuesInSameTransactionsWhenOnline()
-    {
-        // Given
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-            tx.success();
-        }
-        Node a, b;
-        Object va = "a", vb = "b";
-
-        // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            a = db.createNode( label );
-            a.setProperty( property, va );
-
-            b = db.createNode( label );
-            b.setProperty( property, vb );
-            tx.success();
-        }
-
-        // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( single( db.findNodesByLabelAndProperty( label, property, va ) ).getProperty( property ),
-                    is( va ) );
-            assertThat( single( db.findNodesByLabelAndProperty( label, property, vb ) ).getProperty( property ),
-                    is( vb ) );
-            tx.success();
-        }
+        transaction(
+                assertLookupNode( "a", is( a ) ),
+                assertLookupNode( "n" , is( n ) ) );
     }
 
     @Test
-    public void shouldNotFalselyCollideOnFindNodesByLabelAndProperty() throws Exception
+    public void onlineConstraintShouldAcceptDistinctValuesInSameTransaction()
     {
         // Given
+        givenOnlineConstraint();
+
+        // When
+        Node n, m;
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            n = db.createNode( label );
+            n.setProperty( property, "n" );
+
+            m = db.createNode( label );
+            m.setProperty( property, "m" );
             tx.success();
         }
-        Node a, b;
+
+        // Then
+        transaction(
+                assertLookupNode( "n", is( n ) ),
+                assertLookupNode( "m", is( m ) ) );
+    }
+
+    @Test
+    public void onlineConstrainthouldNotFalselyCollideOnFindNodesByLabelAndProperty() throws Exception
+    {
+        // Given
+        givenOnlineConstraint();
+        Node n, m;
         try ( Transaction tx = db.beginTx() )
         {
-            a = db.createNode( label );
-            a.setProperty( property, 4611686018427387905L );
+            n = db.createNode( label );
+            n.setProperty( property, COLLISION_X );
             tx.success();
         }
 
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            b = db.createNode( label );
-            b.setProperty( property, 4611686018427387907L );
+            m = db.createNode( label );
+            m.setProperty( property, COLLISION_Y );
             tx.success();
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
+        transaction(
+                assertLookupNode( COLLISION_X, is( n ) ),
+                assertLookupNode( COLLISION_Y, is( m ) ) );
+    }
+
+    // Replaces UniqueIAC: shouldConsiderWholeTransactionForValidatingUniqueness
+    @Test
+    public void onlineConstraintShouldNotConflictOnIntermediateStatesInSameTransaction()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // When
+        transaction(
+                setProperty( a, "b" ),
+                setProperty( b, "a" ),
+                success );
+
+        // Then
+        transaction(
+                assertLookupNode( "a", is( b ) ),
+                assertLookupNode( "b", is( a ) ) );
+    }
+
+    // Replaces UniqueIAC: shouldRejectChangingEntryToAlreadyIndexedValue
+    @Test( expected = ConstraintViolationException.class )
+    public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValue()
+    {
+        // Given
+        givenOnlineConstraint();
+        transaction(
+                setProperty( b, "b" ),
+                success );
+
+        // When
+        transaction(
+                setProperty( b, "a" ),
+                success,
+                fail( "Changing a property to an already indexed value should have thrown" ) );
+    }
+
+    // Replaces UniqueIPC: should*EnforceUnqieConstraintsAgainstDataAddedInSameTx
+    @Test( expected = ConstraintViolationException.class)
+    public void onlineConstraintShouldRejectConflictsInTheSameTransaction() throws Exception
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // Then
+        transaction(
+                setProperty( a, "x" ),
+                setProperty( b, "x" ),
+                success,
+                fail( "Should have rejected changes of two node/properties to the same index value" ) );
+    }
+
+    @Test
+    public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValueThatOtherTransactionsAreRemoving()
+            throws Exception
+    {
+        // Given
+        givenOnlineConstraint();
+        transaction(
+                setProperty( b, "b" ),
+                success );
+
+        Transaction otherTx = db.beginTx();
+        a.removeLabel( label );
+        suspend( otherTx );
+
+        // When
+        try
         {
-            assertThat( single( db.findNodesByLabelAndProperty( label, property, 4611686018427387905L ) ), is( a ) );
-            assertThat( single( db.findNodesByLabelAndProperty( label, property, 4611686018427387907L ) ), is( b ) );
-            tx.success();
+            transaction(
+                    setProperty( b, "a" ),
+                    success,
+                    fail( "Changing a property to an already indexed value should have thrown" ) );
+        }
+        catch ( ConstraintViolationException ignore )
+        {
+            // we're happy
+        }
+        finally
+        {
+            resume( otherTx );
+            otherTx.failure();
+            otherTx.close();
         }
     }
 
+    // Replaces UniqueIAC: shouldRemoveAndAddEntries
+    @Test
+    public void onlineConstraintShouldAddAndRemoveFromIndexAsPropertiesAndLabelsChange()
+    {
+        // Given
+        givenOnlineConstraint();
 
+        // When
+        transaction( setProperty( b, "b" ), success );
+        transaction( setProperty( c, "c" ), addLabel( c, label ), success );
+        transaction( setProperty( d, "d" ), addLabel( d, label ), success );
+        transaction( removeProperty( a ), success );
+        transaction( removeProperty( b ), success );
+        transaction( removeProperty( c ), success );
+        transaction( setProperty( a, "a" ), success );
+        transaction( setProperty( c, "c2" ), success );
 
+        // Then
+        transaction(
+                assertLookupNode( "a", is( a ) ),
+                assertLookupNode( "b", is( nullValue( Node.class ) ) ),
+                assertLookupNode( "c", is( nullValue( Node.class ) ) ),
+                assertLookupNode( "d", is( d ) ),
+                assertLookupNode( "c2", is( c ) ) );
+    }
 
-    // -- Set Up:
+    // Replaces UniqueIAC: shouldRejectEntryWithAlreadyIndexedValue
+    @Test( expected = ConstraintViolationException.class )
+    public void onlineConstraintShouldRejectConflictingPropertyChange()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // Then
+        transaction(
+                setProperty( b, "a" ),
+                success,
+                fail( "Setting b.name = \"a\" should have caused a conflict" ) );
+    }
+
+    @Test( expected = ConstraintViolationException.class )
+    public void onlineConstraintShouldRejectConflictingLabelChange()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // Then
+        transaction(
+                addLabel( c, label ),
+                success,
+                fail( "Setting c:Cybermen should have caused a conflict" ) );
+    }
+
+    // Replaces UniqueIAC: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
+    @Test( expected = ConstraintViolationException.class )
+    public void onlineConstraintShouldRejectAddingEntryForValueAlreadyIndexedByPriorChange()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // When
+        transaction( setProperty( a, "a1" ), success ); // This is a CHANGE update
+
+        // Then
+        transaction(
+                setProperty( b, "a1" ),
+                success,
+                fail( "Setting b.name = \"a1\" should have caused a conflict" ) );
+    }
+
+    // Replaces UniqueIAC: shouldAddUniqueEntries
+    // Replaces UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedOnline
+    @Test
+    public void onlineConstraintShouldAcceptUniqueEntries()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // When
+        transaction( setProperty( b, "b" ), addLabel( d, label ), success );
+        transaction( setProperty( c, "c" ), addLabel( c, label ), success );
+
+        // Then
+        transaction(
+                assertLookupNode( "a", is( a ) ),
+                assertLookupNode( "b", is( b ) ),
+                assertLookupNode( "c", is( c ) ),
+                assertLookupNode( "d", is( d ) ) );
+    }
+
+    // Replaces UniqueIAC: shouldUpdateUniqueEntries
+    @Test
+    public void onlineConstraintShouldAcceptUniqueEntryChanges()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // When
+        transaction( setProperty( a, "a1" ), success ); // This is a CHANGE update
+
+        // Then
+        transaction( assertLookupNode( "a1", is( a ) ) );
+    }
+
+    // Replaces UniqueIAC: shoouldRejectEntriesInSameTransactionWithDuplicateIndexedValue\
+    @Test( expected = ConstraintViolationException.class )
+    public void onlineConstraintShouldRejectDuplicateEntriesAddedInSameTransaction()
+    {
+        // Given
+        givenOnlineConstraint();
+
+        // Then
+        transaction(
+                setProperty( b, "d" ),
+                addLabel( d, label ),
+                success,
+                fail( "Setting b.name = \"d\" and d:Cybermen should have caused a conflict" ));
+    }
+
+    // Replaces UniqueIPC: should*EnforceUniqueConstraints
+    // Replaces UniqueIPC: should*EnforceUniqueConstraintsAgainstDataAddedThroughPopulator
+    @Test
+    public void populatingConstraintMustAcceptDatasetOfUniqueEntries()
+    {
+        // Given
+        givenUniqueDataset();
+
+        // Then this does not throw:
+        createUniqueConstraint();
+    }
+
+    @Test( expected = ConstraintViolationException.class )
+    public void populatingConstraintMustRejectDatasetWithDuplicateEntries()
+    {
+        // Given
+        givenUniqueDataset();
+        transaction(
+                setProperty( c, "b" ), // same property value as 'b' has
+                success );
+
+        // Then this must throw:
+        createUniqueConstraint();
+    }
+
+    @Test
+    public void populatingConstraintMustAcceptDatasetWithDalseIndexCollisions()
+    {
+        // Given
+        givenUniqueDataset();
+        transaction(
+                setProperty( b, COLLISION_X ),
+                setProperty( c, COLLISION_Y ),
+                success );
+
+        // Then this does not throw:
+        createUniqueConstraint();
+    }
+
+    @Test
+    public void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithUniqueEntries() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "d1" ) );
+
+        // Then observe that our constraint was created successfully:
+        createConstraintTransaction.get();
+        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectEntryWithAlreadyIndexedValue
+    @Test
+    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicateAddition() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), createNode( "b" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectChangingEntryToAlreadyIndexedValue
+    @Test
+    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicates() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "b" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    @Test
+    public void populatingConstraintMustAcceptDatasetThatGestUpdatedWithFalseIndexCollisions() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+        transaction( setProperty( a, COLLISION_X ), success );
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, COLLISION_Y ) );
+
+        // Then observe that our constraint was created successfully:
+        createConstraintTransaction.get();
+        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectEntriesInSameTransactionWithDuplicatedIndexedValues
+    @Test
+    public void populatingConstraintMustRejectDatasetThatGetsUpdatedWithDuplicatesInSameTransaction() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "x" ), setProperty( c, "x" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    @Test
+    public void populatingConstraintMustAcceptDatasetThatGetsUpdatedWithDuplicatesThatAreLaterResolved() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(),
+                a.getId(),
+                setProperty( d, "b" ), // Cannot touch node 'a' because that one is locked
+                setProperty( b, "c" ),
+                setProperty( c, "d" ) );
+
+        // Then observe that our constraint was created successfully:
+        createConstraintTransaction.get();
+        // Future.get() will throw an ExecutionException, if the Runnable threw an exception.
+    }
+
+    // Replaces UniqueLucIAT: shouldRejectAddingEntryToValueAlreadyIndexedByPriorChange
+    @Test
+    public void populatingUpdaterMustRejectDatasetWhereAdditionsConflictsWithPriorChanges() throws Exception
+    {
+        // Given
+        givenUniqueDataset();
+
+        // When
+        Future<?> createConstraintTransaction = applyChangesToPopulatingUpdater(
+                d.getId(), a.getId(), setProperty( d, "x" ), createNode( "x" ) );
+
+        // Then observe that our constraint creation failed:
+        try
+        {
+            createConstraintTransaction.get();
+            Assert.fail( "expected to throw when PopulatingUpdater got duplicates" );
+        }
+        catch ( ExecutionException ee )
+        {
+            Throwable cause = ee.getCause();
+            assertThat( cause, instanceOf( ConstraintViolationException.class ) );
+        }
+    }
+
+    /**
+     * NOTE the tests using this will currently succeed for the wrong reasons,
+     * because the data-changing transaction does not actually release the
+     * schema read lock early enough for the PopulatingUpdater to come into
+     * play.
+     */
+    private Future<?> applyChangesToPopulatingUpdater(
+            long blockDataChangeTransactionOnLockOnId,
+            long blockPopulatorOnLockOnId,
+            final Action... actions ) throws InterruptedException, ExecutionException
+    {
+        // We want to issue an update to an index populator for a constraint.
+        // However, creating a constraint takes a schema write lock, while
+        // creating nodes and setting their properties takes a schema read
+        // lock. We need to sneak past these locks.
+        final CountDownLatch createNodeReadyLatch = new CountDownLatch( 1 );
+        final CountDownLatch createNodeCommitLatch = new CountDownLatch( 1 );
+        Future<?> updatingTransaction = executor.submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    for ( Action action : actions )
+                    {
+                        action.apply( tx );
+                    }
+                    tx.success();
+                    createNodeReadyLatch.countDown();
+                    awaitUninterruptibly( createNodeCommitLatch );
+                }
+            }
+        } );
+        createNodeReadyLatch.await();
+
+        // The above transaction now contain the changes we want to expose to
+        // the IndexUpdater as updates. This will happen when we commit the
+        // transaction. The transaction now also holds the schema read lock,
+        // so we can't begin creating our constraint just yet.
+        // We first have to unlock the schema, and then block just before we
+        // send off our updates. We can do that by making another thread take a
+        // read lock on the node we just created, and then initiate our commit.
+        Lock lockBlockingDataChangeTransaction = getLockService().acquireNodeLock(
+                blockDataChangeTransactionOnLockOnId,
+                LockType.WRITE_LOCK );
+
+        // Before we begin creating the constraint, we take a write lock on an
+        // "earlier" node, to hold up the populator for the constraint index.
+        Lock lockBlockingIndexPopulator = getLockService().acquireNodeLock(
+                blockPopulatorOnLockOnId,
+                LockType.WRITE_LOCK );
+
+        // This thread tries to create a constraint. It should block, waiting for it's
+        // population job to finish, and it's population job should in turn be blocked
+        // on the lockBlockingIndexPopulator above:
+        final CountDownLatch createConstraintTransactionStarted = new CountDownLatch( 1 );
+        Future<?> createConstraintTransaction = executor.submit( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+
+                createUniqueConstraint( createConstraintTransactionStarted );
+            }
+        } );
+        createConstraintTransactionStarted.await();
+
+        // Now we can initiate the data-changing commit. It should then
+        // release the schema read lock, and block on the
+        // lockBlockingDataChangeTransaction.
+        createNodeCommitLatch.countDown();
+
+        // Now we can issue updates to the populator in the still ongoing population job.
+        // We do that by releasing the lock that is currently preventing our
+        // data-changing transaction from committing.
+        lockBlockingDataChangeTransaction.release();
+
+        // And we observe that our updating transaction has completed as well:
+        updatingTransaction.get();
+
+        // Now we can release the lock blocking the populator, allowing it to finish:
+        lockBlockingIndexPopulator.release();
+
+        // And return the future for examination:
+        return createConstraintTransaction;
+    }
+
+    // -- Set Up: Data parts
+
+    // These two values coalesce to the same double value, and therefor collides in our current index implementation:
+    private static final long COLLISION_X = 4611686018427387905L;
+    private static final long COLLISION_Y = 4611686018427387907L;
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     private Label label = DynamicLabel.label( "Cybermen" );
     private String property = "name";
+    private Node a;
+    private Node b;
+    private Node c;
+    private Node d;
 
     private GraphDatabaseService db;
+
+    /**
+     * Effectively:
+     *
+     * <pre><code>
+     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     ;
+     *
+     *     CREATE (a:Cybermen {name: "a"}),
+     *            (b:Cybermen),
+     *            (c: {name: "a"}),
+     *            (d: {name: "d"})
+     *     ;
+     * </code></pre>
+     */
+    private void givenOnlineConstraint()
+    {
+        createUniqueConstraint();
+        try ( Transaction tx = db.beginTx() )
+        {
+            a = db.createNode( label );
+            a.setProperty( property, "a" );
+            b = db.createNode( label );
+            c = db.createNode();
+            c.setProperty( property, "a" );
+            d = db.createNode();
+            d.setProperty( property, "d" );
+            tx.success();
+        }
+    }
+
+    /**
+     * Effectively:
+     *
+     * <pre><code>
+     *     CREATE (a:Cybermen {name: "a"}),
+     *            (b:Cybermen {name: "b"}),
+     *            (c:Cybermen {name: "c"}),
+     *            (d:Cybermen {name: "d"})
+     *     ;
+     * </code></pre>
+     */
+    private void givenUniqueDataset()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            a = db.createNode( label );
+            a.setProperty( property, "a" );
+            b = db.createNode( label );
+            b.setProperty( property, "b" );
+            c = db.createNode( label );
+            c.setProperty( property, "c" );
+            d = db.createNode( label );
+            d.setProperty( property, "d" );
+            tx.success();
+        }
+    }
+
+    /**
+     * Effectively:
+     *
+     * <pre><code>
+     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     ;
+     * </code></pre>
+     */
+    private void createUniqueConstraint()
+    {
+        createUniqueConstraint( null );
+    }
+
+    /**
+     * Effectively:
+     *
+     * <pre><code>
+     *     CREATE CONSTRAINT ON (n:Cybermen) assert n.name is unique
+     *     ;
+     * </code></pre>
+     *
+     * Also counts down the given latch prior to creating the constraint.
+     */
+    private void createUniqueConstraint( CountDownLatch preCreateLatch )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            if ( preCreateLatch != null )
+            {
+                preCreateLatch.countDown();
+            }
+            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            tx.success();
+        }
+    }
+
+    /**
+     * Effectively:
+     *
+     * <pre><code>
+     *     return single( db.findNodesByLabelAndProperty( label, property, value ), null );
+     * </code></pre>
+     */
+    private Node lookUpNode( Object value )
+    {
+        return single( db.findNodesByLabelAndProperty( label, property, value ), null );
+    }
+
+    // -- Set Up: Transaction handling
+
+    public void transaction( Action... actions )
+    {
+        int progress = 0;
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Action action : actions )
+            {
+                action.apply( tx );
+                progress++;
+            }
+        }
+        catch ( Throwable ex )
+        {
+            StringBuilder sb = new StringBuilder( "Transaction failed:\n\n" );
+            for ( int i = 0; i < actions.length; i++ )
+            {
+                String mark = progress == i? " failed --> " : "            ";
+                sb.append( mark ).append( actions[i] ).append( '\n' );
+            }
+            ex.addSuppressed( new AssertionError( sb.toString() ) );
+            throw ex;
+        }
+    }
+
+    private abstract class Action implements Function<Transaction,Void>
+    {
+        private final String name;
+
+        protected Action( String name )
+        {
+            this.name = name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
+        }
+    }
+
+    private final Action success = new Action( "tx.success();" )
+    {
+        @Override
+        public Void apply( Transaction transaction )
+        {
+            transaction.success();
+            // We also call close() here, because some validations and checks don't run until commit
+            transaction.close();
+            return null;
+        }
+    };
+
+    private Action createNode( final Object propertyValue )
+    {
+        return new Action( "Node node = db.createNode( label ); " +
+                "node.setProperty( property, " + reprValue( propertyValue ) + " );" )
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                Node node = db.createNode( label );
+                node.setProperty( property, propertyValue );
+                return null;
+            }
+        };
+    }
+
+    private Action setProperty( final Node node, final Object value )
+    {
+        return new Action( reprNode( node ) + ".setProperty( property, " + reprValue( value ) + " );")
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                node.setProperty( property, value );
+                return null;
+            }
+        };
+    }
+
+    private Action removeProperty( final Node node )
+    {
+        return new Action( reprNode( node ) + ".removeProperty( property );")
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                node.removeProperty( property );
+                return null;
+            }
+        };
+    }
+
+    private Action addLabel( final Node node, final Label label )
+    {
+        return new Action( reprNode( node ) + ".addLabel( " + label + " );" )
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                node.addLabel( label );
+                return null;
+            }
+        };
+    }
+
+    private Action fail( final String message )
+    {
+        return new Action( "fail( \"" + message + "\" );")
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                Assert.fail( message );
+                return null;
+            }
+        };
+    }
+
+    private Action assertLookupNode( final Object propertyValue, final Matcher<Node> matcher )
+    {
+        return new Action( "assertThat( lookUpNode( " + reprValue( propertyValue ) + " ), " + matcher + " );" )
+        {
+            @Override
+            public Void apply( Transaction transaction )
+            {
+                assertThat( lookUpNode( propertyValue ), matcher );
+                return null;
+            }
+        };
+    }
+
+    private String reprValue( Object value )
+    {
+        return value instanceof String? "\"" + value + "\"" : String.valueOf( value );
+    }
+
+    private String reprNode( Node node )
+    {
+        return node == a? "a"
+                : node == b? "b"
+                : node == c? "c"
+                : node == d? "d"
+                : "n";
+    }
+
+    // -- Set Up: Advanced transaction handling
+
+    private final Map<Transaction, javax.transaction.Transaction> txMap = new IdentityHashMap<>();
+
+    private void suspend( Transaction tx ) throws Exception
+    {
+        TransactionManager txManager = getTransactionManager();
+        txMap.put( tx, txManager.suspend() );
+    }
+
+    private void resume( Transaction tx ) throws Exception
+    {
+        TransactionManager txManager = getTransactionManager();
+        txManager.resume( txMap.remove( tx ) );
+    }
+
+    private TransactionManager getTransactionManager()
+    {
+        return resolveInternalDependency( TransactionManager.class );
+    }
+
+    // -- Set Up: Misc. sharp tools
+
+    /**
+     * Locks controlling concurrent access to the store files.
+     */
+    private LockService getLockService()
+    {
+        return resolveInternalDependency( LockService.class );
+    }
+
+    private <T> T resolveInternalDependency( Class<T> type )
+    {
+        @SuppressWarnings("deprecation")
+        GraphDatabaseAPI api = (GraphDatabaseAPI) db;
+        DependencyResolver resolver = api.getDependencyResolver();
+        return resolver.resolveDependency( type );
+    }
+
+    private static void awaitUninterruptibly( CountDownLatch latch )
+    {
+        try
+        {
+            latch.await();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new AssertionError( "Interrupted", e );
+        }
+    }
+
+    // -- Set Up: Environment parts
 
     @Rule
     public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );

@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.{ExecutionResult, StatisticsChecker}
-import java.io.{PrintWriter, File}
+import org.neo4j.cypher.{ExecutionResult, QueryStatisticsTestSupport}
+import java.io.File
 
-class LoadCSVFromSingleFileTest extends ArticleTest with StatisticsChecker {
-  implicit val csvFilesDir: File = createDir(dir, "csv-files")
+class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupport {
+  implicit var csvFilesDir: File = _
+
+  override def doThisBefore() {
+    csvFilesDir = createDir(dir, "csv-files")
+  }
 
   def title: String = "Importing data from a single CSV file"
   def section: String = "Import"
@@ -90,10 +94,17 @@ class LoadCSVFromSingleFileTest extends ArticleTest with StatisticsChecker {
                        |LOAD CSV WITH HEADERS FROM "file://$movie_productions" AS csvLine
                        |MERGE (c:Country {name: csvLine.country})
                        |MERGE (m:Movie {title: csvLine.movie})
-                       |CREATE (p)-[:PRODUCED {year: csvLine.year}]->(m)
+                       |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)
                        |###
+                       |
+                       |+LOAD CSV+ produces values that are collections (or maps when +WITH HEADERS+ is used) of strings.
+                       |In order to convert them to appropriate types, use the built-in +toInt+ and +toFloat+ functions.
                        |""".stripMargin
 
 }
+
+//object CSVFiles {
+//  def implicit val csvFilesDir: File = createDir(dir, "target/csv-files")
+//}
 
 

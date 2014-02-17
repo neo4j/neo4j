@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.junit.Test
 import org.scalatest.Assertions
 
-class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
+class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
 
   @Test
   def split_should_work_as_expected() {
@@ -38,6 +38,34 @@ class FunctionsAcceptanceTest extends ExecutionEngineHelper with Assertions {
 
     // Then
     assert(result === 2)
+  }
+
+  @Test
+  def toInt_should_work_as_expected() {
+    // When
+    val result = executeScalar[Long](
+      "CREATE (p:Person { age: \"42\" })" +
+      "WITH * " +
+      "MATCH (n) " +
+      "RETURN toInt(n.age)"
+    )
+
+    // Then
+    assert(result === 42)
+  }
+
+  @Test
+  def toFloat_should_work_as_expected() {
+    // When
+    val result = executeScalar[Double](
+      "CREATE (m:Movie { rating: 4 })" +
+        "WITH * " +
+        "MATCH (n) " +
+        "RETURN toFloat(n.rating)"
+    )
+
+    // Then
+    assert(result === 4.0)
   }
 
 }

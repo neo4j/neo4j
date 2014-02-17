@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.Literal
 import org.scalatest.Assertions
-import org.neo4j.cypher.ExecutionEngineHelper
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport}
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.CreateNode
 import org.scalautils.LegacyTripleEquals
 
-class CreateNodeActionTest extends ExecutionEngineHelper with Assertions with LegacyTripleEquals {
+class CreateNodeActionTest extends ExecutionEngineJUnitSuite {
 
   @Test def mixed_types_are_not_ok() {
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)

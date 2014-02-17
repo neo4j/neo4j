@@ -26,9 +26,21 @@ import org.neo4j.graphdb.{Path, Node, Relationship}
 import org.scalautils.LegacyTripleEquals
 
 class CreateUniqueAcceptanceTest
-  extends ExecutionEngineHelper with Assertions with StatisticsChecker with LegacyTripleEquals {
+  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
   val stats = QueryStatistics()
+
+  @Test
+  def create_unique_accepts_undirected_relationship() {
+    val a = createNode("id" -> 1)
+    val b = createNode("id" -> 2)
+
+    val rel = executeScalar[Relationship]("MATCH (a {id: 1}), (b {id: 2}) CREATE UNIQUE (a)-[r:X]-(b) RETURN r")
+    graph.inTx {
+      assert(1 === rel.getStartNode.getProperty("id"))
+      assert(2 === rel.getEndNode.getProperty("id"))
+    }
+  }
 
   @Test
   def create_new_node_with_labels_on_the_right() {

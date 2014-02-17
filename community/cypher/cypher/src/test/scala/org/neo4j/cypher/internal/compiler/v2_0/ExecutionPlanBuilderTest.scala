@@ -24,12 +24,11 @@ import commands.expressions.Identifier
 import commands.values.TokenType.{Label, PropertyKey}
 import pipes._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.{GraphDatabaseTestBase, InternalException}
+import org.neo4j.cypher.{GraphDatabaseJUnitSuite, InternalException}
 import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
 import scala.collection.Seq
 import org.junit.Test
 import org.junit.Assert._
-import org.scalatest.Assertions
 import java.util.concurrent._
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
@@ -43,7 +42,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 import javax.transaction.TransactionManager
 
-class ExecutionPlanBuilderTest extends GraphDatabaseTestBase with Assertions with Timed with MockitoSugar {
+class ExecutionPlanBuilderTest extends GraphDatabaseJUnitSuite with Timed with MockitoSugar {
   @Test def should_not_accept_returning_the_input_execution_plan() {
     val q = Query.empty
     val planContext = mock[PlanContext]

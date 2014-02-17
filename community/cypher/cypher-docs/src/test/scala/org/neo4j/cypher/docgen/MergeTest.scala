@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.{MergeConstraintConflictException, StatisticsChecker}
+import org.neo4j.cypher.{MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class MergeTest extends DocumentingTestBase with StatisticsChecker {
+class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
@@ -51,7 +51,7 @@ class MergeTest extends DocumentingTestBase with StatisticsChecker {
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
 
-  override val setupContraintQueries = List(
+  override val setupConstraintQueries = List(
     "CREATE CONSTRAINT ON (n:Person) ASSERT n.name IS UNIQUE",
     "CREATE CONSTRAINT ON (n:Person) ASSERT n.role IS UNIQUE")
 
@@ -206,6 +206,21 @@ return movie""",
         "movie between them, Cypher will not use any of the existing movies already connected to either person. Instead, " +
         "a new movie node is created.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1, propertiesSet = 0, labelsAdded = 1)
+    )
+  }
+
+  @Test def merging_on_undirected_relationship() {
+    testQuery(
+      title = "Merge on an undirected relationship",
+      text = "+MERGE+ can also be used with an undirected relationship. When it needs to create a new one, it will pick a direction.",
+      queryText =
+        """match (charlie:Person {name:'Charlie Sheen'}), (oliver:Person {name:'Oliver Stone'})
+merge (charlie)-[r:KNOWS]-(oliver)
+return r""",
+      optionalResultExplanation = "Assume that Charlie Sheen and Oliver Stone do not know each other then " +
+        "this +MERGE+ query will create a +:KNOWS+ relationship between them. " +
+        "The direction of the created relationship is arbitrary.",
+      assertions = (p) => assertStats(p, relationshipsCreated = 1)
     )
   }
 

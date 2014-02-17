@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.junit.Test
 
-class AggregationAcceptanceTest extends ExecutionEngineHelper {
+class AggregationAcceptanceTest extends ExecutionEngineJUnitSuite {
   @Test def should_handle_aggregates_inside_non_aggregate_expressions() {
     execute(
       "MATCH (a { name: 'Andres' })<-[:FATHER_OF]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"

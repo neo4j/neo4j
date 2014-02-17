@@ -40,12 +40,13 @@ trait ExecutionResult extends Iterator[Map[String, Any]] {
 // org.neo4j.cypher.javacompat.QueryStatistics
 // org.neo4j.server.rest.repr.CypherResultRepresentation
 // org.neo4j.server.rest.CypherFunctionalTest
+// org.neo4j.cypher.QueryStatisticsTestSupport
 //
 case class QueryStatistics(nodesCreated: Int = 0,
                            relationshipsCreated: Int = 0,
                            propertiesSet: Int = 0,
-                           deletedNodes: Int = 0,
-                           deletedRelationships: Int = 0,
+                           nodesDeleted: Int = 0,
+                           relationshipsDeleted: Int = 0,
                            labelsAdded: Int = 0,
                            labelsRemoved: Int = 0,
                            indexesAdded: Int = 0,
@@ -57,8 +58,8 @@ case class QueryStatistics(nodesCreated: Int = 0,
     nodesCreated > 0 ||
       relationshipsCreated > 0 ||
       propertiesSet > 0 ||
-      deletedNodes > 0 ||
-      deletedRelationships > 0 ||
+      nodesDeleted > 0 ||
+      relationshipsDeleted > 0 ||
       labelsAdded > 0 ||
       labelsRemoved > 0 ||
       indexesAdded > 0 ||
@@ -73,8 +74,8 @@ case class QueryStatistics(nodesCreated: Int = 0,
     includeIfNonZero(builder, "Nodes created: ", nodesCreated)
     includeIfNonZero(builder, "Relationships created: ", relationshipsCreated)
     includeIfNonZero(builder, "Properties set: ", propertiesSet)
-    includeIfNonZero(builder, "Nodes deleted: ", deletedNodes)
-    includeIfNonZero(builder, "Relationships deleted: ", deletedRelationships)
+    includeIfNonZero(builder, "Nodes deleted: ", nodesDeleted)
+    includeIfNonZero(builder, "Relationships deleted: ", relationshipsDeleted)
     includeIfNonZero(builder, "Labels added: ", labelsAdded)
     includeIfNonZero(builder, "Labels removed: ", labelsRemoved)
     includeIfNonZero(builder, "Indexes added: ", indexesAdded)

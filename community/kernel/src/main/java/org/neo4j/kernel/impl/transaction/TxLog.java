@@ -63,6 +63,7 @@ public class TxLog
 
     private final ByteCounterMonitor bufferMonitor;
 
+    public static final byte NULL_BYTE = 0;
     public static final byte TX_START = 1;
     public static final byte BRANCH_ADD = 2;
     public static final byte MARK_COMMIT = 3;
@@ -403,10 +404,7 @@ public class TxLog
     {
         FileChannel fileChannel = logBuffer.getFileChannel();
         ByteBuffer buffer = ByteBuffer.allocateDirect(SCAN_WINDOW_SIZE);
-        fileChannel.position( 0 );
-        buffer.clear();
-        fileChannel.read( buffer );
-        buffer.flip();
+        readFileIntoBuffer( fileChannel, buffer, 0 );
 
         // next record position
         long nextPosition = 0;
@@ -417,33 +415,28 @@ public class TxLog
         while ( buffer.hasRemaining() )
         {
             byte recordType = buffer.get();
-
-            if ( recordType == 0)
-            {
-                // We accept and ignore arbitrary null-bytes in between records.
-                // I'm not sure where they come from, though. A challenge for another day.
-                // For now we just make sure to increment nextPosition, so we skip over
-                // them in case we want to move our buffer window.
-                nextPosition++;
-                continue;
-            }
-
-            seqNr++;
-            int recordSize = 0;
+            int recordSize;
 
             switch ( recordType )
             {
                 case TX_START:
-                    recordSize = readTxStartRecordInto( recordMap, buffer, seqNr );
+                    recordSize = readTxStartRecordInto( recordMap, buffer, seqNr++ );
                     break;
                 case BRANCH_ADD:
-                    recordSize = readBranchAddRecordInto( recordMap, buffer, seqNr );
+                    recordSize = readBranchAddRecordInto( recordMap, buffer, seqNr++ );
                     break;
                 case MARK_COMMIT:
-                    recordSize = readMarkCommitRecordInto( recordMap, buffer, seqNr );
+                    recordSize = readMarkCommitRecordInto( recordMap, buffer, seqNr++ );
                     break;
                 case TX_DONE:
                     recordSize = readTxDoneAndRemoveTransactionFrom( recordMap, buffer );
+                    break;
+                case NULL_BYTE:
+                    // We accept and ignore arbitrary null-bytes in between records.
+                    // I'm not sure where they come from, though. A challenge for another day.
+                    // For now we just make sure to increment nextPosition, so we skip over
+                    // them in case we want to move our buffer window.
+                    recordSize = 1;
                     break;
                 default:
                     throw new IOException( "Unknown type: " + recordType );
@@ -455,17 +448,23 @@ public class TxLog
             }
             nextPosition += recordSize;
 
-
-            if ( buffer.remaining() < MAX_RECORD_SIZE )
+            // Reposition the scan window if we're getting to the end of it and there is more bytes in the
+            // channel to be read.
+            if ( buffer.remaining() < MAX_RECORD_SIZE && (fileChannel.size() - nextPosition) > buffer.remaining() )
             {
-                // make sure we don't try to read non full entry
-                buffer.clear();
-                fileChannel.position(nextPosition);
-                fileChannel.read( buffer );
-                buffer.flip();
+                readFileIntoBuffer( fileChannel, buffer, nextPosition );
             }
+
         }
         return recordMap.values();
+    }
+
+    private void readFileIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, long nextPosition ) throws IOException
+    {
+        buffer.clear();
+        fileChannel.position( nextPosition );
+        fileChannel.read( buffer );
+        buffer.flip();
     }
 
     /**
@@ -492,7 +491,7 @@ public class TxLog
         }
         List<Record> recordList = new LinkedList<>();
         recordList.add( new Record( TX_START, globalId, null, seqNr ) );
-        recordMap.put(xid, recordList);
+        recordMap.put( xid, recordList );
         return 2 + globalId.length;
     }
 

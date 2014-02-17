@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.junit.Test
 import scala.collection.immutable.Seq
 
-class MergeConcurrencyIT extends ExecutionEngineHelper {
+class MergeConcurrencyIT extends ExecutionEngineJUnitSuite {
 
   val nodeCount = 100
   val threadCount = Runtime.getRuntime.availableProcessors() * 2

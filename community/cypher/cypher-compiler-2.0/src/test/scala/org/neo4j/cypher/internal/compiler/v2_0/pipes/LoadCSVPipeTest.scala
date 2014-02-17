@@ -34,13 +34,13 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val fileName = createFile { writer =>
+    val url = createFile { writer =>
       writer.println("1")
       writer.println("2")
       writer.println("3")
       writer.println("4")
     }
-    val pipe = new LoadCSVPipe(input, NoHeaders, new URL("file://" + fileName), "foo")
+    val pipe = new LoadCSVPipe(input, NoHeaders, url, "foo")
 
     //when
     val result = pipe.createResults(QueryStateHelper.empty).toList
@@ -60,12 +60,12 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val fileName = createFile { writer =>
+    val url = createFile { writer =>
       writer.println("a,b")
       writer.println("1,2")
       writer.println("3,4")
     }
-    val pipe = new LoadCSVPipe(input, HasHeaders, new URL("file://" + fileName), "foo")
+    val pipe = new LoadCSVPipe(input, HasHeaders, url, "foo")
 
     //when
     val result = pipe.createResults(QueryStateHelper.empty).toList
@@ -83,13 +83,13 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val fileName = createFile {
+    val url = createFile {
       writer =>
         writer.println("a,b")
         writer.println("1,2")
         writer.println("3")
     }
-    val pipe = new LoadCSVPipe(input, HasHeaders, new URL("file://" + fileName), "foo")
+    val pipe = new LoadCSVPipe(input, HasHeaders, url, "foo")
 
     //when
     val result = pipe.createResults(QueryStateHelper.empty).toList
@@ -107,8 +107,8 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx))
 
-    val fileName = createFile(_ => {})
-    val pipe = new LoadCSVPipe(input, HasHeaders, new URL("file://" + fileName), "foo")
+    val url = createFile(_ => {})
+    val pipe = new LoadCSVPipe(input, HasHeaders, url, "foo")
 
     //when
     val result = pipe.createResults(QueryStateHelper.empty).toList
@@ -122,13 +122,13 @@ class LoadCSVPipeTest extends Assertions {
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx, ctx))
 
-    val fileName = createFile { writer =>
+    val url = createFile { writer =>
       writer.println("1")
       writer.println("2")
       writer.println("3")
       writer.println("4")
     }
-    val pipe = new LoadCSVPipe(input, NoHeaders, new URL("file://" + fileName), "foo")
+    val pipe = new LoadCSVPipe(input, NoHeaders, url, "foo")
 
     //when
     val result = pipe.createResults(QueryStateHelper.empty).toList
@@ -160,14 +160,14 @@ class LoadCSVPipeTest extends Assertions {
 
   var files: Seq[File] = Seq.empty
 
-  private def createFile(f: PrintWriter => Unit): String = synchronized {
+  private def createFile(f: PrintWriter => Unit): URL = synchronized {
     val file = File.makeTemp("cypher", ".csv")
     val writer = file.printWriter()
     f(writer)
     writer.flush()
     writer.close()
     files = files :+ file
-    file.path
+    file.toURI.toURL
   }
 
   @After def cleanup() {

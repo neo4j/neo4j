@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.junit.Test
 
-class IndexUsageAcceptanceTest extends ExecutionEngineHelper {
+class IndexUsageAcceptanceTest extends ExecutionEngineJUnitSuite{
   @Test
   def should_not_forget_predicates() {
     // Given

@@ -178,9 +178,12 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
 
   def header = "[[%s-%s]]".format(section.toLowerCase, title.toLowerCase.replace(" ", "-"))
 
+  def doThisBefore() {}
+
   @Test
   def produceDocumentation() {
     val db = init()
+    doThisBefore()
     try {
       val writer: PrintWriter = createWriter(title, dir)
 

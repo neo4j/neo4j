@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import org.neo4j.cypher.GraphDatabaseTestBase
-import org.scalatest.Assertions
+import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.junit.{After, Test}
 import org.junit.Assert._
 import org.neo4j.graphdb.{Path, Direction}
@@ -31,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.ShortestPath
 import org.neo4j.cypher.internal.compiler.v2_0.commands.SingleNode
 import org.neo4j.cypher.internal.compiler.v2_0.commands.ShortestPath
 
-class PathExpressionTest extends GraphDatabaseTestBase with Assertions {
+class PathExpressionTest extends GraphDatabaseJUnitSuite {
 
   @Test def shouldAcceptShortestPathExpressions() {
     val a = createNode()

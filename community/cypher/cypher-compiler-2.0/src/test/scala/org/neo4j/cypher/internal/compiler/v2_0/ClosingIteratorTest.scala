@@ -30,14 +30,14 @@ import org.scalatest.mock.MockitoSugar
 class ClosingIteratorTest extends Assertions with MockitoSugar {
   var ctx: QueryContext = _
   var cleanupTaskList: CleanupTaskList = _
-  var cleanupTask: CleanupTask = _
+  var cleanupTask: () => Unit = _
 
   @Before
   def before() {
     ctx = mock[QueryContext]
     cleanupTaskList = mock[CleanupTaskList]
-    cleanupTask = mock[CleanupTask]
-    when(cleanupTaskList.getCleanupTasks).thenReturn(Seq(cleanupTask))
+    cleanupTask = mock[() => Unit]
+    when(cleanupTaskList.cleanupTasks).thenReturn(Seq(cleanupTask))
   }
 
   @Test
@@ -51,7 +51,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx).close(success = true)
-    verify(cleanupTask, times(1)).close()
+    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 
@@ -66,7 +66,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx).close(success = true)
-    verify(cleanupTask, times(1)).close()
+    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(false))
   }
 
@@ -85,7 +85,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx, times(1)).close(success = true)
-    verify(cleanupTask, times(1)).close()
+    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(false))
   }
 
@@ -101,7 +101,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx).close(success = false)
-    verify(cleanupTask, times(1)).close()
+    verify(cleanupTask, times(1)).apply()
   }
 
   @Test
@@ -118,7 +118,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx).close(success = false)
-    verify(cleanupTask, times(1)).close()
+    verify(cleanupTask, times(1)).apply()
   }
 
   @Test
@@ -133,7 +133,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx).close(success = true)
-    verify(cleanupTask, times(1)).close()
+    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 }

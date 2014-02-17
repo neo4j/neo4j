@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,6 +34,9 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 public class TestTxLog
 {
@@ -171,7 +169,7 @@ public class TestTxLog
         }
         try
         {
-            TxLog txLog = new TxLog( txFile(), new DefaultFileSystemAbstraction(), new Monitors() );
+            TxLog txLog = new TxLog( txFile(), fs, new Monitors() );
             byte globalId[] = new byte[64];
             byte branchId[] = new byte[45];
             txLog.txStart( globalId );
@@ -206,38 +204,75 @@ public class TestTxLog
     @Test
     public void logFilesInflatedWithZerosShouldStillBeAbleToRotate() throws IOException
     {
+        // Given
         File logFile = tmpFile();
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        FileChannel ch = fileSystem.open(logFile, "rw");
-        ch.write(ByteBuffer.allocate(TxLog.SCAN_WINDOW_SIZE / 2));
-        ch.force(false);
-        ch.close();
+        File rotationTarget = tmpFile();
+        zeroPad( logFile, fs, TxLog.SCAN_WINDOW_SIZE / 2 );
 
-        TxLog log = new TxLog( logFile, fileSystem, new Monitors() );
-
-        ByteBuffer tmp = ByteBuffer.allocate( Xid.MAXGTRIDSIZE );
-
-        for (int i = 0; i < 2000; i++)
-        {
-            tmp.putInt(0, i);
-            byte[] bytes = new byte[ Xid.MAXGTRIDSIZE ];
-            tmp.position( 0 );
-            tmp.get( bytes );
-            log.txStart( bytes );
-        }
+        TxLog log = new TxLog( logFile, fs, new Monitors() );
+        writeStartRecords( log, 2000, 0 );
         log.force();
 
-        File rotationTarget = tmpFile();
-
-        // Asserting that this does not throw an exception:
+        // When
         log.switchToLogFile( rotationTarget );
-        // ... and that the rotated log has all our started transactions:
+
+        // Then
         assertThat( log.getRecordCount(), is( 2000 ) );
     }
 
     @Test
-    public void testTxRecovery()
+    public void logFilesInflatedWithZerosShouldNotSkipLastEntries() throws IOException
     {
-        // TODO
+        // Given
+        File logFile = tmpFile();
+        TxLog log = new TxLog( logFile, fs, new Monitors() );
+        writeStartRecords( log, 1, 0);
+        log.force();
+        log.close();
+
+        // And given we then pad it enough that records will misalign with the scan window size
+        zeroPad( logFile, fs, TxLog.SCAN_WINDOW_SIZE - 2 );
+
+        // And add more records
+        log = new TxLog( logFile, fs, new Monitors() );
+        writeStartRecords( log, 1, 1 );
+        log.force();
+
+        File rotationTarget = tmpFile();
+
+        // When
+        log.switchToLogFile( rotationTarget );
+
+        // Then
+        assertThat( log.getRecordCount(), is( 2 ) );
+    }
+
+    private void writeStartRecords( TxLog log, int numberOfStartRecords, int startId ) throws IOException
+    {
+        for (int i = startId; i < numberOfStartRecords + startId; i++)
+        {
+            log.txStart( globalId( i )  );
+        }
+    }
+
+    private byte[] globalId( int i )
+    {
+        globalIdBuffer.putInt(0, i);
+        byte[] bytes = new byte[ Xid.MAXGTRIDSIZE ];
+        globalIdBuffer.position( 0 );
+        globalIdBuffer.get( bytes );
+        return bytes;
+    }
+
+    private final ByteBuffer globalIdBuffer = ByteBuffer.allocate( Xid.MAXGTRIDSIZE );
+    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
+    private void zeroPad( File logFile, DefaultFileSystemAbstraction fileSystem, int numberOfNulls ) throws IOException
+    {
+        FileChannel ch = fileSystem.open(logFile, "rw");
+        ch.position( ch.size() );
+        ch.write( ByteBuffer.allocate( numberOfNulls ));
+        ch.force(false);
+        ch.close();
     }
 }
