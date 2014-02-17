@@ -25,17 +25,18 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
 public class RelationshipDeleter
 {
-    private final TransactionalRelationshipGroupGetter relGroupGetter;
-    private final PropertyChainDeleter propertyChainDeleter;
+    private final RelationshipGroupGetter relGroupGetter;
+    private final PropertyDeleter propertyChainDeleter;
     private final RelationshipLocker locker;
 
-    public RelationshipDeleter( RelationshipLocker locker, TransactionalRelationshipGroupGetter relGroupGetter,
-                                PropertyChainDeleter propertyChainDeleter )
+    public RelationshipDeleter( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter,
+                                PropertyDeleter propertyChainDeleter )
     {
         this.locker = locker;
         this.relGroupGetter = relGroupGetter;
@@ -52,7 +53,7 @@ public class RelationshipDeleter
      * @return The properties of the relationship that were removed during the
      *         delete.
      */
-    public ArrayMap<Integer, DefinedProperty> relDelete( long id, RecordChangeSet recordChanges )
+    public ArrayMap<Integer, DefinedProperty> relDelete( long id, RecordAccessSet recordChanges )
     {
         RelationshipRecord record = recordChanges.getRelRecords().getOrLoad( id, null ).forChangingLinkage();
         if ( !record.inUse() )
@@ -68,7 +69,7 @@ public class RelationshipDeleter
         return propertyMap;
     }
 
-    private void disconnectRelationship( RelationshipRecord rel, RecordChangeSet recordChangeSet )
+    private void disconnectRelationship( RelationshipRecord rel, RecordAccessSet recordChangeSet )
     {
         disconnect( rel, RelationshipConnection.START_NEXT, recordChangeSet.getRelRecords() );
         disconnect( rel, RelationshipConnection.START_PREV, recordChangeSet.getRelRecords() );
@@ -77,7 +78,7 @@ public class RelationshipDeleter
     }
 
     private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
-                             RecordChanges<Long, RelationshipRecord, Void> relChanges )
+                             RecordAccess<Long, RelationshipRecord, Void> relChanges )
     {
         long otherRelId = pointer.otherSide().get( rel );
         if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -106,11 +107,11 @@ public class RelationshipDeleter
         }
     }
 
-    private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordChangeSet recordChanges )
+    private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges )
     {
-        RecordChanges.RecordChange<Long, NodeRecord, Void> startNodeChange =
+        RecordProxy<Long, NodeRecord, Void> startNodeChange =
                 recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null );
-        RecordChanges.RecordChange<Long, NodeRecord, Void> endNodeChange =
+        RecordProxy<Long, NodeRecord, Void> endNodeChange =
                 recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null );
 
         NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
@@ -129,7 +130,7 @@ public class RelationshipDeleter
         }
         else
         {
-            RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> groupChange =
+            RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( startNode, rel.getType() );
             assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
             RelationshipGroupRecord group = groupChange.forReadingData();
@@ -162,7 +163,7 @@ public class RelationshipDeleter
         }
         else
         {
-            RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> groupChange =
+            RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( endNode, rel.getType() );
             RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
             assert groupChange != null || loop : "Group has been deleted";
@@ -188,7 +189,7 @@ public class RelationshipDeleter
     }
 
     private boolean decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
-                                                     RecordChanges<Long, RelationshipRecord, Void> relRecords )
+                                                     RecordAccess<Long, RelationshipRecord, Void> relRecords )
     {
         if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
         {
@@ -216,9 +217,9 @@ public class RelationshipDeleter
         return false;
     }
 
-    private void deleteGroup( RecordChanges.RecordChange<Long,NodeRecord,Void> nodeChange,
+    private void deleteGroup( RecordProxy<Long, NodeRecord, Void> nodeChange,
                               RelationshipGroupRecord group,
-                              RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+                              RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         long previous = group.getPrev();
         long next = group.getNext();

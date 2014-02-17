@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RecordChangeSetTest
 {
@@ -49,16 +49,6 @@ public class RecordChangeSetTest
         assertEquals( 0, changeSet.getRelRecords().changeSize() );
         assertEquals( 0, changeSet.getSchemaRuleChanges().changeSize() );
         assertEquals( 0, changeSet.getRelGroupRecords().changeSize() );
-
-        assertEquals( 0, changeSet.getNodeCommands().size() );
-        assertEquals( 0, changeSet.getPropCommands().size() );
-        assertEquals( 0, changeSet.getPropertyKeyTokenCommands().size() );
-        assertEquals( 0, changeSet.getRelCommands().size() );
-        assertEquals( 0, changeSet.getSchemaRuleCommands().size() );
-        assertEquals( 0, changeSet.getRelationshipTypeTokenCommands().size() );
-        assertEquals( 0, changeSet.getLabelTokenCommands().size() );
-        assertEquals( 0, changeSet.getRelGroupCommands().size() );
-        assertNull( changeSet.getNeoStoreCommand() );
     }
 
     @Test
@@ -85,16 +75,6 @@ public class RecordChangeSetTest
         changeSet.getSchemaRuleChanges().create( 1l, null ).forChangingLinkage();
         changeSet.getRelGroupRecords().create( 1l, 1 ).forChangingLinkage();
 
-        changeSet.getNodeCommands().put( new Long( 1 ), mock( Command.NodeCommand.class ) );
-        changeSet.getPropCommands().add( mock( Command.PropertyCommand.class ) );
-        changeSet.getPropertyKeyTokenCommands().add( mock( Command.PropertyKeyTokenCommand.class ) );
-        changeSet.getRelCommands().add( mock( Command.RelationshipCommand.class ) );
-        changeSet.getSchemaRuleCommands().add( mock( Command.SchemaRuleCommand.class ) );
-        changeSet.getRelationshipTypeTokenCommands().add( mock( Command.RelationshipTypeTokenCommand.class ) );
-        changeSet.getLabelTokenCommands().add( mock( Command.LabelTokenCommand.class ) );
-        changeSet.getRelGroupCommands().add( mock( Command.RelationshipGroupCommand.class ) );
-        changeSet.setNeoStoreCommand( mock ( Command.NeoStoreCommand.class ) );
-
         changeSet.close();
 
         // THEN
@@ -103,16 +83,5 @@ public class RecordChangeSetTest
         assertEquals( 0, changeSet.getRelRecords().changeSize() );
         assertEquals( 0, changeSet.getSchemaRuleChanges().changeSize() );
         assertEquals( 0, changeSet.getRelGroupRecords().changeSize() );
-
-        assertEquals( 0, changeSet.getNodeCommands().size() );
-        assertEquals( 0, changeSet.getPropCommands().size() );
-        assertEquals( 0, changeSet.getPropertyKeyTokenCommands().size() );
-        assertEquals( 0, changeSet.getRelCommands().size() );
-        assertEquals( 0, changeSet.getSchemaRuleCommands().size() );
-        assertEquals( 0, changeSet.getRelationshipTypeTokenCommands().size() );
-        assertEquals( 0, changeSet.getLabelTokenCommands().size() );
-        assertEquals( 0, changeSet.getRelGroupCommands().size() );
-        assertNull( changeSet.getNeoStoreCommand() );
     }
-
 }

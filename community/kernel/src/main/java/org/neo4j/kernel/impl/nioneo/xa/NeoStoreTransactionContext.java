@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -45,25 +46,31 @@ public class NeoStoreTransactionContext
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter relationshipDeleter;
     private final NeoStoreTransactionContextSupplier supplier;
-    private final PropertyChainDeleter propertyChainDeleter;
+    private final PropertyTraverser propertyTraverser;
+    private final PropertyCreator propertyCreator;
+    private final PropertyDeleter propertyDeleter;
     private final TransactionalRelationshipLocker locker;
-    private final TransactionalRelationshipGroupGetter transactionalRelationshipGroupGetter;
+    private final RelationshipGroupGetter relationshipGroupGetter;
 
     private TransactionState txState;
 
     private final RecordChangeSet recordChangeSet;
+    private final CommandSet commandSet;
 
     public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
     {
         this.supplier = supplier;
 
         recordChangeSet = new RecordChangeSet( neoStore );
+        commandSet = new CommandSet( neoStore );
 
         locker = new TransactionalRelationshipLocker();
-        transactionalRelationshipGroupGetter = new TransactionalRelationshipGroupGetter( recordChangeSet.getRelGroupRecords() );
-        propertyChainDeleter = new PropertyChainDeleter( neoStore.getPropertyStore() );
-        relationshipCreator = new RelationshipCreator( locker, transactionalRelationshipGroupGetter, neoStore );
-        relationshipDeleter = new RelationshipDeleter( locker, transactionalRelationshipGroupGetter, propertyChainDeleter);
+        relationshipGroupGetter = new RelationshipGroupGetter( recordChangeSet.getRelGroupRecords() );
+        propertyTraverser = new PropertyTraverser();
+        propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
+        propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
+        relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore );
+        relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter);
     }
 
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
@@ -88,7 +95,7 @@ public class NeoStoreTransactionContext
 
     public void updateFirstRelationships()
     {
-        for ( RecordChanges.RecordChange<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
+        for ( RecordProxy<Long, NodeRecord, Void> change : recordChangeSet.getNodeRecords().changes() )
         {
             NodeRecord record = change.forReadingLinkage();
             txState.setFirstIds( record.getId(), record.getNextRel(), record.getNextProp() );
@@ -97,8 +104,25 @@ public class NeoStoreTransactionContext
 
     public ArrayMap<Integer, DefinedProperty>  getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
-        return propertyChainDeleter.getAndDeletePropertyChain( nodeRecord,
+        return propertyDeleter.getAndDeletePropertyChain( nodeRecord,
                 recordChangeSet.getPropertyRecords() );
+    }
+
+    public <T extends PrimitiveRecord> void removeProperty( RecordProxy<Long,T,Void> primitiveProxy, int propertyKey )
+    {
+        propertyDeleter.removeProperty( primitiveProxy, propertyKey, getPropertyRecords() );
+    }
+
+    public <P extends PrimitiveRecord> void primitiveChangeProperty( RecordProxy<Long, P, Void> primitive,
+            int propertyKey, Object value )
+    {
+        propertyCreator.primitiveChangeProperty( primitive, propertyKey, value, getPropertyRecords() );
+    }
+
+    public <P extends PrimitiveRecord> void primitiveAddProperty( RecordProxy<Long, P, Void> primitive,
+            int propertyKey, Object value )
+    {
+        propertyCreator.primitiveAddProperty( primitive, propertyKey, value, getPropertyRecords() );
     }
 
     public void bind( TransactionState txState )
@@ -110,6 +134,8 @@ public class NeoStoreTransactionContext
     public void close()
     {
         recordChangeSet.close();
+        commandSet.close();
+
         locker.setTransactionState( null );
         txState = null;
         supplier.release( this );
@@ -117,37 +143,37 @@ public class NeoStoreTransactionContext
 
     public Map<Long, Command.NodeCommand> getNodeCommands()
     {
-        return recordChangeSet.getNodeCommands();
+        return commandSet.getNodeCommands();
     }
 
     public ArrayList<Command.PropertyCommand> getPropCommands()
     {
-        return recordChangeSet.getPropCommands();
+        return commandSet.getPropCommands();
     }
 
     public ArrayList<Command.RelationshipCommand> getRelCommands()
     {
-        return recordChangeSet.getRelCommands();
+        return commandSet.getRelCommands();
     }
 
     public ArrayList<Command.SchemaRuleCommand> getSchemaRuleCommands()
     {
-        return recordChangeSet.getSchemaRuleCommands();
+        return commandSet.getSchemaRuleCommands();
     }
 
     public ArrayList<Command.RelationshipTypeTokenCommand> getRelationshipTypeTokenCommands()
     {
-        return recordChangeSet.getRelationshipTypeTokenCommands();
+        return commandSet.getRelationshipTypeTokenCommands();
     }
 
     public ArrayList<Command.LabelTokenCommand> getLabelTokenCommands()
     {
-        return recordChangeSet.getLabelTokenCommands();
+        return commandSet.getLabelTokenCommands();
     }
 
     public ArrayList<Command.PropertyKeyTokenCommand> getPropertyKeyTokenCommands()
     {
-        return recordChangeSet.getPropertyKeyTokenCommands();
+        return commandSet.getPropertyKeyTokenCommands();
     }
 
     public RecordChanges<Long, NodeRecord, Void> getNodeRecords()
@@ -177,25 +203,25 @@ public class NeoStoreTransactionContext
 
     public void generateNeoStoreCommand( NeoStoreRecord neoStoreRecord )
     {
-        recordChangeSet.generateNeoStoreCommand( neoStoreRecord );
+        commandSet.generateNeoStoreCommand( neoStoreRecord );
     }
 
     public XaCommand getNeoStoreCommand()
     {
-        return recordChangeSet.getNeoStoreCommand();
+        return commandSet.getNeoStoreCommand();
     }
 
     public ArrayList<Command.RelationshipGroupCommand> getRelGroupCommands()
     {
-        return recordChangeSet.getRelGroupCommands();
+        return commandSet.getRelGroupCommands();
     }
 
     public void setNeoStoreCommand( Command.NeoStoreCommand xaCommand )
     {
-        recordChangeSet.setNeoStoreCommand( xaCommand );
+        commandSet.setNeoStoreCommand( xaCommand );
     }
 
-    public RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node,
+    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node,
                                                                                                     int type )
     {
         long groupId = node.getNextRel();
@@ -203,7 +229,7 @@ public class NeoStoreTransactionContext
         Set<Integer> allTypes = new HashSet<>();
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> change =
+            RecordProxy<Long, RelationshipGroupRecord, Integer> change =
                     recordChangeSet.getRelGroupRecords().getOrLoad( groupId, type );
             RelationshipGroupRecord record = change.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"

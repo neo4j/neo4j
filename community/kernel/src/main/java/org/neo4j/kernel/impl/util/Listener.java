@@ -17,17 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa;
+package org.neo4j.kernel.impl.util;
 
-public interface RelationshipLocker
+public interface Listener<T>
 {
-    void getWriteLock( long relId );
-
-    public static final RelationshipLocker NO_LOCKING = new RelationshipLocker()
-    {
-        @Override
-        public void getWriteLock( long relId )
-        {   // Don't lock anything
-        }
-    };
+    void receive( T notification );
 }
