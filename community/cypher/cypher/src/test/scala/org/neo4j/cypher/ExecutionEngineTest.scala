@@ -2726,8 +2726,8 @@ RETURN x0.name""")
   }
 
   @Test
-  def should_handle_cypher_version_and_autocommit() {
-    val result = execute("cypher 2.1 using autocommit create () with * match n return n")
+  def should_handle_cypher_version_and_periodic_commit() {
+    val result = execute("cypher 2.1 using periodic commit create () with * match n return n")
     assert(result.size === 1)
   }
 }

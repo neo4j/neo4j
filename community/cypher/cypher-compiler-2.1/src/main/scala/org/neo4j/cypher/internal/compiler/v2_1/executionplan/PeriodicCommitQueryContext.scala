@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{DelegatingOperations, Operations, QueryContext, DelegatingQueryContext}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 
-class AutoCommitQueryContext(batchSize: Long, inner: QueryContext) extends DelegatingQueryContext(inner) {
+class PeriodicCommitQueryContext(batchSize: Long, inner: QueryContext) extends DelegatingQueryContext(inner) {
   var currentCount: Long = 0
   var commitCount: Long = 0
 

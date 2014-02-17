@@ -2962,10 +2962,10 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("should parse an autocommit query with size") {
+  test("should parse an periodic commit query with size") {
     expectQuery(
-      "USING AUTOCOMMIT 10 CREATE (n)",
-      AutoCommitQuery(
+      "USING PERIODIC COMMIT 10 CREATE (n)",
+      PeriodicCommitQuery(
         Query.
           start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
           returns(),
@@ -2974,10 +2974,10 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("should parse an autocommit query without size") {
+  test("should parse an periodic commit query without size") {
     expectQuery(
-      "USING AUTOCOMMIT CREATE (n) ",
-      AutoCommitQuery(
+      "USING PERIODIC COMMIT CREATE (n) ",
+      PeriodicCommitQuery(
         Query.
           start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
           returns(),

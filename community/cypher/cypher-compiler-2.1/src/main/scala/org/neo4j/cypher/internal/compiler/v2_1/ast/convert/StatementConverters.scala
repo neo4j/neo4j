@@ -24,7 +24,7 @@ import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.StartItem
-import org.neo4j.cypher.internal.compiler.v2_1.commands.AutoCommitQuery
+import org.neo4j.cypher.internal.compiler.v2_1.commands.PeriodicCommitQuery
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 object StatementConverters {
@@ -33,8 +33,8 @@ object StatementConverters {
     def asQuery: commands.AbstractQuery = statement match {
       case s: ast.Query =>
         val innerQuery = s.part.asQuery
-        s.autoCommitHint match {
-          case Some(hint) => AutoCommitQuery(innerQuery, hint.size.map(_.value))
+        s.periodicCommitHint match {
+          case Some(hint) => PeriodicCommitQuery(innerQuery, hint.size.map(_.value))
           case _          => innerQuery
         }
       case s: ast.CreateIndex =>

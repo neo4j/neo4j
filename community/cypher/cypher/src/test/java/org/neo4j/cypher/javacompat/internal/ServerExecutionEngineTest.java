@@ -32,28 +32,28 @@ public class ServerExecutionEngineTest
     public EmbeddedDatabaseRule rule = new EmbeddedDatabaseRule();
 
     @Test
-    public void shouldDetectAutoCommitQueries() throws Exception
+    public void shouldDetectPeriodicCommitQueries() throws Exception
     {
         // GIVEN
         ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
 
         // WHEN
-        boolean result = engine.isAutoCommitQuery("USING AUTOCOMMIT CREATE ()");
+        boolean result = engine.isPeriodicCommitQuery("USING PERIODIC COMMIT CREATE ()");
 
         // THEN
-        assertTrue( "Did not detect autocommit query", result );
+        assertTrue( "Did not detect periodic commit query", result );
     }
 
     @Test
-    public void shouldNotDetectNonAutoCommitQueriesAsAutoCommitQueries() throws Exception
+    public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries() throws Exception
     {
         // GIVEN
         ServerExecutionEngine engine = new ServerExecutionEngine( rule.getGraphDatabaseService() );
 
         // WHEN
-        boolean result = engine.isAutoCommitQuery("CREATE ()");
+        boolean result = engine.isPeriodicCommitQuery("CREATE ()");
 
         // THEN
-        assertFalse( "Did detect non-autocommit query as autocommit query", result );
+        assertFalse( "Did detect non-periodic commit query as periodic commit query", result );
     }
 }

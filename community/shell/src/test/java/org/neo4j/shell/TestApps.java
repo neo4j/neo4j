@@ -555,17 +555,17 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void use_cypher_autocommit() throws Exception
+    public void use_cypher_periodic_commit() throws Exception
     {
         try
         {
             // WHEN
-            executeCommand( "USING AUTOCOMMIT 100 CREATE n;" );
+            executeCommand( "USING PERIODIC COMMIT 100 CREATE n;" );
         }
         catch ( ShellException e )
         {
             // THEN NOT
-            fail( "Failed to execute AUTOCOMMIT query" );
+            fail( "Failed to execute PERIODIC COMMIT query" );
         }
     }
 

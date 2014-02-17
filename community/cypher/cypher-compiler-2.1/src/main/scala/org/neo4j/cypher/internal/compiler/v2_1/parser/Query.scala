@@ -27,7 +27,7 @@ trait Query extends Parser
   with Base {
 
   def Query: Rule1[ast.Query] = rule {
-    group(optional(AutoCommitHint ~ WS) ~ SingleQuery ~ zeroOrMore(WS ~ Union)) ~~>> (ast.Query(_, _))
+    group(optional(PeriodicCommitHint ~ WS) ~ SingleQuery ~ zeroOrMore(WS ~ Union)) ~~>> (ast.Query(_, _))
   }
 
   def SingleQuery: Rule1[ast.SingleQuery] = rule {

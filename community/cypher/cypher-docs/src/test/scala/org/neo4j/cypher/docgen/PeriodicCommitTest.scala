@@ -23,32 +23,32 @@ import org.junit.{Ignore, Test}
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 
-class AutoCommitTest
+class PeriodicCommitTest
   extends DocumentingTestBase with QueryStatisticsTestSupport with CreateTempFileTestSupport {
 
-  def section: String = "AUTOCOMMIT"
+  def section: String = "PERIODIC COMMIT"
 
-  @Test def autocommit() {
+  @Test def periodicCommit() {
     testQuery(
-      title = "AUTOCOMMIT",
-      text = "AUTOCOMMIT with a specified number of entity updates after which the transaction should be committed.",
-      queryText = "USING AUTOCOMMIT 500 FOREACH(id IN range(0, 10000) | CREATE (n:User {id: id}))",
+      title = "PERIODIC COMMIT",
+      text = "PERIODIC COMMIT with a specified number of entity updates after which the transaction should be committed.",
+      queryText = "USING PERIODIC COMMIT 500 FOREACH(id IN range(0, 10000) | CREATE (n:User {id: id}))",
       optionalResultExplanation = "",
       assertions = assertStatsResult(nodesCreated = 10001, labelsAdded = 10001, propertiesSet = 10001)(_)
     )
   }
 
-  @Test def autocommit_default() {
+  @Test def periodic_commit_default() {
     testQuery(
-      title = "AUTOCOMMIT",
-      text = "AUTOCOMMIT with no specified number of entity updates, using N as the default value.",
-      queryText = "USING AUTOCOMMIT FOREACH(id IN range(0, 10000) | CREATE (n:User {id: id}))",
+      title = "PERIODIC COMMIT",
+      text = "PERIODIC COMMIT with no specified number of entity updates, using N as the default value.",
+      queryText = "USING PERIODIC COMMIT FOREACH(id IN range(0, 10000) | CREATE (n:User {id: id}))",
       optionalResultExplanation = "",
       assertions = assertStatsResult(nodesCreated = 10001, labelsAdded = 10001, propertiesSet = 10001)(_)
     )
   }
 
-  @Test def autocommit_with_load_csv() {
+  @Test def periodic_commit_with_load_csv() {
     val fileName = createTempFile("cypher", ".csv", { writer =>
       writer.println("name")
       writer.println("Davide")
@@ -58,9 +58,9 @@ class AutoCommitTest
     })
 
     testQuery(
-      title = "AUTOCOMMIT",
-      text = "Using AUTOCOMMIT along with LOAD CSV",
-      queryText = s"USING AUTOCOMMIT LOAD CSV WITH HEADERS FROM 'file://$fileName' AS line CREATE (n:User {name: line.name})",
+      title = "PERIODIC COMMIT",
+      text = "Using PERIODIC COMMIT along with LOAD CSV",
+      queryText = s"USING PERIODIC COMMIT LOAD CSV WITH HEADERS FROM 'file://$fileName' AS line CREATE (n:User {name: line.name})",
       optionalResultExplanation = "",
       assertions = assertStatsResult(nodesCreated = 4, labelsAdded = 4, propertiesSet = 4)(_)
     )

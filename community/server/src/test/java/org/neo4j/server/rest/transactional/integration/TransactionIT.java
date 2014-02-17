@@ -175,14 +175,14 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_autocommit_and_commit() throws Exception
+    public void begin_and_execute_periodic_commit_and_commit() throws Exception
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute and commit
         Response response = http.POST(
                 "/db/data/transaction/commit",
-                quotedJson( "{ 'statements': [ { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" )
+                quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT CREATE ()' } ] }" )
         );
 
         assertThat( response.status(), equalTo( 200 ) );
@@ -204,18 +204,18 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_multiple_autocommit_last_and_commit() throws Exception
+    public void begin_and_execute_multiple_periodic_commit_last_and_commit() throws Exception
     {
         // begin and execute and commit
         Response response = http.POST(
                 "/db/data/transaction/commit",
-                quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" )
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, { 'statement': 'USING PERIODIC COMMIT CREATE ()' } ] }" )
         );
         assertThat( response, hasErrors(Status.Statement.InvalidSemantics) );
     }
 
     @Test
-    public void begin__execute__execute_and_autocommit() throws Exception
+    public void begin__execute__execute_and_periodic_commit() throws Exception
     {
         // begin
         Response begin = http.POST( "/db/data/transaction" );
@@ -224,18 +224,18 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
 
         // execute
-        Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" ) );
+        Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT CREATE ()' } ] }" ) );
 
         assertThat( response, hasErrors(Status.Statement.InvalidSemantics) );
     }
 
     @Test
-    public void begin_and_execute_autocommit__commit() throws Exception
+    public void begin_and_execute_periodic_commit__commit() throws Exception
     {
         // begin and execute
         Response begin = http.POST(
                 "/db/data/transaction",
-                quotedJson( "{ 'statements': [ { 'statement': 'USING AUTOCOMMIT CREATE ()' } ] }" )
+                quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT CREATE ()' } ] }" )
         );
 
         assertThat( begin, hasErrors(Status.Statement.InvalidSemantics) );

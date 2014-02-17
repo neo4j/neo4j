@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 
-case class Query(autoCommitHint: Option[AutoCommitHint], part: QueryPart)(val position: InputPosition)
+case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
   extends Statement with SemanticChecking {
 
   override def semanticCheck =
     part.semanticCheck then
-    autoCommitHint.semanticCheck then
-    when(autoCommitHint.nonEmpty && !part.containsUpdates) {
-      SemanticError("Cannot use autocommit in a non-updating query", autoCommitHint.get.position)
+    periodicCommitHint.semanticCheck then
+    when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
+      SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
     }
 }
 

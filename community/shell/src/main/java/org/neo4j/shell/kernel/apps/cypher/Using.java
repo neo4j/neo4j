@@ -41,7 +41,7 @@ public class Using extends Start
     {
         GraphDatabaseAPI graphDatabaseAPI = getServer().getDb();
         ServerExecutionEngine engine = getEngine();
-        if ( engine.isAutoCommitQuery( query ) )
+        if ( engine.isPeriodicCommitQuery( query ) )
         {
             TransactionManager manager =
                 graphDatabaseAPI.getDependencyResolver().resolveDependency( TransactionManager.class );

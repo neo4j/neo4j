@@ -179,11 +179,11 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     }
   }
 
-  test("should set the autocommit flag") {
+  test("should set the periodic commit flag") {
     // given
     val tx = graph.beginTx()
     try {
-      val q = AutoCommitQuery(
+      val q = PeriodicCommitQuery(
         Query.
           start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
           returns(),
@@ -194,9 +194,9 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
       val queryContext = new TransactionBoundExecutionContext(graph, tx, isTopLevelTx = true, statement)
 
       // when
-      val autocommit = execPlanBuilder.buildPipes(planContext, q).autocommit
+      val periodicCommit = execPlanBuilder.buildPipes(planContext, q).periodicCommit
 
-      assert(autocommit === Some(AutoCommitInfo(None)))
+      assert(periodicCommit === Some(PeriodicCommitInfo(None)))
     } finally {
       tx.close()
     }

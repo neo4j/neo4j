@@ -24,16 +24,16 @@ import org.parboiled.scala._
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 
-class AutoCommitHintTest extends ParserTest[ast.AutoCommitHint, Any] with Query {
+class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] with Query {
 
-  implicit val parserToTest = AutoCommitHint ~ EOI
+  implicit val parserToTest = PeriodicCommitHint ~ EOI
 
   val t = DummyPosition(0)
 
   @Test def tests() {
-    parsing("USING AUTOCOMMIT") shouldGive ast.AutoCommitHint(None)(t)
-    parsing("USING AUTOCOMMIT 300") shouldGive ast.AutoCommitHint(Some(ast.SignedIntegerLiteral("300")(t)))(t)
+    parsing("USING PERIODIC COMMIT") shouldGive ast.PeriodicCommitHint(None)(t)
+    parsing("USING PERIODIC COMMIT 300") shouldGive ast.PeriodicCommitHint(Some(ast.SignedIntegerLiteral("300")(t)))(t)
   }
 
-  override def convert(astNode: ast.AutoCommitHint): Any = astNode
+  override def convert(astNode: ast.PeriodicCommitHint): Any = astNode
 }

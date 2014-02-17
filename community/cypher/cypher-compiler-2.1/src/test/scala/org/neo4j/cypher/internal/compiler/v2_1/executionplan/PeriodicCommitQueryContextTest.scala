@@ -28,7 +28,7 @@ import org.mockito.Mockito._
 import org.neo4j.graphdb.{Relationship, Node}
 
 @RunWith(classOf[JUnitRunner])
-class AutoCommitQueryContextTest extends FunSuite with BeforeAndAfter with MockitoSugar {
+class PeriodicCommitQueryContextTest extends FunSuite with BeforeAndAfter with MockitoSugar {
 
   implicit def intWithTimes(n: Int) = new {
     def times(f: => Unit) = 1 to n foreach {
@@ -41,7 +41,7 @@ class AutoCommitQueryContextTest extends FunSuite with BeforeAndAfter with Mocki
   var innerNodeOpds: Operations[Node] = _
   var innerRelOpds: Operations[Relationship] = _
 
-  var contextUnderTest: AutoCommitQueryContext = _
+  var contextUnderTest: PeriodicCommitQueryContext = _
 
   before {
     inner = mock[QueryContext]
@@ -49,7 +49,7 @@ class AutoCommitQueryContextTest extends FunSuite with BeforeAndAfter with Mocki
     innerRelOpds = mock[Operations[Relationship]]
     when(inner.nodeOps).thenReturn(innerNodeOpds)
     when(inner.relationshipOps).thenReturn(innerRelOpds)
-    contextUnderTest = new AutoCommitQueryContext(3, inner)
+    contextUnderTest = new PeriodicCommitQueryContext(3, inner)
   }
 
   test("should pass through 100 reads") {

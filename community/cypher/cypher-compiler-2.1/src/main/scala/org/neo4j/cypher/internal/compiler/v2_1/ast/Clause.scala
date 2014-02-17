@@ -182,8 +182,8 @@ case class Return(
   def name = "RETURN"
 }
 
-case class AutoCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {
-  def name = s"USING AUTOCOMMIT $size"
+case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {
+  def name = s"USING PERIODIC COMMIT $size"
 
   override def semanticCheck: SemanticCheck = size match {
     case Some(integer) if integer.value <= 0 =>

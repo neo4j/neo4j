@@ -25,13 +25,13 @@ import org.scalatest.junit.JUnitRunner
 import org.neo4j.cypher.internal.compiler.v2_1.{SemanticCheckResult, InputPosition, SemanticState, DummyPosition}
 
 @RunWith(classOf[JUnitRunner])
-class AutoCommitHintTest extends FunSuite with Positional {
+class PeriodicCommitHintTest extends FunSuite with Positional {
   test("negative values should fail") {
     // Given
     val sizePosition: InputPosition = pos
     val input = "-1"
     val value: SignedIntegerLiteral = SignedIntegerLiteral(input)(sizePosition)
-    val hint = AutoCommitHint(Some(value))(pos)
+    val hint = PeriodicCommitHint(Some(value))(pos)
 
     // When
     val result = hint.semanticCheck(SemanticState.clean)
@@ -42,9 +42,9 @@ class AutoCommitHintTest extends FunSuite with Positional {
     assert(result.errors.head.position === sizePosition)
   }
 
-  test("no autocommit size is ok") {
+  test("no periodic commit size is ok") {
     // Given
-    val hint = AutoCommitHint(None)(pos)
+    val hint = PeriodicCommitHint(None)(pos)
 
     // When
     val result = hint.semanticCheck(SemanticState.clean)
@@ -58,7 +58,7 @@ class AutoCommitHintTest extends FunSuite with Positional {
     val sizePosition: InputPosition = pos
     val input = "1"
     val value: SignedIntegerLiteral = SignedIntegerLiteral(input)(sizePosition)
-    val hint = AutoCommitHint(Some(value))(pos)
+    val hint = PeriodicCommitHint(Some(value))(pos)
 
     // When
     val result: SemanticCheckResult = hint.semanticCheck(SemanticState.clean)
@@ -67,12 +67,12 @@ class AutoCommitHintTest extends FunSuite with Positional {
     assert(result.errors.size === 0)
   }
   
-  test("queries with autocommit and no updates are not OK") {
-    // Given USING AUTOCOMMIT RETURN "Hello World!"
+  test("queries with periodic commit and no updates are not OK") {
+    // Given USING PERIODIC COMMIT RETURN "Hello World!"
 
     val value: SignedIntegerLiteral = SignedIntegerLiteral("1")(pos)
-    val autoCommitPos: InputPosition = pos
-    val hint = AutoCommitHint(Some(value))(autoCommitPos)
+    val periodicCommitPos: InputPosition = pos
+    val hint = PeriodicCommitHint(Some(value))(periodicCommitPos)
     val literal: StringLiteral = StringLiteral("Hello world!")(pos)
     val returnItem = UnaliasedReturnItem(literal, "Hello world!")(pos)
     val returnItems = ListedReturnItems(Seq(returnItem))(pos)
@@ -85,16 +85,16 @@ class AutoCommitHintTest extends FunSuite with Positional {
 
     // Then
     assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Cannot use autocommit in a non-updating query")
-    assert(result.errors.head.position === autoCommitPos)
+    assert(result.errors.head.msg === "Cannot use periodic commit in a non-updating query")
+    assert(result.errors.head.position === periodicCommitPos)
   }
 
-  test("queries with autocommit and updates are OK") {
+  test("queries with periodic commit and updates are OK") {
 
-    // Given USING AUTOCOMMIT CREATE ()
+    // Given USING PERIODIC COMMIT CREATE ()
 
     val value: SignedIntegerLiteral = SignedIntegerLiteral("1")(pos)
-    val hint = AutoCommitHint(Some(value))(pos)
+    val hint = PeriodicCommitHint(Some(value))(pos)
     val nodePattern = NodePattern(None,Seq.empty,None,false)(pos)
     val pattern = Pattern(Seq(EveryPath(nodePattern)))(pos)
     val create = Create(pattern)(pos)

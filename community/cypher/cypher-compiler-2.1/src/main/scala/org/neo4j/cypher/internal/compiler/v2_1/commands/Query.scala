@@ -52,7 +52,7 @@ trait AbstractQuery {
   def verifySemantics() {}
 }
 
-case class AutoCommitQuery(query: AbstractQuery, batchSize: Option[Long]) extends AbstractQuery {
+case class PeriodicCommitQuery(query: AbstractQuery, batchSize: Option[Long]) extends AbstractQuery {
 
   override def setQueryText(t: String): AbstractQuery = {
     query.setQueryText(t)

@@ -96,9 +96,9 @@ public class CypherService
         try
         {
             ServerExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
-            boolean autoCommitQuery = executionEngine.isAutoCommitQuery( query );
+            boolean periodicCommitQuery = executionEngine.isPeriodicCommitQuery( query );
             CommitOnSuccessfulStatusCodeRepresentationWriteHandler handler = (CommitOnSuccessfulStatusCodeRepresentationWriteHandler) this.output.getRepresentationWriteHandler();
-            if ( autoCommitQuery )
+            if ( periodicCommitQuery )
             {
                 handler.closeTransaction();
             }
@@ -114,7 +114,7 @@ public class CypherService
                 result = executionEngine.execute( query, params );
             }
 
-            if ( autoCommitQuery )
+            if ( periodicCommitQuery )
             {
                 handler.setTransaction( database.beginTx() );
             }

@@ -236,9 +236,9 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
   private def fetchQueryResults(prepare: Option[() => Any], query: String): ExecutionResult =  {
     lazy val results =  if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
     
-    if (engine.isAutoCommitQuery(query)) {
+    if (engine.isPeriodicCommit(query)) {
       if (prepare.isDefined) {
-        throw new IllegalArgumentException("Can't use prepare steps together with AutoCommit")
+        throw new IllegalArgumentException("Can't use prepare steps together with periodic commit")
       }
       val txManager = db.getDependencyResolver.resolveDependency(classOf[TxManager])
       val tx = txManager.suspend()

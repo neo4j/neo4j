@@ -77,5 +77,5 @@ class ArithmeticException(message: String) extends CypherException(message)
 class IncomparableValuesException(lhs: String, rhs: String)
   extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}")
 
-class AutoCommitInOpenTransactionException
-  extends InvalidSemanticsException("Executing queries that use autocommit in an open transaction is not possible.")
+class PeriodicCommitInOpenTransactionException
+  extends InvalidSemanticsException("Executing queries that use periodic commit in an open transaction is not possible.")

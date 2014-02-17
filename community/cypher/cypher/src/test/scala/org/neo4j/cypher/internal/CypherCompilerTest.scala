@@ -24,9 +24,9 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.scalatest.mock.MockitoSugar
 
 class CypherCompilerTest extends FunSuite with Matchers with MockitoSugar {
-  test("isAutoCommit handles versioned queries") {
+  test("isPeriodicCommit handles versioned queries") {
     val gds = mock[GraphDatabaseService]
     val compiler = new CypherCompiler(gds)
-    compiler.isAutoCommit("CYPHER 2.0 USING AUTOCOMMIT CREATE n RETURN n") should be(true)
+    compiler.isPeriodicCommit("CYPHER 2.0 USING PERIODIC COMMIT CREATE n RETURN n") should be(true)
   }
 }

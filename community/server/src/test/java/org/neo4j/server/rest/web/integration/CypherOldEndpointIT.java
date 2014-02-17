@@ -34,12 +34,12 @@ public class CypherOldEndpointIT extends AbstractRestFunctionalTestBase
     private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
 
     @Test
-    public void autocommitTest() throws Exception
+    public void periodicCommitTest() throws Exception
     {
         // begin
         HTTP.Response begin = http.POST(
                 "/db/data/cypher",
-                quotedJson( "{ 'query': 'USING AUTOCOMMIT 10 CREATE ()' }" )
+                quotedJson( "{ 'query': 'USING PERIODIC COMMIT 10 CREATE ()' }" )
         );
 
         assertThat( begin.status(), equalTo( 200 ) );

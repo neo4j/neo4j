@@ -150,15 +150,15 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldCommitSingleAutoCommitStatement() throws Exception
+    public void shouldCommitSinglePeriodicCommitStatement() throws Exception
     {
         // given
-        String queryText = "USING AUTOCOMMIT CREATE()";
+        String queryText = "USING PERIODIC COMMIT CREATE()";
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
 
         ServerExecutionEngine executionEngine = mock( ServerExecutionEngine.class );
         ExecutionResult executionResult = mock( ExecutionResult.class );
-        when( executionEngine.isAutoCommitQuery( queryText) ).thenReturn( true );
+        when( executionEngine.isPeriodicCommitQuery( queryText) ).thenReturn( true );
         when( executionEngine.execute( queryText ) ).thenReturn( executionResult );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
@@ -171,7 +171,7 @@ public class TransactionHandleTest
         handle.commit(statements(statement), output, true);
 
         // then
-        verify( executionEngine ).isAutoCommitQuery(queryText);
+        verify( executionEngine ).isPeriodicCommitQuery(queryText);
         verify( executionEngine ).execute(queryText, map());
 
         InOrder outputOrder = inOrder( output );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{AutoCommitQuery, AbstractQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{PeriodicCommitQuery, AbstractQuery}
 import executionplan.{ExecutionPlanBuilder, ExecutionPlan}
 import executionplan.verifiers.HintVerifier
 import parser.CypherParser
@@ -34,8 +34,8 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => O
   val planBuilder = new ExecutionPlanBuilder(graph)
   
   @throws(classOf[SyntaxException])
-  def isAutoCommit(queryText: String) = cachedQuery(queryText) match {
-    case _: AutoCommitQuery => true
+  def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
+    case _: PeriodicCommitQuery => true
     case _                  => false
   }
 

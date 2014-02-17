@@ -27,23 +27,23 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.{A
 import pipes._
 import profiler.Profiler
 import symbols.SymbolTable
-import org.neo4j.cypher.{AutoCommitInOpenTransactionException, SyntaxException, ExecutionResult}
+import org.neo4j.cypher.{PeriodicCommitInOpenTransactionException, SyntaxException, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, PlanContext}
 
-case class PipeInfo(pipe: Pipe, updating: Boolean, autocommit: Option[AutoCommitInfo] = None)
+case class PipeInfo(pipe: Pipe, updating: Boolean, periodicCommit: Option[PeriodicCommitInfo] = None)
 
-case class AutoCommitInfo(size: Option[Long])
+case class PeriodicCommitInfo(size: Option[Long])
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
 
-    val PipeInfo(p, isUpdating, autoCommitInfo) = buildPipes(planContext, inputQuery)
+    val PipeInfo(p, isUpdating, periodicCommitInfo) = buildPipes(planContext, inputQuery)
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
     val func = if (isUpdating) {
-      getEagerReadWriteQuery(p, columns, autoCommitInfo)
+      getEagerReadWriteQuery(p, columns, periodicCommitInfo)
     } else {
       getLazyReadonlyQuery(p, columns)
     }
@@ -55,7 +55,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeInfo = in match {
-    case q: AutoCommitQuery           => buildPipes(planContext, q.query).copy(autocommit = Some(AutoCommitInfo(q.batchSize)))
+    case q: PeriodicCommitQuery       => buildPipes(planContext, q.query).copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
     case q: Query                     => buildQuery(q, planContext)
     case q: IndexOperation            => buildIndexQuery(q)
     case q: UniqueConstraintOperation => buildConstraintQuery(q)
@@ -134,18 +134,18 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
     func
   }
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String], autocommit: Option[AutoCommitInfo]):
+  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String], periodicCommit: Option[PeriodicCommitInfo]):
     (QueryContext, Map[String, Any], Boolean) => ExecutionResult =
   {
     val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
-      val newQueryContext: QueryContext = autocommit match {
+      val newQueryContext: QueryContext = periodicCommit match {
         case Some(info) =>
           if (!queryContext.isTopLevelTx)
-            throw new AutoCommitInOpenTransactionException()
+            throw new PeriodicCommitInOpenTransactionException()
 
           val defaultSize = 10000L
           val size = info.size.getOrElse(defaultSize)
-          new AutoCommitQueryContext(size, queryContext)
+          new PeriodicCommitQueryContext(size, queryContext)
 
         case _ =>
           queryContext

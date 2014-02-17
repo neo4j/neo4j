@@ -73,11 +73,11 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
   }
 
   @throws(classOf[SyntaxException])
-  def isAutoCommit(query: String): Boolean = {
+  def isPeriodicCommit(query: String): Boolean = {
     val (version, remainingQuery) = versionedQuery(query)
 
     version match  {
-      case CypherVersion.v2_1 => compiler2_1.isAutoCommit(remainingQuery)
+      case CypherVersion.v2_1 => compiler2_1.isPeriodicCommit(remainingQuery)
       case _                  => false
     }
   }

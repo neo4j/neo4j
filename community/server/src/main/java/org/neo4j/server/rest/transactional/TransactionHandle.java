@@ -108,17 +108,17 @@ public class TransactionHandle
         {
             try
             {
-                // AUTOCOMMIT queries may only be used when directly committing a pristine (newly created)
-                // transaction and when the first statement is an AUTOCOMMIT statement.
+                // PERIODIC COMMIT queries may only be used when directly committing a pristine (newly created)
+                // transaction and when the first statement is an PERIODIC COMMIT statement.
                 //
                 // In that case we refrain from opening a transaction and leave management of
                 // transactions to Cypher. If there are any further statements they will all be
-                // executed in a separate transaction (Once you AUTOCOMMIT all bets are off).
+                // executed in a separate transaction (Once you PERIODIC COMMIT all bets are off).
                 //
-                boolean autocommit;
+                boolean periodicCommit;
                 try
                 {
-                    autocommit = pristine && engine.isAutoCommitQuery( statements.peek().statement() );
+                    periodicCommit = pristine && engine.isPeriodicCommitQuery( statements.peek().statement() );
                 }
                 catch ( CypherException e )
                 {
@@ -126,17 +126,17 @@ public class TransactionHandle
                     throw e;
                 }
 
-                if ( autocommit )
+                if ( periodicCommit )
                 {
                     // If there is an open transaction at this point this will cause an immediate error
-                    // as soon as Cypher tries to execute the initial AUTOCOMMIT statement
+                    // as soon as Cypher tries to execute the initial PERIODIC COMMIT statement
                     executeStatements( statements, output, errors );
                 }
                 else
                 {
                     ensureActiveTransaction();
-                    // If any later statement is an AUTOCOMMIT query, executeStatements will fail
-                    // as Cypher does refuse to execute AUTOCOMMIT queries in an open transaction
+                    // If any later statement is an PERIODIC COMMIT query, executeStatements will fail
+                    // as Cypher does refuse to execute PERIODIC COMMIT queries in an open transaction
                     executeStatements( statements, output, errors );
                     closeContextAndCollectErrors( errors );
                 }
