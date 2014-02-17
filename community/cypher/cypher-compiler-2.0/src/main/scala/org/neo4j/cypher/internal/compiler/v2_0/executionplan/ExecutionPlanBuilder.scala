@@ -88,7 +88,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       planInProgress.query.tail match {
         case None => continue = false
         case Some(q) =>
-          val pipe = if (q.containsUpdates && planInProgress.pipe.isLazy) {
+          val pipe = if (q.containsUpdates && planInProgress.pipe.readsFromDatabase && planInProgress.pipe.isLazy) {
             new EagerPipe(planInProgress.pipe)
           }
           else {
