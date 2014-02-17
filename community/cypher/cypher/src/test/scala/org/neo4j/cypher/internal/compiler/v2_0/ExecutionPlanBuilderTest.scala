@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import commands._
+import org.neo4j.cypher.internal.compiler.v2_0.commands._
 import commands.expressions.Identifier
 import commands.values.TokenType.{Label, PropertyKey}
 import pipes._
 import org.neo4j.cypher.internal.compiler.v2_0.spi.PlanContext
-import org.neo4j.cypher.{GraphDatabaseJUnitSuite, InternalException}
-import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
+import org.neo4j.cypher.{GraphDatabaseTestSupport, GraphDatabaseJUnitSuite, InternalException}
+import org.neo4j.graphdb.{Transaction, DynamicLabel, GraphDatabaseService}
 import scala.collection.Seq
 import org.junit.Test
 import org.junit.Assert._
@@ -34,16 +34,22 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
-import org.neo4j.cypher.internal.compiler.v2_0.mutation.DeletePropertyAction
-import org.neo4j.cypher.internal.compiler.v2_0.commands.HasLabel
+import org.neo4j.cypher.internal.compiler.v2_0.mutation.{CreateNode, DeletePropertyAction}
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
 import javax.transaction.TransactionManager
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_0.commands.ReturnItem
+import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.ExecuteUpdateCommandsPipe
+import org.neo4j.cypher.internal.compiler.v2_0.commands.HasLabel
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+import java.net.URL
 
-class ExecutionPlanBuilderTest extends GraphDatabaseJUnitSuite with Timed with MockitoSugar {
-  @Test def should_not_accept_returning_the_input_execution_plan() {
+class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
+  test("should not accept returning the input execution plan") {
     val q = Query.empty
     val planContext = mock[PlanContext]
 
@@ -56,7 +62,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseJUnitSuite with Timed with M
       exception.getCause.isInstanceOf[InternalException])
   }
 
-  @Test def should_close_transactions_if_pipe_throws_when_creating_iterator() {
+  test("should close transactions if pipe throws when creating iterator") {
     // given
     val tx = graph.beginTx()
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
@@ -73,10 +79,9 @@ class ExecutionPlanBuilderTest extends GraphDatabaseJUnitSuite with Timed with M
     // then
     val txManager: TransactionManager = graph.getDependencyResolver.resolveDependency(classOf[TransactionManager])
     assertNull("Expected no transactions left open", txManager.getTransaction)
-
   }
 
-  @Test def should_resolve_property_keys() {
+  test("should resolve property keys") {
     // given
     val tx = graph.beginTx()
     try {
@@ -102,7 +107,7 @@ class ExecutionPlanBuilderTest extends GraphDatabaseJUnitSuite with Timed with M
     }
   }
 
-  @Test def should_resolve_label_ids() {
+  test("should resolve label ids") {
     // given
     val tx = graph.beginTx()
     try {
@@ -123,6 +128,57 @@ class ExecutionPlanBuilderTest extends GraphDatabaseJUnitSuite with Timed with M
       assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
     } finally {
       tx.close()
+    }
+  }
+
+  def toSeq(pipe: Pipe): Seq[Class[_ <: Pipe]] = {
+    Seq(pipe.getClass) ++ pipe.sources.headOption.toSeq.flatMap(toSeq)
+  }
+
+  test("should wrap a lazy pipe in an eager pipe if the query contains updates") {
+    graph.inTx {
+      // MATCH n CREATE ()
+      val q = Query
+        .matches(SingleNode("n"))
+        .tail(Query
+          .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
+          .returns()
+        )
+        .returns(AllIdentifiers())
+
+      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val (pipe: Pipe, _) = execPlanBuilder.buildPipes(planContext, q)
+
+      toSeq(pipe) should equal (Seq(
+        classOf[EmptyResultPipe],
+        classOf[ExecuteUpdateCommandsPipe],
+        classOf[EagerPipe],
+        classOf[NodeStartPipe],
+        classOf[NullPipe]
+      ))
+    }
+  }
+
+  test("should not wrap a LOAD CSV pipe in an eager pipe if the query contains updates") {
+    graph.inTx {
+      // LOAD CSV "file:///tmp/foo.csv" AS line CREATE ()
+      val q = Query
+        .start(LoadCSV(withHeaders = false, new URL("file:///tmp/foo.csv"), "line"))
+        .tail(Query
+          .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
+          .returns()
+        )
+        .returns(AllIdentifiers())
+
+      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val (pipe: Pipe, _) = execPlanBuilder.buildPipes(planContext, q)
+
+      toSeq(pipe) should equal (Seq(
+        classOf[EmptyResultPipe],
+        classOf[ExecuteUpdateCommandsPipe],
+        classOf[LoadCSVPipe],
+        classOf[NullPipe]
+      ))
     }
   }
 }

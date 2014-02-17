@@ -25,19 +25,19 @@ import scala.reflect.io.File
 
 class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
   @Test def import_three_strings() {
-    val fileName = createFile {
+    val url = createFile {
       writer =>
         writer.println("'Foo'")
         writer.println("'Foo'")
         writer.println("'Foo'")
     }
 
-    val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
   @Test def import_three_numbers() {
-    val fileName = createFile {
+    val url = createFile {
       writer =>
         writer.println("1")
         writer.println("2")
@@ -45,26 +45,26 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     }
 
     val result =
-      execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {number: line[0]}) RETURN a.number")
+      execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {number: line[0]}) RETURN a.number")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
 
     result.columnAs[Long]("a.number").toList === List("")
   }
 
   @Test def import_three_rows_numbers_and_strings() {
-    val fileName = createFile {
+    val url = createFile {
       writer =>
         writer.println("1, 'Aadvark'")
         writer.println("2, 'Babs'")
         writer.println("3, 'Cash'")
     }
 
-    val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
   @Test def import_three_rows_with_headers() {
-    val fileName = createFile {
+    val url = createFile {
       writer =>
         writer.println("id,name")
         writer.println("1, 'Aadvark'")
@@ -72,12 +72,12 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
         writer.println("3, 'Cash'")
     }
 
-    val result = execute(s"LOAD CSV WITH HEADERS FROM 'file://${fileName}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name")
+    val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
   }
 
   @Test def should_handle_quotes() {
-    val fileName = createFile {
+    val url = createFile {
       writer =>
         writer.println("String without quotes")
         writer.println("'String, with single quotes'")
@@ -86,7 +86,7 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
         writer.println("""String with "quotes" in it""")
     }
 
-    val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line RETURN line as string").toList
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
     assert(result === List(
       Map("string" -> Seq("String without quotes")),
       Map("string" -> Seq("'String", " with single quotes'")),
@@ -96,9 +96,9 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
   }
 
   @Test def empty_file_does_not_create_anything() {
-    val fileName = createFile(writer => {})
+    val url = createFile(writer => {})
 
-    val result = execute(s"LOAD CSV FROM 'file://${fileName}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 0)
   }
 
@@ -111,7 +111,7 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     writer.flush()
     writer.close()
     files = files :+ file
-    file.path
+    file.toURI.toURL.toString.replace("\\", "\\\\")
   }
 
   @After def cleanup() {

@@ -28,7 +28,6 @@ class CsvFile(fileName: String)(implicit csvFilesDir: File) {
     lines.foreach(line => writer.println(line.mkString("\"", "\",\"", "\"")))
     writer.flush()
     writer.close()
-
-    csvFile.getAbsolutePath
+    csvFile.toURI.toURL.toString.replace("\\", "\\\\")
   }
 }

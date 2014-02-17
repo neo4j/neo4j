@@ -45,7 +45,9 @@ trait Pipe {
   /**
    * Please make sure to add a test for this implementation @ PipeLazynessTest
    */
-  def isLazy:Boolean = true
+  def isLazy: Boolean = true
+
+  def readsFromDatabase: Boolean = true
 
   def sources: Seq[Pipe] = Seq.empty
 
