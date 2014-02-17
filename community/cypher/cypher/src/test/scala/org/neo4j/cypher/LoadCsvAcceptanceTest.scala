@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{After, Test}
+import org.junit.{Ignore, After, Test}
 import java.io.PrintWriter
 import scala.reflect.io.File
 
+@Ignore("Disabling LOAD CSV in 2.0, Jakub")
 class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
   @Test def import_three_strings() {
     val url = createFile {
