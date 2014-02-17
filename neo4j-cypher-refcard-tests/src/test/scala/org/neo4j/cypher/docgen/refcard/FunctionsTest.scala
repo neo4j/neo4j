@@ -18,10 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
+import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class FunctionsTest extends RefcardTest with StatisticsChecker {
+class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Functions"
   val css = "general c2-2 c3-2 c4-1 c5-4 c6-4"
@@ -88,12 +88,12 @@ RETURN
 
 toInt({expr})###
 
-Convert the given input in an integer if possible otherwise it returns null.
+Converts the given input in an integer if possible; otherwise it returns +NULL+.
 
 ###assertion=toFloat parameters=toFloat
 RETURN
 
 toFloat({expr})###
 
-Convert the given input in a floating point number if possible otherwise it returns null."""
+Converts the given input in a floating point number if possible; otherwise it returns +NULL+."""
 }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
+import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 import org.neo4j.graphdb.DynamicLabel
 import java.util.concurrent.TimeUnit
 
-class IndexTest extends RefcardTest with StatisticsChecker {
+class IndexTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS B:Person")
   val title = "INDEX"
   val css = "write c4-4 c5-5 c6-3"

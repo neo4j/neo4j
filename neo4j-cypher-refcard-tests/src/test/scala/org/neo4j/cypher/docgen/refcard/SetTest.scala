@@ -18,10 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.docgen.refcard
-import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
+import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class SetTest extends RefcardTest with StatisticsChecker {
+class SetTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A")
   val title = "SET"
   val css = "write c2-2 c4-4 c5-5 c6-3"

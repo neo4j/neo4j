@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
+import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class CollectionsTest extends RefcardTest with StatisticsChecker {
+class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A KNOWS B")
   val title = "Collections"
   val css = "general c2-2 c3-1 c4-3 c5-2 c6-2"

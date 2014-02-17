@@ -353,7 +353,7 @@ footer div.mid {
 .col h2 {
   font-size: 1.3em;
   margin-top: 0;
-  color: #005a72;
+  color: #2e383c;
 }
 
 .twoCols {
@@ -385,23 +385,23 @@ footer div.mid {
 }
 
 .col.cardgeneral tr th {
-  background: #617a96;
+  background: #428BCA;
 }
 
 .col.cardread tr th /*, p.cardread span*/ {
-  background: #789661;
+  background: #5CB85C;
 }
 
 .col.cardwrite tr th {
-  background: #967061;
+  background: #c78f41;
 }
 
 .col.cardperformance tr th {
-  background: #964362;
+  background: #5BC0DE;
 }
 
 .col.carddeprecation tr th {
-  background: #808080;
+  background: #999999;
 }
 
 /*p.cardread span {
@@ -433,7 +433,7 @@ footer div.mid {
 }
 
 .col td pre,.blk pre {
-  white-space: nowrap;
+  white-space: pre-wrap;
 }
 
 .col td pre {
@@ -484,7 +484,7 @@ ul {
   overflow: auto;
 }
 
-.syntaxhighlighter a,.syntaxhighlighter div,.syntaxhighlighter code,.syntaxhighlighter table,.syntaxhighlighter table td,.syntaxhighlighter table tr,.syntaxhighlighter table tbody,.syntaxhighlighter table thead,.syntaxhighlighter table caption,.syntaxhighlighter textarea
+pre
   {
   font-size: 14px !important;
   font-family: "Ubuntu Mono", Consolas, Monaco, "Bitstream Vera Sans Mono", monospace !important;

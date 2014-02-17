@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.{ ExecutionResult, StatisticsChecker }
+import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 
-class UnionTest extends RefcardTest with StatisticsChecker {
+class UnionTest extends RefcardTest with QueryStatisticsTestSupport {
   def graphDescription = List(
     "A KNOWS B", "A LOVES B")
   val title = "UNION"
