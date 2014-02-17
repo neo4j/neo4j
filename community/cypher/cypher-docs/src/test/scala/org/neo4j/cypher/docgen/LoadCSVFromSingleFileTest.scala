@@ -74,7 +74,7 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
                        |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE
                        |###
                        |###
-                       |LOAD CSV FROM "file://$roles" AS csvLine
+                       |LOAD CSV FROM "$roles" AS csvLine
                        |MERGE (p:Person {name: csvLine[0]})
                        |MERGE (m:Movie {title: csvLine[1]})
                        |CREATE (p)-[:PLAYED {role: csvLine[2]}]->(m)
@@ -91,7 +91,7 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
                        |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE
                        |###
                        |###
-                       |LOAD CSV WITH HEADERS FROM "file://$movie_productions" AS csvLine
+                       |LOAD CSV WITH HEADERS FROM "$movie_productions" AS csvLine
                        |MERGE (c:Country {name: csvLine.country})
                        |MERGE (m:Movie {title: csvLine.movie})
                        |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)

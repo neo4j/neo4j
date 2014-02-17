@@ -77,14 +77,14 @@ class LoadCSVWithExplicitJoinTableTest extends ArticleTest with QueryStatisticsT
                        |First, we import the movies.csv file and create a Movie node for each row.
                        |
                        |###
-                       |LOAD CSV FROM "file://$movies" AS csvLine
+                       |LOAD CSV FROM "$movies" AS csvLine
                        |CREATE (m:Movie {id: toInt(csvLine[0]), title: csvLine[1]})
                        |###
                        |
                        |Second, we do the same for the persons.csv file.
                        |
                        |###
-                       |LOAD CSV FROM "file://$persons" AS csvLine
+                       |LOAD CSV FROM "$persons" AS csvLine
                        |CREATE (p:Person {id: toInt(csvLine[0]), name: csvLine[1]})
                        |###
                        |
@@ -93,7 +93,7 @@ class LoadCSVWithExplicitJoinTableTest extends ArticleTest with QueryStatisticsT
                        |between them.
                        |
                        |###
-                       |LOAD CSV FROM "file://$directors" AS csvLine
+                       |LOAD CSV FROM "$directors" AS csvLine
                        |MATCH (p:Person {id: toInt(csvLine[0])}), (m:Movie {id: csvLine[1]})
                        |CREATE (p)-[:DIRECTED]->(m)
                        |###
