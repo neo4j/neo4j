@@ -34,6 +34,8 @@ public enum RecordType
     RELATIONSHIP_TYPE,
     RELATIONSHIP_TYPE_NAME,
 
+    RELATIONSHIP_GROUP,
+
     LABEL,
     LABEL_NAME,
 

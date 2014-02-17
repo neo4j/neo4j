@@ -124,6 +124,7 @@ public class TestBackup
             server = startServer( serverPath );
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
 
@@ -137,6 +138,7 @@ public class TestBackup
             addMoreData( serverPath );
             server = startServer( serverPath );
             backup.incremental( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
 
@@ -170,12 +172,14 @@ public class TestBackup
             server = startServer( serverPath );
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
 
             addMoreData( serverPath );
             server = startServer( serverPath );
             backup.incremental( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
 
@@ -186,6 +190,7 @@ public class TestBackup
             addMoreData( serverPath );
             server = startServer( serverPath );
             backup.incremental( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
             shutdownServer( server );
             server = null;
 
@@ -231,6 +236,7 @@ public class TestBackup
         // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         backup.full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
@@ -240,6 +246,7 @@ public class TestBackup
         // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
     }
@@ -253,15 +260,18 @@ public class TestBackup
 
         // First check full
         backup.full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertFalse( checkLogFileExistence( backupPath.getPath() ) );
         // Then check empty incremental
         backup.incremental( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertFalse( checkLogFileExistence( backupPath.getPath() ) );
         // Then check real incremental
         shutdownServer( server );
         addMoreData( serverPath );
         server = startServer( serverPath );
         backup.incremental( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertFalse( checkLogFileExistence( backupPath.getPath() ) );
         shutdownServer( server );
     }
@@ -276,6 +286,7 @@ public class TestBackup
         // Grab initial backup from server A
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         backup.full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
 
@@ -300,6 +311,7 @@ public class TestBackup
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
         server = startServer( serverPath );
         backup.incremental( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
     }
@@ -393,6 +405,7 @@ public class TestBackup
 
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
             long lastCommittedTxForLucene = getLastCommittedTx( backupPath.getPath() );
 
             for ( int i = 0; i < 5; i++ )
@@ -440,6 +453,8 @@ public class TestBackup
 
             OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
             backup.full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
+            assertTrue( backup.isConsistent() );
         }
         finally
         {
@@ -488,10 +503,12 @@ public class TestBackup
         {
             tx.finish();
         }
-        OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
         tx = db.beginTx();
@@ -505,7 +522,7 @@ public class TestBackup
             tx.finish();
         }
         FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+        backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();

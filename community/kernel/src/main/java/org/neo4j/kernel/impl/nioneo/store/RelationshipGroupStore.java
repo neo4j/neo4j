@@ -31,19 +31,19 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store 
+public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store
 {
     /* Record layout
-     * 
+     *
      * [type+inUse+highbits,next,firstOut,firstIn,firstLoop] = 20B
-     * 
+     *
      * One record holds first relationship links (out,in,loop) to relationships for one type for one entity.
      */
     public static final int RECORD_SIZE = 20;
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
-    
+
     private int denseNodeThreshold;
-    
+
     public RelationshipGroupStore( File fileName, Config config, IdGeneratorFactory idGeneratorFactory,
             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
@@ -64,7 +64,13 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             releaseWindow( window );
         }
     }
-    
+
+    @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return 1;
+    }
+
     @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
@@ -84,7 +90,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     private RelationshipGroupRecord getRecord( long id, PersistenceWindow window, RecordLoad load )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
-        
+
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
         // [ xxx,    ] high firstOut bits
@@ -98,24 +104,24 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             case CHECK: return null;
             }
         }
-        
+
         // [    ,xxx ] high firstIn bits
         // [ xxx,    ] high firstLoop bits
         long highByte = buffer.get();
-        
+
         int type = buffer.getShort();
         long nextLowBits = buffer.getUnsignedInt();
         long nextOutLowBits = buffer.getUnsignedInt();
         long nextInLowBits = buffer.getUnsignedInt();
         long nextLoopLowBits = buffer.getUnsignedInt();
-        
+
         long nextMod = (inUseByte & 0xE) << 31;
-        long nextOutMod = (inUseByte & 0x70) << 28; 
+        long nextOutMod = (inUseByte & 0x70) << 28;
         long nextInMod = (highByte & 0xE) << 31;
         long nextLoopMod = (highByte & 0x70) << 28;
-        
+
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
-        record.setInUse( true );
+        record.setInUse( inUse );
         record.setNext( longFromIntAndMod( nextLowBits, nextMod ) );
         record.setFirstOut( longFromIntAndMod( nextOutLowBits, nextOutMod ) );
         record.setFirstIn( longFromIntAndMod( nextInLowBits, nextInMod ) );
@@ -152,7 +158,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             unsetRecovered();
         }
     }
-    
+
     private void updateRecord( RelationshipGroupRecord record, PersistenceWindow window, boolean force )
     {
         long id = record.getId();
@@ -164,17 +170,17 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & 0x700000000L) >> 28;
             long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & 0x700000000L) >> 31;
             long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & 0x700000000L) >> 28;
-        
+
             buffer
                 // [    ,   x] in use
                 // [    ,xxx ] high next id bits
                 // [ xxx,    ] high firstOut bits
                 .put( (byte) (nextOutMod | nextMod | 1) )
-                
+
                 // [    ,xxx ] high firstIn bits
                 // [ xxx,    ] high firstLoop bits
                 .put( (byte) (nextLoopMod | nextInMod) )
-                
+
                 .putShort( (short) record.getType() )
                 .putInt( (int) record.getNext() )
                 .putInt( (int) record.getFirstOut() )
@@ -203,7 +209,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         {
             return new RelationshipGroupRecord( id, -1 );
         }
-        
+
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -213,7 +219,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public RelationshipGroupRecord forceGetRaw( long id )
     {
@@ -234,7 +240,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public RelationshipGroupRecord forceGetRaw( RelationshipGroupRecord record )
     {
@@ -242,9 +248,10 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     }
 
     @Override
-    public void accept( RecordStore.Processor processor, RelationshipGroupRecord record )
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, RelationshipGroupRecord record )
+            throws FAILURE
     {
-        throw new UnsupportedOperationException();
+        processor.processRelationshipGroup( this, record );
     }
 
     @Override

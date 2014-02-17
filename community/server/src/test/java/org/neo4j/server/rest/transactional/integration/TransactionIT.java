@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -37,7 +38,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -223,7 +226,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( response.status(), equalTo(200) );
         assertThat( response, hasErrors(Status.Statement.InvalidSemantics) );
     }
-    
+
     @Test
     public void begin_and_execute_invalid_query_and_commit() throws Exception
     {
@@ -323,7 +326,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
          * This issue was reported from the community. It resulted in a refactoring of the interaction
          * between TxManager and TransactionContexts.
          */
-        
+
         // GIVEN
         long nodesInDatabaseBeforeTransaction = countNodes();
         Response response = http.POST( "/db/data/transaction/commit",
@@ -332,7 +335,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         JsonNode everything = jsonNode( response.rawContent() );
         JsonNode result = everything.get( "results" ).get( 0 );
         long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).getLongValue();
-        
+
         // WHEN
         http.POST( "/db/data/cypher", rawPayload( "{\"query\":\"start n = node(" + id + ") delete n\"}" ) );
 

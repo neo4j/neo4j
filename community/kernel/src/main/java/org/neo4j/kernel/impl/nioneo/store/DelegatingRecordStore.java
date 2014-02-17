@@ -30,6 +30,7 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     {
         this.delegate = delegate;
     }
+    @Override
     public String toString()
     {
         return delegate.toString();
@@ -71,6 +72,7 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
         return delegate.getRecord( id );
     }
 
+    @Override
     public Long getNextRecordReference( R record )
     {
         return delegate.getNextRecordReference( record );
@@ -82,6 +84,7 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
         return delegate.getRecords( id );
     }
 
+    @Override
     public void updateRecord( R record )
     {
         delegate.updateRecord( record );
@@ -93,6 +96,7 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
         return delegate.forceGetRecord( id );
     }
 
+    @Override
     public R forceGetRaw( R record )
     {
         return delegate.forceGetRaw( record );
@@ -104,11 +108,13 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
         return delegate.forceGetRaw( id );
     }
 
+    @Override
     public void forceUpdateRecord( R record )
     {
         delegate.forceUpdateRecord( record );
     }
 
+    @Override
     public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, R record ) throws FAILURE
     {
         delegate.accept( processor, record );
@@ -130,5 +136,11 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     public void close()
     {
         delegate.close();
+    }
+
+    @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return delegate.getNumberOfReservedLowIds();
     }
 }

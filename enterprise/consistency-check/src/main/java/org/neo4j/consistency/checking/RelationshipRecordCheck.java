@@ -287,10 +287,10 @@ class RelationshipRecordCheck
                                  DiffRecordAccess records )
         {
             if ( !newRecord.inUse() || valueFrom( oldRecord ) != valueFrom( newRecord ) )
-            {
+            {   // if we're deleting or creating this relationship record
                 if ( !endOfChain( oldRecord )
                      && records.changedRelationship( valueFrom( oldRecord ) ) == null )
-                {
+                {   // and we didn't update an expected pointer --> report
                     notUpdated( engine.report() );
                 }
             }

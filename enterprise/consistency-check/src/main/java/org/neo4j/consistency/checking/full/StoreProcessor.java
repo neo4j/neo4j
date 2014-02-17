@@ -25,16 +25,17 @@ import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.SchemaRecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-
-import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 
 /**
  * Full check works by spawning StoreProcessorTasks that call StoreProcessor. StoreProcessor.applyFiltered()
@@ -117,6 +118,13 @@ class StoreProcessor extends AbstractStoreProcessor
                                       RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
     {
         report.forDynamicLabelBlock( type, string, checker );
+    }
+
+    @Override
+    protected void checkRelationshipGroup( RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+    {
+        report.forRelationshipGroup( record, checker );
     }
 
     void setSchemaRecordCheck( SchemaRecordCheck schemaRecordCheck )

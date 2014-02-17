@@ -100,6 +100,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return 1;
+    }
+
+    @Override
     protected void verifyFileSizeAndTruncate() throws IOException
     {
         int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
@@ -214,7 +220,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         updateRecord( record );
     }
-    
+
     // [next][type][data]
 
     protected Collection<DynamicRecord> allocateRecordsFromBytes( byte src[] )
@@ -476,12 +482,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             totalLength += record.getLength();
         }
-        
+
         if ( target.length < totalLength )
         {
             target = new byte[totalLength];
         }
-        
+
         ByteBuffer buffer = ByteBuffer.wrap( target, 0, totalLength );
         for ( DynamicRecord record : records )
         {

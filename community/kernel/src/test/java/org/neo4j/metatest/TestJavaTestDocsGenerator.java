@@ -104,12 +104,12 @@ public class TestJavaTestDocsGenerator implements GraphHolder
 
     /**
      * Title2.
-     * 
+     *
      * @@snippet1
-     * 
+     *
      *            more stuff
-     * 
-     * 
+     *
+     *
      * @@snippet2
      */
     @Documented
@@ -159,13 +159,16 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     {
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
-    
+
     @AfterClass
     public static void shutdown()
     {
         try
         {
-            if ( graphdb != null ) graphdb.shutdown();
+            if ( graphdb != null )
+            {
+                graphdb.shutdown();
+            }
         }
         finally
         {

@@ -20,11 +20,13 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
@@ -54,6 +56,8 @@ public interface CheckDecorator
     RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
             RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker );
 
+    RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+            RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
     static CheckDecorator NONE = new CheckDecorator()
     {
@@ -109,6 +113,13 @@ public interface CheckDecorator
         @Override
         public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
                 RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
+        {
+            return checker;
+        }
+
+        @Override
+        public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+                RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
         {
             return checker;
         }
