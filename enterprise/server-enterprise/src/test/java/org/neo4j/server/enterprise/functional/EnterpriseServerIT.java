@@ -24,27 +24,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.enterprise.EnterpriseDatabase;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_WEBSERVER_PORT;
 
 public class EnterpriseServerIT
@@ -72,7 +67,6 @@ public class EnterpriseServerIT
             server.start();
             server.getDatabase();
 
-            assertThat( server.getDatabase(), is( EnterpriseDatabase.class ) );
             assertThat( server.getDatabase().getGraph(), is( HighlyAvailableGraphDatabase.class ) );
 
             Client client = Client.create();

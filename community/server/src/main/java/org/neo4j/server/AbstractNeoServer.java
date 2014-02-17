@@ -24,20 +24,27 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import javax.servlet.Filter;
 
 import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
@@ -75,15 +82,18 @@ import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.shell.ShellSettings;
 
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
+import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_TRANSACTION_TIMEOUT;
 import static org.neo4j.server.configuration.Configurator.SCRIPT_SANDBOXING_ENABLED_KEY;
@@ -108,9 +118,12 @@ public abstract class AbstractNeoServer implements NeoServer
     protected WebServer webServer;
     protected final StatisticCollector statisticsCollector = new StatisticCollector();
 
-    private PreFlightTasks preflight;
+    private PreFlightTasks preFlight;
+
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
+    private final Config dbConfig;
+
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
 
@@ -125,20 +138,30 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract Iterable<ServerModule> createServerModules();
 
-    protected abstract Database createDatabase();
-
     protected abstract WebServer createWebServer();
 
-    public void init()
+    public AbstractNeoServer( Configurator configurator, Database.Factory dbFactory )
     {
-        this.preflight = createPreflightTasks();
-        this.database = createDatabase();
+        this.configurator = configurator;
+        this.dbConfig = new Config();
+        this.logging = new LogbackWeakDependency().tryLoadLogbackService( dbConfig, DEFAULT_TO_CLASSIC );
+
+
+        this.database = dbFactory.newDatabase( dbConfig, Functions.<Config, Logging>constant( logging ));
+
+        this.preFlight = createPreflightTasks();
         this.webServer = createWebServer();
 
         for ( ServerModule moduleClass : createServerModules() )
         {
             registerModule( moduleClass );
         }
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 
     @Override
@@ -155,10 +178,11 @@ public abstract class AbstractNeoServer implements NeoServer
 
             try
             {
+                reloadConfigFromDisk();
+
                 database.start();
 
                 DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
-                logging = resolveDependency( Logging.class );
     
                 StringLogger diagnosticsLog = diagnosticsManager.getTargetLog();
                 diagnosticsLog.info( "--- SERVER STARTED START ---" );
@@ -216,6 +240,35 @@ public abstract class AbstractNeoServer implements NeoServer
             }
 
             throw new ServerStartupException( format( "Starting Neo4j Server failed: %s", t.getMessage() ), t );
+        }
+    }
+
+    private void reloadConfigFromDisk()
+    {
+        Map<String, String> result = new HashMap<>( configurator.getDatabaseTuningProperties() );
+        result.put( GraphDatabaseSettings.store_dir.name(), configurator.configuration()
+                .getString( DATABASE_LOCATION_PROPERTY_KEY, DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) );
+
+        putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
+        putIfAbsent( result, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+
+        try
+        {
+            result.put( UdcSettings.udc_source.name(), "server" );
+        }
+        catch ( NoClassDefFoundError e )
+        {
+            // UDC is not on classpath, ignore
+        }
+
+        dbConfig.applyChanges( result );
+    }
+
+    private void putIfAbsent( Map<String, String> databaseProperties, String configKey, String configValue )
+    {
+        if ( databaseProperties.get( configKey ) == null )
+        {
+            databaseProperties.put( configKey, configValue );
         }
     }
 
@@ -330,9 +383,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void runPreflightTasks()
     {
-        if ( !preflight.run() )
+        if ( !preFlight.run() )
         {
-            throw new PreflightFailedException( preflight.failedTask() );
+            throw new PreflightFailedException( preFlight.failedTask() );
         }
     }
 
@@ -408,6 +461,7 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 logger.logMessage( "Server started on: " + baseUri() );
             }
+
             //noinspection deprecation
             log.info( format( "Remote interface ready and available at [%s]", baseUri() ) );
         }
@@ -707,7 +761,7 @@ public abstract class AbstractNeoServer implements NeoServer
             else if ( type.equals( PreFlightTasks.class ) )
             {
                 //noinspection unchecked
-                return (T) preflight;
+                return (T) preFlight;
             }
             else if ( type.equals( InterruptThreadTimer.class ) )
             {

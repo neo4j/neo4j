@@ -28,8 +28,6 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
@@ -38,6 +36,7 @@ import org.neo4j.server.rest.web.DatabaseActions;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -78,7 +77,8 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
 
         public TestEnterpriseNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
         {
-            super( propertyFileConfigurator );
+            super( propertyFileConfigurator, persistent ? createDbFactory( propertyFileConfigurator.configuration() )
+                                                        : lifecycleManagingDatabase( IN_MEMORY_DB )  );
             this.configFile = configFile;
         }
 
@@ -86,14 +86,6 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         protected PreFlightTasks createPreflightTasks()
         {
             return preflightTasks;
-        }
-
-        @Override
-        protected Database createDatabase()
-        {
-            return persistent ?
-                    super.createDatabase() :
-                    new EphemeralDatabase( configurator );
         }
 
         @Override

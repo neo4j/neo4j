@@ -26,21 +26,21 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
 
-import static org.mockito.Mockito.*;
 import static org.neo4j.test.Mute.muteAll;
 
 @Path("/")
-public class TestJetty9WebServer {
+public class TestJetty9WebServer
+{
 
 	@GET
 	public Response index()
@@ -56,8 +56,7 @@ public class TestJetty9WebServer {
 		// dependency to NeoServer, which should be removed.
 		// Once that is done, we should instantiate WebServer
 		// here directly.
-        AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
-		WrappingNeoServer neoServer = new WrappingNeoServer(db);
+		WrappingNeoServer neoServer = new WrappingNeoServer(dbRule.getGraphDatabaseAPI());
 		WebServer server = neoServer.getWebServer();
 
 		try
@@ -106,4 +105,7 @@ public class TestJetty9WebServer {
     
     @Rule
     public Mute mute = muteAll();
+
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 }

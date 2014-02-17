@@ -30,32 +30,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
 public class ServerTestUtils
 {
-    public static final GraphDatabaseFactory EMBEDDED_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
-    {
-        @Override
-        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                Map<String, String> databaseProperties )
-        {
-            return (GraphDatabaseAPI) new org.neo4j.graphdb.factory.GraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseStoreDirectory ).setConfig( databaseProperties ).newGraphDatabase();
-        }
-    };
-
-    public static final GraphDatabaseFactory EPHEMERAL_GRAPH_DATABASE_FACTORY = new GraphDatabaseFactory()
-    {
-        @Override
-        public GraphDatabaseAPI createDatabase( String databaseStoreDirectory,
-                Map<String, String> databaseProperties )
-        {
-            return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().setConfig( databaseProperties ).newGraphDatabase();
-        }
-    };
-    
     public static File createTempDir() throws IOException
     {
         File d = File.createTempFile( "neo4j-test", "dir" );

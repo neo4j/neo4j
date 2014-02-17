@@ -19,39 +19,17 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.neo4j.server.configuration.Configurator.EMPTY;
-
-public class EphemeralDatabase extends CommunityDatabase
+public class NoSuchDatabaseProviderException extends Exception
 {
-    public EphemeralDatabase()
+    private final String provider;
+
+    public NoSuchDatabaseProviderException( String provider )
     {
-        this( EMPTY );
+        this.provider = provider;
     }
 
-    public EphemeralDatabase( Configurator configurator )
+    public String provider()
     {
-        super( configurator );
-    }
-
-    @Override
-    protected AbstractGraphDatabase createDb()
-    {
-        return (AbstractGraphDatabase) new TestGraphDatabaseFactory()
-            .newImpermanentDatabaseBuilder()
-            .setConfig( getDbTuningPropertiesWithServerDefaults() )
-            .newGraphDatabase();
-    }
-
-    @Override
-    public void shutdown()
-    {
-        if ( this.getGraph() != null )
-        {
-            this.getGraph().shutdown();
-        }
+        return provider;
     }
 }

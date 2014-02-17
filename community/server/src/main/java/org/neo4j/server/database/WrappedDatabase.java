@@ -19,23 +19,35 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.ServerConfigurator;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Function;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 
-public class WrappedDatabase extends CommunityDatabase
+public class WrappedDatabase extends LifecycleAdapter implements Database
 {
-    private final AbstractGraphDatabase db;
+    private final GraphDatabaseAPI graph;
+    private final ExecutionEngine executionEngine;
 
-    public WrappedDatabase( AbstractGraphDatabase db )
+    public static Database.Factory wrappedDatabase( final GraphDatabaseAPI db )
     {
-        this( db, new ServerConfigurator( db ) );
+        return new Factory()
+        {
+            @Override
+            public Database newDatabase( Config config, Function<Config, Logging> loggingProvider )
+            {
+                return new WrappedDatabase( db );
+            }
+        };
     }
 
-    public WrappedDatabase( AbstractGraphDatabase db, Configurator configurator )
+    public WrappedDatabase( GraphDatabaseAPI graph )
     {
-        super( configurator );
-        this.db = db;
+        this.graph = graph;
+        this.executionEngine = new ExecutionEngine( graph );
         try
         {
             start();
@@ -47,14 +59,27 @@ public class WrappedDatabase extends CommunityDatabase
     }
 
     @Override
-    protected AbstractGraphDatabase createDb()
+    public String getLocation()
     {
-        return db;
+        return graph.getDependencyResolver().resolveDependency( Config.class )
+                .get( GraphDatabaseSettings.store_dir ).getAbsolutePath();
     }
 
     @Override
-    public void stop() throws Throwable
+    public GraphDatabaseAPI getGraph()
     {
-        // No-op
+        return graph;
+    }
+
+    @Override
+    public ExecutionEngine executionEngine()
+    {
+        return executionEngine;
+    }
+
+    @Override
+    public boolean isRunning()
+    {
+        return true;
     }
 }

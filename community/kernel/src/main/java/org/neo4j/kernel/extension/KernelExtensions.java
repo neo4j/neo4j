@@ -48,7 +48,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final DependencyResolver dependencyResolver;
     private final LifeSupport life = new LifeSupport();
-    private final Map<Iterable<String>, Lifecycle> extensions = new HashMap<Iterable<String>, Lifecycle>();
+    private final Map<Iterable<String>, Lifecycle> extensions = new HashMap<>();
     private Iterable<KernelExtensionListener> listeners = Listeners.newListeners();
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 

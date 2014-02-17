@@ -19,25 +19,49 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import java.io.File;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 
-public interface Database extends Lifecycle
+/** Metadata about a database that runs in the server. */
+public class DatabaseDefinition
 {
-    interface Factory
+    private final String key;
+    private final String provider;
+    private final DatabaseHosting.Mode mode;
+    private final Config config;
+
+    public DatabaseDefinition( String key, String provider, DatabaseHosting.Mode mode, Config config )
     {
-
-        Database newDatabase( Config config, Function<Config, Logging> loggingProvider );
+        this.key = key;
+        this.provider = provider;
+        this.mode = mode;
+        this.config = config;
     }
-    public String getLocation();
 
-    public GraphDatabaseAPI getGraph();
+    public String key()
+    {
+        return key;
+    }
 
-    ExecutionEngine executionEngine();
+    public String provider()
+    {
+        return provider;
+    }
 
-    public abstract boolean isRunning();
+    public Config config()
+    {
+        return config;
+    }
+
+    public DatabaseHosting.Mode mode()
+    {
+        return mode;
+    }
+
+    public File path()
+    {
+        return config.get( GraphDatabaseSettings.store_dir);
+    }
 }

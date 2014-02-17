@@ -56,6 +56,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
@@ -78,7 +79,6 @@ import org.neo4j.kernel.configuration.ConfigurationChange;
 import org.neo4j.kernel.configuration.ConfigurationChangeListener;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -159,7 +159,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -167,12 +166,13 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.lang.String.format;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.logbackOrDefaultToClassic;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -184,6 +184,9 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+
+    private final Function<Config, Logging> loggingProvider;
+
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
@@ -200,18 +203,18 @@ public abstract class InternalAbstractGraphDatabase
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
-    protected File storeDir;
-    protected Map<String, String> params;
     private final TransactionInterceptorProviders transactionInterceptorProviders;
-    protected StoreId storeId;
-    private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
 
+    private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
     protected final KernelExtensions kernelExtensions;
 
-    protected Config config;
+    protected final DependencyResolver dependencyResolver = new DependencyResolverImpl();;
+    protected final Config config;
 
-    protected DependencyResolver dependencyResolver;
+    protected File storeDir;
+
     protected Logging logging;
+    protected StoreId storeId;
     protected StringLogger msgLog;
     protected StoreLockerLifecycleAdapter storeLocker;
     protected KernelEventHandlers kernelEventHandlers;
@@ -265,24 +268,32 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        this.params = params;
+        this( new Config( appendStoreDir( storeDir, params ), settingsClasses ),
+                logbackOrDefaultToClassic(), kernelExtensions, cacheProviders, transactionInterceptorProviders );
+    }
 
-        dependencyResolver = new DependencyResolverImpl();
+    protected InternalAbstractGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
+                                             Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                             Iterable<CacheProvider> cacheProviders,
+                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    {
+        config.registerSettingsClasses( getSettingsClasses( kernelExtensions, cacheProviders ));
 
-        // Setup configuration
-        params.put( Configuration.store_dir.name(), storeDir );
-
-        // SPI - provided services
+        this.config = config;
+        this.loggingProvider = loggingProvider;
         this.cacheProviders = mapCacheProviders( cacheProviders );
-        config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
 
-        this.kernelExtensions = new KernelExtensions( kernelExtensions, config, getDependencyResolver(),
-                UnsatisfiedDependencyStrategies.fail() );
+        this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver, fail() );
         this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
                 dependencyResolver );
-
         this.storeDir = config.get( Configuration.store_dir );
         accessTimeout = 1 * 1000; // TODO make configurable
+    }
+
+    private static Map<String, String> appendStoreDir( String storeDir, Map<String, String> params )
+    {
+        params.put( Configuration.store_dir.name(), storeDir );
+        return params;
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -417,7 +428,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             // Don't override explicit settings
             String key = autoConfig.getKey();
-            if ( !params.containsKey( key ) )
+            if ( !config.getParams().containsKey( key ) )
             {
                 configParams.put( key, autoConfig.getValue() );
             }
@@ -532,10 +543,6 @@ public abstract class InternalAbstractGraphDatabase
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
 
         diagnosticsManager.prependProvider( config );
-
-        // Config can auto-configure memory mapping settings and what not, so reassign params
-        // after we've instantiated Config.
-        params = config.getParams();
 
         extensions = life.add( createKernelData() );
 
@@ -897,7 +904,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC ) );
+        return life.add( loggingProvider.apply( config ) );
     }
 
     protected void createNeoDataSource()
@@ -1119,14 +1126,10 @@ public abstract class InternalAbstractGraphDatabase
         return config;
     }
 
-    private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
-                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable
-            <CacheProvider> cacheProviders )
+    private Iterable<Class<?>> getSettingsClasses( Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                                   Iterable<CacheProvider> cacheProviders )
     {
         List<Class<?>> totalSettingsClasses = new ArrayList<>();
-
-        // Add given settings classes
-        Iterables.addAll( totalSettingsClasses, settingsClasses );
 
         // Get the list of settings classes for extensions
         for ( KernelExtensionFactory<?> kernelExtension : kernelExtensions )

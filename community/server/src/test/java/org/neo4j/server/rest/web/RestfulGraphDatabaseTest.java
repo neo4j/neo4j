@@ -1919,11 +1919,6 @@ public class RestfulGraphDatabaseTest
     public void nodeAutoindexingSupposedToWork() throws JsonParseException
     {
         String type = "node";
-//        Response response = service.getAutoIndexedProperties(type);
-//        assertEquals(200, response.getStatus());
-//        List<String> properties = (List<String>) JsonHelper.readJson(entityAsString(response));
-//        assertEquals(0, properties.size());
-
         Response response = service.startAutoIndexingProperty( type, "myAutoIndexedProperty" );
         assertEquals( 204, response.getStatus() );
 
@@ -1935,7 +1930,7 @@ public class RestfulGraphDatabaseTest
         Transaction transaction = graph.beginTx();
         try
         {
-            IndexHits<Node> indexResult = database.getIndexManager().getNodeAutoIndexer().getAutoIndex().get(
+            IndexHits<Node> indexResult = database.getGraph().index().getNodeAutoIndexer().getAutoIndex().get(
                     "myAutoIndexedProperty", "value" );
             assertEquals( 1, indexResult.size() );
         }

@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.Pair;
 
 /**
@@ -395,6 +396,16 @@ public abstract class MapUtil
         Map<K, V> copy = new HashMap<K, V>( map );
         copy.remove( key );
         return copy;
+    }
+
+    public static Map<String, String> toStringMap( PropertyContainer entity )
+    {
+        Map<String, String> out = new HashMap<>();
+        for ( String key : entity.getPropertyKeys() )
+        {
+            out.put( key, entity.getProperty( key ).toString() );
+        }
+        return out;
     }
 
     public static <K,V> Map<K, V> toMap( Iterable<Pair<K, V>> pairs )

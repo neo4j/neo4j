@@ -31,8 +31,14 @@ import java.util.Properties;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
@@ -40,21 +46,23 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.database.CommunityDatabase;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.EphemeralDatabase;
+import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
+import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
 {
@@ -66,6 +74,22 @@ public class CommunityServerBuilder
     protected PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
+
+    public static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = new LifecycleManagingDatabase.GraphFactory()
+    {
+        @Override
+        public GraphDatabaseAPI newGraphDatabase( Config config, Function<Config, Logging> logProvider,
+                                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                                  Iterable<CacheProvider> cacheProviders,
+                                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+        {
+            Map<String, String> params = config.getParams();
+            params.put( ephemeral.name(), "true" );
+            config.applyChanges( params );
+            return new ImpermanentGraphDatabase( config, logProvider, kernelExtensions, cacheProviders,
+                    txInterceptorProviders );
+        }
+    };
 
     private static enum WhatToDo
     {
@@ -425,7 +449,7 @@ public class CommunityServerBuilder
 
         private TestCommunityNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
         {
-            super( propertyFileConfigurator );
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ));
             this.configFile = configFile;
         }
 
@@ -433,14 +457,6 @@ public class CommunityServerBuilder
         protected PreFlightTasks createPreflightTasks()
         {
             return preflightTasks;
-        }
-
-        @Override
-        protected Database createDatabase()
-        {
-            return persistent ?
-                    new CommunityDatabase( configurator ) :
-                    new EphemeralDatabase( configurator );
         }
 
         @Override

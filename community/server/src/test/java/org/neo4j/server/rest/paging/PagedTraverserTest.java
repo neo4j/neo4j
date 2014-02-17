@@ -21,52 +21,44 @@ package org.neo4j.server.rest.paging;
 
 import java.util.List;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.database.EphemeralDatabase;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 public class PagedTraverserTest
 {
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( );
+
     private static final int LIST_LENGTH = 100;
-    private Database database;
     private Node startNode;
 
     @Before
     public void clearDb() throws Throwable
     {
-        database = new EphemeralDatabase();
-        database.start();
-        createLinkedList( LIST_LENGTH, database );
+        createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseService() );
     }
 
-    @After
-    public void shutdownDatabase() throws Throwable
+    private void createLinkedList( int listLength, GraphDatabaseService db )
     {
-        database.getGraph().shutdown();
-    }
-
-    private void createLinkedList( int listLength, Database db )
-    {
-        try ( Transaction tx = db.getGraph().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             Node previous = null;
             for ( int i = 0; i < listLength; i++ )
             {
-                Node current = db.getGraph().createNode();
+                Node current = db.createNode();
 
                 if ( previous != null )
                 {
@@ -99,7 +91,7 @@ public class PagedTraverserTest
     @SuppressWarnings( "unused" )
     private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
-        try ( Transaction transaction = database.getGraph().beginTx() )
+        try ( Transaction transaction = dbRule.getGraphDatabaseService().beginTx() )
         {
             int count = 0;
             for ( List<Path> paths : traversalPager )

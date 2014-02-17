@@ -212,6 +212,11 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         }
     }
 
+    public Thread.State state()
+    {
+        return thread.getState();
+    }
+
     private Thread getThread()
     {
         Thread thread = null;

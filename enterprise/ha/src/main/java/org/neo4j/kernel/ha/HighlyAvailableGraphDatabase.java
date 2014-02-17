@@ -48,6 +48,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
@@ -98,6 +100,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
@@ -107,6 +110,8 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
+    private static final Iterable<Class<?>> SETTINGS_CLASSES
+            = iterable( GraphDatabaseSettings.class, HaSettings.class, ClusterSettings.class );
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
@@ -133,10 +138,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params,
-                Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,ClusterSettings.class ),
-                kernelExtensions,
-                cacheProviders, txInterceptorProviders );
+        super( storeDir, params, SETTINGS_CLASSES, kernelExtensions, cacheProviders, txInterceptorProviders );
+        run();
+    }
+
+    public HighlyAvailableGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                         Iterable<CacheProvider> cacheProviders,
+                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    {
+        super( config.registerSettingsClasses( SETTINGS_CLASSES ),
+               loggingProvider, kernelExtensions, cacheProviders, txInterceptorProviders );
         run();
     }
 

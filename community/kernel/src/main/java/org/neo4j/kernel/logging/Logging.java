@@ -20,11 +20,12 @@
 package org.neo4j.kernel.logging;
 
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Logging service that is used for creating loggers with specific names.
  */
-public interface Logging
+public interface Logging extends Lifecycle
 {
     StringLogger getMessagesLog( Class loggingClass );
 

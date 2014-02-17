@@ -24,9 +24,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -128,7 +130,17 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 transactionInterceptorProviders );
         trackUnclosedUse( storeDir );
     }
-    
+
+    @Deprecated
+    public ImpermanentGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                     Iterable<CacheProvider> cacheProviders,
+                                     Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    {
+        super( config, loggingProvider, kernelExtensions, cacheProviders, txInterceptorProviders );
+        trackUnclosedUse( PATH );
+    }
+
     private void trackUnclosedUse( String path )
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
