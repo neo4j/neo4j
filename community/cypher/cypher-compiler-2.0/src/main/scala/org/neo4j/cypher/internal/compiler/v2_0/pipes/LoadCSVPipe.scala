@@ -53,6 +53,8 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
     case NoHeaders => source.symbols.add(identifier, CollectionType(AnyType.instance))
   }
 
+  override def readsFromDatabase = false
+
   private def getCSVReader(state: QueryState): CSVReader = {
 
     val reader = new BufferedReader(new InputStreamReader(url.openStream()))
