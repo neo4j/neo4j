@@ -34,7 +34,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
     case null           => null
     case IsMap(mapFunc) => try {
-      mapFunc(state.query).apply(propertyKey.name)
+      mapFunc(state.query).getOrElse(propertyKey.name, null)
     } catch {
       case _: EntityNotFoundException => null
       case _: NotFoundException       => null
