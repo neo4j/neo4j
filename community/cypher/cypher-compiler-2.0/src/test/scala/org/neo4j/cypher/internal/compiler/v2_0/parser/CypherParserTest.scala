@@ -2944,7 +2944,7 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("should handle load and return as map") {
+  ignore("should handle load and return as map") {
     expectQuery(
       "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",
       Query.
@@ -2953,7 +2953,7 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("should handle load and return") {
+  ignore("should handle load and return") {
     expectQuery(
       "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
       Query.

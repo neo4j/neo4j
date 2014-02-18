@@ -35,8 +35,7 @@ trait Query extends Parser
   }
 
   def Clause: Rule1[ast.Clause] = (
-      LoadCSV
-    | Start
+      Start
     | Match
     | Merge
     | Create

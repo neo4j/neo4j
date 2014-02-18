@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{After, Test}
+import org.junit.{Ignore, After, Test}
 import java.io.PrintWriter
 import scala.reflect.io.File
 
+@Ignore("Disabling LOAD CSV in 2.0, Jakub")
 class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
   @Test def import_three_strings() {
     val url = createFile {
@@ -74,6 +75,19 @@ class LoadCsvAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
 
     val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
+  }
+
+  @Test def import_three_rows_with_headers_messy_data() {
+    val url = createFile {
+      writer =>
+        writer.println("id,name,x")
+        writer.println("1,'Aadvark',0")
+        writer.println("2,'Babs'")
+        writer.println("3,'Cash',1")
+    }
+
+    val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line RETURN line.x")
+    assert(result.toList === List(Map("line.x" -> "0"), Map("line.x" -> null), Map("line.x" -> "1")))
   }
 
   @Test def should_handle_quotes() {

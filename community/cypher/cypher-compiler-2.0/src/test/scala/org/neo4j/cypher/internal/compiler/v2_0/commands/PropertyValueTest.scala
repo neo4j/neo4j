@@ -34,4 +34,12 @@ class PropertyValueTest extends Assertions {
 
     assert(p(ctx)(state) === null)
   }
+
+  @Test def nonExistentPropertyShouldEvaluateToNull() {
+    val p = Property(Identifier("identifier"), PropertyKey("nonExistent"))
+    val ctx = ExecutionContext.from("identifier" -> Map("property" -> 42))
+    val state = QueryStateHelper.empty
+
+    assert(p(ctx)(state) === null)
+  }
 }
