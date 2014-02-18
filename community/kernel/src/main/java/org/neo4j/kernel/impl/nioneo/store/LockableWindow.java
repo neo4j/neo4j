@@ -20,23 +20,26 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.channels.FileChannel;
-import java.util.LinkedList;
-
-import org.neo4j.kernel.impl.transaction.LockException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Makes a {@link PersistenceWindow} "lockable" meaning it can be locked by a
  * thread during a operation making sure no other thread use the same window
  * concurrently.
+ * <p>
+ * The synchronization policy is thus: internal state changes that need to preserve
+ * invariants, must be protected by the monitor lock, i.e. with the
+ * <code>synchronized</code> keyword. The locking mechanism that the LockableWindow
+ * itself exposes, where threads are allowed to wait for longer periods of time,
+ * is implemented using a java.util.concurrent.lock.ReentrantLock. This lock must
+ * not be tried while the monitor lock is held, because then a stall on the
+ * ReentrantLock can propagate to the monitor.
  */
 abstract class LockableWindow implements PersistenceWindow
 {
+    private final ReentrantLock lock = new ReentrantLock();
     private final FileChannel fileChannel;
 
-    private Thread lockingThread = null;
-    private final LinkedList<LockElement> waitingThreadList = 
-        new LinkedList<LockElement>();
-    private boolean locked;
     private int marked = 0;
     protected boolean closed;
 
@@ -79,40 +82,16 @@ abstract class LockableWindow implements PersistenceWindow
         return true;
     }
 
-    private static class LockElement
+    void lock( OperationType operationType )
     {
-        private final Thread thread;
-        private boolean movedOn = false;
-        
-        LockElement( Thread thread )
+        lock.lock();
+        synchronized ( this )
         {
-            this.thread = thread;
-        }
-    }
-    
-    synchronized void lock( OperationType operationType )
-    {
-        Thread currentThread = Thread.currentThread();
-        LockElement le = new LockElement( currentThread );
-        while ( locked && lockingThread != currentThread )
-        {
-            waitingThreadList.addFirst( le );
-            try
+            marked--;
+            if ( operationType == OperationType.WRITE )
             {
-                wait();
+                isDirty = true;
             }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
-        }
-        locked = true;
-        lockingThread = currentThread;
-        le.movedOn = true;
-        marked--;
-        if ( operationType == OperationType.WRITE )
-        {
-            isDirty = true;
         }
     }
     
@@ -126,37 +105,21 @@ abstract class LockableWindow implements PersistenceWindow
         isDirty = false;
     }
 
-    synchronized void unLock()
+    void unLock()
     {
-        Thread currentThread = Thread.currentThread();
-        if ( !locked )
-        {
-            throw new LockException( currentThread
-                + " doesn't have window lock on " + this );
-        }
-        locked = false;
-        lockingThread = null;
-        while ( !waitingThreadList.isEmpty() )
-        {
-            LockElement le = waitingThreadList.removeLast();
-            if ( !le.movedOn )
-            {
-                le.thread.interrupt();
-                break;
-            }
-        }
+        lock.unlock();
     }
 
-    private boolean isFree( boolean assumingOwnerUnlockedIt )
+    private boolean isFree()
     {
-        return assumingOwnerUnlockedIt ?
+        return lock.isHeldByCurrentThread() ?
                 marked == 0 :           // excluding myself (the owner) no other must have marked this window
-                marked == 0 && !locked; // no one must have this marked and it mustn't be locked
+                marked == 0 && !lock.isLocked(); // no one must have this marked and it mustn't be locked
     }
 
     synchronized boolean writeOutAndCloseIfFree( boolean readOnly )
     {
-        if ( isFree( lockingThread == Thread.currentThread() ) )
+        if ( isFree() )
         {
             if ( !readOnly )
                 writeOutAndClose();
