@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -36,10 +32,10 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
-import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.HaRequestType18;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
@@ -53,6 +49,10 @@ import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It

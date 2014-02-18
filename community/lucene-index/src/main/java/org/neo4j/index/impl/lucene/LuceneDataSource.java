@@ -60,7 +60,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -73,6 +72,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -219,7 +220,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         caching = new Cache();
         File storeDir = config.get( Configuration.store_dir );
         this.baseStorePath =
-                this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction, new File( storeDir, "index" ));
+                this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction, baseDirectory( storeDir ) );
         this.filesystemFacade.cleanWriteLocks( baseStorePath );
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
         this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
@@ -271,7 +272,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return (T) LuceneDataSource.this.config;
             }
         };
-        xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), cf,
+        xaContainer = xaFactory.newXaContainer( this, logBaseName(baseStorePath), cf,
                 InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
                 new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false );
         closed = false;
@@ -288,6 +289,16 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
+    }
+
+    private File logBaseName(File baseDirectory)
+    {
+        return new File( baseDirectory, "lucene.log");
+    }
+
+    private File baseDirectory( File storeDir )
+    {
+        return new File( storeDir, "index" );
     }
 
     IndexType getType( IndexIdentifier identifier, boolean recovery )
@@ -935,6 +946,18 @@ public class LuceneDataSource extends LogBackedXaDataSource
     public ResourceIterator<File> listLogicalLogs() throws IOException
     {
         return IteratorUtil.emptyIterator();
+    }
+
+    @Override
+    public LogWriter createLogWriter()
+    {
+        return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>(){
+            @Override
+            public File apply( Config config )
+            {
+                return logBaseName(baseDirectory(config.get( GraphDatabaseSettings.store_dir )));
+            }
+        });
     }
 
     private void makeSureAllIndexesAreInstantiated()

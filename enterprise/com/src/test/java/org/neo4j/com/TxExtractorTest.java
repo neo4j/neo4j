@@ -17,15 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.com;
 
-import org.neo4j.com.Response;
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.storecopy.StoreWriter;
+import java.nio.ByteBuffer;
 
-public interface TheBackupInterface
+import org.junit.Test;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+
+public class TxExtractorTest
 {
-    Response<Void> fullBackup( StoreWriter writer );
-    
-    Response<Void> incrementalBackup( RequestContext context );
+
+    @Test
+    public void shouldExtractToLogBuffer() throws Exception
+    {
+        // Given
+        InMemoryLogBuffer input = new InMemoryLogBuffer(),
+                         output = new InMemoryLogBuffer();
+
+        input.putLong( 1337l );
+
+        TxExtractor extractor = TxExtractor.create( input );
+
+        // When
+        extractor.extract( output );
+
+        // Then
+        ByteBuffer buf = ByteBuffer.allocate( 128 );
+        output.read( buf );
+        buf.flip();
+
+        assertThat(buf.getLong(), equalTo(1337l));
+    }
+
 }

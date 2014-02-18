@@ -36,7 +36,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
-import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;

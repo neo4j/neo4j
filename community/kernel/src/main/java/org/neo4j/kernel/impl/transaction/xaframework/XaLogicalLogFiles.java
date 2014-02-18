@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * Used to figure out what logical log file to open when the database
@@ -81,21 +83,21 @@ public class XaLogicalLogFiles {
         DUAL_LOGS_LOG_2_ACTIVE
     }
 
-    private File fileName;
+    private File logBaseName;
     private FileSystemAbstraction fileSystem;
     
     public XaLogicalLogFiles(File fileName, FileSystemAbstraction fileSystem)
     {
-        this.fileName = fileName;
+        this.logBaseName = fileName;
         this.fileSystem = fileSystem;
     }
 
     public State determineState() throws IOException
     {
-        File activeFileName = new File( fileName.getPath() + ACTIVE_FILE_SUFFIX);
+        File activeFileName = new File( logBaseName.getPath() + ACTIVE_FILE_SUFFIX);
         if ( !fileSystem.fileExists( activeFileName ) )
         {
-            if ( fileSystem.fileExists( fileName ) )
+            if ( fileSystem.fileExists( logBaseName ) )
             {
                 // old < b8 xaframework with no log rotation and we need to
                 // do recovery on it
@@ -166,12 +168,41 @@ public class XaLogicalLogFiles {
 
     public File getLog1FileName()
     {
-        return new File( fileName.getPath() + LOG_1_SUFFIX);
+        return new File( logBaseName.getPath() + LOG_1_SUFFIX);
     }
 
     public File getLog2FileName()
     {
-        return new File( fileName.getPath() + LOG_2_SUFFIX);
+        return new File( logBaseName.getPath() + LOG_2_SUFFIX);
+    }
+
+    /**
+     * Use the archived logical log files to determine the next-in-line logical log version.
+     * If no log files are present, return fallbackVersion.
+     */
+    public long determineNextLogVersion(long fallbackVersion)
+    {
+        /* This is for compensating for that, during rotation, renaming the active log
+         * file and updating the log version via xaTf isn't atomic. First the file gets
+         * renamed and then the version is updated. If a crash occurs in between those
+         * two we need to detect and repair it the next startup...
+         * and here's the code for doing that. */
+        long highestSeen = -1;
+        for ( File file : fileSystem.listFiles( logBaseName.getParentFile() ) )
+        {
+            String fileName = file.getName();
+            if( fileName.startsWith( logBaseName.getName() ))
+            {
+                Pattern p = Pattern.compile( "^.*\\.v([0-9]+)$" );
+                Matcher m = p.matcher(fileName);
+                if(m.find())
+                {
+                    highestSeen = Math.max(highestSeen, Integer.parseInt(m.group(1)));
+                }
+            }
+        }
+
+        return highestSeen > -1 ? highestSeen + 1 : fallbackVersion;
     }
 
 }

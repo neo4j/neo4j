@@ -37,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
@@ -85,6 +86,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -728,5 +730,17 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public void recoveryCompleted() throws IOException
     {
         indexingService.startIndexes();
+    }
+
+    public LogWriter createLogWriter()
+    {
+        return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>()
+        {
+            @Override
+            public File apply( Config config )
+            {
+                return config.get( Configuration.logical_log );
+            }
+        } );
     }
 }
