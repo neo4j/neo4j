@@ -59,7 +59,7 @@ public class TestRelationshipGroupStore
     private int defaultThreshold;
     private FileSystemAbstraction fs;
     private GraphDatabaseAPI db;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -67,7 +67,7 @@ public class TestRelationshipGroupStore
         neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }
-    
+
     @Test
     public void createWithDefaultThreshold() throws Exception
     {
@@ -79,12 +79,12 @@ public class TestRelationshipGroupStore
     {
         createAndVerify( defaultThreshold*2 );
     }
-    
+
     @Test
     public void createDenseNodeWithLowThreshold() throws Exception
     {
         newDb( 2 );
-        
+
         // Create node with two relationships
         Node node;
         try ( Transaction tx = db.beginTx() )
@@ -97,23 +97,23 @@ public class TestRelationshipGroupStore
             assertEquals( 1, node.getDegree( MyRelTypes.TEST2 ) );
             tx.success();
         }
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( NodeImpl.class, db.getDependencyResolver().resolveDependency( NodeManager.class )
                     .getNodeForProxy( node.getId() ).getClass() );
             tx.success();
         }
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
             tx.success();
         }
-        
+
         db.shutdown();
     }
-    
+
     private void newDb( int denseNodeThreshold )
     {
         db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dense_node_threshold", "" + denseNodeThreshold ) )
@@ -133,19 +133,19 @@ public class TestRelationshipGroupStore
         NeoStore neoStore = factory.createNeoStore( new File( neostoreFileName ) );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
-        
+
         // Next time we open it it should be the same
         neoStore = factory.newNeoStore( new File( neostoreFileName ) );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
-        
+
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
         neoStore = factory.newNeoStore( new File( neostoreFileName ) );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
     }
-    
+
     private StoreFactory factory( Integer customThreshold )
     {
         Map<String, String> customConfig = new HashMap<>();
@@ -157,7 +157,7 @@ public class TestRelationshipGroupStore
                 new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
                 new DefaultTxHook() );
     }
-    
+
     private Config config( Map<String, String> customConfig )
     {
         return new Config( customConfig );
@@ -167,7 +167,7 @@ public class TestRelationshipGroupStore
     public void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly() throws Exception
     {
         newDb( 1 );
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -175,7 +175,7 @@ public class TestRelationshipGroupStore
             Node node2 = db.createNode();
             node0.createRelationshipTo( node, MyRelTypes.TEST );
             node.createRelationshipTo( node2, MyRelTypes.TEST2 );
-            
+
             for ( Relationship rel : node.getRelationships() )
             {
                 rel.delete();
@@ -183,17 +183,17 @@ public class TestRelationshipGroupStore
             node.delete();
             tx.success();
         }
-        
+
         db.shutdown();
     }
-    
+
     @Test
     public void verifyRecordsForDenseNodeWithOneRelType() throws Exception
     {
-        // TODO test on a lower level instead 
-        
+        // TODO test on a lower level instead
+
         newDb( 2 );
-        
+
         Node node;
         Relationship rel1, rel2, rel3, rel4, rel5, rel6;
         try ( Transaction tx = db.beginTx() )
@@ -207,7 +207,7 @@ public class TestRelationshipGroupStore
             rel6 = node.createRelationshipTo( node, MyRelTypes.TEST );
             tx.success();
         }
-        
+
         NeoStore neoStore = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource().getNeoStore();
         NodeStore nodeStore = neoStore.getNodeStore();
@@ -225,10 +225,10 @@ public class TestRelationshipGroupStore
     @Test
     public void verifyRecordsForDenseNodeWithTwoRelTypes() throws Exception
     {
-        // TODO test on a lower level instead 
-        
+        // TODO test on a lower level instead
+
         newDb( 2 );
-        
+
         Node node;
         Relationship rel1, rel2, rel3, rel4, rel5, rel6;
         try ( Transaction tx = db.beginTx() )
@@ -242,30 +242,30 @@ public class TestRelationshipGroupStore
             rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
             tx.success();
         }
-        
+
         NeoStore neoStore = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource().getNeoStore();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
-        
+
         RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.getRecord( group );
         assertFalse( groupRecord.getNext() == -1 );
-        assertRelationshipChain( neoStore.getRelationshipStore(), node, groupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
-        
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
+
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext() );
         assertEquals( -1, otherGroupRecord.getNext() );
-        assertRelationshipChain( neoStore.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel1.getId(), rel2.getId(), rel3.getId() );
+        assertRelationshipChain( neoStore.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(), rel5.getId(), rel6.getId() );
     }
-    
+
     @Test
     public void verifyGroupIsDeletedWhenNeeded() throws Exception
     {
-        // TODO test on a lower level instead 
-        
+        // TODO test on a lower level instead
+
         newDb( 2 );
-        
+
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         Relationship rel1 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
@@ -276,19 +276,19 @@ public class TestRelationshipGroupStore
         Relationship rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
         tx.success();
         tx.finish();
-        
+
         NeoStore neoStore = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource().getNeoStore();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
-        
+
         RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
         RelationshipGroupRecord groupRecord = groupStore.getRecord( group );
         assertFalse( groupRecord.getNext() == -1 );
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext() );
         assertEquals( -1, otherGroupRecord.getNext() );
-        
+
         // TODO Delete all relationships of one type and see to that the correct group is deleted.
     }
 
@@ -307,11 +307,11 @@ public class TestRelationshipGroupStore
             {
                 break;
             }
-            
+
             readChain.add( nextId );
             record = relationshipStore.getRecord( nextId );
         }
-        
+
         Set<Long> expectedChain = new HashSet<>( asList( firstId ) );
         for ( long id : chainedIds )
         {

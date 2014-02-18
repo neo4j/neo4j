@@ -131,7 +131,8 @@ public class RelationshipDeleter
         else
         {
             RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
-                    relGroupGetter.getRelationshipGroup( startNode, rel.getType() );
+                    relGroupGetter.getRelationshipGroup( startNode, rel.getType(),
+                            recordChanges.getRelGroupRecords() ).group();
             assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
             RelationshipGroupRecord group = groupChange.forReadingData();
             RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, startNode );
@@ -164,7 +165,8 @@ public class RelationshipDeleter
         else
         {
             RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
-                    relGroupGetter.getRelationshipGroup( endNode, rel.getType() );
+                    relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
+                            recordChanges.getRelGroupRecords() ).group();
             RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
             assert groupChange != null || loop : "Group has been deleted";
             if ( groupChange != null )

@@ -35,7 +35,6 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.Traversal;
 
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
 public class FunctionalTestPlugin extends ServerPlugin

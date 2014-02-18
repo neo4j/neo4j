@@ -170,7 +170,7 @@ public class RelationshipCreator
                                                  RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         RelationshipGroupRecord group =
-                getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
+                relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
         RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
         long nextRel = dir.getNextRel( group );
         setCorrectNextRel( node, rel, nextRel );
@@ -251,32 +251,6 @@ public class RelationshipCreator
             rel.setSecondPrevRel( newCount );
             rel.setFirstInSecondChain( true );
         }
-    }
-
-    private RecordProxy<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
-            NodeRecord node, int type, RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords  )
-    {
-        RecordProxy<Long, RelationshipGroupRecord, Integer> change =
-                relGroupGetter.getRelationshipGroup( node, type );
-        if ( change == null )
-        {
-            assert node.isDense();
-            long id = neoStore.getRelationshipGroupStore().nextId();
-            long firstGroupId = node.getNextRel();
-            change = relGroupRecords.create( id, type );
-            RelationshipGroupRecord record = change.forChangingData();
-            record.setInUse( true );
-            record.setCreated();
-            if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {   // There are others, make way for this new group
-                RelationshipGroupRecord previousFirstRecord =
-                        relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
-                record.setNext( previousFirstRecord.getId() );
-                previousFirstRecord.setPrev( id );
-            }
-            node.setNextRel( id );
-        }
-        return change;
     }
 
     private void setCorrectNextRel( NodeRecord node, RelationshipRecord rel, long nextRel )

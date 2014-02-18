@@ -19,42 +19,106 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 
 public class RelationshipGroupGetter
 {
-    private final RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords;
+    private final RelationshipGroupStore store;
 
-    public RelationshipGroupGetter( RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+    public RelationshipGroupGetter( RelationshipGroupStore store )
     {
-        this.relGroupRecords = relGroupRecords;
+        this.store = store;
     }
 
-    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
+    public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type,
+            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        Set<Integer> allTypes = new HashSet<>();
+        RecordProxy<Long, RelationshipGroupRecord, Integer> previous = null, current = null;
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordProxy<Long, RelationshipGroupRecord, Integer> change =
-                    relGroupRecords.getOrLoad( groupId, type );
-            RelationshipGroupRecord record = change.forReadingData();
+            current = relGroupRecords.getOrLoad( groupId, null );
+            RelationshipGroupRecord record = current.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"
-            allTypes.add( record.getType() );
             if ( record.getType() == type )
             {
-                return change;
+                return new RelationshipGroupPosition( previous, current );
+            }
+            else if ( record.getType() > type )
+            {   // The groups are sorted in the chain, so if we come too far we can return
+                // empty handed right away
+                return new RelationshipGroupPosition( previous, null );
             }
             previousGroupId = groupId;
             groupId = record.getNext();
+            previous = current;
         }
-        return null;
+        return new RelationshipGroupPosition( previous, null );
+    }
+
+    public RecordProxy<Long, RelationshipGroupRecord, Integer> getOrCreateRelationshipGroup(
+            NodeRecord node, int type, RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords  )
+    {
+        RelationshipGroupPosition existingGroup = getRelationshipGroup( node, type, relGroupRecords );
+        RecordProxy<Long, RelationshipGroupRecord, Integer> change = existingGroup.group();
+        if ( change == null )
+        {
+            assert node.isDense() : "Node " + node + " should have been dense at this point";
+            long id = store.nextId();
+            change = relGroupRecords.create( id, type );
+            RelationshipGroupRecord record = change.forChangingData();
+            record.setInUse( true );
+            record.setCreated();
+
+            // Attach it...
+            RecordProxy<Long, RelationshipGroupRecord, Integer> closestPreviousChange = existingGroup.closestPrevious();
+            if ( closestPreviousChange != null )
+            {   // ...after the closest previous one
+                RelationshipGroupRecord closestPrevious = closestPreviousChange.forChangingLinkage();
+                record.setNext( closestPrevious.getNext() );
+                record.setPrev( closestPrevious.getId() );
+                closestPrevious.setNext( id );
+            }
+            else
+            {   // ...first in the chain
+                long firstGroupId = node.getNextRel();
+                if ( firstGroupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+                {   // There are others, make way for this new group
+                    RelationshipGroupRecord previousFirstRecord =
+                            relGroupRecords.getOrLoad( firstGroupId, type ).forReadingData();
+                    record.setNext( previousFirstRecord.getId() );
+                    previousFirstRecord.setPrev( id );
+                }
+                node.setNextRel( id );
+            }
+        }
+        return change;
+    }
+
+    public static class RelationshipGroupPosition
+    {
+        private final RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious, group;
+
+        public RelationshipGroupPosition( RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious,
+                RecordProxy<Long, RelationshipGroupRecord, Integer> group )
+        {
+            this.closestPrevious = closestPrevious;
+            this.group = group;
+        }
+
+        public RecordProxy<Long, RelationshipGroupRecord, Integer> group()
+        {
+            return group;
+        }
+
+        public RecordProxy<Long, RelationshipGroupRecord, Integer> closestPrevious()
+        {
+            return closestPrevious;
+        }
     }
 }

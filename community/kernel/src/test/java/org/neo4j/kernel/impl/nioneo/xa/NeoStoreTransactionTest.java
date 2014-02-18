@@ -19,42 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.lang.Integer.parseInt;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.IdType.NODE;
-import static org.neo4j.kernel.IdType.RELATIONSHIP;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -73,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -121,6 +86,44 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.lang.Integer.parseInt;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.IdType.NODE;
+import static org.neo4j.kernel.IdType.RELATIONSHIP;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 public class NeoStoreTransactionTest
 {
     public static final String LONG_STRING = "string value long enough not to be stored as a short string";
@@ -153,8 +156,7 @@ public class NeoStoreTransactionTest
         final long ruleId = neoStore.getSchemaStore().nextId();
         IndexRule schemaRule = indexRule( ruleId, 10, 8, PROVIDER_DESCRIPTOR );
         writeTransaction.createSchemaRule( schemaRule );
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         verify( cacheAccessBackDoor ).addSchemaRule( schemaRule );
@@ -177,8 +179,7 @@ public class NeoStoreTransactionTest
 
         // WHEN
         writeTransaction.dropSchemaRule( rule );
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );
@@ -202,8 +203,7 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 27, nodeId );
         writeTransaction.addLabelToNode( 50, nodeId );
 
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // And given that I now start recording the commands in the log
         CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
@@ -215,8 +215,7 @@ public class NeoStoreTransactionTest
         writeTransaction.removeLabelFromNode( 11, nodeId );
         writeTransaction.removeLabelFromNode( 23, nodeId );
 
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
@@ -257,8 +256,7 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 51, nodeId );
         writeTransaction.addLabelToNode( 52, nodeId );
 
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // And given that I now start recording the commands in the log
         CommandCapturingVisitor commandCapture = new CommandCapturingVisitor();
@@ -274,8 +272,7 @@ public class NeoStoreTransactionTest
         writeTransaction.addLabelToNode( 61, nodeId );
         writeTransaction.addLabelToNode( 62, nodeId );
 
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         // The dynamic label record in before should be the same id as in after, and should be in use
@@ -993,8 +990,7 @@ public class NeoStoreTransactionTest
         writeTransaction.createRelationshipTypeToken( typeA, "A" );
         createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
 
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         int typeB = 1;
         writeTransaction.createRelationshipTypeToken( typeB, "B" );
@@ -1011,8 +1007,7 @@ public class NeoStoreTransactionTest
             deleteRelationship( writeTransaction, relationshipToDelete );
         }
 
-        writeTransaction.prepare();
-        writeTransaction.commit();
+        prepareAndCommit( writeTransaction );
 
         // THEN
         // The dynamic label record in before should be the same id as in after, and should be in use
@@ -1040,11 +1035,82 @@ public class NeoStoreTransactionTest
         assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
     }
 
+    @Test
+    public void shouldSortRelationshipGroups() throws Exception
+    {
+        // GIVEN a node with group of type 10
+        instantiateNeoStore( 1 );
+        int type5 = 5, type10 = 10, type15 = 15;
+        {
+            NeoStoreTransaction tx = newWriteTransaction().first();
+            neoStore.getRelationshipTypeStore().setHighId( 16 );
+            tx.createRelationshipTypeToken( type5, "5" );
+            tx.createRelationshipTypeToken( type10, "10" );
+            tx.createRelationshipTypeToken( type15, "15" );
+            prepareAndCommit( tx );
+        }
+        long nodeId = neoStore.getNodeStore().nextId();
+        {
+            NeoStoreTransaction tx = newWriteTransaction().first();
+            long otherNode1Id = neoStore.getNodeStore().nextId();
+            long otherNode2Id = neoStore.getNodeStore().nextId();
+            tx.nodeCreate( nodeId );
+            tx.nodeCreate( otherNode1Id );
+            tx.nodeCreate( otherNode2Id );
+            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode1Id );
+            // This relationship will cause the switch to dense
+            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type10, nodeId, otherNode2Id );
+            prepareAndCommit( tx );
+            // Just a little validation of assumptions
+            assertRelationshipGroupsInOrder( nodeId, type10 );
+        }
+
+        // WHEN inserting a relationship of type 5
+        {
+            NeoStoreTransaction tx = newWriteTransaction().first();
+            long otherNodeId = neoStore.getNodeStore().nextId();
+            tx.nodeCreate( otherNodeId );
+            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type5, nodeId, otherNodeId );
+            prepareAndCommit( tx );
+        }
+
+        // THEN that group should end up first in the chain
+        assertRelationshipGroupsInOrder( nodeId, type5, type10 );
+
+        // WHEN inserting a relationship of type 15
+        {
+            NeoStoreTransaction tx = newWriteTransaction().first();
+            long otherNodeId = neoStore.getNodeStore().nextId();
+            tx.nodeCreate( otherNodeId );
+            tx.relationshipCreate( neoStore.getRelationshipStore().nextId(), type15, nodeId, otherNodeId );
+            prepareAndCommit( tx );
+        }
+
+        // THEN that group should end up last in the chain
+        assertRelationshipGroupsInOrder( nodeId, type5, type10, type15 );
+    }
+
+    private void assertRelationshipGroupsInOrder( long nodeId, int... types )
+    {
+        NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+        assertTrue( "Node should be dense, is " + node, node.isDense() );
+        long groupId = node.getNextRel();
+        int cursor = 0;
+        List<RelationshipGroupRecord> seen = new ArrayList<>();
+        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+        {
+            RelationshipGroupRecord group = neoStore.getRelationshipGroupStore().getRecord( groupId );
+            seen.add( group );
+            assertEquals( "Invalid type, seen groups so far " + seen, types[cursor++], group.getType() );
+            groupId = group.getNext();
+        }
+        assertEquals( "Not enough relationship group records found in chain for " + node, types.length, cursor );
+    }
+
     private static void assertRelationshipGroupDoesNotExist( NeoStoreTransactionContext txCtx, NodeRecord node, int type )
     {
         assertNull( txCtx.getRelationshipGroup( node, type ) );
     }
-
 
     private static void assertDenseRelationshipCounts( NeoStoreTransaction tx, NeoStoreTransactionContext txCtx,
                                                        long nodeId, int type, int outCount, int inCount )

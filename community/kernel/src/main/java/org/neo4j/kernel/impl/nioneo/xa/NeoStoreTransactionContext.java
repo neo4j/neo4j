@@ -65,7 +65,7 @@ public class NeoStoreTransactionContext
         commandSet = new CommandSet( neoStore );
 
         locker = new TransactionalRelationshipLocker();
-        relationshipGroupGetter = new RelationshipGroupGetter( recordChangeSet.getRelGroupRecords() );
+        relationshipGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );

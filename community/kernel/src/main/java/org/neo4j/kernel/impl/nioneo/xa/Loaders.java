@@ -23,21 +23,24 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.Loader;
 
 public class Loaders
 {
-    public static Loader<Long,NodeRecord,Void> nodeLoader( final NeoStore neoStore )
+    public static Loader<Long,NodeRecord,Void> nodeLoader( final NodeStore store )
     {
         return new Loader<Long,NodeRecord,Void>()
         {
@@ -51,13 +54,13 @@ public class Loaders
             @Override
             public NodeRecord load( Long key, Void additionalData )
             {
-                return neoStore.getNodeStore().getRecord( key );
+                return store.getRecord( key );
             }
 
             @Override
             public void ensureHeavy( NodeRecord record )
             {
-                neoStore.getNodeStore().ensureHeavy( record );
+                store.ensureHeavy( record );
             }
 
             @Override
@@ -68,7 +71,7 @@ public class Loaders
         };
     }
 
-    public static Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader( final NeoStore neoStore )
+    public static Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store )
     {
         return new RecordChanges.Loader<Long,PropertyRecord,PrimitiveRecord>()
         {
@@ -91,7 +94,7 @@ public class Loaders
             @Override
             public PropertyRecord load( Long key, PrimitiveRecord additionalData )
             {
-                PropertyRecord record = neoStore.getPropertyStore().getRecord( key.longValue() );
+                PropertyRecord record = store.getRecord( key.longValue() );
                 setOwner( record, additionalData );
                 return record;
             }
@@ -101,7 +104,7 @@ public class Loaders
             {
                 for ( PropertyBlock block : record.getPropertyBlocks() )
                 {
-                    neoStore.getPropertyStore().ensureHeavy( block );
+                    store.ensureHeavy( block );
                 }
             }
 
@@ -113,7 +116,7 @@ public class Loaders
         };
     }
 
-    public static Loader<Long,RelationshipRecord,Void> relationshipLoader( final NeoStore neoStore )
+    public static Loader<Long,RelationshipRecord,Void> relationshipLoader( final RelationshipStore store )
     {
         return new RecordChanges.Loader<Long, RelationshipRecord, Void>()
         {
@@ -126,7 +129,7 @@ public class Loaders
             @Override
             public RelationshipRecord load( Long key, Void additionalData )
             {
-                return neoStore.getRelationshipStore().getRecord( key );
+                return store.getRecord( key );
             }
 
             @Override
@@ -142,7 +145,8 @@ public class Loaders
         };
     }
 
-    public static Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader( final NeoStore neoStore )
+    public static Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader(
+            final RelationshipGroupStore store )
     {
         return new RecordChanges.Loader<Long, RelationshipGroupRecord, Integer>()
         {
@@ -155,7 +159,7 @@ public class Loaders
             @Override
             public RelationshipGroupRecord load( Long key, Integer type )
             {
-                return neoStore.getRelationshipGroupStore().getRecord( key );
+                return store.getRecord( key );
             }
 
             @Override
@@ -171,29 +175,28 @@ public class Loaders
         };
     }
 
-    public static Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader( final NeoStore neoStore )
+    public static Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader( final SchemaStore store )
     {
         return new RecordChanges.Loader<Long, Collection<DynamicRecord>, SchemaRule>()
         {
             @Override
             public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
             {
-                return neoStore.getSchemaStore().allocateFrom(additionalData);
+                return store.allocateFrom(additionalData);
             }
 
             @Override
             public Collection<DynamicRecord> load(Long key, SchemaRule additionalData)
             {
-                return neoStore.getSchemaStore().getRecords( key );
+                return store.getRecords( key );
             }
 
             @Override
             public void ensureHeavy(Collection<DynamicRecord> dynamicRecords)
             {
-                SchemaStore schemaStore = neoStore.getSchemaStore();
                 for ( DynamicRecord record : dynamicRecords)
                 {
-                    schemaStore.ensureHeavy(record);
+                    store.ensureHeavy(record);
                 }
             }
 

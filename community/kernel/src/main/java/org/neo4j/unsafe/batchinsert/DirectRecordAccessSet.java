@@ -43,10 +43,10 @@ public class DirectRecordAccessSet implements RecordAccessSet
 
     public DirectRecordAccessSet( NeoStore neoStore )
     {
-        nodeRecords = new DirectRecordAccess<>( neoStore.getNodeStore(), Loaders.nodeLoader( neoStore ) );
-        propertyRecords = new DirectRecordAccess<>( neoStore.getPropertyStore(), Loaders.propertyLoader( neoStore ) );
-        relationshipRecords = new DirectRecordAccess<>( neoStore.getRelationshipStore(), Loaders.relationshipLoader( neoStore ) );
-        relationshipGroupRecords = new DirectRecordAccess<>( neoStore.getRelationshipGroupStore(), Loaders.relationshipGroupLoader( neoStore ) );
+        nodeRecords = new DirectRecordAccess<>( neoStore.getNodeStore(), Loaders.nodeLoader( neoStore.getNodeStore() ) );
+        propertyRecords = new DirectRecordAccess<>( neoStore.getPropertyStore(), Loaders.propertyLoader( neoStore.getPropertyStore() ) );
+        relationshipRecords = new DirectRecordAccess<>( neoStore.getRelationshipStore(), Loaders.relationshipLoader( neoStore.getRelationshipStore() ) );
+        relationshipGroupRecords = new DirectRecordAccess<>( neoStore.getRelationshipGroupStore(), Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ) );
 //        schemaRecords = new DirectRecordAccess<>( neoStore.getSchemaStore(), Loaders.schemaRuleLoader( neoStore ) ); // TODO
     }
 
