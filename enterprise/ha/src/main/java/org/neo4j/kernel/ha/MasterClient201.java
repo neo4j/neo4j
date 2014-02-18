@@ -37,7 +37,7 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
-import org.neo4j.com.StoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;

@@ -30,7 +30,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.StoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;

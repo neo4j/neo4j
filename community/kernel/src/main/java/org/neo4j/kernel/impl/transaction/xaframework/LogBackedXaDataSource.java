@@ -142,7 +142,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         return logicalLog.getMasterForCommittedTransaction( txId );
     }
-    
+
     @Override
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
