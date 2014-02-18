@@ -1,5 +1,15 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.2-SNAPSHOT (2014-02-18)
+---------------------------
+Cypher:
+o Fixes #1897 - goes into never ending loop for some aggregate queries
+o Add the functions toInt(...) and toFloat(...)
+o Renames the Cypher type Double to Float
+o Add the function split(...)
+o Reading a non-existent property from a map returns null rather than failing
+o MERGE will choose a direction when it has to create a relationship if you use an undirected relationship pattern
+
 2.0.1 (2014-01-04)
 ------------------
 Kernel:

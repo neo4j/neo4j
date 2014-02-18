@@ -1,5 +1,5 @@
-2.0.2
------
+2.0.2-SNAPSHOT
+--------------
 o Fixes #1897 - goes into never ending loop for some aggregate queries
 o Add the functions toInt(...) and toFloat(...)
 o Renames the Cypher type Double to Float
