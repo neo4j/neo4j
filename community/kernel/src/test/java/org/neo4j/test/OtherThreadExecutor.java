@@ -21,7 +21,7 @@ package org.neo4j.test;
 
 import java.io.Closeable;
 import java.io.PrintStream;
-import java.util.Arrays;
+import java.lang.Thread.State;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
@@ -58,6 +59,48 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     private final String name;
     private final long timeout;
     private Exception lastExecutionTrigger;
+
+    private static final class AnyThreadState implements Predicate<Thread>
+    {
+        private final Set<State> possibleStates;
+        private final Set<Thread.State> seenStates = new HashSet<>();
+
+        private AnyThreadState( State... possibleStates )
+        {
+            this.possibleStates = new HashSet<>( asList( possibleStates ) );
+        }
+
+        @Override
+        public boolean accept( Thread thread )
+        {
+            State threadState = thread.getState();
+            seenStates.add( threadState );
+            return possibleStates.contains( threadState );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Any of thread states " + possibleStates + ", but saw " + seenStates;
+        }
+    }
+
+    public static Predicate<Thread> anyThreadState( State... possibleStates )
+    {
+        return new AnyThreadState( possibleStates );
+    }
+
+    public Predicate<Thread> orExecutionCompleted( final Predicate<Thread> actual )
+    {
+        return new Predicate<Thread>()
+        {
+            @Override
+            public boolean accept( Thread thread )
+            {
+                return actual.accept( thread ) || executionState == ExecutionState.EXECUTED;
+            }
+        };
+    }
 
     private static enum ExecutionState
     {
@@ -173,27 +216,27 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
                        thread == null ? "dead" : thread.getState() );
     }
 
-    public void waitUntilWaiting() throws TimeoutException
+    public WaitDetails waitUntilWaiting() throws TimeoutException
     {
-        waitUntilThreadState( Thread.State.WAITING );
+        return waitUntilThreadState( Thread.State.WAITING );
     }
 
-    public void waitUntilBlocked() throws TimeoutException
+    public WaitDetails waitUntilBlocked() throws TimeoutException
     {
-        waitUntilThreadState( Thread.State.BLOCKED );
+        return waitUntilThreadState( Thread.State.BLOCKED );
     }
-    
-    public void waitUntilThreadState( Thread.State... possibleStates ) throws TimeoutException
+
+    public WaitDetails waitUntilThreadState( final Thread.State... possibleStates ) throws TimeoutException
     {
-        Set<Thread.State> stateSet = new HashSet<>( asList( possibleStates ) );
+        return waitUntil( new AnyThreadState( possibleStates ) );
+    }
+
+    public WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
+    {
         long end = System.currentTimeMillis() + timeout;
         Thread thread = getThread();
-        Set<Thread.State> seenStates = new HashSet<>();
-        for ( Thread.State state;
-              !stateSet.contains( (state = thread.getState()) ) ||
-              executionState == ExecutionState.REQUESTED_EXECUTION; )
+        while ( !condition.accept( thread ) || executionState == ExecutionState.REQUESTED_EXECUTION )
         {
-            seenStates.add( state );
             try
             {
                 Thread.sleep( 1 );
@@ -205,10 +248,31 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
 
             if ( System.currentTimeMillis() > end )
             {
-                throw new TimeoutException( "The executor didn't enter any of states " +
-                                            Arrays.toString( possibleStates ) + " inside an executing command for " +
-                                            timeout + " ms. Seen states: " + seenStates );
+                throw new TimeoutException( "The executor didn't meet condition '" + condition +
+                        "' inside an executing command for " + timeout + " ms" );
             }
+        }
+        return new WaitDetails( thread.getStackTrace() );
+    }
+
+    public static class WaitDetails
+    {
+        private final StackTraceElement[] stackTrace;
+
+        public WaitDetails( StackTraceElement[] stackTrace )
+        {
+            this.stackTrace = stackTrace;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            for ( StackTraceElement element : stackTrace )
+            {
+                builder.append( format( element.toString() + "%n" ) );
+            }
+            return builder.toString();
         }
     }
 
