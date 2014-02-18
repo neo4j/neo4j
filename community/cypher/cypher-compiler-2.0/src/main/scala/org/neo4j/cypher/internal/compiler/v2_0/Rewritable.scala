@@ -34,26 +34,21 @@ trait Rewriter extends (AnyRef => Option[AnyRef])
 
 
 object Rewritable {
-  import Foldable._
-
-  implicit class IterableLikeEq[A <: AnyRef](val iterable: IterableLike[A, _]) {
-    def eqElements[B <: AnyRef](that: GenIterable[B]): Boolean = {
-      val these = iterable.iterator
-      val those = that.iterator
-      while (these.hasNext && those.hasNext) {
-        if (!(these.next eq those.next))
+  implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
+    def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
+      while (iterator.hasNext && that.hasNext) {
+        if (!(iterator.next eq that.next))
           return false
       }
-      !these.hasNext && !those.hasNext
+      !iterator.hasNext && !that.hasNext
     }
   }
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
     def dup(rewriter: AnyRef => AnyRef): AnyRef = that match {
       case p: Product with AnyRef =>
-        val children = p.children.toSeq
-        val rewrittenChildren = children.map(rewriter)
-        if (children eqElements rewrittenChildren)
+        val rewrittenChildren = p.productIterator.asInstanceOf[Iterator[AnyRef]].map(rewriter).toList
+        if (p.productIterator.asInstanceOf[Iterator[AnyRef]] eqElements rewrittenChildren.iterator)
           p
         else
           p.dup(rewrittenChildren).asInstanceOf[AnyRef]
