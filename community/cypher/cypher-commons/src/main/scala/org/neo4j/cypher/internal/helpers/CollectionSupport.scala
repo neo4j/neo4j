@@ -81,7 +81,7 @@ trait CollectionSupport {
   def makeTraversable(z: Any): Iterable[Any] = if (castToIterable.isDefinedAt(z)) {
     castToIterable(z)
   } else {
-    Iterable(z)
+    if (z == null) Iterable() else Iterable(z)
   }
 
   protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
