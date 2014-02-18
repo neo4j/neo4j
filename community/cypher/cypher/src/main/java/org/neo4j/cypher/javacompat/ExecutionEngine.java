@@ -40,7 +40,7 @@ public class ExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseService database )
     {
-        this( database, DEV_NULL );
+        inner = createInnerEngine( database, DEV_NULL );
     }
 
     /**
@@ -50,7 +50,13 @@ public class ExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseService database, StringLogger logger )
     {
-        inner = new org.neo4j.cypher.ExecutionEngine( database, logger );
+        inner = createInnerEngine( database, logger );
+    }
+
+    protected
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
+    {
+        return new org.neo4j.cypher.ExecutionEngine( database, logger );
     }
 
     /**
@@ -62,7 +68,7 @@ public class ExecutionEngine
      */
     public ExecutionResult execute( String query ) throws CypherException
     {
-        return new ExecutionResult(inner.execute( query ));
+        return new ExecutionResult( inner.execute( query ) );
     }
 
     /**
@@ -75,7 +81,7 @@ public class ExecutionEngine
      */
     public ExecutionResult execute( String query, Map<String, Object> params) throws CypherException
     {
-        return new ExecutionResult(inner.execute(query, params));
+        return new ExecutionResult( inner.execute( query, params ) );
     }
 
     /**
@@ -91,7 +97,7 @@ public class ExecutionEngine
      */
     public ExecutionResult profile( String query ) throws CypherException
     {
-        return new ExecutionResult(inner.profile(query));
+        return new ExecutionResult( inner.profile( query ) );
     }
 
     /**
@@ -108,7 +114,7 @@ public class ExecutionEngine
      */
     public ExecutionResult profile( String query, Map<String, Object> params) throws CypherException
     {
-        return new ExecutionResult(inner.profile(query, params));
+        return new ExecutionResult( inner.profile( query, params ) );
     }
 
     /**
@@ -120,6 +126,6 @@ public class ExecutionEngine
      */
     public String prettify( String query )
     {
-        return inner.prettify(query);
+        return inner.prettify( query );
     }
 }

@@ -28,7 +28,7 @@ import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements RepresentationWriteHandler
 {
     private final HttpContext httpContext;
-    private final Transaction transaction;
+    private Transaction transaction;
 
     public CommitOnSuccessfulStatusCodeRepresentationWriteHandler( HttpContext httpContext, Transaction transaction )
     {
@@ -57,6 +57,17 @@ public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements R
     @Override
     public void onRepresentationFinal()
     {
+        closeTransaction();
+    }
+
+
+    public void closeTransaction()
+    {
         transaction.close();
+    }
+
+    public void setTransaction( Transaction transaction )
+    {
+        this.transaction = transaction;
     }
 }

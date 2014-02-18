@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.database;
 
+import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -30,7 +31,7 @@ public class CypherExecutor implements Lifecycle
 
     private final Database database;
     private final StringLogger logger;
-    private ExecutionEngine executionEngine;
+    private ServerExecutionEngine executionEngine;
 
     public CypherExecutor( Database database, StringLogger logger )
     {
@@ -38,7 +39,7 @@ public class CypherExecutor implements Lifecycle
         this.logger = logger;
     }
 
-	public ExecutionEngine getExecutionEngine()
+	public ServerExecutionEngine getExecutionEngine()
     {
 		return executionEngine;
 	}
@@ -52,7 +53,7 @@ public class CypherExecutor implements Lifecycle
 	@Override
 	public void start() throws Throwable 
 	{
-		this.executionEngine = new ExecutionEngine( database.getGraph(), logger );
+		this.executionEngine = new ServerExecutionEngine( database.getGraph(), logger );
 	}
 
 	@Override

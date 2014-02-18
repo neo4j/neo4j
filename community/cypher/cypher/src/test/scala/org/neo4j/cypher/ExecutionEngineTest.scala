@@ -2724,4 +2724,10 @@ RETURN x0.name""")
     val result = execute("MATCH n RETURN n, count(n) + 3")
     assert(result.toList === List(Map("n" -> n, "count(n) + 3" -> 4)))
   }
+
+  @Test
+  def should_handle_cypher_version_and_periodic_commit() {
+    val result = execute("cypher 2.1 using periodic commit create () with * match n return n")
+    assert(result.size === 1)
+  }
 }

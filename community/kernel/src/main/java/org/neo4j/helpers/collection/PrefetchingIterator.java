@@ -27,10 +27,9 @@ import java.util.NoSuchElementException;
  * how many objects there are (which is pretty much every time)
  *
  * Basically the {@link #hasNext()} method will look up the next object and
- * cache it with {@link #setPrefetchedNext(Object)}. The cached object is
- * then set to {@code null} in {@link #next()}. So you only have to implement
- * one method, {@code fetchNextOrNull} which returns {@code null} when the
- * iteration has reached the end, and you're done.
+ * cache it. The cached object is then set to {@code null} in {@link #next()}.
+ * So you only have to implement one method, {@code fetchNextOrNull} which
+ * returns {@code null} when the iteration has reached the end, and you're done.
  */
 public abstract class PrefetchingIterator<T> implements Iterator<T>
 {
@@ -38,27 +37,32 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
     T nextObject;
 
 	/**
-	 * Tries to fetch the next item and caches it so that consecutive calls
-	 * (w/o an intermediate call to {@link #next()} will remember it and won't
-	 * try to fetch it again.
-	 *
-	 * @return {@code true} if there was a next item to return in the next
+	 * @return {@code true} if there is a next item to be returned from the next
 	 * call to {@link #next()}.
 	 */
 	@Override
     public boolean hasNext()
 	{
-		if ( hasFetchedNext )
-		{
-		    return nextObject != null;
-		}
-
-		nextObject = fetchNextOrNull();
-        hasFetchedNext = true;
-		return nextObject != null;
+		return peek() != null;
 	}
 
-	/**
+    /**
+     * @return the next element that will be returned from {@link #next()} without
+     * actually advancing the iterator
+     */
+    public T peek()
+    {
+        if ( hasFetchedNext )
+        {
+            return nextObject;
+        }
+
+        nextObject = fetchNextOrNull();
+        hasFetchedNext = true;
+        return nextObject;
+    }
+
+    /**
 	 * Uses {@link #hasNext()} to try to fetch the next item and returns it
 	 * if found, otherwise it throws a {@link NoSuchElementException}.
 	 *

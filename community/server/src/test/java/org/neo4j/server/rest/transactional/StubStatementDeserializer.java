@@ -23,6 +23,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 import java.io.ByteArrayInputStream;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -32,14 +33,12 @@ public class StubStatementDeserializer extends StatementDeserializer
     private final Iterator<Statement> statements;
     private final Iterator<Neo4jError> errors;
 
+    private boolean hasNext;
+    private Statement next;
+
     public static StubStatementDeserializer statements( Statement... statements )
     {
         return new StubStatementDeserializer( IteratorUtil.<Neo4jError>emptyIterator(), iterator( statements ) );
-    }
-
-    public static StubStatementDeserializer deserilizationErrors( Neo4jError... errors )
-    {
-        return new StubStatementDeserializer( iterator( errors ), IteratorUtil.<Statement>emptyIterator() );
     }
 
     public StubStatementDeserializer( Iterator<Neo4jError> errors, Iterator<Statement> statements )
@@ -47,18 +46,47 @@ public class StubStatementDeserializer extends StatementDeserializer
         super( new ByteArrayInputStream( new byte[]{} ) );
         this.statements = statements;
         this.errors = errors;
+
+        computeNext();
+    }
+
+    private void computeNext()
+    {
+        hasNext = statements.hasNext();
+        if ( hasNext )
+        {
+            next = statements.next();
+        }
+        else
+        {
+            next = null;
+        }
     }
 
     @Override
     public boolean hasNext()
     {
-        return statements.hasNext();
+        return hasNext;
+    }
+
+    @Override
+    public Statement peek() {
+        if ( hasNext )
+        {
+            return next;
+        }
+        else
+        {
+            throw new NoSuchElementException();
+        }
     }
 
     @Override
     public Statement next()
     {
-        return statements.next();
+        Statement result = next;
+        computeNext();
+        return result;
     }
 
     @Override

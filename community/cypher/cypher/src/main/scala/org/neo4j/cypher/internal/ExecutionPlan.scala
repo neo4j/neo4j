@@ -24,7 +24,9 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.Statement
 
+final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
+
 trait ExecutionPlan {
-  def execute(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]): ExecutionResult
-  def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]): ExecutionResult
+  def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExecutionResult
+  def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExecutionResult
 }

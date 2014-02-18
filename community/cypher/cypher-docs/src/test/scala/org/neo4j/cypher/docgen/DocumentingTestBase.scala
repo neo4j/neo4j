@@ -29,9 +29,8 @@ import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter, GraphSt
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{ CypherException, ExecutionResult, ExecutionEngine }
+import org.neo4j.cypher.{ CypherException, ExecutionResult }
 import org.neo4j.test.{ TestGraphDatabaseFactory, GraphDescription }
-import org.scalatest.Assertions
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
@@ -41,9 +40,11 @@ import org.neo4j.helpers.Settings
 import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
-import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.NodeManager
-import org.scalatest.junit.JUnitSuite
+import org.neo4j.cypher.internal.ServerExecutionEngine
+import org.neo4j.kernel.impl.transaction.TxManager
+import org.neo4j.cypher.internal.commons.CypherJUnitSuite
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -137,7 +138,7 @@ trait DocumentationHelper extends GraphIcing {
 
 }
 
-abstract class DocumentingTestBase extends JUnitSuite with Assertions with DocumentationHelper with GraphIcing {
+abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHelper with GraphIcing {
 
   def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: (ExecutionResult => Unit)*) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, assertions: _*)
@@ -187,7 +188,8 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
         dumpPreparationGraphviz(dir, title, graphvizOptions)
       }
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-      val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
+      val result = fetchQueryResults(prepare, query)
+
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
       }
@@ -210,7 +212,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
     val writer: PrintWriter = createWriter(title, dir)
     try {
       prepare.foreach { (prepareStep: () => Any) => prepareStep() }
-      val result = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
+      val result = fetchQueryResults(prepare, query)
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
       }
@@ -231,8 +233,28 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
     }
   }
 
+  private def fetchQueryResults(prepare: Option[() => Any], query: String): ExecutionResult =  {
+    lazy val results =  if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
+    
+    if (engine.isPeriodicCommit(query)) {
+      if (prepare.isDefined) {
+        throw new IllegalArgumentException("Can't use prepare steps together with periodic commit")
+      }
+      val txManager = db.getDependencyResolver.resolveDependency(classOf[TxManager])
+      val tx = txManager.suspend()
+      try {
+        results
+      }
+      finally {
+        txManager.resume(tx)
+      }
+      
+    } else
+      results
+  }
+
   var db: GraphDatabaseAPI = null
-  var engine: ExecutionEngine = null
+  var engine: ServerExecutionEngine = null
   var nodes: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
   var relIndex: Index[Relationship] = null
@@ -338,7 +360,7 @@ abstract class DocumentingTestBase extends JUnitSuite with Assertions with Docum
       setConfig(GraphDatabaseSettings.node_keys_indexable, "name").
       setConfig(GraphDatabaseSettings.node_auto_indexing, Settings.TRUE).
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
-    engine = new ExecutionEngine(db)
+    engine = new ServerExecutionEngine(db)
 
     cleanDatabaseContent( db )
 

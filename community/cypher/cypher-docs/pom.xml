@@ -76,6 +76,13 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-commons</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+      <type>test-jar</type>
+    </dependency>
 
     <!-- other -->
 
