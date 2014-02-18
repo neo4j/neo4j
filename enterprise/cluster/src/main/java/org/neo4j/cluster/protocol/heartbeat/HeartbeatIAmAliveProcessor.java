@@ -45,20 +45,31 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
     @Override
     public boolean process( Message<? extends MessageType> message )
     {
-        if (!message.isInternal() &&
-                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ))
+        if ( !message.isInternal() &&
+                !message.getMessageType().equals( HeartbeatMessage.i_am_alive ) )
         {
-            String from = message.getHeader( Message.FROM );
-            if ( !from.equals( message.getHeader( Message.TO ) ) )
+            // We assume the FROM header always exists.
+            String from =  message.getHeader( Message.FROM );
+            if ( !from.equals( message.getHeader( Message.TO ) )  )
             {
-                InstanceId id = clusterContext.getConfiguration().getIdForUri( URI.create( from ) );
+                InstanceId theId;
+                if ( message.hasHeader( Message.INSTANCE_ID ) )
+                {
+                    // INSTANCE_ID is there since after 1.9.6
+                    theId = new InstanceId( Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+                }
+                else
+                {
+                    theId = clusterContext.getConfiguration().getIdForUri( URI.create( from ) );
+                }
 
-                if (id != null && !clusterContext.isMe( id ))
+                if ( theId != null && clusterContext.getConfiguration().getMembers().containsKey( theId )
+                        && !clusterContext.isMe( theId ) )
                 {
                     output.offer( message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
-                                    new HeartbeatMessage.IAmAliveState( id ) ),
-                            Message.FROM ) );
+                                    new HeartbeatMessage.IAmAliveState( theId ) ),
+                            Message.FROM, Message.INSTANCE_ID ) );
                 }
             }
         }

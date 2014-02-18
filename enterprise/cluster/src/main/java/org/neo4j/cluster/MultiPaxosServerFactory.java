@@ -90,7 +90,8 @@ public class MultiPaxosServerFactory
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
 
         // Create state machines
-        StateMachines stateMachines = new StateMachines( input, output, timeoutStrategy, executor, stateMachineExecutor );
+        StateMachines stateMachines = new StateMachines( input, output, timeoutStrategy, executor, stateMachineExecutor,
+                me );
         Timeouts timeouts = stateMachines.getTimeouts();
 
         final MultiPaxosContext context = new MultiPaxosContext( me,

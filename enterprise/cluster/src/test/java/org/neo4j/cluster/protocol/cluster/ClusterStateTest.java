@@ -19,22 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
-
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.cluster.com.message.TrackingMessageHolder;
-import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationRequestState;
-import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
-import org.neo4j.kernel.impl.util.StringLogger;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -42,10 +26,24 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.cluster.com.message.Message.to;
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.configurationRequest;
 import static org.neo4j.cluster.protocol.cluster.ClusterMessage.joinDenied;
+
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.com.message.Message;
+import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.com.message.TrackingMessageHolder;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationRequestState;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ClusterStateTest
 {
@@ -113,7 +111,30 @@ public class ClusterStateTest
         ClusterEntryDeniedException deniedException = response.getPayload();
         assertEquals( existingMembers, deniedException.getConfigurationResponseState().getMembers() );
     }
-    
+
+    @Test
+    public void shouldNotDenyJoinToInstanceThatRejoinsBeforeTimingOut() throws Throwable
+    {
+        // GIVEN
+        ClusterContext context = mock( ClusterContext.class );
+        Map<InstanceId, URI> existingMembers = members( 1, 2 );
+        when( context.isCurrentlyAlive( id( 2 ) ) ).thenReturn( true );
+        when( context.getMembers() ).thenReturn( existingMembers );
+        when( context.getConfiguration() ).thenReturn( clusterConfiguration( existingMembers ) );
+        when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getUriForId( id( 2 ) ) ).thenReturn( uri( 2 ) );
+        TrackingMessageHolder outgoing = new TrackingMessageHolder();
+        Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configuration( 2 ) )
+                .setHeader( Message.FROM, uri( 2 ).toString() );
+
+        // WHEN the join denial actually takes effect (signaled by a join timeout locally)
+        ClusterState.entered.handle( context, message, outgoing );
+
+        // THEN assert that the failure contains the received configuration
+        Message<? extends MessageType> response = outgoing.single();
+        assertEquals( ClusterMessage.configurationResponse, response.getMessageType() );
+    }
+
     private ConfigurationResponseState configurationResponseState( Map<InstanceId, URI> existingMembers )
     {
         return new ConfigurationResponseState( Collections.<String,InstanceId>emptyMap(),
@@ -145,6 +166,11 @@ public class ClusterStateTest
     private URI uri( int i )
     {
         return URI.create( "http://localhost:" + (6000+i) + "?serverId=" + i );
+    }
+
+    private InstanceId id( int i )
+    {
+        return new InstanceId( i );
     }
 
     private static class ConfigurationResponseStateMatcher extends ArgumentMatcher<ConfigurationResponseState>
