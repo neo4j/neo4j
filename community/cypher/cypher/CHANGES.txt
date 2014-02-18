@@ -1,3 +1,8 @@
+2.1.0-M01
+---------
+o Add LOAD CSV
+o Add USING PERIODIC COMMIT
+
 2.0.2-SNAPSHOT
 --------------
 o Fixes #1897 - goes into never ending loop for some aggregate queries

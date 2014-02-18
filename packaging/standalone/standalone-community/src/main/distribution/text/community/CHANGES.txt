@@ -1,5 +1,11 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.1.0-M01
+---------
+Cypher:
+o Add LOAD CSV
+o Add USING PERIODIC COMMIT
+
 2.0.2-SNAPSHOT (2014-02-18)
 ---------------------------
 Cypher:
