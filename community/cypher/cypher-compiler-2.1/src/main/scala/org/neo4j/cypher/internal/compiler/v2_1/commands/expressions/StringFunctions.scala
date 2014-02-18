@@ -44,6 +44,8 @@ object StringHelper {
   implicit class RichString(val text: String) extends AnyVal {
     def stripLinesAndMargins: String =
       text.stripMargin.filter( (ch: Char) => Character.isDefined(ch) && !Character.isISOControl(ch) )
+    def cypherEscape: String =
+      text.replace("\\", "\\\\")
   }
 }
 

@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.{Ignore, Test}
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 
 class PeriodicCommitTest
   extends DocumentingTestBase with QueryStatisticsTestSupport with CreateTempFileTestSupport {
@@ -49,18 +50,18 @@ class PeriodicCommitTest
   }
 
   @Test def periodic_commit_with_load_csv() {
-    val fileName = createTempFile("cypher", ".csv", { writer =>
+    val url = createTempFileURL("cypher", ".csv", { writer =>
       writer.println("name")
       writer.println("Davide")
       writer.println("Jakub")
       writer.println("Andres")
       writer.println("Stefan")
-    })
+    }).cypherEscape
 
     testQuery(
       title = "PERIODIC COMMIT",
       text = "Using PERIODIC COMMIT along with LOAD CSV",
-      queryText = s"USING PERIODIC COMMIT LOAD CSV WITH HEADERS FROM 'file://$fileName' AS line CREATE (n:User {name: line.name})",
+      queryText = s"USING PERIODIC COMMIT LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (n:User {name: line.name})",
       optionalResultExplanation = "",
       assertions = assertStatsResult(nodesCreated = 4, labelsAdded = 4, propertiesSet = 4)(_)
     )

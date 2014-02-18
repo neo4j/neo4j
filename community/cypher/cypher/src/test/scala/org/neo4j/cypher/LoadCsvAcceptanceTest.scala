@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.junit.Test
 import java.io.{FileNotFoundException, PrintWriter}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 
 class LoadCsvAcceptanceTest
   extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
@@ -121,5 +122,5 @@ class LoadCsvAcceptanceTest
     intercept[FileNotFoundException] { execute("LOAD CSV FROM 'file://missing_file.csv' AS line CREATE (a {name:line[0]})") }
   }
 
-  private def createFile(f: PrintWriter => Unit) = s"file://${createTempFile("cypher", ".csv", f)}"
+  private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape
 }

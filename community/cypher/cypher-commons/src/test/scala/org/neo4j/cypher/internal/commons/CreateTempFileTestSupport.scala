@@ -46,4 +46,14 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     files = files :+ file
     file.toAbsolute.path
   }
+
+  def createTempFileURL(name: String, ext: String, f: PrintWriter => Unit): String = synchronized {
+    val file = File.makeTemp(name, ext)
+    val writer = file.printWriter()
+    f(writer)
+    writer.flush()
+    writer.close()
+    files = files :+ file
+    file.toURI.toURL.toString
+  }
 }
