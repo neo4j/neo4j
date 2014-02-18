@@ -1,10 +1,11 @@
-2.0.2
------
+2.0.2-SNAPSHOT
+--------------
 o Fixes #1897 - goes into never ending loop for some aggregate queries
 o Add the functions toInt(...) and toFloat(...)
-o Add LOAD CSV
 o Renames the Cypher type Double to Float
 o Add the function split(...)
+o Reading a non-existent property from a map returns null rather than failing
+o MERGE will choose a direction when it has to create a relationship if you use an undirected relationship pattern
 
 2.0.1
 -----
