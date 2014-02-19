@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundExecutionContext, TransactionBoundPlanContext}
+import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundQueryContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.spi.v1_9.GDSBackedQueryContext
 
@@ -83,7 +83,7 @@ object CypherCompiler {
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
 
   private def queryContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement) =
-    new ExceptionTranslatingQueryContext(new TransactionBoundExecutionContext(graph, tx, statement))
+    new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(graph, tx, statement))
 
   def profile(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement, params: Map[String, Any]) =
     inner.profile(queryContext(graph, tx, statement), params)

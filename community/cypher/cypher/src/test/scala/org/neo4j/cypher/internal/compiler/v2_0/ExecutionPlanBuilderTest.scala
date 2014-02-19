@@ -32,7 +32,7 @@ import org.junit.Assert._
 import java.util.concurrent._
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundExecutionContext
+import org.neo4j.cypher.internal.spi.v2_0.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.compiler.v2_0.mutation.{CreateNode, DeletePropertyAction}
@@ -68,7 +68,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
-    val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
+    val queryContext = new TransactionBoundQueryContext(graph, tx, statement)
 
     // when
     intercept[ExplodingException] {
@@ -95,7 +95,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(ReturnItem(Identifier("x"), "x"))
 
       val execPlanBuilder = new ExecutionPlanBuilder(graph)
-      val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
 
       // when
@@ -119,7 +119,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(ReturnItem(Identifier("x"), "x"))
 
       val execPlanBuilder = new ExecutionPlanBuilder(graph)
-      val queryContext = new TransactionBoundExecutionContext(graph, tx, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, statement)
       val labelId = queryContext.getLabelId("Person")
 
       // when
