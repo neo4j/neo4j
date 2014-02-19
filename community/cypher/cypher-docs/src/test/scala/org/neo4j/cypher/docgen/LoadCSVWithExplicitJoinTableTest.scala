@@ -24,30 +24,33 @@ import java.io.File
 
 class LoadCSVWithExplicitJoinTableTest extends ArticleTest with QueryStatisticsTestSupport {
   implicit var csvFilesDir: File = _
+  private var movies: String = _
+  private var persons: String = _
+  private var directors: String = _
 
   override def doThisBefore() {
     csvFilesDir = createDir(dir, "csv-files")
+
+    movies = create("movies.csv") withContents(
+      Seq("1", "Wall Street"),
+      Seq("2", "The American President"))
+
+    persons = create("persons.csv") withContents(
+      Seq("1", "Charlie Sheen"),
+      Seq("2", "Oliver Stone"),
+      Seq("3", "Michael Douglas"),
+      Seq("4", "Rob Reiner"),
+      Seq("5", "Martin Sheen"))
+
+    directors = create("directors.csv") withContents(
+      Seq("2", "1"),
+      Seq("4", "2"))
   }
 
   def title: String = "Importing data from multiple CSV files"
   def section: String = "Import"
   def assert(name: String, result: ExecutionResult) {}
   def graphDescription: List[String] = List.empty
-
-  val movies = create("movies.csv") withContents(
-    Seq("1", "Wall Street"),
-    Seq("2", "The American President"))
-
-  val persons = create("persons.csv") withContents(
-    Seq("1", "Charlie Sheen"),
-    Seq("2", "Oliver Stone"),
-    Seq("3", "Michael Douglas"),
-    Seq("4", "Rob Reiner"),
-    Seq("5", "Martin Sheen"))
-
-  val directors = create("directors.csv") withContents(
-    Seq("2", "1"),
-    Seq("4", "2"))
 
   private def create(fileName: String): CsvFile = new CsvFile(fileName)
 

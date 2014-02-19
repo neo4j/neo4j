@@ -24,9 +24,25 @@ import java.io.File
 
 class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupport {
   implicit var csvFilesDir: File = _
+  private var roles:String = _
+  private var movie_productions:String = _
 
   override def doThisBefore() {
     csvFilesDir = createDir(dir, "csv-files")
+
+    roles = create("roles.csv") withContents(
+      Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
+      Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
+      Seq("Martin Sheen", "Wall Street", "Carl Fox"),
+      Seq("Michael Douglas", "Wall Street", "Gordon Gekko"),
+      Seq("Martin Sheen", "The American President", "A.J. MacInerney"),
+      Seq("Michael Douglas", "The American President", "President Andrew Shepherd"))
+
+    movie_productions = create("movie_productions.csv") withContents(
+      Seq("movie", "country", "year"),
+      Seq("Cloud Atlas", "Germany", "2012"),
+      Seq("Cloud Atlas", "USA", "2012"),
+      Seq("The Shawshank Redemption", "USA", "1993"))
   }
 
   def title: String = "Importing data from a single CSV file"
@@ -34,19 +50,6 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
   def assert(name: String, result: ExecutionResult) {}
   def graphDescription: List[String] = List.empty
 
-  val roles = create("roles.csv") withContents(
-    Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
-    Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
-    Seq("Martin Sheen", "Wall Street", "Carl Fox"),
-    Seq("Michael Douglas", "Wall Street", "Gordon Gekko"),
-    Seq("Martin Sheen", "The American President", "A.J. MacInerney"),
-    Seq("Michael Douglas", "The American President", "President Andrew Shepherd"))
-
-  val movie_productions = create("movie_productions.csv") withContents(
-    Seq("movie", "country", "year"),
-    Seq("Cloud Atlas", "Germany", "2012"),
-    Seq("Cloud Atlas", "USA", "2012"),
-    Seq("The Shawshank Redemption", "USA", "1993"))
 
   private def create(fileName: String): CsvFile = new CsvFile(fileName)
 
@@ -102,9 +105,3 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
                        |""".stripMargin
 
 }
-
-//object CSVFiles {
-//  def implicit val csvFilesDir: File = createDir(dir, "target/csv-files")
-//}
-
-
