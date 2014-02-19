@@ -54,8 +54,6 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  */
 public class TransactionHandle
 {
-    private static final CypherExceptionMapping EXCEPTION_MAPPING = new CypherExceptionMapping();
-
     private final TransitionalPeriodTransactionMessContainer txManagerFacade;
     private final ExecutionEngine engine;
     private final TransactionRegistry registry;
@@ -252,7 +250,7 @@ public class TransactionHandle
                 }
                 catch ( CypherException e )
                 {
-                    errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
+                    errors.add( new Neo4jError( e.status(), e ) );
                     break;
                 }
                 catch ( IOException e )

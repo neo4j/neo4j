@@ -132,8 +132,10 @@ public interface Status
                 "database." ),
         EntityNotFound( ClientError,      "The statement is directly referring to an entity that does not exist." ),
         NoSuchProperty( ClientError, "The statement is referring to a property that does not exist." ),
+        NoSuchLabel( ClientError, "The statement is referring to a label that does not exist."),
         InvalidType( ClientError,         "The statement is attempting to perform operations on values with types that " +
                 "are not supported by the operation." ),
+        InvalidArguments( ClientError, "The statement is attempting to perform operations using invalid arguments"),
         ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
         // database
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
