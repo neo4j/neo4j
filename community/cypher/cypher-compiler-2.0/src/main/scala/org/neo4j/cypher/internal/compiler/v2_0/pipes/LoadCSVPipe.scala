@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, MapType, SymbolTable}
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, MapType}
 import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescription}
-import java.io.{InputStreamReader, BufferedReader}
+import java.io._
 import au.com.bytecode.opencsv.CSVReader
 import java.net.URL
+import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -56,8 +57,8 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
   override def readsFromDatabase = false
 
   private def getCSVReader(state: QueryState): CSVReader = {
-
-    val reader = new BufferedReader(new InputStreamReader(url.openStream()))
+    val inputStream = ToStream(url).stream
+    val reader = new BufferedReader(new InputStreamReader(inputStream))
     val csvReader = new CSVReader(reader)
 
     state.addCleanupTask(() => csvReader.close())
@@ -78,5 +79,14 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
       newContext
     }
   }
+}
+
+case class ToStream(url: URL) {
+
+  def isFile: Boolean = "file" == url.getProtocol
+
+  def file = if (isFile) new File(url.getHost, url.getPath) else throw new IllegalStateException("url is not a file: " + url)
+
+  def stream: InputStream = if (isFile) new FileInputStream(file) else url.openStream
 }
 
