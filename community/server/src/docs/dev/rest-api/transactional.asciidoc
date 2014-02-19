@@ -23,6 +23,10 @@ However, the format for raw entities is slightly less verbose and does not inclu
 Open transactions are not shared among members of an HA cluster. Therefore, if you use this endpoint in an HA cluster,
 you must ensure that all requests for a given transaction are sent to the same Neo4j instance.
 
+[NOTE]
+Cypher queries with +USING PERIODIC COMMIT+ may only be executed when creating a new transaction and immediately committing it
+with a single HTTP request (see <<query-periodic-commit>>).
+
 [TIP]
 In order to speed up queries in repeated scenarios, try not to use literals but replace them with parameters wherever
 possible in order to let the server cache query plans.
