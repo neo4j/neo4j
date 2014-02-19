@@ -174,28 +174,28 @@ class CypherParserTest extends CypherFunSuite {
 
   test("shouldReturnAdditions") {
     expectQuery(
-      "start a = NODE(1) return 12+2",
+      "start a = NODE(1) return 12+a.x",
       Query.
         start(NodeById("a", 1)).
-        returns(ReturnItem(Add(Literal(12), Literal(2)), "12+2")))
+        returns(ReturnItem(Add(Literal(12), Property(Identifier("a"), PropertyKey("x"))), "12+a.x")))
   }
 
   test("arithmeticsPrecedence") {
     expectQuery(
-      "start a = NODE(1) return 12/4*3-2*4",
+      "start a = NODE(1) return a.a/a.b*a.c-a.d*a.e",
       Query.
         start(NodeById("a", 1)).
         returns(ReturnItem(
         Subtract(
           Multiply(
             Divide(
-              Literal(12),
-              Literal(4)),
-            Literal(3)),
+              Property(Identifier("a"), PropertyKey("a")),
+              Property(Identifier("a"), PropertyKey("b"))),
+            Property(Identifier("a"), PropertyKey("c"))),
           Multiply(
-            Literal(2),
-            Literal(4)))
-        , "12/4*3-2*4")))
+            Property(Identifier("a"), PropertyKey("d")),
+            Property(Identifier("a"), PropertyKey("e"))))
+        , "a.a/a.b*a.c-a.d*a.e")))
   }
 
   test("shouldFilterOnPropWithDecimals") {
@@ -1286,14 +1286,14 @@ class CypherParserTest extends CypherFunSuite {
 
   test("shouldParseMathFunctions") {
     expectQuery(
-      "start s = NODE(0) return 5 % 4, abs(-1), round(3.1415), 2 ^ 8, sqrt(16), sign(1)",
+      "start s = NODE(0) return 5 % s.x, abs(-1), round(3.1415), 2 ^ s.x, sqrt(16), sign(1)",
       Query.
         start(NodeById("s", 0)).
         returns(
-        ReturnItem(Modulo(Literal(5), Literal(4)), "5 % 4"),
+        ReturnItem(Modulo(Literal(5), Property(Identifier("s"), PropertyKey("x"))), "5 % s.x"),
         ReturnItem(AbsFunction(Literal(-1)), "abs(-1)"),
         ReturnItem(RoundFunction(Literal(3.1415)), "round(3.1415)"),
-        ReturnItem(Pow(Literal(2), Literal(8)), "2 ^ 8"),
+        ReturnItem(Pow(Literal(2), Property(Identifier("s"), PropertyKey("x"))), "2 ^ s.x"),
         ReturnItem(SqrtFunction(Literal(16)), "sqrt(16)"),
         ReturnItem(SignFunction(Literal(1)), "sign(1)")
       )

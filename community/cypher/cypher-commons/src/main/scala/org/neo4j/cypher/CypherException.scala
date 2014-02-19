@@ -117,7 +117,7 @@ class MergeConstraintConflictException(message: String) extends CypherException(
   val status = Status.Statement.ConstraintViolation
 }
 
-class ArithmeticException(message: String) extends CypherException(message) {
+class ArithmeticException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
   val status = Status.Statement.ArithmeticError
 }
 
