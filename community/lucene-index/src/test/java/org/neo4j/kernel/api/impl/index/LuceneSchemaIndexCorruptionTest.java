@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-
-import org.apache.lucene.index.CorruptIndexException;
-import org.junit.Test;
-
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.configuration.Config;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
+
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileNotFoundException;
+
+import org.apache.lucene.index.CorruptIndexException;
+import org.junit.Test;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.configuration.Config;
 
 public class LuceneSchemaIndexCorruptionTest
 {
@@ -56,5 +57,81 @@ public class LuceneSchemaIndexCorruptionTest
 
         // Then
         assertThat( initialState, equalTo(InternalIndexState.FAILED) );
+    }
+
+    @Test
+    public void shouldMarkAsFailedAndReturnCorrectFailureMessageWhenFailingWithFileNotFoundException() throws Exception
+    {
+        // Given
+        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+
+        // This isn't quite correct, but it will trigger the correct code paths in our code
+        FileNotFoundException toThrow = new FileNotFoundException( "/some/path/somewhere" );
+        when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
+
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
+                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+        );
+
+        // When
+        InternalIndexState initialState = p.getInitialState( 1l );
+
+        // Then
+        assertThat( initialState, equalTo(InternalIndexState.FAILED) );
+        assertThat( p.getPopulationFailure( 1l ), equalTo( "File not found: " + toThrow.getMessage() ) );
+    }
+
+    @Test
+    public void shouldMarkAsFailedAndReturnCorrectFailureMessageWhenFailingWithEOFException() throws Exception
+    {
+        // Given
+        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+
+        // This isn't quite correct, but it will trigger the correct code paths in our code
+        EOFException toThrow = new EOFException( "/some/path/somewhere" );
+        when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
+
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
+                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+        );
+
+        // When
+        InternalIndexState initialState = p.getInitialState( 1l );
+
+        // Then
+        assertThat( initialState, equalTo(InternalIndexState.FAILED) );
+        assertThat( p.getPopulationFailure( 1l ), equalTo( "EOF encountered: " + toThrow.getMessage() ) );
+    }
+
+    @Test
+    public void shouldDenyFailureForNonFailedIndex() throws Exception
+    {
+
+        // Given
+        DirectoryFactory dirFactory = mock(DirectoryFactory.class);
+
+        // This isn't quite correct, but it will trigger the correct code paths in our code
+        EOFException toThrow = new EOFException( "/some/path/somewhere" );
+        when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
+
+        LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
+                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+        );
+
+        // When
+        InternalIndexState initialState = p.getInitialState( 1l );
+
+        // Then
+        assertThat( initialState, equalTo( InternalIndexState.FAILED ) );
+        boolean exceptionOnOtherIndexThrown = false;
+        try
+        {
+            p.getPopulationFailure( 2l );
+        }
+        catch( IllegalStateException e )
+        {
+            exceptionOnOtherIndexThrown = true;
+        }
+        assertTrue( exceptionOnOtherIndexThrown );
     }
 }
