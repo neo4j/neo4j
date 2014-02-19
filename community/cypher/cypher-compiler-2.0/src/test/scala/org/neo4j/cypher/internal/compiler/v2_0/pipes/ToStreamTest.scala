@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import java.io.File
 
 class ToStreamTest extends CypherFunSuite {
   test("should open a local file with an absolute path") {
@@ -29,7 +30,7 @@ class ToStreamTest extends CypherFunSuite {
     val c = ToStream(url)
 
     c shouldBe 'isFile
-    c.file.getPath should equal (path)
+    c.file.getPath should equal (localized(path))
   }
 
   test("should open a local file with a relative path") {
@@ -38,7 +39,7 @@ class ToStreamTest extends CypherFunSuite {
     val c = ToStream(url)
 
     c shouldBe 'isFile
-    c.file.getPath should equal (path)
+    c.file.getPath should equal (localized(path))
   }
 
   test("should open a local file with a relative path 2") {
@@ -47,7 +48,7 @@ class ToStreamTest extends CypherFunSuite {
     val c = ToStream(url)
 
     c shouldBe 'isFile
-    c.file.getPath should equal (path)
+    c.file.getPath should equal (localized(path))
   }
 
   test("should open a remote url") {
@@ -63,6 +64,8 @@ class ToStreamTest extends CypherFunSuite {
     val c = ToStream(url, '\\')
 
     c shouldBe 'isFile
-    c.file.getPath should equal("C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc")
+    c.file.getPath should equal(localized("C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc"))
   }
+
+  private def localized(in: String): String = in.replace('/', File.separatorChar)
 }
