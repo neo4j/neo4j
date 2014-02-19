@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
+import org.neo4j.cypher.CypherVersion
 
 class LRUCache[K, V](cacheSize: Int) {
 
@@ -30,10 +31,22 @@ class LRUCache[K, V](cacheSize: Int) {
   def getOrElseUpdate(key: K, f: => V): V = {
     val value = inner.get(key)
 
-    if(value==null) {
+    if (value == null) {
       val createdValue = f
-      val oldValue = Option(inner.putIfAbsent(key, createdValue))
-      oldValue.getOrElse(createdValue)
+      val previousValue = inner.putIfAbsent(key, createdValue)
+      if (previousValue == null) createdValue else previousValue
+    } else {
+      value
+    }
+  }
+
+  def getOrElseUpdateByKey(key: K, f: K => V): V = {
+    val value = inner.get(key)
+
+    if (value == null) {
+      val createdValue = f(key)
+      val previousValue = inner.putIfAbsent(key, createdValue)
+      if (previousValue == null) createdValue else previousValue
     } else {
       value
     }

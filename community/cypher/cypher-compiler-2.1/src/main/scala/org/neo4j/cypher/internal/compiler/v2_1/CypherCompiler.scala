@@ -27,7 +27,7 @@ import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 
-case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
+case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, String => Object) => Object) {
   
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier)
@@ -43,8 +43,10 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => O
   def prepare(queryText: String, context: PlanContext): ExecutionPlan = planBuilder.build(context, cachedQuery(queryText))
 
   private def cachedQuery(queryText: String): AbstractQuery =
-    queryCache(queryText, { verify(parse(queryText)) }).asInstanceOf[AbstractQuery]
-
+    queryCache(queryText, prepareQueryForCache).asInstanceOf[AbstractQuery]
+  
+  private def prepareQueryForCache(queryText: String) = verify(parse(queryText))
+  
   private def verify(query: AbstractQuery): AbstractQuery = {
     query.verifySemantics()
     for (verifier <- verifiers)
