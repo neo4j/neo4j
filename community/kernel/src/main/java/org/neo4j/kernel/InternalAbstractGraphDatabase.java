@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -62,6 +61,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -91,8 +91,6 @@ import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.cleanup.CleanupIfOutsideTransaction;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
@@ -164,6 +162,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -252,7 +251,6 @@ public abstract class InternalAbstractGraphDatabase
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
-    protected CleanupService cleanupService;
 
     protected Monitors monitors;
 
@@ -505,8 +503,6 @@ public abstract class InternalAbstractGraphDatabase
         }
         life.add( txManager );
 
-        cleanupService = life.add( createCleanupService() );
-
         txIdGenerator = life.add( createTxIdGenerator() );
 
         lockManager = createLockManager();
@@ -533,8 +529,10 @@ public abstract class InternalAbstractGraphDatabase
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
-        transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
-                statementContextProvider, cleanupService  );
+        transactionEventHandlers = new TransactionEventHandlers(
+                createNodeLookup(),
+                createRelationshipLookups(),
+                statementContextProvider  );
 
         stateFactory.setDependencies( lockManager, nodeManager, txHook, txIdGenerator );
 
@@ -601,11 +599,6 @@ public abstract class InternalAbstractGraphDatabase
     {
     }
 
-    protected CleanupService createCleanupService()
-    {
-        return CleanupService.create( jobScheduler, logging, new CleanupIfOutsideTransaction( txManager ) );
-    }
-
     private Map<Object, Object> newSchemaStateMap() {
         return new HashMap<>();
     }
@@ -649,14 +642,14 @@ public abstract class InternalAbstractGraphDatabase
             return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                     createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
-                    statementContextProvider, cleanupService );
+                    statementContextProvider );
         }
 
         return new NodeManager(
                 logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
                 createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager,
-                statementContextProvider, cleanupService );
+                statementContextProvider );
     }
 
     private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
@@ -666,8 +659,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                     persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider,
-                    cleanupService )
+                    createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
             {
                 @Override
                 public Node getNodeByIdOrNull( final long nodeId )
@@ -716,7 +708,7 @@ public abstract class InternalAbstractGraphDatabase
 
         return new NodeManager( logging.getMessagesLog( NodeManager.class ), this, txManager, persistenceManager,
                 persistenceSource, relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider, cleanupService )
+                createRelationshipLookups(), nodeCache, relCache, xaDataSourceManager, statementContextProvider )
         {
             @Override
             public Node getNodeByIdOrNull( final long nodeId )
@@ -1369,10 +1361,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( neoDataSource.getKernel() );
             }
-            else if ( CleanupService.class.equals( type ) )
-            {
-                return type.cast( cleanupService );
-            }
             else if ( LabelScanStore.class.isAssignableFrom( type )
                 && type.isInstance( neoDataSource.getLabelScanStore() ) )
             {
@@ -1571,14 +1559,14 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
     {
-        return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
+        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
         {
             @Override
             public Node apply( long id )
             {
                 return getNodeById( id );
             }
-        }, input ), statement );
+        }, input ) );
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator

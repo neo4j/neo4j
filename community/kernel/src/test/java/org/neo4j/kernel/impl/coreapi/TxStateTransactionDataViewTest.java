@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -38,16 +39,20 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveIntIterator;
@@ -283,8 +288,10 @@ public class TxStateTransactionDataViewTest
 
     private TxStateTransactionDataSnapshot snapshot()
     {
-        return new TxStateTransactionDataSnapshot( state, mock( NodeProxy.NodeLookup.class ),
-                mock( RelationshipProxy.RelationshipLookups.class ), bridge,
-                mock( CleanupService.class ) );
+        return new TxStateTransactionDataSnapshot(
+                state,
+                mock( NodeProxy.NodeLookup.class ),
+                mock( RelationshipProxy.RelationshipLookups.class ),
+                bridge );
     }
 }

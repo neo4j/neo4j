@@ -34,7 +34,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -55,15 +54,13 @@ public class TransactionEventHandlers
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
     private final ThreadToStatementContextBridge bridge;
-    private final CleanupService cleanupService;
 
     public TransactionEventHandlers( NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups
-            relationshipLookups, ThreadToStatementContextBridge bridge, CleanupService cleanupService )
+            relationshipLookups, ThreadToStatementContextBridge bridge )
     {
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.bridge = bridge;
-        this.cleanupService = cleanupService;
     }
 
     @Override
@@ -126,7 +123,7 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeLookup, relationshipLookups, bridge, cleanupService );
+                new TxStateTransactionDataSnapshot( state, nodeLookup, relationshipLookups, bridge );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )
