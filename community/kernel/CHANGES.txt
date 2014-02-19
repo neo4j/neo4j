@@ -1,9 +1,12 @@
-2.1-SNAPSHOT
+2.1.0-M01
 ------------
 o Introduces utility methods for printing paths into a new class, org.neo4j.graphdb.traveral.Paths
 o Deprecates several methods in the old traversal framework (org.neo4j.kernel.Traversal) that have been replaced by
   new utilities in the org.neo4j.graphdb.traversal library. No breaking changes made, but this flags for these features
   being removed in the next major version, 3.0.
+o Relationship chains are now split by type and direction. Disk storage format changes, requires an upgrade.
+o Fixes an issue with tx log reading in damaged log files
+o Adds support for labels in transaction event handlers
 
 2.0.1
 -----

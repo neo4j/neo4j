@@ -1,3 +1,9 @@
+2.1.0-M01
+---------
+o Solves issue with join denied when restarting a failed instance before it times out on the master.
+o Instances will now not form clusters on startup unless they managed to contact
+  every other instance in initial_hosts setting.
+
 2.0.1
 -----
 o Fixes message reordering issue
