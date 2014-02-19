@@ -22,6 +22,7 @@ package org.neo4j.desktop.runtime;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -82,13 +83,13 @@ public class DesktopConfigurator implements Configurator
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
     {
         return propertyFileConfig.getThirdpartyJaxRsClasses();
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
         return propertyFileConfig.getThirdpartyJaxRsPackages();
     }

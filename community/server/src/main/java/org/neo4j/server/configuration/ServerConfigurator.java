@@ -19,14 +19,16 @@
  */
 package org.neo4j.server.configuration;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum amount
@@ -51,7 +53,7 @@ public class ServerConfigurator extends Configurator.Adapter
 {
 
     private MapBasedConfiguration config = new MapBasedConfiguration();
-    private Set<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<>();
+    private List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();
 
     public ServerConfigurator( GraphDatabaseAPI db )
     {
@@ -67,11 +69,11 @@ public class ServerConfigurator extends Configurator.Adapter
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
-        return null;
+        return stringMap();
     }
 
     @Override
-    public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+    public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
     {
         return jaxRsPackages;
     }
