@@ -68,34 +68,34 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
                        |property before the +LOAD CSV+ command.
                        |
                        |###
-                       |CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE
+                       |CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE###
+                       |
                        |###
-                       |###
-                       |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE
-                       |###
+                       |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE###
+                       |
                        |###
                        |LOAD CSV FROM "$roles" AS csvLine
                        |MERGE (p:Person {name: csvLine[0]})
                        |MERGE (m:Movie {title: csvLine[1]})
-                       |CREATE (p)-[:PLAYED {role: csvLine[2]}]->(m)
-                       |###
+                       |CREATE (p)-[:PLAYED {role: csvLine[2]}]->(m)###
                        |
                        |+LOAD CSV+ also supports loading CSV files that start with headers (column names). In this
                        |case these header names may be used to address the values in a row via the
                        |+LOAD CSV WITH HEADERS+ clause.
                        |
+                       |== Using PERIODIC COMMIT ==
+                       |
+                       |When importing lots of data, the transaction state might build up so much that queries run very
+                       |slowly or even crash the JVM. By using +PERIODIC COMMIT+, the transaction will be committed at
+                       |periodic intervals.
+                       |
+                       |All you need to do is start your query with the +PERIODIC COMMIT+ hint, like so:
                        |###
-                       |CREATE CONSTRAINT ON (c:Country) ASSERT c.name IS UNIQUE
-                       |###
-                       |###
-                       |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE
-                       |###
-                       |###
+                       |USING PERIODIC COMMIT
                        |LOAD CSV WITH HEADERS FROM "$movie_productions" AS csvLine
                        |MERGE (c:Country {name: csvLine.country})
                        |MERGE (m:Movie {title: csvLine.movie})
-                       |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)
-                       |###
+                       |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)###
                        |
                        |+LOAD CSV+ produces values that are collections (or maps when +WITH HEADERS+ is used) of strings.
                        |In order to convert them to appropriate types, use the built-in +toInt+ and +toFloat+ functions.
