@@ -21,15 +21,11 @@ package org.neo4j.test.ha;
 
 import java.net.InetAddress;
 
-import static org.junit.Assert.fail;
-
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,6 +38,11 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTest
 {
@@ -297,4 +298,24 @@ public class ClusterTest
             clusterManager.stop();
         }
     }
+
+    @Test
+    public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
+    {
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( getClass() ).directory( "singleinstance", true ).getAbsolutePath() ).
+                setConfig( ClusterSettings.server_id, "1" ).
+                setConfig( ClusterSettings.initial_hosts, "" ).
+                newGraphDatabase();
+
+        try
+        {
+            System.out.println(db.isAvailable( 10 ));
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
 }
+
