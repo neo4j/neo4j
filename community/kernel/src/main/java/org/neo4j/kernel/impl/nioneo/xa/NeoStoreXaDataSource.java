@@ -41,6 +41,7 @@ import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -144,6 +145,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private final PersistenceManager persistenceManager;
     private final LockManager lockManager;
     private final SchemaWriteGuard schemaWriteGuard;
+    private final TransactionEventHandlers transactionEventHandlers;
     private final StoreFactory storeFactory;
     private final XaFactory xaFactory;
     private final JobScheduler scheduler;
@@ -268,7 +270,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, LockManager lockManager,
-                                 SchemaWriteGuard schemaWriteGuard )
+                                 SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -285,6 +287,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.persistenceManager = persistenceManager;
         this.lockManager = lockManager;
         this.schemaWriteGuard = schemaWriteGuard;
+        this.transactionEventHandlers = transactionEventHandlers;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -373,6 +376,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                     persistenceManager, lockManager, updateableSchemaState, schemaWriteGuard,
                     indexingService, nodeManager, neoStore, persistenceCache, schemaCache, providerMap, labelScanStore,
                     readOnly ));
+
+            kernel.registerTransactionHook( transactionEventHandlers );
 
             life.init();
 
@@ -681,6 +686,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public XaContainer getXaContainer()
     {
         return xaContainer;
+    }
+
+    public KernelAPI getKernel()
+    {
+        return kernel;
     }
 
     @Override

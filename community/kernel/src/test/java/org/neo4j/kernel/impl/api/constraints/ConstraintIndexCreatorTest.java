@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.api.TxState;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

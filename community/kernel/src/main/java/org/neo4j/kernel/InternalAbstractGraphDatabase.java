@@ -62,6 +62,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -111,9 +112,7 @@ import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.core.TransactionEventsSyncHook;
 import org.neo4j.kernel.impl.core.Transactor;
-import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
@@ -231,7 +230,6 @@ public abstract class InternalAbstractGraphDatabase
     protected LockManager lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected NioNeoDbPersistenceSource persistenceSource;
-    protected TxEventSyncHookFactory syncHook;
     protected PersistenceManager persistenceManager;
     protected PropertyKeyTokenHolder propertyKeyTokenHolder;
     protected LabelTokenHolder labelTokenHolder;
@@ -509,8 +507,6 @@ public abstract class InternalAbstractGraphDatabase
 
         cleanupService = life.add( createCleanupService() );
 
-        transactionEventHandlers = new TransactionEventHandlers( txManager );
-
         txIdGenerator = life.add( createTxIdGenerator() );
 
         lockManager = createLockManager();
@@ -519,10 +515,8 @@ public abstract class InternalAbstractGraphDatabase
 
         persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
 
-        syncHook = new DefaultTxEventSyncHookFactory();
-
         persistenceManager = new PersistenceManager( logging.getMessagesLog( PersistenceManager.class ), txManager,
-                persistenceSource, syncHook );
+                persistenceSource );
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( txManager, persistenceManager, persistenceSource, createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( txManager, persistenceManager, persistenceSource, createLabelIdCreator() ) );
@@ -538,6 +532,9 @@ public abstract class InternalAbstractGraphDatabase
         nodeManager = guard != null ?
                 createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
                 createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+
+        transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
+                statementContextProvider, cleanupService  );
 
         stateFactory.setDependencies( lockManager, nodeManager, txHook, txIdGenerator );
 
@@ -916,7 +913,7 @@ public abstract class InternalAbstractGraphDatabase
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, this );
+                persistenceManager, lockManager, this, transactionEventHandlers );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
@@ -1212,16 +1209,6 @@ public abstract class InternalAbstractGraphDatabase
         }
     }
 
-    private class DefaultTxEventSyncHookFactory implements TxEventSyncHookFactory
-    {
-        @Override
-        public TransactionEventsSyncHook create()
-        {
-            return transactionEventHandlers.hasHandlers() ?
-                    new TransactionEventsSyncHook( transactionEventHandlers, txManager ) : null;
-        }
-    }
-
     /**
      * FIXME: This is supposed to be handled by a Dependency Injection framework...
      *
@@ -1378,6 +1365,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( jobScheduler );
             }
+            else if( KernelAPI.class.equals( type ))
+            {
+                return type.cast( neoDataSource.getKernel() );
+            }
             else if ( CleanupService.class.equals( type ) )
             {
                 return type.cast( cleanupService );
@@ -1402,6 +1393,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( RemoteTxHook.class.isAssignableFrom( type ) )
             {
                 return type.cast( txHook );
+            }
+            else if( TransactionEventHandlers.class.equals( type ))
+            {
+                return type.cast( transactionEventHandlers );
             }
             else if ( DependencyResolver.class.equals( type ) )
             {

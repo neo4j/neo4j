@@ -28,6 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
 
+import static java.util.Collections.newSetFromMap;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -115,7 +116,7 @@ public class DiffSets<T>
     public boolean remove( T elem )
     {
         boolean removedFromAddedElements = added( false ).remove( elem );
-        // Add to the removedElements only if it was removed from the addedElements.
+        // Add to the removedElements only if it was not removed from the addedElements.
         return removedFromAddedElements || removed( true ).add( elem );
     }
 
@@ -176,14 +177,24 @@ public class DiffSets<T>
         return result;
     }
 
-    public PrimitiveLongIterator applyPrimitiveLongIterator( final PrimitiveLongIterator source )
+    public PrimitiveLongIterator augment( final PrimitiveLongIterator source )
     {
         return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
     }
 
-    public PrimitiveIntIterator applyPrimitiveIntIterator( final PrimitiveIntIterator source )
+    public PrimitiveIntIterator augment( final PrimitiveIntIterator source )
     {
         return new DiffApplyingPrimitiveIntIterator( source, added( false ), removed( false ) );
+    }
+
+    public PrimitiveLongIterator augmentWithRemovals( final PrimitiveLongIterator source )
+    {
+        return new DiffApplyingPrimitiveLongIterator( source, Collections.emptySet(), removed( false ) );
+    }
+
+    public PrimitiveLongIterator augmentWithAdditions( final PrimitiveLongIterator source )
+    {
+        return new DiffApplyingPrimitiveLongIterator( source, added( false ), Collections.emptySet() );
     }
 
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
@@ -248,7 +259,7 @@ public class DiffSets<T>
 
     private Set<T> newSet()
     {
-        return new CopyOnWriteAfterIteratorHashSet<>();
+        return newSetFromMap( new VersionedHashMap<T, Boolean>() );
     }
 
     private Set<T> resultSet( Set<T> coll )
@@ -259,6 +270,52 @@ public class DiffSets<T>
     public boolean unRemove( T item )
     {
         return removed( false ).remove( item );
+    }
+
+    public void clear()
+    {
+        if(addedElements != null) addedElements.clear();
+        if(removedElements != null) removedElements.clear();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        DiffSets diffSets = (DiffSets) o;
+
+        if ( addedElements != null ? !addedElements.equals( diffSets.addedElements ) : diffSets.addedElements != null )
+        {
+            return false;
+        }
+        if ( filter != null ? !filter.equals( diffSets.filter ) : diffSets.filter != null )
+        {
+            return false;
+        }
+        if ( removedElements != null ? !removedElements.equals( diffSets.removedElements ) : diffSets.removedElements
+                != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = addedElements != null ? addedElements.hashCode() : 0;
+        result = 31 * result + (removedElements != null ? removedElements.hashCode() : 0);
+        result = 31 * result + (filter != null ? filter.hashCode() : 0);
+        return result;
     }
 
     @Override

@@ -46,6 +46,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
+import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -600,7 +601,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                     resolver.resolveDependency( PersistenceManager.class ),
                     resolver.resolveDependency( LockManager.class ),
-                    (SchemaWriteGuard)graphDb);
+                    (SchemaWriteGuard)graphDb,
+                    resolver.resolveDependency( TransactionEventHandlers.class ) );
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Set;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.transaction.RollbackException;
@@ -28,6 +28,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
@@ -39,13 +40,12 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
-import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
-import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -66,6 +66,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
     private final LockHolder lockHolder;
+    private final TransactionHooks hooks;
     private final LabelScanStore labelScanStore;
     private final SchemaStorage schemaStorage;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -73,26 +74,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaIndexProviderMap providerMap;
     private final UpdateableSchemaState schemaState;
     private final OldTxStateBridge legacyStateBridge;
-    private final LegacyKernelOperations legacyKernelOperations;
     private final StatementOperationParts operations;
     private final boolean readOnly;
 
     private TransactionType transactionType = TransactionType.ANY;
     private boolean closing, closed;
     private TxStateImpl txState;
+    private TransactionHooks.TransactionHooksState hooksState;
 
-    public KernelTransactionImplementation( StatementOperationParts operations,
-                                            LegacyKernelOperations legacyKernelOperations, boolean readOnly,
+    public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
                                             IndexingService indexService,
                                             AbstractTransactionManager transactionManager, NodeManager nodeManager,
                                             UpdateableSchemaState schemaState,
                                             LockHolder lockHolder, PersistenceManager persistenceManager,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
-                                            TransactionState legacyTxState )
+                                            TransactionState legacyTxState, TransactionHooks hooks )
     {
         this.operations = operations;
-        this.legacyKernelOperations = legacyKernelOperations;
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.labelScanStore = labelScanStore;
@@ -101,6 +100,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.schemaState = schemaState;
         this.persistenceManager = persistenceManager;
         this.lockHolder = lockHolder;
+        this.hooks = hooks;
 
         constraintIndexCreator = new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ),
                 this.indexService );
@@ -108,8 +108,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyTxState );
     }
 
-    public void prepare()
+    public void prepare() throws TransactionFailureException
     {
+        // Trigger transaction hooks
+        if((hooksState = hooks.beforeCommit( txState, this )) != null && hooksState.failed())
+        {
+            throw new TransactionFailureException(hooksState.failure());
+        }
+
         beginClose();
         try
         {
@@ -127,6 +133,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             release();
             close();
+            hooks.afterCommit( txState, this, hooksState );
         }
         catch ( ReleaseLocksFailedKernelException e )
         {
@@ -164,6 +171,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
             }
             close();
+            hooks.afterRollback( txState, this, hooksState );
         }
         finally
         {
@@ -191,7 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, lockHolder, legacyKernelOperations, operations,
+                    labelScanStore, this, lockHolder, operations,
                     // Just use forReading since read/write has been decided prior to this
                     persistenceManager.getResource().forReading() );
         }
@@ -323,9 +331,65 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             txState().accept( new TxState.Visitor()
             {
                 @Override
-                public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
+                public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
                 {
-                    // TODO: move store level changes here.
+                    while(removed.hasNext())
+                    {
+                        persistenceManager.nodeRemoveProperty( id, removed.next() );
+                    }
+                    while(changed.hasNext())
+                    {
+                        DefinedProperty prop = changed.next();
+                        persistenceManager.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
+                    }
+                    while(added.hasNext())
+                    {
+                        DefinedProperty prop = added.next();
+                        persistenceManager.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
+                    }
+                }
+
+                @Override
+                public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                {
+                    while(removed.hasNext())
+                    {
+                        persistenceManager.relRemoveProperty( id, removed.next() );
+                    }
+                    while(changed.hasNext())
+                    {
+                        DefinedProperty prop = changed.next();
+                        persistenceManager.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
+                    }
+                    while(added.hasNext())
+                    {
+                        DefinedProperty prop = added.next();
+                        persistenceManager.relAddProperty( id, prop.propertyKeyId(), prop.value() );
+                    }
+                }
+
+                @Override
+                public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+                {
+                    while(removed.hasNext())
+                    {
+                        persistenceManager.graphRemoveProperty( removed.next() );
+                    }
+                    while(changed.hasNext())
+                    {
+                        DefinedProperty prop = changed.next();
+                        persistenceManager.graphChangeProperty( prop.propertyKeyId(), prop.value() );
+                    }
+                    while(added.hasNext())
+                    {
+                        DefinedProperty prop = added.next();
+                        persistenceManager.graphAddProperty( prop.propertyKeyId(), prop.value() );
+                    }
+                }
+
+                @Override
+                public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
+                {
                 }
 
                 @Override

@@ -29,6 +29,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -271,11 +272,11 @@ public class LabelTransactionStateTest
     public void before() throws Exception
     {
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( answerAsIteratorFrom( Collections
+        when( store.indexesGetForLabel( labelId1 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( answerAsIteratorFrom( Collections
+        when( store.indexesGetForLabel( labelId2 ) ).then( answerAsIteratorFrom( Collections
                 .<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
         oldTxState = mock( OldTxStateBridge.class );
 
@@ -308,7 +309,7 @@ public class LabelTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( state, nodeLabels.nodeId ) )
+            when( store.nodeGetLabels( nodeLabels.nodeId ) )
                     .then( answerAsPrimitiveIntIteratorFrom( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
             for ( int label : nodeLabels.labelIds )
             {

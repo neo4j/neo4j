@@ -56,7 +56,7 @@ public class RelationshipProxy implements Relationship
     private final RelationshipLookups relationshipLookups;
     private final ThreadToStatementContextBridge statementContextProvider;
 
-    RelationshipProxy( long relId, RelationshipLookups relationshipLookups,
+    public RelationshipProxy( long relId, RelationshipLookups relationshipLookups,
                        ThreadToStatementContextBridge statementContextProvider )
     {
         this.relId = relId;

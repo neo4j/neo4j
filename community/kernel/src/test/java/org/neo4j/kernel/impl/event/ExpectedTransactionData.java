@@ -180,7 +180,7 @@ class ExpectedTransactionData
             Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         Map<String, PropertyEntryImpl<T>> innerMap = map.get( entry.entity() );
-        assertNotNull( innerMap );
+        assertNotNull( "Unexpected entity " + entry, innerMap );
         PropertyEntryImpl<T> expectedEntry = innerMap.remove( entry.key() );
         assertNotNull( "Unexpacted property entry " + entry, expectedEntry );
         if ( innerMap.isEmpty() )

@@ -51,6 +51,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -194,7 +195,7 @@ public class TestNeoStore
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(LockManager.class),
-                mock( SchemaWriteGuard.class));
+                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class) );
         ds.init();
         ds.start();
 

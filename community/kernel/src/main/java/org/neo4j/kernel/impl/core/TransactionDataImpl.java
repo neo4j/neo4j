@@ -25,6 +25,7 @@ import java.util.HashSet;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 
@@ -143,5 +144,17 @@ class TransactionDataImpl implements TransactionData
     void deleted( Relationship relationship )
     {
         this.deletedRelationships.add( relationship );
+    }
+
+    @Override
+    public Iterable<LabelEntry> assignedLabels()
+    {
+        throw new UnsupportedOperationException(  );
+    }
+
+    @Override
+    public Iterable<LabelEntry> removedLabels()
+    {
+        throw new UnsupportedOperationException(  );
     }
 }

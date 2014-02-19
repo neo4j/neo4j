@@ -308,6 +308,13 @@ public class RelationshipChangesForNode
         return IteratorUtil.toPrimitiveIntIterator( types.iterator() );
     }
 
+    public void clear()
+    {
+        if(outgoing != null) outgoing.clear();
+        if(incoming != null) incoming.clear();
+        if(loops != null) loops.clear();
+    }
+
     private Map<Integer /* Type */, Set<Long /* Id */>> outgoing()
     {
         if(outgoing == null)

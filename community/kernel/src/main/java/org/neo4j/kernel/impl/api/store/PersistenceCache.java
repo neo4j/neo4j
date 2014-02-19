@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -88,16 +87,16 @@ public class PersistenceCache
         this.nodeManager = nodeManager;
     }
 
-    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId, CacheLoader<int[]> cacheLoader )
+    public boolean nodeHasLabel( long nodeId, int labelId, CacheLoader<int[]> cacheLoader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).hasLabel( state, labelId, cacheLoader );
+        return getNode( nodeId ).hasLabel( labelId, cacheLoader );
     }
 
-    public int[] nodeGetLabels( KernelStatement state, long nodeId, CacheLoader<int[]> loader )
+    public int[] nodeGetLabels( long nodeId, CacheLoader<int[]> loader )
             throws EntityNotFoundException
     {
-        return getNode( nodeId ).getLabels( state, loader );
+        return getNode( nodeId ).getLabels( loader );
     }
 
     public NodeImpl getNode( long nodeId ) throws EntityNotFoundException

@@ -25,12 +25,13 @@ import javax.transaction.Transaction;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
@@ -123,8 +124,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final SchemaIndexProviderMap providerMap;
     private final LabelScanStore labelScanStore;
     private final NodeManager nodeManager;
-    private final LegacyKernelOperations legacyKernelOperations;
     private final StatementOperationParts statementOperations;
+
+    private final TransactionHooks hooks = new TransactionHooks();
 
     private final boolean readOnly;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
@@ -159,7 +161,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 nodeManager.getNodePropertyTrackers(),
                 nodeManager.getRelationshipPropertyTrackers(),
                 nodeManager );
-        this.legacyKernelOperations = new DefaultLegacyKernelOperations( nodeManager );
         this.statementOperations = buildStatementOperations();
     }
 
@@ -182,10 +183,22 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public KernelTransaction newTransaction()
     {
         checkIfShutdown();
-        return new KernelTransactionImplementation( statementOperations, legacyKernelOperations, readOnly,
+        return new KernelTransactionImplementation( statementOperations, readOnly,
                 schemaWriteGuard, labelScanStore, indexService, transactionManager, nodeManager,
                 schemaState, new LockHolderImpl( lockManager, getJTATransaction(), nodeManager ),
-                persistenceManager, providerMap, neoStore, getLegacyTxState() );
+                persistenceManager, providerMap, neoStore, getLegacyTxState(), hooks );
+    }
+
+    @Override
+    public void registerTransactionHook( TransactionHook hook )
+    {
+        hooks.register(hook);
+    }
+
+    @Override
+    public void unregisterTransactionHook( TransactionHook hook )
+    {
+        hooks.unregister(hook);
     }
 
     // We temporarily need this until all transaction state has moved into the kernel

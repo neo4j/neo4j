@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Iterator;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.DiffSets;
@@ -32,6 +34,11 @@ public final class NodeState extends PropertyContainerState
     private DiffSets<Integer> labelDiffSets;
     private RelationshipChangesForNode relationshipsAdded;
     private RelationshipChangesForNode relationshipsRemoved;
+
+    public interface Visitor extends PropertyContainerState.Visitor
+    {
+        void visitLabelChanges( long nodeId, Iterator<Integer> added, Iterator<Integer> removed );
+    }
 
     public NodeState( long id )
     {
@@ -73,6 +80,15 @@ public final class NodeState extends PropertyContainerState
         }
         relationshipsRemoved.addRelationship( relId, typeId, direction );
 
+    }
+
+    @Override
+    public void clear()
+    {
+        super.clear();
+        if(relationshipsAdded != null) relationshipsAdded.clear();
+        if(relationshipsRemoved != null) relationshipsRemoved.clear();
+        if(labelDiffSets != null) labelDiffSets.clear();
     }
 
     public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels )
@@ -119,6 +135,16 @@ public final class NodeState extends PropertyContainerState
         return degree;
     }
 
+    public void accept(Visitor visitor)
+    {
+        super.accept(visitor);
+        if(labelDiffSets != null)
+        {
+            visitor.visitLabelChanges( getId(), labelDiffSets.getAdded().iterator(),
+                                                labelDiffSets.getRemoved().iterator() );
+        }
+    }
+
     private boolean hasAddedRelationships()
     {
         return relationshipsAdded != null;
@@ -136,5 +162,10 @@ public final class NodeState extends PropertyContainerState
             return relationshipsAdded.relationshipTypes();
         }
         return IteratorUtil.emptyPrimitiveIntIterator();
+    }
+
+    public boolean hasLabelChanges()
+    {
+        return labelDiffSets != null;
     }
 }

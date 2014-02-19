@@ -31,6 +31,8 @@ public interface EntityWriteOperations
 
     long relationshipCreate( KernelStatement statement, int relationshipTypeId, long startNodeId, long endNodeId );
 
+    long nodeCreate( KernelStatement statement );
+
     void nodeDelete( KernelStatement state, long nodeId );
 
     void relationshipDelete( KernelStatement state, long relationshipId );

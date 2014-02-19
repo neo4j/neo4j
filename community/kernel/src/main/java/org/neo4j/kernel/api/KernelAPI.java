@@ -31,10 +31,12 @@ package org.neo4j.kernel.api;
  */
 public interface KernelAPI
 {
-
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
      * underlying graph.
      */
     KernelTransaction newTransaction();
+
+    void registerTransactionHook( TransactionHook hook );
+    void unregisterTransactionHook( TransactionHook hook );
 }

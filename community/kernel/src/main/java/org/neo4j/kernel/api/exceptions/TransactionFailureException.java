@@ -64,6 +64,12 @@ public class TransactionFailureException extends TransactionalException
         errorCode = XAException.XAER_RMERR;
     }
 
+    public TransactionFailureException( TransactionHookException e )
+    {
+        super(e);
+        errorCode = XAException.XA_RBOTHER;
+    }
+
     public TransactionFailureException( Exception e )
     {
         super(e);

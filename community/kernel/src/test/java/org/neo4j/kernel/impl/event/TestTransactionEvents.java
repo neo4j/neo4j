@@ -236,7 +236,7 @@ public class TestTransactionEvents
                 rel1.setProperty( "description", "New" );
                 expectedData.assignedProperty( rel1, "description", "New",
                         "A description" );
-    
+
                 tempRel.delete();
                 tempNode.delete();
                 tx.success();

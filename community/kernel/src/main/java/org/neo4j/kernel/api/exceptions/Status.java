@@ -108,7 +108,8 @@ public interface Status
                 "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
                 "will most likely be successful."),
 
-        ;
+        EventHandlerThrewException( ClientError, "A transaction event handler threw an exception. The transaction " +
+                "will be rolled back." );
         private final Code code;
 
         @Override

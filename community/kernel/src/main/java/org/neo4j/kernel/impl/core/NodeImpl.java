@@ -33,7 +33,6 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
@@ -610,7 +609,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         return nm.newNodeProxyById( getId() );
     }
 
-    public int[] getLabels( KernelStatement state, CacheLoader<int[]> loader ) throws EntityNotFoundException
+    public int[] getLabels( CacheLoader<int[]> loader ) throws EntityNotFoundException
     {
         if ( labels == null )
         {
@@ -625,9 +624,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         return labels;
     }
 
-    public boolean hasLabel( KernelStatement state, int labelId, CacheLoader<int[]> loader ) throws EntityNotFoundException
+    public boolean hasLabel( int labelId, CacheLoader<int[]> loader ) throws EntityNotFoundException
     {
-        int[] labels = getLabels( state, loader );
+        int[] labels = getLabels( loader );
         return binarySearch( labels, labelId ) >= 0;
     }
 

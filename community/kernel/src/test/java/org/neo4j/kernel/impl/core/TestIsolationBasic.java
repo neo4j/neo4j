@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -31,13 +30,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
+import static org.junit.Assert.*;
+
 public class TestIsolationBasic extends AbstractNeo4jTestCase
 {
     /*
      * Tests that changes performed in a transaction before commit are not apparent in another.
      */
     @Test
-    public void testSimpleTransactionIsolation() throws InterruptedException
+    public void testSimpleTransactionIsolation() throws Exception
     {
         // Start setup - create base data
         commit();
@@ -78,12 +79,13 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         assertRelationshipCount( node2, 1 );
 
         // This is the mutating transaction - it will change stuff which will be read in between
+        final AtomicReference<Exception> t1Exception = new AtomicReference<>();
         Thread t1 = new Thread( new Runnable()
         {
             public void run()
             {
-                Transaction tx = getGraphDb().beginTx();
-                try
+
+                try(Transaction tx = getGraphDb().beginTx())
                 {
                     node1.setProperty( "key", "new" );
                     rel1.setProperty( "key", "new" );
@@ -101,18 +103,25 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
                     assertRelationshipCount( node2, 2 );
                     // no tx.success();
                 }
-                catch ( InterruptedException e )
+                catch ( Exception e )
                 {
                     e.printStackTrace();
                     Thread.interrupted();
+                    t1Exception.set( e );
                 }
                 finally
                 {
-                    tx.finish();
-                    assertPropertyEqual( node1, "key", "old" );
-                    assertPropertyEqual( rel1, "key", "old" );
-                    assertRelationshipCount( node1, 1 );
-                    assertRelationshipCount( node2, 1 );
+                    try
+                    {
+                        assertPropertyEqual( node1, "key", "old" );
+                        assertPropertyEqual( rel1, "key", "old" );
+                        assertRelationshipCount( node1, 1 );
+                        assertRelationshipCount( node2, 1 );
+                    }
+                    catch(Exception e)
+                    {
+                        t1Exception.compareAndSet( null, e );
+                    }
                 }
             }
         } );
@@ -134,6 +143,11 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
         assertPropertyEqual( rel1, "key", "old" );
         assertRelationshipCount( node1, 1 );
         assertRelationshipCount( node2, 1 );
+
+        if(t1Exception.get() != null)
+        {
+            throw t1Exception.get();
+        }
 
         tx = getGraphDb().beginTx();
         try

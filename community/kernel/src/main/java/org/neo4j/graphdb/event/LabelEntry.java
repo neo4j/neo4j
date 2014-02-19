@@ -17,17 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.graphdb.event;
 
-import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 
-public interface TxEventSyncHookFactory
+/**
+ * Represents an assigned or removed label for a node.
+ */
+public interface LabelEntry
 {
     /**
-     * Creates a new {@link TransactionEventsSyncHook} instance of there
-     * are any registered {@link TransactionEventHandler}s, else {@code null}.
-     * @return a new {@link TransactionEventsSyncHook} or {@code null} if
-     * there were no registered {@link TransactionEventHandler}s.
+     * This is the label that has been added or removed.
+     *
+     * @return the label.
      */
-    TransactionEventsSyncHook create();
+    Label label();
+
+    /**
+     * This is the node which has had the label added or removed.
+     *
+     * @return the node that has been modified.
+     */
+    Node node();
+
 }

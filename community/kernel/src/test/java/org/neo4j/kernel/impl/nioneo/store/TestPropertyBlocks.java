@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +31,8 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+
+import static org.junit.Assert.*;
 
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
@@ -54,7 +51,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
         {
             node.setProperty( "prop" + i, i );
-            assertEquals( inUseBefore + 1, propertyRecordsInUse() );
             assertEquals( i, node.getProperty( "prop" + i ) );
         }
 
@@ -85,7 +81,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
         {
             node.setProperty( "prop" + i, i * -1.0 );
-            assertEquals( inUseBefore + 1, propertyRecordsInUse() );
             assertEquals( i * -1.0, node.getProperty( "prop" + i ) );
         }
 
@@ -117,9 +112,9 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             node.setProperty( "shortString" + i, String.valueOf( i ) );
         }
-        assertEquals( inUseBefore + 3, propertyRecordsInUse() );
         newTransaction();
         clearCache();
+        assertEquals( inUseBefore + 3, propertyRecordsInUse() );
 
         for ( int i = PropertyType.getPayloadSizeLongs(); i < 2 * PropertyType.getPayloadSizeLongs(); i++ )
         {
@@ -689,23 +684,22 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         rel.setProperty( "theDoubleThatGrows", Math.PI );
         rel.setProperty( "theInteger", -444345 );
 
-        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
-
         rel.setProperty( "theDoubleThatGrows", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
 
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-        assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
-
         rel.setProperty( "theDoubleThatGrows", Math.E );
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
+        // When
         newTransaction();
         clearCache();
+
+        // Then
         /*
          * The following line should pass if we have packing on property block
          * size shrinking.
          */
         // assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+        assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
 
         assertEquals( (byte) -8, rel.getProperty( "theByte" ) );
         assertEquals( -444345, rel.getProperty( "theInteger" ) );
@@ -738,11 +732,11 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             theYoyoData.add( 1l << 63 );
             Long[] value = theYoyoData.toArray( new Long[] {} );
             rel.setProperty( "yoyo", value );
-            assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
-            assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
             if ( withNewTx )
             {
                 newTransaction();
+                assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+                assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
                 clearCache();
             }
         }
@@ -750,12 +744,13 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         theYoyoData.add( 1l << 63 );
         Long[] value = theYoyoData.toArray( new Long[] {} );
         rel.setProperty( "yoyo", value );
-        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
-        assertEquals( valueRecordsInUseAtStart + 1, dynamicArrayRecordsInUse() );
 
         newTransaction();
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+        assertEquals( valueRecordsInUseAtStart + 1, dynamicArrayRecordsInUse() );
         clearCache();
         rel.setProperty( "filler", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
+        newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
 
@@ -773,11 +768,11 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
             {
                 rel.setProperty( "int" + ( propRecCount * 10 + i ), ( propRecCount * 10 + i ) );
-                assertEquals( recordsInUseAtStart + propRecCount, propertyRecordsInUse() );
             }
         }
 
         newTransaction();
+        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
         clearCache();
 
         for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
@@ -843,15 +838,13 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         {
             data += counter++;
             node.setProperty( "yoyo", data );
-            assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
             if ( withNewTx )
             {
                 newTransaction();
+                assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
                 clearCache();
             }
         }
-
-        assertEquals( valueRecordsInUseAtStart + 1, dynamicStringRecordsInUse() );
 
         data = data.substring( 0, data.length() - 2 );
         node.setProperty( "yoyo", data );
@@ -862,6 +855,8 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.setProperty( "fillerBoolean", true );
+
+        newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
 
@@ -869,12 +864,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     public void testStringYoYoWithTx()
     {
         testStringYoYoBase( true );
-    }
-
-    @Test
-    public void testStringYoYoWithoutTx()
-    {
-        testStringYoYoBase( false );
     }
 
     @Test
@@ -890,8 +879,8 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "Int2", 1.2 );
         node.setProperty( "Int2", 2 );
         node.setProperty( "Double3", 3.0 );
-        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
         newTransaction();
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
         clearCache();
         assertEquals( new Double( 1.0 ), node.getProperty( "Double1" ) );
         assertEquals( new Integer( 1 ), node.getProperty( "Int1" ) );
@@ -908,12 +897,13 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "two", 2 );
         node.setProperty( "three", 3 );
         node.setProperty( "four", 4 );
-        assertEquals( "Invalid assumption: property record count", propcount + 1,
-                      getNodeManager().getNumberOfIdsInUse( PropertyStore.class ) );
         newTransaction();
+        assertEquals( "Invalid assumption: property record count", propcount + 1,
+                getNodeManager().getNumberOfIdsInUse( PropertyStore.class ) );
         assertEquals( "Invalid assumption: property record count", propcount + 1,
                       getNodeManager().getNumberOfIdsInUse( PropertyStore.class ) );
         node.setProperty( "final", 666 );
+        newTransaction();
         assertEquals( "Invalid assumption: property record count", propcount + 2,
                       getNodeManager().getNumberOfIdsInUse( PropertyStore.class ) );
         node.delete();

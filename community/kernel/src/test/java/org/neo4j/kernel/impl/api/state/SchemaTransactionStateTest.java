@@ -33,6 +33,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -68,10 +69,10 @@ public class SchemaTransactionStateTest
 
         // THEN
         assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
-        verify( store ).indexesGetForLabel( state, labelId1 );
+        verify( store ).indexesGetForLabel( labelId1 );
 
         assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.indexesGetAll( state ) ) );
-        verify( store ).indexesGetAll( state );
+        verify( store ).indexesGetAll();
 
         verifyNoMoreInteractions( store );
     }
@@ -88,13 +89,13 @@ public class SchemaTransactionStateTest
 
         // THEN
         assertEquals( asSet( rule1 ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
-        verify( store ).indexesGetForLabel( state, labelId1 );
+        verify( store ).indexesGetForLabel( labelId1 );
 
         assertEquals( asSet( rule2 ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId2 ) ) );
-        verify( store ).indexesGetForLabel( state, labelId2 );
+        verify( store ).indexesGetForLabel( labelId2 );
 
         assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.indexesGetAll( state ) ) );
-        verify( store ).indexesGetAll( state );
+        verify( store ).indexesGetAll();
 
         verifyNoMoreInteractions( store );
     }
@@ -147,7 +148,7 @@ public class SchemaTransactionStateTest
         // GIVEN
         // -- a rule that exists in the store
         IndexDescriptor rule = new IndexDescriptor( labelId1, key1 );
-        when( store.indexesGetForLabel( state, labelId1 ) ).thenReturn( option( rule ).iterator() );
+        when( store.indexesGetForLabel( labelId1 ) ).thenReturn( option( rule ).iterator() );
         // -- that same rule dropped in the transaction
         txContext.indexDrop( state, rule );
 
@@ -214,9 +215,9 @@ public class SchemaTransactionStateTest
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
-        when( store.indexesGetForLabel( state, labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetForLabel( state, labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
-        when( store.indexesGetAll( state ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId1 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetForLabel( labelId2 ) ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
+        when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
 
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ));
@@ -256,7 +257,7 @@ public class SchemaTransactionStateTest
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
         {
-            when( store.nodeGetLabels( state, nodeLabels.nodeId ) ).then(
+            when( store.nodeGetLabels( nodeLabels.nodeId ) ).then(
                     asAnswer( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
             for ( int label : nodeLabels.labelIds )
             {

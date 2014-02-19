@@ -20,14 +20,14 @@
 package org.neo4j.kernel.api;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LockHolder;
+import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 public class KernelTransactionImplementationTest
 {
@@ -38,9 +38,9 @@ public class KernelTransactionImplementationTest
     public void shouldBeAbleToRollbackPreparedTransaction() throws Exception
     {
         // given
-        KernelTransactionImplementation tx = new KernelTransactionImplementation( null, null, false, null, null,
+        KernelTransactionImplementation tx = new KernelTransactionImplementation( null, false, null, null,
                 null, txm, null, null, mock(LockHolder.class), null, null, mock( NeoStore.class ),
-                mock(TransactionState.class) );
+                mock(TransactionState.class), new TransactionHooks() );
         // when
         tx.prepare();
 

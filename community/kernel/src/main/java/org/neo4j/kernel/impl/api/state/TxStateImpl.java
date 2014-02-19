@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,12 +31,13 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
@@ -116,8 +119,20 @@ public final class TxStateImpl implements TxState
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<IndexDescriptor> constraintIndexChanges;
     private DiffSets<UniquenessConstraint> constraintsChanges;
-    private DiffSets<Long> deletedNodes;
-    private DiffSets<Long> deletedRelationships;
+
+    private PropertyChanges propertyChangesForNodes;
+
+    // Tracks added and removed nodes, not modified nodes
+    private DiffSets<Long> nodes;
+
+    // Tracks added and removed relationships, not modified relationships
+    private DiffSets<Long> relationships;
+
+    // This is temporary. It is needed until we've removed nodes and rels from the global cache, to tell
+    // that they were created and then deleted in the same tx. This is here just to set a save point to
+    // get a large set of changes in, and is meant to be removed in the coming days in a follow-up commit.
+    private Set<Long> nodesCreatedAndDeletedInTx = new HashSet<>();
+    private Set<Long> relsCreatedAndDeletedInTx = new HashSet<>();
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
@@ -139,11 +154,23 @@ public final class TxStateImpl implements TxState
     {
         if ( hasNodeStatesMap() && !nodeStatesMap().isEmpty() )
         {
-            for ( NodeState node : nodeStates() )
+            for ( NodeState node : modifiedNodes() )
             {
-                DiffSets<Integer> labelDiff = node.labelDiffSets();
-                visitor.visitNodeLabelChanges( node.getId(), labelDiff.getAdded(), labelDiff.getRemoved() );
+                node.accept(nodeVisitor( visitor ));
             }
+        }
+
+        if ( hasRelationshipsStatesMap() && !relationshipStatesMap().isEmpty() )
+        {
+            for ( RelationshipState rel : modifiedRelationships() )
+            {
+                rel.accept( relVisitor( visitor ) );
+            }
+        }
+
+        if( graphState != null )
+        {
+            graphState.accept( graphPropertyVisitor( visitor ) );
         }
 
         if ( hasIndexChangesDiffSets() && !indexChanges().isEmpty() )
@@ -193,6 +220,51 @@ public final class TxStateImpl implements TxState
         };
     }
 
+    private static NodeState.Visitor nodeVisitor( final Visitor visitor  )
+    {
+        return new NodeState.Visitor()
+        {
+            @Override
+            public void visitLabelChanges( long nodeId, Iterator<Integer> added, Iterator<Integer> removed )
+            {
+                visitor.visitNodeLabelChanges( nodeId, added, removed );
+            }
+
+            @Override
+            public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
+                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed)
+            {
+                visitor.visitNodePropertyChanges( entityId, added, changed, removed );
+            }
+        };
+    }
+
+    private static PropertyContainerState.Visitor relVisitor( final Visitor visitor  )
+    {
+        return new PropertyContainerState.Visitor()
+        {
+            @Override
+            public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
+                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed)
+            {
+                visitor.visitRelPropertyChanges( entityId, added, changed, removed );
+            }
+        };
+    }
+
+    private static PropertyContainerState.Visitor graphPropertyVisitor( final Visitor visitor  )
+    {
+        return new PropertyContainerState.Visitor()
+        {
+            @Override
+            public void visitPropertyChanges( long entityId, Iterator<DefinedProperty> added,
+                                              Iterator<DefinedProperty> changed, Iterator<Integer> removed)
+            {
+                visitor.visitGraphPropertyChanges( added, changed, removed );
+            }
+        };
+    }
+
     @Override
     public boolean hasChanges()
     {
@@ -200,7 +272,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public Iterable<NodeState> nodeStates()
+    public Iterable<NodeState> modifiedNodes()
     {
         return hasNodeStatesMap() ? nodeStatesMap().values() : Iterables.<NodeState>empty();
     }
@@ -218,40 +290,103 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public DiffSets<DefinedProperty> nodePropertyDiffSets( long nodeId )
+    public Iterator<DefinedProperty> augmentNodeProperties( long nodeId, Iterator<DefinedProperty> original )
     {
-        return getOrCreateNodeState( nodeId ).propertyDiffSets();
+        NodeState state;
+        if(nodeStatesMap != null && (state = nodeStatesMap.get( nodeId )) != null)
+        {
+            return state.augmentProperties( original );
+        }
+        return original;
     }
 
     @Override
-    public DiffSets<DefinedProperty> relationshipPropertyDiffSets( long relationshipId )
+    public Iterator<DefinedProperty> augmentRelProperties( long relId, Iterator<DefinedProperty> original )
     {
-        return getOrCreateRelationshipState( relationshipId ).propertyDiffSets();
+        RelationshipState state;
+        if(relationshipStatesMap != null && (state = relationshipStatesMap.get( relId )) != null)
+        {
+            return state.augmentProperties( original );
+        }
+        return original;
     }
 
     @Override
-    public DiffSets<DefinedProperty> graphPropertyDiffSets()
+    public Iterator<DefinedProperty> augmentGraphProperties( Iterator<DefinedProperty> original )
     {
-        return getOrCreateGraphState().propertyDiffSets();
+        if(graphState != null)
+        {
+            return graphState.augmentProperties( original );
+        }
+        return original;
+    }
+
+    @Override
+    public Iterator<DefinedProperty> addedAndChangedNodeProperties( long nodeId )
+    {
+        NodeState state;
+        if(nodeStatesMap != null && (state = nodeStatesMap.get( nodeId )) != null)
+        {
+            return state.addedAndChangedProperties();
+        }
+        return IteratorUtil.emptyIterator();
+    }
+
+    @Override
+    public Iterator<DefinedProperty> addedAndChangedRelProperties( long relId )
+    {
+        RelationshipState state;
+        if(relationshipStatesMap != null && (state = relationshipStatesMap.get( relId )) != null)
+        {
+            return state.addedAndChangedProperties();
+        }
+        return IteratorUtil.emptyIterator();
     }
 
     @Override
     public boolean nodeIsAddedInThisTx( long nodeId )
     {
-        return legacyState.nodeIsAddedInThisTx( nodeId );
+        return hasNodesAddedOrRemoved() && nodes.isAdded( nodeId );
     }
 
     @Override
     public boolean relationshipIsAddedInThisTx( long relationshipId )
     {
-        return legacyState.relationshipIsAddedInThisTx( relationshipId );
+        return hasRelsAddedOrRemoved() && relationships.isAdded( relationshipId );
+    }
+
+    @Override
+    public long nodeDoCreate()
+    {
+        long id = legacyState.nodeCreate();
+        addedAndRemovedNodes().add( id );
+        hasChanges = true;
+        return id;
     }
 
     @Override
     public void nodeDoDelete( long nodeId )
     {
         legacyState.deleteNode( nodeId );
-        nodesDeletedInTx().remove( nodeId );
+        if(addedAndRemovedNodes().remove( nodeId ))
+        {
+            nodesCreatedAndDeletedInTx.add(nodeId);
+        }
+
+        if(hasNodeStatesMap())
+        {
+            NodeState nodeState = nodeStatesMap.remove( nodeId );
+
+            if(nodeState != null)
+            {
+                DiffSets<Integer> diff = nodeState.labelDiffSets();
+                for ( Integer label : diff.getAdded() )
+                {
+                    labelStateNodeDiffSets( label ).remove( nodeId );
+                }
+                nodeState.clear();
+            }
+        }
         hasChanges = true;
     }
 
@@ -259,6 +394,8 @@ public final class TxStateImpl implements TxState
     public long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId )
     {
         long id = legacyState.relationshipCreate( relationshipTypeId, startNodeId, endNodeId );
+
+        addedAndRemovedRels().add( id );
 
         if(startNodeId == endNodeId)
         {
@@ -279,7 +416,9 @@ public final class TxStateImpl implements TxState
     @Override
     public boolean nodeIsDeletedInThisTx( long nodeId )
     {
-        return hasDeletedNodesDiffSets() && nodesDeletedInTx().isRemoved( nodeId );
+        return hasNodesAddedOrRemoved() && addedAndRemovedNodes().isRemoved( nodeId )
+                // Temporary until we've stopped adding nodes to the global cache during tx.
+                || nodesCreatedAndDeletedInTx.contains( nodeId );
     }
 
     @Override
@@ -292,7 +431,10 @@ public final class TxStateImpl implements TxState
     public void relationshipDoDelete( long id, long startNodeId, long endNodeId, int type )
     {
         legacyState.deleteRelationship( id );
-        deletedRelationships().remove( id );
+        if(addedAndRemovedRels().remove( id ))
+        {
+            relsCreatedAndDeletedInTx.add( id );
+        }
 
         if(startNodeId == endNodeId)
         {
@@ -302,6 +444,15 @@ public final class TxStateImpl implements TxState
         {
             getOrCreateNodeState( startNodeId ).removeRelationship( id, type, Direction.OUTGOING );
             getOrCreateNodeState( endNodeId ).removeRelationship( id, type, Direction.INCOMING );
+        }
+
+        if(hasRelationshipsStatesMap())
+        {
+            RelationshipState removed = relationshipStatesMap.remove( id );
+            if(removed != null)
+            {
+                removed.clear();
+            }
         }
 
         hasChanges = true;
@@ -317,97 +468,83 @@ public final class TxStateImpl implements TxState
     @Override
     public boolean relationshipIsDeletedInThisTx( long relationshipId )
     {
-        return hasDeletedRelationshipsDiffSets() && deletedRelationships().isRemoved( relationshipId );
+        return hasDeletedRelationshipsDiffSets() && addedAndRemovedRels().isRemoved( relationshipId )
+                // Temporary until we stop adding rels to the global cache during tx
+                || relsCreatedAndDeletedInTx.contains( relationshipId );
     }
 
     @Override
     public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty )
     {
-        if ( newProperty.isDefined() )
+        if(replacedProperty.isDefined())
         {
-            DiffSets<DefinedProperty> diffSets = nodePropertyDiffSets( nodeId );
-            if ( replacedProperty.isDefined() )
-            {
-                diffSets.replace( (DefinedProperty)replacedProperty, newProperty );
-            }
-            else
-            {
-                diffSets.add( newProperty );
-            }
-            legacyState.nodeSetProperty( nodeId, newProperty );
-            hasChanges = true;
+            getOrCreateNodeState( nodeId ).changeProperty( newProperty );
+            nodePropertyChanges().changeProperty( nodeId, replacedProperty.propertyKeyId(),
+                    ((DefinedProperty)replacedProperty).value(), newProperty.value() );
         }
+        else
+        {
+            getOrCreateNodeState( nodeId ).addProperty( newProperty );
+            nodePropertyChanges().addProperty(nodeId, newProperty.propertyKeyId(), newProperty.value());
+        }
+        legacyState.nodeSetProperty( nodeId, newProperty );
+        hasChanges = true;
     }
 
     @Override
     public void relationshipDoReplaceProperty( long relationshipId, Property replacedProperty, DefinedProperty newProperty )
     {
-        if ( newProperty.isDefined() )
+        if(replacedProperty.isDefined())
         {
-            DiffSets<DefinedProperty> diffSets = relationshipPropertyDiffSets( relationshipId );
-            if ( replacedProperty.isDefined() )
-            {
-                diffSets.replace( (DefinedProperty)replacedProperty, newProperty );
-            }
-            else
-            {
-                diffSets.add( newProperty );
-            }
-            legacyState.relationshipSetProperty( relationshipId, newProperty );
-            hasChanges = true;
+            getOrCreateRelationshipState( relationshipId ).changeProperty( newProperty );
         }
+        else
+        {
+            getOrCreateRelationshipState( relationshipId ).addProperty( newProperty );
+        }
+        legacyState.relationshipSetProperty( relationshipId, newProperty );
+        hasChanges = true;
     }
 
     @Override
     public void graphDoReplaceProperty( Property replacedProperty, DefinedProperty newProperty )
     {
-        if ( newProperty.isDefined() )
+        if(replacedProperty.isDefined())
         {
-            DiffSets<DefinedProperty> diffSets = graphPropertyDiffSets();
-            if ( replacedProperty.isDefined() )
-            {
-                diffSets.replace( (DefinedProperty)replacedProperty, newProperty );
-            }
-            else
-            {
-                diffSets.add( newProperty );
-            }
-            legacyState.graphSetProperty( newProperty );
-            hasChanges = true;
+            getOrCreateGraphState().changeProperty( newProperty );
         }
+        else
+        {
+            getOrCreateGraphState().addProperty( newProperty );
+        }
+        legacyState.graphSetProperty( newProperty );
+        hasChanges = true;
     }
 
     @Override
-    public void nodeDoRemoveProperty( long nodeId, Property removedProperty )
+    public void nodeDoRemoveProperty( long nodeId, DefinedProperty removedProperty )
     {
-        if ( removedProperty.isDefined() )
-        {
-            nodePropertyDiffSets( nodeId ).remove( (DefinedProperty)removedProperty );
-            legacyState.nodeRemoveProperty( nodeId, (DefinedProperty) removedProperty );
-            hasChanges = true;
-        }
+        getOrCreateNodeState( nodeId ).removeProperty( removedProperty.propertyKeyId() );
+        nodePropertyChanges().removeProperty( nodeId, removedProperty.propertyKeyId(),
+                removedProperty.value() );
+        legacyState.nodeRemoveProperty( nodeId, removedProperty );
+        hasChanges = true;
     }
 
     @Override
-    public void relationshipDoRemoveProperty( long relationshipId, Property removedProperty )
+    public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
     {
-        if ( removedProperty.isDefined() )
-        {
-            relationshipPropertyDiffSets( relationshipId ).remove( (DefinedProperty)removedProperty );
-            legacyState.relationshipRemoveProperty( relationshipId, (DefinedProperty)removedProperty );
-            hasChanges = true;
-        }
+        getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty.propertyKeyId() );
+        legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
+        hasChanges = true;
     }
 
     @Override
-    public void graphDoRemoveProperty( Property removedProperty )
+    public void graphDoRemoveProperty( DefinedProperty removedProperty )
     {
-        if ( removedProperty.isDefined() )
-        {
-            graphPropertyDiffSets().remove( (DefinedProperty)removedProperty );
-            legacyState.graphRemoveProperty( (DefinedProperty)removedProperty );
-            hasChanges = true;
-        }
+        getOrCreateGraphState().removeProperty( removedProperty.propertyKeyId() );
+        legacyState.graphRemoveProperty( removedProperty );
+        hasChanges = true;
     }
 
     @Override
@@ -577,28 +714,28 @@ public final class TxStateImpl implements TxState
     @Override
     public DiffSets<Long> nodesWithChangedProperty( int propertyKeyId, Object value )
     {
-        return legacyState.getNodesWithChangedProperty( propertyKeyId, value );
+        return propertyChangesForNodes != null ? propertyChangesForNodes.changesForProperty( propertyKeyId, value ) :
+                DiffSets.<Long>emptyDiffSets();
     }
 
     @Override
-    public Map<Long, Object> nodesWithChangedProperty( int propertyKeyId )
+    public DiffSets<Long> addedAndRemovedNodes()
     {
-        return legacyState.getNodesWithChangedProperty( propertyKeyId );
-    }
-
-    @Override
-    public DiffSets<Long> nodesDeletedInTx()
-    {
-        if ( !hasDeletedNodesDiffSets() )
+        if ( !hasNodesAddedOrRemoved() )
         {
-            deletedNodes = new DiffSets<>();
+            nodes = new DiffSets<>();
         }
-        return deletedNodes;
+        return nodes;
     }
 
-    private boolean hasDeletedNodesDiffSets()
+    private boolean hasNodesAddedOrRemoved()
     {
-        return deletedNodes != null;
+        return nodes != null;
+    }
+
+    private boolean hasRelsAddedOrRemoved()
+    {
+        return relationships != null;
     }
 
     @Override
@@ -610,7 +747,7 @@ public final class TxStateImpl implements TxState
             // TODO: This should be handled by the augment call above
             if(hasDeletedRelationshipsDiffSets())
             {
-                rels = deletedRelationships().applyPrimitiveLongIterator( rels );
+                rels = addedAndRemovedRels().augmentWithRemovals( rels );
             }
         }
         return rels;
@@ -625,7 +762,7 @@ public final class TxStateImpl implements TxState
             // TODO: This should be handled by the augment call above
             if(hasDeletedRelationshipsDiffSets())
             {
-                rels = deletedRelationships().applyPrimitiveLongIterator( rels );
+                rels = addedAndRemovedRels().augmentWithRemovals( rels );
             }
         }
         return rels;
@@ -661,18 +798,25 @@ public final class TxStateImpl implements TxState
         return IteratorUtil.emptyPrimitiveIntIterator();
     }
 
-    private DiffSets<Long> deletedRelationships()
+    @Override
+    public DiffSets<Long> addedAndRemovedRels()
     {
         if ( !hasDeletedRelationshipsDiffSets() )
         {
-            deletedRelationships = new DiffSets<>();
+            relationships = new DiffSets<>();
         }
-        return deletedRelationships;
+        return relationships;
+    }
+
+    @Override
+    public Iterable<RelationshipState> modifiedRelationships()
+    {
+        return relationshipStatesMap != null ? relationshipStatesMap.values() : Iterables.<RelationshipState>empty();
     }
 
     private boolean hasDeletedRelationshipsDiffSets()
     {
-        return deletedRelationships != null;
+        return relationships != null;
     }
 
     private LabelState getOrCreateLabelState( int labelId )
@@ -884,5 +1028,11 @@ public final class TxStateImpl implements TxState
     private boolean hasLabelStatesMap()
     {
         return null != labelStatesMap;
+    }
+
+    private PropertyChanges nodePropertyChanges()
+    {
+        return propertyChangesForNodes == null ?
+                propertyChangesForNodes = new PropertyChanges() : propertyChangesForNodes;
     }
 }

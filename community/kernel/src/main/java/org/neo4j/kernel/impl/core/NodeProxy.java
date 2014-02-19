@@ -88,7 +88,7 @@ public class NodeProxy implements Node
     private final CleanupService cleanupService;
     private final long nodeId;
 
-    NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
+    public NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
                ThreadToStatementContextBridge statementContextProvider, CleanupService cleanupService )
     {
         this.nodeId = nodeId;

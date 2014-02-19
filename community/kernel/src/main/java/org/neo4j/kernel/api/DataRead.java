@@ -82,11 +82,19 @@ interface DataRead
      */
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
+    PrimitiveIntIterator nodeGetCommittedLabels( long nodeId ) throws EntityNotFoundException;
+
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
+    /** Get a property for a node, bypassing any transactional state. */
+    Property nodeGetCommittedProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+
     Property relationshipGetProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
+
+    /** Get a property for a relationship, bypassing any transactional state. */
+    Property relationshipGetCommittedProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
 
     Property graphGetProperty( int propertyKeyId );
 
@@ -96,4 +104,8 @@ interface DataRead
             throws EntityNotFoundException;
 
     Iterator<DefinedProperty> graphGetAllProperties();
+
+    Iterator<DefinedProperty> nodeGetAllCommittedProperties( long nodeId ) throws EntityNotFoundException;
+
+    Iterator<DefinedProperty> relationshipGetAllCommittedProperties( long nodeId ) throws EntityNotFoundException;
 }

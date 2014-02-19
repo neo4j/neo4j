@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -40,6 +41,8 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
+import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs;
 
 public class TxStateTest
@@ -175,10 +178,10 @@ public class TxStateTest
         // Given
         long nodeId = 1337l;
         int propertyKey = 2;
-        int propValue = 42;
+        String propValue = "hello";
 
-        DiffSets<Long> nodesWithChangedProp = new DiffSets<>( asSet( nodeId ), emptySet );
-        when( legacyState.getNodesWithChangedProperty( propertyKey, propValue ) ).thenReturn( nodesWithChangedProp );
+        state.nodeDoReplaceProperty( nodeId, noNodeProperty( nodeId, propertyKey ), stringProperty(
+                propertyKey, propValue ) );
 
         // When
         DiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
@@ -194,10 +197,9 @@ public class TxStateTest
         // Given
         long nodeId = 1337l;
         int propertyKey = 2;
-        int propValue = 42;
+        String propValue = "hello";
 
-        DiffSets<Long> nodesWithChangedProp = new DiffSets<>( emptySet, asSet( nodeId ) );
-        when( legacyState.getNodesWithChangedProperty( propertyKey, propValue ) ).thenReturn( nodesWithChangedProp );
+        state.nodeDoRemoveProperty( nodeId, stringProperty( propertyKey, propValue ) );
 
         // When
         DiffSets<Long> diff = state.nodesWithChangedProperty( propertyKey, propValue );
@@ -220,7 +222,7 @@ public class TxStateTest
         verify( legacyState ).deleteNode( nodeId );
         verifyNoMoreInteractions( legacyState, persistenceManager );
 
-        assertThat( asSet( state.nodesDeletedInTx().getRemoved() ), equalTo( asSet( nodeId ) ) );
+        assertThat( asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
     @Test

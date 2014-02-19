@@ -47,8 +47,8 @@ public class PersistenceCacheTest
         when( nodeCache.get( nodeId ) ).thenReturn( node );
 
         // WHEN
-        boolean hasLabel1 = persistenceCache.nodeHasLabel( state, nodeId, 1, loader );
-        boolean hasLabel2 = persistenceCache.nodeHasLabel( state, nodeId, 2, loader );
+        boolean hasLabel1 = persistenceCache.nodeHasLabel( nodeId, 1, loader );
+        boolean hasLabel2 = persistenceCache.nodeHasLabel( nodeId, 2, loader );
 
         // THEN
         assertTrue( hasLabel1 );

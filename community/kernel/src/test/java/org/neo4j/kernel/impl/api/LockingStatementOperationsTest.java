@@ -46,7 +46,7 @@ public class LockingStatementOperationsTest
     private final SchemaWriteOperations schemaWriteOps;
     private final LockHolder locks = mock( LockHolder.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null, null );
+    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null );
 
     public LockingStatementOperationsTest()
     {

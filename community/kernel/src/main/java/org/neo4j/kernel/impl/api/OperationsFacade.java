@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyKernelOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.core.Token;
@@ -64,14 +63,12 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterat
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
     final KernelStatement statement;
-    private final LegacyKernelOperations legacyKernelOperations;
     private final StatementOperationParts operations;
 
-    OperationsFacade( KernelStatement statement, LegacyKernelOperations legacyKernelOperations,
+    OperationsFacade( KernelStatement statement,
                       StatementOperationParts operations )
     {
         this.statement = statement;
-        this.legacyKernelOperations = legacyKernelOperations;
         this.operations = operations;
     }
 
@@ -109,11 +106,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final SchemaStateOperations schemaState()
     {
         return operations.schemaStateOperations();
-    }
-
-    final LegacyKernelOperations legacyOps()
-    {
-        return legacyKernelOperations;
     }
 
     // <DataRead>
@@ -218,6 +210,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public Property nodeGetCommittedProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noRelationshipProperty( nodeId, propertyKeyId );
+        }
+        return dataRead().nodeGetCommittedProperty( statement, nodeId, propertyKeyId );
+    }
+
+    @Override
+    public Property relationshipGetCommittedProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
+        }
+        return dataRead().relationshipGetCommittedProperty( statement, relationshipId, propertyKeyId );
+    }
+
+    @Override
     public Property graphGetProperty( int propertyKeyId )
     {
         statement.assertOpen();
@@ -249,6 +263,28 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         return dataRead().graphGetAllProperties( statement );
     }
+
+    @Override
+    public Iterator<DefinedProperty> nodeGetAllCommittedProperties( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetAllCommittedProperties( statement, nodeId );
+    }
+
+    @Override
+    public Iterator<DefinedProperty> relationshipGetAllCommittedProperties( long relId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().relationshipGetAllCommittedProperties( statement, relId );
+    }
+
+    @Override
+    public PrimitiveIntIterator nodeGetCommittedLabels( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetCommittedLabels( statement, nodeId );
+    }
+
     // </DataRead>
 
     // <SchemaRead>
@@ -456,7 +492,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     public long nodeCreate()
     {
         statement.assertOpen();
-        return legacyOps().nodeCreate( statement );
+        return dataWrite().nodeCreate( statement );
     }
 
     @Override

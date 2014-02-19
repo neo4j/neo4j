@@ -115,6 +115,12 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     }
 
     @Override
+    public long nodeCreate()
+    {
+        return nodeManager.createNode().getId();
+    }
+
+    @Override
     public void deleteNode( long nodeId )
     {
         NodeImpl node = nodeManager.getNodeForProxy( nodeId );

@@ -19,16 +19,21 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.graphdb.*;
-import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.tooling.GlobalGraphOperations;
-
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TestConcurrentIteratorModification {
@@ -65,6 +70,6 @@ public class TestConcurrentIteratorModification {
         }
 
         // then does not throw and retains view from iterator creation time
-        assertEquals(asSet(node1, node2, node3), result);
+        assertEquals(asSet(node1, node2), result);
     }
 }

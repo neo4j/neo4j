@@ -50,59 +50,59 @@ public interface StoreReadLayer
 {
     boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
 
-    PrimitiveIntIterator nodeGetLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+    PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
     PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction) throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction, int[] relTypes) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction, int[] relTypes ) throws EntityNotFoundException;
 
     int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
     int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
 
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
-    Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
-    Iterator<IndexDescriptor> indexesGetAll( KernelStatement state );
+    Iterator<IndexDescriptor> indexesGetAll();
 
-    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( KernelStatement state, int labelId );
+    Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId );
 
-    Iterator<IndexDescriptor> uniqueIndexesGetAll( KernelStatement state );
+    Iterator<IndexDescriptor> uniqueIndexesGetAll();
 
-    Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
-    long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind ) throws SchemaRuleNotFoundException;
 
     IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind );
 
-    PrimitiveLongIterator nodeGetPropertyKeys( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+    Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
 
-    Iterator<DefinedProperty> nodeGetAllProperties( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+    Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
+    PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId )
                     throws EntityNotFoundException;
 
-    Property relationshipGetProperty( KernelStatement state, long relationshipId, int propertyKeyId )
+    Property relationshipGetProperty( long relationshipId, int propertyKeyId )
                             throws EntityNotFoundException;
 
-    Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long nodeId )
+    Iterator<DefinedProperty> relationshipGetAllProperties( long nodeId )
                                     throws EntityNotFoundException;
 
     PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state );
 
-    Property graphGetProperty( KernelStatement state, int propertyKeyId );
+    Property graphGetProperty( int propertyKeyId );
 
-    Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state );
+    Iterator<DefinedProperty> graphGetAllProperties();
 
     Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey(
-            KernelStatement state, int labelId, int propertyKeyId );
+            int labelId, int propertyKeyId );
 
-    Iterator<UniquenessConstraint> constraintsGetForLabel( KernelStatement state, int labelId );
+    Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId );
 
-    Iterator<UniquenessConstraint> constraintsGetAll( KernelStatement state );
+    Iterator<UniquenessConstraint> constraintsGetAll();
 
     PrimitiveLongIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
                                                         Object value )
@@ -113,13 +113,13 @@ public interface StoreReadLayer
     PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
                                                             throws IndexNotFoundKernelException;
 
-    IndexDescriptor indexesGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKey )
+    IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
                                                                     throws SchemaRuleNotFoundException;
 
-    InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
+    InternalIndexState indexGetState( IndexDescriptor descriptor )
                                                                             throws IndexNotFoundKernelException;
 
-    String indexGetFailure( Statement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     int labelGetForName( String labelName );
 
