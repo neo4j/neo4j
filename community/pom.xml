@@ -116,6 +116,10 @@ the relevant Commercial Agreement.
                     <include>org.neo4j.examples:*</include>
                     <include>org.neo4j.build:licensecheck-config:*</include>
                   </includes>
+                  <excludes>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-1.9</exclude>
+                    <exclude>org.neo4j:neo4j-cypher-compiler-2.0</exclude>
+                  </excludes>
                 </configuration>
               </execution>
               <execution>
