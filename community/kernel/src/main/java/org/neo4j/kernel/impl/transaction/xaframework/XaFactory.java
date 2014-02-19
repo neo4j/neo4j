@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
-
 import java.io.File;
+import java.util.List;
 
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -31,12 +32,14 @@ import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+
 /**
 * TODO
 */
 public class XaFactory
 {
-    private Config config;
+    private final Config config;
     private final TxIdGenerator txIdGenerator;
     private final AbstractTransactionManager txManager;
     private final FileSystemAbstraction fileSystemAbstraction;
@@ -59,7 +62,7 @@ public class XaFactory
         this.pruneStrategy = pruneStrategy;
     }
 
-    public XaContainer newXaContainer( XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
+    public XaContainer newXaContainer( final XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
                                        InjectedTransactionValidator injectedTxValidator, XaTransactionFactory tf,
                                        TransactionStateFactory stateFactory, TransactionInterceptorProviders providers,
                                        boolean readOnly )
@@ -81,15 +84,19 @@ public class XaFactory
         {
             log = new NoOpLogicalLog( logging );
         }
-        else if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
-        {
-            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, monitors, fileSystemAbstraction,
-                logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator );
-        }
         else
         {
+            Function<List<LogEntry>, List<LogEntry>> interceptor = null;
+            if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
+            {
+                interceptor = new LogEntryVisitorAdapter( providers.resolveChain( xaDataSource ) );
+            }
+            else
+            {
+                interceptor = Functions.identity();
+            }
             log = new XaLogicalLog( logicalLog, rm, cf, tf, fileSystemAbstraction,
-                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator );
+                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator, interceptor );
         }
 
         // TODO These setters should be removed somehow

@@ -41,6 +41,7 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -78,6 +79,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -1248,7 +1250,7 @@ public class NeoStoreTransactionTest
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
             super( new File( "log" ), null, null, null, fs, new Monitors(), new SingleLoggingService( DEV_NULL ),
-                    LogPruneStrategies.NO_PRUNING, null, 25*1024*1024, ALLOW_ALL );
+                    LogPruneStrategies.NO_PRUNING, null, 25*1024*1024, ALLOW_ALL, Functions.<List<LogEntry>>identity() );
             this.verifier = verifier;
         }
 

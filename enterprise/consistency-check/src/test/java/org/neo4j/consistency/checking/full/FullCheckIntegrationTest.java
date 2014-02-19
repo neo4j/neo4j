@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionDataBuilder;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -169,7 +170,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 NeoStoreRecord record = new NeoStoreRecord();
@@ -194,7 +195,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
@@ -215,7 +216,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
@@ -238,7 +239,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
@@ -281,7 +282,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord record1 = inUse( new DynamicRecord( chain.get( 0 ).getId() ) );
@@ -397,7 +398,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord node = new NodeRecord( 42, false, -1, -1 );
@@ -440,7 +441,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord node = new NodeRecord( 42, false, -1, -1 );
@@ -523,7 +524,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ))[0];
@@ -557,7 +558,7 @@ public class FullCheckIntegrationTest
             fixture.apply( new GraphStoreFixture.Transaction()
             { // Neo4j can create no more than one label per transaction...
                 @Override
-                protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                protected void transactionData( TransactionDataBuilder tx,
                                                 GraphStoreFixture.IdGenerator next )
                 {
                     Integer label = next.label();
@@ -570,7 +571,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
@@ -597,7 +598,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 tx.nodeLabel( 42, "Label" );
@@ -627,7 +628,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 tx.nodeLabel( 42, "Label" );
@@ -656,7 +657,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 tx.create( new RelationshipRecord( next.relationship(), 1, 2, 0 ) );
@@ -677,7 +678,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 PropertyRecord property = new PropertyRecord( next.property() );
@@ -703,7 +704,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord string = new DynamicRecord( next.stringProperty() );
@@ -738,7 +739,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord schema = new DynamicRecord( next.schema() );
@@ -767,7 +768,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 int ruleId1 = (int) next.schema();
@@ -814,7 +815,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 int ruleId1 = (int) next.schema();
@@ -876,7 +877,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord array = new DynamicRecord( next.arrayProperty() );
@@ -912,7 +913,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 inconsistentName.set( next.relationshipType() );
@@ -939,7 +940,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 inconsistentName.set( next.propertyKey() );
@@ -1001,7 +1002,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 inconsistentKey.set( next.propertyKey() );

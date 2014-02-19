@@ -21,22 +21,30 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -53,13 +61,18 @@ import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
  */
 public class TransactionWriter
 {
-    private final LogBuffer buffer;
     private final int identifier;
     private final int localId;
+    private final Output output;
 
     public TransactionWriter( LogBuffer buffer, int identifier, int localId )
     {
-        this.buffer = buffer;
+        this( new LogBufferOutput( buffer ), identifier, localId );
+    }
+
+    public TransactionWriter( Output output, int identifier, int localId )
+    {
+        this.output = output;
         this.identifier = identifier;
         this.localId = localId;
     }
@@ -75,7 +88,7 @@ public class TransactionWriter
                        long latestCommittedTxWhenTxStarted ) throws IOException
     {
         Xid xid = new XidImpl( globalId, NeoStoreXaDataSource.BRANCH_ID );
-        LogIoUtils.writeStart( buffer, this.identifier, xid, masterId, myId, startTimestamp, latestCommittedTxWhenTxStarted );
+        output.writeStart( xid, this.identifier, masterId, myId, startTimestamp, latestCommittedTxWhenTxStarted );
     }
 
     public void prepare() throws IOException
@@ -85,7 +98,7 @@ public class TransactionWriter
 
     public void prepare( long prepareTimestamp ) throws IOException
     {
-        LogIoUtils.writePrepare( buffer, identifier, prepareTimestamp );
+        output.writePrepare( this.identifier, prepareTimestamp );
     }
 
     public void commit( boolean twoPhase, long txId ) throws IOException
@@ -95,12 +108,12 @@ public class TransactionWriter
 
     public void commit( boolean twoPhase, long txId, long commitTimestamp ) throws IOException
     {
-        LogIoUtils.writeCommit( twoPhase, buffer, identifier, txId, commitTimestamp );
+        output.writeCommit( this.identifier, twoPhase, txId, commitTimestamp );
     }
 
     public void done() throws IOException
     {
-        LogIoUtils.writeDone( buffer, identifier );
+        output.writeDone( this.identifier );
     }
 
     // Transaction data
@@ -130,6 +143,12 @@ public class TransactionWriter
     {
         node.setCreated();
         update( new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ), node );
+    }
+
+    public void create( RelationshipGroupRecord group ) throws IOException
+    {
+        group.setCreated();
+        update( group );
     }
 
     public void update( NodeRecord before, NodeRecord node ) throws IOException
@@ -172,6 +191,12 @@ public class TransactionWriter
     {
         relationship.setInUse( true );
         add( relationship );
+    }
+
+    public void update( RelationshipGroupRecord group ) throws IOException
+    {
+        group.setInUse( true );
+        add( group );
     }
 
     public void delete( RelationshipRecord relationship ) throws IOException
@@ -224,6 +249,11 @@ public class TransactionWriter
         write( new Command.RelationshipCommand( null, relationship ) );
     }
 
+    public void add( RelationshipGroupRecord group ) throws IOException
+    {
+        write( new Command.RelationshipGroupCommand( null, group ) );
+    }
+
     public void add( PropertyRecord before, PropertyRecord property ) throws IOException
     {
         write( new Command.PropertyCommand( null, before, property ) );
@@ -246,7 +276,7 @@ public class TransactionWriter
 
     private void write( Command command ) throws IOException
     {
-        LogIoUtils.writeCommand( buffer, identifier, command );
+        output.writeCommand( this.identifier, command );
     }
 
     private static <T extends TokenRecord> T withName( T record, int[] dynamicIds, String name )
@@ -281,5 +311,246 @@ public class TransactionWriter
         }
         record.setNameId( dynamicIds[0] );
         return record;
+    }
+
+    public interface Output
+    {
+        void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
+                long latestCommittedTxWhenTxStarted ) throws IOException;
+
+        void writeCommand( int identifier, XaCommand command ) throws IOException;
+
+        void writePrepare( int identifier, long prepareTimestamp ) throws IOException;
+
+        void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException;
+
+        void writeDone( int identifier ) throws IOException;
+    }
+
+    public static class RecordOutput implements Output
+    {
+        private final CommandRecordVisitor visitor;
+
+        public RecordOutput( CommandRecordVisitor visitor )
+        {
+            this.visitor = visitor;
+        }
+
+        @Override
+        public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
+                long latestCommittedTxWhenTxStarted ) throws IOException
+        {   // Do nothing
+        }
+
+        @Override
+        public void writeCommand( int identifier, XaCommand command ) throws IOException
+        {
+            ((Command)command).accept( visitor );
+        }
+
+        @Override
+        public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
+        {   // Do nothing
+        }
+
+        @Override
+        public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
+        {   // Do nothing
+        }
+
+        @Override
+        public void writeDone( int identifier ) throws IOException
+        {   // Do nothing
+        }
+    }
+
+    public static class NeoStoreCommandRecordVisitor implements CommandRecordVisitor
+    {
+        private final NeoStore neoStore;
+
+        public NeoStoreCommandRecordVisitor( NeoStore neoStore )
+        {
+            this.neoStore = neoStore;
+        }
+
+        private <RECORD extends AbstractBaseRecord,STORE extends AbstractRecordStore<RECORD>> void update( STORE store, RECORD record )
+        {
+            boolean prev = neoStore.isInRecoveryMode();
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                store.updateRecord( record );
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( prev );
+            }
+        }
+
+        @Override
+        public void visitNode( NodeRecord record )
+        {
+            update( neoStore.getNodeStore(), record );
+        }
+
+        @Override
+        public void visitRelationship( RelationshipRecord record )
+        {
+            update( neoStore.getRelationshipStore(), record );
+        }
+
+        @Override
+        public void visitRelationshipGroup( RelationshipGroupRecord record )
+        {
+            update( neoStore.getRelationshipGroupStore(), record );
+        }
+
+        @Override
+        public void visitProperty( PropertyRecord record )
+        {
+            update( neoStore.getPropertyStore(), record );
+        }
+
+        @Override
+        public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
+        {
+            update( neoStore.getRelationshipTypeStore(), record );
+        }
+
+        @Override
+        public void visitLabelToken( LabelTokenRecord record )
+        {
+            update( neoStore.getLabelTokenStore(), record );
+        }
+
+        @Override
+        public void visitPropertyKeyToken( PropertyKeyTokenRecord record )
+        {
+            update( neoStore.getPropertyStore().getPropertyKeyTokenStore(), record );
+        }
+
+        @Override
+        public void visitNeoStore( NeoStoreRecord record )
+        {
+            boolean prev = neoStore.isInRecoveryMode();
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                neoStore.setGraphNextProp( record.getNextProp() );
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( prev );
+            }
+        }
+
+        @Override
+        public void visitSchemaRule( Collection<DynamicRecord> records )
+        {
+            boolean prev = neoStore.isInRecoveryMode();
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                SchemaStore schemaStore = neoStore.getSchemaStore();
+                for ( DynamicRecord record : records )
+                {
+                    schemaStore.updateRecord( record );
+                }
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( prev );
+            }
+        }
+    }
+
+    public static class LogBufferOutput implements Output
+    {
+        private final LogBuffer buffer;
+
+        public LogBufferOutput( LogBuffer buffer )
+        {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
+                long latestCommittedTxWhenTxStarted ) throws IOException
+        {
+            LogIoUtils.writeStart( buffer, identifier, xid, masterId, myId, startTimestamp, latestCommittedTxWhenTxStarted );
+        }
+
+        @Override
+        public void writeCommand( int identifier, XaCommand command ) throws IOException
+        {
+            LogIoUtils.writeCommand( buffer, identifier, command );
+        }
+
+        @Override
+        public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
+        {
+            LogIoUtils.writePrepare( buffer, identifier, prepareTimestamp );
+        }
+
+        @Override
+        public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
+        {
+            LogIoUtils.writeCommit( twoPhase, buffer, identifier, txId, commitTimestamp );
+        }
+
+        @Override
+        public void writeDone( int identifier ) throws IOException
+        {
+            LogIoUtils.writeDone( buffer, identifier );
+        }
+    }
+
+    public static class CommandCollector implements Output
+    {
+        private final List<LogEntry> target;
+
+        public CommandCollector( List<LogEntry> target )
+        {
+            this.target = target;
+        }
+
+        @Override
+        public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
+                long latestCommittedTxWhenTxStarted ) throws IOException
+        {
+            add( new LogEntry.Start( xid, identifier, masterId, myId, 16, startTimestamp,
+                    latestCommittedTxWhenTxStarted ) );
+        }
+
+        @Override
+        public void writeCommand( int identifier, XaCommand command ) throws IOException
+        {
+            add( new LogEntry.Command( identifier, command ) );
+        }
+
+        @Override
+        public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
+        {
+            add( new LogEntry.Prepare( identifier, prepareTimestamp ) );
+        }
+
+        @Override
+        public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
+        {
+            add( twoPhase ?
+                    new LogEntry.TwoPhaseCommit( identifier, txId, commitTimestamp ) :
+                    new LogEntry.OnePhaseCommit( identifier, txId, commitTimestamp ) );
+        }
+
+        @Override
+        public void writeDone( int identifier ) throws IOException
+        {
+            add( new LogEntry.Done( identifier ) );
+        }
+
+        private void add( LogEntry entry )
+        {
+            target.add( entry );
+        }
     }
 }

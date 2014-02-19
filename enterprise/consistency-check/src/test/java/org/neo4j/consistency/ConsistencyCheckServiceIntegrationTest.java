@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionDataBuilder;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
@@ -104,7 +105,7 @@ public class ConsistencyCheckServiceIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+            protected void transactionData( TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
                 tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );

@@ -50,7 +50,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -497,7 +496,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
                         lastUpdateTime ) );
     }
-    
+
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {

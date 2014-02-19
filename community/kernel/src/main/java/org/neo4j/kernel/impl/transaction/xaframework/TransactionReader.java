@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
@@ -52,33 +53,37 @@ public class TransactionReader
 
         void visitDone( int localId );
 
-        void visitUpdateNode( int localId, NodeRecord node );
+        void visitUpdateNode( int localId, NodeRecord record );
 
-        void visitDeleteNode( int localId, long node );
+        void visitDeleteNode( int localId, long id );
 
-        void visitUpdateRelationship( int localId, RelationshipRecord node );
+        void visitUpdateRelationship( int localId, RelationshipRecord record );
 
-        void visitDeleteRelationship( int localId, long node );
+        void visitDeleteRelationship( int localId, long id );
 
-        void visitUpdateProperty( int localId, PropertyRecord node );
+        void visitUpdateRelationshipGroup( int localId, RelationshipGroupRecord record );
 
-        void visitDeleteProperty( int localId, long node );
+        void visitDeleteRelationshipGroup( int localId, long id );
 
-        void visitUpdateRelationshipTypeToken( int localId, RelationshipTypeTokenRecord node );
+        void visitUpdateProperty( int localId, PropertyRecord record );
 
-        void visitDeleteRelationshipTypeToken( int localId, int node );
+        void visitDeleteProperty( int localId, long id );
 
-        void visitUpdateLabelToken( int localId, LabelTokenRecord node );
+        void visitUpdateRelationshipTypeToken( int localId, RelationshipTypeTokenRecord record );
 
-        void visitDeleteLabelToken( int localId, int node );
+        void visitDeleteRelationshipTypeToken( int localId, int id );
+
+        void visitUpdateLabelToken( int localId, LabelTokenRecord record );
+
+        void visitDeleteLabelToken( int localId, int id );
 
         void visitUpdatePropertyKeyToken( int localId, PropertyKeyTokenRecord node );
 
-        void visitDeletePropertyKeyToken( int localId, int node );
+        void visitDeletePropertyKeyToken( int localId, int id );
 
-        void visitUpdateNeoStore( int localId, NeoStoreRecord node );
+        void visitUpdateNeoStore( int localId, NeoStoreRecord record );
 
-        void visitDeleteNeoStore( int localId, long node );
+        void visitDeleteNeoStore( int localId, long id );
 
         void visitDeleteSchemaRule( int localId, Collection<DynamicRecord> records, long id );
 
@@ -172,6 +177,19 @@ public class TransactionReader
             else
             {
                 visitor.visitUpdateRelationship( localId, record );
+            }
+        }
+
+        @Override
+        public void visitRelationshipGroup( RelationshipGroupRecord record )
+        {
+            if ( !record.inUse() )
+            {
+                visitor.visitDeleteRelationshipGroup( localId, record.getId() );
+            }
+            else
+            {
+                visitor.visitUpdateRelationshipGroup( localId, record );
             }
         }
 

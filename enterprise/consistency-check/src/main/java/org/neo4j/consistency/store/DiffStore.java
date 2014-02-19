@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -97,6 +98,11 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
                 markRelationship( record.getSecondPrevRel() );
             }
         }
+    }
+
+    @Override
+    public void visitRelationshipGroup( RelationshipGroupRecord record )
+    {
     }
 
     private void markRelationship( long rel )

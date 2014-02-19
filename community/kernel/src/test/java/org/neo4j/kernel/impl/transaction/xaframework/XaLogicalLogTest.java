@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.List;
 
 import javax.transaction.xa.Xid;
 
@@ -33,6 +34,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
+
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -54,6 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
@@ -113,7 +117,8 @@ public class XaLogicalLogTest
                                                       LogPruneStrategies.NO_PRUNING,
                                                       mock( TransactionStateFactory.class ),
                                                       25 * 1024 * 1024,
-                                                      ALLOW_ALL );
+                                                      ALLOW_ALL,
+                                                      Functions.<List<LogEntry>>identity() );
         xaLogicalLog.open();
         // -- set the log up with 10 transactions (with no commands, just start and commit)
         for ( int txId = 1; txId <= 10; txId++ )
@@ -130,13 +135,13 @@ public class XaLogicalLogTest
         // then
         assertThat( "should not read excessively from the logical log file channel", reads, lessThan( 10 ) );
     }
-    
+
     @Test
     public void shouldRespectCustomLogRotationThreshold() throws Exception
     {
         // GIVEN
         long maxSize = 1000;
-        XaLogicalLog log = new XaLogicalLog( new File( "log" ), 
+        XaLogicalLog log = new XaLogicalLog( new File( "log" ),
                 mock( XaResourceManager.class ),
                 new FixedSizeXaCommandFactory(),
                 new VersionRespectingXaTransactionFactory(),
@@ -145,10 +150,10 @@ public class XaLogicalLogTest
                 new DevNullLoggingService(),
                 NO_PRUNING,
                 mock( TransactionStateFactory.class ), maxSize,
-                ALLOW_ALL );
+                ALLOW_ALL, Functions.<List<LogEntry>>identity() );
         log.open();
         long initialLogVersion = log.getHighestLogVersion();
-        
+
         // WHEN
         for ( int i = 0; i < 10; i++ )
         {
@@ -158,7 +163,7 @@ public class XaLogicalLogTest
             log.commitOnePhase( identifier, i+1, forced );
             log.done( identifier );
         }
-        
+
         // THEN
         assertEquals( initialLogVersion+1, log.getHighestLogVersion() );
     }
@@ -171,7 +176,7 @@ public class XaLogicalLogTest
         {
             this.data = new byte[payloadSize-2/*2 bytes for describing which size will follow*/];
         }
-        
+
         @Override
         public void execute()
         {   // There's nothing to execute
@@ -184,7 +189,7 @@ public class XaLogicalLogTest
             buffer.put( data );
         }
     }
-    
+
     private static class FixedSizeXaCommandFactory extends XaCommandFactory
     {
         @Override
@@ -219,11 +224,11 @@ public class XaLogicalLogTest
             }
         }
     }
-    
+
     private static class VersionRespectingXaTransactionFactory extends XaTransactionFactory
     {
         private long currentVersion = 0;
-        
+
         @Override
         public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
@@ -259,7 +264,7 @@ public class XaLogicalLogTest
             return 0;
         }
     }
-    
+
     public final @Rule EphemeralFileSystemRule ephemeralFs = new EphemeralFileSystemRule();
     public final Xid xid = new XidImpl( "global".getBytes(), "resource".getBytes() );
 }

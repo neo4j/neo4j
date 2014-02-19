@@ -99,12 +99,12 @@ public class NodeRecord extends PrimitiveRecord
     {
         return filter( RECORD_IN_USE, dynamicLabelRecords );
     }
-    
+
     public boolean isDense()
     {
         return dense;
     }
-    
+
     public boolean isCommittedDense()
     {
         return committedDense;

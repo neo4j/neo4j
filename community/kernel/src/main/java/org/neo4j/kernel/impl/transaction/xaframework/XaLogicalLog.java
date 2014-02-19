@@ -34,6 +34,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -118,17 +119,20 @@ public class XaLogicalLog implements LogLoader
     // We need separate monitors to differentiate between network/disk I/O
     protected final ByteCounterMonitor bufferMonitor;
     protected final ByteCounterMonitor logDeserializerMonitor;
+    private final Function<List<LogEntry>, List<LogEntry>> interceptor;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
-                         long rotateAtSize, InjectedTransactionValidator injectedTxValidator )
+                         long rotateAtSize, InjectedTransactionValidator injectedTxValidator,
+                         Function<List<LogEntry>,List<LogEntry>> interceptor )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
+        this.interceptor = interceptor;
         this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
         this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );
         this.pruneStrategy = pruneStrategy;
@@ -226,7 +230,7 @@ public class XaLogicalLog implements LogLoader
         else
         {
             logVersion = xaTf.getCurrentVersion();
-            
+
             /* This is for compensating for that, during rotation, renaming the active log
              * file and updating the log version via xaTf isn't atomic. First the file gets
              * renamed and then the version is updated. If a crash occurs in between those
@@ -775,7 +779,7 @@ public class XaLogicalLog implements LogLoader
             return;
         }
         logVersion = header[0];
-        
+
         /* This is for compensating for that, during rotation, renaming the active log
          * file and updating the log version via xaTf isn't atomic. First the file gets
          * renamed and then the version is updated. If a crash occurs in between those
@@ -1109,22 +1113,25 @@ public class XaLogicalLog implements LogLoader
 
     protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel )
     {
-        return new LogDeserializer( byteChannel, logDeserializerMonitor );
+        return new LogDeserializer( byteChannel, bufferMonitor, interceptor );
     }
 
     protected class LogDeserializer
     {
         private final ReadableByteChannel byteChannel;
         private final ByteCounterMonitor monitor;
-        LogEntry.Start startEntry;
-        LogEntry.Commit commitEntry;
+        private final Function<List<LogEntry>, List<LogEntry>> interceptor;
+        private LogEntry.Start startEntry;
+        private LogEntry.Commit commitEntry;
 
         private final List<LogEntry> logEntries;
 
-        protected LogDeserializer( ReadableByteChannel byteChannel, ByteCounterMonitor monitor )
+        protected LogDeserializer( ReadableByteChannel byteChannel, ByteCounterMonitor monitor,
+                Function<List<LogEntry>, List<LogEntry>> interceptor )
         {
             this.byteChannel = byteChannel;
             this.monitor = monitor;
+            this.interceptor = interceptor;
             this.logEntries = new LinkedList<LogEntry>();
         }
 
@@ -1132,15 +1139,13 @@ public class XaLogicalLog implements LogLoader
                 throws IOException
         {
             long startedAtPosition = sharedBuffer.position();
-            LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel,
-                    cf );
+            LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel, cf );
             monitor.bytesRead( sharedBuffer.position() - startedAtPosition );
             if ( entry == null )
             {
                 try
                 {
-                    intercept( logEntries );
-                    apply();
+                    apply( interceptor.apply( logEntries ) );
                     return false;
                 }
                 catch ( Error e )
@@ -1164,12 +1169,7 @@ public class XaLogicalLog implements LogLoader
             return true;
         }
 
-        protected void intercept( List<LogEntry> logEntries )
-        {
-            // default do nothing
-        }
-
-        private void apply() throws IOException
+        private void apply( List<LogEntry> logEntries ) throws IOException
         {
             for ( LogEntry entry : logEntries )
             {
@@ -1314,7 +1314,10 @@ public class XaLogicalLog implements LogLoader
         boolean successfullyApplied = false;
         try
         {
-            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) );
+            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+            {
+                ;
+            }
             successfullyApplied = true;
         }
         finally
@@ -1557,7 +1560,7 @@ public class XaLogicalLog implements LogLoader
     {
         return new File( baseFile.getPath() + ".v" + version );
     }
-    
+
     public static long getHistoryLogVersion( File historyLogFile )
     {   // Get version based on the name
         String name = historyLogFile.getName();
