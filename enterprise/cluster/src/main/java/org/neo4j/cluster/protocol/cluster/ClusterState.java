@@ -429,9 +429,12 @@ public enum ClusterState
                             boolean messageComesFromSameHost = request.getJoiningId().equals( context.getMyId() );
                             boolean otherInstanceJoiningWithSameId = context.isInstanceJoiningFromDifferentUri(
                                     joiningId, joiningUri );
+                            boolean isFromSameURIAsTheOneWeAlreadyKnow = context.getUriForId( joiningId ) != null &&
+                                    context.getUriForId( joiningId ).equals( joiningUri );
 
                             boolean somethingIsWrong =
-                                    (isInCluster && !messageComesFromSameHost && isCurrentlyAlive) || otherInstanceJoiningWithSameId ;
+                                    ( isInCluster && !messageComesFromSameHost && isCurrentlyAlive && !isFromSameURIAsTheOneWeAlreadyKnow )
+                                            || otherInstanceJoiningWithSameId ;
 
                             if ( somethingIsWrong )
                             {

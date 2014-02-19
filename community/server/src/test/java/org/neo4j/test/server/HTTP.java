@@ -24,17 +24,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import org.codehaus.jackson.JsonNode;
+
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Collections.unmodifiableMap;
+
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -215,6 +223,26 @@ public class HTTP
         }
     }
 
+    /**
+     * Check some general validations that all REST responses should always pass.
+     */
+    public static ClientResponse sanityCheck( ClientResponse response )
+    {
+        List<String> contentEncodings = response.getHeaders().get( "Content-Encoding" );
+        String contentEncoding;
+        if ( contentEncodings != null && (contentEncoding = singleOrNull( contentEncodings )) != null )
+        {
+            // Specifically, this is never used for character encoding.
+            contentEncoding = contentEncoding.toLowerCase();
+            assertThat( contentEncoding, anyOf(
+                    containsString( "gzip" ),
+                    containsString( "deflate" ) ) );
+            assertThat( contentEncoding, allOf(
+                    not( containsString( "utf-8" ) ) ) );
+        }
+        return response;
+    }
+
     public static class Response
     {
         private final ClientResponse response;
@@ -222,7 +250,7 @@ public class HTTP
 
         public Response( ClientResponse response )
         {
-            this.response = response;
+            this.response = sanityCheck( response );
             this.entity = response.getEntity( String.class );
         }
 

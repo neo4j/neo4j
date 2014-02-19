@@ -27,10 +27,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -52,7 +53,7 @@ public class ThirdPartyJAXRSModuleTest
         when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
 
         Configurator configurator = mock( PropertyFileConfigurator.class );
-        HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
+        List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
         jaxRsPackages.add( new ThirdPartyJaxRsPackage( "org.example.neo4j", path ) );
         when( configurator.getThirdpartyJaxRsPackages() ).thenReturn( jaxRsPackages );

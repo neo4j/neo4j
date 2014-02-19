@@ -25,19 +25,19 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.web.PropertyValueException;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
+
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.server.HTTP;
 
 public class RestRequest {
 
@@ -70,7 +70,7 @@ public class RestRequest {
     }
 
     public RestRequest() {
-        this(null);
+        this( null );
     }
 
     private URI uriWithoutSlash( URI uri ) {
@@ -89,16 +89,16 @@ public class RestRequest {
     }
 
 
-    private Builder builder(String path) {
-        return builder(path, accept);
+    private Builder builder( String path ) {
+        return builder( path, accept );
     }
 
-    private Builder builder(String path, final MediaType accept) {
+    private Builder builder( String path, final MediaType accept ) {
         WebResource resource = client.resource( uri( pathOrAbsolute( path ) ) );
-        Builder builder = resource.accept(accept);
-        if (!headers.isEmpty()) {
-            for (Map.Entry<String, String> header : headers.entrySet()) {
-                builder = builder.header(header.getKey(),header.getValue());
+        Builder builder = resource.accept( accept );
+        if ( !headers.isEmpty() ) {
+            for ( Map.Entry<String, String> header : headers.entrySet() ) {
+                builder = builder.header( header.getKey(),header.getValue() );
             }
         }
         return builder;
@@ -110,25 +110,25 @@ public class RestRequest {
     }
 
     public JaxRsResponse get( String path ) {
-        return JaxRsResponse.extractFrom(builder(path).get(ClientResponse.class));
+        return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder( path ).get( ClientResponse.class ) ) );
     }
 
     public JaxRsResponse get(String path, String data) {
-        return get(path, data, MediaType.APPLICATION_JSON_TYPE);
+        return get( path, data, MediaType.APPLICATION_JSON_TYPE );
     }
 
-    public JaxRsResponse get(String path, String data, final MediaType mediaType) {
-        Builder builder = builder(path);
+    public JaxRsResponse get( String path, String data, final MediaType mediaType ) {
+        Builder builder = builder( path );
         if ( data != null ) {
             builder = builder.entity( data, mediaType);
         } else {
-            builder = builder.type(mediaType);
+            builder = builder.type( mediaType );
         }
-        return JaxRsResponse.extractFrom(builder.get(ClientResponse.class));
+        return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder.get( ClientResponse.class ) ) );
     }
 
     public JaxRsResponse delete(String path) {
-        return JaxRsResponse.extractFrom(builder(path).delete(ClientResponse.class));
+        return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder( path ).delete( ClientResponse.class ) ) );
     }
 
     public JaxRsResponse post(String path, String data) {
@@ -142,7 +142,7 @@ public class RestRequest {
         } else {
             builder = builder.type(mediaType);
         }
-        return JaxRsResponse.extractFrom(builder.post(ClientResponse.class));
+        return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder.post( ClientResponse.class ) ) );
     }
 
     public JaxRsResponse put(String path, String data) {
@@ -150,16 +150,16 @@ public class RestRequest {
         if ( data != null ) {
             builder = builder.entity( data, MediaType.APPLICATION_JSON_TYPE );
         }
-        return new JaxRsResponse(builder.put(ClientResponse.class));
+        return new JaxRsResponse( HTTP.sanityCheck( builder.put( ClientResponse.class ) ) );
     }
 
 
-    public Object toEntity( JaxRsResponse JaxRsResponse) throws PropertyValueException {
-        return JsonHelper.jsonToSingleValue(entityString(JaxRsResponse));
+    public Object toEntity( JaxRsResponse JaxRsResponse ) throws PropertyValueException {
+        return JsonHelper.jsonToSingleValue( entityString( JaxRsResponse ) );
     }
 
     public Map<?, ?> toMap( JaxRsResponse JaxRsResponse) throws JsonParseException {
-        final String json = entityString(JaxRsResponse);
+        final String json = entityString( JaxRsResponse );
         return JsonHelper.jsonToMap(json);
     }
 
@@ -192,12 +192,12 @@ public class RestRequest {
     }
 
     public JaxRsResponse get() {
-        return get("");
+        return get( "" );
     }
 
     public JaxRsResponse get(String path, final MediaType acceptType) {
         Builder builder = builder(path, acceptType);
-        return JaxRsResponse.extractFrom(builder.get(ClientResponse.class));
+        return JaxRsResponse.extractFrom( HTTP.sanityCheck( builder.get( ClientResponse.class ) ) );
     }
 
     public static RestRequest req() {

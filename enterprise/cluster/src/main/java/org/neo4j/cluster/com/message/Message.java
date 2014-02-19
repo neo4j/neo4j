@@ -80,6 +80,7 @@ public class Message<MESSAGETYPE extends MessageType>
     public static final String CREATED_BY = "created-by";
     public static final String FROM = "from";
     public static final String TO = "to";
+    public static final String INSTANCE_ID = "instance-id";
 
     final private MESSAGETYPE messageType;
     final private Object payload;

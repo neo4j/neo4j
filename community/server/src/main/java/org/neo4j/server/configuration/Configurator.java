@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
@@ -35,8 +34,8 @@ import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.server.webadmin.console.ShellSessionCreator;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
 
 public interface Configurator
 {
@@ -115,9 +114,9 @@ public interface Configurator
     Map<String, String> getDatabaseTuningProperties();
 
     @Deprecated
-    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
+    List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses();
 
-    Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages();
+    List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages();
 
     DiagnosticsExtractor<Configurator> DIAGNOSTICS = new DiagnosticsExtractor<Configurator>()
     {
@@ -155,15 +154,15 @@ public interface Configurator
     public static abstract class Adapter implements Configurator
     {
         @Override
-        public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
+        public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsClasses()
         {
             return getThirdpartyJaxRsPackages();
         }
 
         @Override
-        public Set<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
+        public List<ThirdPartyJaxRsPackage> getThirdpartyJaxRsPackages()
         {
-            return emptySet();
+            return emptyList();
         }
 
         @Override

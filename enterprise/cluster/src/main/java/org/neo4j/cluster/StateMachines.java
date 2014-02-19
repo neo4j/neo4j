@@ -19,6 +19,9 @@
  */
 package org.neo4j.cluster;
 
+import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.CREATED_BY;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -41,8 +44,6 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.CREATED_BY;
 
 /**
  * Combines a set of state machines into one. This will
@@ -66,20 +67,23 @@ public class StateMachines
     private final OutgoingMessageHolder outgoing;
     // This is used to ensure fairness of message delivery
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
+    private final String instanceIdHeaderValue;
 
     public StateMachines( MessageSource source,
                           final MessageSender sender,
                           Timeouts timeouts,
-                          DelayedDirectExecutor executor, Executor stateMachineExecutor )
+                          DelayedDirectExecutor executor, Executor stateMachineExecutor, InstanceId instanceId )
     {
         this.sender = sender;
         this.executor = executor;
         this.stateMachineExecutor = stateMachineExecutor;
         this.timeouts = timeouts;
+        this.instanceIdHeaderValue = instanceId.toString();
 
         outgoing = new OutgoingMessageHolder();
         timeouts.addMessageProcessor( this );
         source.addMessageProcessor( this );
+
     }
 
     public Timeouts getTimeouts()
@@ -169,6 +173,7 @@ public class StateMachines
 
                                 if ( outgoingMessage.hasHeader( Message.TO ) )
                                 {
+                                    outgoingMessage.setHeader( Message.INSTANCE_ID, instanceIdHeaderValue );
                                     toSend.add( outgoingMessage );
                                 }
                                 else
