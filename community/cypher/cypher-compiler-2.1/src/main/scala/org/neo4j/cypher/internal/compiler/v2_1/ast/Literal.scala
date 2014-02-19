@@ -28,7 +28,9 @@ sealed trait Literal extends Expression {
   def value: Any
 }
 
-sealed abstract class IntegerLiteral(stringVal: String) extends Literal with SimpleTyping {
+sealed trait NumberLiteral extends Literal
+
+sealed abstract class IntegerLiteral(stringVal: String) extends NumberLiteral with SimpleTyping {
   lazy val value = stringVal.toLong
 
   protected def possibleTypes = CTInteger
@@ -46,7 +48,7 @@ sealed abstract class IntegerLiteral(stringVal: String) extends Literal with Sim
 case class SignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 case class UnsignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 
-case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends Literal with SimpleTyping {
+case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends NumberLiteral with SimpleTyping {
   val value = stringVal.toDouble
 
   protected def possibleTypes = CTFloat
