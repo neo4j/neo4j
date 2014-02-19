@@ -2936,11 +2936,12 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should handle match properties pointing to other parts of pattern") {
-    val nodeA = SingleNode("a", Seq.empty, Map("foo" -> Property(Identifier("x"), PropertyKey("bar"))))
+    val nodeA = SingleNode("a", Seq.empty, Map.empty)
     expectQuery(
       "MATCH (a { foo:x.bar })-->(x) RETURN *",
       Query.
         matches(RelatedTo(nodeA, SingleNode("x"), "  UNNAMED23", Seq.empty, Direction.OUTGOING, Map.empty)).
+        where(Equals(Property(Identifier("a"), PropertyKey("foo")), Property(Identifier("x"), PropertyKey("bar")))).
         returns(AllIdentifiers()))
   }
 
