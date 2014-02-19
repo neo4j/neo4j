@@ -564,4 +564,19 @@ return distinct center""")
 
     assertStats(result, nodesCreated = 7, propertiesSet = 7, relationshipsCreated = 21, nodesDeleted = 1, relationshipsDeleted = 6)
   }
+
+  @Test
+  def for_each_applied_to_null_should_never_execute() {
+    val result = execute("foreach(x in null| create ())")
+
+    assertStats(result, nodesCreated = 0)
+  }
+
+  @Test
+  def should_execute_when_null_is_contained_in_a_collection() {
+    val result = execute("foreach(x in [null]| create ())")
+
+    assertStats(result, nodesCreated = 1)
+  }
+
 }
