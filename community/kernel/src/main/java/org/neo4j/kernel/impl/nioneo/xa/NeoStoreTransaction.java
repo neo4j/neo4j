@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.copyOf;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
+import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -87,17 +97,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static java.util.Arrays.binarySearch;
-import static java.util.Arrays.copyOf;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -740,10 +739,6 @@ public class NeoStoreTransaction extends XaTransaction
             {
                 neoStore.updateIdGenerators();
             }
-        }
-        finally
-        {
-            clear();
         }
     }
 

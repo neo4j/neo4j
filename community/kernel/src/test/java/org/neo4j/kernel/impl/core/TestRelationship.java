@@ -19,12 +19,21 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,17 +43,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {

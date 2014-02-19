@@ -126,7 +126,6 @@ public class BatchOperationService {
             BatchOperationResults results = batchOperations.performBatchJobs( uriInfo, httpHeaders, body );
 
             Response res = Response.ok().entity(results.toJSON())
-                    .header(HttpHeaders.CONTENT_ENCODING, "UTF-8")
                     .type(HttpHeaderUtils.mediaTypeWithCharsetUtf8(MediaType.APPLICATION_JSON_TYPE)).build();
             representationWriteHandler.onRepresentationWritten();
             return res;

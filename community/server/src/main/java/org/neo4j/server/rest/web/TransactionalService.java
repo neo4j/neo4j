@@ -31,7 +31,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -152,28 +151,23 @@ public class TransactionalService
 
     private Response invalidTransaction( TransactionLifecycleException e )
     {
-        return defaultResponseBuilder( Response.status( Response.Status.NOT_FOUND ) )
-               .entity( serializeError( e.toNeo4jError() ) )
-               .build();
+        return Response.status( Response.Status.NOT_FOUND )
+                .entity( serializeError( e.toNeo4jError() ) )
+                .build();
     }
 
-    private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults  )
+    private Response createdResponse( TransactionHandle transactionHandle, StreamingOutput streamingResults )
     {
-        return defaultResponseBuilder( Response.created( transactionHandle.uri() ) )
-               .entity( streamingResults )
-               .build();
-    }
-
-    private Response okResponse( StreamingOutput streamingResults )
-    {
-        return defaultResponseBuilder( Response.ok() )
+        return Response.created( transactionHandle.uri() )
                 .entity( streamingResults )
                 .build();
     }
 
-    private Response.ResponseBuilder defaultResponseBuilder( Response.ResponseBuilder builder )
+    private Response okResponse( StreamingOutput streamingResults )
     {
-        return builder.header( HttpHeaders.CONTENT_ENCODING, "UTF-8" );
+        return Response.ok()
+                .entity( streamingResults )
+                .build();
     }
 
     private StreamingOutput executeStatements( final InputStream input, final TransactionHandle transactionHandle )

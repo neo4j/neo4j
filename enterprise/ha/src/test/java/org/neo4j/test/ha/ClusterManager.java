@@ -913,6 +913,9 @@ public class ClusterManager
             @Override
             public boolean accept( ManagedCluster cluster )
             {
+                if (!allSeesAllAsJoined().accept( cluster ))
+                    return false;
+
                 for ( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
                     ClusterMembers members = database.getDependencyResolver().resolveDependency( ClusterMembers.class );
