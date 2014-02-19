@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryCon
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 
 object CypherCompiler {
-  val DEFAULT_QUERY_CACHE_SIZE: Int = 100
+  val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 }
 
@@ -48,10 +48,13 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
 
   def this(graph: GraphDatabaseService, versionName: String) = this(graph, CypherVersion(versionName))
 
-  private val queryCache = new LRUCache[(CypherVersion, String), Object](getQueryCacheSize)
-  private val compiler2_1 = new CypherCompiler2_1(graph, (q, f) => queryCache.getOrElseUpdate((v2_1, q), f))
-  private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache.getOrElseUpdate((v2_0, q), f))
-  private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache.getOrElseUpdate((v1_9, q), f))
+  private val queryCache2_1 = new LRUCache[String, Object](getQueryCacheSize)
+  private val queryCache2_0 = new LRUCache[String, Object](getQueryCacheSize)
+  private val queryCache1_9 = new LRUCache[String, Object](getQueryCacheSize)
+
+  private val compiler2_1 = new CypherCompiler2_1(graph, (q, f) => queryCache2_1.getOrElseUpdateByKey(q, f))
+  private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
+  private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
   @throws(classOf[SyntaxException])
   def prepare(query: String, context: GraphDatabaseService, statement: Statement): ExecutionPlan = {
