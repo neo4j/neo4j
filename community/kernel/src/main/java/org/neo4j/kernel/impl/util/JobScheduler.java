@@ -40,7 +40,6 @@ public interface JobScheduler extends Lifecycle
         indexPopulation,
         masterTransactionPushing,
         serverTransactionTimeout,
-        unusedResourceCleanup,
     }
 
     void schedule( Group group, Runnable job );
