@@ -36,6 +36,8 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
 
   def hasNext: Boolean = failIfThrows {
+    if(closed) return false
+
     val innerHasNext: Boolean = inner.hasNext
     if (!innerHasNext) {
       close(true)
@@ -44,6 +46,8 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   }
 
   def next(): Map[String, Any] = failIfThrows {
+    if (closed) return Iterator.empty.next()
+
     val input: collection.Map[String, Any] = inner.next()
     val result: Map[String, Any] = Materialized.mapValues(input, materialize)
     if (!inner.hasNext) {

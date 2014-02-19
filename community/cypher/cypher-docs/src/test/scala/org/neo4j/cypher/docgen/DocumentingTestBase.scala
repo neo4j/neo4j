@@ -43,8 +43,8 @@ import scala.reflect.ClassTag
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.cypher.internal.ServerExecutionEngine
-import org.neo4j.kernel.impl.transaction.TxManager
 import org.neo4j.cypher.internal.commons.CypherJUnitSuite
+import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -70,8 +70,7 @@ trait DocumentationHelper extends GraphIcing {
 
   def createCypherSnippet(query: String) = {
     val prettifiedQuery = Prettifier(query.trim())
-    val result = AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery)
-    result
+    AsciidocHelper.createCypherSnippetFromPreformattedQuery(prettifiedQuery)
   }
 
   def prepareFormatting(query: String): String = {
@@ -79,7 +78,7 @@ trait DocumentationHelper extends GraphIcing {
     if ((str takeRight 1) == ";") {
       str
     } else {
-      str + ";";
+      str + ";"
     }
   }
 
@@ -153,7 +152,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions: _*)
   }
 
-  def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+  private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()
     //dumpGraphViz(dir, graphvizOptions.trim)
@@ -179,47 +178,35 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
 
     // val r = testWithoutDocs(queryText, prepare, assertions:_*)
     var query = queryText
-    val keySet = nodes.keySet
-    val tx1 = db.beginTx()
-    try {
-      prepare.foreach { (prepareStep: () => Any) => prepareStep() }
-      if (preparationQueries.size > 0) {
-        dumpPreparationQueries(preparationQueries, dir, title)
-        dumpPreparationGraphviz(dir, title, graphvizOptions)
-      }
+    val keySet = nodeMap.keySet
+    val writer: PrintWriter = createWriter(title, dir)
+    prepare.foreach {
+      (prepareStep: () => Any) => prepareStep()
+    }
+    if (preparationQueries.size > 0) {
+      dumpPreparationQueries(preparationQueries, dir, title)
+      dumpPreparationGraphviz(dir, title, graphvizOptions)
+    }
+    db.inTx {
       keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-      val result = fetchQueryResults(prepare, query)
-
-      if (expectedException.isDefined) {
-        fail(s"Expected the test to throw an exception: $expectedException")
-      }
-      assertions.foreach(_.apply(result))
-      tx1.failure()
-    } catch {
-      case e: CypherException =>
-        expectedException match {
-          case Some(expectedExceptionType) => e match {
-            case expectedExceptionType(typedE) =>
-            case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
-          }
-          case None => throw e
-        }
-    } finally {
-      tx1.close()
     }
 
-    val tx2 = db.beginTx()
-    val writer: PrintWriter = createWriter(title, dir)
+
     try {
-      prepare.foreach { (prepareStep: () => Any) => prepareStep() }
       val result = fetchQueryResults(prepare, query)
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
       }
+
       dumpToFile(dir, writer, title, query, optionalResultExplanation, text, result, consoleData)
       if (graphvizExecutedAfter) {
         dumpGraphViz(dir, graphvizOptions.trim)
       }
+
+      db.inTx {
+        assertions.foreach(_.apply(result))
+      }
+
     } catch {
       case e: CypherException if expectedException.nonEmpty =>
         val expectedExceptionType = expectedException.get
@@ -228,34 +215,17 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
             dumpToFile(dir, writer, title, query, optionalResultExplanation, text, typedE, consoleData)
           case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
         }
-    } finally {
-      tx2.close()
     }
   }
 
   private def fetchQueryResults(prepare: Option[() => Any], query: String): ExecutionResult =  {
-    lazy val results =  if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
-    
-    if (engine.isPeriodicCommit(query)) {
-      if (prepare.isDefined) {
-        throw new IllegalArgumentException("Can't use prepare steps together with periodic commit")
-      }
-      val txManager = db.getDependencyResolver.resolveDependency(classOf[TxManager])
-      val tx = txManager.suspend()
-      try {
-        results
-      }
-      finally {
-        txManager.resume(tx)
-      }
-      
-    } else
-      results
+    val results = if (parameters == null) engine.execute(query) else engine.execute(query, parameters)
+    RewindableExecutionResult(results)
   }
 
   var db: GraphDatabaseAPI = null
   var engine: ServerExecutionEngine = null
-  var nodes: Map[String, Long] = null
+  var nodeMap: Map[String, Long] = null
   var nodeIndex: Index[Node] = null
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
@@ -285,7 +255,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     dumpToFile(dir, writer, title, query, returns, text, Left(failure), consoleData)
   }
 
-  def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
+  private def dumpToFile(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
     val testId = nicefy(section + " " + title)
     writer.println("[[" + testId + "]]")
     if (!noTitle) writer.println("== " + title + " ==")
@@ -296,16 +266,10 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     writer.close()
   }
 
-  def executeQuery(queryText: String): ExecutionResult = {
-    var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    engine.execute(query)
-  }
-
   def setParameters(params: Map[String, Any]) {
     parameters = params
   }
-  
+
   def executePreparationQueries(queries: List[String]) {
     preparationQueries = queries
     preparationQueries.foreach(engine.execute)
@@ -321,18 +285,6 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     }
   }
 
-  def testWithoutDocs(queryText: String, prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
-    prepare.foreach { (prepareStep: () => Any) => prepareStep() }
-
-    var query = queryText
-    val keySet = nodes.keySet
-    keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val result = engine.execute(query)
-    assertions.foreach(_.apply(result))
-
-    (result, query)
-  }
-
   protected def getLabelsFromNode(p: ExecutionResult): Iterable[String] = p.columnAs[Node]("n").next().labels
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
@@ -344,9 +296,8 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     })
   }
 
-  def node(name: String): Node = db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name)))
+  def node(name: String): Node = db.getNodeById(nodeMap.getOrElse(name, throw new NotFoundException(name)))
   def nodes(names: String*): List[Node] = names.map(node).toList
-
   def rel(id: Long): Relationship = db.getRelationshipById(id)
 
   @After
@@ -374,7 +325,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
 
       setupQueries.foreach(engine.execute)
 
-      nodes = description.create(db).asScala.map {
+      nodeMap = description.create(db).asScala.map {
         case (name, node) => name -> node.getId
       }.toMap
 
@@ -393,13 +344,13 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
   private def asNodeMap[T: Manifest](m: Map[String, T]): Map[Node, T] =
     m map { case (k: String, v: T) => (node(k), v) }
 
-  def mapMapValue(v: Any): Any = v match {
+  private def mapMapValue(v: Any): Any = v match {
     case v: Map[_, _] => Materialized.mapValues(v, mapMapValue).asJava
     case seq: Seq[_] => seq.map(mapMapValue).asJava
     case v: Any => v
   }
 
-  def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
+  private def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
     if (parameters != null) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }

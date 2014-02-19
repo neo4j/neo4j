@@ -30,7 +30,6 @@ import util.Random
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
-import org.scalautils.LegacyTripleEquals
 
 class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
 
@@ -1248,10 +1247,7 @@ RETURN x0.name""")
   @Test def shouldToStringArraysPrettily() {
     createNode("foo" -> Array("one", "two"))
 
-    val result = executeLazy( """start n = node(0) return n.foo""")
-
-
-    val string = result.dumpToString()
+    val string = execute( """start n = node(0) return n.foo""").dumpToString()
 
     assertThat(string, containsString( """["one","two"]"""))
   }
@@ -1742,7 +1738,7 @@ RETURN x0.name""")
   @Test
   def array_prop_output() {
     createNode("foo"->Array(1,2,3))
-    val result = executeLazy("start n = node(0) return n").dumpToString()
+    val result = execute("start n = node(0) return n").dumpToString()
     assertThat(result, containsString("[1,2,3]"))
   }
 
@@ -2218,14 +2214,15 @@ RETURN x0.name""")
     old.shutdown()
     val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
             .setConfig( GraphDatabaseSettings.read_only, "true" )
-            .newGraphDatabase();
+            .newGraphDatabase()
     new ExecutionEngine(db)
   }
 
+  @Ignore("This method had a missing @Test, if @Test is added this test fails miserably, 18-2-2014")
+  @Test
   def should_use_predicates_in_the_correct_place() {
     //GIVEN
-    val m = execute( """create
-                        advertiser = {name:"advertiser1"},
+    val m = execute( """create advertiser = {name:"advertiser1"},
                         thing      = {name:"Color"},
                         red        = {name:"red"},
                         p1         = {name:"product1"},

@@ -24,9 +24,25 @@ import java.io.File
 
 class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupport {
   implicit var csvFilesDir: File = _
+  private var roles:String = _
+  private var movie_productions:String = _
 
   override def doThisBefore() {
     csvFilesDir = createDir(dir, "csv-files")
+
+    roles = create("roles.csv") withContents(
+      Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
+      Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
+      Seq("Martin Sheen", "Wall Street", "Carl Fox"),
+      Seq("Michael Douglas", "Wall Street", "Gordon Gekko"),
+      Seq("Martin Sheen", "The American President", "A.J. MacInerney"),
+      Seq("Michael Douglas", "The American President", "President Andrew Shepherd"))
+
+    movie_productions = create("movie_productions.csv") withContents(
+      Seq("movie", "country", "year"),
+      Seq("Cloud Atlas", "Germany", "2012"),
+      Seq("Cloud Atlas", "USA", "2012"),
+      Seq("The Shawshank Redemption", "USA", "1993"))
   }
 
   def title: String = "Importing data from a single CSV file"
@@ -34,19 +50,6 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
   def assert(name: String, result: ExecutionResult) {}
   def graphDescription: List[String] = List.empty
 
-  val roles = create("roles.csv") withContents(
-    Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
-    Seq("Charlie Sheen", "Wall Street", "Bud Fox"),
-    Seq("Martin Sheen", "Wall Street", "Carl Fox"),
-    Seq("Michael Douglas", "Wall Street", "Gordon Gekko"),
-    Seq("Martin Sheen", "The American President", "A.J. MacInerney"),
-    Seq("Michael Douglas", "The American President", "President Andrew Shepherd"))
-
-  val movie_productions = create("movie_productions.csv") withContents(
-    Seq("movie", "country", "year"),
-    Seq("Cloud Atlas", "Germany", "2012"),
-    Seq("Cloud Atlas", "USA", "2012"),
-    Seq("The Shawshank Redemption", "USA", "1993"))
 
   private def create(fileName: String): CsvFile = new CsvFile(fileName)
 
@@ -68,43 +71,37 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
                        |property before the +LOAD CSV+ command.
                        |
                        |###
-                       |CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE
+                       |CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE###
+                       |
                        |###
-                       |###
-                       |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE
-                       |###
+                       |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE###
+                       |
                        |###
                        |LOAD CSV FROM "$roles" AS csvLine
                        |MERGE (p:Person {name: csvLine[0]})
                        |MERGE (m:Movie {title: csvLine[1]})
-                       |CREATE (p)-[:PLAYED {role: csvLine[2]}]->(m)
-                       |###
+                       |CREATE (p)-[:PLAYED {role: csvLine[2]}]->(m)###
                        |
                        |+LOAD CSV+ also supports loading CSV files that start with headers (column names). In this
                        |case these header names may be used to address the values in a row via the
                        |+LOAD CSV WITH HEADERS+ clause.
                        |
+                       |== Using PERIODIC COMMIT ==
+                       |
+                       |When importing lots of data, the transaction state might build up so much that queries run very
+                       |slowly or even crash the JVM. By using +PERIODIC COMMIT+, the transaction will be committed at
+                       |periodic intervals.
+                       |
+                       |All you need to do is start your query with the +PERIODIC COMMIT+ hint, like so:
                        |###
-                       |CREATE CONSTRAINT ON (c:Country) ASSERT c.name IS UNIQUE
-                       |###
-                       |###
-                       |CREATE CONSTRAINT ON (m:Movie) ASSERT m.title IS UNIQUE
-                       |###
-                       |###
+                       |USING PERIODIC COMMIT
                        |LOAD CSV WITH HEADERS FROM "$movie_productions" AS csvLine
                        |MERGE (c:Country {name: csvLine.country})
                        |MERGE (m:Movie {title: csvLine.movie})
-                       |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)
-                       |###
+                       |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)###
                        |
                        |+LOAD CSV+ produces values that are collections (or maps when +WITH HEADERS+ is used) of strings.
                        |In order to convert them to appropriate types, use the built-in +toInt+ and +toFloat+ functions.
                        |""".stripMargin
 
 }
-
-//object CSVFiles {
-//  def implicit val csvFilesDir: File = createDir(dir, "target/csv-files")
-//}
-
-

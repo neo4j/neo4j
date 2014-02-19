@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import pipes.QueryState
+import org.neo4j.cypher.ExecutionResult
 
 class EagerPipeExecutionResult(result: ClosingIterator,
                                columns: List[String],
@@ -35,4 +36,15 @@ class EagerPipeExecutionResult(result: ClosingIterator,
 
 
   override def queryStatistics() = state.getStatistics
+
+  override def toList: List[Map[String, Any]] = eagerResult
+}
+
+object RewindableExecutionResult {
+  def apply(inner: ExecutionResult) = inner match {
+    case _: EagerPipeExecutionResult => inner
+    case other: PipeExecutionResult =>
+      new EagerPipeExecutionResult(other.result, other.columns, other.state, other.executionPlanBuilder)
+    case _ => inner
+  }
 }
