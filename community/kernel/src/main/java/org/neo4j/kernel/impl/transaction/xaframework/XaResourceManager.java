@@ -56,7 +56,7 @@ public class XaResourceManager
             this.xaTx = xaTx;
         }
     }
-    
+
     private final ArrayMap<XAResource,ResourceTransaction> xaResourceMap = new ArrayMap<>();
     private final ArrayMap<Xid,XidStatus> xidMap = new ArrayMap<>();
     private final TransactionMonitor transactionMonitor;
@@ -97,7 +97,7 @@ public class XaResourceManager
      * A call to {@link #start(XAResource, Xid)} after a call to this method will start the transaction
      * created here. Otherwise if there's no {@link #createTransaction(XAResource)} call prior to a
      * {@link #start(XAResource, Xid)} call the transaction will be created there instead.
-     * 
+     *
      * @param xaResource the {@link XAResource} to create the transaction for.
      * @return the created transaction.
      * @throws XAException if the {@code resource} was already associated with another transaction.
@@ -109,12 +109,12 @@ public class XaResourceManager
         {
             throw new XAException( "Resource[" + xaResource + "] already enlisted or suspended" );
         }
-        
+
         XaTransaction xaTx = tf.create( dataSource.getLastCommittedTxId(), transactionManager.getTransactionState() );
         xaResourceMap.put( xaResource, new ResourceTransaction( xaTx ) );
         return xaTx;
     }
-    
+
     synchronized XaTransaction getXaTransaction( XAResource xaRes )
             throws XAException
     {
@@ -136,7 +136,7 @@ public class XaResourceManager
             createTransaction( xaResource );
             tx = xaResourceMap.get( xaResource );
         }
-        
+
         if ( xidMap.get( xid ) == null ) // TODO why are we allowing this?
         {
             int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId(),
@@ -185,7 +185,7 @@ public class XaResourceManager
             throw new XAException( "Resource[" + xaResource
                     + "] already enlisted" );
         }
-        
+
         ResourceTransaction tx = new ResourceTransaction( null /* TODO hmm */ );
         tx.xid = xid;
         xaResourceMap.put( xaResource, tx );
@@ -876,7 +876,9 @@ public class XaResourceManager
         }
         try
         {
-            ((NeoStoreTransaction)xaTransaction).kernelTransaction().commit();
+            NeoStoreTransaction neoStoreTransaction = (NeoStoreTransaction)xaTransaction;
+            neoStoreTransaction.commitChangesToCache();
+            neoStoreTransaction.kernelTransaction().commit();
         }
         catch ( TransactionFailureException e )
         {

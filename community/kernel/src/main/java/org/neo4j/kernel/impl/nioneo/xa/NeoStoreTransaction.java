@@ -854,12 +854,29 @@ public class NeoStoreTransaction extends XaTransaction
             if ( !isRecovered )
             {
                 updateFirstRelationships();
-                state.commitCows(); // updates the cached primitives
+                // Update of the cached primitives will happen when calling commitChangesToCache,
+                // which should be done after applyCommit and after the XaResourceManager monitor
+                // has been released.
             }
             neoStore.setLastCommittedTx( getCommitTxId() );
             if ( isRecovered )
             {
                 neoStore.updateIdGenerators();
+            }
+        }
+        finally
+        {
+            // clear() will be called in commitChangesToCache outside of the XaResourceManager monitor
+        }
+    }
+
+    public void commitChangesToCache()
+    {
+        try
+        {
+            if ( !isRecovered() )
+            {
+                state.commitCows(); // updates the cached primitives
             }
         }
         finally
@@ -1698,7 +1715,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         return addPropertyToPrimitive( rel, propertyKey, value );
     }
-    
+
     /**
      * Adds a property to the given node, with the given index and value.
      *
@@ -2364,7 +2381,7 @@ public class NeoStoreTransaction extends XaTransaction
             loadPropertyChain( chain, propertyStore, receiver );
         }
     }
-    
+
     public interface PropertyReceiver
     {
         void receive( DefinedProperty property, long propertyRecordId );

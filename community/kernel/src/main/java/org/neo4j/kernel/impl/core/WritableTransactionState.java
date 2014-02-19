@@ -375,13 +375,13 @@ public class WritableTransactionState implements TransactionState
     @Override
     public void commitCows()
     {
-        releaseCows( Status.STATUS_COMMITTED );
+        applyTransactionStateToCache( Status.STATUS_COMMITTED );
     }
 
     @Override
     public void rollback()
     {
-        releaseCows( Status.STATUS_ROLLEDBACK );
+        applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
         releaseLocks();
     }
 
@@ -422,7 +422,7 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    private void releaseCows( int param )
+    private void applyTransactionStateToCache( int param )
     {
         if ( primitiveElement == null )
         {
