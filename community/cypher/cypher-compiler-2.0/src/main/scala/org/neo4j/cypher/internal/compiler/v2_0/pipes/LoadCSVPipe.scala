@@ -81,11 +81,23 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
   }
 }
 
-case class ToStream(url: URL) {
+case class ToStream(url: URL, separator: Char = File.separatorChar) {
 
   def isFile: Boolean = "file" == url.getProtocol
 
-  def file = if (isFile) new File(url.getHost, url.getPath) else throw new IllegalStateException("url is not a file: " + url)
+  def file = {
+    val host: String = url.getHost
+    var path: String = url.getPath
+
+    // This is to handle Windows file paths correctly.
+    if (path.startsWith("/") && path.contains(":/") && host == "" && separator == '\\')
+      path = path.drop(1)
+
+    if (isFile)
+      if(host.nonEmpty) new File(host, path) else new File(path)
+    else
+      throw new IllegalStateException("url is not a file: " + url)
+  }
 
   def stream: InputStream = if (isFile) new FileInputStream(file) else url.openStream
 }

@@ -50,12 +50,19 @@ class ToStreamTest extends CypherFunSuite {
     c.file.getPath should equal (path)
   }
 
-
   test("should open a remote url") {
     val url = new URL("http://www.google.com")
     val c = ToStream(url)
 
     c should not be 'isFile
     an [IllegalStateException] should be thrownBy c.file
+  }
+
+  test("should work even with windows files") {
+    val url = new URL("file:///C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc")
+    val c = ToStream(url, '\\')
+
+    c shouldBe 'isFile
+    c.file.getPath should equal("C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc")
   }
 }
