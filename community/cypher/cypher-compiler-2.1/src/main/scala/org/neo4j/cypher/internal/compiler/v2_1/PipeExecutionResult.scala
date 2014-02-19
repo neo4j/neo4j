@@ -31,9 +31,9 @@ import collection.Map
 import java.util
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-class PipeExecutionResult(result: ClosingIterator,
-                          val columns: List[String], state: QueryState,
-                          executionPlanBuilder: () => PlanDescription)
+class PipeExecutionResult(val result: ClosingIterator,
+                          val columns: List[String], val state: QueryState,
+                          val executionPlanBuilder: () => PlanDescription)
   extends ExecutionResult
   with CollectionSupport
   with StringHelper {

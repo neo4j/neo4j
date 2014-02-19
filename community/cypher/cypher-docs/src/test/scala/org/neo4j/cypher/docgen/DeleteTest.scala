@@ -23,6 +23,7 @@ import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.graphdb.DynamicLabel
 
 class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
@@ -39,12 +40,15 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   def section = "Delete"
 
   @Test def delete_single_node() {
+
+    db.inTx(db.createNode(DynamicLabel.label("Useless")))
+
     testQuery(
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
-      queryText = "match (n {name: 'Peter'}) delete n",
+      queryText = "match (n:Useless) delete n",
       optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => assertIsDeleted(node("Peter")))
+      assertions = (p) => assertStats(p, nodesDeleted = 1))
   }
 
   @Test def delete_single_node_with_all_relationships() {
@@ -53,7 +57,7 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
       text = "If you are trying to delete a node with relationships on it, you have to delete these as well.",
       queryText = "match (n {name: 'Andres'})-[r]-() delete n, r",
       optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
-      assertions = (p) => assertIsDeleted(node("Andres")))
+      assertions = (p) => assertStats(p, relationshipsDeleted = 2, nodesDeleted = 1))
   }
 
   @Test def delete_all_nodes_and_all_relationships() {

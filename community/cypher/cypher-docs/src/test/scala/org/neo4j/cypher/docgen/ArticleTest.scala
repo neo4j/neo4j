@@ -35,6 +35,7 @@ import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
 
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
@@ -56,29 +57,21 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   def graphDescription: List[String]
   def indexProps: List[String] = List()
   
-  def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
-    val result = engine.execute(replaceNodeIds(queryText))
+  private def executeQuery(queryText: String)(implicit engine: ExecutionEngine): ExecutionResult = try {
+    val result = RewindableExecutionResult(engine.execute(replaceNodeIds(queryText)))
     result.dumpToString()
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
   }
 
-  def replaceNodeIds(_query: String): String = {
+  private def replaceNodeIds(_query: String): String = {
     var query = _query
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     query
   }
 
-  def testWithoutDocs(queryText: String, assertions: (ExecutionResult => Unit)*): (ExecutionResult, String) = {
-    var query = queryText
-    nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
-    val result = engine.execute(query)
-    assertions.foreach(_.apply(result))
-    (result, query)
-  }
-
-  def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
+  private def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
     indexProps.foreach((property) => {
       if (n.hasProperty(property)) {
         val value = n.getProperty(property)
@@ -87,14 +80,11 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     })
   }
 
-  def node(name: String): Node = db.inTx(db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name))))
-
-  def rel(id: Long): Relationship = db.inTx(db.getRelationshipById(id))
-
+  private def node(name: String): Node = db.inTx(db.getNodeById(nodes.getOrElse(name, throw new NotFoundException(name))))
 
   def text: String
 
-  def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
+  private def expandQuery(query: String, includeResults: Boolean, emptyGraph: Boolean, dir: File, possibleAssertion: Seq[String]) = {
     val name = title.toLowerCase.replace(" ", "-")
     val queryAsciidoc = createCypherSnippet(replaceNodeIds(query))
     val querySnippet = AsciiDocGenerator.dumpToSeparateFileWithType(dir,  name + "-query", queryAsciidoc)
@@ -123,36 +113,29 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   }
 
 
-  def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String]): String = {
+  private def runQuery(emptyGraph: Boolean, query: String, possibleAssertion: Seq[String]): String = {
 
     def testAssertions(result:ExecutionResult) {
       possibleAssertion.foreach(name => assert(name, result) )
     }
 
     if (emptyGraph) {
-      val db = new ImpermanentGraphDatabase()
+      val db = new TestGraphDatabaseFactory().
+        newImpermanentDatabaseBuilder().
+        newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
       try {
         val engine = new ExecutionEngine(db)
-
-        val tx: Transaction = db.beginTx()
         val result = executeQuery(query)(engine)
         testAssertions(result)
-        tx.failure()
-        tx.finish()
-
-        executeQuery(query)(engine).dumpToString()
+        result.dumpToString()
       } finally {
         db.shutdown()
       }
     }
     else {
-      val tx: Transaction = db.beginTx()
       val result = executeQuery(query)
       testAssertions(result)
-      tx.failure()
-      tx.finish()
-
-      executeQuery(query).dumpToString()
+      result.dumpToString()
     }
   }
 
@@ -176,7 +159,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
     } else ""
   }
 
-  def header = "[[%s-%s]]".format(section.toLowerCase, title.toLowerCase.replace(" ", "-"))
+  private def header = "[[%s-%s]]".format(section.toLowerCase, title.toLowerCase.replace(" ", "-"))
 
   def doThisBefore() {}
 
