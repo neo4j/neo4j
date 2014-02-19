@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.commons
 
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import org.neo4j.graphdb.Relationship
+import org.scalatest.matchers.{MatchResult, Matcher}
 
-@RunWith(classOf[JUnitRunner])
-class CreateAcceptanceTest extends ExecutionEngineFunSuite {
+trait CustomMatchers {
+  class IsTypeOf(clazz: Class[_]) extends Matcher[Any] {
 
-  test("using an undirected relationship pattern should fail on create") {
-    evaluating {
-      executeScalar[Relationship]("create (a {id: 2})-[r:KNOWS]-(b {id: 1}) RETURN r")
-    }  should produce[SyntaxException]
+    def apply(left: Any) = MatchResult(
+      clazz.isAssignableFrom(left.getClass),
+      s"expected $left to have type $clazz but it was ${left.getClass}",
+      s"$left has type $clazz")
   }
+
+  def haveType[T](implicit manifest: Manifest[T]) = new IsTypeOf(manifest.runtimeClass)
 
 }
