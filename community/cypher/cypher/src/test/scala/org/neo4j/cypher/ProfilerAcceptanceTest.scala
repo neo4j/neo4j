@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.data.{SimpleVal, MapVal, SeqVal}
+import org.neo4j.cypher.internal.helpers.TxCounts
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -176,6 +177,25 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
     createLabeledNode(Map("x" -> 1), "Label")
     val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
     result("A") should equal(1)
+  }
+
+  test("should handle PERIODIC COMMIT when profiling") {
+    val query = "USING PERIODIC COMMIT 10 FOREACH(n IN range(0,99) | CREATE()) WITH * MATCH n RETURN n"
+
+    // given
+    execute(query).toList
+    deleteAllEntities()
+    val initialTxCounts = graph.txCounts
+
+    // when
+    val result = profile(query)
+
+    // then
+    result.toList.size should equal(100)
+    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 11))
+    result.executionPlanDescription().asJava should not equal(null)
+    result.queryStatistics().containsUpdates should equal(true)
+    result.queryStatistics().nodesCreated should equal(100)
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
