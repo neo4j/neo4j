@@ -29,7 +29,7 @@ import profiler.Profiler
 import symbols.SymbolTable
 import org.neo4j.cypher.{PeriodicCommitInOpenTransactionException, SyntaxException, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{LoadCSVQueryContext, QueryContext, PlanContext}
 
 case class PipeInfo(pipe: Pipe, updating: Boolean, periodicCommit: Option[PeriodicCommitInfo] = None)
 
@@ -48,9 +48,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
       getLazyReadonlyQuery(p, columns)
     }
 
-    new ExecutionPlan {
-      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
-      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
+    new ExecutionPlan { // TODO: Only add the LoadCSVQueryContext when needed
+      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(new LoadCSVQueryContext(queryContext), params, false)
+      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new LoadCSVQueryContext(queryContext), params, true)
     }
   }
 
