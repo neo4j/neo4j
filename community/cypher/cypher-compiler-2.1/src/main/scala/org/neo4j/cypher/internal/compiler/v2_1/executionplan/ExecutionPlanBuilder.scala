@@ -105,8 +105,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
-    case in: Query =>
+    case in: PeriodicCommitQuery =>
+      getQueryResultColumns(in.query, currentSymbols)
 
+    case in: Query =>
       // Find the last query part
       var query = in
       while (query.tail.isDefined) {
@@ -118,9 +120,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuil
         case x   => Seq(x)
       }
 
-    case union: Union => getQueryResultColumns(union.queries.head, currentSymbols)
+    case union: Union =>
+      getQueryResultColumns(union.queries.head, currentSymbols)
 
-    case _ => List.empty
+    case _ =>
+      List.empty
   }
 
 

@@ -20,8 +20,8 @@
 package org.neo4j.cypher
 
 import org.scalatest.Matchers
-import org.junit.{Ignore, Test}
-import org.neo4j.cypher.internal.helpers.{TxCounts, GraphIcing}
+import org.junit.Test
+import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.Node
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matchers {
@@ -31,6 +31,14 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matche
     evaluating {
       executeScalar("USING PERIODIC COMMIT 200 MATCH (n) RETURN count(n)")
     } should produce[SyntaxException]
+  }
+
+  @Test
+  def should_produce_data_from_periodic_commit() {
+    val result = execute("USING PERIODIC COMMIT 200 CREATE (n {id: 42}) RETURN n.id")
+
+    result.toList should equal(List(Map("n.id" -> 42)))
+    result.columns should equal(List("n.id"))
   }
 
   @Test
