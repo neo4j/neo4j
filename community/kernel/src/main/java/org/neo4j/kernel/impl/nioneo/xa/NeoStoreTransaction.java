@@ -731,6 +731,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
             if ( !isRecovered )
             {
+
                 context.updateFirstRelationships();
                 context.commitCows(); // updates the cached primitives
             }

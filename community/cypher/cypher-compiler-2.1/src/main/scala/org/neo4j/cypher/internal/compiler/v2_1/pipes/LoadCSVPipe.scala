@@ -21,11 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CollectionType, AnyType, MapType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_1.{ExecutionContext, PlanDescription}
-import java.io._
-import au.com.bytecode.opencsv.CSVReader
 import java.net.URL
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -34,15 +30,19 @@ case object NoHeaders extends CSVFormat
 class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
-      val csvReader = getCSVReader(state)
-      val nextRow = format match {
+      val iterator: Iterator[Array[String]] = state.query.getCsvIterator(url)
+
+      val nextRow: Array[String] => Iterable[Any] = format match {
         case HasHeaders =>
-          val headers = csvReader.readNext().toSeq
+          val headers = iterator.next().toSeq
           (row: Array[String]) => (headers zip row).toMap
         case NoHeaders =>
           (row: Array[String]) => row.toSeq
       }
-      new RowIterator(csvReader, context, nextRow)
+
+      iterator.map {
+        value => context.newWith(identifier -> nextRow(value))
+      }
     })
   }
 
@@ -57,35 +57,5 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
 
   override def readsFromDatabase = false
 
-  private def getCSVReader(state: QueryState): CSVReader = {
-
-    val inputStream =
-      if (url.getProtocol == "file") {
-        // workaround for https://bugs.openjdk.java.net/browse/JDK-7177996
-        new FileInputStream(new File(url.getFile))
-      }
-      else
-        url.openStream()
-    val reader = new BufferedReader(new InputStreamReader(inputStream))
-    val csvReader = new CSVReader(reader)
-
-    state.addCleanupTask(() => csvReader.close())
-
-    csvReader
-  }
-
-  class RowIterator(csvReader: CSVReader, start: ExecutionContext, valueF: Array[String] => Any) extends Iterator[ExecutionContext] {
-    var nextRow: Array[String] = csvReader.readNext()
-
-    def hasNext: Boolean =
-      nextRow != null
-
-    def next(): ExecutionContext = {
-      if (nextRow == null) Iterator.empty.next()
-      val newContext = start.newWith(identifier -> valueF(nextRow))
-      nextRow = csvReader.readNext()
-      newContext
-    }
-  }
 }
 

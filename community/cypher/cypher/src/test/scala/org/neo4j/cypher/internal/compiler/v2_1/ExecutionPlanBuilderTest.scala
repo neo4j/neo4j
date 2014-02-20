@@ -27,12 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.{GraphDatabaseTestSupport, InternalException}
 import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
 import scala.collection.Seq
-import org.junit.Test
 import org.junit.Assert._
 import java.util.concurrent._
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundExecutionContext
+import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
 import javax.transaction.TransactionManager
 import org.neo4j.cypher.internal.commons.CypherFunSuite
@@ -65,7 +64,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
     val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
-    val queryContext = new TransactionBoundExecutionContext(graph, tx, isTopLevelTx = true, statement)
+    val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
 
     // when
     intercept[ExplodingException] {
@@ -92,7 +91,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(ReturnItem(Identifier("x"), "x"))
 
       val execPlanBuilder = new ExecutionPlanBuilder(graph)
-      val queryContext = new TransactionBoundExecutionContext(graph, tx, isTopLevelTx = true, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
 
       // when
@@ -116,7 +115,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(ReturnItem(Identifier("x"), "x"))
 
       val execPlanBuilder = new ExecutionPlanBuilder(graph)
-      val queryContext = new TransactionBoundExecutionContext(graph, tx, isTopLevelTx = true, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
 
       // when
@@ -191,7 +190,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
       )
 
       val execPlanBuilder = new ExecutionPlanBuilder(graph)
-      val queryContext = new TransactionBoundExecutionContext(graph, tx, isTopLevelTx = true, statement)
+      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
 
       // when
       val periodicCommit = execPlanBuilder.buildPipes(planContext, q).periodicCommit

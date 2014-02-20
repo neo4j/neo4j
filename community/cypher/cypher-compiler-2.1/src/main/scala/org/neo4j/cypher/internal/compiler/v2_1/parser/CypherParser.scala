@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.{ReattachAliasedExpressions, SemanticState, InvalidInputErrorFormatter, ast}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.parboiled.scala._
 import org.parboiled.errors.InvalidInputError
-import scala.Some
 
 case class CypherParser() extends Parser
   with Statement
@@ -40,7 +39,7 @@ case class CypherParser() extends Parser
   def parse(text: String): ast.Statement = {
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
-      case Some(statement: ast.Statement) => statement
+      case Some(root: ast.Statement) => root
       case _ => {
         parsingResult.parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
@@ -61,7 +60,7 @@ case class CypherParser() extends Parser
 
   @throws(classOf[SyntaxException])
   def parseToQuery(query: String): AbstractQuery = {
-    val statement = parse(query)
+    val statement: ast.Statement = parse(query)
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }

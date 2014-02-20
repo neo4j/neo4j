@@ -19,19 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NullDecorator, QueryState}
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.api.Statement
+import scala.collection.mutable.ListBuffer
 
-object QueryStateHelper {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
+class CleanUpper {
 
-  def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
-    val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
-    val context = new TransactionBoundQueryContext(db, tx, isTopLevelTx = true, statement)
-    empty.copy(db = db, inner = context)
+  private val _cleanupTasks: ListBuffer[() => Unit] = ListBuffer.empty
+
+  def addCleanupTask(task: () => Unit) {
+    _cleanupTasks += task
+  }
+
+  def cleanUp() {
+    val errors = _cleanupTasks.toSeq.flatMap {
+      f =>
+        try {
+          f()
+          None
+        } catch {
+          case e: Throwable => Some(e)
+        }
+    }
+
+    errors.map(e => throw e)
   }
 }

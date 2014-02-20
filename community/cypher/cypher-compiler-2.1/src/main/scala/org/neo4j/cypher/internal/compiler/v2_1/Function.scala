@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.{Predicate => CommandPredicate}
 import commands.expressions.{Expression => CommandExpression}
 import symbols._
 

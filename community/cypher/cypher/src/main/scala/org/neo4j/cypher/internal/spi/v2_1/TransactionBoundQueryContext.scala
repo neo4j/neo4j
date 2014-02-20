@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v2_0
+package org.neo4j.cypher.internal.spi.v2_1
 
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -28,17 +28,18 @@ import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.kernel.api._
-import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
+import org.neo4j.cypher.{InternalException, FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.helpers.collection.IteratorUtil
-import org.neo4j.cypher.internal.compiler.v2_0.spi._
+import org.neo4j.cypher.internal.compiler.v2_1.spi._
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import java.net.URL
 
-class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
+class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                        var tx: Transaction,
                                        val isTopLevelTx: Boolean,
                                        var statement: Statement)
@@ -78,7 +79,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
       try {
         val otherStatement = txBridge.instance()
         val result = try {
-          work(new TransactionBoundExecutionContext(graph, tx, isTopLevelTx, otherStatement))
+          work(new TransactionBoundQueryContext(graph, tx, isTopLevelTx, otherStatement))
         }
         finally {
           otherStatement.close()
@@ -262,4 +263,16 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
+
+  override def commitAndRestartTx() {
+    tx.success()
+    tx.close()
+
+    tx = graph.beginTx()
+    statement = txBridge.instance()
+  }
+
+  def getCsvIterator(url: URL): Iterator[Array[String]] =
+    throw new InternalException("This method should never be called")
+
 }

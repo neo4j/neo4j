@@ -20,24 +20,23 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
-import CypherVersion._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.kernel.api.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
-import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundExecutionContext => QueryContext_v2_1}
-import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundExecutionContext => QueryContext_v2_0}
+import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
+import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundQueryContext => QueryContext_v2_0}
 import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundPlanContext => PlanContext_v2_1}
 import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
+import org.neo4j.kernel.api.Statement
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -121,7 +120,7 @@ class ExecutionPlanWrapperForV2_1(inner: ExecutionPlan_v2_1) extends ExecutionPl
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
 
   private def queryContext(graph: GraphDatabaseAPI, txInfo: TransactionInfo) = {
-    val ctx = new QueryContext_v2_0(graph, txInfo.tx, txInfo.isTopLevelTx, txInfo.statement)
+    val ctx = new QueryContext_v2_0(graph, txInfo.tx, txInfo.statement)
     new ExceptionTranslatingQueryContext_v2_0(ctx)
   }
 

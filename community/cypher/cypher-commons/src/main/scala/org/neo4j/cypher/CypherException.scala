@@ -19,60 +19,107 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.{Status, KernelException}
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+  def status: Status
   def this(message: String) = this(message, null)
 }
 
-class CypherExecutionException(message: String, cause: KernelException) extends CypherException(message, cause)
+class CypherExecutionException(message: String, cause: KernelException) extends CypherException(message, cause) {
+  def status = cause match {
+    // These are always caused by KernelException's, so just map to the status code from the kernel exception.
+    case e: KernelException if e != null => e.status()
+    case _ => Status.Statement.ExecutionFailure
+  }
+}
 
-class UniquePathNotUniqueException(message: String) extends CypherException(message)
+class UniquePathNotUniqueException(message: String) extends CypherException(message) {
+  val status = Status.Statement.ConstraintViolation
+}
 
-class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause)
+class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+  val status = Status.Statement.EntityNotFound
+}
 
-class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause)
+class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+  val status = Status.Statement.InvalidType
+}
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
   def this(message: String) = this(message, null)
+
+  val status = Status.Statement.ParameterMissing
 }
 
 class ParameterWrongTypeException(message: String, cause: Throwable) extends CypherException(message, cause) {
   def this(message: String) = this(message, null)
+
+  val status = Status.Statement.InvalidType
 }
 
-class PatternException(message: String) extends CypherException(message, null)
+class PatternException(message: String) extends CypherException(message, null) {
+  val status = Status.Statement.InvalidSemantics
+}
 
-class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner)
+class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner) {
+  val status = Status.Statement.ExecutionFailure
+}
 
-class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist")
+class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist") {
+  val status = Status.Schema.NoSuchIndex
+}
 
-class FailedIndexException(indexName: String) extends CypherException("Index `" + indexName + "` has failed. Drop and recreate it to get it back online.")
+class FailedIndexException(indexName: String) extends CypherException("Index `" + indexName + "` has failed. Drop and recreate it to get it back online.") {
+  val status = Status.General.FailedIndex
+}
 
-class MissingConstraintException() extends CypherException("Constraint not found")
+class MissingConstraintException() extends CypherException("Constraint not found") {
+  val status = Status.Schema.NoSuchConstraint
+}
 
 class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
-  extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.")
+  extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.") {
+  val status = Status.Schema.ConstraintViolation
+}
 
-class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.")
+class ProfilerStatisticsNotReadyException() extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.") {
+  val status = Status.Statement.ExecutionFailure
+}
 
-class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`$labelName` does not exist in the store")
+class UnknownLabelException(labelName: String) extends CypherException(s"The provided label :`$labelName` does not exist in the store") {
+  val status = Status.Statement.NoSuchLabel
+}
 
 class IndexHintException(identifier: String, label: String, property: String, message: String)
-  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`")
+  extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`") {
+  val status = Status.Schema.NoSuchIndex
+}
 
 class LabelScanHintException(identifier: String, label: String, message: String)
-  extends CypherException(s"$message\nLabel: `$label`")
+  extends CypherException(s"$message\nLabel: `$label`") {
+  val status = Status.Statement.InvalidSemantics
+}
 
-class UnableToPickStartPointException(message: String) extends CypherException(message)
+class UnableToPickStartPointException(message: String) extends CypherException(message) {
+  val status = Status.Statement.ExecutionFailure
+}
 
-class InvalidSemanticsException(message: String) extends CypherException(message)
+class InvalidSemanticsException(message: String) extends CypherException(message) {
+  val status = Status.Statement.InvalidSemantics
+}
 
-class OutOfBoundsException(message: String) extends CypherException(message)
+class OutOfBoundsException(message: String) extends CypherException(message) {
+  val status = Status.Statement.InvalidArguments
+}
 
-class MergeConstraintConflictException(message: String) extends CypherException(message)
+class MergeConstraintConflictException(message: String) extends CypherException(message) {
+  val status = Status.Statement.ConstraintViolation
+}
 
-class ArithmeticException(message: String) extends CypherException(message)
+class ArithmeticException(message: String) extends CypherException(message) {
+  val status = Status.Statement.ArithmeticError
+}
 
 class IncomparableValuesException(lhs: String, rhs: String)
   extends SyntaxException(s"Don't know how to compare that. Left: ${lhs}; Right: ${rhs}")
