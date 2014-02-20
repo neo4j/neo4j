@@ -20,6 +20,8 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.CypherExecutionException;
+import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -130,7 +132,7 @@ public class TransactionHandle
                 {
                     // If there is an open transaction at this point this will cause an immediate error
                     // as soon as Cypher tries to execute the initial PERIODIC COMMIT statement
-                    executeStatements( statements, output, errors );
+                    executePeriodicCommitStatement(statements, output, errors);
                 }
                 else
                 {
@@ -276,7 +278,7 @@ public class TransactionHandle
                 try
                 {
                     result = engine.execute( statement.statement(), statement.parameters() );
-                    output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
+                    output.statementResult(result, statement.includeStats(), statement.resultDataContents());
                 }
                 catch ( CypherException e )
                 {
@@ -310,4 +312,52 @@ public class TransactionHandle
             errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
         }
     }
-}
+
+
+    private void executePeriodicCommitStatement( 
+           StatementDeserializer statements, ExecutionResultSerializer output, List<Neo4jError> errors )
+    {
+        try
+        {
+            ExecutionResult result;
+            try
+            {
+                Statement statement = statements.next();
+                if ( statements.hasNext() )
+                {
+                    throw new InvalidSemanticsException("Cannot execute another statement after executing PERIODIC COMMIT statement in the same transaction");
+                }
+
+                result = engine.execute( statement.statement(), statement.parameters() );
+                ensureActiveTransaction();
+                output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
+                closeContextAndCollectErrors(errors);
+            }
+            catch ( CypherException e )
+            {
+                errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
+            }
+            catch( DeadlockDetectedException e )
+            {
+                errors.add( new Neo4jError( Status.Transaction.DeadlockDetected, e ));
+            }
+            catch ( IOException e )
+            {
+                errors.add( new Neo4jError( Status.Network.UnknownFailure, e ) );
+            }
+            catch ( Exception e )
+            {
+                errors.add( new Neo4jError( Status.Statement.ExecutionFailure, e ) );
+            }
+
+            Iterator<Neo4jError> deserializationErrors = statements.errors();
+            while ( deserializationErrors.hasNext() )
+            {
+                errors.add( deserializationErrors.next() );
+            }
+        }
+        catch ( Exception e )
+        {
+            errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
+        }
+    }}
