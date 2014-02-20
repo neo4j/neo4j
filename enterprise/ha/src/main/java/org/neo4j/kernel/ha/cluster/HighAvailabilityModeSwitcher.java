@@ -312,13 +312,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 idGeneratorFactory.switchToMaster();
 
-                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
+                Monitors monitors = graphDb.getDependencyResolver().resolveDependency( Monitors.class );
+
+                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager, monitors );
 
                 MasterImpl masterImpl = new MasterImpl( spi, logging, config );
 
                 MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                         new BranchDetectingTxVerifier( graphDb ),
-                        graphDb.getDependencyResolver().resolveDependency( Monitors.class ));
+                        monitors );
                 haCommunicationLife.add( masterImpl );
                 haCommunicationLife.add( masterServer );
                 assignMaster( masterImpl );

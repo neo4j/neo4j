@@ -28,14 +28,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
@@ -55,9 +49,11 @@ import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
@@ -90,6 +86,17 @@ class BackupService
         {
             return consistent;
         }
+    }
+
+    private final FileSystemAbstraction fileSystem;
+
+    BackupService() {
+        this.fileSystem = new DefaultFileSystemAbstraction();
+    }
+
+    BackupService( FileSystemAbstraction fileSystem )
+    {
+        this.fileSystem = fileSystem;
     }
 
     BackupOutcome doFullBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
@@ -338,7 +345,7 @@ class BackupService
 
     boolean directoryContainsDb( String targetDirectory )
     {
-        return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
+        return fileSystem.fileExists( new File( targetDirectory, NeoStore.DEFAULT_NAME ) );
     }
 
     static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )

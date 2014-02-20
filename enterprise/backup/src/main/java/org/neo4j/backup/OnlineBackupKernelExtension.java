@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
@@ -87,7 +88,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 {
                     return graphDatabaseAPI.getStoreId();
                 }
-            }, xaDataSourceManager, kpeg );
+            }, xaDataSourceManager, kpeg, monitors );
             try
             {
                 server = new BackupServer( backup,

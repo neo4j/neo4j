@@ -47,6 +47,8 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
@@ -54,12 +56,15 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final GraphDatabaseAPI graphDb;
     private final Logging logging;
     private final TransactionManager txManager;
+    private Monitors monitors;
 
-    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, TransactionManager txManager )
+    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging,
+                                 TransactionManager txManager, Monitors monitors )
     {
         this.graphDb = graphDb;
         this.logging = logging;
         this.txManager = txManager;
+        this.monitors = monitors;
     }
 
     @Override
@@ -171,7 +176,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     public RequestContext rotateLogsAndStreamStoreFiles( StoreWriter writer )
     {
         return ServerUtil.rotateLogsAndStreamStoreFiles( graphDb.getStoreDir(), graphDb.getXaDataSourceManager(),
-                graphDb.getKernelPanicGenerator(), logging.getMessagesLog( MasterImpl.class ), true, writer );
+                graphDb.getKernelPanicGenerator(), logging.getMessagesLog( MasterImpl.class ), true, writer,
+                monitors.newMonitor( BackupMonitor.class, getClass() ) );
     }
 
     @Override
