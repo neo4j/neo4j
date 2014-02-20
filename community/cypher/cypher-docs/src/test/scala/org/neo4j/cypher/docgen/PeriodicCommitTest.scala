@@ -32,7 +32,7 @@ class PeriodicCommitTest
   @Test def periodic_commit_default() {
     testQuery(
       title = "Periodic commit without update limit",
-      text = "PERIODIC COMMIT with no specified number of entity updates, using 1000 as the default value.",
+      text = "PERIODIC COMMIT with no specified number of entity updates, using 1000 as the default value",
       queryText = "USING PERIODIC COMMIT FOREACH(id IN range(0, 10000) | CREATE (n:User {id: id}))",
       optionalResultExplanation = "",
       assertions = assertStatsResult(nodesCreated = 10001, labelsAdded = 10001, propertiesSet = 10001)(_)
@@ -42,7 +42,7 @@ class PeriodicCommitTest
   @Test def periodicCommit() {
     testQuery(
       title = "Periodic commit with update limit",
-      text = "PERIODIC COMMIT with a specified number of entity updates after which the transaction should be committed.",
+      text = "PERIODIC COMMIT with a specified number of entity updates after which the transaction should be committed",
       queryText = "USING PERIODIC COMMIT 500 FOREACH(id IN range(0, 10000) | CREATE (n:User {id: id}))",
       optionalResultExplanation = "",
       assertions = assertStatsResult(nodesCreated = 10001, labelsAdded = 10001, propertiesSet = 10001)(_)
@@ -59,7 +59,7 @@ class PeriodicCommitTest
     }).cypherEscape
 
     testQuery(
-      title = "import using periodic commit",
+      title = "Import using periodic commit",
       text = "Using PERIODIC COMMIT along with LOAD CSV",
       queryText = s"USING PERIODIC COMMIT LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (n:User {name: line.name})",
       optionalResultExplanation = "",
