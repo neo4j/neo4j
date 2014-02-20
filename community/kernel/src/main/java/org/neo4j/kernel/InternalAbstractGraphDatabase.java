@@ -60,6 +60,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -89,8 +90,6 @@ import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.cleanup.CleanupIfOutsideTransaction;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DefaultCaches;
@@ -252,7 +251,6 @@ public abstract class InternalAbstractGraphDatabase
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
     protected UpdateableSchemaState updateableSchemaState;
-    protected CleanupService cleanupService;
 
     protected Monitors monitors;
 
@@ -497,8 +495,6 @@ public abstract class InternalAbstractGraphDatabase
         }
         life.add( txManager );
 
-        cleanupService = life.add( createCleanupService() );
-
         transactionEventHandlers = new TransactionEventHandlers( txManager );
 
         txIdGenerator = life.add( createTxIdGenerator() );
@@ -596,11 +592,6 @@ public abstract class InternalAbstractGraphDatabase
 
     public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
-    }
-
-    protected CleanupService createCleanupService()
-    {
-        return CleanupService.create( jobScheduler, logging, new CleanupIfOutsideTransaction( txManager ) );
     }
 
     private Map<Object, Object> newSchemaStateMap() {
@@ -1382,10 +1373,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( jobScheduler );
             }
-            else if ( CleanupService.class.equals( type ) )
-            {
-                return type.cast( cleanupService );
-            }
             else if ( LabelScanStore.class.isAssignableFrom( type )
                 && type.isInstance( neoDataSource.getLabelScanStore() ) )
             {
@@ -1580,14 +1567,14 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Statement statement )
     {
-        return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
+        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
         {
             @Override
             public Node apply( long id )
             {
                 return getNodeById( id );
             }
-        }, input ), statement );
+        }, input ) );
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator
