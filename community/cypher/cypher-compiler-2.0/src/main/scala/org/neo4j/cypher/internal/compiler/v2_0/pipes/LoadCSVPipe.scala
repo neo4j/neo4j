@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.{CollectionType, AnyType, MapType}
 import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescription}
 import java.io._
-import au.com.bytecode.opencsv.CSVReader
 import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
 
@@ -33,15 +32,19 @@ case object NoHeaders extends CSVFormat
 class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
-      val csvReader = getCSVReader(state)
-      val nextRow = format match {
+      val iterator:Iterator[Array[String]] = state.query.getCsvIterator(url)
+
+      val nextRow: Array[String] => Iterable[Serializable]  = format match {
         case HasHeaders =>
-          val headers = csvReader.readNext().toSeq
+          val headers = iterator.next().toSeq
           (row: Array[String]) => (headers zip row).toMap
         case NoHeaders =>
           (row: Array[String]) => row.toSeq
       }
-      new RowIterator(csvReader, context, nextRow)
+
+      iterator.map {
+        value => context.newWith(identifier -> nextRow(value))
+      }
     })
   }
 
@@ -55,50 +58,5 @@ class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String)
   }
 
   override def readsFromDatabase = false
-
-  private def getCSVReader(state: QueryState): CSVReader = {
-    val inputStream = ToStream(url).stream
-    val reader = new BufferedReader(new InputStreamReader(inputStream))
-    val csvReader = new CSVReader(reader)
-
-    state.addCleanupTask(() => csvReader.close())
-
-    csvReader
-  }
-
-  class RowIterator(csvReader: CSVReader, start: ExecutionContext, valueF: Array[String] => Any) extends Iterator[ExecutionContext] {
-    var nextRow: Array[String] = csvReader.readNext()
-
-    def hasNext: Boolean =
-      nextRow != null
-
-    def next(): ExecutionContext = {
-      if (nextRow == null) Iterator.empty.next()
-      val newContext = start.newWith(identifier -> valueF(nextRow))
-      nextRow = csvReader.readNext()
-      newContext
-    }
-  }
-}
-
-case class ToStream(url: URL, separator: Char = File.separatorChar) {
-
-  def isFile: Boolean = "file" == url.getProtocol
-
-  def file = {
-    val host: String = url.getHost
-    var path: String = url.getPath
-
-    // This is to handle Windows file paths correctly.
-    if (path.startsWith("/") && path.contains(":/") && host == "" && separator == '\\')
-      path = path.drop(1)
-
-    if (isFile)
-      if(host.nonEmpty) new File(host, path) else new File(path)
-    else
-      throw new IllegalStateException("url is not a file: " + url)
-  }
-
-  def stream: InputStream = if (isFile) new FileInputStream(file) else url.openStream
 }
 

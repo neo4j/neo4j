@@ -29,29 +29,23 @@ import org.scalatest.mock.MockitoSugar
 
 class ClosingIteratorTest extends Assertions with MockitoSugar {
   var ctx: QueryContext = _
-  var cleanupTaskList: CleanupTaskList = _
-  var cleanupTask: () => Unit = _
 
   @Before
   def before() {
     ctx = mock[QueryContext]
-    cleanupTaskList = mock[CleanupTaskList]
-    cleanupTask = mock[() => Unit]
-    when(cleanupTaskList.cleanupTasks).thenReturn(Seq(cleanupTask))
   }
 
   @Test
   def should_cleanup_when_we_reach_the_end() {
     //Given
     val wrapee   = Iterator(Map("k" -> 42))
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     val result = iterator.next()
 
     //Then
     verify(ctx).close(success = true)
-    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 
@@ -59,14 +53,13 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def should_cleanup_even_for_empty_iterator() {
     //Given
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     val result = iterator.hasNext
 
     //Then
     verify(ctx).close(success = true)
-    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(false))
   }
 
@@ -74,7 +67,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def multiple_has_next_should_not_close_more_than_once() {
     //Given
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     val result = iterator.hasNext
@@ -85,7 +78,6 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
 
     //Then
     verify(ctx, times(1)).close(success = true)
-    verify(cleanupTask, times(1)).apply()
     assertThat(result, is(false))
   }
 
@@ -94,14 +86,13 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenThrow(new RuntimeException)
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
 
     //Then
     verify(ctx).close(success = false)
-    verify(cleanupTask, times(1)).apply()
   }
 
   @Test
@@ -111,50 +102,12 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
 
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
+    val iterator = new ClosingIterator(wrapee, ctx)
 
     //When
     intercept[RuntimeException](iterator.next())
 
     //Then
     verify(ctx).close(success = false)
-    verify(cleanupTask, times(1)).apply()
-  }
-
-  @Test
-  def close_runs_cleanup() {
-    //Given
-    val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43))
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
-
-    //When
-    val result = iterator.next()
-    iterator.close()
-
-    //Then
-    verify(ctx).close(success = true)
-    verify(cleanupTask, times(1)).apply()
-    assertThat(result, is(Map[String, Any]("k" -> 42)))
-  }
-
-  @Test
-  def close_runs_all_cleanup_tasks_despite_exception_in_one_of_them() {
-    //Given
-    val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43), Map("k" -> 44))
-    cleanupTaskList = mock[CleanupTaskList]
-    val cleanupTask1 = mock[() => Unit]
-    val cleanupTask2 = mock[() => Unit]
-    when(cleanupTaskList.cleanupTasks).thenReturn(Seq(cleanupTask1, cleanupTask2))
-    val iterator = new ClosingIterator(wrapee, ctx, cleanupTaskList)
-    when(cleanupTask1.apply).thenThrow(new RuntimeException("error"))
-
-    //When
-    iterator.next()
-    iterator.next()
-    intercept[RuntimeException](iterator.next())
-
-    //Then
-    verify(ctx).close(success = true)
-    verify(cleanupTask2, times(1)).apply()
   }
 }

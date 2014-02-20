@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.pipes
 import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import java.io.File
+import org.neo4j.cypher.internal.compiler.v2_0.spi.ToStream
 
 class ToStreamTest extends CypherFunSuite {
   test("should open a local file with an absolute path") {
@@ -43,7 +44,7 @@ class ToStreamTest extends CypherFunSuite {
   }
 
   test("should open a local file with a relative path 2") {
-    val path = ".././.././file.csv"
+    val path = ".././.././file.csv".replace('/', File.separatorChar)
     val url = new URL(s"file://$path")
     val c = ToStream(url)
 

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.commands.{LabelSetOp, LabelAction
 import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.{TokenType, KeyToken}
 import org.neo4j.kernel.api.index.IndexDescriptor
+import java.net.URL
 
 class LabelActionTest extends GraphDatabaseJUnitSuite {
   val queryContext = new SnitchingQueryContext
@@ -139,4 +140,6 @@ class SnitchingQueryContext extends QueryContext {
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
+
+  def getCsvIterator(url: URL): Iterator[Array[String]] = ???
 }
