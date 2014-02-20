@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import ast.convert.StatementConverters._
-import commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_0.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_0.commands.AbstractQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.scala._
@@ -39,7 +39,7 @@ case class CypherParser() extends Parser
   def parse(text: String): ast.Statement = {
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
-      case Some(statement: ast.Statement) => statement
+      case Some(root: ast.Statement) => root
       case _ => {
         parsingResult.parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
@@ -60,7 +60,7 @@ case class CypherParser() extends Parser
 
   @throws(classOf[SyntaxException])
   def parseToQuery(query: String): AbstractQuery = {
-    val statement = parse(query)
+    val statement: ast.Statement = parse(query)
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }

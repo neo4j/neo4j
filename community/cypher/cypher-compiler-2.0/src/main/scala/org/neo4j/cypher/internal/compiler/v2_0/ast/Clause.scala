@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
-import java.net.URI
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String

@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 
-sealed trait Query extends Statement
 
-case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends Query {
+case class Query(part: QueryPart)(val position: InputPosition) extends Statement {
+  override def semanticCheck = part.semanticCheck
+}
+
+sealed trait QueryPart extends ASTNode with SemanticCheckable
+
+case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart {
   assert(clauses.nonEmpty)
 
   def semanticCheck: SemanticCheck = checkOrder(clauses) then checkClauses
@@ -82,16 +87,16 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 }
 
-trait Union extends Query {
-  def statement: Query
+sealed trait Union extends QueryPart {
+  def part: QueryPart
   def query: SingleQuery
 
   def semanticCheck: SemanticCheck =
     checkUnionAggregation then
-    statement.semanticCheck then
+    part.semanticCheck then
     query.semanticCheck
 
-  private def checkUnionAggregation: SemanticCheck = (statement, this) match {
+  private def checkUnionAggregation: SemanticCheck = (part, this) match {
     case (_: SingleQuery, _)                  => None
     case (_: UnionAll, _: UnionAll)           => None
     case (_: UnionDistinct, _: UnionDistinct) => None
@@ -99,11 +104,11 @@ trait Union extends Query {
   }
 
   def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
-  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = statement match {
+  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = part match {
     case q: SingleQuery => accum :+ query :+ q
     case u: Union       => u.unionedQueries(accum :+ query)
   }
 }
 
-case class UnionAll(statement: Query, query: SingleQuery)(val position: InputPosition) extends Union
-case class UnionDistinct(statement: Query, query: SingleQuery)(val position: InputPosition) extends Union
+case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union
+case class UnionDistinct(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union

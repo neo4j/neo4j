@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0
 
-import commands.{Predicate => CommandPredicate}
 import commands.expressions.{Expression => CommandExpression}
 import symbols._
-import org.neo4j.cypher.SyntaxException
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(

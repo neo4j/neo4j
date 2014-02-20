@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.NodeStillHasRelationshipsException
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.TransactionFailureException
-import scala.collection
 import org.neo4j.cypher.internal.compiler.v2_0.spi.QueryContext
 import scala.collection.mutable
 
