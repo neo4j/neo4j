@@ -122,7 +122,7 @@ public class TransactionHandle
                 }
                 catch ( CypherException e )
                 {
-                    errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
+                    errors.add( new Neo4jError( e.status(), e ) );
                     throw e;
                 }
 
@@ -333,7 +333,7 @@ public class TransactionHandle
             }
             catch ( CypherException e )
             {
-                errors.add( new Neo4jError( EXCEPTION_MAPPING.apply( e ), e ) );
+                errors.add( new Neo4jError( e.status(), e ) );
             }
             catch( DeadlockDetectedException e )
             {
