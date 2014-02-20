@@ -33,6 +33,7 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -159,7 +160,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         assertThat( execute.status(), equalTo( 404 ) );
-        assertThat(execute, hasErrors( Status.Transaction.UnknownId ));
+        assertThat( execute, hasErrors( Status.Transaction.UnknownId ) );
     }
 
     @Test
@@ -190,6 +191,40 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
     }
 
+    @Test
+    public void begin_and_execute_periodic_commit_that_returns_data_and_commit() throws Exception
+    {
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin and execute and commit
+        Response response = http.POST(
+                "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT CREATE (n {id: 23}) RETURN n' } ] }" )
+        );
+
+        assertThat( response.status(), equalTo( 200 ) );
+
+        assertThat( response, containsNoErrors() );
+
+        JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
+        assertThat(columns.toString(), equalTo("[\"n\"]"));
+
+        assertThat(countNodes(), equalTo(nodesInDatabaseBeforeTransaction + 1));
+    }
+
+    @Test
+    public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception
+    {
+        // begin and execute and commit
+        Response response = http.POST(
+                "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
+        );
+
+        assertThat( response.status(), equalTo(200) );
+        assertThat( response, hasErrors(Status.Statement.InvalidSemantics) );
+    }
+    
     @Test
     public void begin_and_execute_invalid_query_and_commit() throws Exception
     {
