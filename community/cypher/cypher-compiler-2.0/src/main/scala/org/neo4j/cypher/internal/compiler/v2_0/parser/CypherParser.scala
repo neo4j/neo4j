@@ -39,7 +39,7 @@ case class CypherParser() extends Parser
   def parse(text: String): ast.Statement = {
     val parsingResult = ReportingParseRunner(SingleStatement).run(text)
     parsingResult.result match {
-      case Some(root: ast.Statement) => root
+      case Some(statement: ast.Statement) => statement
       case _ => {
         parsingResult.parseErrors.map { error =>
           val message = if (error.getErrorMessage != null) {
@@ -60,7 +60,7 @@ case class CypherParser() extends Parser
 
   @throws(classOf[SyntaxException])
   def parseToQuery(query: String): AbstractQuery = {
-    val statement: ast.Statement = parse(query)
+    val statement = parse(query)
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }
