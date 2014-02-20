@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -59,7 +58,6 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relLookup;
     private final ThreadToStatementContextBridge bridge;
-    private final CleanupService cleanupService;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -70,13 +68,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
 
     public TxStateTransactionDataSnapshot( TxState state, NodeProxy.NodeLookup nodeLookup, RelationshipProxy
-            .RelationshipLookups relLookup, ThreadToStatementContextBridge bridge, CleanupService cleanupService )
+            .RelationshipLookups relLookup, ThreadToStatementContextBridge bridge )
     {
         this.state = state;
         this.nodeLookup = nodeLookup;
         this.relLookup = relLookup;
         this.bridge = bridge;
-        this.cleanupService = cleanupService;
 
         // Load all changes eagerly, because we won't have access to the after state after the tx has been committed.
         takeSnapshot( state, bridge );
@@ -246,7 +243,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             @Override
             public Node apply( Long id )
             {
-                return new NodeProxy( id, nodeLookup, relLookup, bridge, cleanupService );
+                return new NodeProxy( id, nodeLookup, relLookup, bridge );
             }
         }, added);
     }
@@ -312,7 +309,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Node entity()
         {
-            return new NodeProxy( nodeId, nodeLookup, relLookup, bridge, cleanupService );
+            return new NodeProxy( nodeId, nodeLookup, relLookup, bridge );
         }
         @Override
         public String key()
@@ -423,7 +420,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Node node()
         {
-            return new NodeProxy( nodeId, nodeLookup, relLookup, bridge, cleanupService );
+            return new NodeProxy( nodeId, nodeLookup, relLookup, bridge );
         }
 
         @Override
