@@ -23,6 +23,7 @@ import java.net.URL
 import java.io._
 import au.com.bytecode.opencsv.CSVReader
 import org.neo4j.cypher.internal.compiler.v2_1.CleanUpper
+import org.neo4j.cypher.LoadExternalResourceException
 
 class LoadCSVQueryContext(inner: QueryContext, cleaner: CleanUpper = new CleanUpper) extends DelegatingQueryContext(inner) {
 
@@ -76,5 +77,9 @@ case class ToStream(url: URL, separator: Char = File.separatorChar) {
       throw new IllegalStateException("url is not a file: " + url)
   }
 
-  def stream: InputStream = if (isFile) new FileInputStream(file) else url.openStream
+  def stream: InputStream = try {
+    if (isFile) new FileInputStream(file) else url.openStream
+  } catch {
+    case e: IOException => throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
+  }
 }

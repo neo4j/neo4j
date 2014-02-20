@@ -143,8 +143,9 @@ public interface Status
         ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
         // database
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
-
+        ExternalResourceFailure( TransientError, "The external resource is not available"),
         ;
+
         private final Code code;
 
         @Override
