@@ -34,6 +34,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   require(graph != null, "Can't work with a null graph database")
 
+  val compiler = createCorrectCompiler()
   private def graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
 
   @throws(classOf[SyntaxException])
@@ -74,9 +75,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val statement = txBridge.instance()
       val plan = try {
         // fetch plan cache
-        val (planCache, compiler) = getOrCreateFromSchemaState(statement,
-          (new LRUCache[String, ExecutionPlan](getPlanCacheSize), createCompiler())
-        )
+        val planCache = getOrCreateFromSchemaState(statement, new LRUCache[String, ExecutionPlan](getPlanCacheSize))
 
         // get plan or build it
         planCache.getOrElseUpdate(query, {
@@ -123,7 +122,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query:String): String = Prettifier(query)
 
-  private def createCompiler() =
+  private def createCorrectCompiler() =
     optGraphAs[InternalAbstractGraphDatabase]
       .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
       .andThen({
