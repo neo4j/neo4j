@@ -24,7 +24,6 @@ import symbols._
 import org.junit.Test
 import org.scalatest.Assertions
 import org.junit.Assert._
-import scala.collection.immutable.SortedSet
 
 class CollectionSliceTest extends Assertions {
   val dummyCollection = DummyExpression(

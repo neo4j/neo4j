@@ -36,7 +36,7 @@ class SemanticStateTest extends Assertions {
       case Right(_) => fail("Expected an error from second declaration")
       case Left(error) =>
         assertEquals(identifier2.position, error.position)
-        assertEquals(Set(identifier1.position), error.references)
+        assertEquals(Seq(identifier1.position), error.references)
     }
   }
 
@@ -52,7 +52,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val positions = state.symbolTable.get("foo").map(_.positions)
-        assertEquals(Set(identifier1.position, identifier2.position, identifier3.position), positions.get)
+        assertEquals(Seq(identifier1.position, identifier2.position, identifier3.position), positions.get)
     }
   }
 
