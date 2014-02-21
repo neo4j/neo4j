@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import symbols._
-import scala.collection.immutable.Map
-import scala.collection.immutable.HashMap
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable.{Map, HashMap, SortedSet}
 
 case class Symbol(positions: SortedSet[InputPosition], types: TypeSpec)
 
@@ -35,10 +33,10 @@ case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = 
 }
 
 object SemanticState {
-  val clean = SemanticState(HashMap.empty, HashMap.empty, None)
+  val clean = SemanticState(HashMap.empty, IdentityMap.empty, None)
 }
 
-case class SemanticState(
+case class SemanticState private (
     symbolTable: Map[String, Symbol],
     typeTable: Map[ast.Expression, ExpressionTypeInfo],
     parent: Option[SemanticState]) {

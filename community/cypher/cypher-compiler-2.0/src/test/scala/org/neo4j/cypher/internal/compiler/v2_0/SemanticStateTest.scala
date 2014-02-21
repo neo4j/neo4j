@@ -211,6 +211,21 @@ class SemanticStateTest extends Assertions {
     assertEquals(TypeSpec.all, s1.clearSymbols.symbolTypes("foo"))
   }
 
+  @Test
+  def shouldMaintainSeparateTypeInfoForEquivalentExpressions() {
+    val exp1 = ast.Property(ast.Identifier("n")(DummyPosition(0)), ast.Identifier("prop")(DummyPosition(3)))(DummyPosition(0))
+    val exp2 = ast.Property(ast.Identifier("n")(DummyPosition(6)), ast.Identifier("prop")(DummyPosition(9)))(DummyPosition(6))
+    val s1 = SemanticState.clean.specifyType(exp1, CTNode).right.get
+    val s2 = s1.specifyType(exp2, CTRelationship).right.get
+
+    assertEquals(CTNode: TypeSpec, s2.expressionType(exp1).specified)
+    assertEquals(CTRelationship: TypeSpec, s2.expressionType(exp2).specified)
+
+    val s3 = s2.expectType(exp1, CTMap)._1.expectType(exp2, CTAny)._1
+    assertEquals(Some(CTMap: TypeSpec), s3.expressionType(exp1).expected)
+    assertEquals(Some(CTAny: TypeSpec), s3.expressionType(exp2).expected)
+  }
+
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
     def then(next: SemanticState => Either[SemanticError, SemanticState]): Either[SemanticError, SemanticState] = {
       either match {
