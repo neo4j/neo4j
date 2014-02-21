@@ -58,6 +58,10 @@ include::startnode.asciidoc[]
 
 include::endnode.asciidoc[]
 
+include::toint.asciidoc[]
+
+include::tofloat.asciidoc[]
+
 :leveloffset: 1
 
 [[query-functions-collection]]
@@ -186,3 +190,5 @@ include::trim.asciidoc[]
 include::lower.asciidoc[]
 
 include::upper.asciidoc[]
+
+include::split.asciidoc[]
