@@ -20,14 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import symbols._
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class SemanticStateTest extends Assertions {
+class SemanticStateTest extends CypherFunSuite {
 
-  @Test
-  def shouldDeclareIdentifierOnce() {
+  test("should declare identifier once") {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
     val state = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
@@ -35,13 +32,12 @@ class SemanticStateTest extends Assertions {
     state.declareIdentifier(identifier2, CTNode) match {
       case Right(_) => fail("Expected an error from second declaration")
       case Left(error) =>
-        assertEquals(identifier2.position, error.position)
-        assertEquals(Seq(identifier1.position), error.references)
+        error.position should equal(identifier2.position)
+        error.references should equal(Seq(identifier1.position))
     }
   }
 
-  @Test
-  def shouldCollectAllIdentifiersWhenImplicitlyDeclared() {
+  test("should collect all identifiers when implicitly declared") {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(2))
     val identifier3 = ast.Identifier("foo")(DummyPosition(3))
@@ -51,13 +47,12 @@ class SemanticStateTest extends Assertions {
     ((_: SemanticState).implicitIdentifier(identifier3, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
-        val positions = state.symbolTable.get("foo").map(_.positions)
-        assertEquals(Seq(identifier1.position, identifier2.position, identifier3.position), positions.get)
+        val positions = state.symbolTable.get("foo").map(_.positions).get
+        positions should equal(Seq(identifier1.position, identifier2.position, identifier3.position))
     }
   }
 
-  @Test
-  def shouldConstrainTypesForConsecutiveImplicitIdentifierDeclarations() {
+  test("should constrain types for consecutive implicit identifier declarations") {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
 
@@ -66,7 +61,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
-        assertEquals(CTNode: TypeSpec, types)
+        types should equal(CTNode: TypeSpec)
     }
 
     SemanticState.clean.implicitIdentifier(identifier1, CTRelationship) then
@@ -74,7 +69,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
-        assertEquals(CTRelationship: TypeSpec, types)
+        types should equal(CTRelationship: TypeSpec)
     }
 
     SemanticState.clean.implicitIdentifier(identifier1, CTNode | CTRelationship) then
@@ -82,7 +77,7 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
-        assertEquals(CTNode | CTRelationship, types)
+        types should equal(CTNode | CTRelationship)
     }
 
     SemanticState.clean.implicitIdentifier(identifier1, CTNode) then
@@ -90,19 +85,18 @@ class SemanticStateTest extends Assertions {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
-        assertEquals(CTNode: TypeSpec, types)
+        types should equal(CTNode: TypeSpec)
     }
   }
 
-  @Test
-  def shouldFailIfNoPossibleTypesRemainAfterImplicitIdentifierDeclaration() {
+  test("should fail if no possible types remain after implicit identifier declaration") {
     SemanticState.clean.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTMap) then
       ((_: SemanticState).implicitIdentifier(ast.Identifier("foo")(DummyPosition(3)), CTNode)) match {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
-        assertEquals(DummyPosition(3), error.position)
-        assertEquals(Seq(DummyPosition(0)), error.references.toSeq)
-        assertEquals("Type mismatch: foo already defined with conflicting type Map (expected Node)", error.msg)
+        error.position should equal(DummyPosition(3))
+        error.references should be (Seq(DummyPosition(0)))
+        error.msg should equal("Type mismatch: foo already defined with conflicting type Map (expected Node)")
     }
 
     SemanticState.clean.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode | CTRelationship) then
@@ -110,120 +104,109 @@ class SemanticStateTest extends Assertions {
     ((_: SemanticState).implicitIdentifier(ast.Identifier("foo")(DummyPosition(9)), CTInteger | CTRelationship)) match {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
-        assertEquals(DummyPosition(9), error.position)
-        assertEquals(Seq(DummyPosition(0), DummyPosition(3)), error.references.toSeq)
-        assertEquals("Type mismatch: foo already defined with conflicting type Node (expected Integer or Relationship)", error.msg)
+        error.position should equal(DummyPosition(9))
+        error.references should equal(Seq(DummyPosition(0), DummyPosition(3)))
+        error.msg should equal("Type mismatch: foo already defined with conflicting type Node (expected Integer or Relationship)")
     }
   }
 
-  @Test
-  def shouldRecordTypeForExpressionWhenSpecifyingType() {
+  test("should record type for expression when specifying type") {
     val expression = DummyExpression(CTInteger | CTString)
     val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
-    assertEquals(expression.possibleTypes, state.expressionType(expression).specified)
-    assertEquals(expression.possibleTypes, state.expressionType(expression).actual)
+    state.expressionType(expression).specified should equal(expression.possibleTypes)
+    state.expressionType(expression).actual should equal(expression.possibleTypes)
   }
 
-  @Test
-  def shouldExpectTypeForExpression() {
+  test("should expect type for expression") {
     val expression = DummyExpression(CTInteger | CTString | CTMap)
     val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
 
     state.expectType(expression, CTNumber.covariant) match {
       case (s, typ) =>
-        assertEquals(CTInteger: TypeSpec, typ)
-        assertEquals(typ, s.expressionType(expression).actual)
+        typ should equal(CTInteger: TypeSpec)
+        s.expressionType(expression).actual should equal(typ)
     }
 
     state.expectType(expression, CTNode.covariant | CTNumber.covariant) match {
       case (s, typ) =>
-        assertEquals(CTInteger: TypeSpec, typ)
-        assertEquals(typ, s.expressionType(expression).actual)
+        typ should equal(CTInteger: TypeSpec)
+        s.expressionType(expression).actual should equal(typ)
     }
   }
 
-  @Test
-  def shouldFindSymbolInParent() {
+  test("should find symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
     val s2 = s1.newScope
-    assertEquals(CTNode: TypeSpec, s2.symbolTypes("foo"))
+    s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldOverrideSymbolInParent() {
+  test("should override symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
     val s2 = s1.newScope.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTString).right.get
-    assertEquals(CTString: TypeSpec, s2.symbolTypes("foo"))
+
+    s2.symbolTypes("foo") should equal(CTString: TypeSpec)
   }
 
-  @Test
-  def shouldExtendSymbolInParent() {
+  test("should extend symbol in parent") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
     val s2 = s1.newScope.implicitIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTAny.covariant).right.get
-    assertEquals(CTNode: TypeSpec, s2.symbolTypes("foo"))
+    s2.symbolTypes("foo") should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldReturnTypesOfIdentifier() {
+  test("should return types of identifier") {
     val identifier = ast.Identifier("foo")(DummyPosition(0))
     val s1 = SemanticState.clean.declareIdentifier(identifier, CTNode).right.get
-    assertEquals(CTNode: TypeSpec, s1.expressionType(identifier).actual)
+    s1.expressionType(identifier).actual should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldReturnTypesOfIdentifierAtLaterExpression() {
+  test("should return types of identifier at later expression") {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
     val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
-    assertEquals(CTNode: TypeSpec, s2.expressionType(identifier2).actual)
+    s2.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldReturnTypesOfIdentifierAfterClear() {
+  test("should return types of identifier after clear") {
     val identifier = ast.Identifier("foo")(DummyPosition(0))
     val s1 = SemanticState.clean.declareIdentifier(identifier, CTNode).right.get
-    assertEquals(CTNode: TypeSpec, s1.clearSymbols.expressionType(identifier).actual)
+    s1.clearSymbols.expressionType(identifier).actual should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldReturnTypesOfLaterImplicitIdentifierAfterClear() {
+  test("should return types of later implicit identifier after clear") {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
     val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.implicitIdentifier(identifier2, CTNode).right.get
-    assertEquals(CTNode: TypeSpec, s2.clearSymbols.expressionType(identifier2).actual)
+    s2.clearSymbols.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldReturnTypesOfLaterEnsuredIdentifierAfterClear() {
+  test("should return types of later ensured identifier after clear") {
     val identifier1 = ast.Identifier("foo")(DummyPosition(0))
     val identifier2 = ast.Identifier("foo")(DummyPosition(3))
     val s1 = SemanticState.clean.declareIdentifier(identifier1, CTNode).right.get
     val s2 = s1.ensureIdentifierDefined(identifier2).right.get
-    assertEquals(CTNode: TypeSpec, s2.clearSymbols.expressionType(identifier2).actual)
+    s2.clearSymbols.expressionType(identifier2).actual should equal(CTNode: TypeSpec)
   }
 
-  @Test
-  def shouldNotReturnSymbolOfIdentifierAfterClear() {
+  test("should not return symbol of identifier after clear") {
     val s1 = SemanticState.clean.declareIdentifier(ast.Identifier("foo")(DummyPosition(0)), CTNode).right.get
-    assertEquals(None, s1.clearSymbols.symbol("foo"))
-    assertEquals(TypeSpec.all, s1.clearSymbols.symbolTypes("foo"))
+    s1.clearSymbols.symbol("foo") should equal(None)
+    s1.clearSymbols.symbolTypes("foo") should equal(TypeSpec.all)
   }
 
-  @Test
-  def shouldMaintainSeparateTypeInfoForEquivalentExpressions() {
+  test("should maintain separate TypeInfo for equivalent expressions") {
     val exp1 = ast.Property(ast.Identifier("n")(DummyPosition(0)), ast.Identifier("prop")(DummyPosition(3)))(DummyPosition(0))
     val exp2 = ast.Property(ast.Identifier("n")(DummyPosition(6)), ast.Identifier("prop")(DummyPosition(9)))(DummyPosition(6))
     val s1 = SemanticState.clean.specifyType(exp1, CTNode).right.get
     val s2 = s1.specifyType(exp2, CTRelationship).right.get
 
-    assertEquals(CTNode: TypeSpec, s2.expressionType(exp1).specified)
-    assertEquals(CTRelationship: TypeSpec, s2.expressionType(exp2).specified)
+    s2.expressionType(exp1).specified should equal(CTNode: TypeSpec)
+    s2.expressionType(exp2).specified should equal(CTRelationship: TypeSpec)
 
     val s3 = s2.expectType(exp1, CTMap)._1.expectType(exp2, CTAny)._1
-    assertEquals(Some(CTMap: TypeSpec), s3.expressionType(exp1).expected)
-    assertEquals(Some(CTAny: TypeSpec), s3.expressionType(exp2).expected)
+    s3.expressionType(exp1).expected should equal(Some(CTMap: TypeSpec))
+    s3.expressionType(exp2).expected should equal(Some(CTAny: TypeSpec))
   }
 
   implicit class ChainableSemanticStateEither(either: Either[SemanticError, SemanticState]) {
