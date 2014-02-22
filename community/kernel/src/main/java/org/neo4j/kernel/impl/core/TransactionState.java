@@ -24,6 +24,7 @@ import java.util.Set;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
@@ -48,10 +49,6 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 public interface TransactionState
 {
     TransactionState NO_STATE = new NoTransactionState();
-
-    LockElement acquireWriteLock( Object resource );
-
-    LockElement acquireReadLock( Object resource );
 
     RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type );
 
@@ -167,4 +164,11 @@ public interface TransactionState
     void markAsRemotelyInitialized();
 
     ArrayMap<Integer,RelIdArray> getCowRelationshipAddMap( NodeImpl node );
+
+    /**
+     * For a transitional period, until all locks are managed via the new kernel, we use this as the owner of the lock
+     * client. Once the kernel is the sole owner of locking (right now it is shared with our friend {@link NodeManager},
+     * the locks client should be owner by it.
+     */
+    Locks.Client locks();
 }

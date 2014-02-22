@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,11 +33,13 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.kernel.ha.HaRequestType201;
-import org.neo4j.kernel.ha.MasterClient201;
+import org.neo4j.kernel.ha.HaRequestType210;
+import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -52,14 +52,14 @@ public class MasterServer extends Server<Master, Void>
     public MasterServer( Master requestTarget, Logging logging, Configuration config,
                          TxChecksumVerifier txVerifier, Monitors monitors )
     {
-        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient201.PROTOCOL_VERSION, txVerifier,
+        super( requestTarget, config, logging, FRAME_LENGTH, MasterClient210.PROTOCOL_VERSION, txVerifier,
                 SYSTEM_CLOCK, monitors );
     }
 
     @Override
     protected RequestType<Master> getRequestContext( byte id )
     {
-        return HaRequestType201.values()[id];
+        return HaRequestType210.values()[id];
     }
 
     @Override

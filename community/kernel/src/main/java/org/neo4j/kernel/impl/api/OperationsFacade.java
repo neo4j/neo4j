@@ -52,9 +52,11 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
@@ -72,7 +74,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         this.operations = operations;
     }
 
-    // <DataRead>
     final KeyReadOperations tokenRead()
     {
         return operations.keyReadOperations();
@@ -106,6 +107,11 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     final SchemaStateOperations schemaState()
     {
         return operations.schemaStateOperations();
+    }
+
+    final LockOperations locking()
+    {
+        return operations.locking();
     }
 
     // <DataRead>
@@ -611,7 +617,39 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     @Override
     public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
     {
+        statement.assertOpen();
         schemaWrite().uniqueIndexDrop( statement, descriptor );
     }
     // </SchemaWrite>
+
+
+    // <Locking>
+    @Override
+    public void acquireExclusive( Locks.ResourceType type, long... id )
+    {
+        statement.assertOpen();
+        locking().acquireExclusive( statement, type, id );
+    }
+
+    @Override
+    public void acquireShared( Locks.ResourceType type, long... id )
+    {
+        statement.assertOpen();
+        locking().acquireShared( statement, type, id );
+    }
+
+    @Override
+    public void releaseExclusive( Locks.ResourceType type, long... id )
+    {
+        statement.assertOpen();
+        locking().releaseExclusive( statement, type, id );
+    }
+
+    @Override
+    public void releaseShared( Locks.ResourceType type, long... id )
+    {
+        statement.assertOpen();
+        locking().releaseShared( statement, type, id );
+    }
+    // </Locking>
 }

@@ -26,6 +26,11 @@ public class DeadlockDetectedException extends RuntimeException
 {
     public DeadlockDetectedException( String message )
     {
+        super( message, null );
+    }
+
+    public DeadlockDetectedException( String message, Throwable cause )
+    {
         super( "Don't panic.\n" +
                 "\n" +
                 "A deadlock scenario has been detected and avoided. This means that two or more transactions, which were " +
@@ -35,6 +40,6 @@ public class DeadlockDetectedException extends RuntimeException
                 "See the deadlock section in the Neo4j manual for how to avoid this: " +
                 "http://docs.neo4j.org/chunked/stable/transactions-deadlocks.html\n" +
                 "\n" +
-                "Details: '" + message + "'." );
+                "Details: '" + message + "'.", cause );
     }
 }

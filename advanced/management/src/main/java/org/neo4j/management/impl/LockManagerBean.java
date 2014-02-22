@@ -19,6 +19,7 @@
  */
 package org.neo4j.management.impl;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.management.NotCompliantMBeanException;
@@ -27,6 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.management.LockManager;
 
@@ -52,7 +54,7 @@ public final class LockManagerBean extends ManagementBeanProvider
 
     private static class LockManagerImpl extends Neo4jMBean implements LockManager
     {
-        private final org.neo4j.kernel.impl.transaction.LockManager lockManager;
+        private final Locks lockManager;
 
         LockManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
@@ -60,10 +62,10 @@ public final class LockManagerBean extends ManagementBeanProvider
             this.lockManager = lockManager( management );
         }
 
-        private org.neo4j.kernel.impl.transaction.LockManager lockManager( ManagementData management )
+        private Locks lockManager( ManagementData management )
         {
             return management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( org.neo4j.kernel.impl.transaction.LockManager.class );
+                    .resolveDependency( Locks.class );
         }
 
         LockManagerImpl( ManagementData management, boolean mxBean )
@@ -72,22 +74,24 @@ public final class LockManagerBean extends ManagementBeanProvider
             this.lockManager = lockManager( management );
         }
 
+        // TODO: Fix after M02
+
         @Override
         public long getNumberOfAvertedDeadlocks()
         {
-            return lockManager.getDetectedDeadlockCount();
+            return -1l;
         }
 
         @Override
         public List<LockInfo> getLocks()
         {
-            return lockManager.getAllLocks();
+            return Collections.emptyList();
         }
 
         @Override
         public List<LockInfo> getContendedLocks( long minWaitTime )
         {
-            return lockManager.getAwaitedLocks( minWaitTime );
+            return Collections.emptyList();
         }
     }
 }

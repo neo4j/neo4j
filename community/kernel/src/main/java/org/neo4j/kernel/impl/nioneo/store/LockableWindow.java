@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
-import org.neo4j.kernel.impl.transaction.LockException;
+import org.neo4j.kernel.impl.locking.community.LockException;
 
 /**
  * Makes a {@link PersistenceWindow} "lockable" meaning it can be locked by a

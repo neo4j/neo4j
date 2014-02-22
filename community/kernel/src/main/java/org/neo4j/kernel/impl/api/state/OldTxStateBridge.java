@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import java.util.Map;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.util.DiffSets;
 
 /**
@@ -61,5 +62,5 @@ public interface OldTxStateBridge
 
     long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId );
 
-    long nodeCreate();
+    long nodeCreate() throws AcquireLockTimeoutException;
 }

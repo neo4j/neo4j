@@ -169,11 +169,11 @@ public class TestPullUpdatesApplied
                 } );
 
         // Temporary debugging
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Starting instance " + toKill + " in separate process..");
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Starting instance " + toKill + " in separate process..");
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
         // Temporary debugging
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Waiting for instance to start..");
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Waiting for instance to start..");
         if ( !latch2.await( 60, TimeUnit.SECONDS ) )
         {
             throw new IllegalStateException( "Timeout waiting for instance to fail" );

@@ -241,11 +241,6 @@ public class PersistenceManager
         return getResource().forWriting().kernelTransaction();
     }
 
-    public void ensureKernelIsEnlisted()
-    {
-        getResource();
-    }
-
     public ResourceHolder getResource()
     {
         TransactionState txState = transactionManager.getTransactionState();

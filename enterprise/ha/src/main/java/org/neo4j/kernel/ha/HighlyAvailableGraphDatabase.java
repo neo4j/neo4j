@@ -27,9 +27,8 @@ import java.util.Map;
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
@@ -85,7 +84,8 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
-import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -235,9 +235,24 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             @Override
             public TransactionState create( Transaction tx )
             {
-                return new WritableTransactionState( snapshot( lockManager ),
-                        nodeManager, logging, tx, snapshot( txHook ),
+                return new WritableTransactionState( newLockClient(), nodeManager,
+                        snapshot( txHook ),
                         snapshot( txIdGenerator ) );
+            }
+
+            private Locks.Client newLockClient()
+            {
+                try
+                {
+                    return locks.newClient();
+                }
+                catch( TransactionFailureException e )
+                {
+                    // This happens during recovery, when there is no lock manager available in certain conditions
+                    // due to HAs lifecycle management. It's "safe", since recover does not need locks, but this is
+                    // indicative of something shady, we should investigate the lifecycle of the lock management.
+                    return new NoOpClient();
+                }
             }
         };
     }
@@ -428,15 +443,22 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected LockManager createLockManager()
+    protected Locks createLockManager()
     {
-        DelegateInvocationHandler<LockManager> lockManagerDelegate = new DelegateInvocationHandler<>( LockManager.class );
-        LockManager lockManager =
-                (LockManager) Proxy.newProxyInstance( LockManager.class.getClassLoader(),
-                        new Class[]{LockManager.class}, lockManagerDelegate );
+        DelegateInvocationHandler<Locks> lockManagerDelegate = new DelegateInvocationHandler<>( Locks.class );
+        Locks lockManager =
+                (Locks) Proxy.newProxyInstance( Locks.class.getClassLoader(),
+                        new Class[]{Locks.class}, lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate,
                 (HaXaDataSourceManager) xaDataSourceManager, masterDelegateInvocationHandler, requestContextFactory,
-                txManager, txHook, availabilityGuard, config );
+                txManager, txHook, availabilityGuard, config, new Factory<Locks>()
+        {
+            @Override
+            public Locks newInstance()
+            {
+                return HighlyAvailableGraphDatabase.super.createLockManager();
+            }
+        });
         return lockManager;
     }
 

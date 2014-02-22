@@ -36,10 +36,13 @@ import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations
 {
@@ -103,7 +106,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             Object value = property.value();
             IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, property.propertyKeyId() );
             assertIndexOnline( state, indexDescriptor );
-            state.locks().acquireIndexEntryWriteLock( labelId, property.propertyKeyId(), property.valueAsString() );
+            state.locks().acquireExclusive( INDEX_ENTRY,
+                    indexEntryResourceId( labelId, property.propertyKeyId(), property.valueAsString() ) );
+
             PrimitiveLongIterator existingNodes = entityReadOperations.nodesGetFromIndexLookup(
                     state, indexDescriptor, value );
             while ( existingNodes.hasNext() )
@@ -224,27 +229,27 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
             stringVal = property.valueAsString();
         }
 
-        // If we find the node - hold a READ lock. If we don't find a node - hold a WRITE lock.
-        LockHolder holder = state.locks();
-        try ( ReleasableLock r = holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal ) )
+        // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
+        Locks.Client locks = state.locks();
+        long indexEntryId = indexEntryResourceId( labelId, propertyKeyId, stringVal );
+
+        locks.acquireShared( INDEX_ENTRY, indexEntryId );
+
+        long nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+        if ( NO_SUCH_NODE == nodeId )
         {
-            long nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
-            if ( NO_SUCH_NODE == nodeId )
+            locks.releaseShared( INDEX_ENTRY, indexEntryId );
+            locks.acquireExclusive( INDEX_ENTRY, indexEntryId );
+
+            nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
+            if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
-                r.release(); // and change to a WRITE lock
-                try ( ReleasableLock w = holder.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, stringVal ) )
-                {
-                    nodeId = entityReadOperations.nodeGetUniqueFromIndexLookup( state, index, value );
-                    if ( NO_SUCH_NODE != nodeId ) // we found it under the WRITE lock
-                    { // downgrade to a READ lock
-                        holder.getReleasableIndexEntryReadLock( labelId, propertyKeyId, stringVal )
-                              .registerWithTransaction();
-                        w.release();
-                    }
-                }
+                // downgrade to a shared lock
+                locks.acquireShared( INDEX_ENTRY, indexEntryId );
+                locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
             }
-            return nodeId;
         }
+        return nodeId;
     }
 
     @Override

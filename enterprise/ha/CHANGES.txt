@@ -1,3 +1,7 @@
+2.1.0-SNAPSHOT
+--------------
+o Introduces a new default lock manager, Forseti, with significantly improved performance characteristics.
+
 2.0.2
 -----
 o Fixes potential deadlock when concurrently shutting down the database and role switching

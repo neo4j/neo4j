@@ -128,7 +128,7 @@ public class NeoStoreTransactionContext
     public void bind( TransactionState txState )
     {
         this.txState = txState;
-        locker.setTransactionState( txState );
+        locker.setLockClient( txState.locks() );
     }
 
     public void close()
@@ -136,7 +136,7 @@ public class NeoStoreTransactionContext
         recordChangeSet.close();
         commandSet.close();
 
-        locker.setTransactionState( null );
+        locker.setLockClient( null );
         txState = null;
         supplier.release( this );
     }

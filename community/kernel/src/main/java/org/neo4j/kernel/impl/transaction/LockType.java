@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.kernel.impl.core.LockElement;
-import org.neo4j.kernel.impl.core.TransactionState;
-
 /**
  * Enum defining the <CODE>READ</CODE> lock and the <CODE>WRITE</CODE> lock.
  */
@@ -31,12 +28,6 @@ public enum LockType
 {
     READ
     {
-        @Override
-        public LockElement acquire( TransactionState state, Object resource )
-        {
-            return state.acquireReadLock( resource );
-        }
-        
         @Override
         public void release( LockManager lockManager, Object resource, Transaction tx )
         {
@@ -46,19 +37,11 @@ public enum LockType
     WRITE
     {
         @Override
-        public LockElement acquire( TransactionState state, Object resource )
-        {
-            return state.acquireWriteLock( resource );
-        }
-        
-        @Override
         public void release( LockManager lockManager, Object resource, Transaction tx )
         {
             lockManager.releaseWriteLock( resource, tx );
         }
     };
-    
-    public abstract LockElement acquire( TransactionState state, Object resource );
-    
+
     public abstract void release( LockManager lockManager, Object resource, Transaction tx );
 }

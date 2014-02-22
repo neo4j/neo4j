@@ -20,6 +20,14 @@
 package org.neo4j.kernel.impl.locking;
 
 /**
+ * Note: This is confusing to you. What is the difference between this and {@link Locks}? Well. {@link Locks} is the
+ * primary locking component in neo. However, there are lower layers that use a separate locking mechanism (this),
+ * which they can do under very strict rules of engagement.
+ *
+ * This implementation should be removed, and it's usage should be replaced by using the regular lock manager.
+ *
+ *
+ *
  * An implementation of this interface must guarantee that locking is completely fair:
  * - Locks should be assigned in the order which they were claimed.
  * - If a write lock is waiting, new read locks may not be issued.

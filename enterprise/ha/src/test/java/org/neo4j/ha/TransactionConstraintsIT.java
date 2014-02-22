@@ -26,7 +26,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -48,13 +47,7 @@ import org.neo4j.test.ha.ClusterManager;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
@@ -277,7 +270,6 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         for ( int i = 0; i < 10; i++ )
         {
             thread2.waitUntilThreadState( Thread.State.TIMED_WAITING, Thread.State.WAITING );
-
             Thread.sleep(2);
         }
 
@@ -285,6 +277,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         {
             // WHEN
             tx1.acquireWriteLock( commonNode );
+
+            // -- Deadlock detection is non-deterministic, so either the slave or the master will detect it
+            writeLockFuture.get();
             fail( "Deadlock exception should have been thrown" );
         }
         catch ( DeadlockDetectedException e )
@@ -295,8 +290,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         {
             tx1.close();
         }
-        
-        assertNotNull( writeLockFuture.get() );
+
         thread2.execute( new FinishTx( tx2, true ) );
         thread2.close();
     }

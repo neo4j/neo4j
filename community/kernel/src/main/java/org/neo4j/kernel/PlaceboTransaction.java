@@ -20,8 +20,7 @@
 package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Lock;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
@@ -38,9 +37,9 @@ public class PlaceboTransaction extends TopLevelTransaction
         }
     };
     
-    public PlaceboTransaction( PersistenceManager pm, AbstractTransactionManager transactionManager, TransactionState state )
+    public PlaceboTransaction( AbstractTransactionManager transactionManager, ThreadToStatementContextBridge bridge )
     {
-        super( pm, transactionManager, state );
+        super( transactionManager, bridge );
     }
 
     @Override

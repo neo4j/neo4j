@@ -1,0 +1,2 @@
+This package contains some Functional classes, but many of them remain in org.neo4j.helpers. This will be the primary
+package for functional tools, as soon as we can move the current helpers into our internal packages.

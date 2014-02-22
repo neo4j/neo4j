@@ -21,21 +21,17 @@ package org.neo4j.kernel.impl.api.operations;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.LockHolder;
-import org.neo4j.kernel.impl.api.ReleasableLock;
+import org.neo4j.kernel.impl.locking.Locks;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
 public class ConstraintEnforcingEntityOperationsTest
 {
@@ -46,7 +42,7 @@ public class ConstraintEnforcingEntityOperationsTest
     private EntityReadOperations readOps;
     private SchemaReadOperations schemaOps;
     private KernelStatement state;
-    private LockHolder locks;
+    private Locks.Client locks;
     private ConstraintEnforcingEntityOperations ops;
 
     @Before
@@ -56,7 +52,7 @@ public class ConstraintEnforcingEntityOperationsTest
         this.schemaOps = mock( SchemaReadOperations.class );
         this.state = mock( KernelStatement.class );
         when( schemaOps.indexGetState( state, indexDescriptor ) ).thenReturn( InternalIndexState.ONLINE );
-        this.locks = mock( LockHolder.class );
+        this.locks = mock( Locks.Client.class );
         when( state.locks() ).thenReturn( locks );
 
         this.ops = new ConstraintEnforcingEntityOperations( null, readOps, schemaOps );
@@ -68,17 +64,14 @@ public class ConstraintEnforcingEntityOperationsTest
         // given
         long expectedNodeId = 15;
         when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( expectedNodeId );
-        LockAnswer readLocks = new LockAnswer(), writeLocks = new LockAnswer();
-        when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
-        when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
 
         // when
         long nodeId = ops.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // then
         assertEquals( expectedNodeId, nodeId );
-        assertEquals( 1, readLocks.held() );
-        assertEquals( 0, writeLocks.held() );
+        verify( locks).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verifyNoMoreInteractions( locks );
     }
 
     @Test
@@ -86,17 +79,16 @@ public class ConstraintEnforcingEntityOperationsTest
     {
         // given
         when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn( NO_SUCH_NODE );
-        LockAnswer readLocks = new LockAnswer(), writeLocks = new LockAnswer();
-        when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
-        when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
 
         // when
         long nodeId = ops.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // then
         assertEquals( NO_SUCH_NODE, nodeId );
-        assertEquals( 0, readLocks.held() );
-        assertEquals( 1, writeLocks.held() );
+        verify( locks ).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).acquireExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).releaseShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verifyNoMoreInteractions( locks );
     }
 
     @Test
@@ -107,69 +99,16 @@ public class ConstraintEnforcingEntityOperationsTest
         when( readOps.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) )
                 .thenReturn( NO_SUCH_NODE )
                 .thenReturn( expectedNodeId );
-        LockAnswer readLocks = new LockAnswer(), writeLocks = new LockAnswer();
-        when( locks.getReleasableIndexEntryReadLock( labelId, propertyKeyId, value ) ).then( readLocks );
-        when( locks.getReleasableIndexEntryWriteLock( labelId, propertyKeyId, value ) ).then( writeLocks );
 
         // when
         long nodeId = ops.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // then
         assertEquals( expectedNodeId, nodeId );
-        assertEquals( 1, readLocks.held() );
-        assertEquals( 0, writeLocks.held() );
-    }
-
-
-    private class LockAnswer implements Answer<ReleasableLock>
-    {
-        public int acquired, txBound, released;
-
-        @Override
-        public ReleasableLock answer( InvocationOnMock invocation ) throws Throwable
-        {
-            acquired++;
-            return new ReleasableLock()
-            {
-                boolean closed;
-
-                @Override
-                public void release()
-                {
-                    if ( closed )
-                    {
-                        throw new IllegalStateException();
-                    }
-                    released++;
-                    closed = true;
-                }
-
-                @Override
-                public void registerWithTransaction()
-                {
-                    if ( closed )
-                    {
-                        throw new IllegalStateException();
-                    }
-                    txBound++;
-                    closed = true;
-                }
-
-                @Override
-                public void close()
-                {
-                    if ( !closed )
-                    {
-                        registerWithTransaction();
-                    }
-                }
-            };
-        }
-
-        public int held()
-        {
-            assertEquals( "locking must be balanced", acquired, txBound + released );
-            return txBound;
-        }
+        verify( locks, times(2) ).acquireShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).acquireExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).releaseShared( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verify( locks ).releaseExclusive( INDEX_ENTRY, indexEntryResourceId( labelId, propertyKeyId, value ) );
+        verifyNoMoreInteractions( locks );
     }
 }

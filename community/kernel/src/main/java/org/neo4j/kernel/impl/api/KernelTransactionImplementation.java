@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.Transactor;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -65,7 +66,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 {
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
-    private final LockHolder lockHolder;
     private final TransactionHooks hooks;
     private final LabelScanStore labelScanStore;
     private final SchemaStorage schemaStorage;
@@ -77,6 +77,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StatementOperationParts operations;
     private final boolean readOnly;
 
+    private Locks.Client locks;
     private TransactionType transactionType = TransactionType.ANY;
     private boolean closing, closed;
     private TxStateImpl txState;
@@ -87,7 +88,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             IndexingService indexService,
                                             AbstractTransactionManager transactionManager, NodeManager nodeManager,
                                             UpdateableSchemaState schemaState,
-                                            LockHolder lockHolder, PersistenceManager persistenceManager,
+                                            PersistenceManager persistenceManager,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             TransactionState legacyTxState, TransactionHooks hooks )
     {
@@ -99,13 +100,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.persistenceManager = persistenceManager;
-        this.lockHolder = lockHolder;
         this.hooks = hooks;
 
         constraintIndexCreator = new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ),
                 this.indexService );
         schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
         legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyTxState );
+        locks = legacyTxState.locks();
     }
 
     public void prepare() throws TransactionFailureException
@@ -181,7 +182,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     
     public void release() throws ReleaseLocksFailedKernelException
     {
-        lockHolder.releaseLocks();
+        // TODO: Move lock releasing here once TransactionState has been removed.
     }
     
     private void ensureWriteTransaction()
@@ -199,7 +200,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
-                    labelScanStore, this, lockHolder, operations,
+                    labelScanStore, this, locks, operations,
                     // Just use forReading since read/write has been decided prior to this
                     persistenceManager.getResource().forReading() );
         }

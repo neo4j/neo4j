@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -88,7 +89,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
@@ -605,7 +605,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     resolver.resolveDependency( LabelTokenHolder.class ),
                     resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                     resolver.resolveDependency( PersistenceManager.class ),
-                    resolver.resolveDependency( LockManager.class ),
+                    resolver.resolveDependency( Locks.class ),
                     (SchemaWriteGuard)graphDb,
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ));
