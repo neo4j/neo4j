@@ -59,27 +59,47 @@ class LoadCSVQueryContext(inner: QueryContext, cleaner: CleanUpper = new CleanUp
   }
 }
 
-case class ToStream(url: URL, separator: Char = File.separatorChar) {
-
-  def isFile: Boolean = "file" == url.getProtocol
-
-  def file = {
-    val host: String = url.getHost
-    var path: String = url.getPath
-
-    // This is to handle Windows file paths correctly.
-    if (path.startsWith("/") && path.contains(":/") && host == "" && separator == '\\')
-      path = path.drop(1)
-
-    if (isFile)
-      if (host.nonEmpty) new File(host, path) else new File(path)
-    else
-      throw new IllegalStateException("url is not a file: " + url)
+object ToStream {
+  def apply(url: URL, separator: Char = File.separatorChar) = {
+    val isWindows = System.getProperty("os.name").startsWith("Windows")
+    if (isWindows) WindowsToStream(url, separator) else UnixToStream(url, separator)
   }
 
-  def stream: InputStream = try {
-    if (isFile) new FileInputStream(file) else url.openStream
-  } catch {
-    case e: IOException => throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
+  final case class UnixToStream(url: URL, separator: Char) extends ToStream(url, separator) {
+    val path = url.getPath
+  }
+
+  final case class WindowsToStream(url: URL, separator: Char) extends ToStream(url, separator) {
+    val path = {
+      val urlPath = url.getPath
+      // This is to handle Windows file paths correctly.
+      if (urlPath.startsWith("/") && urlPath.contains(":/") && host == "" && separator == '\\')
+        urlPath.drop(1)
+      else
+        urlPath
+    }
   }
 }
+
+sealed abstract class ToStream(url: URL, separator: Char) {
+  val protocol = url.getProtocol
+  val host = url.getHost
+  val path: String
+
+  val isFile = "file" == protocol
+
+  def file =
+    if (isFile) {
+      if (host.nonEmpty) new File(host, path) else new File(path)
+    } else
+      throw new IllegalStateException(s"URL is not a file: $url")
+
+  def stream: InputStream = try {
+    if (isFile)
+      new FileInputStream(file) else url.openStream
+  } catch {
+    case e: IOException =>
+      throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
+  }
+}
+

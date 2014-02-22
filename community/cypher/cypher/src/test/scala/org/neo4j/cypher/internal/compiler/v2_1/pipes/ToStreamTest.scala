@@ -23,8 +23,9 @@ import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import java.io.File
 import org.neo4j.cypher.internal.compiler.v2_1.spi.ToStream
+import org.neo4j.cypher.SystemPropertyTestSupport
 
-class ToStreamTest extends CypherFunSuite {
+class ToStreamTest extends CypherFunSuite with SystemPropertyTestSupport {
   test("should open a local file with an absolute path") {
     val path = "/tmp/file.csv"
     val url = new URL(s"file://$path")
@@ -61,11 +62,13 @@ class ToStreamTest extends CypherFunSuite {
   }
 
   test("should work even with windows files") {
-    val url = new URL("file:///C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc")
-    val c = ToStream(url, '\\')
+    withSystemProperties("os.name" -> "Windows") {
+      val url = new URL("file:///C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc")
+      val c = ToStream(url, '\\')
 
-    c shouldBe 'isFile
-    c.file.getPath should equal(localized("C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc"))
+      c shouldBe 'isFile
+      c.file.getPath should equal(localized("C:/Documents%20and%20Settings/davris/FileSchemeURIs.doc"))
+    }
   }
 
   private def localized(in: String): String = in.replace('/', File.separatorChar)
