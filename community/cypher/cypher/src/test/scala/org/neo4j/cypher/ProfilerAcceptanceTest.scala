@@ -37,7 +37,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
     result.toList // need to exhaust the results to ensure that the transaction is closed
   }
 
-
   test("tracks number of rows") {
     //GIVEN
     createNode("foo" -> "bar")
@@ -134,13 +133,49 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
       ) === producer.v )
   }
 
-
   test("allows optional match to start a query") {
     //GIVEN
     val result: ExecutionResult = engine.profile("optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("NullableMatch")
+  }
+
+  test("should produce profile when using limit") {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+    val result = profile("""START n=node(*) RETURN n LIMIT 1""")
+
+    // WHEN
+    result.toList
+
+    // THEN PASS
+    result.executionPlanDescription()
+  }
+
+  test ("should support profiling union queries") {
+    val result = profile("return 1 as A union return 2 as A")
+    result.toList should equal(List(Map("A" -> 1), Map("A" -> 2)))
+  }
+
+  test("should support profiling merge_queries") {
+    val result = profile("merge (a {x: 1}) return a.x as A")
+    result.toList.head("A") should equal(1)
+  }
+
+  test("should support profiling optional match queries") {
+    createLabeledNode(Map("x" -> 1), "Label")
+    val result = profile("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
+    result("A") should equal(1)
+    result("B") should equal(null.asInstanceOf[Int])
+  }
+
+  test("should support profiling optional match and with") {
+    createLabeledNode(Map("x" -> 1), "Label")
+    val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
+    result("A") should equal(1)
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
@@ -154,12 +189,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
 
   private def parentCd(result: ExecutionResult, names: Seq[String]) = {
     result.toList
-    val descr = result.executionPlanDescription().asJava
+    val description = result.executionPlanDescription().asJava
     if (names.isEmpty)
-      descr
+      description
     else {
-      assert(names.head === descr.getName)
-      descr.cd(names.tail: _*)
+      assert(names.head === description.getName)
+      description.cd(names.tail: _*)
     }
   }
 }
