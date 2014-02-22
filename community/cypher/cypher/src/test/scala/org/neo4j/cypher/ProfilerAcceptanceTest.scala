@@ -20,16 +20,14 @@
 package org.neo4j.cypher
 
 import javacompat.ProfilerStatistics
-import org.scalatest.Assertions
-import org.junit.Test
 import scala.collection.JavaConverters._
 import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.data.{SimpleVal, MapVal, SeqVal}
 
-class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
-  @Test
-  def unfinished_profiler_complains() {
+class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
+
+  test("unfinished profiler complains") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n=node(0) RETURN n")
@@ -39,8 +37,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     result.toList // need to exhaust the results to ensure that the transaction is closed
   }
 
-  @Test
-  def tracks_number_of_rows() {
+
+  test("tracks number of rows") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n = node(0) RETURN n")
@@ -49,8 +47,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertRows(1)(result)("NodeById")
   }
 
-  @Test
-  def tracks_number_of_graph_accesses() {
+
+  test("tracks number of graph accesses") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n = node(0) RETURN n.foo")
@@ -59,8 +57,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(1)(result)("ColumnFilter", "Extract", "NodeById")
   }
 
-  @Test
-  def no_problem_measuring_creation() {
+
+  test("no problem measuring creation") {
     //GIVEN
     val result: ExecutionResult = engine.profile("CREATE n")
 
@@ -68,8 +66,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(0)(result)("EmptyResult")
   }
 
-  @Test
-  def tracks_graph_global_queries() {
+
+  test("tracks graph global queries") {
     createNode()
 
     //GIVEN
@@ -79,8 +77,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
   }
 
-  @Test
-  def tracks_optional_matches() {
+
+  test("tracks optional matches") {
     //GIVEN
     createNode()
     val result: ExecutionResult = engine.profile("start n=node(*) optional match (n)-->(x) return x")
@@ -90,8 +88,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "SimplePatternMatcher")
   }
 
-  @Test
-  def tracks_pattern_matcher_start_items() {
+
+  test("tracks pattern matcher start items") {
     //GIVEN
     createNode()
     val result: ExecutionResult = engine.profile("match (n:Person)-->(x) return x")
@@ -113,8 +111,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assert( Seq("n") === start("identifiers").asInstanceOf[java.lang.Iterable[String]].asScala.toSeq )
   }
 
-  @Test
-  def tracks_merge_node_producers() {
+
+  test("tracks merge node producers") {
     //GIVEN
     val result: ExecutionResult = engine.profile("merge (n:Person {id: 1})")
 
@@ -136,8 +134,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
       ) === producer.v )
   }
 
-  @Test
-  def allows_optional_match_to_start_a_query() {
+
+  test("allows optional match to start a query") {
     //GIVEN
     val result: ExecutionResult = engine.profile("optional match (n) return n")
 
