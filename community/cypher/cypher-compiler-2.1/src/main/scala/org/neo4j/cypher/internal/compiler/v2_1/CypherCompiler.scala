@@ -28,11 +28,10 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 
 case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, String => Object) => Object) {
-  
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier)
   val planBuilder = new ExecutionPlanBuilder(graph)
-  
+
   @throws(classOf[SyntaxException])
   def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
     case _: PeriodicCommitQuery => true
@@ -44,9 +43,9 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, Stri
 
   private def cachedQuery(queryText: String): AbstractQuery =
     queryCache(queryText, prepareQueryForCache).asInstanceOf[AbstractQuery]
-  
+
   private def prepareQueryForCache(queryText: String) = verify(parse(queryText))
-  
+
   private def verify(query: AbstractQuery): AbstractQuery = {
     query.verifySemantics()
     for (verifier <- verifiers)
