@@ -1,0 +1,38 @@
+= Neo4j: The World's Leading Graph Database =
+
+http://neo4j.org[Neo4j] is the world's leading Graph Database. It is a high performance graph store with all the features expected of a mature and robust database, like a friendly query language and ACID transactions. The programmer works with a flexible network structure of nodes and relationships rather than static tables -- yet enjoys all the benefits of enterprise-quality database. For many applications, Neo4j offers orders of magnitude performance benefits compared to relational DBs.
+
+Learn more on the http://neo4j.org[Neo4j website].
+
+== Using Neo4j ==
+
+Neo4j is available both as a standalone server, or an embeddable component. You can http://neo4j.org/download/[download] or http://console.neo4j.org[try online].
+
+== Extending Neo4j ==
+
+We encourage experimentation with Neo4j. You can build extensions to Neo4j, develop library or drivers atop the product, or make contributions directly to the product core. You'll need to sign a Contributor License Agreement in order for us to accept your patches.
+
+For a quick overview of the components in this repository,
+you can read the link:RepositoryOverview.asciidoc[RepositoryOverview.asciidoc].
+
+NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the link:community/[community/] directory) is GPLv3. Our Enterprise edition (link:enterprise/[enterprise/]) is differently licensed under the AGPLv3.
+
+== Building Neo4j ==
+
+Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 7].
+
+The Neo4j Browser module is built using http://nodejs.org[Node.js]. For skipping that part of the build, see below.
+
+* A plain `mvn clean install` will only build the individual jar files. 
+* Test execution is, of course, part of the build.
+* To add execution of integration tests, use: `mvn clean install -DrunITs`
+* In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
+* To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it.)
+* To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
+* To build the documentation see the link:manual/[Neo4j manual]
+* When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
+* The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`
+
+== Licensing ==
+
+Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from http://info.neotechnology.com/contactus.html[Neo Technology].
