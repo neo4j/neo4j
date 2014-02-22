@@ -28,10 +28,10 @@ import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 
-
 case class CypherCompiler(graph: GraphDatabaseService, queryCache: (Object, => Object) => Object) {
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier)
+  val planBuilder = new ExecutionPlanBuilder(graph)
 
   @throws(classOf[SyntaxException])
   def prepare(query: String, context: PlanContext): ExecutionPlan = {
@@ -43,15 +43,14 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (Object, => O
       }
 
       val parsedQuery = ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
-      parsedQuery.verifySemantics()
-      verify(parsedQuery)
-      val planBuilder = new ExecutionPlanBuilder(graph)
-      planBuilder.build(context, parsedQuery)
+      planBuilder.build(context, verify(parsedQuery))
     }).asInstanceOf[ExecutionPlan]
   }
 
-  def verify(query: AbstractQuery) {
+  def verify(query: AbstractQuery): AbstractQuery = {
+    query.verifySemantics()
     for (verifier <- verifiers)
       verifier.verify(query)
+    query
   }
 }
