@@ -27,7 +27,7 @@ import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 
-case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, String => Object) => Object) {
+case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
   val parser = CypherParser()
   val verifiers = Seq(HintVerifier)
   val planBuilder = new ExecutionPlanBuilder(graph)
@@ -35,16 +35,14 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, Stri
   @throws(classOf[SyntaxException])
   def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
     case _: PeriodicCommitQuery => true
-    case _                  => false
+    case _                      => false
   }
 
   @throws(classOf[SyntaxException])
   def prepare(queryText: String, context: PlanContext): ExecutionPlan = planBuilder.build(context, cachedQuery(queryText))
 
   private def cachedQuery(queryText: String): AbstractQuery =
-    queryCache(queryText, prepareQueryForCache).asInstanceOf[AbstractQuery]
-
-  private def prepareQueryForCache(queryText: String) = verify(parse(queryText))
+    queryCache(queryText, { verify(parse(queryText)) } ).asInstanceOf[AbstractQuery]
 
   private def verify(query: AbstractQuery): AbstractQuery = {
     query.verifySemantics()

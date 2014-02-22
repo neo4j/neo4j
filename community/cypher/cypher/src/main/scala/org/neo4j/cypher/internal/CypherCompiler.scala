@@ -51,7 +51,7 @@ class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion 
   private val queryCache2_0 = new LRUCache[String, Object](getQueryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](getQueryCacheSize)
 
-  private val compiler2_1 = new CypherCompiler2_1(graph, (q, f) => queryCache2_1.getOrElseUpdateByKey(q, f))
+  private val compiler2_1 = new CypherCompiler2_1(graph, (q, f) => queryCache2_1.getOrElseUpdate(q, f))
   private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
   private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
