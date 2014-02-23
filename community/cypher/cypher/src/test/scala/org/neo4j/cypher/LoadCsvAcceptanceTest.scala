@@ -128,8 +128,10 @@ class LoadCsvAcceptanceTest
   }
 
   @Test def should_fail_gracefully_when_loading_non_existent_site() {
+    // If this test fails, check that you are not in a network that
+    // redirects http requests to unknown domains to some landing page
     intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'http://not-existent-site.com' AS line CREATE (a {name:line[0]})")
+      execute("LOAD CSV FROM 'http://non-existing-site.com' AS line CREATE (a {name:line[0]})")
     }
   }
 

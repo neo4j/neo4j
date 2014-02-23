@@ -884,21 +884,6 @@ order by a.COL1""")
   }
 
   @Test
-  def shouldProduceProfileWhenUsingLimit() {
-    // GIVEN
-    createNode()
-    createNode()
-    createNode()
-    val result = profile("""START n=node(*) RETURN n LIMIT 1""")
-
-    // WHEN
-    result.toList
-
-    // THEN PASS
-    result.executionPlanDescription()
-  }
-
-  @Test
   def should_be_able_to_coalesce_nodes() {
     val n = createNode("n")
     val m = createNode("m")
@@ -1043,33 +1028,6 @@ order by a.COL1""")
   def should_not_mind_rewriting_NOT_queries() {
     val result = execute(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     assert(result.toList === List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
-  }
-
-  @Test
-  def should_not_mind_profiling_union_queries() {
-    val result = profile("return 1 as A union return 2 as A")
-    assert(result.toList === List(Map("A" -> 1), Map("A" -> 2)))
-  }
-
-  @Test
-  def should_not_mind_profiling_merge_queries() {
-    val result = profile("merge (a {x: 1}) return a.x as A")
-    assert(result.toList.head("A") === 1)
-  }
-
-  @Test
-  def should_not_mind_profiling_optional_match_queries() {
-    createLabeledNode(Map("x" -> 1), "Label")
-    val result = profile("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
-    assert(result("A") === 1)
-    assert(result("B") === null)
-  }
-
-  @Test
-  def should_not_mind_profiling_optional_match_and_with() {
-    createLabeledNode(Map("x" -> 1), "Label")
-    val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
-    assert(result("A") === 1)
   }
 
   @Test
