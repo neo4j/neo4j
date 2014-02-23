@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+case class AllNodesScan(id: Id, cardinality: Int) extends LogicalPlan {
+  def coveredIds: Set[Id] = Set(id)
 
-/* This class is responsible for taking a query from an AST object to a runnable object.  */
-class Planner(cardinalityEstimate: CardinalityEstimator, costModel: CostModel) {
-  def producePlan(ast: Query): PipeInfo = ???
+  def cost: Int = ???
+
+  def rhs: Option[LogicalPlan] = None
+  def lhs: Option[LogicalPlan] = None
 }

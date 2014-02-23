@@ -28,14 +28,14 @@ object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression]): ExtractPipe = source match {
       // If we can merge the two pipes together, do it
     case p: ExtractPipe if expressions.values.forall(_.symbolDependenciesMet(p.source.symbols)) =>
-      new ExtractPipe(p.source, p.expressions ++ expressions)
+      new ExtractPipe(p.source, p.expressions ++ expressions, true)
 
     case _              =>
-      new ExtractPipe(source, expressions)
+      new ExtractPipe(source, expressions, true)
   }
 }
 
-class ExtractPipe(val source: Pipe, val expressions: Map[String, Expression]) extends PipeWithSource(source) {
+case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean) extends PipeWithSource(source) {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)

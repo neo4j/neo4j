@@ -19,10 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
 
-/* This class is responsible for taking a query from an AST object to a runnable object.  */
-class Planner(cardinalityEstimate: CardinalityEstimator, costModel: CostModel) {
-  def producePlan(ast: Query): PipeInfo = ???
+class SimpleQueryGraphBuilder extends QueryGraphBuilder {
+  override def produce(ast: Query): QueryGraph = {
+    val (projection, identifiers: Set[Id]) = ast match {
+      case Query(None, SingleQuery(Seq(Return(_, ListedReturnItems(expressions), _, _, _)))) =>
+        (expressions.map(e => e.name -> e.expression), Set.empty)
+      case Query(None, SingleQuery(Seq(
+        Match(_, Pattern(Seq(EveryPath(NodePattern(Some(Identifier(s)), _, _, _)))), _, _),
+        Return(_, ListedReturnItems(expressions), _, _, _)
+      ))) =>
+        (expressions.map(e => e.name -> e.expression), Set(Id(s)))
+    }
+    QueryGraph(projection, identifiers)
+  }
 }

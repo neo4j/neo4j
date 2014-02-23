@@ -21,6 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.graphdb.Direction
 
+/*
+This class is responsible for answering questions about cardinality. It does this by asking the database when this
+information is available, or guessing when that's not possible.
+ */
 trait CardinalityEstimator {
   def estimateLabelScan(labelId: LabelId): Int
 

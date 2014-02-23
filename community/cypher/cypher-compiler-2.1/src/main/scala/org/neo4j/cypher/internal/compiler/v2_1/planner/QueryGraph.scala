@@ -19,6 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-class QueryGraph {
+import org.neo4j.cypher.internal.compiler.v2_1.ast
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+
+/*
+An abstract representation of the query graph being solved at the current step
+ */
+case class QueryGraph(projection: Seq[(String, ast.Expression)], identifiers: Set[Id]) {
 
 }
+

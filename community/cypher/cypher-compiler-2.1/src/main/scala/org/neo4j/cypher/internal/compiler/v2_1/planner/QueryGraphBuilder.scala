@@ -17,6 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.physical
+package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-trait PhysicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+
+trait QueryGraphBuilder {
+  def produce(ast: Query): QueryGraph
+}
