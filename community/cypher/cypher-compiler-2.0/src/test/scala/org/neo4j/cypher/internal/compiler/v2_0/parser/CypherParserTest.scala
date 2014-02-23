@@ -2944,6 +2944,14 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("should allow append to empty collection") {
+    expectQuery(
+      "return [] + 1 AS result",
+      Query.
+        matches().
+        returns(ReturnItem(Add(Collection(), Literal(1)), "result", true)))
+  }
+
   ignore("should handle load and return as map") {
     expectQuery(
       "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",

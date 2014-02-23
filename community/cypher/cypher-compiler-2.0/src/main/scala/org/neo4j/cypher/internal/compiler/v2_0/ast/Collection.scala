@@ -27,7 +27,7 @@ case class Collection(expressions: Seq[Expression])(val position: InputPosition)
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
-    case Seq() => CTCollection(CTAny).invariant
+    case Seq() => CTCollection(CTAny).covariant
     case _     => expressions.mergeUpTypes(state).wrapInCollection
   }
 }
