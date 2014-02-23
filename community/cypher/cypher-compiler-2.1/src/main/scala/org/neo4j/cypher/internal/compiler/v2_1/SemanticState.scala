@@ -40,7 +40,7 @@ object SemanticState {
 
 case class SemanticState private (
     symbolTable: Map[String, Symbol],
-    typeTable: Map[ast.Expression, ExpressionTypeInfo],
+    typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo],
     parent: Option[SemanticState]) {
 
   def newScope = copy(symbolTable = HashMap.empty, parent = Some(this))

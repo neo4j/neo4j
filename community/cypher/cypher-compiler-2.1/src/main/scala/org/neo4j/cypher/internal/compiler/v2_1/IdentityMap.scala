@@ -41,20 +41,24 @@ case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new ut
       case value => Some(value)
     }
 
-  override def +[V1 >: V](kv: (K, V1)): Map[K, V1] =
+  override def +[V1 >: V](kv: (K, V1)): IdentityMap[K, V1] =
     IdentityMap({
       val clone = idMap.clone().asInstanceOf[util.IdentityHashMap[K, V1]]
       clone.put(kv._1, kv._2)
       clone
     })
 
-  override def -(key: K): Map[K, V] =
+  override def -(key: K): IdentityMap[K, V] =
     IdentityMap({
       val clone = idMap.clone().asInstanceOf[util.IdentityHashMap[K, V]]
       clone.remove(key)
       clone
     })
 
+  override def updated[V1 >: V](key: K, value: V1): IdentityMap[K, V1] = this + ((key, value))
+
   override def iterator: Iterator[(K, V)] =
     idMap.clone().asInstanceOf[util.IdentityHashMap[K, V]].entrySet().iterator().asScala.map(e => (e.getKey, e.getValue))
+
+  override def stringPrefix: String = "IdentityMap"
 }
