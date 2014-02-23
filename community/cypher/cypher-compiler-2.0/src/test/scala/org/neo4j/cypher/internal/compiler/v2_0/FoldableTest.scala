@@ -41,6 +41,16 @@ class FoldableTest extends CypherFunSuite {
     assert(result === 200)
   }
 
+  test("should fold by depth then breadth left to right") {
+    val ast = Add(Val(1), Add(Add(Val(2), Val(3)), Val(4)))
+
+    val result = ast.fold(Seq.empty[Int]) {
+      case Val(x) => acc => acc :+ x
+    }
+
+    assert(result === Seq(1, 2, 3, 4))
+  }
+
   test("should tree fold over all objects") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
