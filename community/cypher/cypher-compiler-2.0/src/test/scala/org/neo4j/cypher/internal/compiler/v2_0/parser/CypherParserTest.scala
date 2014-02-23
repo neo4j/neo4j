@@ -30,7 +30,6 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
-import org.scalatest.Matchers
 import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
