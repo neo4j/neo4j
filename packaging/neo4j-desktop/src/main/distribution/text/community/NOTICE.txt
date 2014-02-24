@@ -28,9 +28,6 @@ Third-party licenses
 ASM License
   ASM Core
 
-Academic Free License version 3.0
-  Pure Feature Detection Library (has.js)
-
 Apache Software License, Version 2.0
   Apache ServiceMix Bundles: jline-0.9.94
   bootstrap
@@ -75,7 +72,6 @@ BSD License
   Easing Equations (in easing.js)
   Janino
   JQuery Easing Plugin
-  Pure Feature Detection Library (has.js)
 
 Bouncy Castle License
   Legion of the Bouncy Castle Java Cryptography APIs
@@ -103,13 +99,6 @@ Eclipse Public License, Version 1.0
   Logback Access Module
   Logback Classic Module
   Logback Core Module
-
-GNU General Public License, version 2
-  Color picker
-  JQuery
-  jquery.hotkeys.js
-  jquery.putCursorAtEnd.js
-  jquery.sortable.js
 
 GNU General Public License, version 2 or later
   Mozilla Rhino
@@ -150,7 +139,6 @@ MIT License
   Date Format
   es5-shim
   FileSaver.js
-  Font Awesome
   JQuery
   JQuery Animated-Advanced Plugin
   jquery-ui
@@ -188,21 +176,9 @@ SIL OFL 1.1
 Dependencies with multiple licenses
 -----------------------------------
 
-Color picker
-  GNU General Public License, version 2
-  MIT License
-
-Font Awesome
-  MIT License
-  SIL OFL 1.1
-
 JAX-RS provider for JSON content type
   Apache Software License, Version 2.0
   GNU Lesser General Public License, Version 2.1
-
-JQuery
-  GNU General Public License, version 2
-  MIT License
 
 Jetty :: Http Utility
   Apache Software License, Version 2.0
@@ -260,11 +236,6 @@ Mozilla Rhino
   GNU General Public License, version 2 or later
   Mozilla Public License, Version 1.1
 
-Pure Feature Detection Library (has.js)
-  Academic Free License version 3.0
-  BSD License
-  MIT License
-
 jersey-core
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
@@ -276,18 +247,6 @@ jersey-multipart
 jersey-server
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
-
-jquery.hotkeys.js
-  GNU General Public License, version 2
-  MIT License
-
-jquery.putCursorAtEnd.js
-  GNU General Public License, version 2
-  MIT License
-
-jquery.sortable.js
-  GNU General Public License, version 2
-  MIT License
 
 jsr311-api
   Common Development and Distribution License Version 1.1
