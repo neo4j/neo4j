@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 
 class LoadCsvAcceptanceTest
-  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
+  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
 
-  @Test def import_three_strings() {
+  test("import three strings") {
     val url = createFile {
       writer =>
         writer.println("'Foo'")
@@ -39,7 +39,7 @@ class LoadCsvAcceptanceTest
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
-  @Test def import_three_numbers() {
+  test("import three numbers") {
     val url = createFile {
       writer =>
         writer.println("1")
@@ -54,7 +54,7 @@ class LoadCsvAcceptanceTest
     result.columnAs[Long]("a.number").toList === List("")
   }
 
-  @Test def import_three_rows_numbers_and_strings() {
+  test("import three rows numbers and strings") {
     val url = createFile {
       writer =>
         writer.println("1, 'Aadvark'")
@@ -66,7 +66,7 @@ class LoadCsvAcceptanceTest
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
-  @Test def import_three_rows_with_headers() {
+  test("import three rows with headers") {
     val url = createFile {
       writer =>
         writer.println("id,name")
@@ -82,7 +82,7 @@ class LoadCsvAcceptanceTest
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
   }
 
-  @Test def import_three_rows_with_headers_messy_data() {
+  test("import three rows with headers messy data") {
     val url = createFile {
       writer =>
         writer.println("id,name,x")
@@ -95,7 +95,7 @@ class LoadCsvAcceptanceTest
     assert(result.toList === List(Map("line.x" -> "0"), Map("line.x" -> null), Map("line.x" -> "1")))
   }
 
-  @Test def should_handle_quotes() {
+  test("should handle quotes") {
     val url = createFile {
       writer =>
         writer.println("String without quotes")
@@ -114,20 +114,37 @@ class LoadCsvAcceptanceTest
       Map("string" -> Seq( """String with "quotes" in it"""))))
   }
 
-  @Test def empty_file_does_not_create_anything() {
+  test("should open file containing strange chars") {
+    val url = createFile ({
+      writer =>
+        writer.println("something")
+    }, "cypher %^&!@#_)(098.,;'[]{}\\//~$*+-")
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
+    assert(result === List(Map("string" -> Seq("something"))))
+  }
+
+  test("empty file does not create anything") {
     val url = createFile(writer => {})
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 0)
   }
 
-  @Test def should_fail_gracefully_when_loading_missing_file() {
+  test("should be able to download data from the web") {
+    val url = "http://www.neo4j.org"
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line").toList
+    result.isEmpty should be (false)
+  }
+
+  test("should fail gracefully when loading missing file") {
     intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'file://missing_file.csv' AS line CREATE (a {name:line[0]})")
+      execute("LOAD CSV FROM 'file://missing file.csv' AS line CREATE (a {name:line[0]})")
     }
   }
 
-  @Test def should_fail_gracefully_when_loading_non_existent_site() {
+  test("should fail gracefully when loading non existent site") {
     // If this test fails, check that you are not in a network that
     // redirects http requests to unknown domains to some landing page
     intercept[LoadExternalResourceException] {
@@ -135,5 +152,5 @@ class LoadCsvAcceptanceTest
     }
   }
 
-  private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape
+  private def createFile(f: PrintWriter => Unit, filename: String = "cypher") = createTempFileURL(filename, ".csv", f).cypherEscape
 }
