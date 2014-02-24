@@ -70,6 +70,18 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     ex should equal(expected)
   }
 
+  test("does not close twice") {
+    val expected = new Exception("oh noes")
+    taskCloser.addTask(closingTask)
+
+    taskCloser.close(success = true)
+    ran = false
+    taskCloser.close(success = true)
+
+    // If we close the closer twice, it should only run this once
+    ran should not equal(true)
+  }
+
   test("cleanup without any cleanups does not fail") {
     taskCloser.close(success = true)
 

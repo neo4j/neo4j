@@ -47,7 +47,7 @@ class Profiler extends PipeDecorator {
     }
 
     contextStats(pipe) = decoratedContext
-    state.copy(inner = decoratedContext)
+    state.copy(query = decoratedContext)
   }
 
   private def decoratePipe[T](pipe: Pipe, default: T)(f: => T): T = pipe match {

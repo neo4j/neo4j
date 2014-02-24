@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
 import org.junit.Test
@@ -32,7 +31,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseJUnitSuite {
   val queryContext = new SnitchingQueryContext
-  val state = QueryStateHelper.emptyWith(inner = queryContext)
+  val state = QueryStateHelper.emptyWith(query = queryContext)
   val ctx = ExecutionContext()
 
   @Test

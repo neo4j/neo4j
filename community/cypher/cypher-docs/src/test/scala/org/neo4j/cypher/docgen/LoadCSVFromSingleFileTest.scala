@@ -100,6 +100,11 @@ class LoadCSVFromSingleFileTest extends ArticleTest with QueryStatisticsTestSupp
                        |MERGE (m:Movie {title: csvLine.movie})
                        |CREATE (p)-[:PRODUCED {year: toInt(csvLine.year)}]->(m)###
                        |
+                       |When used together with +LOAD CSV+ +PERIODIC COMMIT+ will hardly try to commit batches at the
+                       |end of processing a csv row. This behavior is not always guaranteed. If you use more than
+                       |one +LOAD CSV+ clause or execute twice the number of updates specified by +PERIODIC COMMIT+
+                       |per csv row, Cypher may commit in the middle of processing a row.
+                       |
                        |+LOAD CSV+ produces values that are collections (or maps when +WITH HEADERS+ is used) of strings.
                        |In order to convert them to appropriate types, use the built-in +toInt+ and +toFloat+ functions.
                        |""".stripMargin

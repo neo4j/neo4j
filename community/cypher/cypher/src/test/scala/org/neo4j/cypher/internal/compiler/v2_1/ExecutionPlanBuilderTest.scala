@@ -25,7 +25,7 @@ import commands.values.TokenType.{Label, PropertyKey}
 import pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.{GraphDatabaseTestSupport, InternalException}
-import org.neo4j.graphdb.{DynamicLabel, GraphDatabaseService}
+import org.neo4j.graphdb.DynamicLabel
 import scala.collection.Seq
 import org.junit.Assert._
 import java.util.concurrent._
@@ -33,7 +33,6 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
-import javax.transaction.TransactionManager
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
@@ -44,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import javax.transaction.TransactionManager
 
 class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
   val ast = mock[Statement]
@@ -53,7 +53,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val epi = new FakeExecPlanBuilder(graph, Seq(new BadBuilder))
+      val epi = new ExecutionPlanBuilder(graph, new FakePipeBuilder(Seq(new BadBuilder)))
       epi.build(planContext, q, ast)
     })
 
@@ -66,7 +66,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val tx = graph.beginTx()
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
-    val execPlanBuilder = new FakeExecPlanBuilder(graph, Seq(new ExplodingPipeBuilder))
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, new FakePipeBuilder(Seq(new ExplodingPipeBuilder)))
     val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
 
     // when
@@ -93,12 +93,13 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val pipeBuilder = new PipeBuilder
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
 
       // when
-      val commands = execPlanBuilder.buildPipes(planContext, q).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+
+      val commands = pipeBuilder.buildPipes(planContext, q).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
       assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
     } finally {
@@ -117,7 +118,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .where(HasLabel(Identifier("x"), Label("Person")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val execPlanBuilder = new PipeBuilder
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
 
@@ -145,7 +146,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         )
         .returns(AllIdentifiers())
 
-      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val execPlanBuilder = new PipeBuilder
       val PipeInfo(pipe, _, _) = execPlanBuilder.buildPipes(planContext, q)
 
       toSeq(pipe) should equal (Seq(
@@ -169,7 +170,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         )
         .returns(AllIdentifiers())
 
-      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val execPlanBuilder = new PipeBuilder
       val PipeInfo(pipe, _, _) = execPlanBuilder.buildPipes(planContext, q)
 
       toSeq(pipe) should equal (Seq(
@@ -192,7 +193,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         None
       )
 
-      val execPlanBuilder = new ExecutionPlanBuilder(graph)
+      val execPlanBuilder = new PipeBuilder
 
       // when
       val periodicCommit = execPlanBuilder.buildPipes(planContext, q).periodicCommit
@@ -204,7 +205,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
   }
 }
 
-class FakeExecPlanBuilder(gds: GraphDatabaseService, builders: Seq[PlanBuilder]) extends ExecutionPlanBuilder(gds) {
+class FakePipeBuilder(builders: Seq[PlanBuilder]) extends PipeBuilder {
   override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = builders }
 }
 

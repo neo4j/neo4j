@@ -24,6 +24,7 @@ import scala.collection.mutable.ListBuffer
 class TaskCloser {
 
   private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
+  private var closed = false
 
   /**
    *
@@ -34,16 +35,21 @@ class TaskCloser {
   }
 
   def close(success: Boolean) {
-    val errors = _tasks.toSeq.flatMap {
-      f =>
-        try {
-          f(success)
-          None
-        } catch {
-          case e: Throwable => Some(e)
-        }
-    }
+    if (!closed) {
+      closed = true
+      val errors = _tasks.toSeq.flatMap {
+        f =>
+          try {
+            f(success)
+            None
+          } catch {
+            case e: Throwable => Some(e)
+          }
+      }
 
-    errors.map(e => throw e)
+      errors.map(e => throw e)
+    }
   }
+
+  def isClosed = closed
 }

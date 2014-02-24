@@ -20,18 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 import org.junit.Test
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, TraversalMatchPipe, DistinctPipe}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 
-class PlanBuildingTest extends MockitoSugar {
-  val gds: GraphDatabaseService = null
+class PipeBuilderTest extends MockitoSugar {
   val planContext: PlanContext = mock[PlanContext]
   val parser = CypherParser()
-  val planBuilder = new ExecutionPlanBuilder(gds)
+  val planBuilder = new PipeBuilder()
 
   @Test def should_use_distinct_pipe_for_distinct() {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")

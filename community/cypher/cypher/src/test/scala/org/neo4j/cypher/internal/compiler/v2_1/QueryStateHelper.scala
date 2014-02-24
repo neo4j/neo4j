@@ -25,18 +25,20 @@ import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ExternalResource, PipeDecorator, NullDecorator, QueryState}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{UpdateCountingQueryContext, QueryContext}
 
 object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
-  def emptyWith(db: GraphDatabaseService = null, inner: QueryContext = null, resources: ExternalResource = null,
+  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
                 params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
-    QueryState(db = db, inner = inner, resources = resources, params = params, decorator = decorator)
+    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
     val context = new TransactionBoundQueryContext(db, tx, isTopLevelTx = true, statement)
-    emptyWith(db = db, inner = context)
+    emptyWith(db = db, query = context)
   }
+
+  def countStats(q: QueryState) = q.copy(query = new UpdateCountingQueryContext(q.query))
 }

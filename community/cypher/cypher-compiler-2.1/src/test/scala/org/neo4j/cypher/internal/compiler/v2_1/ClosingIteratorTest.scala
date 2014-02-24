@@ -75,7 +75,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     iterator.hasNext
 
     //Then
-    verify(taskCloser, times(1)).close(success = true)
+    verify(taskCloser, atLeastOnce()).close(success = true)
     assertThat(result, is(false))
   }
 

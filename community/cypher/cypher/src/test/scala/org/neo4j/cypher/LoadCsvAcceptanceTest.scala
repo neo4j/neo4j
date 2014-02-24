@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.junit.Test
-import java.io.{FileNotFoundException, PrintWriter}
+import java.io.PrintWriter
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 

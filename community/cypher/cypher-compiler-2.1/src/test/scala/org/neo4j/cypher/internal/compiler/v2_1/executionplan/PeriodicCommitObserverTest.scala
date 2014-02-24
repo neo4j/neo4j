@@ -17,15 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.graphdb.GraphDatabaseService
+import org.scalatest.BeforeAndAfter
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import org.scalatest.mock.MockitoSugar
+import org.mockito.Mockito._
+import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-object QueryStateHelper {
-  def empty: QueryState = emptyWith()
+class PeriodicCommitObserverTest extends CypherFunSuite with BeforeAndAfter with MockitoSugar {
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
+
+  var queryContext: QueryContext = _
+  var observer: PeriodicCommitObserver = _
+
+  before {
+    queryContext = mock[QueryContext]
+    observer = new PeriodicCommitObserver(10, queryContext)
+  }
+
+  test("should commit every batch size updates") {
+    observer.notify(10)
+
+    verify(queryContext, times(1)).commitAndRestartTx()
+  }
+
+  test("should not commit if there are less then batch size updates") {
+    observer.notify(9)
+
+    verify(queryContext, never()).commitAndRestartTx()
+  }
 }

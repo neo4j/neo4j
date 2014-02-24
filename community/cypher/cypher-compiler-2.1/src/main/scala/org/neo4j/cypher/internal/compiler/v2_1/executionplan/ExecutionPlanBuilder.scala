@@ -22,92 +22,38 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 import builders._
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
-import commands.values.{TokenType, KeyToken}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
 import pipes._
 import profiler.Profiler
 import symbols.SymbolTable
-import org.neo4j.cypher.{PeriodicCommitInOpenTransactionException, SyntaxException, ExecutionResult}
+import org.neo4j.cypher.{PeriodicCommitInOpenTransactionException, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Planner}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{CSVResources, QueryContext, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{UpdateCountingQueryContext, CSVResources, QueryContext, PlanContext}
 
 case class PipeInfo(pipe: Pipe, updating: Boolean, periodicCommit: Option[PeriodicCommitInfo] = None)
 
 case class PeriodicCommitInfo(size: Option[Long])
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
+class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
 
     val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
       execPlanBuilder.producePlan(ast)
     } catch {
-      case _: CantHandleQueryException => buildPipes(planContext, inputQuery)
+      case _: CantHandleQueryException => pipeBuilder.buildPipes(planContext, inputQuery)
     }
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
-    val func = if (isUpdating) {
-      getEagerReadWriteQuery(p, columns, periodicCommitInfo)
-    } else {
-      getLazyReadonlyQuery(p, columns)
-    }
+    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
-      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
+
+      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
     }
-  }
-
-  def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeInfo = in match {
-    case q: PeriodicCommitQuery       => buildPipes(planContext, q.query).copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
-    case q: Query                     => buildQuery(q, planContext)
-    case q: IndexOperation            => buildIndexQuery(q)
-    case q: UniqueConstraintOperation => buildConstraintQuery(q)
-    case q: Union                     => buildUnionQuery(q, planContext)
-  }
-
-  val unionBuilder = new UnionBuilder(this)
-
-  def buildUnionQuery(union: Union, context:PlanContext): PipeInfo = unionBuilder.buildUnionQuery(union, context)
-
-  def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true)
-
-  def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
-    val label = KeyToken.Unresolved(op.label, TokenType.Label)
-    val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
-
-    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true)
-  }
-
-  def buildQuery(inputQuery: Query, context: PlanContext): PipeInfo = {
-    val initialPSQ = PartiallySolvedQuery(inputQuery)
-
-    var continue = true
-    var planInProgress = ExecutionPlanInProgress(initialPSQ, NullPipe(), isUpdating = false)
-
-    while (continue) {
-      planInProgress = phases(planInProgress, context)
-
-      if (!planInProgress.query.isSolved) {
-        produceAndThrowException(planInProgress)
-      }
-
-      planInProgress.query.tail match {
-        case None => continue = false
-        case Some(q) =>
-          val pipe = if (q.containsUpdates && planInProgress.pipe.readsFromDatabase && planInProgress.pipe.isLazy) {
-            new EagerPipe(planInProgress.pipe)
-          }
-          else {
-            planInProgress.pipe
-          }
-          planInProgress = planInProgress.copy(query = q, pipe = pipe)
-      }
-    }
-
-    PipeInfo(planInProgress.pipe, planInProgress.isUpdating)
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
@@ -123,7 +69,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, execPlanBuilder: Planner
 
       query.returns.columns.flatMap {
         case "*" => currentSymbols.identifiers.keys
-        case x   => Seq(x)
+        case x => Seq(x)
       }
 
     case union: Union =>
@@ -133,141 +79,94 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, execPlanBuilder: Planner
       List.empty
   }
 
-
-  private def getLazyReadonlyQuery(pipe: Pipe, columns: List[String]): (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
+  private def getExecutionPlanFunction(pipe: Pipe,
+                                       columns: List[String],
+                                       periodicCommit: Option[PeriodicCommitInfo],
+                                       updating: Boolean):
+  (QueryContext, Map[String, Any], Boolean) => ExecutionResult = {
     val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
-      val (state, results, descriptor) = prepareStateAndResult(queryContext, params, pipe, profile)
 
-      new PipeExecutionResult(results, columns, state, descriptor)
-    }
+      val builder = new ExecutionResultBuilder
+      builder.addQueryContextBuilder(_ => queryContext)
+      builder.addCloserBuilder(_ => new TaskCloser)
+      builder.addExternalResourceBuilder(_ => new CSVResources(builder.closer))
 
-    func
-  }
+      periodicCommit match {
 
-  private def getEagerReadWriteQuery(pipe: Pipe, columns: List[String], periodicCommit: Option[PeriodicCommitInfo]):
-    (QueryContext, Map[String, Any], Boolean) => ExecutionResult =
-  {
-    val func = (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
-      val newQueryContext: QueryContext = periodicCommit match {
-        case Some(info) =>
-          if (!queryContext.isTopLevelTx)
-            throw new PeriodicCommitInOpenTransactionException()
+        case Some(info) if !queryContext.isTopLevelTx => throw new PeriodicCommitInOpenTransactionException()
 
+        case Some(info) if !pipe.exists(_.isInstanceOf[LoadCSVPipe]) =>
           val defaultSize = 10000L
           val size = info.size.getOrElse(defaultSize)
-          new PeriodicCommitQueryContext(size, queryContext)
+          builder.addObserverBuilder(_ => new PeriodicCommitObserver(size, queryContext))
+          builder.addQueryContextBuilder(inner => new UpdateObservableQueryContext(builder.observer, inner))
+
+        case Some(info) =>
+          val defaultSize = 10000L
+          val size = info.size.getOrElse(defaultSize)
+          builder.addObserverBuilder(_ => new LoadCsvPeriodicCommitObserver(size, builder.externalResource, queryContext))
+          builder.addQueryContextBuilder(inner => new UpdateObservableQueryContext(builder.observer, inner))
 
         case _ =>
-          queryContext
       }
-      val (state, results, descriptor) = prepareStateAndResult(newQueryContext, params, pipe, profile)
-      new EagerPipeExecutionResult(results, columns, state, descriptor)
+
+      builder.addQueryContextBuilder(inner => new UpdateCountingQueryContext(inner))
+      val newQueryContext = builder.queryContext
+
+      val decorator = if (profile) new Profiler() else NullDecorator
+      val taskCloser =  builder.closer
+      taskCloser.addTask(newQueryContext.close)
+      val state = new QueryState(graph, newQueryContext, builder.externalResource, params, decorator)
+
+      try {
+        val results: Iterator[collection.Map[String, Any]] = pipe.createResults(state)
+
+        val closingIterator = new ClosingIterator(results, taskCloser)
+        val descriptor = {
+          () =>
+            val result = decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
+            result
+        }
+        if (updating)
+          new EagerPipeExecutionResult(closingIterator, columns, state, descriptor)
+        else
+          new PipeExecutionResult(closingIterator, columns, state, descriptor)
+
+      }
+      catch {
+        case (t: Throwable) =>
+          taskCloser.close(success = false)
+          throw t
+      }
     }
 
     func
   }
 
-  private def prepareStateAndResult(queryContext: QueryContext, params: Map[String, Any], pipe: Pipe, profile:Boolean):
-    (QueryState, ClosingIterator, () => PlanDescription) = {
+  class ExecutionResultBuilder {
+    var queryContextBuilders: QueryContext => QueryContext = (_) => null
 
-    try {
-      val decorator = if (profile) new Profiler() else NullDecorator
-      val taskCloser = new TaskCloser
-      taskCloser.addTask(queryContext.close)
+    def addQueryContextBuilder(f: QueryContext => QueryContext) =
+      queryContextBuilders = queryContextBuilders andThen f
 
-      val resources = new CSVResources(taskCloser)
-      val state = new QueryState(graph, queryContext, resources, params, decorator)
-      val results: Iterator[collection.Map[String, Any]] = pipe.createResults(state)
+    var externalResourceBuilder: ExternalResource => ExternalResource = (_) => null
 
-      val closingIterator = new ClosingIterator(results, taskCloser)
-      val descriptor = { () =>
-        val result = decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
-        result
-      }
-      (state, closingIterator, descriptor)
-    }
-    catch {
-      case (t: Throwable) =>
-        queryContext.close(success = false)
-        throw t
-    }
-  }
+    def addExternalResourceBuilder(f: ExternalResource => ExternalResource) =
+      externalResourceBuilder = externalResourceBuilder andThen f
 
-  private def produceAndThrowException(plan: ExecutionPlanInProgress) {
-    val errors = builders.flatMap(builder => builder.missingDependencies(plan).map(builder ->)).toList
+    var observerBuild: UpdateObserver => UpdateObserver = (_) => null
 
-    if (errors.isEmpty) {
-      throw new SyntaxException( """Somehow, Cypher was not able to construct a valid execution plan from your query.
-The Neo4j team is very interested in knowing about this query. Please, consider sending a copy of it to cypher@neo4j.org.
-Thank you!
+    def addObserverBuilder(f: UpdateObserver => UpdateObserver) =
+      observerBuild = observerBuild andThen f
 
-The Neo4j Team""")
-    }
+    var closerBuilder: TaskCloser => TaskCloser = (_) => null
 
-    val errorMessage = errors.distinct.map(_._2).mkString("\n")
-    throw new SyntaxException(errorMessage)
-  }
+    def addCloserBuilder(f: TaskCloser => TaskCloser) =
+      closerBuilder = closerBuilder andThen f
 
-  val phases =
-    prepare andThen   /* Prepares the query by rewriting it before other plan builders start working on it. */
-    matching andThen  /* Pulls in data from the stores, adds named paths, and filters the result */
-    updates andThen   /* Plans update actions */
-    extract andThen   /* Handles RETURN and WITH expression */
-    finish            /* Prepares the return set so it looks like the user specified */
-
-
-  lazy val builders = phases.myBuilders.distinct
-
-  /*
-  The order of the plan builders here is important. It decides which PlanBuilder gets to go first.
-   */
-  def prepare = new Phase {
-    def myBuilders: Seq[PlanBuilder] = Seq(
-      new PredicateRewriter, 
-      new KeyTokenResolver,  
-      new AggregationPreparationRewriter(), 
-      new IndexLookupBuilder,
-      new StartPointChoosingBuilder, 
-      new MergeStartPointBuilder,
-      new OptionalMatchBuilder(matching)
-    )
-  }
-
-  def matching = new Phase {
-    def myBuilders: Seq[PlanBuilder] = Seq(
-      new TraversalMatcherBuilder,
-      new FilterBuilder, 
-      new NamedPathBuilder,
-      new LoadCSVBuilder,
-      new StartPointBuilder,
-      new MatchBuilder, 
-      new ShortestPathBuilder 
-    )
-  }
-
-  def updates = new Phase {
-    def myBuilders: Seq[PlanBuilder] = Seq(
-      new NamedPathBuilder,
-      new MergePatternBuilder(prepare andThen matching),
-      new UpdateActionBuilder
-    )
-  }
-
-  def extract = new Phase {
-    def myBuilders: Seq[PlanBuilder] = Seq(
-      new TopPipeBuilder,
-      new ExtractBuilder,
-      new SliceBuilder,
-      new DistinctBuilder,
-      new AggregationBuilder, 
-      new SortBuilder
-    )
-  }
-
-  def finish = new Phase {
-    def myBuilders: Seq[PlanBuilder] = Seq(
-      new ColumnFilterBuilder,
-      new EmptyResultBuilder
-    )
+    lazy val queryContext: QueryContext = queryContextBuilders(null)
+    lazy val observer: UpdateObserver = observerBuild(null)
+    lazy val externalResource: ExternalResource = externalResourceBuilder(null)
+    lazy val closer: TaskCloser = closerBuilder(null)
   }
 }

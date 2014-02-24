@@ -65,7 +65,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     when(planContext.getIndexRule(label, prop)).thenReturn(Some(index))
     val indexResult = Iterator(null)
     when(queryContext.exactIndexSearch(index, value)).thenReturn(indexResult)
-    val state = QueryStateHelper.empty.copy(inner = queryContext)
+    val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
     val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, Some(Literal(value))))
@@ -79,7 +79,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.getOptLabelId(label)).thenReturn(None)
     when(queryContext.getOptLabelId(label)).thenReturn(None)
-    val state = QueryStateHelper.empty.copy(inner = queryContext)
+    val state = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
     val func = factory.nodeByLabel(planContext, NodeByLabel("id", label))
@@ -98,7 +98,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     when(planContext.getIndexRule(labelName, propertyKey)).thenReturn(Some(index))
     val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(Literal(Seq(1,2,3)))))
     val queryContext: QueryContext = mock[QueryContext]
-    val state = QueryStateHelper.empty.copy(inner = queryContext)
+    val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
     producer.apply(context, state)

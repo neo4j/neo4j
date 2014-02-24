@@ -22,20 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{DelegatingOperations, Operations, QueryContext, DelegatingQueryContext}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 
-class PeriodicCommitQueryContext(batchSize: Long, inner: QueryContext) extends DelegatingQueryContext(inner) {
-  var currentCount: Long = 0
-  var commitCount: Long = 0
+trait UpdateObserver {
+  def notify(increment: Long)
+}
 
+class UpdateObservableQueryContext(observer: UpdateObserver, inner: QueryContext) extends DelegatingQueryContext(inner) {
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
-    countWhenNeeded(super.removeLabelsFromNode(node, labelIds))
+    observe(super.removeLabelsFromNode(node, labelIds))
 
   override def createRelationship(start: Node, end: Node, relType: String): Relationship =
-    incrementWhenNeeded(super.createRelationship(start, end, relType))
+    observe(super.createRelationship(start, end, relType))
 
-  override def createNode(): Node = incrementWhenNeeded(super.createNode())
+  override def createNode(): Node = observe(super.createNode())
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
-    countWhenNeeded(super.setLabelsOnNode(node, labelIds))
+    observe(super.setLabelsOnNode(node, labelIds))
 
   override val nodeOps: Operations[Node] = new TxResettingOps(super.nodeOps)
 
@@ -44,46 +45,22 @@ class PeriodicCommitQueryContext(batchSize: Long, inner: QueryContext) extends D
   class TxResettingOps[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
 
     override def removeProperty(obj: Long, propertyKeyId: Int): Unit =
-      incrementWhenNeeded(super.removeProperty(obj, propertyKeyId))
+      observe(super.removeProperty(obj, propertyKeyId))
 
     override def setProperty(obj: Long, propertyKey: Int, value: Any): Unit =
-      incrementWhenNeeded(super.setProperty(obj, propertyKey, value))
+      observe(super.setProperty(obj, propertyKey, value))
 
-    override def delete(obj: T): Unit = incrementWhenNeeded(super.delete(obj))
+    override def delete(obj: T): Unit = observe(super.delete(obj))
   }
 
-  private def incrementWhenNeeded[T](f: => T): T = {
-    val result = f
-    resetWhenNeeded(1)
-    result
-  }
-
-  private def countWhenNeeded(f: => Int): Int = {
-    val result = f
-    if (result > 0)
-      resetWhenNeeded(result)
-    result
-  }
-
-  private def resetWhenNeeded(increment: Int) {
-    // !!! DO NOT CALL WITH increment < 1
-
-    currentCount += increment
-
-    if (currentCount % batchSize == 0)
-      commitAndRestartTx()
-  }
-
-  override def close(success: Boolean) {
-    super.close(success)
-    if (success) {
-        commitCount += 1
+  private def observe[T](result: T): T = {
+    result match {
+      case n:Int => if (n > 0) observer.notify(n)
+      case _ => observer.notify(1)
     }
-  }
 
-  override def commitAndRestartTx() {
-    super.commitAndRestartTx()
-    commitCount += 1
+    result
   }
 }
+
 

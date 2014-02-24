@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
 import pipes.QueryState
-import symbols.{CypherType, SymbolTable}
+import symbols.CypherType
 import org.neo4j.cypher.{PatternException, UniquePathNotUniqueException}
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -49,7 +49,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
         val lockingContext = state.query.upgradeToLockingQueryContext
 
         try {
-          executionContext = tryAgain(linksToDo, executionContext, state.copy(inner = lockingContext))
+          executionContext = tryAgain(linksToDo, executionContext, state.copy(query = lockingContext))
         } finally {
           lockingContext.releaseLocks()
         }

@@ -20,24 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.ParameterNotFoundException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
 
 case class QueryState(db: GraphDatabaseService,
-                      inner: QueryContext,
+                      query: QueryContext,
                       resources: ExternalResource,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
-                      collectStatistics: Boolean = true,
                       timeReader: TimeReader = new TimeReader,
                       var initialContext: Option[ExecutionContext] = None) {
   def readTimeStamp(): Long = timeReader.getTime
-
-  private val wrappedContext = if (collectStatistics) new UpdateCountingQueryContext(inner) else inner
-
-  val query: QueryContext = wrappedContext
 
   def graphDatabaseAPI: GraphDatabaseAPI = db match {
     case i: GraphDatabaseAPI => i
@@ -47,7 +42,7 @@ case class QueryState(db: GraphDatabaseService,
   def getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
-  def getStatistics = wrappedContext.getOptStatistics.get
+  def getStatistics = query.getOptStatistics.get
 }
 
 class TimeReader {

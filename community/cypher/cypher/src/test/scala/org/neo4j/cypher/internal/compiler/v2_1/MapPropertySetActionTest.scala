@@ -34,7 +34,7 @@ class MapPropertySetActionTest extends GraphDatabaseJUnitSuite {
   @Before
   def init() {
     tx = graph.beginTx()
-    state = QueryStateHelper.queryStateFrom(graph, tx)
+    state = QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
   }
 
   @After
