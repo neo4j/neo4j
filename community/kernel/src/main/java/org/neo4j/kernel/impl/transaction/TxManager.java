@@ -571,9 +571,20 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             }
             else
             {
+                // Find first cause that has a message
+                Throwable commitFailureMessage = commitFailureCause;
+                while (commitFailureMessage.getMessage() == null)
+                    commitFailureMessage = commitFailureMessage.getCause();
+
+                if (commitFailureMessage == null)
+                {
+                    // None found, revert to top
+                    commitFailureMessage = commitFailureCause;
+                }
+
                 throw logAndReturn( "TM error tx commit", Exceptions.withCause( new HeuristicRollbackException(
                         "Failed to commit transaction "+ tx +", transaction rolled back ---> " +
-                                commitFailureCause ), commitFailureCause ) );
+                                commitFailureMessage.getMessage() ), commitFailureCause ) );
             }
         }
         tx.doAfterCompletion();

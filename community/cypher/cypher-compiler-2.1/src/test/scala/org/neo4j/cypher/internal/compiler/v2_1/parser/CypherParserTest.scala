@@ -30,7 +30,6 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
-import org.scalatest.Matchers
 import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
@@ -2942,6 +2941,14 @@ class CypherParserTest extends CypherFunSuite {
         where(Not(IsNull(Identifier("n")))).
         returns(ReturnItem(Identifier("n"), "n"))
     )
+  }
+
+  test("should allow append to empty collection") {
+    expectQuery(
+      "return [] + 1 AS result",
+      Query.
+        matches().
+        returns(ReturnItem(Add(Collection(), Literal(1)), "result", true)))
   }
 
   test("should handle load and return as map") {

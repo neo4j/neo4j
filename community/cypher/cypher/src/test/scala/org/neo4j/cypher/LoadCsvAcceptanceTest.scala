@@ -75,7 +75,10 @@ class LoadCsvAcceptanceTest
         writer.println("3, 'Cash'")
     }
 
-    val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name")
+    val result = execute(
+      s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
+    )
+
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
   }
 
@@ -119,7 +122,17 @@ class LoadCsvAcceptanceTest
   }
 
   @Test def should_fail_gracefully_when_loading_missing_file() {
-    intercept[FileNotFoundException] { execute("LOAD CSV FROM 'file://missing_file.csv' AS line CREATE (a {name:line[0]})") }
+    intercept[LoadExternalResourceException] {
+      execute("LOAD CSV FROM 'file://missing_file.csv' AS line CREATE (a {name:line[0]})")
+    }
+  }
+
+  @Test def should_fail_gracefully_when_loading_non_existent_site() {
+    // If this test fails, check that you are not in a network that
+    // redirects http requests to unknown domains to some landing page
+    intercept[LoadExternalResourceException] {
+      execute("LOAD CSV FROM 'http://non-existing-site.com' AS line CREATE (a {name:line[0]})")
+    }
   }
 
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape

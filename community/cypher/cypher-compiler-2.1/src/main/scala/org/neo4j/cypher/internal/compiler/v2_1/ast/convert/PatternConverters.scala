@@ -289,11 +289,11 @@ object PatternConverters {
 
     def legacyName = relationship.identifier.fold("  UNNAMED" + relationship.position.offset)(_.name)
 
-    def legacyProperties = relationship.properties match {
-      case Some(m: ast.MapExpression) => m.items.map(p => (p._1.name, p._2.asCommandExpression)).toMap
+    def legacyProperties: Map[String, CommandExpression] = relationship.properties match {
+      case None                       => Map.empty[String, CommandExpression]
+      case Some(m: ast.MapExpression) => m.items.map(p => p._1.name -> p._2.asCommandExpression)(collection.breakOut)
       case Some(p: ast.Parameter)     => Map("*" -> p.asCommandExpression)
       case Some(p)                    => throw new SyntaxException(s"Properties of a node must be a map or parameter (${p.position})")
-      case None                       => Map[String, CommandExpression]()
     }
   }
 }

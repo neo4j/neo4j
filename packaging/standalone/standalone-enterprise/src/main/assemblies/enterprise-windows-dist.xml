@@ -98,6 +98,7 @@
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>org.scala-lang:scala-library</include>
         <include>org.parboiled:*</include>
+        <include>net.sf.opencsv:opencsv</include>
       </includes>
       <excludes>
         <exclude>*:javadoc:*</exclude>

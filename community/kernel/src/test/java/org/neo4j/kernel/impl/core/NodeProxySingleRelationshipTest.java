@@ -34,7 +34,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.util.TestLogging;
 
 import static junit.framework.Assert.assertNotNull;
@@ -112,15 +111,8 @@ public class NodeProxySingleRelationshipTest
         when(gds.getRelationshipById( REL_ID + 1)).thenReturn( mock(Relationship.class) );
         when( nodeLookup.getGraphDatabase() ).thenReturn( gds );
 
-        NodeProxy nodeImpl = new NodeProxy( 1, nodeLookup, mock( RelationshipProxy.RelationshipLookups.class), stmCtxBridge,
-                new CleanupService(new TestLogging())
-                {
-                    @Override
-                    public <T> ResourceIterator<T> resourceIterator( Iterator<T> iterator, Resource resource )
-                    {
-                        return IteratorUtil.asResourceIterator( iterator );
-                    }
-                } );
+        NodeProxy nodeImpl = new NodeProxy( 1, nodeLookup, mock( RelationshipProxy.RelationshipLookups.class),
+                stmCtxBridge );
 
         Statement stmt = mock( Statement.class );
         ReadOperations readOps = mock( ReadOperations.class );

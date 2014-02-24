@@ -67,33 +67,4 @@ class QueryStateTest extends Assertions with MockitoSugar {
     //THEN
     assert(ts1 === stateCopy.readTimeStamp(), "Time has changed")
   }
-
-  @Test
-  def add_cleanup_task() {
-    //GIVEN
-    val state = QueryStateHelper.empty
-    val cleanupTask = mock[() => Unit]
-
-    //WHEN
-    state.addCleanupTask(cleanupTask)
-
-    //THEN
-    assert(state.cleanupTasks == Seq(cleanupTask))
-  }
-
-  @Test
-  def add_cleanup_task_copy() {
-    //GIVEN
-    val state = QueryStateHelper.empty
-    val cleanupTask = mock[() => Unit]
-    val newCleanupTask = mock[() => Unit]
-
-    //WHEN
-    state.addCleanupTask(cleanupTask)
-    val copiedState = state.copy()
-    state.addCleanupTask(newCleanupTask)
-
-    //THEN
-    assert(copiedState.cleanupTasks == Seq(cleanupTask, newCleanupTask))
-  }
 }

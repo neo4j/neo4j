@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -284,7 +283,6 @@ public class TxStateTransactionDataViewTest
     private TxStateTransactionDataSnapshot snapshot()
     {
         return new TxStateTransactionDataSnapshot( state, mock( NodeProxy.NodeLookup.class ),
-                mock( RelationshipProxy.RelationshipLookups.class ), bridge,
-                mock( CleanupService.class ) );
+                mock( RelationshipProxy.RelationshipLookups.class ), bridge );
     }
 }

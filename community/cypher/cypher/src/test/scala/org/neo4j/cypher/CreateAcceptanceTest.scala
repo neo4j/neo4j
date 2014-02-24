@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.{FunSuite, Matchers}
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import org.neo4j.graphdb.Relationship

@@ -24,6 +24,7 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.{QueryStatistics, ExecutionResult}
+import java.net.URL
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -94,6 +95,8 @@ trait QueryContext extends TokenContext {
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 
   def commitAndRestartTx()
+
+  def getCsvIterator(url: URL): Iterator[Array[String]]
 }
 
 trait LockingQueryContext extends QueryContext {

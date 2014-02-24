@@ -31,14 +31,14 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
+import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -50,7 +50,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
-    private final CleanupService cleanupService;
     private final ThreadToStatementContextBridge statementCtxProvider;
 
     private GlobalGraphOperations( GraphDatabaseService db )
@@ -58,7 +57,6 @@ public class GlobalGraphOperations
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
         DependencyResolver resolver = dbApi.getDependencyResolver();
         this.nodeManager = resolver.resolveDependency( NodeManager.class );
-        this.cleanupService = resolver.resolveDependency( CleanupService.class );
         this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
@@ -144,15 +142,15 @@ public class GlobalGraphOperations
             public ResourceIterator<Label> iterator()
             {
                 Statement statement = statementCtxProvider.instance();
-                return cleanupService.resourceIterator( map( new Function<Token, Label>()
-                {
+                return ResourceClosingIterator.newResourceIterator( statement, map( new Function<Token, Label>()
+                        {
 
-                    @Override
-                    public Label apply( Token labelToken )
-                    {
-                        return label( labelToken.name() );
-                    }
-                }, statement.readOperations().labelsGetAllTokens() ), statement );
+                            @Override
+                            public Label apply( Token labelToken )
+                            {
+                                return label( labelToken.name() );
+                            }
+                        }, statement.readOperations().labelsGetAllTokens() ) );
             }
         };
     }
@@ -176,14 +174,14 @@ public class GlobalGraphOperations
             public ResourceIterator<String> iterator()
             {
                 Statement statement = statementCtxProvider.instance();
-                return cleanupService.resourceIterator( map( new Function<Token, String>() {
+                return ResourceClosingIterator.newResourceIterator( statement, map( new Function<Token, String>() {
 
-                    @Override
-                    public String apply( Token propertyToken )
-                    {
-                        return propertyToken.name();
-                    }
-                }, statement.readOperations().propertyKeyGetAllTokens() ), statement );
+                            @Override
+                            public String apply( Token propertyToken )
+                            {
+                                return propertyToken.name();
+                            }
+                        }, statement.readOperations().propertyKeyGetAllTokens() ) );
             }
         };
     }
@@ -222,14 +220,14 @@ public class GlobalGraphOperations
         }
 
         final PrimitiveLongIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Node>()
+        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong<Node>()
         {
             @Override
             public Node apply( long nodeId )
             {
                 return nodeManager.getNodeById( nodeId );
             }
-        }, nodeIds ), statement );
+        }, nodeIds ) );
     }
 
     private void assertInTransaction()

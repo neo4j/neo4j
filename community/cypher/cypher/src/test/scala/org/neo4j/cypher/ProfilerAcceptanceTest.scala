@@ -20,16 +20,15 @@
 package org.neo4j.cypher
 
 import javacompat.ProfilerStatistics
-import org.scalatest.Assertions
-import org.junit.Test
 import scala.collection.JavaConverters._
 import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.data.{SimpleVal, MapVal, SeqVal}
+import org.neo4j.cypher.internal.helpers.TxCounts
 
-class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
-  @Test
-  def unfinished_profiler_complains() {
+class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
+
+  test("unfinished profiler complains") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n=node(0) RETURN n")
@@ -39,8 +38,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     result.toList // need to exhaust the results to ensure that the transaction is closed
   }
 
-  @Test
-  def tracks_number_of_rows() {
+  test("tracks number of rows") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n = node(0) RETURN n")
@@ -49,8 +47,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertRows(1)(result)("NodeById")
   }
 
-  @Test
-  def tracks_number_of_graph_accesses() {
+
+  test("tracks number of graph accesses") {
     //GIVEN
     createNode("foo" -> "bar")
     val result: ExecutionResult = engine.profile("START n = node(0) RETURN n.foo")
@@ -59,8 +57,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(1)(result)("ColumnFilter", "Extract", "NodeById")
   }
 
-  @Test
-  def no_problem_measuring_creation() {
+
+  test("no problem measuring creation") {
     //GIVEN
     val result: ExecutionResult = engine.profile("CREATE n")
 
@@ -68,8 +66,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(0)(result)("EmptyResult")
   }
 
-  @Test
-  def tracks_graph_global_queries() {
+
+  test("tracks graph global queries") {
     createNode()
 
     //GIVEN
@@ -79,8 +77,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
   }
 
-  @Test
-  def tracks_optional_matches() {
+
+  test("tracks optional matches") {
     //GIVEN
     createNode()
     val result: ExecutionResult = engine.profile("start n=node(*) optional match (n)-->(x) return x")
@@ -90,8 +88,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "SimplePatternMatcher")
   }
 
-  @Test
-  def tracks_pattern_matcher_start_items() {
+
+  test("tracks pattern matcher start items") {
     //GIVEN
     createNode()
     val result: ExecutionResult = engine.profile("match (n:Person)-->(x) return x")
@@ -113,8 +111,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
     assert( Seq("n") === start("identifiers").asInstanceOf[java.lang.Iterable[String]].asScala.toSeq )
   }
 
-  @Test
-  def tracks_merge_node_producers() {
+
+  test("tracks merge node producers") {
     //GIVEN
     val result: ExecutionResult = engine.profile("merge (n:Person {id: 1})")
 
@@ -136,13 +134,68 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
       ) === producer.v )
   }
 
-  @Test
-  def allows_optional_match_to_start_a_query() {
+  test("allows optional match to start a query") {
     //GIVEN
     val result: ExecutionResult = engine.profile("optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("NullableMatch")
+  }
+
+  test("should produce profile when using limit") {
+    // GIVEN
+    createNode()
+    createNode()
+    createNode()
+    val result = profile("""START n=node(*) RETURN n LIMIT 1""")
+
+    // WHEN
+    result.toList
+
+    // THEN PASS
+    result.executionPlanDescription()
+  }
+
+  test ("should support profiling union queries") {
+    val result = profile("return 1 as A union return 2 as A")
+    result.toList should equal(List(Map("A" -> 1), Map("A" -> 2)))
+  }
+
+  test("should support profiling merge_queries") {
+    val result = profile("merge (a {x: 1}) return a.x as A")
+    result.toList.head("A") should equal(1)
+  }
+
+  test("should support profiling optional match queries") {
+    createLabeledNode(Map("x" -> 1), "Label")
+    val result = profile("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
+    result("A") should equal(1)
+    result("B") should equal(null.asInstanceOf[Int])
+  }
+
+  test("should support profiling optional match and with") {
+    createLabeledNode(Map("x" -> 1), "Label")
+    val result = profile("match (n) optional match (n)--(m) with n, m where m is null return n.x as A").toList.head
+    result("A") should equal(1)
+  }
+
+  test("should handle PERIODIC COMMIT when profiling") {
+    val query = "USING PERIODIC COMMIT 10 FOREACH(n IN range(0,99) | CREATE()) WITH * MATCH n RETURN n"
+
+    // given
+    execute(query).toList
+    deleteAllEntities()
+    val initialTxCounts = graph.txCounts
+
+    // when
+    val result = profile(query)
+
+    // then
+    result.toList.size should equal(100)
+    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 11))
+    result.executionPlanDescription().asJava should not equal(null)
+    result.queryStatistics().containsUpdates should equal(true)
+    result.queryStatistics().nodesCreated should equal(100)
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
@@ -156,12 +209,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineJUnitSuite {
 
   private def parentCd(result: ExecutionResult, names: Seq[String]) = {
     result.toList
-    val descr = result.executionPlanDescription().asJava
+    val description = result.executionPlanDescription().asJava
     if (names.isEmpty)
-      descr
+      description
     else {
-      assert(names.head === descr.getName)
-      descr.cd(names.tail: _*)
+      assert(names.head === description.getName)
+      description.cd(names.tail: _*)
     }
   }
 }

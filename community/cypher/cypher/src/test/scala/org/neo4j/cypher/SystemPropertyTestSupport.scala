@@ -17,29 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.cleanup;
+package org.neo4j.cypher
 
-import java.lang.ref.ReferenceQueue;
+import org.neo4j.cypher.internal.commons.CypherTestSupport
 
-class CleanupReferenceQueue
-{
-    private final long removeTimeoutMillis;
-    final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
+trait SystemPropertyTestSupport {
+  self: CypherTestSupport =>
 
-    public CleanupReferenceQueue( long removeTimeoutMillis )
-    {
-        this.removeTimeoutMillis = removeTimeoutMillis;
+  def withSystemProperties[T](properties: (String, String)*)(f: => T) = {
+    val backup = Map.newBuilder[String, String]
+    try {
+      properties.foreach( backup += setSystemProperty(_) )
+      f
+    } finally {
+      backup.result().foreach( setSystemProperty )
     }
+  }
 
-    CleanupReference remove()
-    {
-        try
-        {
-            return (CleanupReference) queue.remove( removeTimeoutMillis );
-        }
-        catch ( InterruptedException e )
-        {
-            return null;
-        }
-    }
+  def getSystemProperty(propertyKey: String): (String, String) = (propertyKey, System.getProperty(propertyKey))
+
+  def setSystemProperty(property: (String, String)): (String, String) = property match {
+    case (k, v) => (k, System.setProperty(k, v))
+  }
 }

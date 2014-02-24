@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.{Predicate => CommandPredicate}
 import commands.expressions.{Expression => CommandExpression}
 import symbols._
 
@@ -87,7 +86,9 @@ object Function {
     functions.Timestamp,
     functions.ToFloat,
     functions.ToInt,
+    functions.ToLower,
     functions.ToStr,
+    functions.ToUpper,
     functions.Trim,
     functions.Type,
     functions.Upper

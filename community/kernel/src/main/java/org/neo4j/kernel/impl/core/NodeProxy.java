@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.FunctionFromPrimitiveInt;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.cleanup.CleanupService;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
@@ -85,17 +85,15 @@ public class NodeProxy implements Node
     private final NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relLookup;
     private final ThreadToStatementContextBridge statementContextProvider;
-    private final CleanupService cleanupService;
     private final long nodeId;
 
     public NodeProxy( long nodeId, NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relLookup,
-               ThreadToStatementContextBridge statementContextProvider, CleanupService cleanupService )
+               ThreadToStatementContextBridge statementContextProvider )
     {
         this.nodeId = nodeId;
         this.nodeLookup = nodeLookup;
         this.relLookup = relLookup;
         this.statementContextProvider = statementContextProvider;
-        this.cleanupService = cleanupService;
     }
 
     @Override
@@ -698,14 +696,15 @@ public class NodeProxy implements Node
 
     private ResourceIterable<Relationship> map2rels( Statement statement, PrimitiveLongIterator input )
     {
-        return asResourceIterable( cleanupService.resourceIterator( map( new FunctionFromPrimitiveLong<Relationship>()
+        return asResourceIterable( ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong
+                <Relationship>()
         {
             @Override
             public Relationship apply( long id )
             {
                 return new RelationshipProxy( id, relLookup, statementContextProvider );
             }
-        }, input ), statement ) );
+        }, input ) ) );
     }
 
     private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )

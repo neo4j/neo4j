@@ -25,11 +25,13 @@ import symbols._
 import java.net.URL
 
 sealed trait Literal extends Expression {
-  def value: Any
+  def value: AnyRef
 }
 
-sealed abstract class IntegerLiteral(stringVal: String) extends Literal with SimpleTyping {
-  lazy val value = stringVal.toLong
+sealed trait NumberLiteral extends Literal
+
+sealed abstract class IntegerLiteral(stringVal: String) extends NumberLiteral with SimpleTyping {
+  lazy val value: java.lang.Long = stringVal.toLong
 
   protected def possibleTypes = CTInteger
 
@@ -46,8 +48,8 @@ sealed abstract class IntegerLiteral(stringVal: String) extends Literal with Sim
 case class SignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 case class UnsignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
 
-case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends Literal with SimpleTyping {
-  val value = stringVal.toDouble
+case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends NumberLiteral with SimpleTyping {
+  val value: java.lang.Double = stringVal.toDouble
 
   protected def possibleTypes = CTFloat
 
@@ -77,12 +79,14 @@ case class Null()(val position: InputPosition) extends Literal with SimpleTyping
   protected def possibleTypes = CTAny.covariant
 }
 
-case class True()(val position: InputPosition) extends Literal with SimpleTyping {
-  val value = true
+sealed trait BooleanLiteral extends Literal
+
+case class True()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
+  val value: java.lang.Boolean = true
   protected def possibleTypes = CTBoolean
 }
 
-case class False()(val position: InputPosition) extends Literal with SimpleTyping {
-  val value = false
+case class False()(val position: InputPosition) extends BooleanLiteral with SimpleTyping {
+  val value: java.lang.Boolean = false
   protected def possibleTypes = CTBoolean
 }

@@ -28,7 +28,7 @@ import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.kernel.api._
-import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
+import org.neo4j.cypher.{InternalException, FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -37,8 +37,9 @@ import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_1.spi._
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import java.net.URL
 
-class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
+class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                        var tx: Transaction,
                                        val isTopLevelTx: Boolean,
                                        var statement: Statement)
@@ -78,7 +79,7 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
       try {
         val otherStatement = txBridge.instance()
         val result = try {
-          work(new TransactionBoundExecutionContext(graph, tx, isTopLevelTx, otherStatement))
+          work(new TransactionBoundQueryContext(graph, tx, isTopLevelTx, otherStatement))
         }
         finally {
           otherStatement.close()
@@ -270,4 +271,8 @@ class TransactionBoundExecutionContext(graph: GraphDatabaseAPI,
     tx = graph.beginTx()
     statement = txBridge.instance()
   }
+
+  def getCsvIterator(url: URL): Iterator[Array[String]] =
+    throw new InternalException("This method should never be called")
+
 }

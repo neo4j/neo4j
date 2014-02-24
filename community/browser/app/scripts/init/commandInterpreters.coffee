@@ -198,7 +198,7 @@ angular.module('neo4jApp')
       type: 'cypher'
       matches: ['cypher', 'start', 'match', 'create', 'drop', 
         'return', 'set', 'remove', 'delete', 'merge', 'optional',
-        'where', 'foreach', 'with', 'load'
+        'where', 'foreach', 'with', 'load', 'using'
       ]
       templateUrl: 'views/frame-cypher.html'
       exec: ['Cypher', 'GraphModel', (Cypher, GraphModel) ->

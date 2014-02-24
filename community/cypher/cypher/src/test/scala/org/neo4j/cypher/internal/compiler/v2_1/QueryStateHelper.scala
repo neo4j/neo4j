@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundExecutionContext
+import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NullDecorator, QueryState}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.Statement
@@ -31,7 +31,7 @@ object QueryStateHelper {
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
-    val context = new TransactionBoundExecutionContext(db, tx, isTopLevelTx = true, statement)
+    val context = new TransactionBoundQueryContext(db, tx, isTopLevelTx = true, statement)
     empty.copy(db = db, inner = context)
   }
 }

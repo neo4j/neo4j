@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -32,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.Assert.assertEquals;
@@ -43,6 +45,36 @@ import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class TestNode extends AbstractNeo4jTestCase
 {
+    @Test
+    public void givenNodeWithRelationshipWhenDeleteNodeThenThrowExceptionOnCommit() throws Exception
+    {
+        // Given
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "KNOWS" ) );
+        getTransaction().success();
+        getTransaction().close();
+
+        // When
+        setTransaction( getGraphDb().beginTx() );
+        node1.delete();
+        getTransaction().success();
+        TransactionFailureException exc = null;
+        try
+        {
+            getTransaction().close();
+            Assert.fail();
+        }
+        catch ( TransactionFailureException e )
+        {
+            exc = e;
+        }
+
+        // Then
+        Assert.assertNotEquals( exc.getCause().getMessage().indexOf( "still has relationships" ), -1 );
+
+    }
+
     @Test
     public void testNodeCreateAndDelete()
     {
