@@ -19,23 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, CardinalityEstimator, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Identifier}
 
-case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
-
-  val projectionPlanner = new ProjectionPlanner
-
-  override def plan(in: QueryGraph): LogicalPlan = {
-    var planTable: Map[Set[Id], LogicalPlan] = Map.empty
-    in.identifiers.foreach {
-      id =>
-        planTable = planTable + (Set(id) -> AllNodesScan(id, estimator.estimateAllNodes()))
+class ProjectionPlanner {
+  def amendPlan(in: QueryGraph, plan: LogicalPlan): LogicalPlan = {
+    val ids: Seq[(String, Expression)] = plan.coveredIds.toSeq.map {
+      case Id(id) => id -> Identifier(id)(null)
     }
-    while (planTable.size > 1) {
-      throw new CantHandleQueryException
-    }
-    val input = if (planTable.size == 0) SingleRow() else planTable.values.head
 
-    projectionPlanner.amendPlan(in, input)
+    if (ids != in.projection)
+      Projection(plan, in.projection)
+    else
+      plan
   }
+
 }

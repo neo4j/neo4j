@@ -43,15 +43,18 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import java.net.URL
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 
 class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
+  val ast = mock[Statement]
+
   test("should not accept returning the input execution plan") {
     val q = Query.empty
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val epi = new FakeExecPlanBuilder(graph, Seq(new BadBuilder))
-      epi.build(planContext, q)
+      epi.build(planContext, q, ast)
     })
 
     assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
@@ -68,7 +71,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
 
     // when
     intercept[ExplodingException] {
-      val executionPlan = execPlanBuilder.build(planContext, q)
+      val executionPlan = execPlanBuilder.build(planContext, q, ast)
       executionPlan.execute(queryContext, Map())
     }
 
@@ -190,7 +193,6 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
       )
 
       val execPlanBuilder = new ExecutionPlanBuilder(graph)
-      val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
 
       // when
       val periodicCommit = execPlanBuilder.buildPipes(planContext, q).periodicCommit

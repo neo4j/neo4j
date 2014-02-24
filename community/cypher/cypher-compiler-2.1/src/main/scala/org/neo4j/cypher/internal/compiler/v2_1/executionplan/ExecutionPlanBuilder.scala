@@ -30,16 +30,22 @@ import symbols.SymbolTable
 import org.neo4j.cypher.{PeriodicCommitInOpenTransactionException, SyntaxException, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{LoadCSVQueryContext, QueryContext, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Planner}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 
 case class PipeInfo(pipe: Pipe, updating: Boolean, periodicCommit: Option[PeriodicCommitInfo] = None)
 
 case class PeriodicCommitInfo(size: Option[Long])
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService) extends PatternGraphBuilder {
+class ExecutionPlanBuilder(graph: GraphDatabaseService, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
 
-  def build(planContext: PlanContext, inputQuery: AbstractQuery): ExecutionPlan = {
+  def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
 
-    val PipeInfo(p, isUpdating, periodicCommitInfo) = buildPipes(planContext, inputQuery)
+    val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
+      execPlanBuilder.producePlan(ast)
+    } catch {
+      case _: CantHandleQueryException => buildPipes(planContext, inputQuery)
+    }
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
     val func = if (isUpdating) {

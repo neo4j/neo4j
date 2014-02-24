@@ -40,7 +40,7 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val right = plan.rhs.map(buildPipe)
 
       plan match {
-        case Projection(_, expressions) => ExtractPipe(left.get, toLegacyExpressions(expressions))
+        case Projection(_, expressions) => ProjectionPipe(left.get, toLegacyExpressions(expressions))
         case SingleRow() => NullPipe()
         case AllNodesScan(Id(id), _) => AllNodesScanPipe(id)
       }

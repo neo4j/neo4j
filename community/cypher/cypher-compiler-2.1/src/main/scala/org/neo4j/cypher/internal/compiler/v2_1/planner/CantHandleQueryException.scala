@@ -17,25 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, CardinalityEstimator, QueryGraph}
+import org.neo4j.cypher.CypherException
+import org.neo4j.kernel.api.exceptions.Status
 
-case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
-
-  val projectionPlanner = new ProjectionPlanner
-
-  override def plan(in: QueryGraph): LogicalPlan = {
-    var planTable: Map[Set[Id], LogicalPlan] = Map.empty
-    in.identifiers.foreach {
-      id =>
-        planTable = planTable + (Set(id) -> AllNodesScan(id, estimator.estimateAllNodes()))
-    }
-    while (planTable.size > 1) {
-      throw new CantHandleQueryException
-    }
-    val input = if (planTable.size == 0) SingleRow() else planTable.values.head
-
-    projectionPlanner.amendPlan(in, input)
-  }
+class CantHandleQueryException extends CypherException("Internal error - should have used fall back to execute query, " +
+  "but something went horribly wrong"){
+  def status = Status.Statement.ExecutionFailure
 }

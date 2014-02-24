@@ -19,10 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Statement, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-class Planner(cardinalityEstimate: CardinalityEstimator, costModel: CostModel) {
-  def producePlan(ast: Query): PipeInfo = ???
+case class Planner() {
+  val estimator = new CardinalityEstimator {
+    def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
+
+    def estimateLabelScan(labelId: LabelId) = 100
+
+    def estimateAllNodes() = 1000
+  }
+
+  val logicalPlanner = new SimpleLogicalPlanner(estimator)
+  val queryGraphBuilder = new SimpleQueryGraphBuilder
+  val executionPlanBuilder = new SimpleExecutionPlanBuilder
+
+  def producePlan(in: Statement): PipeInfo = in match {
+    case ast: Query =>
+      val queryGraph = queryGraphBuilder.produce(ast)
+      val logicalPlan = logicalPlanner.plan(queryGraph)
+      executionPlanBuilder.build(logicalPlan)
+
+    case _ => throw new CantHandleQueryException
+  }
 }

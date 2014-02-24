@@ -53,6 +53,6 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val resultPlan = planner.plan(qg)
 
     // then
-    resultPlan should equal(Projection(AllNodesScan(Id("n"), 1000), expressions))
+    resultPlan should equal(AllNodesScan(Id("n"), 1000))
   }
 }
