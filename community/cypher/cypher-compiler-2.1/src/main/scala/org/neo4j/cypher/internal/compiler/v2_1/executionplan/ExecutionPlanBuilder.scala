@@ -29,9 +29,9 @@ import profiler.Profiler
 import symbols.SymbolTable
 import org.neo4j.cypher.{PeriodicCommitInOpenTransactionException, SyntaxException, ExecutionResult}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{LoadCSVQueryContext, QueryContext, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Planner}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{CSVResources, QueryContext, PlanContext}
 
 case class PipeInfo(pipe: Pipe, updating: Boolean, periodicCommit: Option[PeriodicCommitInfo] = None)
 
@@ -54,9 +54,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, execPlanBuilder: Planner
       getLazyReadonlyQuery(p, columns)
     }
 
-    new ExecutionPlan { // TODO: Only add the LoadCSVQueryContext when needed
-      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(new LoadCSVQueryContext(queryContext), params, false)
-      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new LoadCSVQueryContext(queryContext), params, true)
+    new ExecutionPlan {
+      def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
+      def profile(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, true)
     }
   }
 
@@ -172,9 +172,14 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, execPlanBuilder: Planner
 
     try {
       val decorator = if (profile) new Profiler() else NullDecorator
-      val state = new QueryState(graph, queryContext, params, decorator)
+      val taskCloser = new TaskCloser
+      taskCloser.addTask(queryContext.close)
+
+      val resources = new CSVResources(taskCloser)
+      val state = new QueryState(graph, queryContext, resources, params, decorator)
       val results: Iterator[collection.Map[String, Any]] = pipe.createResults(state)
-      val closingIterator = new ClosingIterator(results, queryContext)
+
+      val closingIterator = new ClosingIterator(results, taskCloser)
       val descriptor = { () =>
         val result = decorator.decorate(pipe.executionPlanDescription, closingIterator.isEmpty)
         result

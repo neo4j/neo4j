@@ -19,13 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import java.net.URL
 
-object QueryStateHelper {
-  def empty: QueryState = emptyWith()
-
-  def emptyWith(db: GraphDatabaseService = null, inner: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
-    QueryState(db = db, inner = inner, resources = resources, params = params, decorator = decorator)
+trait ExternalResource {
+  def getCsvIterator(url: URL): Iterator[Array[String]]
 }

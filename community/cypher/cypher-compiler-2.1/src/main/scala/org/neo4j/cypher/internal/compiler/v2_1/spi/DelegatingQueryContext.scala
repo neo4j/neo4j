@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.spi
 
 import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
-import java.net.URL
 
 
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
@@ -95,8 +94,6 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   override def commitAndRestartTx() {
     inner.commitAndRestartTx()
   }
-
-  def getCsvIterator(url: URL): Iterator[Array[String]] = inner.getCsvIterator(url)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

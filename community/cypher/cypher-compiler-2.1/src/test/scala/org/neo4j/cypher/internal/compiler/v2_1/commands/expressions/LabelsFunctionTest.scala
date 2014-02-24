@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.{NullDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.graphdb.Node
 import org.scalatest.Assertions
@@ -42,7 +42,7 @@ class LabelsFunctionTest extends Assertions with MockitoSugar {
       def answer(invocation: InvocationOnMock): Iterator[Int] = ids.iterator
     })
     when(queryContext.getLabelName(12)).thenReturn("bambi")
-    val state = new QueryState(null, queryContext, Map.empty, NullDecorator)
+    val state = QueryStateHelper.emptyWith(inner = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN

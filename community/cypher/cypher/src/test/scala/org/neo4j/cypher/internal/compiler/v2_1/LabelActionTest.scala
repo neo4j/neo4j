@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import pipes.{NullDecorator, QueryState}
+import pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
 import org.junit.Test
@@ -29,11 +29,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.{LabelSetOp, LabelAction
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.kernel.api.index.IndexDescriptor
-import java.net.URL
 
 class LabelActionTest extends GraphDatabaseJUnitSuite {
   val queryContext = new SnitchingQueryContext
-  val state = new QueryState(null, queryContext, Map.empty, NullDecorator)
+  val state = QueryStateHelper.emptyWith(inner = queryContext)
   val ctx = ExecutionContext()
 
   @Test
@@ -146,6 +145,4 @@ class SnitchingQueryContext extends QueryContext {
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
 
   def commitAndRestartTx() { ??? }
-
-  def getCsvIterator(url: URL): Iterator[Array[String]] = ???
 }

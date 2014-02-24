@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, UpdateCounting
 import org.neo4j.cypher.ParameterNotFoundException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
-import scala.collection.mutable.ListBuffer
 
 case class QueryState(db: GraphDatabaseService,
                       inner: QueryContext,
+                      resources: ExternalResource,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
                       collectStatistics: Boolean = true,

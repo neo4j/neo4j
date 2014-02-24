@@ -22,48 +22,63 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.scalatest.BeforeAndAfter
 
-class CleanUpperTest extends CypherFunSuite with BeforeAndAfter {
-  var cleanUpper: CleanUpper = _
+class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
+  var taskCloser: TaskCloser = _
   var ran = false
+  var outcome = false
 
   before {
-    cleanUpper = new CleanUpper
+    taskCloser = new TaskCloser
     ran = false
   }
 
   test("cleanUp call methods") {
-
-    cleanUpper.addCleanupTask(() => ran = true)
-    cleanUpper.cleanUp()
+    taskCloser.addTask(closingTask)
+    taskCloser.close(success = true)
 
     ran should equal(true)
+    outcome should equal(true)
+  }
+
+  test("cleanUp call methods and pass on the success") {
+    outcome = true
+
+    taskCloser.addTask(closingTask)
+    taskCloser.close(success = false)
+
+    ran should equal(true)
+    outcome should equal(false)
   }
 
   test("cleanUp calls all cleanUp methods even if some fail") {
+    taskCloser.addTask(_ => throw new Exception("oh noes"))
+    taskCloser.addTask(closingTask)
 
-    cleanUpper.addCleanupTask(() => throw new Exception("oh noes"))
-    cleanUpper.addCleanupTask(() => ran = true)
-
-    intercept[Exception](cleanUpper.cleanUp())
+    intercept[Exception](taskCloser.close(success = true))
 
     ran should equal(true)
+    outcome should equal(true)
   }
 
   test("cleanUp calls all cleanUp and if there are failures the first exception is thrown") {
-
     val expected = new Exception("oh noes")
-    cleanUpper.addCleanupTask(() => throw expected)
-    cleanUpper.addCleanupTask(() => throw new Exception)
+    taskCloser.addTask(_ => throw expected)
+    taskCloser.addTask(_ => throw new Exception)
 
-    val ex = intercept[Exception](cleanUpper.cleanUp())
+    val ex = intercept[Exception](taskCloser.close(success = true))
 
     ex should equal(expected)
   }
 
   test("cleanup without any cleanups does not fail") {
-    cleanUpper.cleanUp()
+    taskCloser.close(success = true)
 
     ran should equal(false)
+  }
+
+  private def closingTask(success:Boolean) = {
+    ran = true
+    outcome = success
   }
 
 }

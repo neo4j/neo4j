@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.junit.{Before, Test}
 import org.hamcrest.CoreMatchers.is
 import org.junit.Assert.assertThat
@@ -28,25 +27,23 @@ import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
 
 class ClosingIteratorTest extends Assertions with MockitoSugar {
-  var ctx: QueryContext = _
+  var taskCloser: TaskCloser = _
 
   @Before
   def before() {
-    ctx = mock[QueryContext]
+    taskCloser = mock[TaskCloser]
   }
 
   @Test
   def should_cleanup_when_we_reach_the_end() {
     //Given
     val wrapee   = Iterator(Map("k" -> 42))
-    val iterator = new ClosingIterator(wrapee, ctx)
-    when(ctx.isOpen).thenReturn(true)
-
+    val iterator = new ClosingIterator(wrapee, taskCloser)
     //When
     val result = iterator.next()
 
     //Then
-    verify(ctx).close(success = true)
+    verify(taskCloser).close(success = true)
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 
@@ -54,14 +51,13 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def should_cleanup_even_for_empty_iterator() {
     //Given
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, ctx)
-    when(ctx.isOpen).thenReturn(true)
+    val iterator = new ClosingIterator(wrapee, taskCloser)
 
     //When
     val result = iterator.hasNext
 
     //Then
-    verify(ctx).close(success = true)
+    verify(taskCloser).close(success = true)
     assertThat(result, is(false))
   }
 
@@ -69,8 +65,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def multiple_has_next_should_not_close_more_than_once() {
     //Given
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, ctx)
-    when(ctx.isOpen).thenReturn(true).thenReturn(false)
+    val iterator = new ClosingIterator(wrapee, taskCloser)
 
     //When
     val result = iterator.hasNext
@@ -80,7 +75,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     iterator.hasNext
 
     //Then
-    verify(ctx, times(1)).close(success = true)
+    verify(taskCloser, times(1)).close(success = true)
     assertThat(result, is(false))
   }
 
@@ -89,14 +84,13 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenThrow(new RuntimeException)
-    val iterator = new ClosingIterator(wrapee, ctx)
-    when(ctx.isOpen).thenReturn(true)
+    val iterator = new ClosingIterator(wrapee, taskCloser)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
 
     //Then
-    verify(ctx).close(success = false)
+    verify(taskCloser).close(success = false)
   }
 
   @Test
@@ -105,30 +99,28 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
-    when(ctx.isOpen).thenReturn(true)
 
-    val iterator = new ClosingIterator(wrapee, ctx)
+    val iterator = new ClosingIterator(wrapee, taskCloser)
 
     //When
     intercept[RuntimeException](iterator.next())
 
     //Then
-    verify(ctx).close(success = false)
+    verify(taskCloser).close(success = false)
   }
 
   @Test
   def close_runs_cleanup() {
     //Given
     val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43))
-    val iterator = new ClosingIterator(wrapee, ctx)
-    when(ctx.isOpen).thenReturn(true)
+    val iterator = new ClosingIterator(wrapee, taskCloser)
 
     //When
     val result = iterator.next()
     iterator.close()
 
     //Then
-    verify(ctx).close(success = true)
+    verify(taskCloser).close(success = true)
     assertThat(result, is(Map[String, Any]("k" -> 42)))
   }
 }

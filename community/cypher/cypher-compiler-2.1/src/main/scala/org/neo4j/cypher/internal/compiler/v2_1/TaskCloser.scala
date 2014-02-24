@@ -21,19 +21,23 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import scala.collection.mutable.ListBuffer
 
-class CleanUpper {
+class TaskCloser {
 
-  private val _cleanupTasks: ListBuffer[() => Unit] = ListBuffer.empty
+  private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
 
-  def addCleanupTask(task: () => Unit) {
-    _cleanupTasks += task
+  /**
+   *
+   * @param task This task will be called, with true if the query went OK, and a false if an error occurred
+   */
+  def addTask(task: Boolean => Unit) {
+    _tasks += task
   }
 
-  def cleanUp() {
-    val errors = _cleanupTasks.toSeq.flatMap {
+  def close(success: Boolean) {
+    val errors = _tasks.toSeq.flatMap {
       f =>
         try {
-          f()
+          f(success)
           None
         } catch {
           case e: Throwable => Some(e)

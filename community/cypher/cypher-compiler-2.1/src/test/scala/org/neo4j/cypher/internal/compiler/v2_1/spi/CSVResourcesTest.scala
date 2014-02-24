@@ -25,52 +25,56 @@ import scala.reflect.io.File
 import java.net.URL
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.CleanUpper
+import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
 
-class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoSugar with BeforeAndAfter {
 
-  var ctx: LoadCSVQueryContext = _
-  var inner: QueryContext = _
+class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar with BeforeAndAfter {
+
+  var resources: CSVResources = _
+  var cleaner: TaskCloser = _
 
   before {
-    inner = mock[QueryContext]
-    ctx = new LoadCSVQueryContext(inner)
+    cleaner = mock[TaskCloser]
+    resources = new CSVResources(cleaner)
   }
 
   test("should_handle_strings") {
     // given
-    val url = createFile { writer =>
-      writer.println("1")
-      writer.println("2")
-      writer.println("3")
-      writer.println("4")
+    val url = createFile {
+      writer =>
+        writer.println("1")
+        writer.println("2")
+        writer.println("3")
+        writer.println("4")
     }
 
     //when
-    val result: List[Array[String]] = ctx.getCsvIterator(url).toList
+    val result: List[Array[String]] = resources.getCsvIterator(url).toList
 
     (result zip List(
-      Array[String] ("1"),
-      Array[String] ("2"),
-      Array[String] ("3"),
-      Array[String] ("4")
+      Array[String]("1"),
+      Array[String]("2"),
+      Array[String]("3"),
+      Array[String]("4")
     )).foreach {
-        case (r, expected) =>
-          r should equal (expected)
+      case (r, expected) =>
+        r should equal(expected)
     }
   }
 
   test("should handle with headers") {
     // given
-    val url = createFile { writer =>
-      writer.println("a,b")
-      writer.println("1,2")
-      writer.println("3,4")
+    val url = createFile {
+      writer =>
+        writer.println("a,b")
+        writer.println("1,2")
+        writer.println("3,4")
     }
 
     //when
-    val result = ctx.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(url).toList
 
     //then
     (result zip List(
@@ -79,7 +83,7 @@ class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoS
       Array[String]("3", "4")
     )).foreach {
       case (r, expected) =>
-        r should equal (expected)
+        r should equal(expected)
     }
   }
 
@@ -93,7 +97,7 @@ class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoS
     }
 
     //when
-    val result = ctx.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(url).toList
 
     //then
     (result zip List(
@@ -102,7 +106,7 @@ class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoS
       Array[String]("3")
     )).foreach {
       case (r, expected) =>
-        r should equal (expected)
+        r should equal(expected)
     }
   }
 
@@ -111,9 +115,9 @@ class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoS
     val url = createFile(_ => {})
 
     //when
-    val result = ctx.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(url).toList
 
-    result should equal (List.empty)
+    result should equal(List.empty)
   }
 
   // 2014-01-30 Andres & Jakub - Tries to get data from internet
@@ -122,7 +126,7 @@ class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoS
     val url = new URL("https://dl.dropboxusercontent.com/u/47132/test.csv")
 
     //when
-    val result = ctx.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(url).toList
 
     //then
     (result zip List(
@@ -133,19 +137,24 @@ class LoadCSVQueryContextTest extends CypherFunSuite with Matchers with MockitoS
       Array[String]("Chris")
     )).foreach {
       case (r, expected) =>
-        r should equal (expected)
+        r should equal(expected)
     }
   }
 
-  test("cleans up csv files even if the inner context throws") {
-    when(inner.close(success = true)).thenThrow(new RuntimeException)
+  test("shoud register a task in the cleanupper") {
+    // given
+    val url = createFile {
+      writer =>
+        writer.println("a,b")
+        writer.println("1,2")
+        writer.println("3,4")
+    }
 
-    val cleaner = mock[CleanUpper]
+    // when
+    resources.getCsvIterator(url)
 
-    val ctx = new LoadCSVQueryContext(inner, cleaner)
-    val e = intercept[RuntimeException](ctx.close(success = true))
-
-    verify(cleaner, times(1)).cleanUp()
+    // then
+    verify(cleaner, times(1)).addTask(any(classOf[Boolean => Unit]))
   }
 
   var files: Seq[File] = Seq.empty

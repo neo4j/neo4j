@@ -19,19 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NullDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ExternalResource, PipeDecorator, NullDecorator, QueryState}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 
 object QueryStateHelper {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
+  def empty: QueryState = emptyWith()
+
+  def emptyWith(db: GraphDatabaseService = null, inner: QueryContext = null, resources: ExternalResource = null,
+                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
+    QueryState(db = db, inner = inner, resources = resources, params = params, decorator = decorator)
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
     val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
     val context = new TransactionBoundQueryContext(db, tx, isTopLevelTx = true, statement)
-    empty.copy(db = db, inner = context)
+    emptyWith(db = db, inner = context)
   }
 }
