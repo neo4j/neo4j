@@ -17,15 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import scala.collection.mutable.ListBuffer
 
-object QueryStateHelper {
-  def empty: QueryState = emptyWith()
+class TaskCloser {
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
+  private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
+  private var closed = false
+
+  /**
+   *
+   * @param task This task will be called, with true if the query went OK, and a false if an error occurred
+   */
+  def addTask(task: Boolean => Unit) {
+    _tasks += task
+  }
+
+  def close(success: Boolean) {
+    if (!closed) {
+      closed = true
+      val errors = _tasks.toSeq.flatMap {
+        f =>
+          try {
+            f(success)
+            None
+          } catch {
+            case e: Throwable => Some(e)
+          }
+      }
+
+      errors.map(e => throw e)
+    }
+  }
+
+  def isClosed = closed
 }

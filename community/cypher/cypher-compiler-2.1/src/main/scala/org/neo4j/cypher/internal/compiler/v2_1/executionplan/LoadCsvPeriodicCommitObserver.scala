@@ -17,15 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.ExternalResource
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import java.net.URL
 
-object QueryStateHelper {
-  def empty: QueryState = emptyWith()
+class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource, queryContext: QueryContext)
+  extends UpdateObserver with ExternalResource {
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
+  var updates: Long = 0
+  var first = true
+
+  def notify(increment: Long) {
+    updates += increment
+    maybeCommitAndRestartTx(batchSize * 2)
+  }
+
+  def getCsvIterator(url: URL): Iterator[Array[String]] = if (first) {
+    first = false
+
+    resources.getCsvIterator(url).map {
+      csvRow =>
+        maybeCommitAndRestartTx(batchSize)
+        csvRow
+    }
+
+  } else resources.getCsvIterator(url)
+
+  private def maybeCommitAndRestartTx(max: Long) {
+    if (updates > max) {
+      queryContext.commitAndRestartTx()
+      updates = 0
+    }
+  }
+
 }
+

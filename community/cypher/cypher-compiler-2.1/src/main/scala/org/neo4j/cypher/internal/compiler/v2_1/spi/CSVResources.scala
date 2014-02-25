@@ -22,25 +22,18 @@ package org.neo4j.cypher.internal.compiler.v2_1.spi
 import java.net.URL
 import java.io._
 import au.com.bytecode.opencsv.CSVReader
-import org.neo4j.cypher.internal.compiler.v2_1.CleanUpper
+import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
 import org.neo4j.cypher.LoadExternalResourceException
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.ExternalResource
 
-class LoadCSVQueryContext(inner: QueryContext, cleaner: CleanUpper = new CleanUpper) extends DelegatingQueryContext(inner) {
-
-  override def close(success: Boolean) {
-    try {
-      super.close(success)
-    } finally {
-      cleaner.cleanUp()
-    }
-  }
+class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
   override def getCsvIterator(url: URL): Iterator[Array[String]] = {
     val inputStream = ToStream(url).stream
     val reader = new BufferedReader(new InputStreamReader(inputStream))
     val csvReader = new CSVReader(reader)
 
-    cleaner.addCleanupTask(() => {
+    cleaner.addTask(_ => {
       csvReader.close()
     })
 

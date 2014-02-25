@@ -17,29 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.helpers
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
-class CleanUpper {
 
-  private val _cleanupTasks: ListBuffer[() => Unit] = ListBuffer.empty
+trait MappingBuilder[T] extends mutable.Builder[T => T, T] {
+  def reset(f: => T): this.type
+}
 
-  def addCleanupTask(task: () => Unit) {
-    _cleanupTasks += task
+class EagerMappingBuilder[T <: AnyRef](initial: T = null) extends MappingBuilder[T] {
+  private var current: T = initial
+
+  def +=(f: T => T) = {
+    current = f(current)
+    this
   }
 
-  def cleanUp() {
-    val errors = _cleanupTasks.toSeq.flatMap {
-      f =>
-        try {
-          f()
-          None
-        } catch {
-          case e: Throwable => Some(e)
-        }
-    }
+  def result() = current
 
-    errors.map(e => throw e)
+  def reset(f: => T) = {
+    current = f
+    this
+  }
+
+  def clear() {
+    current = initial
   }
 }

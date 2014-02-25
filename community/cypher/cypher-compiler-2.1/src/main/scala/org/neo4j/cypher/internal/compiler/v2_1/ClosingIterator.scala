@@ -24,14 +24,12 @@ import org.neo4j.cypher.NodeStillHasRelationshipsException
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.TransactionFailureException
 import scala.collection
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 
-class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext: QueryContext) extends Iterator[Map[String, Any]] {
-  private var closed: Boolean = false
+class ClosingIterator(inner: Iterator[collection.Map[String, Any]], closer: TaskCloser) extends Iterator[Map[String, Any]] {
   lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
 
   def hasNext: Boolean = failIfThrows {
-    if(closed) return false
+    if(closer.isClosed) return false
 
     val innerHasNext: Boolean = inner.hasNext
     if (!innerHasNext) {
@@ -41,7 +39,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   }
 
   def next(): Map[String, Any] = failIfThrows {
-    if (closed) return Iterator.empty.next()
+    if (closer.isClosed) return Iterator.empty.next()
 
     val input: collection.Map[String, Any] = inner.next()
     val result: Map[String, Any] = Materialized.mapValues(input, materialize)
@@ -63,10 +61,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]], queryContext
   }
 
   def close(success: Boolean) = translateException {
-    if (!closed) {
-      closed = true
-      queryContext.close(success)
-    }
+    closer.close(success)
   }
 
   private def translateException[U](f: => U): U = try {

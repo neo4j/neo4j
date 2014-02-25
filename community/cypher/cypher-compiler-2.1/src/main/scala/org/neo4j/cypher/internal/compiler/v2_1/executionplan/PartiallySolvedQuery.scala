@@ -193,6 +193,8 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
   def containsUpdates = start.exists(_.token.mutating) || updates.nonEmpty
 
+  def containsAggregation: Boolean = !aggregation.isEmpty || tail.exists(_.containsAggregation)
+
   /*
   This methods is used to rewrite the queries from the end of the query line to the beginning of it
    */

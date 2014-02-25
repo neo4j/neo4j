@@ -24,9 +24,10 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.{JUnitSuiteLike, JUnitRunner}
 import org.scalautils.LegacyTripleEquals
 import org.junit.{After, Before}
+import org.scalatest.mock.MockitoSugar
 
 // Shared between all TestSuite variants
-abstract class CypherTestSuite extends Suite with Assertions with CypherTestSupport
+abstract class CypherTestSuite extends Suite with Assertions with CypherTestSupport with MockitoSugar
 
 abstract class CypherJUnitSuite extends CypherTestSuite with JUnitSuiteLike with LegacyTripleEquals {
 

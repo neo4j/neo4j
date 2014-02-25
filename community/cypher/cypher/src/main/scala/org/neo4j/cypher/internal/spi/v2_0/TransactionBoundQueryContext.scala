@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_0
 
 import org.neo4j.graphdb._
-import org.neo4j.kernel.{GraphDatabaseAPI}
+import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
 import collection.mutable
 import scala.collection.Iterator
@@ -28,7 +28,7 @@ import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
 import org.neo4j.kernel.api._
-import org.neo4j.cypher.{InternalException, FailedIndexException, EntityNotFoundException}
+import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -37,7 +37,6 @@ import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_0.spi._
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
@@ -260,7 +259,4 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, sta
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
-
-  def getCsvIterator(url: URL): Iterator[Array[String]] =
-    throw new InternalException("This method should never be called")
 }
