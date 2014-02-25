@@ -30,30 +30,31 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
   override protected def stopTest(): Unit = {
     try {
       files.foreach(_.delete())
-    }
-    finally
-    {
+    } finally {
       super.stopTest()
     }
   }
 
   def createTempFile(name: String, ext: String, f: PrintWriter => Unit): String = synchronized {
-    val file = File.makeTemp(name, ext)
-    val writer = file.printWriter()
-    f(writer)
-    writer.flush()
-    writer.close()
-    files = files :+ file
-    file.toAbsolute.path
+    withTempFileWriter(name, ext)(f).toAbsolute.path
   }
 
   def createTempFileURL(name: String, ext: String, f: PrintWriter => Unit): String = synchronized {
-    val file = File.makeTemp(name, ext)
-    val writer = file.printWriter()
-    f(writer)
-    writer.flush()
-    writer.close()
-    files = files :+ file
-    file.toURI.toURL.toString
+    withTempFileWriter(name, ext)(f).toURI.toURL.toString
+  }
+
+  private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit): File =  {
+    val file = new File(java.io.File.createTempFile(name, ext, null))
+    try {
+      val writer = file.printWriter()
+      try {
+        f(writer)
+      } finally {
+        writer.close()
+      }
+    } finally {
+      files = files :+ file
+    }
+    file
   }
 }
