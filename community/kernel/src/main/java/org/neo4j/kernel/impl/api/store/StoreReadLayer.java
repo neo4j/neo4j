@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;

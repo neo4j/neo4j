@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.transactional;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
