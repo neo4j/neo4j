@@ -46,6 +46,37 @@
       <license>GNU General Public License, version 2 or later</license>
       <license>Mozilla Public License, Version 1.1</license>
     </artifact>
+    <artifact id="org.codehaus.jackson:jackson-jaxrs:">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-server:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-http:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-util:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-io:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-webapp:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-xml:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-servlet:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty:jetty-security:jar:9.0.5.v20130815">
+      <license>ASL2.0</license>
+    </artifact>
+    <artifact id="org.eclipse.jetty.orbit:javax.servlet:orbit:3.0.0.v201112011016">
+      <license>CDDL1.1</license>
+      <license>GPL2/CPE</license>
+    </artifact>
   </override-licenses>
   <coalesced-licenses>
     <license name="Academic Free License version 3.0">
