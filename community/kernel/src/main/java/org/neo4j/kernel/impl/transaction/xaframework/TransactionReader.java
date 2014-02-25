@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
@@ -83,6 +84,10 @@ public class TransactionReader
         void visitDeleteSchemaRule( int localId, Collection<DynamicRecord> records, long id );
 
         void visitUpdateSchemaRule( int localId, Collection<DynamicRecord> records );
+
+        void visitDeleteRelationshipGroup( int localId, long id );
+
+        void visitUpdateRelationshipGroup( int localId, RelationshipGroupRecord record );
     }
 
     private static final XaCommandFactory COMMAND_FACTORY = new XaCommandFactory()
@@ -254,6 +259,19 @@ public class TransactionReader
                 {
                     visitor.visitUpdateSchemaRule( localId, records );
                 }
+            }
+        }
+
+        @Override
+        public void visitRelationshipGroup( RelationshipGroupRecord record )
+        {
+            if ( !record.inUse() )
+            {
+                visitor.visitDeleteRelationshipGroup( localId, record.getId() );
+            }
+            else
+            {
+                visitor.visitUpdateRelationshipGroup( localId, record );
             }
         }
     }

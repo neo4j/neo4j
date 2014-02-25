@@ -33,7 +33,6 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;

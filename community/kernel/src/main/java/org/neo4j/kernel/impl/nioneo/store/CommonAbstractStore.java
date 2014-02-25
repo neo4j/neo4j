@@ -35,9 +35,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.nio.ByteBuffer.wrap;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -548,54 +553,44 @@ public abstract class CommonAbstractStore implements IdSequence
             releaseFileLockAndCloseFileChannel();
             return;
         }
-        long highId = idGenerator.getHighId();
-        int recordSize = -1;
-        if ( this instanceof AbstractDynamicStore )
-        {
-            recordSize = ((AbstractDynamicStore) this).getBlockSize();
-        }
-        else if ( this instanceof AbstractStore )
-        {
-            recordSize = ((AbstractStore) this).getRecordSize();
-        }
+        final long highId = idGenerator.getHighId();
+        final int recordSize = getEffectiveRecordSize();
         idGenerator.close();
-        boolean success = false;
         IOException storedIoe = null;
         // hack for WINBLOWS
         if ( !readOnly || backupSlave )
         {
-            for ( int i = 0; i < 10; i++ )
+            try
             {
-                try
+                windowsSafeIOOperation( new FileOperation()
                 {
-                    fileChannel.position( highId * recordSize );
-                    ByteBuffer buffer = ByteBuffer.wrap(
-                            UTF8.encode( getTypeAndVersionDescriptor() ) );
-                    fileChannel.write( buffer );
-                    stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
-                                        " vs file size " + fileChannel.size() );
-                    fileChannel.truncate( fileChannel.position() );
-                    fileChannel.force( false );
-                    releaseFileLockAndCloseFileChannel();
-                    success = true;
-                    break;
-                }
-                catch ( IOException e )
-                {
-                    storedIoe = e;
-                    System.gc();
-                }
+                    @Override
+                    public void perform() throws IOException
+                    {
+                        fileChannel.position( highId * recordSize );
+                        ByteBuffer buffer = wrap( encode( getTypeAndVersionDescriptor() ) );
+                        fileChannel.write( buffer );
+                        stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
+                                            " vs file size " + fileChannel.size() );
+                        fileChannel.truncate( fileChannel.position() );
+                        fileChannel.force( false );
+                        releaseFileLockAndCloseFileChannel();
+                    }
+                } );
+            }
+            catch ( IOException e )
+            {
+                storedIoe = e;
             }
         }
         else
         {
             releaseFileLockAndCloseFileChannel();
-            success = true;
         }
-        if ( !success )
+
+        if ( storedIoe != null )
         {
-            throw new UnderlyingStorageException( "Unable to close store "
-                                                  + getStorageFileName(), storedIoe );
+            throw new UnderlyingStorageException( "Unable to close store " + getStorageFileName(), storedIoe );
         }
     }
 

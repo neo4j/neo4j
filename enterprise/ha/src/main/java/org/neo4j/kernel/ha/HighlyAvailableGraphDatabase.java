@@ -50,7 +50,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.IdGeneratorFactory;

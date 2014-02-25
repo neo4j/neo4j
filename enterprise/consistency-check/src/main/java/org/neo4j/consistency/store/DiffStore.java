@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
@@ -104,6 +105,14 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         if ( !Record.NO_NEXT_RELATIONSHIP.is( rel ) )
         {
             getRelationshipStore().markDirty( rel );
+        }
+    }
+
+    private void markRelationshipGroup( long group )
+    {
+        if ( !Record.NO_NEXT_RELATIONSHIP.is( group ) )
+        {
+            getRelationshipGroupStore().markDirty( group );
         }
     }
 
@@ -217,6 +226,20 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     }
 
     @Override
+    public void visitRelationshipGroup( RelationshipGroupRecord record )
+    {
+        getRelationshipGroupStore().forceUpdateRecord( record );
+        record = getRelationshipGroupStore().forceGetRaw( record );
+        if ( record.inUse() )
+        {
+            markRelationship( record.getFirstOut() );
+            markRelationship( record.getFirstIn() );
+            markRelationship( record.getFirstLoop() );
+            markRelationshipGroup( record.getNext() );
+        }
+    }
+
+    @Override
     public DiffRecordStore<DynamicRecord> getSchemaStore()
     {
         return (DiffRecordStore<DynamicRecord>) super.getSchemaStore();
@@ -232,6 +255,12 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public DiffRecordStore<RelationshipRecord> getRelationshipStore()
     {
         return (DiffRecordStore<RelationshipRecord>) super.getRelationshipStore();
+    }
+
+    @Override
+    public DiffRecordStore<RelationshipGroupRecord> getRelationshipGroupStore()
+    {
+        return (DiffRecordStore<RelationshipGroupRecord>) super.getRelationshipGroupStore();
     }
 
     @Override
