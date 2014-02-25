@@ -147,7 +147,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(AllIdentifiers())
 
       val execPlanBuilder = new PipeBuilder
-      val PipeInfo(pipe, _, _) = execPlanBuilder.buildPipes(planContext, q)
+      val PipeInfo(pipe, _, _, _) = execPlanBuilder.buildPipes(planContext, q)
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -171,7 +171,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(AllIdentifiers())
 
       val execPlanBuilder = new PipeBuilder
-      val PipeInfo(pipe, _, _) = execPlanBuilder.buildPipes(planContext, q)
+      val PipeInfo(pipe, _, _, _) = execPlanBuilder.buildPipes(planContext, q)
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],

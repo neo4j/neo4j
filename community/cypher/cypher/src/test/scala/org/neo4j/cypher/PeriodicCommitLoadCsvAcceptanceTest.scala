@@ -104,5 +104,54 @@ class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with C
     graph.txCounts-initialTxCounts should equal(TxCounts(commits = 2))
   }
 
+  test("should give up on row boundary alignment in case of union") {
+    // given
+    val url = createFile(writer => {
+      writer.println("1")
+      writer.println("2")
+    })
+
+    val queryText =
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line" +
+        " CREATE ({name: line[0]})" +
+        "UNION CREATE({name: 123})"
+
+    // prepare
+    execute(queryText)
+    deleteAllEntities()
+
+    // when
+    val initialTxCounts = graph.txCounts
+    execute(queryText)
+
+    // then
+    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 7))
+  }
+
+
+  test("should give up on row boundary alignment in case of aggregation") {
+    // given
+    val url = createFile(writer => {
+      writer.println("1")
+      writer.println("2")
+    })
+
+    val queryText =
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line" +
+        " CREATE ({name: line[0]})" +
+        "RETURN count(*)"
+
+    // prepare
+    execute(queryText)
+    deleteAllEntities()
+
+    // when
+    val initialTxCounts = graph.txCounts
+    execute(queryText)
+
+    // then
+    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 5))
+  }
+
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape
 }

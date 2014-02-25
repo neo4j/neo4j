@@ -36,7 +36,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.{EagerMappingBuilder, MappingBuilder}
 
-case class PipeInfo(pipe: Pipe, updating: Boolean, periodicCommit: Option[PeriodicCommitInfo] = None)
+case class PipeInfo(pipe: Pipe, 
+                    updating: Boolean,
+                    periodicCommit: Option[PeriodicCommitInfo] = None,
+                    rowAlignment: Boolean = true) {
+  def withRowAlignment(alignment: Boolean) = copy(rowAlignment = rowAlignment && alignment)
+}
 
 case class PeriodicCommitInfo(size: Option[Long]) {
   def provideBatchSize = size.getOrElse(/* defaultSize */ 10000L)
@@ -46,14 +51,14 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
 
   def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
 
-    val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
+    val PipeInfo(p, isUpdating, periodicCommitInfo, rowAlignment) = try {
       execPlanBuilder.producePlan(ast)
     } catch {
       case _: CantHandleQueryException => pipeBuilder.buildPipes(planContext, inputQuery)
     }
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)
-    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating)
+    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating, rowAlignment)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
@@ -88,7 +93,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
   private def getExecutionPlanFunction(pipe: Pipe,
                                        columns: List[String],
                                        periodicCommit: Option[PeriodicCommitInfo],
-                                       updating: Boolean) =
+                                       updating: Boolean,
+                                       rowAlignment: Boolean) =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
 
       val builder = new ExecutionWorkflowBuilder(queryContext)
@@ -98,10 +104,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
           throw new PeriodicCommitInOpenTransactionException()
 
         val batchSize = periodicCommit.get.provideBatchSize
-        if (!pipe.exists(_.isInstanceOf[LoadCSVPipe]))
-          builder.setPeriodicCommitObserver(batchSize)
-        else
+        if (containsLoadCsv(pipe) && rowAlignment)
           builder.setLoadCsvPeriodicCommitObserver(batchSize)
+        else
+          builder.setPeriodicCommitObserver(batchSize)
       }
 
       builder.transformQueryContext(new UpdateCountingQueryContext(_))
@@ -121,6 +127,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
             new PipeExecutionResult(closingIterator, columns, state, descriptor)
       }
     }
+
+  private def containsLoadCsv(pipe: Pipe): Boolean = pipe.exists(_.isInstanceOf[LoadCSVPipe])
 }
 
 class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
