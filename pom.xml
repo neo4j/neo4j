@@ -23,7 +23,7 @@
     <doctools.version>13</doctools.version>
     <docs.server>neo@docs.neo4j.org</docs.server>
     <docs.rootpath>/data/www/doc/docs.neo4j.org</docs.rootpath>
-    <refcard.version>2.0</refcard.version>
+    <refcard.version>2.0-SNAPSHOT</refcard.version>
   </properties>
 
   <dependencies>
