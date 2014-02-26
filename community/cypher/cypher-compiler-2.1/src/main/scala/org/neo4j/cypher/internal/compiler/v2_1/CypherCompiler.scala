@@ -26,6 +26,7 @@ import parser.CypherParser
 import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 
 case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
   val parser = CypherParser()
@@ -34,22 +35,27 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => O
 
   @throws(classOf[SyntaxException])
   def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
-    case _: PeriodicCommitQuery => true
-    case _                      => false
+    case (_: PeriodicCommitQuery, _) => true
+    case _ => false
   }
 
   @throws(classOf[SyntaxException])
-  def prepare(queryText: String, context: PlanContext): ExecutionPlan = planBuilder.build(context, cachedQuery(queryText))
+  def prepare(queryText: String, context: PlanContext): ExecutionPlan = {
+    val (query: AbstractQuery, statement: Statement) = cachedQuery(queryText)
+    planBuilder.build(context, query, statement)
+  }
 
-  private def cachedQuery(queryText: String): AbstractQuery =
-    queryCache(queryText, { verify(parse(queryText)) } ).asInstanceOf[AbstractQuery]
+  private def cachedQuery(queryText: String): (AbstractQuery, Statement) =
+    queryCache(queryText, {
+      verify(parse(queryText))
+    }).asInstanceOf[(AbstractQuery, Statement)]
 
-  private def verify(query: AbstractQuery): AbstractQuery = {
-    query.verifySemantics()
+  private def verify(query: (AbstractQuery, Statement)): (AbstractQuery, Statement) = {
+    query._1.verifySemantics()
     for (verifier <- verifiers)
-      verifier.verify(query)
+      verifier.verify(query._1)
     query
   }
 
-  private def parse(query: String): AbstractQuery = parser.parseToQuery(query)
+  private def parse(query: String): (AbstractQuery, Statement) = parser.parseToQuery(query)
 }

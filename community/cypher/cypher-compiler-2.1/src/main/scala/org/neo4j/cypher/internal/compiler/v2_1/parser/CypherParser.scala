@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1.{ReattachAliasedExpressions, SemanticState, InvalidInputErrorFormatter, ast}
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -59,12 +59,12 @@ case class CypherParser() extends Parser
   }
 
   @throws(classOf[SyntaxException])
-  def parseToQuery(query: String): AbstractQuery = {
-    val statement = parse(query)
+  def parseToQuery(query: String): (AbstractQuery, ast.Statement) = {
+    val statement: ast.Statement = parse(query)
     statement.semanticCheck(SemanticState.clean).errors.map { error =>
       throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }
     val abstractQuery = statement.asQuery
-    ReattachAliasedExpressions(abstractQuery.setQueryText(query))
+    (ReattachAliasedExpressions(abstractQuery.setQueryText(query)), statement)
   }
 }

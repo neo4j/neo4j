@@ -29,6 +29,8 @@ import org.junit.{Ignore, Test}
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
+import org.neo4j.kernel.impl.util.FileUtils
+import java.io.File
 
 class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
   @Test def shouldGetRelationshipById() {
@@ -308,8 +310,6 @@ return a""")
 
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
-
-
 
   @Test def shouldReturnAnInterableWithAllRelationshipsFromAVarLength() {
     val a = createNode()
@@ -810,6 +810,7 @@ order by a.COL1""")
   }
 
   private def createReadOnlyEngine(): ExecutionEngine = {
+    FileUtils.deleteRecursively(new File("target/readonly"))
     val old = new GraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
     old.shutdown()
     val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")

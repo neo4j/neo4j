@@ -136,13 +136,13 @@ public class FileUtils
         }
         return deletedFiles.toArray( new File[deletedFiles.size()] );
     }
-    
+
     /**
      * Utility method that moves a file from its current location to the
      * new target location. If rename fails (for example if the target is
      * another disk) a copy/delete will be performed instead. This is not a rename,
      * use {@link #renameFile(File, File)} instead.
-     * 
+     *
      * @param toMove The File object to move.
      * @param target Target file to move to.
      * @throws IOException
@@ -159,12 +159,12 @@ public class FileUtils
             throw new NotFoundException( "Target file[" + target.getAbsolutePath()
                     + "] already exists" );
         }
-        
+
         if ( toMove.renameTo( target ) )
         {
             return;
         }
-        
+
         if ( toMove.isDirectory() )
         {
             target.mkdirs();
@@ -183,11 +183,11 @@ public class FileUtils
      * provided target directory. If rename fails (for example if the target is
      * another disk) a copy/delete will be performed instead. This is not a rename,
      * use {@link #renameFile(File, File)} instead.
-     * 
+     *
      * @param toMove The File object to move.
      * @param targetDirectory the destination directory
      * @return the new file, null iff the move was unsuccessful
-     * @throws IOException 
+     * @throws IOException
      */
     public static File moveFileToDirectory( File toMove, File targetDirectory ) throws IOException
     {
@@ -196,7 +196,7 @@ public class FileUtils
             throw new IllegalArgumentException(
                     "Move target must be a directory, not " + targetDirectory );
         }
-        
+
         File target = new File( targetDirectory, toMove.getName() );
         moveFile( toMove, target );
         return target;
@@ -350,7 +350,7 @@ public class FileUtils
             }
         }
     }
-    
+
     public static void writeToFile( File target, String text, boolean append ) throws IOException
     {
         if ( !target.exists() )
@@ -387,5 +387,29 @@ public class FileUtils
             root = new File( root, part );
         }
         return root;
+    }
+
+    public interface FileOperation
+    {
+        void perform() throws IOException;
+    }
+
+    public static void windowsSafeIOOperation( FileOperation operation ) throws IOException
+    {
+        IOException storedIoe = null;
+        for ( int i = 0; i < 10; i++ )
+        {
+            try
+            {
+                operation.perform();
+                return;
+            }
+            catch ( IOException e )
+            {
+                storedIoe = e;
+                System.gc();
+            }
+        }
+        throw storedIoe;
     }
 }

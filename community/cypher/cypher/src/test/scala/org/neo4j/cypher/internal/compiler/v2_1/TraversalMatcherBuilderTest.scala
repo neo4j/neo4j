@@ -115,5 +115,5 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
 
   val parser = CypherParser()
 
-  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parseToQuery(text).asInstanceOf[Query])
+  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parseToQuery(text)._1.asInstanceOf[Query])
 }

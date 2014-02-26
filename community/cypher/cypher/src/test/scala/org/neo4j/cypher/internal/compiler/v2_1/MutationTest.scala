@@ -22,13 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import commands.expressions.{Expression, Literal}
 import mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
 import symbols._
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, CypherTypeException, ExecutionEngineTestSupport}
+import org.neo4j.cypher.{ExecutionEngineJUnitSuite, CypherTypeException}
 import org.neo4j.graphdb.{Node, NotFoundException}
-import org.scalatest.Assertions
 import org.junit.{After, Test}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{QueryState, ExecuteUpdateCommandsPipe, NullPipe}
-import org.scalautils.LegacyTripleEquals
 
 class MutationTest extends ExecutionEngineJUnitSuite {
 
@@ -36,7 +34,7 @@ class MutationTest extends ExecutionEngineJUnitSuite {
 
   def createQueryState = {
     if(tx == null) tx = graph.beginTx()
-    QueryStateHelper.queryStateFrom(graph, tx)
+    QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
   }
 
   @After
@@ -138,7 +136,7 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     val state = createQueryState
     createNodePipe.createResults(state).toList
 
-    state.inner.close(success = true)
+    state.query.close(success = true)
     tx.close()
 
     intercept[NotFoundException](graph.inTx(graph.getNodeById(node_id)))

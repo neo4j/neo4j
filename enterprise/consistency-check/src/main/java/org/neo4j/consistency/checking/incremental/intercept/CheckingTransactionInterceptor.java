@@ -169,6 +169,16 @@ class CheckingTransactionInterceptor implements TransactionInterceptor
     }
 
     @Override
+    public void visitRelationshipGroup( RelationshipGroupRecord record )
+    {
+        diffs.visitRelationshipGroup( record );
+        if ( next != null )
+        {
+            next.visitRelationshipGroup( record );
+        }
+    }
+
+    @Override
     public void complete() throws ConsistencyCheckingError
     {
         // TODO: move the logging code from VerifyingTransactionInterceptor to this class, then remove that class

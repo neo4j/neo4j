@@ -54,4 +54,6 @@ public interface CommandRecordVisitor
     void visitNeoStore( NeoStoreRecord record );
 
     void visitSchemaRule( Collection<DynamicRecord> records );
+
+    void visitRelationshipGroup( RelationshipGroupRecord record );
 }

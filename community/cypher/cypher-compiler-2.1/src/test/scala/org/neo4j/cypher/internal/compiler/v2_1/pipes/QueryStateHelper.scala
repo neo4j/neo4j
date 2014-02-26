@@ -19,6 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+
 object QueryStateHelper {
-  def empty = new QueryState(null, null, Map.empty, NullDecorator)
+  def empty: QueryState = emptyWith()
+
+  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
+                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
+    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
 }

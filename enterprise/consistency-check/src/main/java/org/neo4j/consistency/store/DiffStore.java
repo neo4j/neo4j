@@ -113,6 +113,14 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         }
     }
 
+    private void markRelationshipGroup( long group )
+    {
+        if ( !Record.NO_NEXT_RELATIONSHIP.is( group ) )
+        {
+            getRelationshipGroupStore().markDirty( group );
+        }
+    }
+
     private void markProperty( long prop, long nodeId, long relId )
     {
         if ( !Record.NO_NEXT_PROPERTY.is( prop ) )
@@ -223,6 +231,20 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     }
 
     @Override
+    public void visitRelationshipGroup( RelationshipGroupRecord record )
+    {
+        getRelationshipGroupStore().forceUpdateRecord( record );
+        record = getRelationshipGroupStore().forceGetRaw( record );
+        if ( record.inUse() )
+        {
+            markRelationship( record.getFirstOut() );
+            markRelationship( record.getFirstIn() );
+            markRelationship( record.getFirstLoop() );
+            markRelationshipGroup( record.getNext() );
+        }
+    }
+
+    @Override
     public DiffRecordStore<DynamicRecord> getSchemaStore()
     {
         return (DiffRecordStore<DynamicRecord>) super.getSchemaStore();
@@ -238,6 +260,12 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     public DiffRecordStore<RelationshipRecord> getRelationshipStore()
     {
         return (DiffRecordStore<RelationshipRecord>) super.getRelationshipStore();
+    }
+
+    @Override
+    public DiffRecordStore<RelationshipGroupRecord> getRelationshipGroupStore()
+    {
+        return (DiffRecordStore<RelationshipGroupRecord>) super.getRelationshipGroupStore();
     }
 
     @Override

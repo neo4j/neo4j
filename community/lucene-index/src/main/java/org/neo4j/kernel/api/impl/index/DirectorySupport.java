@@ -23,11 +23,24 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 
+import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
+
+import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
+
 public class DirectorySupport
 {
-    public static void deleteDirectoryContents(Directory directory) throws IOException
+    public static void deleteDirectoryContents( final Directory directory ) throws IOException
     {
-        for (String fileName : directory.listAll())
-            directory.deleteFile( fileName );
+        for ( final String fileName : directory.listAll() )
+        {
+            windowsSafeIOOperation( new FileOperation()
+            {
+                @Override
+                public void perform() throws IOException
+                {
+                    directory.deleteFile( fileName );
+                }
+            } );
+        }
     }
 }

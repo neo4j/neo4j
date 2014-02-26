@@ -17,29 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import scala.collection.mutable.ListBuffer
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 
-class CleanUpper {
-
-  private val _cleanupTasks: ListBuffer[() => Unit] = ListBuffer.empty
-
-  def addCleanupTask(task: () => Unit) {
-    _cleanupTasks += task
-  }
-
-  def cleanUp() {
-    val errors = _cleanupTasks.toSeq.flatMap {
-      f =>
-        try {
-          f()
-          None
-        } catch {
-          case e: Throwable => Some(e)
-        }
-    }
-
-    errors.map(e => throw e)
-  }
+trait QueryGraphBuilder {
+  def produce(ast: Query): QueryGraph
 }
