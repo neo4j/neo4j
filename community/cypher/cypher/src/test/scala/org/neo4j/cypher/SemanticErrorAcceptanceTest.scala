@@ -385,6 +385,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
+  @Test def shouldFailIfUsingNonUpdateClauseInsideForeach() {
+    test(
+      "FOREACH (n in [1] | WITH foo RETURN bar)",
+      "Invalid use of WITH inside FOREACH (line 1, column 21)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       val result = execute(query)
