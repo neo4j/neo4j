@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
+package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
 import org.junit.Test;
-
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.election.IntegerElectionCredentials;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.ElectionContextImpl.BiasedWinnerStrategy;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.ElectionContextImpl.Vote;
 
 public class BiasedWinnerStrategyTest
 {
@@ -53,7 +51,8 @@ public class BiasedWinnerStrategyTest
         // when
         Collection<Vote> votes = Collections.emptyList();
 
-        BiasedWinnerStrategy strategy = BiasedWinnerStrategy.demotion( clusterContext, instanceOne );
+        BiasedWinnerStrategy strategy = BiasedWinnerStrategy.demotion(
+                clusterContext, instanceOne );
         strategy.pickWinner( votes );
 
         // then
