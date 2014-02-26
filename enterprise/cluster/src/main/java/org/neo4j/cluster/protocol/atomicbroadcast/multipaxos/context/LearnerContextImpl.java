@@ -25,6 +25,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerState;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -38,6 +39,9 @@ class LearnerContextImpl
     // LearnerContext
     private long lastDeliveredInstanceId = -1;
     private long lastLearnedInstanceId = -1;
+
+    /** To minimize logging, keep track of the latest learn miss, only log when it changes. */
+    private InstanceId latestLearnMiss = null;
 
     private final HeartbeatContext heartbeatContext;
     private final AcceptorInstanceStore instanceStore;
@@ -154,6 +158,16 @@ class LearnerContextImpl
     public void setNextInstanceId( long id )
     {
         commonState.setNextInstanceId( id );
+    }
+
+    @Override
+    public void notifyLearnMiss( InstanceId instanceId )
+    {
+        if(!instanceId.equals(latestLearnMiss))
+        {
+            getLogger( LearnerState.class ).debug( "Did not have learned value for instance " + instanceId );
+            latestLearnMiss = instanceId;
+        }
     }
 
     public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
