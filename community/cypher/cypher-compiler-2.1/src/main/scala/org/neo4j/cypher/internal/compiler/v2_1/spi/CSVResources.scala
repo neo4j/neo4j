@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.spi
 
-import java.net.URL
+import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 import java.io._
 import au.com.bytecode.opencsv.CSVReader
 import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
@@ -57,6 +57,8 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
   private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
     try {
+      if (url.getProtocol.startsWith("http"))
+        CookieManager.ensureEnabled()
       val con = url.openConnection()
       con.setConnectTimeout(connectionTimeout)
       con.setReadTimeout(readTimeout)
@@ -65,6 +67,19 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       case e: IOException =>
         throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
     }
+  }
+}
+
+object CookieManager {
+  private lazy val cookieManager = create
+
+  def ensureEnabled() { cookieManager != null }
+
+  private def create = {
+    val cookieManager = new CookieManager
+    CookieHandler.setDefault(cookieManager)
+    cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL)
+    cookieManager
   }
 }
 
