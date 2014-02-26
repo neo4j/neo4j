@@ -131,7 +131,7 @@ class ElectionContextImpl
     @Override
     public void startDemotionProcess( String role, final org.neo4j.cluster.InstanceId demoteNode )
     {
-        elections.put( role, new Election( new BiasedWinnerStrategy( demoteNode, false /*demotion*/ ) ) );
+        elections.put( role, new Election( new BiasedWinnerStrategy( clusterContext, demoteNode, false /*demotion*/ ) ) );
     }
 
     @Override
@@ -169,7 +169,7 @@ class ElectionContextImpl
     @Override
     public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
     {
-        elections.put( role, new Election( new BiasedWinnerStrategy( promoteNode, true /*promotion*/ ) ) );
+        elections.put( role, new Election( new BiasedWinnerStrategy( clusterContext, promoteNode, true /*promotion*/ ) ) );
     }
 
     @Override
@@ -329,13 +329,13 @@ class ElectionContextImpl
                 snapshotHeartbeatContext, new ArrayList<>(roles), electionsSnapshot, credentialsProvider );
     }
 
-    private static class Vote
+    public static class Vote
             implements Comparable<Vote>
     {
         private final org.neo4j.cluster.InstanceId suggestedNode;
         private final Comparable<Object> voteCredentials;
 
-        private Vote( org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> voteCredentials )
+        public Vote( org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> voteCredentials )
         {
             this.suggestedNode = suggestedNode;
             this.voteCredentials = voteCredentials;
@@ -470,13 +470,25 @@ class ElectionContextImpl
         return result;
     }
     
-    private class BiasedWinnerStrategy implements WinnerStrategy
+    public static class BiasedWinnerStrategy implements WinnerStrategy
     {
+        private final ClusterContext clusterCtx;
         private final org.neo4j.cluster.InstanceId biasedNode;
         private final boolean positiveSuggestion;
 
-        public BiasedWinnerStrategy( org.neo4j.cluster.InstanceId biasedNode, boolean positiveSuggestion )
+        public static BiasedWinnerStrategy promotion(ClusterContext clusterContext, InstanceId biasedNode)
         {
+            return new BiasedWinnerStrategy( clusterContext, biasedNode, true );
+        }
+
+        public static BiasedWinnerStrategy demotion(ClusterContext clusterContext, InstanceId biasedNode)
+        {
+            return new BiasedWinnerStrategy( clusterContext, biasedNode, false );
+        }
+
+        public BiasedWinnerStrategy( ClusterContext clusterCtx, org.neo4j.cluster.InstanceId biasedNode, boolean positiveSuggestion )
+        {
+            this.clusterCtx = clusterCtx;
             this.biasedNode = biasedNode;
             this.positiveSuggestion = positiveSuggestion;
         }
@@ -492,7 +504,7 @@ class ElectionContextImpl
             Collections.sort( filteredVoteList );
             Collections.reverse( filteredVoteList );
 
-            clusterContext.getLogger( getClass() ).debug( "Election started with " + voteList +
+            clusterCtx.getLogger( getClass() ).debug( "Election started with " + voteList +
                     ", ended up with " + filteredVoteList + " where " + biasedNode + " is biased for " +
                     (positiveSuggestion ? "promotion" : "demotion") );
 
