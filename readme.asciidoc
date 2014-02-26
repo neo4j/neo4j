@@ -35,4 +35,25 @@ It loads include files created from executing tests against Neo4j.
 That's done in the Scala project in the 'neo4j-cypher-refcard-tests' directory,
 The tests are located in 'neo4j-cypher-refcard-tests/src/test/scala/org/neo4j/cypher/docgen/refcard'
 
+=== Branch layout ===
+
+As of writing this, there's three branches in use.
+
+* The `1.9` branch is for the `1.9.x` series releases.
+* The `2.0` branch is for the `2.0.x` series releases.
+* The `master` branch is for the `2.1.x` series releases.
+
+
+=== Deploying ===
+
+The refcard is automatically deployed on each push to any branch which builds successfully.
+The following properties determine what happens.
+
+[horizontal]
++neo4j.version+:: The version of Neo4j used to execute the tests.
++refcard.version+:: The visible version of the refcard and part of the URL.
+
+The refcard currently gets deployed to `http://docs.neo4j.org/refcard/{refcard.version}/`
+
+IMPORTANT: The project itself should always have a snapshot version.
 
