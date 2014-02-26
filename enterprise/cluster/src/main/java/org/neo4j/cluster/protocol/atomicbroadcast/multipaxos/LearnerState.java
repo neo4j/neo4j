@@ -201,8 +201,8 @@ public enum LearnerState
                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId =
                                     new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
-                            if ( instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance
-                                    .State.delivered ) )
+                            if ( instance.isState( PaxosInstance.State.closed )
+                              || instance.isState( PaxosInstance.State.delivered ) )
                             {
                                 outgoing.offer( Message.respond( LearnerMessage.learn, message,
                                         new LearnerMessage.LearnState( instance.value_2 ) ).
@@ -211,12 +211,10 @@ public enum LearnerState
                             }
                             else
                             {
-                                context.getLogger( LearnerState.class ).debug( "Did not have learned " +
-                                        "value for instance " + instanceId );
+                                context.notifyLearnMiss(instanceId);
                                 outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
-                                        message,
-                                        new LearnerMessage.LearnFailedState() ), org.neo4j.cluster.protocol
-                                        .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                        message, new LearnerMessage.LearnFailedState() ),
+                                        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }
