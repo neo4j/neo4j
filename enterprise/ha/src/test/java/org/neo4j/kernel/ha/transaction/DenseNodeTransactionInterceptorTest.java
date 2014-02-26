@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -34,6 +37,8 @@ import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.IdSequence;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -46,10 +51,7 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
+@Ignore("Currently the feature is not in place - enable when done")
 public class DenseNodeTransactionInterceptorTest
 {
     @Test
@@ -91,7 +93,7 @@ public class DenseNodeTransactionInterceptorTest
     @Test
     public void shouldCreateTheFirstRelationshipOfNewTypeForDenseNode() throws Exception
     {
-        // GIVEN the following store contents
+        // GIVEN the following store contents on slave (2.1 store format)
         final Id denseNodeId = id(), otherNodeId = id(), thirdNodeId = id();
         final Id firstRelationshipId = id(), otherRelationshipId = id();
         final Id groupAId = id();
@@ -152,7 +154,7 @@ public class DenseNodeTransactionInterceptorTest
                         .withNextRel( groupAId.get() ) );
                 transaction.create( group( groupAId.get(), (int) typeA.get() )
                         .asInUse()
-                        .withNextGroup( groupAId.get() +1/*bad assumption perhaps*/ )
+                        .withNextGroup( groupAId.get() + 1/*bad assumption perhaps*/ )
                         .withFirstOut( firstRelationshipId.get() ) );
                 transaction.create( group( groupAId.get()+1, (int) typeB.get() )
                         .asInUse()
@@ -160,7 +162,650 @@ public class DenseNodeTransactionInterceptorTest
             }
         } );
     }
+    /*
+     * The following four tests work with the following store layout on the master
+     *
+     * Node -> Rel1 -> Rel2 -> Rel3 -> Rel4
+     *
+     * Should handle the following cases:
+     *  - Delete Rel2 and Rel4 and Node is dense on slave
+     *  - Delete Rel2 and Rel4 and Node is not dense on slave
+     *  - Delete Rel2 and Rel4 when Rel3 has property modified and Node is dense on slave
+     *  - Delete Rel2 and Rel4 when Rel3 has property modified and Node is not dense on slave
+     */
+    @Test
+    public void deleteRelationshipOnEachSideOfRelationshipOnMasterWhichIsDenseOnSlave() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id denseNodeId = id();
+        final Id target1 = id(), target2 = id(), target3 = id(), target4 = id();
+        final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
+        final Id groupAId = id(), groupBId = id(), groupCId = id();
+        final Id typeA = id(), typeB = id(), typeC = id();
+        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                groupAId.get( neoStore.getRelationshipGroupStore() );
+                groupBId.get( neoStore.getRelationshipGroupStore() );
+                groupCId.get( neoStore.getRelationshipGroupStore() );
+                typeA.get( neoStore.getRelationshipTypeStore() );
+                typeB.get( neoStore.getRelationshipTypeStore() );
+                typeC.get( neoStore.getRelationshipTypeStore() );
+                denseNodeId.get( neoStore.getNodeStore() );
+                target1.get( neoStore.getNodeStore() );
+                target2.get( neoStore.getNodeStore() );
+                target3.get( neoStore.getNodeStore() );
+                target4.get( neoStore.getNodeStore() );
+                rel1Id.get( neoStore.getRelationshipStore() );
+                rel2Id.get( neoStore.getRelationshipStore() );
+                rel3Id.get( neoStore.getRelationshipStore() );
+                rel4Id.get( neoStore.getRelationshipStore() );
 
+                // The nodes
+                transaction.create( node( denseNodeId.get() )
+                        .asInUse()
+                        .asDense()
+                        .withNextRel( groupAId.get() ) );
+                transaction.create( node( target1.get() )
+                        .asInUse()
+                        .withNextRel( rel1Id.get() ) );
+                transaction.create( node( target2.get() )
+                        .asInUse()
+                        .withNextRel( rel2Id.get() ) );
+                transaction.create( node( target3.get() )
+                        .asInUse()
+                        .withNextRel( rel3Id.get() ) );
+                transaction.create( node( target4.get() )
+                        .asInUse()
+                        .withNextRel( rel4Id.get() ) );
+
+
+                // The groups
+                transaction.create( group( groupAId.get(),
+                        (int) typeA.get() )
+                        .asInUse()
+                        .withFirstOut( rel1Id.get() )
+                        .withNextGroup( groupBId.get() ) );
+                transaction.create( group( groupBId.get(),
+                        (int) typeB.get() )
+                        .asInUse()
+                        .withFirstOut( rel3Id.get() )
+                        .withNextGroup( groupCId.get() ) );
+                transaction.create( group( groupBId.get(),
+                        (int) typeC.get() )
+                        .asInUse()
+                        .withFirstOut( rel4Id.get() ) );
+
+                // The relationships : Rel1 and Rel3 belong in GroupA, Rel2 in GroupB and Rel3 in GroupC
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel2Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel4Id.get(),
+                        denseNodeId.get(),
+                        target4.get(),
+                        (int) typeC.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+            }
+        } );
+
+        // WHEN
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+            }
+        } ) );
+
+        // THEN
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(),
+                        denseNodeId.get(),
+                        target4.get(),
+                        (int) typeC.get() ) );
+                transaction.create( node( target2.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( group( groupBId.get(), (int) typeB.get() )
+                        .asInUse()
+                        .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withFirstOut( rel3Id.get() ) );
+                transaction.create( group( groupCId.get(), (int) typeC.get() ) );
+            }
+        } );
+    }
+
+    @Test
+    public void deleteRelationshipOnEachSideOfRelationshipWithChangePropertyOnMasterWhichIsDenseOnSlave() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id denseNodeId = id();
+        final Id target1 = id(), target2 = id(), target3 = id(), target4 = id();
+        final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
+        final Id groupAId = id(), groupBId = id(), groupCId = id();
+        final Id typeA = id(), typeB = id(), typeC = id();
+        final Id propId = id();
+        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                groupAId.get( neoStore.getRelationshipGroupStore() );
+                groupBId.get( neoStore.getRelationshipGroupStore() );
+                groupCId.get( neoStore.getRelationshipGroupStore() );
+                typeA.get( neoStore.getRelationshipTypeStore() );
+                typeB.get( neoStore.getRelationshipTypeStore() );
+                typeC.get( neoStore.getRelationshipTypeStore() );
+                denseNodeId.get( neoStore.getNodeStore() );
+                target1.get( neoStore.getNodeStore() );
+                target2.get( neoStore.getNodeStore() );
+                target3.get( neoStore.getNodeStore() );
+                target4.get( neoStore.getNodeStore() );
+                rel1Id.get( neoStore.getRelationshipStore() );
+                rel2Id.get( neoStore.getRelationshipStore() );
+                rel3Id.get( neoStore.getRelationshipStore() );
+                rel4Id.get( neoStore.getRelationshipStore() );
+                propId.get( neoStore.getPropertyStore() );
+
+                // The nodes
+                transaction.create( node( denseNodeId.get() )
+                        .asInUse()
+                        .asDense()
+                        .withNextRel( groupAId.get() ) );
+                transaction.create( node( target1.get() )
+                        .asInUse()
+                        .withNextRel( rel1Id.get() ) );
+                transaction.create( node( target2.get() )
+                        .asInUse()
+                        .withNextRel( rel2Id.get() ) );
+                transaction.create( node( target3.get() )
+                        .asInUse()
+                        .withNextRel( rel3Id.get() ) );
+                transaction.create( node( target4.get() )
+                        .asInUse()
+                        .withNextRel( rel4Id.get() ) );
+
+
+                // The groups
+                transaction.create( group( groupAId.get(),
+                        (int) typeA.get() )
+                        .asInUse()
+                        .withFirstOut( rel1Id.get() )
+                        .withNextGroup( groupBId.get() ) );
+                transaction.create( group( groupBId.get(),
+                        (int) typeB.get() )
+                        .asInUse()
+                        .withFirstOut( rel3Id.get() )
+                        .withNextGroup( groupCId.get() ) );
+                transaction.create( group( groupBId.get(),
+                        (int) typeC.get() )
+                        .asInUse()
+                        .withFirstOut( rel4Id.get() ) );
+
+                // The relationships : Rel1 and Rel3 belong in GroupA, Rel2 in GroupB and Rel3 in GroupC
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel2Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withNextProperty( propId.get() ) );
+                transaction.create( relationship( rel4Id.get(),
+                        denseNodeId.get(),
+                        target4.get(),
+                        (int) typeC.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+
+                // The property
+                transaction.create( property( propId.get() ).asInUse().withRelId( rel3Id.get() ) );
+            }
+        } );
+
+        // WHEN
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+            }
+        } ) );
+
+        // THEN
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeA.get() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+                transaction.create( relationship( rel4Id.get(),
+                        denseNodeId.get(),
+                        target4.get(),
+                        (int) typeC.get() ) );
+                transaction.create( node( target2.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( group( groupBId.get(), (int) typeB.get() )
+                        .asInUse()
+                        .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withFirstOut( rel3Id.get() ) );
+                transaction.create( group( groupCId.get(), (int) typeC.get() ) );
+            }
+        } );
+    }
+
+    @Test
+    public void deleteRelationshipOnEachSideOfRelationshipOnMasterWhichIsNotDenseOnSlave() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id denseNodeId = id();
+        final Id target1 = id(), target2 = id(), target3 = id(), target4 = id();
+        final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
+        final Id typeA = id(), typeB = id(), typeC = id();
+        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                typeA.get( neoStore.getRelationshipTypeStore() );
+                typeB.get( neoStore.getRelationshipTypeStore() );
+                typeC.get( neoStore.getRelationshipTypeStore() );
+                denseNodeId.get( neoStore.getNodeStore() );
+                target1.get( neoStore.getNodeStore() );
+                target2.get( neoStore.getNodeStore() );
+                target3.get( neoStore.getNodeStore() );
+                target4.get( neoStore.getNodeStore() );
+                rel1Id.get( neoStore.getRelationshipStore() );
+                rel2Id.get( neoStore.getRelationshipStore() );
+                rel3Id.get( neoStore.getRelationshipStore() );
+                rel4Id.get( neoStore.getRelationshipStore() );
+
+                // The nodes
+                transaction.create( node( denseNodeId.get() )
+                        .asInUse()
+                        .asDense()
+                        .withNextRel( rel1Id.get() ) );
+                transaction.create( node( target1.get() )
+                        .asInUse()
+                        .withNextRel( rel1Id.get() ) );
+                transaction.create( node( target2.get() )
+                        .asInUse()
+                        .withNextRel( rel2Id.get() ) );
+                transaction.create( node( target3.get() )
+                        .asInUse()
+                        .withNextRel( rel3Id.get() ) );
+                transaction.create( node( target4.get() )
+                        .asInUse()
+                        .withNextRel( rel4Id.get() ) );
+
+
+                // The relationships
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel2Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel2Id.get(), rel4Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel4Id.get(),
+                        denseNodeId.get(),
+                        target4.get(),
+                        (int) typeC.get() ).asInUse()
+                        .withStartPointers(
+                                rel3Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+            }
+        } );
+
+        // WHEN
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+            }
+        } ) );
+
+        // THEN
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+            }
+        } );
+    }
+
+    @Test
+    public void deleteRelationshipOnEachSideOfRelationshipWithPropertyChangeOnMasterWhichIsNotDenseOnSlave() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id denseNodeId = id();
+        final Id target1 = id(), target2 = id(), target3 = id(), target4 = id();
+        final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
+        final Id typeA = id(), typeB = id(), typeC = id();
+        final Id propId = id();
+        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                typeA.get( neoStore.getRelationshipTypeStore() );
+                typeB.get( neoStore.getRelationshipTypeStore() );
+                typeC.get( neoStore.getRelationshipTypeStore() );
+                denseNodeId.get( neoStore.getNodeStore() );
+                target1.get( neoStore.getNodeStore() );
+                target2.get( neoStore.getNodeStore() );
+                target3.get( neoStore.getNodeStore() );
+                target4.get( neoStore.getNodeStore() );
+                rel1Id.get( neoStore.getRelationshipStore() );
+                rel2Id.get( neoStore.getRelationshipStore() );
+                rel3Id.get( neoStore.getRelationshipStore() );
+                rel4Id.get( neoStore.getRelationshipStore() );
+                propId.get( neoStore.getPropertyStore() );
+
+                // The nodes
+                transaction.create( node( denseNodeId.get() )
+                        .asInUse()
+                        .asDense()
+                        .withNextRel( rel1Id.get() ) );
+                transaction.create( node( target1.get() )
+                        .asInUse()
+                        .withNextRel( rel1Id.get() ) );
+                transaction.create( node( target2.get() )
+                        .asInUse()
+                        .withNextRel( rel2Id.get() ) );
+                transaction.create( node( target3.get() )
+                        .asInUse()
+                        .withNextRel( rel3Id.get() ) );
+                transaction.create( node( target4.get() )
+                        .asInUse()
+                        .withNextRel( rel4Id.get() ) );
+
+
+                // The relationships
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel2Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel2Id.get(), rel4Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withNextProperty( propId.get() ) );
+                transaction.create( relationship( rel4Id.get(),
+                        denseNodeId.get(),
+                        target4.get(),
+                        (int) typeC.get() ).asInUse()
+                        .withStartPointers(
+                                rel3Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+
+                // The property
+                transaction.create( property( propId.get() ).asInUse().withRelId( rel3Id.get() ) );
+            }
+        } );
+
+        // WHEN
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+            }
+        } ) );
+
+        // THEN
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.create( relationship( rel1Id.get(),
+                        denseNodeId.get(),
+                        target1.get(),
+                        (int) typeA.get() ).asInUse()
+                        .withStartPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( relationship( rel3Id.get(),
+                        denseNodeId.get(),
+                        target3.get(),
+                        (int) typeB.get() ).asInUse()
+                        .withStartPointers(
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withEndPointers(
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+            }
+        } );
+    }
+
+    // TODO should handle relationship that is not created or deleted, just has a property update
     // TODO should handle relationship creation where the node is dense and there are relationships of that type already
     // TODO should handle that both start and end nodes are dense
     // TODO should handle that a relationship gets created or deleted, and a surrounding
@@ -326,6 +971,12 @@ public class DenseNodeTransactionInterceptorTest
             return this;
         }
 
+        public RelationshipRecordWithBenefits withNextProperty( long property )
+        {
+            setNextProp( property );
+            return this;
+        }
+
         public RelationshipRecordWithBenefits asInUse()
         {
             setInUse( true );
@@ -336,6 +987,37 @@ public class DenseNodeTransactionInterceptorTest
     private static RelationshipRecordWithBenefits relationship( long id, long startNode, long endNode, int type )
     {
         return new RelationshipRecordWithBenefits( id, startNode, endNode, type );
+    }
+
+    private static class PropertyRecordWithBenefits extends PropertyRecord
+    {
+        public PropertyRecordWithBenefits( long id )
+        {
+            super( id );
+        }
+
+        public PropertyRecordWithBenefits withNodeId( long id )
+        {
+            setNodeId( id );
+            return this;
+        }
+
+        public PropertyRecordWithBenefits withRelId( long id )
+        {
+            setRelId( id );
+            return this;
+        }
+
+        public PropertyRecordWithBenefits asInUse()
+        {
+            setInUse( true );
+            return this;
+        }
+    }
+
+    private static PropertyRecordWithBenefits property( long id )
+    {
+        return new PropertyRecordWithBenefits( id );
     }
 
     private static class RelationshipGroupRecordWithBenefits extends RelationshipGroupRecord
