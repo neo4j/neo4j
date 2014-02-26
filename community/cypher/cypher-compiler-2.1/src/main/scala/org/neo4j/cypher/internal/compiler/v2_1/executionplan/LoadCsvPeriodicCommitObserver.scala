@@ -46,11 +46,10 @@ class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource
   } else resources.getCsvIterator(url)
 
   private def maybeCommitAndRestartTx(max: Long) {
-    if (updates > max) {
+    if (updates >= max) {
       queryContext.commitAndRestartTx()
       updates = 0
     }
   }
-
 }
 

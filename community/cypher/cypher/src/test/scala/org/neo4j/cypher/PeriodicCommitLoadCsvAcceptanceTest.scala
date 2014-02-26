@@ -36,7 +36,7 @@ class PeriodicCommitLoadCsvAcceptanceTest
     })
 
     val queryText =
-      s"USING PERIODIC COMMIT 2 LOAD CSV FROM '${url}' AS line CREATE ({name: line[0]}) CREATE ({name: line[1]})"
+      s"USING PERIODIC COMMIT 3 LOAD CSV FROM '${url}' AS line CREATE ({name: line[0]}) CREATE ({name: line[1]})"
 
     // when
     val txCounts = executeAndTrackTxCounts(queryText)
@@ -126,6 +126,26 @@ class PeriodicCommitLoadCsvAcceptanceTest
 
     // then
     txCounts should equal(TxCounts(commits = 5))
+  }
+
+  test("should commit on row boundary even when some part of the query fails") {
+    // given
+    val url = createFile(writer => {
+      writer.println("1")
+      writer.println("2")
+      writer.println("0")
+      writer.println("3")
+    })
+
+    val queryText =
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
+        s"CREATE ({name: 1/toInt(line[0])})"
+
+    // when
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](execute(queryText)))
+
+    // then
+    txCounts should equal(TxCounts(commits = 2, rollbacks = 1))
   }
 
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape

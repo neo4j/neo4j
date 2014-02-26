@@ -48,7 +48,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
     // When
     val iterator = resourceUnderTest.getCsvIterator(url)
-    resourceUnderTest.notify(12)
+    resourceUnderTest.notify(10)
     verify(queryContext, never()).commitAndRestartTx()
 
     iterator.next()
