@@ -142,10 +142,30 @@ class PeriodicCommitLoadCsvAcceptanceTest
         s"CREATE ({name: 1/toInt(line[0])})"
 
     // when
-    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](execute(queryText)))
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[CypherException](execute(queryText)))
 
     // then
     txCounts should equal(TxCounts(commits = 2, rollbacks = 1))
+  }
+
+  test("should tell line number information when failing using periodic commit and load csv") {
+    // given
+    val url = createFile(writer => {
+      writer.println("1")
+      writer.println("2")
+      writer.println("0")
+      writer.println("3")
+    })
+
+    val queryText =
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
+      s"CREATE ({name: 1/toInt(line[0])})"
+
+    // when
+    val e = intercept[CypherException](execute(queryText))
+
+    // then
+    e.getMessage.contains("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.") should equal(true)
   }
 
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape

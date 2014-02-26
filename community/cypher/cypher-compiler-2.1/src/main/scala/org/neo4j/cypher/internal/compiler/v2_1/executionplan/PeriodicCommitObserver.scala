@@ -26,7 +26,7 @@ class PeriodicCommitObserver(batchSize: Long, queryContext: QueryContext) extend
 
   def notify(increment: Long) {
     assert(increment > 0, "increment must be positive")
-    currentCount+= increment
+    currentCount += increment
     if (currentCount % batchSize == 0)
       queryContext.commitAndRestartTx()
   }

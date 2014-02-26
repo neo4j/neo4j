@@ -130,3 +130,7 @@ class PeriodicCommitInOpenTransactionException
 class LoadExternalResourceException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
   val status = Status.Statement.ExternalResourceFailure
 }
+
+class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(s"${cause.getMessage} (${extraInfo})", cause) {
+  val status = cause.status
+}

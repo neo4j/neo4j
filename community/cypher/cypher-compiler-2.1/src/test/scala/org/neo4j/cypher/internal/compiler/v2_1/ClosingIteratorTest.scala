@@ -25,9 +25,11 @@ import org.junit.Assert.assertThat
 import org.mockito.Mockito._
 import org.scalatest.Assertions
 import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.CypherException
 
 class ClosingIteratorTest extends Assertions with MockitoSugar {
   var taskCloser: TaskCloser = _
+  val exceptionDecorator: CypherException => CypherException = identity
 
   @Before
   def before() {
@@ -38,7 +40,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def should_cleanup_when_we_reach_the_end() {
     //Given
     val wrapee   = Iterator(Map("k" -> 42))
-    val iterator = new ClosingIterator(wrapee, taskCloser)
+    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
     //When
     val result = iterator.next()
 
@@ -51,7 +53,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def should_cleanup_even_for_empty_iterator() {
     //Given
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, taskCloser)
+    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
     val result = iterator.hasNext
@@ -65,7 +67,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def multiple_has_next_should_not_close_more_than_once() {
     //Given
     val wrapee   = Iterator.empty
-    val iterator = new ClosingIterator(wrapee, taskCloser)
+    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
     val result = iterator.hasNext
@@ -84,7 +86,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     //Given
     val wrapee = mock[Iterator[Map[String, Any]]]
     when(wrapee.hasNext).thenThrow(new RuntimeException)
-    val iterator = new ClosingIterator(wrapee, taskCloser)
+    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
     intercept[RuntimeException](iterator.hasNext)
@@ -100,7 +102,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
 
-    val iterator = new ClosingIterator(wrapee, taskCloser)
+    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
     intercept[RuntimeException](iterator.next())
@@ -113,7 +115,7 @@ class ClosingIteratorTest extends Assertions with MockitoSugar {
   def close_runs_cleanup() {
     //Given
     val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43))
-    val iterator = new ClosingIterator(wrapee, taskCloser)
+    val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
     val result = iterator.next()

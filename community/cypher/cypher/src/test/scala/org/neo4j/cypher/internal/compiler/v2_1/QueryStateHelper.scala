@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.graphdb.{GraphDatabaseService, Transaction}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ExternalResource, PipeDecorator, NullDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ExternalResource, PipeDecorator, NullPipeDecorator, QueryState}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.api.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{UpdateCountingQueryContext, QueryContext}
@@ -31,7 +31,7 @@ object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
   def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullDecorator) =
+                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
     QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
