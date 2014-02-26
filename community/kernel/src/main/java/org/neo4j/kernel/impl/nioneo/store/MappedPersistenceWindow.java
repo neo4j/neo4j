@@ -134,7 +134,14 @@ class MappedPersistenceWindow extends LockableWindow
     public Buffer getOffsettedBuffer( long id )
     {
         int offset = (int) (id - buffer.position()) * recordSize;
-        buffer.setOffset( offset );
-        return buffer;
+        try
+        {
+            buffer.setOffset( offset );
+            return buffer;
+        } catch(IllegalArgumentException e)
+        {
+            throw new IllegalArgumentException( "Unable to set offset. id:" + id + ", position:" + buffer.position()
+                    + ", recordSize:" + recordSize, e );
+        }
     }
 }
