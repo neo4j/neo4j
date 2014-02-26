@@ -27,6 +27,8 @@ import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
@@ -74,5 +76,10 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
     if ( !gdb.index().existsForRelationships(idxName) ) {
       throw new MissingIndexException(idxName)
     }
+  }
+
+  override def hasLocalFileAccess: Boolean = gdb match {
+    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.cypher_file_access)
+    case _ => true
   }
 }

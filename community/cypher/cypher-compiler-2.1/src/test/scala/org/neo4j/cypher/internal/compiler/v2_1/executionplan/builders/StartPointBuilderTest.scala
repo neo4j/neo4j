@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPointBuilderTest extends BuilderTest with MockitoSugar {
 
-  override val context = mock[PlanContext]
+  context = mock[PlanContext]
   val builder = new StartPointBuilder()
 
   @Test

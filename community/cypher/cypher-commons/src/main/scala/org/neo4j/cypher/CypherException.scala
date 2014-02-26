@@ -127,6 +127,6 @@ class IncomparableValuesException(lhs: String, rhs: String)
 class PeriodicCommitInOpenTransactionException
   extends InvalidSemanticsException("Executing queries that use periodic commit in an open transaction is not possible.")
 
-class LoadExternalResourceException(message: String, cause: Throwable) extends CypherException(message, cause) {
+class LoadExternalResourceException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
   val status = Status.Statement.ExternalResourceFailure
 }

@@ -92,10 +92,13 @@ public abstract class GraphDatabaseSettings
     @Description("Enable this to specify a parser other than the default one.")
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0" ), NO_DEFAULT );
+            options( "1.9", "2.0", "2.1" ), NO_DEFAULT );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
+
+    @Description("Limits access to the local file system from Cypher")
+    public static Setting<Boolean> cypher_file_access = setting( "cypher_file_access", BOOLEAN, TRUE );
 
     // Store files
     @Description("The directory where the database files are located.")

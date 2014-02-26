@@ -41,5 +41,7 @@ trait PlanContext extends TokenContext {
   def checkNodeIndex(idxName: String)
 
   def checkRelIndex(idxName: String)
+
+  def hasLocalFileAccess: Boolean
 }
 

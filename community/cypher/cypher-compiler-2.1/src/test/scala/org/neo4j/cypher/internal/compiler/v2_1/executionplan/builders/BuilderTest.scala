@@ -71,5 +71,5 @@ trait BuilderTest extends Assertions {
   }
 
   def builder: PlanBuilder
-  def context:PlanContext=null
+  var context:PlanContext=null
 }
