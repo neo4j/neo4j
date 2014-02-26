@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.helpers.TxCounts
 import java.io.PrintWriter
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 
-class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport {
+class PeriodicCommitLoadCsvAcceptanceTest
+  extends ExecutionEngineFunSuite with CreateTempFileTestSupport with TxCountsTrackingTestSupport {
 
   test("should commit on row boundaries only") {
     // given
@@ -37,16 +38,11 @@ class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with C
     val queryText =
       s"USING PERIODIC COMMIT 2 LOAD CSV FROM '${url}' AS line CREATE ({name: line[0]}) CREATE ({name: line[1]})"
 
-    // prepare
-    execute(queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    execute(queryText)
+    val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 3))
+    txCounts should equal(TxCounts(commits = 3))
   }
 
   test("should commit if the updates per row are twice the periodic commit size") {
@@ -63,16 +59,11 @@ class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with C
         " CREATE ({name: line[3]})" +
         " CREATE ({name: line[4]})"
 
-    // prepare
-    execute(queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    execute(queryText)
+    val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 2))
+    txCounts should equal(TxCounts(commits = 2))
   }
 
   test("in case of multiple load csv clauses the more external load csv will delay the commits") {
@@ -92,16 +83,11 @@ class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with C
         s" CREATE ({name: l2[1]})" +
         s" CREATE ({name: l2[0]})"
 
-    // prepare
-    execute(queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    execute(queryText)
+    val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 2))
+    txCounts should equal(TxCounts(commits = 2))
   }
 
   test("should give up on row boundary alignment in case of union") {
@@ -116,18 +102,12 @@ class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with C
         " CREATE ({name: line[0]})" +
         "UNION CREATE({name: 123})"
 
-    // prepare
-    execute(queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    execute(queryText)
+    val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 7))
+    txCounts should equal(TxCounts(commits = 7))
   }
-
 
   test("should give up on row boundary alignment in case of aggregation") {
     // given
@@ -141,16 +121,11 @@ class PeriodicCommitLoadCsvAcceptanceTest extends ExecutionEngineFunSuite with C
         " CREATE ({name: line[0]})" +
         "RETURN count(*)"
 
-    // prepare
-    execute(queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    execute(queryText)
+    val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = 5))
+    txCounts should equal(TxCounts(commits = 5))
   }
 
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape
