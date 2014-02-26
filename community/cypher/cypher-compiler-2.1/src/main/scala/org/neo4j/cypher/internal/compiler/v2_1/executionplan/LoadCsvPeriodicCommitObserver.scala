@@ -27,67 +27,41 @@ import org.neo4j.cypher.{CypherException, LoadCsvStatusWrapCypherException}
 class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource, queryContext: QueryContext)
   extends UpdateObserver with ExternalResource with ((CypherException) => CypherException) {
 
-  var updates = 0L
-  var first = true
-  var it: Option[LoadCsvIterator] = None
+  val updateCounter = new UpdateCounter
+  var loadCsvIterator: Option[LoadCsvIterator] = None
 
   def notify(increment: Long) {
-    assert(increment > 0, "increment must be positive")
-    updates += increment
-    maybeCommitAndRestartTx(batchSize * 2)
+    updateCounter += increment
+    onNotify()   
   }
 
-  def getCsvIterator(url: URL): Iterator[Array[String]] =
-    if (first) {
-      first = false
-      val iterator = new LoadCsvIterator(url, resources.getCsvIterator(url))(
-        maybeCommitAndRestartTx(batchSize)
-      )
-      it = Some(iterator)
-      iterator
-    } else {
-      resources.getCsvIterator(url)
+  def getCsvIterator(url: URL): Iterator[Array[String]] = {
+    val innerIterator = resources.getCsvIterator(url)
+    loadCsvIterator match {
+      case Some(_) =>
+        innerIterator
+      case None =>
+        val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
+        loadCsvIterator = Some(iterator)
+        iterator
     }
+  }
 
-  private def maybeCommitAndRestartTx(max: Long) {
-    if (updates >= max) {
+  private def onNotify() {
+    updateCounter.resetIfPastLimit(batchSize * 2)(commitAndRestartTx())
+  }
+  
+  private def onNext() {
+    updateCounter.resetIfPastLimit(batchSize)(commitAndRestartTx())
+  }
+  
+  private def commitAndRestartTx() {
       queryContext.commitAndRestartTx()
-      updates = 0
-      it.foreach(_.notifyCommit())
-    }
+      loadCsvIterator.foreach(_.notifyCommit())
   }
 
-  def apply(e: CypherException): CypherException =
-  it match {
+  def apply(e: CypherException): CypherException = loadCsvIterator match {
     case Some(iterator) => new LoadCsvStatusWrapCypherException(iterator.msg, e)
     case _ => e
-  }
-}
-
-class LoadCsvIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit) extends Iterator[Array[String]] {
-  var lastProcessed = 0L
-  var lastCommitted = -1L
-  var readAll = false
-
-  def next() = {
-    val row = inner.next()
-    onNext
-    lastProcessed += 1
-    readAll = !hasNext
-    row
-  }
-
-  def hasNext = inner.hasNext
-
-  def notifyCommit() {
-    lastCommitted = lastProcessed
-  }
-
-  def msg = {
-    val maybeReadAllFileMsg: String = if (readAll) " (which is the last row in the file)" else ""
-
-    s"Failure when processing url '${url}' on line ${lastProcessed}${maybeReadAllFileMsg}. " +
-    s"Possibly the last row committed during import is line ${lastCommitted}. " +
-    s"Note that this information might not be accurate."
   }
 }

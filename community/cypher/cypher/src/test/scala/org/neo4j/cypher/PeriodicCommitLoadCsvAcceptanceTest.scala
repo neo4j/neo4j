@@ -30,40 +30,46 @@ class PeriodicCommitLoadCsvAcceptanceTest
   test("should commit on row boundaries only") {
     // given
     val url = createFile(writer => {
-      writer.println("1,2")
-      writer.println("3,4")
-      writer.println("4,5")
+      writer.println("1,2,3,4")
+      writer.println("5,6,7,8")
+      writer.println("9,a,b,c")
+      writer.println("d,e,f,g")
+      writer.println("h,i,j,k")
     })
 
     val queryText =
-      s"USING PERIODIC COMMIT 3 LOAD CSV FROM '${url}' AS line CREATE ({name: line[0]}) CREATE ({name: line[1]})"
+      s"USING PERIODIC COMMIT 7 LOAD CSV FROM '${url}' AS line " +
+      "CREATE ({name: line[0]}) " +
+      "CREATE ({name: line[1]}) " +
+      "CREATE ({name: line[2]}) " +
+      "CREATE ({name: line[3]}) "
 
-    // when
+    // when executing 48 updates
     val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    txCounts should equal(TxCounts(commits = 3))
+    txCounts should equal(TxCounts(commits = 5))
   }
 
   test("should commit if the updates per row are twice the periodic commit size") {
     // given
     val url = createFile(writer => {
-      writer.println("1,2,3,4,5")
+      writer.println("1,2,3,4")
+      writer.println("1,2,3,4")
     })
 
     val queryText =
-      s"USING PERIODIC COMMIT 4 LOAD CSV FROM '${url}' AS line" +
-        " CREATE ({name: line[0]})" +
-        " CREATE ({name: line[1]})" +
-        " CREATE ({name: line[2]})" +
-        " CREATE ({name: line[3]})" +
-        " CREATE ({name: line[4]})"
+      s"USING PERIODIC COMMIT 4 LOAD CSV FROM '${url}' AS line " +
+      s"CREATE ({name: line[0]}) " +
+      s"CREATE ({name: line[1]}) " +
+      s"CREATE ({name: line[2]}) " +
+      s"CREATE ({name: line[3]}) "
 
-    // when
+    // when executing 16 updates
     val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    txCounts should equal(TxCounts(commits = 2))
+    txCounts should equal(TxCounts(commits = 3))
   }
 
   test("in case of multiple load csv clauses the more external load csv will delay the commits") {
@@ -71,10 +77,12 @@ class PeriodicCommitLoadCsvAcceptanceTest
     val url = createFile(writer => {
       writer.println("1,2")
       writer.println("2,3")
+      writer.println("3,4")
+      writer.println("5,6")
     })
 
     val queryText =
-       "USING PERIODIC COMMIT 8" +
+       "USING PERIODIC COMMIT 12" +
         s" LOAD CSV FROM '${url}' AS l1" +
         s" CREATE ({name: l1[0]})" +
         s" CREATE ({name: l1[1]})" +
@@ -83,11 +91,32 @@ class PeriodicCommitLoadCsvAcceptanceTest
         s" CREATE ({name: l2[1]})" +
         s" CREATE ({name: l2[0]})"
 
-    // when
+    // when executing 48 updates
     val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
-    txCounts should equal(TxCounts(commits = 2))
+    txCounts should equal(TxCounts(commits = 4))
+  }
+
+  test("should commit on row boundary even when some part of the query fails") {
+    // given
+    val url = createFile(writer => {
+      writer.println("1")
+      writer.println("2")
+      writer.println("0")
+      writer.println("3")
+    })
+
+    val queryText =
+      s"USING PERIODIC COMMIT 6 LOAD CSV FROM '${url}' AS line " +
+      s"CREATE ({name: toInt(line[0])})" +
+      s"CREATE ({name: 1/toInt(line[0])})"
+
+    // when trying to executing 16 updates
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[CypherException](execute(queryText)))
+
+    // then
+    txCounts should equal(TxCounts(commits = 1, rollbacks = 1))
   }
 
   test("should give up on row boundary alignment in case of union") {
@@ -98,11 +127,11 @@ class PeriodicCommitLoadCsvAcceptanceTest
     })
 
     val queryText =
-      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line" +
-        " CREATE ({name: line[0]})" +
-        "UNION CREATE({name: 123})"
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
+        s"CREATE ({name: line[0]}) " +
+        s"UNION CREATE({name: 123}) "
 
-    // when
+    // when executing 6 updates
     val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
@@ -117,35 +146,15 @@ class PeriodicCommitLoadCsvAcceptanceTest
     })
 
     val queryText =
-      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line" +
-        " CREATE ({name: line[0]})" +
-        "RETURN count(*)"
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
+        s"CREATE ({name: line[0]}) " +
+        s"RETURN count(*)"
 
-    // when
+    // when executing 4 updates
     val txCounts = executeAndTrackTxCounts(queryText)
 
     // then
     txCounts should equal(TxCounts(commits = 5))
-  }
-
-  test("should commit on row boundary even when some part of the query fails") {
-    // given
-    val url = createFile(writer => {
-      writer.println("1")
-      writer.println("2")
-      writer.println("0")
-      writer.println("3")
-    })
-
-    val queryText =
-      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
-        s"CREATE ({name: 1/toInt(line[0])})"
-
-    // when
-    val (_, txCounts) = prepareAndTrackTxCounts(intercept[CypherException](execute(queryText)))
-
-    // then
-    txCounts should equal(TxCounts(commits = 2, rollbacks = 1))
   }
 
   test("should tell line number information when failing using periodic commit and load csv") {
@@ -161,11 +170,11 @@ class PeriodicCommitLoadCsvAcceptanceTest
       s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
       s"CREATE ({name: 1/toInt(line[0])})"
 
-    // when
+    // when executing 5 updates
     val e = intercept[CypherException](execute(queryText))
 
     // then
-    e.getMessage.contains("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.") should equal(true)
+    e.getMessage should include("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.")
   }
 
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv", f).cypherEscape

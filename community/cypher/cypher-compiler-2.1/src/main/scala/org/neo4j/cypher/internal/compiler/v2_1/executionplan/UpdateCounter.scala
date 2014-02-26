@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+class UpdateCounter {
+  private var uncommittedUpdates = 0L
+  private var totalUpdates = 0L
 
-class PeriodicCommitObserver(batchSize: Long, queryContext: QueryContext) extends UpdateObserver {
-  val updates = new UpdateCounter
+  def +=(increment: Long) {
+    assert(increment > 0L, s"increment must be positive but was: $increment")
+    uncommittedUpdates += increment
+    totalUpdates += increment
+  }
 
-  def notify(increment: Long) {
-    updates += increment
-    updates.resetIfPastLimit(batchSize)(queryContext.commitAndRestartTx())
+  def resetIfPastLimit(limit: Long)(f: => Unit) {
+    if (uncommittedUpdates >= limit) {
+      f
+      uncommittedUpdates = 0
+    }
   }
 }

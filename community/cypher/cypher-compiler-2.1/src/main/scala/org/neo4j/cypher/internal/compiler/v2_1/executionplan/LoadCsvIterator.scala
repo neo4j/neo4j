@@ -19,13 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import java.net.URL
 
-class PeriodicCommitObserver(batchSize: Long, queryContext: QueryContext) extends UpdateObserver {
-  val updates = new UpdateCounter
+class LoadCsvIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit) extends Iterator[Array[String]] {
+  var lastProcessed = 0L
+  var lastCommitted = -1L
+  var readAll = false
 
-  def notify(increment: Long) {
-    updates += increment
-    updates.resetIfPastLimit(batchSize)(queryContext.commitAndRestartTx())
+  def next() = {
+    val row = inner.next()
+    onNext
+    lastProcessed += 1
+    readAll = !hasNext
+    row
+  }
+
+  def hasNext = inner.hasNext
+
+  def notifyCommit() {
+    lastCommitted = lastProcessed
+  }
+
+  def msg = {
+    val maybeReadAllFileMsg: String = if (readAll) " (which is the last row in the file)" else ""
+
+    s"Failure when processing url '${url}' on line ${lastProcessed}${maybeReadAllFileMsg}. " +
+      s"Possibly the last row committed during import is line ${lastCommitted}. " +
+      s"Note that this information might not be accurate."
   }
 }
