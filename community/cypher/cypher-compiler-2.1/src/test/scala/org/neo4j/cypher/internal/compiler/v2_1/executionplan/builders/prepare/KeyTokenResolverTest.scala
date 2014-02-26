@@ -31,7 +31,6 @@ import org.mockito.Mockito._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleNode
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken.Resolved
-import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.Unsolved
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.{NamedExpectation, UniqueLink, CreateUniqueAction}
@@ -39,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.mutation.{NamedExpectation, Uniqu
 class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
 
   val builder: PlanBuilder = new KeyTokenResolver
-  override val context = mock[PlanContext]
+  context = mock[PlanContext]
 
   val (unresolvedFoo, resolvedFoo) = labelToken("Foo", 0)
   val (unresolvedBar, resolvedBar) = labelToken("Bar", 1)

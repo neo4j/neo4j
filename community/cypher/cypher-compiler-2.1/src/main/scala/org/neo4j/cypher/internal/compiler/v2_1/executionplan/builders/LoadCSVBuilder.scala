@@ -23,11 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInPro
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{HasHeaders, NoHeaders, LoadCSVPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.LoadCSV
+import org.neo4j.cypher.LoadExternalResourceException
 
 class LoadCSVBuilder extends PlanBuilder {
-
-
-  override def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
     findLoadCSVItem(plan).isDefined
   }
 
@@ -37,11 +36,14 @@ class LoadCSVBuilder extends PlanBuilder {
     }
   }
 
-  override def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
-    val item = findLoadCSVItem(plan).get
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+    val item: LoadCSV = findLoadCSVItem(plan).get
+    if (item.url.getProtocol == "file" && !ctx.hasLocalFileAccess) {
+      throw new LoadExternalResourceException("Accessing local files not allowed by the configuration")
+    }
     plan.copy(
       query = plan.query.copy(start = plan.query.start.replace(Unsolved(item), Solved(item))),
-      pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.fileUrl, item.identifier)
+      pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.url, item.identifier)
     )
   }
 }

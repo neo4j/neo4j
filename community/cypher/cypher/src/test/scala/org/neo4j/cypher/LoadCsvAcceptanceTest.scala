@@ -23,6 +23,8 @@ import org.junit.Test
 import java.io.PrintWriter
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
+import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class LoadCsvAcceptanceTest
   extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
@@ -132,6 +134,22 @@ class LoadCsvAcceptanceTest
     // redirects http requests to unknown domains to some landing page
     intercept[LoadExternalResourceException] {
       execute("LOAD CSV FROM 'http://non-existing-site.com' AS line CREATE (a {name:line[0]})")
+    }
+  }
+
+  @Test def should_fail_for_file_urls_if_local_file_access_disallowed() {
+    val url = createFile {
+      writer =>
+        writer.println("String without quotes")
+    }
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_file_access, "false")
+      .newGraphDatabase()
+
+    intercept[LoadExternalResourceException] {
+      val engine = new ExecutionEngine(db)
+      engine.execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name:line[0]})")
     }
   }
 

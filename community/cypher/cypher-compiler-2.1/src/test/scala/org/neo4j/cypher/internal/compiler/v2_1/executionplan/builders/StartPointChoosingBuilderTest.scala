@@ -41,7 +41,7 @@ import org.mockito.Matchers
 class StartPointChoosingBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new StartPointChoosingBuilder
 
-  override val context = mock[PlanContext]
+  context = mock[PlanContext]
   val identifier = "n"
   val otherIdentifier = "p"
   val label = "Person"

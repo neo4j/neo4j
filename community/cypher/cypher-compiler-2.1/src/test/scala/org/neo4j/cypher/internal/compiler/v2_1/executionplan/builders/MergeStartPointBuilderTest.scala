@@ -37,7 +37,7 @@ import org.scalatest.mock.MockitoSugar
 class MergeStartPointBuilderTest extends BuilderTest with MockitoSugar {
   def builder = new MergeStartPointBuilder
 
-  override val context = mock[PlanContext]
+  context = mock[PlanContext]
   val identifier = "n"
   val otherIdentifier = "p"
   val label = "Person"
