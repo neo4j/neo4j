@@ -50,6 +50,22 @@ trait Base extends Parser {
     // U+FF0D － full-width hyphen-minus
     anyOf(Array('\u002d', '\u00ad', '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015', '\u2212', '\ufe58', '\ufe63', '\uff0d'))
   }
+  def LeftArrowHead = rule("'<'") {
+    // U+003c < less-than sign
+    // U+27e8 ⟨ mathematical left angle bracket
+    // U+3008 〈 left angle bracket
+    // U+fe64 ﹤ small less-than sign
+    // U+ff1c ＜ full-width less-than sign
+    anyOf(Array('\u003c', '\u27e8', '\u3008', '\ufe64', '\uff1c'))
+  }
+  def RightArrowHead = rule("'>'") {
+    // U+003e > greater-than sign
+    // U+27e9 ⟩ mathematical left angle bracket
+    // U+3009 〉 right angle bracket
+    // U+fe65 ﹥ small greater-than sign
+    // U+ff1e ＞ full-width greater-than sign
+    anyOf(Array('\u003e', '\u27e9', '\u3009', '\ufe65', '\uff1e'))
+  }
 
   def CommaSep = rule("','") { WS ~ ch(',') ~ WS }
 

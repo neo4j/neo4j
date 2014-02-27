@@ -71,9 +71,9 @@ trait Patterns extends Parser
 
   private def RelationshipPattern: Rule1[ast.RelationshipPattern] = rule {
     (
-        "<" ~~ Dash ~~ RelationshipDetail ~~ Dash ~~ ">" ~ push(Direction.BOTH)
-      | "<" ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.INCOMING)
-      | Dash ~~ RelationshipDetail ~~ Dash ~~ ">" ~ push(Direction.OUTGOING)
+        LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(Direction.BOTH)
+      | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.INCOMING)
+      | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(Direction.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.BOTH)
     ) ~~>> (ast.RelationshipPattern(_, _, _, _, _, _))
   }
