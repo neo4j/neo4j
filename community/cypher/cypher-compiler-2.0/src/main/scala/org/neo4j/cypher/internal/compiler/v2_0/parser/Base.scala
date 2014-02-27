@@ -35,6 +35,21 @@ trait Base extends Parser {
   def Digits = rule { oneOrMore(Digit) }
   def Digit = rule { "0" - "9" }
   def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "Z" }
+  def Dash = rule("'-'") {
+    // U+002D ‑ hyphen-minus
+    // U+00AD - soft hyphen
+    // U+2010 - hyphen
+    // U+2011 ‐ non-breaking hyphen
+    // U+2012 ‒ figure dash
+    // U+2013 – en dash
+    // U+2014 — em dash
+    // U+2015 ― horizontal bar
+    // U+2212 − minus sign
+    // U+FE58 ﹘ small em dash
+    // U+FE63 ﹣ small hyphen-minus
+    // U+FF0D － full-width hyphen-minus
+    anyOf(Array('\u002d', '\u00ad', '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015', '\u2212', '\ufe58', '\ufe63', '\uff0d'))
+  }
 
   def CommaSep = rule("','") { WS ~ ch(',') ~ WS }
 
