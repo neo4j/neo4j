@@ -20,8 +20,6 @@
 package org.neo4j.server.configuration;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +35,6 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.server.webadmin.console.ShellSessionCreator;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 
 public interface Configurator
 {

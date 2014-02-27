@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.Iterator;
@@ -36,20 +35,16 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.logging.LogMarker;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
     public static final String DEFAULT_ENCODING = "UTF-8";
-    public static final StringLogger SYSTEM = new ActualStringLogger( new PrintWriter( System.out, true ) )
-    {
-        @Override
-        public void close()
-        {
-            // don't close System.out
-        }
-    };
+    public static final StringLogger SYSTEM = new SystemLogger( System.out, false );
+    public static final StringLogger SYSTEM_DEBUG = new SystemLogger( System.out, true );
 
-    private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
+    public static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
 
     public interface LineLogger
@@ -62,7 +57,7 @@ public abstract class StringLogger
         try
         {
             return new ActualStringLogger( new PrintWriter(
-                    new OutputStreamWriter( new FileOutputStream( logfile, true), DEFAULT_ENCODING ) ) );
+                    new OutputStreamWriter( new FileOutputStream( logfile, true), DEFAULT_ENCODING ) ), false );
         }
         catch ( IOException cause )
         {
@@ -72,19 +67,20 @@ public abstract class StringLogger
 
     public static StringLogger loggerDirectory( FileSystemAbstraction fileSystem, File logDirectory )
     {
-        return loggerDirectory( fileSystem, logDirectory, DEFAULT_THRESHOLD_FOR_ROTATION );
+        return loggerDirectory( fileSystem, logDirectory, DEFAULT_THRESHOLD_FOR_ROTATION, false );
     }
 
-    public static StringLogger loggerDirectory( FileSystemAbstraction fileSystem, File logDirectory, int rotationThreshold )
+    public static StringLogger loggerDirectory( FileSystemAbstraction fileSystem, File logDirectory,
+            int rotationThreshold, boolean debugEnabled )
     {
         return new ActualStringLogger( fileSystem, new File( logDirectory, DEFAULT_NAME ).getPath(),
-                rotationThreshold );
+                rotationThreshold, debugEnabled );
     }
 
     public static StringLogger wrap( Writer writer )
     {
         return new ActualStringLogger(
-                writer instanceof PrintWriter ? (PrintWriter) writer : new PrintWriter( writer ) );
+                writer instanceof PrintWriter ? (PrintWriter) writer : new PrintWriter( writer ), false );
     }
 
     public static StringLogger wrap( final StringBuffer target )
@@ -153,13 +149,13 @@ public abstract class StringLogger
             {
                 // do nothing
             }
-        } ) );
+        } ), false );
     }
 
     public static StringLogger tee( final StringLogger logger1, final StringLogger logger2 )
     {
-        return new StringLogger() {
-
+        return new StringLogger()
+        {
             @Override
             public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
             {
@@ -223,8 +219,8 @@ public abstract class StringLogger
      */
     public static StringLogger lazyLogger( final File logFile )
     {
-        return new StringLogger() {
-
+        return new StringLogger()
+        {
             StringLogger logger = null;
 
             @Override
@@ -307,13 +303,17 @@ public abstract class StringLogger
     public void debug( String msg )
     {
         if ( isDebugEnabled() )
+        {
             logMessage( msg );
+        }
     }
 
     public void debug( String msg, Throwable cause )
     {
         if ( isDebugEnabled() )
+        {
             logMessage( msg, cause );
+        }
     }
 
     public boolean isDebugEnabled()
@@ -454,11 +454,14 @@ public abstract class StringLogger
         private final List<Runnable> onRotation = new CopyOnWriteArrayList<Runnable>();
         private final String encoding = "UTF-8";
         private final FileSystemAbstraction fileSystem;
+        private final boolean debugEnabled;
 
-        private ActualStringLogger( FileSystemAbstraction fileSystem, String filename, int rotationThreshold )
+        private ActualStringLogger( FileSystemAbstraction fileSystem, String filename, int rotationThreshold,
+                boolean debugEnabled )
         {
             this.fileSystem = fileSystem;
             this.rotationThreshold = rotationThreshold;
+            this.debugEnabled = debugEnabled;
             try
             {
                 file = new File( filename );
@@ -474,12 +477,19 @@ public abstract class StringLogger
             }
         }
 
-        private ActualStringLogger( PrintWriter writer )
+        private ActualStringLogger( PrintWriter writer, boolean debugEnabled )
         {
             this.out = writer;
             this.rotationThreshold = null;
             this.file = null;
             this.fileSystem = null;
+            this.debugEnabled = debugEnabled;
+        }
+
+        @Override
+        public boolean isDebugEnabled()
+        {
+            return debugEnabled;
         }
 
         @Override
@@ -645,21 +655,12 @@ public abstract class StringLogger
             target.logLine( line );
         }
     }
-    
+
     protected static class SystemLogger extends ActualStringLogger
     {
-        private final boolean debugEnabled;
-
-        private SystemLogger( boolean debugEnabled )
+        private SystemLogger( PrintStream target, boolean debugEnabled )
         {
-            super( new PrintWriter( System.out ) );
-            this.debugEnabled = debugEnabled;
-        }
-        
-        @Override
-        public boolean isDebugEnabled()
-        {
-            return debugEnabled;
+            super( new PrintWriter( target, true ), debugEnabled );
         }
 
         @Override

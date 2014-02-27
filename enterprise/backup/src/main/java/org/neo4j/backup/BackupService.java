@@ -29,8 +29,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;

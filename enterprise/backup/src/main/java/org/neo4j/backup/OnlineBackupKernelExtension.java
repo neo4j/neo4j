@@ -20,8 +20,6 @@
 package org.neo4j.backup;
 
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
