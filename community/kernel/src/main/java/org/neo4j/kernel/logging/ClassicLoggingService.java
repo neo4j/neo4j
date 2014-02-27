@@ -24,6 +24,8 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_THRESHOLD_FOR_ROTATION;
+
 /**
  * Implements the old-style logging with just one logger regardless of name.
  */
@@ -31,7 +33,13 @@ public class ClassicLoggingService extends SingleLoggingService
 {
     public ClassicLoggingService( Config config )
     {
+        this( config, false );
+    }
+
+    public ClassicLoggingService( Config config, boolean debugEnabled )
+    {
         super( StringLogger.loggerDirectory( new DefaultFileSystemAbstraction(),
-                config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) ) );
+                config.get( InternalAbstractGraphDatabase.Configuration.store_dir ),
+                DEFAULT_THRESHOLD_FOR_ROTATION, debugEnabled ) );
     }
 }
