@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CardinalityEstimator, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, CardinalityEstimator, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.scalatest.mock.MockitoSugar
@@ -33,8 +33,8 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
   test("projection only query") {
     // given
-    val expressions = Seq("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
-    val qg = QueryGraph(expressions, Set.empty)
+    val expressions = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
+    val qg = QueryGraph(expressions, Selections(), Set.empty)
 
     // when
     val resultPlan = planner.plan(qg)
@@ -45,8 +45,8 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
   test("simple pattern query") {
     // given
-    val expressions = Seq("n" -> Identifier("n")(DummyPosition(0)))
-    val qg = QueryGraph(expressions, Set(Id("n")))
+    val expressions = Map("n" -> Identifier("n")(DummyPosition(0)))
+    val qg = QueryGraph(expressions, Selections(), Set(Id("n")))
 
     // when
     when(estimator.estimateAllNodes()).thenReturn(1000)

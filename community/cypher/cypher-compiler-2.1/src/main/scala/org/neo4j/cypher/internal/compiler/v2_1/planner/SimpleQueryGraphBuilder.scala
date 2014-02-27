@@ -25,23 +25,30 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters.
 
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
   override def produce(ast: Query): QueryGraph = {
-    val (projection, identifiers: Set[Id]) = ast match {
+    val (projections:  Seq[(String, Expression)], selections, identifiers: Set[Id]) = ast match {
       case Query(None, SingleQuery(Seq(Return(false, ListedReturnItems(expressions), None, None, None)))) =>
-        (expressions.map(e => e.name -> e.expression), Set.empty)
+        val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
+        val selections = Selections()
+        val identifiers = Set.empty
+        (projections, selections, identifiers)
 
       case Query(None, SingleQuery(Seq(
-        Match(false, Pattern(Seq(EveryPath(NodePattern(Some(Identifier(s)), Seq(), None, _)))), Seq(), None),
+        Match(false, Pattern(Seq(EveryPath(NodePattern(Some(Identifier(s)), Seq(), None, _)))), Seq(), optWhere),
         Return(false, ListedReturnItems(expressions), None, None, None)
       ))) =>
-        (expressions.map(e => e.name -> e.expression), Set(Id(s)))
+        val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
+        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
+        val identifiers = Set(Id(s))
+        (projections, selections, identifiers)
 
-      case _ => throw new CantHandleQueryException
+      case _ =>
+        throw new CantHandleQueryException
     }
 
-    if (projection.exists {
+    if (projections.exists {
       case (_,e) => e.asCommandExpression.containsAggregate
     }) throw new CantHandleQueryException
 
-    QueryGraph(projection, identifiers)
+    QueryGraph(projections.toMap, selections, identifiers)
   }
 }

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Id, AllNodesScan, SingleRow, Projection}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ProjectionPipe, AllNodesScanPipe, NullPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ProjectionNewPipe, AllNodesScanPipe, NullPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 
 class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
@@ -31,12 +31,12 @@ class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
   val planner = new SimpleExecutionPlanBuilder
 
   test("projection only query") {
-    val logicalPlan = Projection(SingleRow(), Seq("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
+    val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(ProjectionPipe(NullPipe(), Map("42" -> legacy.Literal(42))))
+    pipeInfo.pipe should equal(ProjectionNewPipe(NullPipe(), Map("42" -> legacy.Literal(42))))
   }
 
   test("simple pattern query") {

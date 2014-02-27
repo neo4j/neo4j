@@ -21,9 +21,24 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels, Where}
 
 /*
 An abstract representation of the query graph being solved at the current step
  */
-case class QueryGraph(projection: Seq[(String, ast.Expression)], identifiers: Set[Id])
+case class QueryGraph(projections: Map[String, ast.Expression],
+                      selections: Selections,
+                      identifiers: Set[Id]) {
+}
 
+object SelectionPredicates {
+  def fromWhere(where: Where): Seq[(Set[Id], ast.Expression)] = where.expression match {
+    case expr@HasLabels(Identifier(name), _) => Seq(Set(Id(name))->expr)
+    case _                                   => throw new CantHandleQueryException
+  }
+}
+
+case class Selections(predicates: Seq[(Set[Id], ast.Expression)] = Seq.empty) {
+  def apply(availableIds: Set[Id]): Seq[ast.Expression] =
+    predicates.collect { case (k, v) if k.subsetOf(availableIds) => v }
+}
