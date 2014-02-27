@@ -19,24 +19,33 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.Predicates.and;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_THRESHOLD_FOR_ROTATION;
+
 public class StringLoggerTest
 {
     private final FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-    
+
     @Test
     public void makeSureLogsAreRotated() throws Exception
     {
@@ -46,7 +55,7 @@ public class StringLoggerTest
         File oldFile = new File( path, StringLogger.DEFAULT_NAME + ".1" );
         File oldestFile = new File( path, StringLogger.DEFAULT_NAME + ".2" );
         StringLogger logger = StringLogger.loggerDirectory( fileSystem,
-                new File( path ), 200 * 1024 );
+                new File( path ), 200 * 1024, false );
         assertFalse( fileSystem.fileExists( oldFile ) );
         int counter = 0;
         String prefix = "Bogus message ";
@@ -81,7 +90,10 @@ public class StringLoggerTest
         while ( true )
         {
             logger.logMessage( prefix + counter++, true );
-            if ( fileSystem.getFileSize( logFile ) < previousSize ) break;
+            if ( fileSystem.getFileSize( logFile ) < previousSize )
+            {
+                break;
+            }
             previousSize = fileSystem.getFileSize( logFile );
         }
         assertFalse( fileSystem.fileExists( new File( path, StringLogger.DEFAULT_NAME + ".3" ) ) );
@@ -95,8 +107,7 @@ public class StringLoggerTest
         final String baseMessage = "base message";
         File target = TargetDirectory.forTest( StringLoggerTest.class ).directory( "recursionTest", true );
         final StringLogger logger = StringLogger.loggerDirectory( fileSystem, target,
-                baseMessage.length()
-        /*rotation threshold*/ );
+                baseMessage.length() /*rotation threshold*/, false );
 
         /*
          * The trigger that will log more than the threshold during rotation, possibly causing another rotation
@@ -126,12 +137,70 @@ public class StringLoggerTest
                                                                         && currentInfo.other() == 1 );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldLogDebugMessagesIfToldTo() throws Exception
+    {
+        // GIVEN
+        File target = TargetDirectory.forTest( StringLoggerTest.class ).directory( "debug", true );
+        StringLogger logger = StringLogger.loggerDirectory( fileSystem, target, DEFAULT_THRESHOLD_FOR_ROTATION, true );
+
+        // WHEN
+        String firstMessage = "First message";
+        String secondMessage = "Second message";
+        String thirdMessage = "Third message";
+        logger.debug( firstMessage );
+        logger.debug( secondMessage, new RuntimeException( thirdMessage ) );
+        logger.close();
+
+        // THEN
+        File logFile = new File( target, DEFAULT_NAME );
+        assertTrue( "Should have contained " + firstMessage, fileContains( logFile, stringContaining( firstMessage ) ) );
+        assertTrue( "Should have contained " + secondMessage, fileContains( logFile, stringContaining( secondMessage ) ) );
+        assertTrue( "Should have contained " + thirdMessage, fileContains( logFile, stringContaining( thirdMessage ) ) );
+        assertTrue( "Should have contained stack trace from " + thirdMessage, fileContains( logFile, and(
+                stringContaining( "at " ), stringContaining( testName.getMethodName() ) ) ) );
+    }
+
+    private Predicate<String> stringContaining( final String string )
+    {
+        return new Predicate<String>()
+        {
+            @Override
+            public boolean accept( String item )
+            {
+                return item.contains( string );
+            }
+        };
+    }
+
     private String firstLineOfFile( File file ) throws Exception
     {
         BufferedReader reader = new BufferedReader( fileSystem.openAsReader( file, Charset.defaultCharset().name() ) );
         String result = reader.readLine();
         reader.close();
         return result;
+    }
+
+    private boolean fileContains( File file, Predicate<String> predicate ) throws IOException
+    {
+        BufferedReader reader = new BufferedReader( fileSystem.openAsReader( file, Charset.defaultCharset().name() ) );
+        try
+        {
+            String line = null;
+            while ( (line = reader.readLine()) != null )
+            {
+                if ( predicate.accept( line ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            reader.close();
+        }
     }
 
     /*
@@ -152,4 +221,6 @@ public class StringLoggerTest
         reader.close();
         return Pair.of( result, count );
     }
+
+    public final @Rule TestName testName = new TestName();
 }

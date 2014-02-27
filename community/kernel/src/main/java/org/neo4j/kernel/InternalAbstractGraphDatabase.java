@@ -775,8 +775,13 @@ public abstract class InternalAbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
+        return new StoreFactory( config, idGeneratorFactory, createWindowPoolFactory(), fileSystem,
                 logging.getMessagesLog( StoreFactory.class ), txHook );
+    }
+
+    protected DefaultWindowPoolFactory createWindowPoolFactory()
+    {
+        return new DefaultWindowPoolFactory();
     }
 
     protected RecoveryVerifier createRecoveryVerifier()

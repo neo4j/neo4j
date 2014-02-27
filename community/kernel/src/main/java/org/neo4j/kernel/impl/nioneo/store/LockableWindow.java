@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.LockException;
  * thread during a operation making sure no other thread use the same window
  * concurrently.
  */
-abstract class LockableWindow implements PersistenceWindow
+public abstract class LockableWindow implements PersistenceWindow
 {
     private final FileChannel fileChannel;
 

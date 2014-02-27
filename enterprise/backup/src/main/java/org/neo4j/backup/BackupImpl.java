@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
@@ -29,42 +31,54 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class BackupImpl implements TheBackupInterface
 {
+    private final BackupMonitor backupMonitor;
+
     public interface SPI
     {
         String getStoreDir();
         StoreId getStoreId();
     }
 
-    private StringLogger logger;
-    private SPI spi;
+    private final StringLogger logger;
+    private final SPI spi;
     private final XaDataSourceManager xaDataSourceManager;
     private final KernelPanicEventGenerator kpeg;
+    private CountDownLatch countDownLatch;
 
-    public BackupImpl( StringLogger logger, SPI spi, XaDataSourceManager xaDataSourceManager, KernelPanicEventGenerator kpeg )
+    public BackupImpl( StringLogger logger, SPI spi, XaDataSourceManager xaDataSourceManager,
+                       KernelPanicEventGenerator kpeg,
+                       Monitors monitors )
     {
         this.logger = logger;
         this.spi = spi;
         this.xaDataSourceManager = xaDataSourceManager;
         this.kpeg = kpeg;
+        this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
     }
-    
+
+    @Override
     public Response<Void> fullBackup( StoreWriter writer )
     {
+        backupMonitor.startCopyingFiles();
         RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
                 xaDataSourceManager,
-                kpeg, logger, false, writer, new DefaultFileSystemAbstraction() );
+                kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), backupMonitor );
         writer.done();
+        backupMonitor.finishedCopyingStoreFiles();
         return packResponse( context );
     }
-    
+
+    @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
         return packResponse( context );
     }
-    
+
     private Response<Void> packResponse( RequestContext context )
     {
         // On Windows there's a problem extracting logs from the current log version
