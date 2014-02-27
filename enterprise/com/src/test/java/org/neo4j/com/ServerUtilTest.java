@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -101,16 +102,16 @@ public class ServerUtilTest
 
         // when
         ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager, kernelPanicEventGenerator,
-                StringLogger.DEV_NULL, false, storeWriter, fs );
+                StringLogger.DEV_NULL, false, storeWriter, fs, BackupMonitor.NONE );
 
-        // then 
+        // then
         verify( storeWriter ).write( eq( "neostore.nodestore.db" ), any( ReadableByteChannel.class ),
                 any( ByteBuffer.class ), any( Boolean.class ) );
         verify( storeWriter, never() ).write( eq( "nioneo_logical.log.v0" ), any( ReadableByteChannel.class ),
                 any( ByteBuffer.class ), any( Boolean.class ) );
 
     }
-    
+
     @Test
     public void shouldCopyLogicalLogFile() throws IOException
     {
@@ -145,7 +146,7 @@ public class ServerUtilTest
 
         // when
         ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager, kernelPanicEventGenerator,
-                StringLogger.DEV_NULL, true, storeWriter, fs );
+                StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
 
         // then
         verify( storeWriter ).write( eq( "nioneo_logical.log.v0" ), any( ReadableByteChannel.class ),
@@ -185,7 +186,7 @@ public class ServerUtilTest
 
         // when
         ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager, kernelPanicEventGenerator,
-                StringLogger.DEV_NULL, true, storeWriter, fs );
+                StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
 
         // then
         verify( storeWriter ).write( eq( "neostore.nodestore.db" ), any( ReadableByteChannel.class ),
@@ -229,7 +230,7 @@ public class ServerUtilTest
         {
             ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager,
                     kernelPanicEventGenerator,
-                    StringLogger.DEV_NULL, true, storeWriter, fs );
+                    StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
             fail( "should have thrown exception" );
         }
         catch ( ServerFailureException e )

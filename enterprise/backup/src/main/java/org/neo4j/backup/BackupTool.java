@@ -64,7 +64,7 @@ public class BackupTool
 
     public static void main( String[] args )
     {
-        BackupTool tool = new BackupTool( new BackupService(), System.out );
+        BackupTool tool = new BackupTool( new BackupService(new DefaultFileSystemAbstraction()), System.out );
         try
         {
             tool.run( args );

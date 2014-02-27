@@ -136,7 +136,10 @@ public interface Configurator
                         while ( keys.hasNext() )
                         {
                             Object key = keys.next();
-                            if ( key instanceof String ) return key + " = " + config.getProperty( (String) key );
+                            if ( key instanceof String )
+                            {
+                                return key + " = " + config.getProperty( (String) key );
+                            }
                         }
                         return null;
                     }
