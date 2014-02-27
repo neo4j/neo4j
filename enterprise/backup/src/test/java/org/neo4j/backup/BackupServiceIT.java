@@ -43,7 +43,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
-import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -65,6 +64,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 
 public class BackupServiceIT
@@ -157,7 +157,8 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
 
-        assertNotNull( getLastMasterForCommittedTx( LuceneDataSource.DEFAULT_NAME ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_DATA_SOURCE_NAME ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_NAME ) );
     }
 
     @Test
@@ -193,7 +194,7 @@ public class BackupServiceIT
 
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
-        assertNotNull( getLastMasterForCommittedTx( LuceneDataSource.DEFAULT_NAME ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_NAME ) );
     }
 
     @Test
