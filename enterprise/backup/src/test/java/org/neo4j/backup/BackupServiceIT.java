@@ -19,6 +19,17 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
@@ -31,6 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -46,24 +58,14 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.index.impl.lucene.LuceneDataSource.*;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.*;
+import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 
 public class BackupServiceIT
 {
@@ -155,15 +157,8 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
 
-        XaDataSourceManager xaDataSourceManager = xaDataSourceManager( backupDir );
-
-        XaDataSource neoStoreXaDataSource = xaDataSourceManager.getXaDataSource( DEFAULT_DATA_SOURCE_NAME );
-        long lastCommittedTxId = neoStoreXaDataSource.getLastCommittedTxId();
-        assertNotNull( neoStoreXaDataSource.getMasterForCommittedTx( lastCommittedTxId ) );
-
-        XaDataSource luceneDataSource = xaDataSourceManager.getXaDataSource( DEFAULT_NAME );
-        long lastCommittedLuceneTxId = luceneDataSource.getLastCommittedTxId();
-        assertNotNull( luceneDataSource.getMasterForCommittedTx( lastCommittedLuceneTxId ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_DATA_SOURCE_NAME ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_NAME ) );
     }
 
     @Test
@@ -182,11 +177,7 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
 
-        XaDataSourceManager xaDataSourceManager = xaDataSourceManager( backupDir );
-        XaDataSource neoStoreXaDataSource = xaDataSourceManager.getXaDataSource( DEFAULT_DATA_SOURCE_NAME );
-        long lastCommittedTxId = neoStoreXaDataSource.getLastCommittedTxId();
-
-        assertNotNull( neoStoreXaDataSource.getMasterForCommittedTx( lastCommittedTxId ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_DATA_SOURCE_NAME ) );
     }
 
     @Test
@@ -205,11 +196,7 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
 
-        XaDataSourceManager xaDataSourceManager = xaDataSourceManager( backupDir );
-        XaDataSource luceneDataSource = xaDataSourceManager.getXaDataSource( DEFAULT_NAME );
-        long lastCommittedLuceneTxId = luceneDataSource.getLastCommittedTxId();
-
-        assertNotNull( luceneDataSource.getMasterForCommittedTx( lastCommittedLuceneTxId ) );
+        assertNotNull( getLastMasterForCommittedTx( DEFAULT_NAME ) );
     }
 
     @Test
@@ -386,12 +373,6 @@ public class BackupServiceIT
         return params;
     }
 
-    private XaDataSourceManager xaDataSourceManager( File backupDir )
-    {
-        return ((EmbeddedGraphDatabase) new GraphDatabaseFactory().
-                newEmbeddedDatabase( backupDir.getAbsolutePath() )).getXaDataSourceManager();
-    }
-
     private GraphDatabaseAPI createDb( File storeDir, Map<String, String> params )
     {
         return (GraphDatabaseAPI) new GraphDatabaseFactory()
@@ -445,5 +426,23 @@ public class BackupServiceIT
                 description.appendText( String.format( "[%s] in list of copied files", fileName ) );
             }
         };
+    }
+
+    private Pair<Integer,Long> getLastMasterForCommittedTx( String dataSourceName ) throws IOException
+    {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
+                backupDir.getAbsolutePath() );
+        try
+        {
+            XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
+                    XaDataSourceManager.class );
+            XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
+            long lastCommittedTxId = dataSource.getLastCommittedTxId();
+            return dataSource.getMasterForCommittedTx( lastCommittedTxId );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 }
