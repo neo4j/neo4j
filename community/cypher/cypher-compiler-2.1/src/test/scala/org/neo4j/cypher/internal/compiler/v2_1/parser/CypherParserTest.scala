@@ -32,6 +32,7 @@ import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
 import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import ast.convert.StatementConverters._
 
 class CypherParserTest extends CypherFunSuite {
 
@@ -612,7 +613,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         start(NodeById("n", 0)).
         matches(RelatedTo("c", "n", "r", Seq("KNOWS"), Direction.BOTH)).
-        orderBy(SortItem(Count(Identifier("c")), true)).
+        orderBy(SortItem(Identifier("cnt"), true)).
         aggregation(Count(Identifier("c"))).
         returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Count(Identifier("c")), "cnt", true)))
   }
@@ -2502,8 +2503,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) match (a:foo) -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("a", Seq()), SingleNode("  UNNAMED48"), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
-        where(HasLabel(Identifier("a"), UnresolvedLabel("foo"))).
+        matches(RelatedTo(SingleNode("a", Seq(UnresolvedLabel("foo"))), SingleNode("  UNNAMED48"), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -2513,8 +2513,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) match (a:foo:bar) -[r:MARRIED]-> () return a",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("a", Seq()), SingleNode("  UNNAMED52"), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
-        where(And(HasLabel(Identifier("a"), UnresolvedLabel("foo")), HasLabel(Identifier("a"), UnresolvedLabel("bar")))).
+        matches(RelatedTo(SingleNode("a", Seq(UnresolvedLabel("foo"),UnresolvedLabel("bar"))), SingleNode("  UNNAMED52"), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -2524,8 +2523,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) match () -[r:MARRIED]-> (a:foo:bar) return a",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("  UNNAMED25"), SingleNode("a", Seq.empty), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
-        where(And(HasLabel(Identifier("a"), UnresolvedLabel("foo")), HasLabel(Identifier("a"), UnresolvedLabel("bar")))).
+        matches(RelatedTo(SingleNode("  UNNAMED25", Seq()), SingleNode("a", Seq(UnresolvedLabel("foo"), UnresolvedLabel("bar"))), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -2535,8 +2533,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) match (b:foo) -[r:MARRIED]-> (a:bar) return a",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo(SingleNode("b", Seq()), SingleNode("a", Seq()), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
-        where(And(HasLabel(Identifier("b"), UnresolvedLabel("foo")), HasLabel(Identifier("a"), UnresolvedLabel("bar")))).
+        matches(RelatedTo(SingleNode("b", Seq(UnresolvedLabel("foo"))), SingleNode("a", Seq(UnresolvedLabel("bar"))), "r", Seq("MARRIED"), Direction.OUTGOING, Map.empty)).
         returns(ReturnItem(Identifier("a"), "a"))
     )
   }
@@ -2586,8 +2583,7 @@ class CypherParserTest extends CypherFunSuite {
       "START n=node(0) MATCH (n:On)-[:WHERE]->() RETURN n",
       Query.
         start(NodeById("n", 0)).
-        matches(RelatedTo(SingleNode("n", Seq()), SingleNode("  UNNAMED40"), "  UNNAMED28", Seq("WHERE"), Direction.OUTGOING, Map.empty)).
-        where(HasLabel(Identifier("n"), UnresolvedLabel("On"))).
+        matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("On"))), SingleNode("  UNNAMED40"), "  UNNAMED28", Seq("WHERE"), Direction.OUTGOING, Map.empty)).
         returns(ReturnItem(Identifier("n"), "n"))
     )
   }
@@ -2602,8 +2598,8 @@ class CypherParserTest extends CypherFunSuite {
   test("simple query with index hint") {
     expectQuery(
       "match (n:Person)-->() using index n:Person(name) where n.name = 'Andres' return n",
-      Query.matches(RelatedTo(SingleNode("n", Seq()), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
-        where(And(HasLabel(Identifier("n"), UnresolvedLabel("Person")), Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres")))).
+      Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
+        where(Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres"))).
         using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
         returns(ReturnItem(Identifier("n"), "n", renamed = false))
     )
@@ -2623,8 +2619,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "match (s:nostart) return s",
       Query.
-        matches(SingleNode("s", Seq())).
-        where(HasLabel(Identifier("s"), UnresolvedLabel("nostart"))).
+        matches(SingleNode("s", Seq(UnresolvedLabel("nostart")))).
         returns(ReturnItem(Identifier("s"), "s"))
     )
   }
@@ -2644,8 +2639,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "match (p:Person) using scan p:Person return p",
       Query.
-        matches(SingleNode("p", Seq())).
-        where(HasLabel(Identifier("p"), UnresolvedLabel("Person"))).
+        matches(SingleNode("p", Seq(UnresolvedLabel("Person")))).
         using(NodeByLabel("p", "Person")).
         returns(ReturnItem(Identifier("p"), "p"))
     )
@@ -2905,7 +2899,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("compile query integration test") {
-    val q = parser.parseToQuery("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)")._1.asInstanceOf[commands.Query]
+    val q = parser.parse("create (a1) create (a2) create (a3) create (a4) create (a5) create (a6) create (a7)").asQuery.asInstanceOf[commands.Query]
     assert(q.tail.nonEmpty, "wasn't compacted enough")
     val compacted = q.compact
 
@@ -2922,7 +2916,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("compile query integration test 2") {
-    val q = parser.parseToQuery("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4")._1.asInstanceOf[commands.Query]
+    val q = parser.parse("create (a1) create (a2) create (a3) with a1 create (a4) return a1, a4").asQuery.asInstanceOf[commands.Query]
     val compacted = q.compact
     var lastQ = compacted
 
@@ -2943,12 +2937,11 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should handle match properties pointing to other parts of pattern") {
-    val nodeA = SingleNode("a", Seq.empty, Map.empty)
+    val nodeA = SingleNode("a", Seq.empty, Map("foo"->Property(Identifier("x"), PropertyKey("bar"))))
     expectQuery(
       "MATCH (a { foo:x.bar })-->(x) RETURN *",
       Query.
         matches(RelatedTo(nodeA, SingleNode("x"), "  UNNAMED23", Seq.empty, Direction.OUTGOING, Map.empty)).
-        where(Equals(Property(Identifier("a"), PropertyKey("foo")), Property(Identifier("x"), PropertyKey("bar")))).
         returns(AllIdentifiers()))
   }
 
@@ -3022,7 +3015,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   private def expectQuery(query: String, expectedQuery: AbstractQuery) {
-    val (abstractQuery , _) = parser.parseToQuery(query)
+    val abstractQuery = parser.parse(query).asQuery
     try {
       assertThat(query, abstractQuery, equalTo(expectedQuery))
     } catch {

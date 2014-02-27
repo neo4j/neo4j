@@ -29,16 +29,18 @@ import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.kernel.monitoring.Monitors
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
   require(graph != null, "Can't work with a null graph database")
 
-  protected val compiler = createCompiler()
-
   // true means we run inside REST server
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
+  protected val monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[Monitors])
+  protected val compiler = createCompiler()
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
@@ -67,7 +69,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   }
 
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, TransactionInfo) =  {
+  private def prepare(query: String): (ExecutionPlan, TransactionInfo) = {
 
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
@@ -125,28 +127,29 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     statement.readOperations().schemaStateGetOrCreate(this, javaCreator)
   }
 
-  def prettify(query:String): String = Prettifier(query)
+  def prettify(query: String): String = Prettifier(query)
 
-  private def createCompiler(): CypherCompiler =
+  private def createCompiler(): CypherCompiler = {
+    val version = optGraphSetting[String](
+      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
+    )
+    new CypherCompiler(graph, monitors, CypherVersion(version))
+  }
+
+  private def getPlanCacheSize: Int =
+    optGraphSetting[java.lang.Integer](
+      graph, GraphDatabaseSettings.query_cache_size, ExecutionEngine.DEFAULT_PLAN_CACHE_SIZE
+    )
+
+  private def optGraphSetting[V](graph: GraphDatabaseService, setting: Setting[V], defaultValue: V): V = {
+    def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
+      case (db: T) => db
+    }
+
     optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_parser_version))
-      .andThen({
-      case v:String => new CypherCompiler(graph, v)
-      case _        => new CypherCompiler(graph)
-    })
-      .applyOrElse(graph, (_: GraphDatabaseService) => new CypherCompiler(graph) )
-
-  private def getPlanCacheSize : Int =
-    optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size))
-      .andThen({
-      case v: java.lang.Integer => v.intValue()
-      case _                    => ExecutionEngine.DEFAULT_PLAN_CACHE_SIZE
-    })
-      .applyOrElse(graph, (_: GraphDatabaseService) => ExecutionEngine.DEFAULT_PLAN_CACHE_SIZE)
-
-  private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
-    case (db: T) => db
+      .andThen(g => Option(g.getConfig.get(setting)))
+      .andThen(_.getOrElse(defaultValue))
+      .applyOrElse(graph, (_: GraphDatabaseService) => defaultValue)
   }
 }
 

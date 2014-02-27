@@ -21,13 +21,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, SimpleQueryG
 import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
-  val parser = new CypherParser()
+  // TODO: we may want to have normalized queries instead that simply parsed queries
+  val parser = new CypherParser(mock[ParserMonitor])
   val pos = DummyPosition(0)
 
   test("projection only query") {

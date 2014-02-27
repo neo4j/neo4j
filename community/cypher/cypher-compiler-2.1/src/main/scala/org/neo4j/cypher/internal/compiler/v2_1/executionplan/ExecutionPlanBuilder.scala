@@ -47,14 +47,24 @@ case class PeriodicCommitInfo(size: Option[Long]) {
   def provideBatchSize = size.getOrElse(/* defaultSize */ 10000L)
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
+trait NewQueryPlanSuccessRateMonitor {
+  def newQuerySeen(ast:Statement)
+  def unableToHandleQuery(ast:Statement)
+}
+
+class ExecutionPlanBuilder(graph: GraphDatabaseService, monitor: NewQueryPlanSuccessRateMonitor, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
 
     val PipeInfo(p, isUpdating, periodicCommitInfo, rowAlignment) = try {
+
+      monitor.newQuerySeen(ast)
       execPlanBuilder.producePlan(ast)(planContext)
     } catch {
-      case _: CantHandleQueryException => pipeBuilder.buildPipes(planContext, inputQuery)
+      case _: CantHandleQueryException => {
+        monitor.unableToHandleQuery(ast)
+        pipeBuilder.buildPipes(planContext, inputQuery)
+      }
     }
 
     val columns = getQueryResultColumns(inputQuery, p.symbols)

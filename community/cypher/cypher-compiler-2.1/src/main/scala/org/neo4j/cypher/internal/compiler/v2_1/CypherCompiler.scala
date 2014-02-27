@@ -20,18 +20,35 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{PeriodicCommitQuery, AbstractQuery}
-import executionplan.{ExecutionPlanBuilder, ExecutionPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder, ExecutionPlan}
 import executionplan.verifiers.HintVerifier
-import parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{TheDefaultMatchPredicateNormalization, patternElementNamer, normalizeArithmeticExpressions}
+import ast.convert.StatementConverters._
 
-case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
-  val parser = CypherParser()
+trait SemanticCheckMonitor {
+  def startSemanticCheck(query: String)
+  def finishSemanticCheckSuccess(query: String)
+  def finishSemanticCheckError(query: String, errors: Seq[SemanticError])
+}
+
+trait AstRewritingMonitor {
+  def startRewriting(queryText: String, statement: Statement)
+  def finishRewriting(queryText: String, statement: Statement)
+}
+
+case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, semanticCheckMonitor: SemanticCheckMonitor, rewritingMonitor: AstRewritingMonitor, queryCache: (String, => Object) => Object) {
   val verifiers = Seq(HintVerifier)
-  val planBuilder = new ExecutionPlanBuilder(graph)
+  private val monitorTag: String = "compiler2.1"
+  val planBuilder = new ExecutionPlanBuilder(graph, monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], monitorTag))
+  val parser = CypherParser(monitors.newMonitor(classOf[ParserMonitor], monitorTag))
+
+  monitors.addMonitorListener(CountNewQueryPlanSuccessRateMonitor, monitorTag)
 
   @throws(classOf[SyntaxException])
   def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
@@ -47,7 +64,7 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => O
 
   private def cachedQuery(queryText: String): (AbstractQuery, Statement) =
     queryCache(queryText, {
-      verify(parse(queryText))
+      verify(parseToQuery(queryText))
     }).asInstanceOf[(AbstractQuery, Statement)]
 
   private def verify(query: (AbstractQuery, Statement)): (AbstractQuery, Statement) = {
@@ -57,5 +74,39 @@ case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => O
     query
   }
 
-  private def parse(query: String): (AbstractQuery, Statement) = parser.parseToQuery(query)
+  private def parseToQuery(queryText: String): (AbstractQuery, ast.Statement) = {
+    val statement: ast.Statement = parser.parse(queryText)
+    semanticCheckMonitor.startSemanticCheck(queryText)
+    val semanticErrors: Seq[SemanticError] = statement.semanticCheck(SemanticState.clean).errors
+
+    if (semanticErrors.nonEmpty)
+      semanticCheckMonitor.finishSemanticCheckError(queryText, semanticErrors)
+    else
+      semanticCheckMonitor.finishSemanticCheckSuccess(queryText)
+
+    semanticErrors.map { error =>
+      throw new SyntaxException(s"${error.msg} (${error.position})", queryText, error.position.offset)
+    }
+
+    rewritingMonitor.startRewriting(queryText, statement)
+    val normalizedStatement = statement.rewrite(bottomUp(
+      normalizeArithmeticExpressions,
+      patternElementNamer,
+      TheDefaultMatchPredicateNormalization
+    )).asInstanceOf[ast.Statement]
+    rewritingMonitor.finishRewriting(queryText, normalizedStatement)
+
+    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(queryText)), statement)
+  }
+
+
+  case class CountNewQueryPlanSuccessRateMonitor(var queries: Long = 0L, var fallbacks: Long = 0L) extends NewQueryPlanSuccessRateMonitor {
+    override def newQuerySeen(ast: Statement) {
+      queries += 1
+    }
+
+    override def unableToHandleQuery(ast: Statement) {
+      fallbacks += 1
+    }
+  }
 }

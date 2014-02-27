@@ -23,7 +23,7 @@ import org.neo4j.cypher._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1}
+import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, AstRewritingMonitor, SemanticCheckMonitor}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
@@ -37,21 +37,24 @@ import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanCo
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.monitoring.Monitors
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 }
 
-class CypherCompiler(graph: GraphDatabaseService, defaultVersion: CypherVersion = CypherVersion.vDefault) {
-
-  def this(graph: GraphDatabaseService, versionName: String) = this(graph, CypherVersion(versionName))
-
+class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
   private val queryCache2_1 = new LRUCache[String, Object](getQueryCacheSize)
   private val queryCache2_0 = new LRUCache[String, Object](getQueryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](getQueryCacheSize)
 
-  private val compiler2_1 = new CypherCompiler2_1(graph, (q, f) => queryCache2_1.getOrElseUpdate(q, f))
+  private val compiler2_1 = new CypherCompiler2_1(graph,
+                                                  monitors,
+                                                  monitors.newMonitor(classOf[SemanticCheckMonitor]),
+                                                  monitors.newMonitor(classOf[AstRewritingMonitor]),
+                                                  (q, f) => queryCache2_1.getOrElseUpdate(q, f))
+
   private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
   private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 

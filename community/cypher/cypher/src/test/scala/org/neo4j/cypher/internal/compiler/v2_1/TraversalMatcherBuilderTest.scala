@@ -23,15 +23,15 @@ import commands._
 import commands.expressions._
 import pipes.NullPipe
 import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.graphdb.Transaction
 import org.junit.{After, Before, Test}
-import org.scalatest.Assertions
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{Solved, Unsolved, TraversalMatcherBuilder, BuilderTest}
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
 import org.neo4j.cypher.GraphDatabaseJUnitSuite
+import ast.convert.StatementConverters._
 
 class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTest {
   var builder: TraversalMatcherBuilder = null
@@ -109,11 +109,11 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
     newPlan.query.where.foreach {
       case Solved(pred) if pred.exists(_.isInstanceOf[PathExpression]) => fail("Didn't expect the predicate to be solved")
-      case _                                                             =>
+      case _                                                           =>
     }
   }
 
-  val parser = CypherParser()
+  val parser = CypherParser(mock[ParserMonitor])
 
-  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parseToQuery(text)._1.asInstanceOf[Query])
+  private def query(text: String): PartiallySolvedQuery = PartiallySolvedQuery(parser.parse(text).asQuery.asInstanceOf[Query])
 }
