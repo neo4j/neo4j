@@ -31,15 +31,15 @@ class ToIntFunctionTest extends CypherFunSuite {
   }
 
   test("should convert a string to an integer") {
-    toInt("10") should be(10)
+    toInt("10") should equal(10)
   }
 
   test("should convert a double to an integer") {
-    toInt(23.5d) should be(23)
+    toInt(23.5d) should equal(23)
   }
 
-  test("should return null if the argument is a float literal") {
-    assert(toInt("20.5") === null)
+  test("should parse float and truncate to int if the argument is a float literal") {
+    toInt("20.5") should equal(20)
   }
 
   test("should return null if the argument is a partially numeric string") {
@@ -51,15 +51,15 @@ class ToIntFunctionTest extends CypherFunSuite {
   }
 
   test("should convert a string with leading zeros to an integer") {
-    toInt("000123121") should be(123121)
+    toInt("000123121") should equal(123121)
   }
 
   test("should convert a string with leading minus in a negative integer") {
-    toInt("-12") should be(-12)
+    toInt("-12") should equal(-12)
   }
 
   test("should convert a string with leading minus and zeros in a negative integer") {
-    toInt("-00012") should be(-12)
+    toInt("-00012") should equal(-12)
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to integer") {
@@ -67,7 +67,11 @@ class ToIntFunctionTest extends CypherFunSuite {
   }
 
   test("given an integer should give the same value back") {
-    toInt(50) should be(50)
+    toInt(50) should equal(50)
+  }
+
+  test("should truncate floats if given a float") {
+    toInt(20.6f) should equal(20)
   }
 
   private def toInt(orig: Any) = {

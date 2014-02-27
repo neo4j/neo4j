@@ -42,7 +42,13 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
         v.toLong
       } catch {
         case e: NumberFormatException =>
-          null
+          try {
+            v.toFloat.toInt
+          } catch {
+            case e: NumberFormatException =>
+              null
+          }
+
       }
     case v =>
       throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
