@@ -365,6 +365,16 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("relatedToUsingUnicodeDashes") {
+    expectQuery(
+      "start a = NODE(1) match a —[:KNOWS]﹘> (b) return a, b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "  UNNAMED26", Seq("KNOWS"), Direction.OUTGOING)).
+        returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
+    )
+  }
+
   test("relatedToWithoutRelType") {
     expectQuery(
       "start a = NODE(1) match a --> (b) return a, b",
