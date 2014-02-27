@@ -72,7 +72,6 @@
     </artifact>
     <artifact id="font-awesome" name="Font Awesome">
       <license>SIL OFL 1.1</license>
-      <license>MIT</license>
     </artifact>
     <artifact id="angular" name="AngularJS">
       <license>MIT</license>
