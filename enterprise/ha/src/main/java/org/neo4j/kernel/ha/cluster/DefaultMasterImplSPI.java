@@ -56,21 +56,26 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
-    private final TransactionManager txManager;
     private final DependencyResolver dependencyResolver;
     private final GraphDatabaseAPI graphDb;
     private final Logging logging;
+    private final TransactionManager txManager;
+    private final Monitors monitors;
 
-    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, TransactionManager txManager )
+    public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging,
+                                 TransactionManager txManager, Monitors monitors )
     {
         this.graphDb = graphDb;
         this.logging = logging;
         this.txManager = txManager;
         this.dependencyResolver = graphDb.getDependencyResolver();
+        this.monitors = monitors;
     }
 
     @Override
@@ -204,7 +209,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
                 logging.getMessagesLog( MasterImpl.class ),
                 true,
                 writer,
-                new DefaultFileSystemAbstraction());
+                new DefaultFileSystemAbstraction(),
+                monitors.newMonitor( BackupMonitor.class, getClass() ) );
     }
 
     @Override
