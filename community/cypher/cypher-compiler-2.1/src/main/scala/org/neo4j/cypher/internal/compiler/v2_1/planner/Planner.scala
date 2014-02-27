@@ -32,7 +32,10 @@ case class Planner() {
   val estimator = new CardinalityEstimator {
     def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
 
-    def estimateLabelScan(labelId: LabelId) = 100
+    def estimateLabelScan(labelId: Option[LabelId]) = labelId match {
+      case Some(id) => 100
+      case None => 0
+    }
 
     def estimateAllNodes() = 1000
   }

@@ -21,20 +21,21 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels, Where}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelName, Identifier, HasLabels, Where}
 
 /*
 An abstract representation of the query graph being solved at the current step
  */
 case class QueryGraph(projections: Map[String, ast.Expression],
                       selections: Selections,
-                      identifiers: Set[Id]) {
-}
+                      identifiers: Set[Id])
 
 object SelectionPredicates {
   def fromWhere(where: Where): Seq[(Set[Id], ast.Expression)] = where.expression match {
-    case expr@HasLabels(Identifier(name), _) => Seq(Set(Id(name))->expr)
-    case _                                   => throw new CantHandleQueryException
+    case expr@HasLabels(identifier@Identifier(name), labels) =>
+      labels.map( (label: LabelName) => Set(Id(name)) -> HasLabels(identifier, Seq(label))(expr.position) )
+    case _ =>
+      throw new CantHandleQueryException
   }
 }
 
