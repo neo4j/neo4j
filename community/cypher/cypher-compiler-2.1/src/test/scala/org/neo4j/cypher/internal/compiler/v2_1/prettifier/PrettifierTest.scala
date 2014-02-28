@@ -19,125 +19,114 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.prettifier
 
-import org.junit.Test
-import org.scalatest.Assertions
-import org.junit.Assert.assertEquals
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class PrettifierTest extends Assertions {
-
-  @Test
-  def shouldUpcaseKeywords() {
-    assertIsPrettified("CREATE n", "create n")
+class PrettifierTest extends CypherFunSuite {
+  
+  test("should upcase keywords") {
+    actual("create n") should equal(expected("CREATE n"))
   }
 
-  @Test
-  def shouldNotBreakIndexOn() {
-    assertIsPrettified("CREATE INDEX ON :Person(name)", "create index on :Person(name)")
+  test("should not break INDEX ON") {
+    actual("create index on :Person(name)") should equal(expected("CREATE INDEX ON :Person(name)"))
   }
 
-  @Test
-  def shouldNotBreakOnAsc() {
-    assertIsPrettified("ORDER BY n.name ASC", "order by n.name asc")
+  test("should not break on ASC") {
+    actual("order by n.name asc") should equal(expected("ORDER BY n.name ASC"))
   }
 
-  @Test
-  def shouldNotBreakCreateInForeach() {
-    assertIsPrettified("MATCH p=n%nFOREACH (x IN p | CREATE x--())", "match p=n foreach(x in p | create x--())")
+  test("should not break CREATE in FOREACH") {
+    actual("match p=n foreach(x in p | create x--())") should equal(expected("MATCH p=n%nFOREACH (x IN p | CREATE x--())"))
   }
 
-  @Test
-  def shouldNotBreakCreateInComplexForeach() {
-    assertIsPrettified("MATCH p=n%nFOREACH (x IN p | CREATE x--()%nSET x.foo = 'bar')%nRETURN DISTINCT p;",
-      "match p=n foreach(x in p | create x--() set x.foo = 'bar') return distinct p;")
+  test("should not break CREATE in complex FOREACH") {
+    actual("match p=n foreach(x in p | create x--() set x.foo = 'bar') return distinct p;") should equal(
+      expected("MATCH p=n%nFOREACH (x IN p | CREATE x--()%nSET x.foo = 'bar')%nRETURN DISTINCT p;")
+    )
   }
 
-  @Test
-  def shouldNotBreakConstraintOn() {
-    assertIsPrettified("CREATE CONSTRAINT ON (person:Person) ASSERT person.age IS UNIQUE",
-      "create constraint on (person:Person) assert person.age is unique")
+  test("should not break CONSTRAINT ON") {
+    actual("create constraint on (person:Person) assert person.age is unique") should equal(
+      expected("CREATE CONSTRAINT ON (person:Person) ASSERT person.age IS UNIQUE")
+    )
   }
 
-  @Test
-  def shouldBreakCertainKeywords() {
-    assertIsPrettified("MERGE n%nON CREATE SET n.age=32", "merge n on create set n.age=32")
+  test("should break ON CREATE") {
+    actual("merge n on create set n.age=32") should equal(expected("MERGE n%nON CREATE SET n.age=32"))
   }
 
-  @Test
-  def shouldHandleParenthesisCorrectlyInMatch() {
-    assertIsPrettified("MATCH (a)-->(b)%nRETURN b", "match (a)-->(b) return b")
+  test("should correctly handle parenthesis in MATCH") {
+    actual("match (a)-->(b) return b") should equal(expected("MATCH (a)-->(b)%nRETURN b"))
   }
 
-  @Test
-  def shouldUpcaseMultipleKeywords() {
-    assertIsPrettified("MATCH n%nWHERE n.name='B'%nRETURN n", "match n where n.name='B' return n")
+  test("should upcase multiple keywords") {
+    actual("match n where n.name='B' return n") should equal(expected("MATCH n%nWHERE n.name='B'%nRETURN n"))
   }
 
-  @Test
-  def shouldUpcaseMultipleKeywords2() {
-    assertIsPrettified("MATCH a%nWHERE a.name='A'%nRETURN a.age AS SomethingTotallyDifferent",
-      "match a where a.name='A' return a.age as SomethingTotallyDifferent")
+  test("should upcase multiple keywords 2") {
+    actual("match a where a.name='A' return a.age as SomethingTotallyDifferent") should equal(
+      expected("MATCH a%nWHERE a.name='A'%nRETURN a.age AS SomethingTotallyDifferent")
+    )
   }
 
-  @Test
-  def shouldNotBreakCreateUnique() {
-    assertIsPrettified(
-      "START me=node(3)%n" +
+  test("should not break CREATE UNIQUE") {
+    actual("start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3") should equal(
+      expected(
+        "START me=node(3)%n" +
         "MATCH p1 = me-[*2]-friendOfFriend%n" +
         "CREATE p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" })%n" +
         "CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend%n" +
-        "RETURN p1,p2,p3",
-      "start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3")
+        "RETURN p1,p2,p3"
+    ))
   }
 
-  @Test
-  def shouldNotBreakWhereInComprehensions() {
-    assertIsPrettified(
-      "RETURN [x IN range(0,10) WHERE x + 2 = 0 | x^3] AS result",
-      "return [x in range(0,10) where x + 2 = 0 | x^3] as result")
+  test("should not break WHERE in comprehensions") {
+    actual("return [x in range(0,10) where x + 2 = 0 | x^3] as result") should equal(
+      expected("RETURN [x IN range(0,10) WHERE x + 2 = 0 | x^3] AS result")
+    )
+  }
+  
+  test("should upcase extra keywords") {
+    actual("match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson") should equal(
+      expected("MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson")
+    )
+
+  }
+  
+  test("should not break after OPTIONAL") {
+    actual("optional MATCH (n)-->(x) return n, x") should equal(expected("OPTIONAL MATCH (n)-->(x)%nRETURN n, x"))
   }
 
-  @Test
-  def shouldUpcaseExtraKeywords() {
-    assertIsPrettified("MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson",
-      "match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson")
+  
+  test("should handle LOAD CSV") {
+    actual("LOAD CSV FROM \"f\" AS line") should equal(expected("LOAD CSV FROM \"f\" AS line"))
   }
 
-  @Test
-  def shouldNotBreakAfterOptional() {
-    assertIsPrettified(
-      "OPTIONAL MATCH (n)-->(x)%nRETURN n, x",
-      "optional MATCH (n)-->(x) return n, x")
+  test("should handle LOAD CSV WITH HEADERS") {
+    actual("LOAD CSV wiTh HEADERS FROM \"f\" AS line") should equal(expected("LOAD CSV WITH HEADERS FROM \"f\" AS line"))
+
+  }
+  
+  test("should prettify and break LOAD CSV") {
+    actual("MATCH (n) LOAD CSV FROM \"f\" AS line return (n)") should equal(
+      expected("MATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)")
+    )
+  }
+  
+  test("should prettify and break USING PERIODIC COMMIT LOAD CSV") {
+    actual("using periodic commit match () MATCH (n) LOAD CSV FROM \"f\" AS line return (n)") should equal(
+      expected("USING PERIODIC COMMIT%nMATCH ()%nMATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)")
+    )
+  }
+  
+  test("should prettify with correct string quotes") {
+    actual("mATCH a WhERE a.name='A' RETURN a.age > 30, \"I'm a literal\", a-->()") should equal(
+      expected("MATCH a%nWHERE a.name='A'%nRETURN a.age > 30, \"I'm a literal\", a-->()")
+    )
   }
 
-  @Test
-  def shouldPrettifyLoadCsv() {
-    assertIsPrettified("LOAD CSV FROM \"f\" AS line", "LOAD CSV FROM \"f\" AS line")
-  }
-
-  @Test
-  def shouldPrettifyLoadCsvWithHeaders() {
-    assertIsPrettified("LOAD CSV WITH HEADERS FROM \"f\" AS line", "LOAD CSV wiTh HEADERS FROM \"f\" AS line")
-  }
-
-  @Test
-  def shouldPrettifyAndBreakLoadCsv() {
-    assertIsPrettified("MATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)", "MATCH (n) LOAD CSV FROM \"f\" AS line return (n)")
-  }
-
-  @Test
-  def shouldPrettifyAndBreakPeriodicCommitLoadCsv() {
-    assertIsPrettified("USING PERIODIC COMMIT%nMATCH ()%nMATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)", "using periodic commit match () MATCH (n) LOAD CSV FROM \"f\" AS line return (n)")
-  }
-
-  @Test
-  def shouldPrettifyWithCorrectStringQuotes() {
-    assertIsPrettified(
-      "MATCH a%nWHERE a.name='A'%nRETURN a.age > 30, \"I'm a literal\", a-->()",
-      "mATCH a WhERE a.name='A' RETURN a.age > 30, \"I'm a literal\", a-->()")
-  }
-
-  private def assertIsPrettified(expected: String, query: String) {
-    assertEquals(String.format(expected), Prettifier(query))
-  }
+  private def actual(text: String) = Prettifier(text)
+  private def expected(text: String) = String.format(text)
 }
+
 
