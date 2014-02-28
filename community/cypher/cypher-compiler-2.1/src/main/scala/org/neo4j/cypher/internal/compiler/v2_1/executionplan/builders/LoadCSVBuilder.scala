@@ -43,7 +43,7 @@ class LoadCSVBuilder extends PlanBuilder {
     }
     plan.copy(
       query = plan.query.copy(start = plan.query.start.replace(Unsolved(item), Solved(item))),
-      pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.url, item.identifier)
+      pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.url, item.identifier, item.fieldTerminator)
     )
   }
 }
