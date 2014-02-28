@@ -36,3 +36,5 @@ The Neo4j Browser module is built using http://nodejs.org[Node.js]. For skipping
 == Licensing ==
 
 Neo4j is an open source product. We support a Community edition under the GPLv3 license. The Enterprise edition is available under the AGPLv3 license for open source projects otherwise under a commercial license from http://info.neotechnology.com/contactus.html[Neo Technology].
+
+Please remove this line.
