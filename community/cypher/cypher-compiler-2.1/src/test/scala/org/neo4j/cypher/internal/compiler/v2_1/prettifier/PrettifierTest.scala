@@ -24,6 +24,7 @@ import org.scalatest.Assertions
 import org.junit.Assert.assertEquals
 
 class PrettifierTest extends Assertions {
+
   @Test
   def shouldUpcaseKeywords() {
     assertIsPrettified("CREATE n", "create n")
@@ -124,11 +125,17 @@ class PrettifierTest extends Assertions {
   }
 
   @Test
+  def shouldPrettifyAndBreakPeriodicCommitLoadCsv() {
+    assertIsPrettified("USING PERIODIC COMMIT%nMATCH ()%nMATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)", "using periodic commit match () MATCH (n) LOAD CSV FROM \"f\" AS line return (n)")
+  }
+
+  @Test
   def shouldPrettifyWithCorrectStringQuotes() {
     assertIsPrettified(
       "MATCH a%nWHERE a.name='A'%nRETURN a.age > 30, \"I'm a literal\", a-->()",
       "mATCH a WhERE a.name='A' RETURN a.age > 30, \"I'm a literal\", a-->()")
   }
+
   private def assertIsPrettified(expected: String, query: String) {
     assertEquals(String.format(expected), Prettifier(query))
   }
