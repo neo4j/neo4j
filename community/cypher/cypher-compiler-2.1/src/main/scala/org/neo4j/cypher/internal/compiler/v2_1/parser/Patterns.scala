@@ -71,10 +71,10 @@ trait Patterns extends Parser
 
   private def RelationshipPattern: Rule1[ast.RelationshipPattern] = rule {
     (
-        "<" ~~ "-" ~~ RelationshipDetail ~~ "-" ~~ ">" ~ push(Direction.BOTH)
-      | "<" ~~ "-" ~~ RelationshipDetail ~~ "-" ~ push(Direction.INCOMING)
-      | "-" ~~ RelationshipDetail ~~ "-" ~~ ">" ~ push(Direction.OUTGOING)
-      | "-" ~~ RelationshipDetail ~~ "-" ~ push(Direction.BOTH)
+        LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(Direction.BOTH)
+      | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.INCOMING)
+      | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(Direction.OUTGOING)
+      | Dash ~~ RelationshipDetail ~~ Dash ~ push(Direction.BOTH)
     ) ~~>> (ast.RelationshipPattern(_, _, _, _, _, _))
   }
 
