@@ -28,13 +28,42 @@ import org.neo4j.graphdb._
 import java.util.HashMap
 import org.neo4j.graphdb.Neo4jMatchers._
 import org.neo4j.tooling.GlobalGraphOperations
-import org.scalautils.LegacyTripleEquals
 import javax.transaction.TransactionManager
 
 class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
   with Assertions with QueryStatisticsTestSupport {
 
   val stats = QueryStatistics()
+
+  @Test
+  def set_node_property_to_null_will_remove_existing_property() {
+    // given
+    val node = createNode("property" -> 12)
+
+    // when
+    val result = execute("MATCH (n) SET n.property = null")
+
+    // then
+    assertStats(result, propertiesSet = 1)
+    graph.inTx {
+      assertFalse("Node property wasn't removed when set to null", node.hasProperty("property"))
+    }
+  }
+
+  @Test
+  def set_relationship_property_to_null_will_remove_existing_property() {
+    // given
+    val relationship = relate(createNode(), createNode(), "property" -> 12)
+
+    // when
+    val result = execute("MATCH ()-[r]->() SET r.property = null")
+
+    // then
+    assertStats(result, propertiesSet = 1)
+    graph.inTx {
+      assertFalse("Relationship property wasn't removed when set to null", relationship.hasProperty("property"))
+    }
+  }
 
   @Test
   def create_a_single_node() {

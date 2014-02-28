@@ -76,13 +76,16 @@ trait GraphElementPropertyFunctions extends CollectionSupport {
   }
 
   private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
-    val value = makeValueNeoSafe(expression(context)(state))
-    pc match {
-      case n: Node =>
-        state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), value)
+    val unsafeValue: Any = expression(context)(state)
+    if (unsafeValue != null) {
+      val value = makeValueNeoSafe(unsafeValue)
+      pc match {
+        case n: Node  =>
+          state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), value)
 
-      case r: Relationship =>
-        state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), value)
+        case r: Relationship =>
+          state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), value)
+      }
     }
   }
 

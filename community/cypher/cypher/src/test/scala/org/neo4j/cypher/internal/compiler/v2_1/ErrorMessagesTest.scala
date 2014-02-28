@@ -25,6 +25,15 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
+
+  test("fails when merging relationship with null property") {
+    expectError("create (a) create (b) merge (a)-[r:X {p: null}]->(b) return r", "Cannot merge relationship using null property value for p")
+  }
+
+  test("fails when merging node with null property") {
+    expectError("merge (n {x: null}) return n", "Cannot merge node using null property value for x")
+  }
+
   test("noReturnColumns") {
     expectError(
       "start s = node(0) return",

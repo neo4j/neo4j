@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.data.{SeqVal, MapVal, SimpleVal}
 import pipes.{QueryState, EntityProducer}
 import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
-import org.neo4j.cypher.{MergeConstraintConflictException, InternalException}
+import org.neo4j.cypher.{InvalidSemanticsException, MergeConstraintConflictException, InternalException}
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.PropertySupport
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {
   def producerType: String = s"IndexNodProducer(${producer.producerType})"
@@ -67,6 +68,9 @@ case class MergeNodeAction(identifier: String,
 
     val foundNodes: Iterator[ExecutionContext] = findNodes(context)(state)
 
+    // TODO get rid of double evaluation of property expressions
+    ensureNoNullNodeProperties(context, state)
+
     if (foundNodes.isEmpty) {
       val query: QueryContext = state.query
       val createdNode: Node = query.createNode()
@@ -83,6 +87,15 @@ case class MergeNodeAction(identifier: String,
           onMatch.foreach(_.exec(nextContext, state))
           nextContext
       }
+    }
+  }
+
+  def ensureNoNullNodeProperties(context: ExecutionContext, state: QueryState) {
+    PropertySupport.firstNullPropertyIfAny(props, context, state) match {
+      case Some(key) =>
+        throw new InvalidSemanticsException(s"Cannot merge node using null property value for ${key.name}")
+      case None =>
+      // awesome
     }
   }
 

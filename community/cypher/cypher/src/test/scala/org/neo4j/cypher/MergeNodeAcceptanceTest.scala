@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Node
-import org.scalautils.LegacyTripleEquals
 
 class MergeNodeAcceptanceTest
   extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
