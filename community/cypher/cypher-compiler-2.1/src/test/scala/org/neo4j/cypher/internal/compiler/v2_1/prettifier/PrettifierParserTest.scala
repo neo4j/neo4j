@@ -38,7 +38,6 @@ class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxTo
       Seq(BreakingKeywords(keyword))
   }
 
-
   @Test
   def shouldNotParseAssertAsANonBreakingKeyword() {
     // given
@@ -46,14 +45,14 @@ class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxTo
 
     // when then
     parsing(query) shouldGive
-      Seq(BreakingKeywords("create constraint on"), OpenGroup("("), AnyText("person:Person"), CloseGroup(")"),
+      Seq(BreakingKeywords("create constraint on"), GroupToken("(", ")", Seq(AnyText("person:Person"))),
         NonBreakingKeywords("assert"), AnyText("person.age"), NonBreakingKeywords("is unique"))
   }
 
   @Test
   def shouldParseIndexAsKeyword() {
     // given
-    val keyword = "index"
+    val keyword = "asc"
 
     // when then
     parsing(keyword) shouldGive
@@ -83,16 +82,15 @@ class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxTo
   @Test
   def shouldParseGroupingText() {
     // given
-    val input = "(}{)[]"
+    val input = "(){}[]"
 
     // when then
     parsing(input) shouldGive
-      Seq(OpenGroup("("),
-          CloseGroup("}"),
-          OpenGroup("{"),
-          CloseGroup(")"),
-          OpenGroup("["),
-          CloseGroup("]"))
+      Seq(
+        GroupToken("(", ")", Seq.empty),
+        GroupToken("{", "}", Seq.empty),
+        GroupToken("[", "]", Seq.empty)
+      )
   }
 
   @Test
@@ -111,31 +109,58 @@ class PrettifierParserTest extends PrettifierParser with ParserTest[Seq[SyntaxTo
     // given
     val input = "merge n on create set n.age=32"
 
-    // when then
-    parsing(input) shouldGive
-      Seq(
-        BreakingKeywords("merge"), AnyText("n"),
-        BreakingKeywords("on create"), BreakingKeywords("set"), AnyText("n.age=32"))
+    // when
+    val result = parsing(input)
+
+    // then
+    val expectation = Seq(
+      BreakingKeywords("merge"),
+      AnyText("n"),
+      BreakingKeywords("on create set"),
+      AnyText("n.age=32")
+    )
+    result shouldGive expectation
+  }
+
+  @Test
+  def shouldParseSimpleGrouping() {
+    val result = parsing("[0,10]")
+    result shouldGive Seq(GroupToken("[", "]", Seq(AnyText("0,10"))))
   }
 
   @Test
   def shouldParseComplexGrouping() {
     val result = parsing("[(0,10)]")
-    result shouldGive Seq(OpenGroup("["),OpenGroup("("), AnyText("0,10"), CloseGroup(")"), CloseGroup("]"))
+    result shouldGive Seq(
+      GroupToken("[", "]", Seq(
+        GroupToken("(", ")", Seq(AnyText("0,10")))
+      )
+    ))
   }
 
   @Test
   def shouldParseGroupingWithEscapedText() {
     val result = parsing("( \"Gunhild\" )")
-    result shouldGive Seq(OpenGroup("("), EscapedText("Gunhild"), CloseGroup(")"))
+    result shouldGive Seq(GroupToken("(", ")", Seq(EscapedText("Gunhild"))))
   }
-
 
   @Test
   def shouldParseGrouping() {
-    parsing("(x)") shouldGive Seq(OpenGroup("("), AnyText("x"), CloseGroup(")"))
-    parsing("[x]") shouldGive Seq(OpenGroup("["), AnyText("x"), CloseGroup("]"))
-    parsing("{x}") shouldGive Seq(OpenGroup("{"), AnyText("x"), CloseGroup("}"))
+    parsing("(x)") shouldGive Seq(GroupToken("(", ")", Seq(AnyText("x"))))
+    parsing("[x]") shouldGive Seq(GroupToken("[", "]", Seq(AnyText("x"))))
+    parsing("{x}") shouldGive Seq(GroupToken("{", "}", Seq(AnyText("x"))))
+  }
+
+  @Test
+  def shouldParseWhereAsNonBreakingInsideGrouping() {
+    val result = parsing("( WHERE )")
+    result shouldGive Seq(GroupToken("(", ")", Seq(NonBreakingKeywords("WHERE"))))
+  }
+
+  @Test
+  def shouldParseUsingPeriodicCommitAndMatchAsDistinctKeywordGroups() {
+    val result = parsing("USING PERIODIC COMMIT MATCH")
+    result shouldGive Seq(BreakingKeywords("USING PERIODIC COMMIT"), BreakingKeywords("MATCH"))
   }
 
   @Test
