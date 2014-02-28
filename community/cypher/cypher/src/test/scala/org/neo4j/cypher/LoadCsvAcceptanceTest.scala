@@ -180,7 +180,7 @@ class LoadCsvAcceptanceTest
     }
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_file_access, "false")
+      .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
       .newGraphDatabase()
 
     intercept[LoadExternalResourceException] {

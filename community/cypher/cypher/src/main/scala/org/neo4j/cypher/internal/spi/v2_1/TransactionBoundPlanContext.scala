@@ -79,7 +79,7 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   }
 
   override def hasLocalFileAccess: Boolean = gdb match {
-    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.cypher_file_access)
+    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)
     case _ => true
   }
 }

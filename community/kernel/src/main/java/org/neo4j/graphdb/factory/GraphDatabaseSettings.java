@@ -97,8 +97,9 @@ public abstract class GraphDatabaseSettings
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
 
-    @Description("Limits access to the local file system from Cypher")
-    public static Setting<Boolean> cypher_file_access = setting( "cypher_file_access", BOOLEAN, TRUE );
+    @Description("Determines if Cypher will allow using file URL when importing data using LOAD CSV. Setting this " +
+            "value to false will cause Neo4j to fail LOAD CSV queries that import data from the file system")
+    public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
     // Store files
     @Description("The directory where the database files are located.")
