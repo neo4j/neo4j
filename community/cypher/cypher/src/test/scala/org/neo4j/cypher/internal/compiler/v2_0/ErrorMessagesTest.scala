@@ -20,35 +20,33 @@
 package org.neo4j.cypher.internal.compiler.v2_0
 
 import commands.expressions.StringHelper
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport, CypherException, SyntaxException}
-import org.scalatest.Assertions
+import org.neo4j.cypher.{ExecutionEngineFunSuite, CypherException, SyntaxException}
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.junit.Test
 
-class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
-  @Test def noReturnColumns() {
+class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
+  test("noReturnColumns") {
     expectError(
       "start s = node(0) return",
       "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 25)"
     )
   }
 
-  @Test def badNodeIdentifier() {
+  test("badNodeIdentifier") {
     expectError(
       "START a = node(0) MATCH a-[WORKED_ON]-, return a",
       "Invalid input ',': expected whitespace, '>' or a node pattern (line 1, column 39)"
     )
   }
 
-  @Test def badStart() {
+  test("badStart") {
     expectError(
       "starta = node(0) return a",
       "Invalid input 'a' (line 1, column 6)"
     )
   }
 
-  @Test def functionDoesNotExist() {
+  test("functionDoesNotExist") {
     expectSyntaxError(
       "START a = node(0) return dontDoIt(a)",
       "Unknown function 'dontDoIt' (line 1, column 26)",
@@ -56,7 +54,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def noIndexName() {
+  test("noIndexName") {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match a-[:WORKED_ON]-b return b",
       "Invalid input 'n': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16)",
@@ -64,14 +62,14 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def aggregateFunctionInWhere() {
+  test("aggregateFunctionInWhere") {
     expectError(
       "START a = node(0) WHERE count(a) > 10 RETURN a",
       "Invalid use of aggregating function count(...) in this context (line 1, column 25)"
     )
   }
 
-  @Test def twoIndexQueriesInSameStart() {
+  test("twoIndexQueriesInSameStart") {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"sebastian\",name=\"magnus\") return a",
       "Invalid input ',': expected whitespace or ')' (line 1, column 48)",
@@ -79,7 +77,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def badMatch2() {
+  test("badMatch2") {
     expectSyntaxError(
       "start p=node(2) match p-[:IS_A]>dude return dude.name",
       "Invalid input '>': expected whitespace or '-' (line 1, column 32)",
@@ -87,7 +85,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def badMatch3() {
+  test("badMatch3") {
     expectSyntaxError(
       "start p=node(2) match p-[:IS_A->dude return dude.name",
       "Invalid input '-': expected an identifier character, whitespace, '|', a length specification, a property map or ']' (line 1, column 31)",
@@ -95,7 +93,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def badMatch4() {
+  test("badMatch4") {
     expectSyntaxError(
       "start p=node(2) match p-[!]->dude return dude.name",
       "Invalid input '!': expected whitespace, an identifier, '?', relationship types, a length specification, a property map or ']' (line 1, column 26)",
@@ -103,7 +101,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def badMatch5() {
+  test("badMatch5") {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, a relationship pattern, ',', USING, WHERE, START, MATCH, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 24)",
@@ -111,7 +109,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def invalidLabel() {
+  test("invalidLabel") {
     expectSyntaxError(
       "start p=node(2) match (p:super-man) return p.name",
       "Invalid input 'm': expected whitespace, [ or '-' (line 1, column 32)",
@@ -119,7 +117,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def noEqualsSignInStart() {
+  test("noEqualsSignInStart") {
     expectSyntaxError(
       "start r:relationship:rels() return r",
       "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 8)",
@@ -127,7 +125,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def relTypeInsteadOfRelIdInStart() {
+  test("relTypeInsteadOfRelIdInStart") {
     expectSyntaxError(
       "start r = relationship(:WORKED_ON) return r",
       "Invalid input ':': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 24)",
@@ -135,7 +133,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def noNodeIdInStart() {
+  test("noNodeIdInStart") {
     expectSyntaxError(
       "start r = node() return r",
       "Invalid input ')': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16)",
@@ -143,7 +141,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def startExpressionWithoutIdentifier() {
+  test("startExpressionWithoutIdentifier") {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"magnus\"),node:node_auto_index(name=\"sebastian) return b,c",
       "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 51)",
@@ -151,91 +149,91 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def functions_and_stuff_have_to_be_renamed_when_sent_through_with() {
+  test("functions and stuff have to be renamed when sent through with") {
     expectError(
       "START a=node(0) with a, count(*) return a",
       "Expression in WITH must be aliased (use AS) (line 1, column 25)"
     )
   }
 
-  @Test def missing_dependency_correctly_reported() {
+  test("missing dependency correctly reported") {
     expectError(
       "START a=node(0) CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
       "missing not defined (line 1, column 45)"
     )
   }
 
-  @Test def missing_create_dependency_correctly_reported() {
+  test("missing create dependency correctly reported") {
     expectError(
       "START a=node(0) CREATE a-[:KNOWS]->(b {name:missing}) RETURN b",
       "missing not defined (line 1, column 45)"
     )
   }
 
-  @Test def missing_set_dependency_correctly_reported() {
+  test("missing set dependency correctly reported") {
     expectError(
       "START a=node(0) SET a.name = missing RETURN a",
       "missing not defined (line 1, column 30)"
     )
   }
 
-  @Test def create_with_identifier_already_existing() {
+  test("create with identifier already existing") {
     expectError(
       "START a=node(0) CREATE (a {name:'foo'}) RETURN a",
       "a already declared (line 1, column 25)"
     )
   }
 
-  @Test def create_with_identifier_already_existing2() {
+  test("create with identifier already existing2") {
     expectError(
       "START a=node(0) CREATE UNIQUE (a {name:'foo'})-[:KNOWS]->() RETURN a",
       "Can't create `a` with properties or labels here. It already exists in this context"
     )
   }
 
-  @Test def type_of_identifier_is_wrong() {
+  test("type of identifier is wrong") {
     expectError(
       "start n=node(0) with [n] as users MATCH users-->messages RETURN messages",
       "Type mismatch: users already defined with conflicting type Collection<Node> (expected Node) (line 1, column 41)"
     )
   }
 
-  @Test def warn_about_exclamation_mark() {
+  test("warn about exclamation mark") {
     expectError(
       "start n=node(0) where n.foo != 2 return n",
       "Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing) (line 1, column 29)"
     )
   }
 
-  @Test def warn_about_type_error() {
+  test("warn about type error") {
     expectError(
       "START p=node(0) MATCH p-[r*]->() WHERE r.foo = 'apa' RETURN r",
       "Type mismatch: expected Map, Node or Relationship but was Collection<Relationship> (line 1, column 40)"
     )
   }
 
-  @Test def missing_something_to_delete() {
+  test("missing something to delete") {
     expectError(
       "START p=node(0) DELETE x",
       "x not defined (line 1, column 24)"
     )
   }
 
-  @Test def aggregations_must_be_included_in_return() {
+  test("aggregations must be included in return") {
     expectError(
       "START a=node(0) RETURN a ORDER BY count(*)",
       "Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY"
     )
   }
 
-  @Test def aggregations_must_be_included_in_return2() {
+  test("aggregations must be included in return2") {
     expectError(
       "START a=node(0) RETURN a ORDER BY count(*) LIMIT 1",
       "Aggregation expressions must be listed in the RETURN/WITH clause to be used in ORDER BY"
     )
   }
 
-  @Test def unions_must_have_the_same_columns() {
+  test("unions must have the same columns") {
     expectError(
       """START a=node(0) RETURN a
          UNION
@@ -244,7 +242,7 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def can_not_mix_union_and_union_all() {
+  test("can not mix union and union all") {
     expectError(
       """START a=node(0) RETURN a
          UNION
@@ -255,14 +253,14 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def can_not_use_optional_pattern_as_predicate() {
+  test("can not use optional pattern as predicate") {
     expectError(
       "START a=node(1) RETURN a-[?]->()",
       "Optional relationships cannot be specified in this context (line 1, column 25)"
     )
   }
 
-  @Test def trying_to_drop_constraint_index_should_return_sensible_error() {
+  test("trying to drop constraint index should return sensible error") {
     graph.createConstraint("LabelName", "Prop")
 
     expectError(
@@ -271,14 +269,14 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def trying_to_drop_non_existent_index() {
+  test("trying to drop non existent index") {
     expectError(
       "DROP INDEX ON :Person(name)",
       "Unable to drop index on :Person(name): No such INDEX ON :Person(name)."
     )
   }
 
-  @Test def trying_to_add_unique_constraint_when_duplicates_exist() {
+  test("trying to add unique constraint when duplicates exist") {
     createLabeledNode(Map("name" -> "A"), "Person")
     createLabeledNode(Map("name" -> "A"), "Person")
 
@@ -289,49 +287,49 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def drop_a_non_existent_constraint() {
+  test("drop a non existent constraint") {
     expectError(
       "DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       "No such constraint"
     )
   }
 
-  @Test def create_without_specifying_direction_should_fail() {
+  test("create without specifying direction should fail") {
     expectError(
       "CREATE (a)-[:FOO]-(b) RETURN a,b",
       "Only directed relationships are supported in CREATE"
     )
   }
 
-  @Test def create_without_specifying_direction_should_fail2() {
+  test("create without specifying direction should fail2") {
     expectError(
       "CREATE (a)<-[:FOO]->(b) RETURN a,b",
       "Only directed relationships are supported in CREATE"
     )
   }
 
-  @Test def report_deprecated_use_of_property_name_with_question_mark() {
+  test("report deprecated use of property name with question mark") {
     expectError(
       "start n = node(0) return n.title? = \"foo\"",
       "This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.title)) OR <ident>.title=<value>) if you really need the old behavior."
     )
   }
 
-  @Test def report_deprecated_use_of_property_name_with_exclamation_mark() {
+  test("report deprecated use of property name with exclamation mark") {
     expectError(
       "start n = node(0) return n.title! = \"foo\"",
       "This syntax is no longer supported (missing properties are now returned as null)."
     )
   }
 
-  @Test def recommend_using_remove_when_user_tries_to_delete_a_label() {
+  test("recommend using remove when user tries to delete a label") {
     expectError(
       "start n = node(0) delete n:Person",
       "DELETE doesn't support removing labels from a node. Try REMOVE."
     )
   }
 
-  @Test def report_wrong_usage_of_index_hint() {
+  test("report wrong usage of index hint") {
     graph.createConstraint("Person", "id")
     expectError(
       "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.id = 12 OR n.id = 14 RETURN n",
@@ -339,10 +337,16 @@ class ErrorMessagesTest extends ExecutionEngineJUnitSuite with StringHelper {
     )
   }
 
-  @Test def report_wrong_usage_of_label_scan_hint() {
+  test("report wrong usage of label scan hint") {
     expectError(
       "MATCH (n) USING SCAN n:Person WHERE n:Person OR n:Bird RETURN n",
       "Cannot use label scan hint in this context. Label scan hints require using a simple label test in WHERE (either directly or as part of a top-level AND). Note that the label must be specified on a non-optional node")
+  }
+
+  test("should give nice error when setting a property to a illegal value") {
+    expectError(
+      "CREATE (a) SET a.foo = [{x: 1}]",
+      "Properties containing arrays of non-primitive types are not supported")
   }
 
   def expectError(query: String, expectedError: String) {
