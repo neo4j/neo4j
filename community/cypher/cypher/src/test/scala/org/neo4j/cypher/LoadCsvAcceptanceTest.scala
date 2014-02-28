@@ -116,6 +116,42 @@ class LoadCsvAcceptanceTest
       Map("string" -> Seq( """String with "quotes" in it"""))))
   }
 
+  @Test def should_handle_crlf_line_termination() {
+    val url = createFile {
+      writer =>
+        writer.print("1,'Aadvark',0\r\n")
+        writer.print("2,'Babs'\r\n")
+        writer.print("3,'Cash',1\r\n")
+    }
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
+    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+  }
+
+  @Test def should_handle_lf_line_termination() {
+    val url = createFile {
+      writer =>
+        writer.print("1,'Aadvark',0\n")
+        writer.print("2,'Babs'\n")
+        writer.print("3,'Cash',1\n")
+    }
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
+    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+  }
+
+  @Test def should_handle_cr_line_termination() {
+    val url = createFile {
+      writer =>
+        writer.print("1,'Aadvark',0\r")
+        writer.print("2,'Babs'\r")
+        writer.print("3,'Cash',1\r")
+    }
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
+    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+  }
+
   @Test def empty_file_does_not_create_anything() {
     val url = createFile(writer => {})
 
