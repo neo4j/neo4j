@@ -35,6 +35,37 @@ trait Base extends Parser {
   def Digits = rule { oneOrMore(Digit) }
   def Digit = rule { "0" - "9" }
   def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "Z" }
+  def Dash = rule("'-'") {
+    // U+002D ‑ hyphen-minus
+    // U+00AD - soft hyphen
+    // U+2010 - hyphen
+    // U+2011 ‐ non-breaking hyphen
+    // U+2012 ‒ figure dash
+    // U+2013 – en dash
+    // U+2014 — em dash
+    // U+2015 ― horizontal bar
+    // U+2212 − minus sign
+    // U+FE58 ﹘ small em dash
+    // U+FE63 ﹣ small hyphen-minus
+    // U+FF0D － full-width hyphen-minus
+    anyOf(Array('\u002d', '\u00ad', '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015', '\u2212', '\ufe58', '\ufe63', '\uff0d'))
+  }
+  def LeftArrowHead = rule("'<'") {
+    // U+003c < less-than sign
+    // U+27e8 ⟨ mathematical left angle bracket
+    // U+3008 〈 left angle bracket
+    // U+fe64 ﹤ small less-than sign
+    // U+ff1c ＜ full-width less-than sign
+    anyOf(Array('\u003c', '\u27e8', '\u3008', '\ufe64', '\uff1c'))
+  }
+  def RightArrowHead = rule("'>'") {
+    // U+003e > greater-than sign
+    // U+27e9 ⟩ mathematical left angle bracket
+    // U+3009 〉 right angle bracket
+    // U+fe65 ﹥ small greater-than sign
+    // U+ff1e ＞ full-width greater-than sign
+    anyOf(Array('\u003e', '\u27e9', '\u3009', '\ufe65', '\uff1e'))
+  }
 
   def CommaSep = rule("','") { WS ~ ch(',') ~ WS }
 
