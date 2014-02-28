@@ -141,7 +141,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
     }
   }
 
-  test("shoud register a task in the cleanupper") {
+  test("should register a task in the cleanupper") {
     // given
     val url = createFile {
       writer =>
@@ -155,6 +155,30 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
 
     // then
     verify(cleaner, times(1)).addTask(any(classOf[Boolean => Unit]))
+  }
+
+  test("should accept and use a custom field terminator") {
+    // given
+    val url = createFile {
+      writer =>
+        writer.println("122\tfoo")
+        writer.println("23\tbar")
+        writer.println("3455\tbaz")
+        writer.println("4\tx")
+    }
+
+    //when
+    val result: List[Array[String]] = resources.getCsvIterator(url, Some("\t")).toList
+
+    (result zip List(
+      Array[String]("122", "foo"),
+      Array[String]("23", "bar"),
+      Array[String]("3455", "baz"),
+      Array[String]("4", "x")
+    )).foreach {
+      case (r, expected) =>
+        r should equal(expected)
+    }
   }
 
   var files: Seq[File] = Seq.empty

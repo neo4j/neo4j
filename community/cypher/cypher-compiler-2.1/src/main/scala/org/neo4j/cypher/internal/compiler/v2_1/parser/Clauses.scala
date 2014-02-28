@@ -35,9 +35,8 @@ trait Clauses extends Parser
       group(keyword("WITH HEADERS") ~ push(true) | push(false)) ~~
       keyword("FROM") ~~ StringLiteral ~~
       keyword("AS") ~~ Identifier ~~
-      optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~
-      optional(keyword("ROWTERMINATOR") ~~ StringLiteral) ~~>>
-      (ast.LoadCSV(_, _, _, _, _))
+      optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
+      (ast.LoadCSV(_, _, _, _))
   }
 
   def Start: Rule1[ast.Start] = rule("START") {

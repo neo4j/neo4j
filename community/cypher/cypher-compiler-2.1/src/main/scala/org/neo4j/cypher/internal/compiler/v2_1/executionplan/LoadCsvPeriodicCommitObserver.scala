@@ -35,8 +35,8 @@ class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource
     onNotify()   
   }
 
-  def getCsvIterator(url: URL): Iterator[Array[String]] = {
-    val innerIterator = resources.getCsvIterator(url)
+  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
+    val innerIterator = resources.getCsvIterator(url, fieldTerminator)
     loadCsvIterator match {
       case Some(_) =>
         innerIterator

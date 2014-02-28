@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ExternalResource
 import java.net.URL
 import org.mockito.Mockito._
+import org.mockito.Matchers
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
@@ -33,18 +34,18 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   val url: URL = new URL("file:///tmp/something.csv")
 
   test("reading and not writing does not commit anything") {
-    when(resource.getCsvIterator(url)).thenReturn(Iterator(Array("yo")))
+    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).thenReturn(Iterator(Array("yo")))
 
     // Get iterator and exhaust it
     resourceUnderTest.getCsvIterator(url).size
 
     verify(queryContext, never()).commitAndRestartTx()
-    verify(resource, times(1)).getCsvIterator(url)
+    verify(resource, times(1)).getCsvIterator(Matchers.eq(url), Matchers.any())
   }
 
   test("writing should not trigger tx restart until next csv line is fetched") {
     // Given
-    when(resource.getCsvIterator(url)).thenReturn(Iterator(Array("yo")))
+    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).thenReturn(Iterator(Array("yo")))
 
     // When
     val iterator = resourceUnderTest.getCsvIterator(url)
@@ -58,7 +59,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("writing should trigger tx restart when there are more then double batch size updates in one shot during a line processing") {
     // Given
-    when(resource.getCsvIterator(url)).thenReturn(Iterator(Array("yo")))
+    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).thenReturn(Iterator(Array("yo")))
 
     // When
     val iterator = resourceUnderTest.getCsvIterator(url)
@@ -72,7 +73,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("writing should trigger tx restart when there are more then double batch size updates notify multiple times during a line processing") {
     // Given
-    when(resource.getCsvIterator(url)).thenReturn(Iterator(Array("yo")))
+    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).thenReturn(Iterator(Array("yo")))
 
     // When
     val iterator = resourceUnderTest.getCsvIterator(url)
@@ -88,7 +89,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
-    when(resource.getCsvIterator(url)).
+    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any())).
       thenReturn(Iterator(Array("yo"))).
       thenReturn(Iterator(Array("yo")))
     val iterator1 = resourceUnderTest.getCsvIterator(url)

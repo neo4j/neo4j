@@ -2975,7 +2975,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",
       Query.
-        start(LoadCSV(withHeaders = true, new URL("file:///tmp/file.cvs"), "line")).
+        start(LoadCSV(withHeaders = true, new URL("file:///tmp/file.cvs"), "line", None)).
         returns(ReturnItem(Property(Identifier("line"), PropertyKey("key")), "line.key"))
     )
   }
@@ -2984,7 +2984,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
       Query.
-        start(LoadCSV(withHeaders = false, new URL("file:///tmp/file.cvs"), "line")).
+        start(LoadCSV(withHeaders = false, new URL("file:///tmp/file.cvs"), "line", None)).
         returns(ReturnItem(Identifier("line"), "line"))
     )
   }

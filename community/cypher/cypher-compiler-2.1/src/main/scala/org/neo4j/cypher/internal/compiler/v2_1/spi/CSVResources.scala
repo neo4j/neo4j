@@ -26,12 +26,16 @@ import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
 import org.neo4j.cypher.LoadExternalResourceException
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ExternalResource
 
+object CSVResources {
+  val DEFAULT_FIELD_TERMINATOR: Char = ','
+}
+
 class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
-  def getCsvIterator(url: URL): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
     val inputStream = ToStream(url).stream
     val reader = new BufferedReader(new InputStreamReader(inputStream))
-    val csvReader = new CSVReader(reader)
+    val csvReader = new CSVReader(reader, fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR))
 
     cleaner.addTask(_ => {
       csvReader.close()

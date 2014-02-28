@@ -39,7 +39,7 @@ class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
   }
 
   @Test def should_accept_queries_containing_unsolved_load_csv_items() {
-    val loadCSV = LoadCSV(withHeaders = false, new URL("file:///tmp/data.csv"), "row")
+    val loadCSV = LoadCSV(withHeaders = false, new URL("file:///tmp/data.csv"), "row", None)
     val q = Query.
       start(loadCSV).
       returns(AllIdentifiers())
@@ -53,7 +53,7 @@ class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
   @Test def should_fail_queries_with_local_file_urls_when_told_to() {
     context = mock[PlanContext]
     when(context.hasLocalFileAccess).thenReturn(false)
-    val loadCSV = LoadCSV(withHeaders = false, new URL("file:///tmp/data.csv"), "row")
+    val loadCSV = LoadCSV(withHeaders = false, new URL("file:///tmp/data.csv"), "row", None)
     val q = Query.
       start(loadCSV).
       returns(AllIdentifiers())
