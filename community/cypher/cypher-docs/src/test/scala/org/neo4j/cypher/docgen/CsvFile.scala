@@ -21,11 +21,14 @@ package org.neo4j.cypher.docgen
 
 import java.io.{PrintWriter, File}
 
-class CsvFile(fileName: String)(implicit csvFilesDir: File) {
+class CsvFile(fileName: String, delimiter: Char = ',')(implicit csvFilesDir: File) {
+
   def withContents(lines: Seq[String]*): String = {
     val csvFile = new File(csvFilesDir, fileName)
     val writer = new PrintWriter(csvFile, "UTF-8")
-    lines.foreach(line => writer.println(line.mkString("\"", "\",\"", "\"")))
+    lines.foreach(line => {
+      writer.println(line.map(s => '"' + s + '"').mkString(delimiter.toString))
+    })
     writer.flush()
     writer.close()
     csvFile.toURI.toURL.toString.replace("\\", "\\\\")
