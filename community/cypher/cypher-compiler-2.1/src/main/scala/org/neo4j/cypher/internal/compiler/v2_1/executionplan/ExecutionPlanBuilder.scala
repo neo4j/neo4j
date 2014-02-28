@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import pipes._
 import profiler.Profiler
-import org.neo4j.cypher.PeriodicCommitInOpenTransactionException
+import org.neo4j.cypher.{CypherException, PeriodicCommitInOpenTransactionException}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Planner}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
@@ -113,7 +113,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
       builder.transformQueryContext(new UpdateCountingQueryContext(_))
 
       if (profile)
-        builder.setDecorator(new Profiler())
+        builder.setPipeDecorator(new Profiler())
 
       builder.runWithQueryState(graph, params) {
         state =>
@@ -133,9 +133,10 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
 
 class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
   private val taskCloser = new TaskCloser
-  private val externalResource: ExternalResource = new CSVResources(taskCloser)
-  private val queryContextBuilder: MappingBuilder[QueryContext] = new EagerMappingBuilder[QueryContext](initialQueryContext)
-  private var decorator: PipeDecorator = NullDecorator
+  private var externalResource: ExternalResource = new CSVResources(taskCloser)
+  private val queryContextBuilder: MappingBuilder[QueryContext] = new EagerMappingBuilder(initialQueryContext)
+  private var pipeDecorator: PipeDecorator = NullPipeDecorator
+  private var exceptionDecorator: CypherException => CypherException = identity
 
   def transformQueryContext(f: QueryContext => QueryContext) {
     queryContextBuilder += f
@@ -146,23 +147,37 @@ class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
   }
 
   def setLoadCsvPeriodicCommitObserver(batchSize: Long) {
-    addUpdateObserver(new LoadCsvPeriodicCommitObserver(batchSize, externalResource, queryContext))
+    val observer = new LoadCsvPeriodicCommitObserver(batchSize, externalResource, queryContext)
+    externalResource = observer
+    setExceptionDecorator(observer)
+    addUpdateObserver(observer)
   }
 
-  def setDecorator(newDecorator: PipeDecorator) {
-    decorator = newDecorator
+  def setPipeDecorator(newDecorator: PipeDecorator) {
+    pipeDecorator = newDecorator
   }
 
-  def buildClosingIterator(results: Iterator[ExecutionContext]) = new ClosingIterator(results, taskCloser)
+  def setExceptionDecorator(newDecorator: CypherException => CypherException) {
+    exceptionDecorator = newDecorator
+  }
+
+  def buildClosingIterator(results: Iterator[ExecutionContext]) =
+    new ClosingIterator(results, taskCloser, exceptionDecorator)
 
   def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean) =
-    () => decorator.decorate(pipe.executionPlanDescription, isProfileReady)
+    () => pipeDecorator.decorate(pipe.executionPlanDescription, isProfileReady)
 
   def runWithQueryState[T](graph: GraphDatabaseService, params: Map[String, Any])(f: QueryState => T) = {
     taskCloser.addTask(queryContext.close)
-    val state = new QueryState(graph, queryContext, externalResource, params, decorator)
+    val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator)
     try {
-      f(state)
+      try {
+        f(state)
+      }
+      catch {
+        case e: CypherException =>
+          throw exceptionDecorator(e)
+      }
     }
     catch {
       case (t: Throwable) =>

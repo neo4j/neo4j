@@ -19,30 +19,25 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Matchers
-import org.junit.Test
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.Node
 
-class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matchers {
+class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite with TxCountsTrackingTestSupport {
 
-  @Test
-  def should_reject_periodic_commit_when_not_updating() {
+  test("should reject periodic commit when not updating") {
     evaluating {
       executeScalar("USING PERIODIC COMMIT 200 MATCH (n) RETURN count(n)")
     } should produce[SyntaxException]
   }
 
-  @Test
-  def should_produce_data_from_periodic_commit() {
+  test("should produce data from periodic commit") {
     val result = execute("USING PERIODIC COMMIT 200 CREATE (n {id: 42}) RETURN n.id")
 
     result.toList should equal(List(Map("n.id" -> 42)))
     result.columns should equal(List("n.id"))
   }
 
-  @Test
-  def should_support_simple_periodic_commit_with_aligned_batch_size_commits() {
+  test("should support simple periodic commit with aligned batch size commits") {
     // given
     val queryText =
       "USING PERIODIC COMMIT 2 " +
@@ -50,23 +45,17 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matche
       "CREATE () " +
       "WITH * MATCH (n) RETURN count(n) AS updates"
 
-    // prepare
-    executeScalar[Number](queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    val expectedUpdates = executeScalar[Number](queryText)
+    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
 
     // then
-    expectedUpdates should be(2)
+    expectedUpdates should equal(2)
 
     // and then
-    graph.txCounts-initialTxCounts should be(TxCounts(commits = 2))
+    txCounts should equal(TxCounts(commits = 2))
   }
 
-  @Test
-  def should_support_simple_periodic_commit_with_unaligned_batch_size() {
+  test("should support simple periodic commit with unaligned batch size") {
     // given
     val queryText =
       "USING PERIODIC COMMIT 3 " +
@@ -76,23 +65,17 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matche
       "CREATE () " +
       "WITH * MATCH (n) RETURN count(n) AS updates"
 
-    // prepare
-    executeScalar[Number](queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    val expectedUpdates = executeScalar[Number](queryText)
+    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
 
     // then
-    expectedUpdates should be(4)
+    expectedUpdates should equal(4)
 
     // and then
-    graph.txCounts-initialTxCounts should be(TxCounts(commits = 2))
+    txCounts should equal(TxCounts(commits = 2))
   }
 
-  @Test
-  def should_support_periodic_commit_with_aligned_batch_size() {
+  test("should support periodic commit with aligned batch size") {
     /*
       10 x nodes         => 30 updates
       4  y nodes         => 12 updates
@@ -110,23 +93,17 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matche
         ") " +
         "WITH * MATCH (:X)-[r:R]->(:Y) RETURN 30 + 12 + count(r) AS updates"
 
-    // prepare
-    executeScalar[Number](queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    val expectedUpdates = executeScalar[Number](queryText)
+    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
 
     // then
-    expectedUpdates should be(82)
+    expectedUpdates should equal(82)
 
     // and then
-    graph.txCounts-initialTxCounts should be(TxCounts(commits = 3))
+    txCounts should equal(TxCounts(commits = 3))
   }
 
-  @Test
-  def should_support_periodic_commit_with_unaligned_batch_size() {
+  test("should support periodic commit with unaligned batch size") {
     /*
       10 x nodes         => 30 updates
       4  y nodes         => 12 updates
@@ -144,75 +121,54 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineJUnitSuite with Matche
         ") " +
         "WITH * MATCH (:X)-[r:R]->(:Y) RETURN 30 + 12 + count(r) AS updates"
 
-    // prepare
-    executeScalar[Number](queryText)
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    val expectedUpdates = executeScalar[Number](queryText)
+    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
 
     // then
-    expectedUpdates should be(82)
+    expectedUpdates should equal(82)
 
     // and then
-    graph.txCounts-initialTxCounts should be(TxCounts(commits = 5))
+    txCounts should equal(TxCounts(commits = 5))
   }
 
-  @Test
-  def should_abort_first_tx_when_failing_on_first_batch_during_periodic_commit() {
+  test("should abort first tx when failing on first batch during periodic commit") {
     // given
     val queryText = "USING PERIODIC COMMIT 256 FOREACH (x IN range(0, 1023) | CREATE ({x: 1/0}))"
 
-    // prepare
-    intercept[ArithmeticException](executeScalar[Number](queryText))
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    intercept[ArithmeticException](executeScalar[Number](queryText))
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](executeScalar[Number](queryText)))
 
     // then
-    graph.txCounts-initialTxCounts should be(TxCounts(rollbacks = 1))
+    txCounts should equal(TxCounts(rollbacks = 1))
   }
 
-  @Test
-  def should_commit_first_tx_and_abort_second_tx_when_failing_on_second_batch_during_periodic_commit() {
+  test("should commit first tx and abort second tx when failing on second batch during periodic commit") {
     // given
     // creating 256 means 512 updates, indeed 1) create node and set the label
     val queryText = "USING PERIODIC COMMIT 256 FOREACH (x IN range(0, 1023) | CREATE ({x: 1/(300-x)}))"
 
-    // prepare
-    intercept[ArithmeticException](executeScalar[Number](queryText))
-    deleteAllEntities()
-
     // when
-    val initialTxCounts = graph.txCounts
-    intercept[ArithmeticException](executeScalar[Number](queryText))
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](executeScalar[Number](queryText)))
 
     // then
-    graph.txCounts-initialTxCounts should be(TxCounts(commits = 2, rollbacks = 1))
+    txCounts should equal(TxCounts(commits = 2, rollbacks = 1))
   }
 
-  @Test
-  def should_support_periodic_commit_hint_without_explicit_size() {
+  test("should support periodic commit hint without explicit size") {
     executeScalar[Node]("USING PERIODIC COMMIT CREATE (n) RETURN n")
   }
 
-  @Test
-  def should_support_periodic_commit_hint_with_explicit_size() {
+  test("should support periodic commit hint with explicit size") {
     executeScalar[Node]("USING PERIODIC COMMIT 400 CREATE (n) RETURN n")
   }
 
-  @Test
-  def should_reject_periodic_commit_hint_with_negative_size() {
+  test("should reject periodic commit hint with negative size") {
     evaluating {
       executeScalar[Node]("USING PERIODIC COMMIT -1 CREATE (n) RETURN n")
     } should produce[SyntaxException]
   }
 
-  @Test
-  def should_fail_if_periodic_commit_is_executed_in_an_open_transaction() {
+  test("should fail if periodic commit is executed in an open transaction") {
     // given
     evaluating {
       graph.inTx {

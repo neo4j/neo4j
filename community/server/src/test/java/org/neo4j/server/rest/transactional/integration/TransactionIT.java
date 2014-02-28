@@ -19,12 +19,16 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;

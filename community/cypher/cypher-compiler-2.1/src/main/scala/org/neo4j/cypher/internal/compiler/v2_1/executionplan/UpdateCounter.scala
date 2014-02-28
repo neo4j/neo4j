@@ -17,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_1._
+class UpdateCounter {
+  private var uncommittedUpdates = 0L
+  private var totalUpdates = 0L
 
-/*
-A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
- */
-trait PipeDecorator {
-  def decorate(pipe: Pipe, state: QueryState): QueryState
+  def +=(increment: Long) {
+    assert(increment > 0L, s"increment must be positive but was: $increment")
+    uncommittedUpdates += increment
+    totalUpdates += increment
+  }
 
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
-
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription
-}
-
-object NullPipeDecorator extends PipeDecorator {
-  def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
-
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan
-
-  def decorate(pipe: Pipe, state: QueryState): QueryState = state
+  def resetIfPastLimit(limit: Long)(f: => Unit) {
+    if (uncommittedUpdates >= limit) {
+      f
+      uncommittedUpdates = 0
+    }
+  }
 }
