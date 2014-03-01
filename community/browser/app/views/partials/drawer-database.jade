@@ -13,7 +13,7 @@ h4 Neo4j {{ neo4j.version }}
   span(ng-show='propertyKeys')
     h5 Property keys
     span(ng-repeat='propertyKey in propertyKeys')
-      a.label.property(ng-click="editor.execScript('MATCH (n) WHERE has(n.`'+propertyKey+'`) RETURN DISTINCT \"node\" as element, n.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25 UNION ALL MATCH ()-[r]-() WHERE has(r.`'+propertyKey+'`) RETURN DISTINCT \"relationship\" AS element, r.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25')") {{propertyKey}}
+      a.label.property(ng-click="editor.execScript('MATCH (n) WHERE has(n.`'+propertyKey+'`) RETURN DISTINCT \"node\" as element, n.`'+propertyKey+'` AS `'+propertyKey+'`, count(n) AS occurrences LIMIT 25 UNION ALL MATCH ()-[r]-() WHERE has(r.`'+propertyKey+'`) RETURN DISTINCT \"relationship\" AS element, r.`'+propertyKey+'` AS `'+propertyKey+'`, count(r) AS occurrences LIMIT 25')") {{propertyKey}}
 
   h5 Database
   ul
