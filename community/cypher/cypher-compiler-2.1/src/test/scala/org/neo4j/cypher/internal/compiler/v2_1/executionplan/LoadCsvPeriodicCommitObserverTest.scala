@@ -105,6 +105,14 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     verify(queryContext, times(1)).commitAndRestartTx()
   }
 
+  test("if a custom iterator is specified should be passed to the wrapped resource") {
+    // Given
+    resourceUnderTest.getCsvIterator(url, Some(";"))
+
+    // When
+    verify(resource, times(1)).getCsvIterator(url, Some(";"))
+  }
+
   override protected def beforeEach() {
     queryContext = mock[QueryContext]
     resource = mock[ExternalResource]

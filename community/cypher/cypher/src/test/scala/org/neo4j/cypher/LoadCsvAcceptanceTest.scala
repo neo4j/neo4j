@@ -152,6 +152,18 @@ class LoadCsvAcceptanceTest
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
+  @Test def should_handle_custom_field_terminator() {
+    val url = createFile {
+      writer =>
+        writer.println("1;'Aadvark';0")
+        writer.println("2;'Babs'")
+        writer.println("3;'Cash';1")
+    }
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line FIELDTERMINATOR ';' RETURN line")
+    assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
+  }
+
   @Test def empty_file_does_not_create_anything() {
     val url = createFile(writer => {})
 
