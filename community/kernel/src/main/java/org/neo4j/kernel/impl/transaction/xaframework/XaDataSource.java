@@ -255,7 +255,7 @@ public abstract class XaDataSource implements Lifecycle
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
-    
+
     public void setLastCommittedTxId( long txId )
     {
         throw new UnsupportedOperationException( getClass().getName() );
@@ -276,7 +276,7 @@ public abstract class XaDataSource implements Lifecycle
         throw new UnsupportedOperationException( getClass().getName() );
     }
 
-    public ResourceIterator<File> listStoreFiles(  ) throws IOException
+    public ResourceIterator<File> listStoreFiles() throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
@@ -297,5 +297,9 @@ public abstract class XaDataSource implements Lifecycle
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
+    }
+
+    public void recoveryCompleted() throws IOException
+    {
     }
 }

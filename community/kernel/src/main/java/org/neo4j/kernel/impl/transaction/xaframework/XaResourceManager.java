@@ -369,8 +369,7 @@ public class XaResourceManager
             xidMap.remove( xid );
             if ( xaTransaction.isRecovered() )
             {
-                recoveredTxCount--;
-                checkIfRecoveryComplete();
+                oneMoreTransactionRecovered();
             }
             return XAResource.XA_RDONLY;
         }
@@ -381,6 +380,12 @@ public class XaResourceManager
             txStatus.markAsPrepared();
             return XAResource.XA_OK;
         }
+    }
+
+    private void oneMoreTransactionRecovered()
+    {
+        recoveredTxCount--;
+        checkIfRecoveryComplete();
     }
 
     // called from XaResource internal recovery
@@ -399,8 +404,7 @@ public class XaResourceManager
             xidMap.remove( xid );
             if ( xaTransaction.isRecovered() )
             {
-                recoveredTxCount--;
-                checkIfRecoveryComplete();
+                oneMoreTransactionRecovered();
             }
             return true;
         }
@@ -521,8 +525,7 @@ public class XaResourceManager
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
-            recoveredTxCount--;
-            checkIfRecoveryComplete();
+            oneMoreTransactionRecovered();
         }
     }
 
@@ -594,8 +597,7 @@ public class XaResourceManager
 
         if ( xaTransaction.isRecovered() )
         {
-            recoveredTxCount--;
-            checkIfRecoveryComplete();
+            oneMoreTransactionRecovered();
         }
         transactionMonitor.transactionCommitted( xid, xaTransaction.isRecovered() );
     }
@@ -628,8 +630,7 @@ public class XaResourceManager
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
-            recoveredTxCount--;
-            checkIfRecoveryComplete();
+            oneMoreTransactionRecovered();
         }
 
         return txStatus.getTransaction();
@@ -655,8 +656,7 @@ public class XaResourceManager
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
         {
-            recoveredTxCount--;
-            checkIfRecoveryComplete();
+            oneMoreTransactionRecovered();
         }
         return xaTransaction;
     }
@@ -686,8 +686,7 @@ public class XaResourceManager
         if ( xaTransaction.isRecovered() )
         {
             recoveredTransactions.remove( xaTransaction.getIdentifier() );
-            recoveredTxCount--;
-            checkIfRecoveryComplete();
+            oneMoreTransactionRecovered();
         }
     }
 

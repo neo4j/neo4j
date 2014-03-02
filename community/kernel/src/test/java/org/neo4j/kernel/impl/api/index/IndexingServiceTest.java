@@ -31,9 +31,11 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -42,7 +44,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
@@ -54,12 +55,23 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
@@ -104,6 +116,7 @@ public class IndexingServiceTest
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
         life.start();
+        indexingService.startIndexes();
 
         // when
         indexingService.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
@@ -157,6 +170,7 @@ public class IndexingServiceTest
         ) );
 
         life.start();
+        indexingService.startIndexes();
 
         // when
         indexingService.createIndex( indexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
@@ -203,6 +217,7 @@ public class IndexingServiceTest
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
         life.start();
+        indexingService.startIndexes();
 
         // when
         indexingService.createIndex( IndexRule.constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
@@ -233,6 +248,7 @@ public class IndexingServiceTest
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
         life.start();
+        indexingService.startIndexes();
 
         // when
         indexingService.createIndex( IndexRule.constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
@@ -263,7 +279,7 @@ public class IndexingServiceTest
                 mock( IndexStoreView.class ),
                 mockLookup,
                 mock( UpdateableSchemaState.class ),
-                mockLogging( logger ) );
+                mockLogging( logger ), IndexingService.NO_MONITOR );
 
         IndexRule onlineIndex     = indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
@@ -304,7 +320,7 @@ public class IndexingServiceTest
                 mock( IndexStoreView.class ),
                 mockLookup,
                 mock( UpdateableSchemaState.class ),
-                mockLogging( logger ) );
+                mockLogging( logger ), IndexingService.NO_MONITOR );
 
         IndexRule onlineIndex     = indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
@@ -323,7 +339,7 @@ public class IndexingServiceTest
         logger.clear();
 
         // when
-        indexingService.start();
+        indexingService.startIndexes();
 
         // then
         verify( provider ).getPopulationFailure( 3 );
@@ -359,7 +375,7 @@ public class IndexingServiceTest
             assertThat( e.getMessage(), containsString( otherProviderKey ) );
         }
     }
-    
+
     @Test
     public void shouldSnapshotOnlineIndexes() throws Exception
     {
@@ -413,6 +429,7 @@ public class IndexingServiceTest
 
         indexing.initIndexes( iterator(rule1, rule2) );
         life.start();
+        indexing.startIndexes();
 
         // WHEN
         ResourceIterator<File> files = indexing.snapshotStoreFiles();
@@ -471,7 +488,7 @@ public class IndexingServiceTest
 
         return life.add( new IndexingService(
                 life.add( new Neo4jJobScheduler( logger ) ), new DefaultSchemaIndexProviderMap( indexProvider ),
-                storeView, mock( TokenNameLookup.class ), schemaState, mockLogging( logger ) ) );
+                storeView, mock( TokenNameLookup.class ), schemaState, mockLogging( logger ), IndexingService.NO_MONITOR ) );
     }
 
     private DataUpdates withData( NodePropertyUpdate... updates )
