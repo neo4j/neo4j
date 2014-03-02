@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.scalatest.FlatSpec
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class PatternElementNamerTest extends FlatSpec {
+class PatternElementNamerTest extends CypherFunSuite {
+
   import parser.ParserFixture._
 
-  "patternElementNamer" should "name all NodePatterns in Query" in {
+  test("name all NodePatterns in Query" ) {
     val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
 
@@ -33,7 +34,7 @@ class PatternElementNamerTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "name all RelationshipPatterns in Query" in {
+  test("name all RelationshipPatterns in Query") {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
 

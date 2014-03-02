@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.scalatest.FlatSpec
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class NormalizeArithmeticExpressionsTest extends FlatSpec {
+class NormalizeArithmeticExpressionsTest extends CypherFunSuite {
   import parser.ParserFixture._
 
-  "normalizeArithmeticExpressions" should "solve literal expressions" in {
+  test("solve literal expressions") {
     assertRewrite("RETURN 1+1 AS r", "RETURN 2 AS r")
     assertRewrite("RETURN 1+5*4-3 AS r", "RETURN 18 AS r")
     assertRewrite("RETURN 1+(5*4)/(3*4) AS r", "RETURN 2 AS r")
     assertRewrite("RETURN 1+(5*4)/(2.0*4) AS r", "RETURN 3.5 AS r")
   }
 
-  it should "solve multiplication regardless of order" in {
+  test("solve multiplication regardless of order") {
     assertRewrite("MATCH n RETURN 5 * 3 * n.prop AS r", "MATCH n RETURN n.prop * 15 AS r")
     assertRewrite("MATCH n RETURN n.prop * 4 * 2 AS r", "MATCH n RETURN n.prop * 8 AS r")
     assertRewrite("MATCH n RETURN 12 * n.prop * 5 AS r", "MATCH n RETURN n.prop * 60 AS r")

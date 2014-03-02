@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.scalatest.FlatSpec
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class NormalizeMatchPredicatesTest extends FlatSpec {
+class NormalizeMatchPropertyPredicatesTest extends CypherFunSuite {
   import parser.ParserFixture._
 
-  "normalizeMatchPredicates" should "move single predicate from nodes to WHERE" in {
+  test("move single predicate from nodes to WHERE") {
     val original = parser.parse("MATCH (n {foo: 'bar'}) RETURN n")
     val expected = parser.parse("MATCH (n) WHERE n.foo = 'bar' RETURN n")
 
@@ -33,7 +33,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "move single predicates from rels to WHERE" in {
+  test("move single predicates from rels to WHERE") {
     val original = parser.parse("MATCH (n)-[r:Foo {foo: 1}]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->() WHERE r.foo = 1 RETURN n")
 
@@ -41,7 +41,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result.toString === expected.toString)
   }
 
-  it should "move multiple predicates from nodes to WHERE" in {
+  test("move multiple predicates from nodes to WHERE") {
     val original = parser.parse("MATCH (n {foo: 'bar', bar: 4}) RETURN n")
     val expected = parser.parse("MATCH (n) WHERE n.foo = 'bar' AND n.bar = 4 RETURN n")
 
@@ -49,7 +49,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "move multiple predicates from rels to WHERE" in {
+  test("move multiple predicates from rels to WHERE") {
     val original = parser.parse("MATCH (n)-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->() WHERE r.foo = 1 AND r.bar = 'baz' RETURN n")
 
@@ -57,7 +57,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "move multiple predicates to WHERE" in {
+  test("move multiple predicates to WHERE") {
     val original = parser.parse("MATCH (n {foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' RETURN n")
 
@@ -65,7 +65,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "prepend predicates to existing WHERE" in {
+  test("prepend predicates to existing WHERE") {
     val original = parser.parse("MATCH (n {foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() WHERE n.baz = true OR r.baz = false RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' AND (n.baz = true OR r.baz = false) RETURN n")
 
@@ -73,7 +73,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "ignore unnamed node pattern elements" in {
+  test("ignore unnamed node pattern elements") {
     val original = parser.parse("MATCH ({foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN n")
     val expected = parser.parse("MATCH ({foo: 'bar', bar: 4})-[r:Foo]->() WHERE r.foo = 1 AND r.bar = 'baz' RETURN n")
 
@@ -81,7 +81,7 @@ class NormalizeMatchPredicatesTest extends FlatSpec {
     assert(result === expected)
   }
 
-  it should "ignore unnamed rel pattern elements" in {
+  test("ignore unnamed rel pattern elements") {
     val original = parser.parse("MATCH (n {foo: 'bar', bar: 4})-[:Foo {foo: 1, bar: 'baz'}]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[:Foo {foo: 1, bar: 'baz'}]->() WHERE n.foo = 'bar' AND n.bar = 4 RETURN n")
 
