@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CypherType}
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{Pattern, AstNode}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{VarLengthRelatedTo, RelatedTo, Pattern, AstNode}
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.{InvalidSemanticsException, InternalException}
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.PropertySupport
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class MergePatternAction(patterns: Seq[Pattern],
                               actions: Seq[UpdateAction],
@@ -40,6 +42,9 @@ case class MergePatternAction(patterns: Seq[Pattern],
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     state.initialContext = Some(context)
+
+    // TODO get rid of double evaluation of property expressions
+    MergePatternAction.ensureNoNullRelationshipPropertiesInPatterns(patterns, context, state)
 
     val matchResult = doMatch(state).toList
     if(matchResult.nonEmpty)
@@ -103,5 +108,29 @@ case class MergePatternAction(patterns: Seq[Pattern],
     val introducedIdentifiers = patterns.flatMap(_.identifiers).toSet
 
     dependencies -- introducedIdentifiers
+  }
+}
+
+object MergePatternAction {
+
+  def ensureNoNullRelationshipPropertiesInPatterns(patterns: Seq[Pattern], context: ExecutionContext, state: QueryState) {
+    for (pattern <- patterns) {
+      val extractedProperties = pattern match {
+        case RelatedTo(_, _, _, _, _, properties) => Some(properties)
+        case VarLengthRelatedTo(_, _, _, _, _, _, _, _, _)
+             | UniqueLink(_, _, _, _, _) =>
+          throw new ThisShouldNotHappenError("Davide/Stefan", "Merge patterns do not support var length or unique link")
+        case _ => None
+      }
+
+      val nullProperty = extractedProperties.flatMap(PropertySupport.firstNullPropertyIfAny(_, context, state))
+
+      nullProperty match {
+        case Some(key) =>
+          throw new InvalidSemanticsException(s"Cannot merge relationship using null property value for $key")
+        case None =>
+        // awesome
+      }
+    }
   }
 }

@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Node, Relationship}
 
-@RunWith(classOf[JUnitRunner])
-class CreateAcceptanceTest extends ExecutionEngineFunSuite {
+class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
   test("using an undirected relationship pattern should fail on create") {
     evaluating {
@@ -32,4 +29,27 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite {
     }  should produce[SyntaxException]
   }
 
+  test("create node using null properties should just ignore those properties") {
+    // when
+    val result = execute("create (n {id: 12, property: null}) return n")
+    val node = result.columnAs[Node]("n").next()
+    assertStats(result, nodesCreated = 1, propertiesSet = 1)
+
+    // then
+    graph.inTx {
+      node.getProperty("id") should equal(12)
+    }
+  }
+
+  test("create relationship using null properties should just ignore those properties") {
+    // when
+    val result = execute("create ()-[r:X {id: 12, property: null}]->() return r")
+    val relationship = result.columnAs[Relationship]("r").next()
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+
+    // then
+    graph.inTx {
+      relationship.getProperty("id") should equal(12)
+    }
+  }
 }
