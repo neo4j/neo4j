@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,6 +39,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
@@ -66,6 +60,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
@@ -100,6 +95,14 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestNeoStore
 {
@@ -197,7 +200,7 @@ public class TestNeoStore
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(LockManager.class),
-                mock( SchemaWriteGuard.class));
+                mock( SchemaWriteGuard.class), IndexingService.NO_MONITOR );
         ds.init();
         ds.start();
 

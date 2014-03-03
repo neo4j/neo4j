@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -203,7 +204,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected File storeDir;
     protected Map<String, String> params;
-    private final TransactionInterceptorProviders transactionInterceptorProviders;
+    protected final TransactionInterceptorProviders transactionInterceptorProviders;
     protected StoreId storeId;
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
 
@@ -400,7 +401,7 @@ public abstract class InternalAbstractGraphDatabase
         this.logging = createLogging();
 
         // Component monitoring
-        this.monitors = new Monitors();
+        this.monitors = createMonitors();
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -465,7 +466,7 @@ public abstract class InternalAbstractGraphDatabase
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         stateFactory = createTransactionStateFactory();
-        
+
         Factory<byte[]> xidGlobalIdFactory = createXidGlobalIdFactory();
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
@@ -573,6 +574,11 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
+    protected Monitors createMonitors()
+    {
+        return new Monitors();
+    }
+
     protected Factory<byte[]> createXidGlobalIdFactory()
     {
         return new Factory<byte[]>()
@@ -590,6 +596,7 @@ public abstract class InternalAbstractGraphDatabase
         return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 1 );
     }
 
+    @Override
     public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
     }
@@ -912,7 +919,7 @@ public abstract class InternalAbstractGraphDatabase
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, this );
+                persistenceManager, lockManager, this, monitors.newMonitor( IndexingService.Monitor.class ) );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
