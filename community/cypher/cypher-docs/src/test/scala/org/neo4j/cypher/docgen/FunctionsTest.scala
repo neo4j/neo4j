@@ -738,7 +738,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
         "parsing fails, +NULL+ will be returned. A floating point number will be cast into an integer.",
       queryText = "return toInt(\"42\"), toInt(\"not a number\")",
       returns = "",
-      assertions = (p) => assert(List(Map("toInt(\"42\")" -> 42, "toInt(\"no a number\")" -> null)) === p.toList)
+      assertions = (p) => assert(List(Map("toInt(\"42\")" -> 42, "toInt(\"not a number\")" -> null)) === p.toList)
     )
   }
 
@@ -751,7 +751,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
         "If the parsing fails, +NULL+ will be returned. An integer will be cast to a floating point number.",
       queryText = "return toFloat(\"11.5\"), toFloat(\"not a number\")",
       returns = "",
-      assertions = (p) => assert(List(Map("toFloat(\"11.5\")" -> 11.5, "toFloat(\"no a number\")" -> null)) === p.toList)
+      assertions = (p) => assert(List(Map("toFloat(\"11.5\")" -> 11.5, "toFloat(\"not a number\")" -> null)) === p.toList)
     )
   }
 
