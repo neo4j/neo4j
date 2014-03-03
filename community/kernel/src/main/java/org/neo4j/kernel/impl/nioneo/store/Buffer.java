@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  * <p>
  * All the <CODE>put</CODE> and <CODE>get</CODE> methods of this class works
  * the same way as in <CODE>ByteBuffer</CODE>.
- * 
+ *
  * @see ByteBuffer, PersistenceWindow
  */
 public class Buffer
@@ -55,7 +55,7 @@ public class Buffer
 
     /**
      * Returns the position of the persistence window tied to this buffer.
-     * 
+     *
      * @return The persistence window's position
      */
     public long position()
@@ -65,14 +65,14 @@ public class Buffer
 
     /**
      * Returns the underlying byte buffer.
-     * 
+     *
      * @return The byte buffer wrapped by this buffer
      */
     public ByteBuffer getBuffer()
     {
         return buf;
     }
-    
+
     public void reset()
     {
         buf.clear();
@@ -81,7 +81,7 @@ public class Buffer
     /**
      * Sets the offset from persistence window position in the underlying byte
      * buffer.
-     * 
+     *
      * @param offset
      *            The new offset to set
      * @return This buffer
@@ -96,14 +96,15 @@ public class Buffer
         {
 //            logger.severe( "Illegal buffer position: Pos=" + position()
 //                + " off=" + offset + " capacity=" + buf.capacity() );
-            throw new IllegalArgumentException( "Illegal position " + offset, e );
+            throw new IllegalArgumentException( "Illegal offset " + offset +
+                    " for window position:" + position() + ", buffer:" + buf, e );
         }
         return this;
     }
 
     /**
      * Returns the offset of this buffer.
-     * 
+     *
      * @return The offset
      */
     public int getOffset()
@@ -113,7 +114,7 @@ public class Buffer
 
     /**
      * Puts a <CODE>byte</CODE> into the underlying buffer.
-     * 
+     *
      * @param b
      *            The <CODE>byte</CODE> that will be written
      * @return This buffer
@@ -126,7 +127,7 @@ public class Buffer
 
     /**
      * Puts a <CODE>int</CODE> into the underlying buffer.
-     * 
+     *
      * @param i
      *            The <CODE>int</CODE> that will be written
      * @return This buffer
@@ -139,7 +140,7 @@ public class Buffer
 
     /**
      * Puts a <CODE>long</CODE> into the underlying buffer.
-     * 
+     *
      * @param l
      *            The <CODE>long</CODE> that will be written
      * @return This buffer
@@ -152,7 +153,7 @@ public class Buffer
 
     /**
      * Reads and returns a <CODE>byte</CODE> from the underlying buffer.
-     * 
+     *
      * @return The <CODE>byte</CODE> value at the current position/offset
      */
     public byte get()
@@ -162,14 +163,14 @@ public class Buffer
 
     /**
      * Reads and returns a <CODE>int</CODE> from the underlying buffer.
-     * 
+     *
      * @return The <CODE>int</CODE> value at the current position/offset
      */
     public int getInt()
     {
         return buf.getInt();
     }
-    
+
     public long getUnsignedInt()
     {
         return buf.getInt()&0xFFFFFFFFL;
@@ -177,7 +178,7 @@ public class Buffer
 
     /**
      * Reads and returns a <CODE>long</CODE> from the underlying buffer.
-     * 
+     *
      * @return The <CODE>long</CODE> value at the current position/offset
      */
     public long getLong()
@@ -187,7 +188,7 @@ public class Buffer
 
     /**
      * Puts a <CODE>byte array</CODE> into the underlying buffer.
-     * 
+     *
      * @param src
      *            The <CODE>byte array</CODE> that will be written
      * @return This buffer
@@ -210,7 +211,7 @@ public class Buffer
      * Puts a <CODE>byte array</CODE> into the underlying buffer starting from
      * <CODE>offset</CODE> in the array and writing <CODE>length</CODE>
      * values.
-     * 
+     *
      * @param src
      *            The <CODE>byte array</CODE> to write values from
      * @param offset
@@ -226,9 +227,9 @@ public class Buffer
     }
 
     /**
-     * Reads <CODE>byte array length</CODE> bytes into the 
+     * Reads <CODE>byte array length</CODE> bytes into the
      * <CODE>byte array</CODE> from the underlying buffer.
-     * 
+     *
      * @param dst
      *            The byte array to read values into
      * @return This buffer
@@ -249,10 +250,11 @@ public class Buffer
     {
         buf.limit( 0 );
     }
-    
+
+    @Override
     public String toString()
     {
-        return "Buffer[[" + buf.position() + "," + buf.capacity() + "]," + 
+        return "Buffer[[" + buf.position() + "," + buf.capacity() + "]," +
             persistenceWindow + "]";
     }
 }
