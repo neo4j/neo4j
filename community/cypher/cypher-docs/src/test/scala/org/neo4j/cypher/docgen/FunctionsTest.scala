@@ -603,8 +603,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     testThis(
       title = "SPLIT",
       syntax = "SPLIT( original, splitPattern )",
-      arguments = List("original" -> "An expression that returns a string",
-        "splitRegex" -> "An expression that returns a pattern to split with"),
+      arguments = List(
+        "original" -> "An expression that returns a string",
+        "splitPattern" -> "The string to split to original string with"),
       text = "`SPLIT` returns the sequence of strings witch are delimited by split patterns.",
       queryText = """return split("one,two", ",")""",
       returns = "",
@@ -735,7 +736,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       arguments = List("expression" -> "An expression that returns anything"),
       text = "`TOINT` converts the argument to an integer. A string is parsed as if it was an integer number. If the " +
         "parsing fails, +NULL+ will be returned. A floating point number will be cast into an integer.",
-      queryText = "return toInt(\"42\"), toInt(\"no a number\")",
+      queryText = "return toInt(\"42\"), toInt(\"not a number\")",
       returns = "",
       assertions = (p) => assert(List(Map("toInt(\"42\")" -> 42, "toInt(\"no a number\")" -> null)) === p.toList)
     )
@@ -748,7 +749,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       arguments = List("expression" -> "An expression that returns anything"),
       text = "`TOFLOAT` converts the argument to a float. A string is parsed as if it was an floating point number. " +
         "If the parsing fails, +NULL+ will be returned. An integer will be cast to a floating point number.",
-      queryText = "return toFloat(\"11.5\"), toFloat(\"no a number\")",
+      queryText = "return toFloat(\"11.5\"), toFloat(\"not a number\")",
       returns = "",
       assertions = (p) => assert(List(Map("toFloat(\"11.5\")" -> 11.5, "toFloat(\"no a number\")" -> null)) === p.toList)
     )
