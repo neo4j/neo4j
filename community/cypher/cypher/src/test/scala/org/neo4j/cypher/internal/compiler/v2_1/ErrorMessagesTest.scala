@@ -348,7 +348,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   test("should give nice error when setting a property to a illegal value") {
     expectError(
       "CREATE (a) SET a.foo = [{x: 1}]",
-      "Properties containing arrays of non-primitive types are not supported")
+      "Property values can only be of primitive types or arrays thereof")
   }
 
   def expectError(query: String, expectedError: String) {
