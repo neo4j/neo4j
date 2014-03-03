@@ -69,7 +69,8 @@ case class CypherParser() extends Parser
     val normalizedStatement = statement.rewrite(bottomUp(
       normalizeArithmeticExpressions,
       patternElementNamer,
-      normalizeMatchPredicates
+      PropertyPredicateNormalizer,
+      LabelPredicateNormalizer
     )).asInstanceOf[ast.Statement]
     (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(query)), statement)
   }
