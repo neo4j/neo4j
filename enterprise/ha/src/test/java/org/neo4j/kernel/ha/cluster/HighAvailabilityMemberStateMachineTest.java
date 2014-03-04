@@ -39,7 +39,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
@@ -71,7 +71,7 @@ public class HighAvailabilityMemberStateMachineTest
     public void shouldMoveToToMasterFromPendingOnMasterElectedForItself() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -109,7 +109,7 @@ public class HighAvailabilityMemberStateMachineTest
     public void shouldRemainToPendingOnMasterElectedForSomeoneElse() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -136,7 +136,7 @@ public class HighAvailabilityMemberStateMachineTest
         ClusterMemberListener theListener = listener.iterator().next();
 
         // When
-        theListener.coordinatorIsElected( new InstanceId( 2 ) );
+        theListener.coordinatorIsElected( new ClusterInstanceId( 2 ) );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -147,7 +147,7 @@ public class HighAvailabilityMemberStateMachineTest
     public void shouldSwitchToToSlaveOnMasterAvailableForSomeoneElse() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -176,7 +176,7 @@ public class HighAvailabilityMemberStateMachineTest
         toTest.addHighAvailabilityMemberListener( probe );
 
         // When
-        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, new InstanceId( 2 ), URI.create( "ha://whatever" ) );
+        theListener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, new ClusterInstanceId( 2 ), URI.create( "ha://whatever" ) );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -188,8 +188,8 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenInMasterStateLosingQuorumShouldPutInPending() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
-        InstanceId other = new InstanceId( 2 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
+        ClusterInstanceId other = new ClusterInstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -234,7 +234,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.MASTER) );
 
         // When
-        theListener.memberIsFailed( new InstanceId( 2 ) );
+        theListener.memberIsFailed( new ClusterInstanceId( 2 ) );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -247,8 +247,8 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenInSlaveStateLosingQuorumShouldPutInPending() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
-        InstanceId other = new InstanceId( 2 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
+        ClusterInstanceId other = new ClusterInstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -293,7 +293,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.SLAVE) );
 
         // When
-        theListener.memberIsFailed( new InstanceId( 2 ) );
+        theListener.memberIsFailed( new ClusterInstanceId( 2 ) );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -306,8 +306,8 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenInToMasterStateLosingQuorumShouldPutInPending() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
-        InstanceId other = new InstanceId( 2 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
+        ClusterInstanceId other = new ClusterInstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -351,7 +351,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_MASTER) );
 
         // When
-        theListener.memberIsFailed( new InstanceId( 2 ) );
+        theListener.memberIsFailed( new ClusterInstanceId( 2 ) );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -364,8 +364,8 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenInToSlaveStateLosingQuorumShouldPutInPending() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
-        InstanceId other = new InstanceId( 2 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
+        ClusterInstanceId other = new ClusterInstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -409,7 +409,7 @@ public class HighAvailabilityMemberStateMachineTest
         assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.TO_SLAVE) );
 
         // When
-        theListener.memberIsFailed( new InstanceId( 2 ) );
+        theListener.memberIsFailed( new ClusterInstanceId( 2 ) );
 
         // Then
         assertThat( listener.size(), equalTo( 1 ) ); // Sanity check.
@@ -422,7 +422,7 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenListenerThrowsExceptionOnMasterElectedStateDoesNotChange() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -465,8 +465,8 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenListenerThrowsExceptionOnMasterAvailableStateDoesNotChange() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
-        InstanceId master = new InstanceId( 2 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
+        ClusterInstanceId master = new ClusterInstanceId( 2 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );
@@ -508,7 +508,7 @@ public class HighAvailabilityMemberStateMachineTest
     public void whenListenerThrowsExceptionOnSlaveAvailableStateDoesNotChange() throws Throwable
     {
         // Given
-        InstanceId me = new InstanceId( 1 );
+        ClusterInstanceId me = new ClusterInstanceId( 1 );
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me );
         AvailabilityGuard guard = mock( AvailabilityGuard.class );
         ClusterMembers members = mock( ClusterMembers.class );

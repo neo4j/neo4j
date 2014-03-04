@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -38,10 +38,10 @@ public class HighAvailabilityConsoleLogger
         implements ClusterMemberListener, ClusterListener, AvailabilityGuard.AvailabilityListener
 {
     private ConsoleLogger console;
-    private InstanceId myId;
+    private ClusterInstanceId myId;
     private URI myUri;
 
-    public HighAvailabilityConsoleLogger( ConsoleLogger console, InstanceId myId )
+    public HighAvailabilityConsoleLogger( ConsoleLogger console, ClusterInstanceId myId )
     {
         this.console = console;
         this.myId = myId;
@@ -77,7 +77,7 @@ public class HighAvailabilityConsoleLogger
      * @param member
      */
     @Override
-    public void joinedCluster( InstanceId instanceId, URI member )
+    public void joinedCluster( ClusterInstanceId instanceId, URI member )
     {
         console.log( "Instance " + printId(instanceId, member) + " joined the cluster" );
     }
@@ -88,7 +88,7 @@ public class HighAvailabilityConsoleLogger
      * @param instanceId
      */
     @Override
-    public void leftCluster( InstanceId instanceId )
+    public void leftCluster( ClusterInstanceId instanceId )
     {
         console.log( "Instance " + instanceId + " has left the cluster" );
     }
@@ -101,7 +101,7 @@ public class HighAvailabilityConsoleLogger
      * @param electedMember
      */
     @Override
-    public void elected( String role, InstanceId instanceId, URI electedMember )
+    public void elected( String role, ClusterInstanceId instanceId, URI electedMember )
     {
         console.log( "Instance " + printId( instanceId, electedMember ) + "was elected as " + role );
     }
@@ -114,14 +114,14 @@ public class HighAvailabilityConsoleLogger
      * @param electedMember
      */
     @Override
-    public void unelected( String role, InstanceId instanceId, URI electedMember )
+    public void unelected( String role, ClusterInstanceId instanceId, URI electedMember )
     {
         console.log( "Instance " + printId( instanceId, electedMember ) + "was demoted as " + role );
     }
 
     // HA events
     @Override
-    public void coordinatorIsElected( InstanceId coordinatorId )
+    public void coordinatorIsElected( ClusterInstanceId coordinatorId )
     {
     }
 
@@ -133,7 +133,7 @@ public class HighAvailabilityConsoleLogger
      * @param atUri       the URI at which the instance is available at
      */
     @Override
-    public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
+    public void memberIsAvailable( String role, ClusterInstanceId availableId, URI atUri )
     {
         console.log( "Instance " + printId( availableId, atUri ) + "is available as " + role + " at " + atUri.toASCIIString() );
     }
@@ -145,7 +145,7 @@ public class HighAvailabilityConsoleLogger
      * @param unavailableId The id of the member which became unavailable for that role
      */
     @Override
-    public void memberIsUnavailable( String role, InstanceId unavailableId )
+    public void memberIsUnavailable( String role, ClusterInstanceId unavailableId )
     {
         console.log( "Instance " + printId( unavailableId, null ) + "is unavailable as " + role );
     }
@@ -156,7 +156,7 @@ public class HighAvailabilityConsoleLogger
      * @param instanceId
      */
     @Override
-    public void memberIsFailed( InstanceId instanceId )
+    public void memberIsFailed( ClusterInstanceId instanceId )
     {
         console.log( "Instance " + printId( instanceId, null ) + "has failed" );
     }
@@ -167,7 +167,7 @@ public class HighAvailabilityConsoleLogger
      * @param instanceId
      */
     @Override
-    public void memberIsAlive( InstanceId instanceId )
+    public void memberIsAlive( ClusterInstanceId instanceId )
     {
         console.log( "Instance " + printId( instanceId, null ) + "is alive" );
     }
@@ -192,7 +192,7 @@ public class HighAvailabilityConsoleLogger
         console.log( "Write transactions to database disabled" );
     }
 
-    private String printId( InstanceId id, URI member )
+    private String printId( ClusterInstanceId id, URI member )
     {
         String memberName = member == null ? null : parameter( "memberName" ).apply( member );
         String memberNameOrId = memberName == null ? id.toString() : memberName;

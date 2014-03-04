@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -46,9 +46,9 @@ class HeartbeatContextImpl
     implements HeartbeatContext
 {
     // HeartbeatContext
-    private Set<InstanceId> failed = new HashSet<InstanceId>();
+    private Set<ClusterInstanceId> failed = new HashSet<ClusterInstanceId>();
 
-    private Map<InstanceId, Set<InstanceId>> nodeSuspicions = new HashMap<InstanceId, Set<InstanceId>>();
+    private Map<ClusterInstanceId, Set<ClusterInstanceId>> nodeSuspicions = new HashMap<ClusterInstanceId, Set<ClusterInstanceId>>();
 
     private Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
 
@@ -56,15 +56,15 @@ class HeartbeatContextImpl
     private ClusterContext clusterContext;
     private LearnerContext learnerContext;
 
-    HeartbeatContextImpl( InstanceId me, CommonContextState commonState, Logging logging,
+    HeartbeatContextImpl( ClusterInstanceId me, CommonContextState commonState, Logging logging,
                           Timeouts timeouts, Executor executor )
     {
         super( me, commonState, logging, timeouts );
         this.executor = executor;
     }
 
-    private HeartbeatContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
-                          Set<InstanceId> failed, Map<InstanceId, Set<InstanceId>> nodeSuspicions,
+    private HeartbeatContextImpl( ClusterInstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
+                          Set<ClusterInstanceId> failed, Map<ClusterInstanceId, Set<ClusterInstanceId>> nodeSuspicions,
                           Iterable<HeartbeatListener> heartBeatListeners, Executor executor)
     {
         super( me, commonState, logging, timeouts );
@@ -90,9 +90,9 @@ class HeartbeatContextImpl
      * @return True iff the node was suspected
      */
     @Override
-    public boolean alive( final InstanceId node )
+    public boolean alive( final ClusterInstanceId node )
     {
-        Set<InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+        Set<ClusterInstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
         boolean suspected = serverSuspicions.remove( node );
 
         if ( !isFailed( node ) && failed.remove( node ) )
@@ -112,9 +112,9 @@ class HeartbeatContextImpl
     }
 
     @Override
-    public void suspect( final InstanceId node )
+    public void suspect( final ClusterInstanceId node )
     {
-        Set<InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+        Set<ClusterInstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
 
         if ( !serverSuspicions.contains( node ) )
         {
@@ -139,15 +139,15 @@ class HeartbeatContextImpl
     }
 
     @Override
-    public void suspicions( InstanceId from, Set<InstanceId> suspicions )
+    public void suspicions( ClusterInstanceId from, Set<ClusterInstanceId> suspicions )
     {
-        Set<InstanceId> serverSuspicions = getSuspicionsFor( from );
+        Set<ClusterInstanceId> serverSuspicions = getSuspicionsFor( from );
 
         // Check removals
-        Iterator<InstanceId> suspicionsIterator = serverSuspicions.iterator();
+        Iterator<ClusterInstanceId> suspicionsIterator = serverSuspicions.iterator();
         while ( suspicionsIterator.hasNext() )
         {
-            InstanceId currentSuspicion = suspicionsIterator.next();
+            ClusterInstanceId currentSuspicion = suspicionsIterator.next();
             if ( !suspicions.contains( currentSuspicion ) )
             {
                 getLogger( HeartbeatContext.class ).info( from + " is no longer suspecting " + currentSuspicion );
@@ -156,7 +156,7 @@ class HeartbeatContextImpl
         }
 
         // Check additions
-        for ( InstanceId suspicion : suspicions )
+        for ( ClusterInstanceId suspicion : suspicions )
         {
             if ( !serverSuspicions.contains( suspicion ) )
             {
@@ -166,7 +166,7 @@ class HeartbeatContextImpl
         }
 
         // Check if anyone is considered failed
-        for ( final InstanceId node : suspicions )
+        for ( final ClusterInstanceId node : suspicions )
         {
             if ( isFailed( node ) && !failed.contains( node ) )
             {
@@ -184,18 +184,18 @@ class HeartbeatContextImpl
     }
 
     @Override
-    public Set<InstanceId> getFailed()
+    public Set<ClusterInstanceId> getFailed()
     {
         return failed;
     }
 
     @Override
-    public Iterable<InstanceId> getAlive()
+    public Iterable<ClusterInstanceId> getAlive()
     {
-        return Iterables.filter( new Predicate<InstanceId>()
+        return Iterables.filter( new Predicate<ClusterInstanceId>()
         {
             @Override
-            public boolean accept( InstanceId item )
+            public boolean accept( ClusterInstanceId item )
             {
                 return !isFailed( item );
             }
@@ -215,19 +215,19 @@ class HeartbeatContextImpl
     }
 
     @Override
-    public void serverLeftCluster( InstanceId node )
+    public void serverLeftCluster( ClusterInstanceId node )
     {
         failed.remove( node );
-        for ( Set<InstanceId> uris : nodeSuspicions.values() )
+        for ( Set<ClusterInstanceId> uris : nodeSuspicions.values() )
         {
             uris.remove( node );
         }
     }
 
     @Override
-    public boolean isFailed( InstanceId node )
+    public boolean isFailed( ClusterInstanceId node )
     {
-        List<InstanceId> suspicions = getSuspicionsOf( node );
+        List<ClusterInstanceId> suspicions = getSuspicionsOf( node );
 
         /*
          * This looks weird but trust me, there is a reason for it.
@@ -245,12 +245,12 @@ class HeartbeatContextImpl
     }
 
     @Override
-    public List<InstanceId> getSuspicionsOf( InstanceId server )
+    public List<ClusterInstanceId> getSuspicionsOf( ClusterInstanceId server )
     {
-        List<InstanceId> suspicions = new ArrayList<InstanceId>();
-        for ( InstanceId member : commonState.configuration().getMemberIds() )
+        List<ClusterInstanceId> suspicions = new ArrayList<ClusterInstanceId>();
+        for ( ClusterInstanceId member : commonState.configuration().getMemberIds() )
         {
-            Set<InstanceId> memberSuspicions = nodeSuspicions.get( member );
+            Set<ClusterInstanceId> memberSuspicions = nodeSuspicions.get( member );
             if ( memberSuspicions != null && !failed.contains( member )
                     && memberSuspicions.contains( server ) )
             {
@@ -262,19 +262,19 @@ class HeartbeatContextImpl
     }
 
     @Override
-    public Set<InstanceId> getSuspicionsFor( InstanceId uri )
+    public Set<ClusterInstanceId> getSuspicionsFor( ClusterInstanceId uri )
     {
-        Set<InstanceId> serverSuspicions = nodeSuspicions.get( uri );
+        Set<ClusterInstanceId> serverSuspicions = nodeSuspicions.get( uri );
         if ( serverSuspicions == null )
         {
-            serverSuspicions = new HashSet<InstanceId>();
+            serverSuspicions = new HashSet<ClusterInstanceId>();
             nodeSuspicions.put( uri, serverSuspicions );
         }
         return serverSuspicions;
     }
 
     @Override
-    public Iterable<InstanceId> getOtherInstances()
+    public Iterable<ClusterInstanceId> getOtherInstances()
     {
         return clusterContext.getOtherInstances();
     }

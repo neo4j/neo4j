@@ -30,7 +30,7 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -41,25 +41,25 @@ public class SnapshotStateTest
     @Test
     public void testNoSnapshotRequestIfCoordinatorInExistingCluster() throws Throwable
     {
-        Map<InstanceId, URI> extraMember = new HashMap<InstanceId, URI>();
+        Map<ClusterInstanceId, URI> extraMember = new HashMap<ClusterInstanceId, URI>();
         URI other = URI.create( "cluster://other");
-        extraMember.put( new InstanceId( 2 ), other );
+        extraMember.put( new ClusterInstanceId( 2 ), other );
         baseNoSendTest( extraMember );
     }
 
     @Test
     public void testNoSnapshotRequestIfOnlyMember() throws Throwable
     {
-        Map<InstanceId, URI> extraMember = new HashMap<InstanceId, URI>();
+        Map<ClusterInstanceId, URI> extraMember = new HashMap<ClusterInstanceId, URI>();
         baseNoSendTest( extraMember );
     }
 
-    public void baseNoSendTest( Map<InstanceId, URI> extraMembers) throws Throwable
+    public void baseNoSendTest( Map<ClusterInstanceId, URI> extraMembers) throws Throwable
     {
         URI me = URI.create( "cluster://me" );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
-        final InstanceId myId = new InstanceId( 1 );
+        Map<ClusterInstanceId, URI> members = new HashMap<ClusterInstanceId, URI>();
+        final ClusterInstanceId myId = new ClusterInstanceId( 1 );
         members.put( myId, me );
         members.putAll( extraMembers );
 

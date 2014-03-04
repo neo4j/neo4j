@@ -80,7 +80,7 @@ public class MultiPaxosServerFactory
     }
 
     @Override
-    public ProtocolServer newProtocolServer( InstanceId me, TimeoutStrategy timeoutStrategy, MessageSource input,
+    public ProtocolServer newProtocolServer( ClusterInstanceId me, TimeoutStrategy timeoutStrategy, MessageSource input,
                                              MessageSender output, AcceptorInstanceStore acceptorInstanceStore,
                                              ElectionCredentialsProvider electionCredentialsProvider,
                                              Executor stateMachineExecutor,
@@ -105,7 +105,7 @@ public class MultiPaxosServerFactory
                 context, snapshotContext );
     }
 
-    public ProtocolServer newProtocolServer( InstanceId me, MessageSource input, MessageSender output,
+    public ProtocolServer newProtocolServer( ClusterInstanceId me, MessageSource input, MessageSender output,
                                               Executor stateMachineExecutor, DelayedDirectExecutor executor, Timeouts timeouts,
                                               MultiPaxosContext context, SnapshotContext snapshotContext )
     {
@@ -129,7 +129,7 @@ public class MultiPaxosServerFactory
      * an external requirement for assembling protocol servers given an existing set of state machines (used to prove
      * correctness).
      * */
-    public ProtocolServer constructSupportingInfrastructureFor( InstanceId me, MessageSource input,
+    public ProtocolServer constructSupportingInfrastructureFor( ClusterInstanceId me, MessageSource input,
                     MessageSender output, DelayedDirectExecutor executor, Timeouts timeouts,
                     Executor stateMachineExecutor, final MultiPaxosContext context,
                     StateMachine[] machines )

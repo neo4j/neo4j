@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -60,10 +60,10 @@ import static org.mockito.Mockito.when;
  */
 public class HeartbeatContextTest
 {
-    private static InstanceId[] instanceIds = new InstanceId[]{
-            new InstanceId( 1 ),
-            new InstanceId( 2 ),
-            new InstanceId( 3 )
+    private static ClusterInstanceId[] instanceIds = new ClusterInstanceId[]{
+            new ClusterInstanceId( 1 ),
+            new ClusterInstanceId( 2 ),
+            new ClusterInstanceId( 3 )
     };
 
     private static String[] initialHosts = new String[]{
@@ -78,7 +78,7 @@ public class HeartbeatContextTest
     @Before
     public void setup()
     {
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>(  );
+        Map<ClusterInstanceId, URI> members = new HashMap<ClusterInstanceId, URI>(  );
         for ( int i = 0; i < instanceIds.length; i++ )
         {
             members.put( instanceIds[i], URI.create( initialHosts[i] ) );
@@ -112,13 +112,13 @@ public class HeartbeatContextTest
         // In config, not suspected yet
         assertFalse( toTest.alive( instanceIds[0] ) );
         // Not in config
-        assertFalse( toTest.alive( new InstanceId( 4 ) ) );
+        assertFalse( toTest.alive( new ClusterInstanceId( 4 ) ) );
 
         // By default, instances start off as alive
         assertEquals( instanceIds.length, Iterables.count( toTest.getAlive() ) );
         assertEquals( 0, toTest.getFailed().size() );
 
-        for ( InstanceId initialHost : instanceIds )
+        for ( ClusterInstanceId initialHost : instanceIds )
         {
             assertFalse( toTest.isFailed( initialHost ) );
         }
@@ -127,7 +127,7 @@ public class HeartbeatContextTest
     @Test
     public void testSuspicions()
     {
-        InstanceId suspect = instanceIds[1];
+        ClusterInstanceId suspect = instanceIds[1];
         toTest.suspect( suspect );
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
         assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
@@ -144,13 +144,13 @@ public class HeartbeatContextTest
         assertTrue( toTest.alive( suspect ) );
 
         // The other one sends suspicions too
-        InstanceId newSuspiciousBastard = instanceIds[2];
+        ClusterInstanceId newSuspiciousBastard = instanceIds[2];
         toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
         toTest.suspect( suspect );
         // Now two instances suspect it, it should be reported failed
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( newSuspiciousBastard ) );
-        List<InstanceId> suspiciousBastards = new ArrayList<InstanceId>( 2 );
+        List<ClusterInstanceId> suspiciousBastards = new ArrayList<ClusterInstanceId>( 2 );
         suspiciousBastards.add( context.getMyId() );
         suspiciousBastards.add( newSuspiciousBastard );
         assertEquals( suspiciousBastards, toTest.getSuspicionsOf( suspect ) );
@@ -161,8 +161,8 @@ public class HeartbeatContextTest
     @Test
     public void testFailedInstanceBecomingAlive()
     {
-        InstanceId suspect = instanceIds[1];
-        InstanceId newSuspiciousBastard = instanceIds[2];
+        ClusterInstanceId suspect = instanceIds[1];
+        ClusterInstanceId newSuspiciousBastard = instanceIds[2];
         toTest.suspicions( newSuspiciousBastard, Collections.singleton( suspect ) );
         toTest.suspect( suspect );
 
@@ -179,7 +179,7 @@ public class HeartbeatContextTest
         assertTrue( toTest.isFailed( suspect ) );
 
         // Assume the other guy started receiving heartbeats first
-        toTest.suspicions( newSuspiciousBastard, Collections.<InstanceId>emptySet() );
+        toTest.suspicions( newSuspiciousBastard, Collections.<ClusterInstanceId>emptySet() );
         assertFalse( toTest.isFailed( suspect ) );
     }
 
@@ -193,8 +193,8 @@ public class HeartbeatContextTest
     @Test
     public void testOneInstanceComesAliveAfterAllOtherFail()
     {
-        InstanceId instanceB = instanceIds[1];
-        InstanceId instanceC = instanceIds[2];
+        ClusterInstanceId instanceB = instanceIds[1];
+        ClusterInstanceId instanceC = instanceIds[2];
 
         // Both A and B consider C down
         toTest.suspect( instanceC );
@@ -214,11 +214,11 @@ public class HeartbeatContextTest
     public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers() throws Exception
     {
         // Given
-        InstanceId notInCluster = new InstanceId( -1 ); // backup, for example
-        toTest.suspicions( notInCluster, Iterables.toSet( Iterables.<InstanceId, InstanceId>iterable( instanceIds[1] ) ) );
+        ClusterInstanceId notInCluster = new ClusterInstanceId( -1 ); // backup, for example
+        toTest.suspicions( notInCluster, Iterables.toSet( Iterables.<ClusterInstanceId, ClusterInstanceId>iterable( instanceIds[1] ) ) );
 
         // When
-        List<InstanceId> suspicions = toTest.getSuspicionsOf ( instanceIds[1] );
+        List<ClusterInstanceId> suspicions = toTest.getSuspicionsOf ( instanceIds[1] );
 
         // Then
         assertThat( suspicions.size(), CoreMatchers.equalTo( 0 ) );

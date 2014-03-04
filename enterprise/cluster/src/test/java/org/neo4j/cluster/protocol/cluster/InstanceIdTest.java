@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterAssertion;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.VerifyInstanceConfiguration;
 
 public class InstanceIdTest
@@ -46,10 +46,10 @@ public class InstanceIdTest
     {
         testCluster( new int[] { 1, 1 }, new VerifyInstanceConfiguration[]
                 {
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                                        Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                                        Collections.<InstanceId>emptySet() )
+                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, ClusterInstanceId>emptyMap(),
+                                        Collections.<ClusterInstanceId>emptySet() ),
+                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, ClusterInstanceId>emptyMap(),
+                                        Collections.<ClusterInstanceId>emptySet() )
                 },
                 DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
@@ -68,16 +68,16 @@ public class InstanceIdTest
         correctMembers.add( URI.create( "server2" ) );
         correctMembers.add( URI.create( "server3" ) );
 
-        Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
-        roles.put( "coordinator", new InstanceId( 1 ) );
+        Map<String, ClusterInstanceId> roles = new HashMap<String, ClusterInstanceId>();
+        roles.put( "coordinator", new ClusterInstanceId( 1 ) );
 
         testCluster( new int[] {1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<InstanceId>emptySet() ),
-                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, InstanceId>emptyMap(),
-                        Collections.<InstanceId>emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<ClusterInstanceId>emptySet() ),
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<ClusterInstanceId>emptySet() ),
+                new VerifyInstanceConfiguration( correctMembers, roles, Collections.<ClusterInstanceId>emptySet() ),
+                new VerifyInstanceConfiguration( Collections.<URI>emptyList(), Collections.<String, ClusterInstanceId>emptyMap(),
+                        Collections.<ClusterInstanceId>emptySet() )}, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 600 ).
                 join( 100, 1, 1 ).
                 join( 100, 2, 1 ).
@@ -107,16 +107,16 @@ public class InstanceIdTest
         wrongMembers.add( URI.create( "server2" ) );
         wrongMembers.add( URI.create( "server3" ) );
 
-        Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
-        roles.put( "coordinator", new InstanceId( 1 ) );
+        Map<String, ClusterInstanceId> roles = new HashMap<String, ClusterInstanceId>();
+        roles.put( "coordinator", new ClusterInstanceId( 1 ) );
 
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<ClusterInstanceId> failed = new HashSet<ClusterInstanceId>();
 
         testCluster( new int[]{ 1, 2, 3, 3 },
                 new VerifyInstanceConfiguration[]{
                         new VerifyInstanceConfiguration( correctMembers, roles, failed ),
                         new VerifyInstanceConfiguration( correctMembers, roles, failed ),
-                        new VerifyInstanceConfiguration( wrongMembers, roles, Collections.<InstanceId>emptySet() ),
+                        new VerifyInstanceConfiguration( wrongMembers, roles, Collections.<ClusterInstanceId>emptySet() ),
                         new VerifyInstanceConfiguration( correctMembers, roles, failed )},
                 DEFAULT_NETWORK(),
                 new ClusterTestScriptDSL().
@@ -144,10 +144,10 @@ public class InstanceIdTest
         badMembers.add( URI.create( "server2" ) );
         badMembers.add( URI.create( "server3" ) );
 
-        Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
-        roles.put( "coordinator", new InstanceId( 1 ) );
+        Map<String, ClusterInstanceId> roles = new HashMap<String, ClusterInstanceId>();
+        roles.put( "coordinator", new ClusterInstanceId( 1 ) );
 
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<ClusterInstanceId> failed = new HashSet<ClusterInstanceId>();
 
         testCluster( new int[]{1, 2, 3, 3},
                 new VerifyInstanceConfiguration[]{

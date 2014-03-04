@@ -27,7 +27,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 public class ClusterHeartbeatTest
         extends ClusterMockTest
@@ -97,7 +97,7 @@ public class ClusterHeartbeatTest
     public void threeNodesJoinAndThenCoordinatorDiesForReal()
             throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
     {
-        final Map<String, InstanceId> roles = new HashMap<String, InstanceId>();
+        final Map<String, ClusterInstanceId> roles = new HashMap<String, ClusterInstanceId>();
 
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).

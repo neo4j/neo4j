@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
@@ -96,7 +97,7 @@ public class ProposerStateTest
         PaxosInstance instance = mock( PaxosInstance.class );
         ProposerContext context = mock( ProposerContext.class );
         when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
-        when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( 0 ) );
+        when( context.getMyId() ).thenReturn( new ClusterInstanceId( 0 ) );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         String instanceId = "1";
         Serializable payload = "myPayload";
@@ -146,7 +147,7 @@ public class ProposerStateTest
         ProposerContext context = mock( ProposerContext.class );
         when( context.getLogger( any(Class.class) ) ).thenReturn( StringLogger.DEV_NULL );
         when( context.getPaxosInstance( any( InstanceId.class ) ) ).thenReturn( instance );
-        when( context.getMyId() ).thenReturn( new org.neo4j.cluster.InstanceId( parseInt( instanceId ) ) );
+        when( context.getMyId() ).thenReturn( new ClusterInstanceId( parseInt( instanceId ) ) );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Message<ProposerMessage> message = to( rejectAccept, create( "http://something" ),
                 new ProposerMessage.RejectAcceptState() )

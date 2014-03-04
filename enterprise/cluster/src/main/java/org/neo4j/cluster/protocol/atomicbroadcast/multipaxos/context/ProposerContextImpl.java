@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
@@ -48,7 +49,7 @@ class ProposerContextImpl
 
     private final PaxosInstanceStore paxosInstances;
 
-    ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
+    ProposerContextImpl( ClusterInstanceId me, CommonContextState commonState,
                          Logging logging,
                          Timeouts timeouts, PaxosInstanceStore paxosInstances )
     {
@@ -58,7 +59,7 @@ class ProposerContextImpl
         bookedInstances = new HashMap<>();
     }
 
-    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+    private ProposerContextImpl( ClusterInstanceId me, CommonContextState commonState, Logging logging,
                                  Timeouts timeouts, Deque<Message> pendingValues,
                                  Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances )
     {

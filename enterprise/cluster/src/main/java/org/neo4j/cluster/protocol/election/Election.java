@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * Election API.
@@ -29,7 +29,7 @@ import org.neo4j.cluster.InstanceId;
  */
 public interface Election
 {
-    void demote( InstanceId node );
+    void demote( ClusterInstanceId node );
 
     /**
      * Asks an election to be performed for all currently known roles, regardless of someone holding that role
@@ -37,5 +37,5 @@ public interface Election
      */
     void performRoleElections();
 
-    void promote( InstanceId node, String role );
+    void promote( ClusterInstanceId node, String role );
 }

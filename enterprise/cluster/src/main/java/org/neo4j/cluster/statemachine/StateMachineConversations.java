@@ -21,7 +21,7 @@ package org.neo4j.cluster.statemachine;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * Generate id's for state machine conversations. This should be shared between all state machines in a server.
@@ -33,7 +33,7 @@ public class StateMachineConversations
     private final AtomicLong nextConversationId = new AtomicLong();
     private final String serverId;
 
-    public StateMachineConversations( InstanceId me )
+    public StateMachineConversations( ClusterInstanceId me )
     {
         serverId = me.toString();
     }

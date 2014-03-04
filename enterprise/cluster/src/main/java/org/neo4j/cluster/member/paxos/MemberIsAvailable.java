@@ -25,7 +25,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * This message is broadcast when a member of the cluster declares that
@@ -35,7 +35,7 @@ public class MemberIsAvailable
         implements Externalizable
 {
     private String role;
-    private InstanceId instanceId;
+    private ClusterInstanceId instanceId;
     private URI clusterUri;
     private URI roleUri;
 
@@ -43,7 +43,7 @@ public class MemberIsAvailable
     {
     }
 
-    public MemberIsAvailable( String role, InstanceId instanceId, URI clusterUri, URI roleUri )
+    public MemberIsAvailable( String role, ClusterInstanceId instanceId, URI clusterUri, URI roleUri )
     {
         this.role = role;
         this.instanceId = instanceId;
@@ -56,7 +56,7 @@ public class MemberIsAvailable
         return role;
     }
 
-    public InstanceId getInstanceId()
+    public ClusterInstanceId getInstanceId()
     {
         return instanceId;
     }
@@ -84,7 +84,7 @@ public class MemberIsAvailable
     public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
     {
         role = in.readUTF();
-        instanceId = (InstanceId) in.readObject();
+        instanceId = (ClusterInstanceId) in.readObject();
         clusterUri = URI.create( in.readUTF() );
         roleUri = URI.create(in.readUTF() );
     }

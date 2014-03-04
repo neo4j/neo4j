@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -40,7 +40,7 @@ public class HeartbeatReelectionListener
     }
 
     @Override
-    public void failed( InstanceId server )
+    public void failed( ClusterInstanceId server )
     {
         // Suggest reelection for all roles of this node
         messagesLog.warn( " instance " + server +" is being demoted since it failed" );
@@ -48,7 +48,7 @@ public class HeartbeatReelectionListener
     }
 
     @Override
-    public void alive( InstanceId server )
+    public void alive( ClusterInstanceId server )
     {
         election.performRoleElections();
     }

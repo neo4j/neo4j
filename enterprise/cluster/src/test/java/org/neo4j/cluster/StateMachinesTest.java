@@ -65,7 +65,7 @@ public class StateMachinesTest
             {
                 command.run();
             }
-        }, mock( InstanceId.class ) );
+        }, mock( ClusterInstanceId.class ) );
 
         ArrayList<TestMessage> handleOrder = new ArrayList<>(  );
         StateMachine stateMachine = new StateMachine( handleOrder, TestMessage.class, TestState.test,
@@ -83,7 +83,7 @@ public class StateMachinesTest
     @Test
     public void shouldAlwaysAddItsInstanceIdToOutgoingMessages() throws Exception
     {
-        InstanceId me = new InstanceId( 42 );
+        ClusterInstanceId me = new ClusterInstanceId( 42 );
         final List<Message> sentOut = new LinkedList<Message>();
 
         /*

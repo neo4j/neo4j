@@ -26,8 +26,8 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -239,7 +239,7 @@ public class QuorumWritesIT
         clusterClient.addHeartbeatListener( new HeartbeatListener.Adapter()
         {
             @Override
-            public void failed( InstanceId server )
+            public void failed( ClusterInstanceId server )
             {
                 latch.countDown();
                 clusterClient.removeHeartbeatListener( this );
@@ -253,7 +253,7 @@ public class QuorumWritesIT
         clusterClient.addHeartbeatListener( new HeartbeatListener.Adapter()
         {
             @Override
-            public void alive( InstanceId server )
+            public void alive( ClusterInstanceId server )
             {
                 latch.countDown();
                 clusterClient.removeHeartbeatListener( this );
@@ -269,7 +269,7 @@ public class QuorumWritesIT
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             @Override
-            public void memberIsAvailable( String role, InstanceId availableId, URI atUri )
+            public void memberIsAvailable( String role, ClusterInstanceId availableId, URI atUri )
             {
                 if ( role.equals( roleToWaitFor ) )
                 {

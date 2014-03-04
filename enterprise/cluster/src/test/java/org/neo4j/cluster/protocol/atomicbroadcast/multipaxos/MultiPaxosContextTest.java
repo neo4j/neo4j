@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.concurrent.Executor;
 
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -46,14 +46,14 @@ public class MultiPaxosContextTest
     public void shouldNotConsiderInstanceJoiningWithSameIdAndIpAProblem() throws Exception
     {
         // Given
-        MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
+        MultiPaxosContext ctx = new MultiPaxosContext( new ClusterInstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
                 mock( ClusterConfiguration.class ), mock( Executor.class ),
                 new TestLogging(), new ObjectStreamFactory(),
                 new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class) );
 
-        InstanceId joiningId = new InstanceId( 12 );
+        ClusterInstanceId joiningId = new ClusterInstanceId( 12 );
         String joiningUri = "http://127.0.0.1:900";
 
         // When
@@ -62,7 +62,7 @@ public class MultiPaxosContextTest
         // Then
         assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI( joiningUri ) ));
         assertTrue( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( joiningId, new URI("http://127.0.0.1:80")));
-        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( new InstanceId( 13 ), new URI( joiningUri ) ) );
+        assertFalse( ctx.getClusterContext().isInstanceJoiningFromDifferentUri( new ClusterInstanceId( 13 ), new URI( joiningUri ) ) );
     }
 
     @Test
@@ -77,7 +77,7 @@ public class MultiPaxosContextTest
         ClusterConfiguration clusterConfig = new ClusterConfiguration( "myCluster", StringLogger.DEV_NULL );
         ElectionCredentialsProvider electionCredentials = mock( ElectionCredentialsProvider.class );
 
-        MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
+        MultiPaxosContext ctx = new MultiPaxosContext( new ClusterInstanceId( 1 ),
                 Collections.<ElectionRole>emptyList(),
                 clusterConfig, executor,
                 logging, objStream,

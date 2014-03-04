@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
@@ -237,7 +237,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
     private static class UniqueInstanceFilter implements Predicate<MemberIsAvailable>
     {
-        private final Set<InstanceId> roles = new HashSet<InstanceId>();
+        private final Set<ClusterInstanceId> roles = new HashSet<ClusterInstanceId>();
 
         @Override
         public boolean accept( MemberIsAvailable item )
@@ -264,7 +264,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             availableMembers = toList( nextSnapshotFunction.apply( availableMembers, memberIsAvailable ) );
         }
 
-        public void unavailableMember( final InstanceId member )
+        public void unavailableMember( final ClusterInstanceId member )
         {
             availableMembers = toList( filter( new Predicate<MemberIsAvailable>()
             {
@@ -293,7 +293,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             return availableMembers;
         }
 
-        public Iterable<MemberIsAvailable> getCurrentAvailable( final InstanceId memberId )
+        public Iterable<MemberIsAvailable> getCurrentAvailable( final ClusterInstanceId memberId )
         {
             return toList( Iterables.filter( new Predicate<MemberIsAvailable>()
                                     {
@@ -313,7 +313,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         public void enteredCluster( ClusterConfiguration clusterConfiguration )
         {
             // Catch up with elections
-            for ( Map.Entry<String, InstanceId> memberRoles : clusterConfiguration.getRoles().entrySet() )
+            for ( Map.Entry<String, ClusterInstanceId> memberRoles : clusterConfiguration.getRoles().entrySet() )
             {
                 elected( memberRoles.getKey(), memberRoles.getValue(),
                         clusterConfiguration.getUriForId( memberRoles.getValue() ) );
@@ -321,7 +321,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         }
 
         @Override
-        public void elected( String role, final InstanceId instanceId, final URI electedMember )
+        public void elected( String role, final ClusterInstanceId instanceId, final URI electedMember )
         {
             if ( role.equals( ClusterConfiguration.COORDINATOR ) )
             {
@@ -338,7 +338,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         }
 
         @Override
-        public void leftCluster( final InstanceId member )
+        public void leftCluster( final ClusterInstanceId member )
         {
             // Notify unavailability of members
             Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
@@ -413,7 +413,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private class HeartbeatListenerImpl implements HeartbeatListener
     {
         @Override
-        public void failed( final InstanceId server )
+        public void failed( final ClusterInstanceId server )
         {
             Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
             {
@@ -426,7 +426,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         }
 
         @Override
-        public void alive( final InstanceId server )
+        public void alive( final ClusterInstanceId server )
         {
             Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
             {

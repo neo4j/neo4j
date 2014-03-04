@@ -46,8 +46,8 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
@@ -263,14 +263,14 @@ public class ClusterNetworkTest
             }
 
             @Override
-            public void joinedCluster( InstanceId instanceId, URI member )
+            public void joinedCluster( ClusterInstanceId instanceId, URI member )
             {
                 logger.getLogger().debug( uri + " sees a join from " + instanceId + " at URI " + member.toString() );
                 config.get().joined( instanceId, member );
             }
 
             @Override
-            public void leftCluster( InstanceId instanceId )
+            public void leftCluster( ClusterInstanceId instanceId )
             {
                 logger.getLogger().debug( uri + " sees a leave:" + instanceId );
                 config.get().left( instanceId );
@@ -284,14 +284,14 @@ public class ClusterNetworkTest
             }
 
             @Override
-            public void elected( String role, InstanceId instanceId, URI electedMember )
+            public void elected( String role, ClusterInstanceId instanceId, URI electedMember )
             {
                 logger.getLogger().debug( uri + " sees an election:" + instanceId +
                         "was elected as " + role + " on URI " + electedMember );
             }
 
             @Override
-            public void unelected( String role, InstanceId instanceId, URI electedMember )
+            public void unelected( String role, ClusterInstanceId instanceId, URI electedMember )
             {
                 logger.getLogger().debug( uri + " sees an unelection:" + instanceId +
                         "was removed from " + role + " on URI " + electedMember );

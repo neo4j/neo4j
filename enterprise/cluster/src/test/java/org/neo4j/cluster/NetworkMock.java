@@ -111,7 +111,7 @@ public class NetworkMock
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
         TestProtocolServer protocolServer = new TestProtocolServer( timeoutStrategy, protocolServerFactory, serverUri,
-                new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
+                new ClusterInstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
         protocolServer.addStateTransitionListener( new StateTransitionLogger( logging ) );
         return protocolServer;
     }

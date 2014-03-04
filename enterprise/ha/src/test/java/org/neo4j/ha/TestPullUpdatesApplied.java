@@ -34,8 +34,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
@@ -131,7 +132,7 @@ public class TestPullUpdatesApplied
                 new ClusterListener.Adapter()
                 {
                     @Override
-                    public void leftCluster( InstanceId member )
+                    public void leftCluster( ClusterInstanceId member )
                     {
                         latch1.countDown();
                         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
@@ -158,7 +159,7 @@ public class TestPullUpdatesApplied
                 new HeartbeatListener.Adapter()
                 {
                     @Override
-                    public void failed( InstanceId server )
+                    public void failed( ClusterInstanceId server )
                     {
                         latch2.countDown();
                         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )

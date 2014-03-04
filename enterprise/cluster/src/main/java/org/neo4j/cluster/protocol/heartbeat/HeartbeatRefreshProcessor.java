@@ -22,7 +22,7 @@ package org.neo4j.cluster.protocol.heartbeat;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -54,7 +54,7 @@ public class HeartbeatRefreshProcessor implements MessageProcessor
             {
                 String to = message.getHeader( Message.TO );
 
-                InstanceId serverId = clusterContext.getConfiguration().getIdForUri( new URI( to ) );
+                ClusterInstanceId serverId = clusterContext.getConfiguration().getIdForUri( new URI( to ) );
 
                 if ( !clusterContext.isMe( serverId ) )
                 {

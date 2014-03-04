@@ -22,7 +22,7 @@ package org.neo4j.cluster.protocol.election;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
@@ -42,23 +42,23 @@ public interface ElectionContext
      * Removes all roles from the provided node. This is expected to be the first call when receiving a demote
      * message for a node, since it is the way to ensure that election will happen for each role that node had
      */
-    void nodeFailed( InstanceId node );
+    void nodeFailed( ClusterInstanceId node );
 
-    Iterable<String> getRoles( InstanceId server );
+    Iterable<String> getRoles( ClusterInstanceId server );
 
     void unelect( String roleName );
 
     boolean isElectionProcessInProgress( String role );
 
-    void startDemotionProcess( String role, final InstanceId demoteNode );
+    void startDemotionProcess( String role, final ClusterInstanceId demoteNode );
 
     void startElectionProcess( String role );
 
-    void startPromotionProcess( String role, final InstanceId promoteNode );
+    void startPromotionProcess( String role, final ClusterInstanceId promoteNode );
 
-    void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials );
+    void voted( String role, ClusterInstanceId suggestedNode, Comparable<Object> suggestionCredentials );
 
-    InstanceId getElectionWinner( String role );
+    ClusterInstanceId getElectionWinner( String role );
 
     Comparable<Object> getCredentialsForRole( String role );
 
@@ -74,15 +74,15 @@ public interface ElectionContext
 
     boolean isInCluster();
 
-    Iterable<InstanceId> getAlive();
+    Iterable<ClusterInstanceId> getAlive();
 
     boolean isElector();
 
-    boolean isFailed( InstanceId key );
+    boolean isFailed( ClusterInstanceId key );
 
-    InstanceId getElected( String roleName );
+    ClusterInstanceId getElected( String roleName );
 
-    boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected );
+    boolean hasCurrentlyElectedVoted( String role, ClusterInstanceId currentElected );
 
-    Set<InstanceId> getFailed();
+    Set<ClusterInstanceId> getFailed();
 }

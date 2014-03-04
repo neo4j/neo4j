@@ -30,8 +30,8 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
@@ -167,7 +167,7 @@ public class MultiPaxosNetworkTest
             }
 
             @Override
-            public void joinedCluster( InstanceId instanceId, URI member )
+            public void joinedCluster( ClusterInstanceId instanceId, URI member )
             {
                 logger.info( "1 sees join by " + instanceId + " at URI " + member );
             }
@@ -182,7 +182,7 @@ public class MultiPaxosNetworkTest
             }
 
             @Override
-            public void joinedCluster( InstanceId instanceId, URI member )
+            public void joinedCluster( ClusterInstanceId instanceId, URI member )
             {
                 logger.info( "2 sees join by " + instanceId + " at URI " + member );
             }
@@ -197,7 +197,7 @@ public class MultiPaxosNetworkTest
             }
 
             @Override
-            public void joinedCluster( org.neo4j.cluster.InstanceId instanceId, URI member )
+            public void joinedCluster( ClusterInstanceId instanceId, URI member )
             {
                 logger.info( "3 sees join by " + instanceId + " at URI " + member );
             }

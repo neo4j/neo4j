@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * This represents the different states that a cluster member
@@ -38,7 +38,7 @@ public enum HighAvailabilityMemberState
             {
                 @Override
                 public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
-                                                                    InstanceId masterId )
+                                                                    ClusterInstanceId masterId )
                 {
                     assert context.getAvailableHaMaster() == null;
                     if ( masterId.equals( context.getMyId() ) )
@@ -50,7 +50,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
-                                                                      InstanceId masterId, URI masterHaURI )
+                                                                      ClusterInstanceId masterId, URI masterHaURI )
                 {
 //                    assert context.getAvailableMaster() == null;
                     if ( masterId.equals( context.getMyId() ) )
@@ -63,7 +63,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
-                                                                     InstanceId slaveId,
+                                                                     ClusterInstanceId slaveId,
                                                                      URI slaveUri )
                 {
                     if ( slaveId.equals( context.getMyId() ) )
@@ -94,7 +94,7 @@ public enum HighAvailabilityMemberState
             {
                 @Override
                 public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
-                                                                    InstanceId masterId )
+                                                                    ClusterInstanceId masterId )
                 {
                     if ( masterId.equals( context.getElectedMasterId() ) )
                     {
@@ -111,7 +111,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
-                                                                      InstanceId masterId,
+                                                                      ClusterInstanceId masterId,
                                                                       URI masterHaURI )
                 {
                     if ( masterId.equals( context.getMyId() ) )
@@ -131,7 +131,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
-                                                                     InstanceId slaveId,
+                                                                     ClusterInstanceId slaveId,
                                                                      URI slaveUri )
                 {
                     if ( slaveId.equals( context.getMyId() ) )
@@ -161,7 +161,7 @@ public enum HighAvailabilityMemberState
             {
                 @Override
                 public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
-                                                                    InstanceId masterId )
+                                                                    ClusterInstanceId masterId )
                 {
                     assert context.getAvailableHaMaster() == null;
                     if ( masterId.equals( context.getMyId() ) )
@@ -173,7 +173,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
-                                                                      InstanceId masterId,
+                                                                      ClusterInstanceId masterId,
                                                                       URI masterHaURI )
                 {
                     if ( masterId.equals( context.getMyId() ) )
@@ -186,7 +186,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
-                                                                     InstanceId slaveId,
+                                                                     ClusterInstanceId slaveId,
                                                                      URI slaveUri )
                 {
                     if ( slaveId.equals( context.getMyId() ) )
@@ -216,7 +216,7 @@ public enum HighAvailabilityMemberState
             {
                 @Override
                 public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
-                                                                    InstanceId masterId )
+                                                                    ClusterInstanceId masterId )
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
@@ -229,7 +229,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
-                                                                      InstanceId masterId,
+                                                                      ClusterInstanceId masterId,
                                                                       URI masterHaURI )
                 {
                     if ( masterId.equals( context.getMyId() ) )
@@ -243,7 +243,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context,
-                                                                     InstanceId slaveId,
+                                                                     ClusterInstanceId slaveId,
                                                                      URI slaveUri )
                 {
                     if ( slaveId.equals( context.getMyId() ) )
@@ -273,7 +273,7 @@ public enum HighAvailabilityMemberState
             {
                 @Override
                 public HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context,
-                                                                    InstanceId masterId )
+                                                                    ClusterInstanceId masterId )
                 {
                     if ( masterId.equals( context.getMyId() ) )
                     {
@@ -291,7 +291,7 @@ public enum HighAvailabilityMemberState
 
                 @Override
                 public HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context,
-                                                                      InstanceId masterId,
+                                                                      ClusterInstanceId masterId,
                                                                       URI masterHaURI )
                 {
                     if ( masterId.equals( context.getMyId() ) )
@@ -309,7 +309,7 @@ public enum HighAvailabilityMemberState
                 }
 
                 @Override
-                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, InstanceId slaveId, URI slaveUri )
+                public HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, ClusterInstanceId slaveId, URI slaveUri )
                 {
                     return this;
                 }
@@ -327,12 +327,12 @@ public enum HighAvailabilityMemberState
                 }
             };
 
-    public abstract HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, InstanceId masterId );
+    public abstract HighAvailabilityMemberState masterIsElected( HighAvailabilityMemberContext context, ClusterInstanceId masterId );
 
-    public abstract HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, InstanceId masterId,
+    public abstract HighAvailabilityMemberState masterIsAvailable( HighAvailabilityMemberContext context, ClusterInstanceId masterId,
                                                                    URI masterHaURI );
 
-    public abstract HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, InstanceId slaveId, URI slaveUri );
+    public abstract HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, ClusterInstanceId slaveId, URI slaveUri );
 
     public abstract boolean isEligibleForElection();
 

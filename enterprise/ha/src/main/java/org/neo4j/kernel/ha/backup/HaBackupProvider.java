@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -125,11 +125,11 @@ public final class HaBackupProvider extends BackupExtensionService
         final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
-            Map<InstanceId, URI> backupUris = new HashMap<InstanceId, URI>();
-            InstanceId master = null;
+            Map<ClusterInstanceId, URI> backupUris = new HashMap<ClusterInstanceId, URI>();
+            ClusterInstanceId master = null;
 
             @Override
-            public void memberIsAvailable( String role, InstanceId clusterUri, URI roleUri )
+            public void memberIsAvailable( String role, ClusterInstanceId clusterUri, URI roleUri )
             {
                 if ( OnlineBackupKernelExtension.BACKUP.equals( role ) )
                 {
@@ -150,13 +150,13 @@ public final class HaBackupProvider extends BackupExtensionService
             /**
              * Called when new master has been elected. The new master may not be available a.t.m.
              * A call to {@link #memberIsAvailable} will confirm that the master given in
-             * the most recent {@link #coordinatorIsElected(org.neo4j.cluster.InstanceId)} call is up and running as
+             * the most recent {@link #coordinatorIsElected(org.neo4j.cluster.ClusterInstanceId)} call is up and running as
              * master.
              *
              * @param coordinatorId the connection information to the master.
              */
             @Override
-            public void coordinatorIsElected( InstanceId coordinatorId )
+            public void coordinatorIsElected( ClusterInstanceId coordinatorId )
             {
             }
         } );

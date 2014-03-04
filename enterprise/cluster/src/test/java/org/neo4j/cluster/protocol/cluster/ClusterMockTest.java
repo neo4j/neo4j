@@ -41,8 +41,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Rule;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
@@ -139,13 +139,13 @@ public class ClusterMockTest
             server.newClient( Heartbeat.class ).addHeartbeatListener( new HeartbeatListener()
             {
                 @Override
-                public void failed( InstanceId server )
+                public void failed( ClusterInstanceId server )
                 {
                     logger.getLogger().warn( uri + ": Failed:" + server );
                 }
 
                 @Override
-                public void alive( InstanceId server )
+                public void alive( ClusterInstanceId server )
                 {
                     logger.getLogger().debug( uri + ": Alive:" + server );
                 }
@@ -230,13 +230,13 @@ public class ClusterMockTest
             }
 
             @Override
-            public void joinedCluster( InstanceId id, URI member )
+            public void joinedCluster( ClusterInstanceId id, URI member )
             {
                 logger.getLogger().debug( uri + " sees a join from " + id + " at URI " + member );
             }
 
             @Override
-            public void leftCluster( InstanceId id )
+            public void leftCluster( ClusterInstanceId id )
             {
                 logger.getLogger().debug( uri + " sees a leave from " + id );
             }
@@ -249,14 +249,14 @@ public class ClusterMockTest
             }
 
             @Override
-            public void elected( String role, InstanceId id, URI electedMember )
+            public void elected( String role, ClusterInstanceId id, URI electedMember )
             {
                 logger.getLogger().debug(
                         uri + " sees an election: " + id + " elected as " + role + " at URI " + electedMember );
             }
 
             @Override
-            public void unelected( String role, InstanceId instanceId, URI electedMember )
+            public void unelected( String role, ClusterInstanceId instanceId, URI electedMember )
             {
                 logger.getLogger().debug(
                         uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " + electedMember );
@@ -269,8 +269,8 @@ public class ClusterMockTest
         logger.getLogger().debug( "Verify configurations against given" );
 
         List<URI> members;
-        Map<String, InstanceId> roles;
-        Set<InstanceId> failed;
+        Map<String, ClusterInstanceId> roles;
+        Set<ClusterInstanceId> failed;
 
         List<AssertionError> errors = new LinkedList<AssertionError>();
 
@@ -325,8 +325,8 @@ public class ClusterMockTest
         logger.getLogger().debug( "Verify configurations" );
 
         List<URI> members = null;
-        Map<String, InstanceId> roles = null;
-        Set<InstanceId> failed = null;
+        Map<String, ClusterInstanceId> roles = null;
+        Set<ClusterInstanceId> failed = null;
 
         List<AssertionError> errors = new LinkedList<AssertionError>();
 
@@ -379,8 +379,8 @@ public class ClusterMockTest
         }
     }
 
-    private void verifyConfigurations( StateMachines stateMachines, List<URI> members, Map<String, InstanceId> roles,
-                                       Set<InstanceId> failed, List<AssertionError> errors )
+    private void verifyConfigurations( StateMachines stateMachines, List<URI> members, Map<String, ClusterInstanceId> roles,
+                                       Set<ClusterInstanceId> failed, List<AssertionError> errors )
     {
 
         ClusterContext context = (ClusterContext) stateMachines.getStateMachine( ClusterMessage.class )
@@ -687,7 +687,7 @@ public class ClusterMockTest
             }
         }
 
-        public ClusterTestScriptDSL getRoles( final Map<String, InstanceId> roles )
+        public ClusterTestScriptDSL getRoles( final Map<String, ClusterInstanceId> roles )
         {
             return addAction( new ClusterAction()
             {
@@ -699,17 +699,17 @@ public class ClusterMockTest
             }, 0 );
         }
 
-        public ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String, InstanceId> comparedTo )
+        public ClusterTestScriptDSL verifyCoordinatorRoleSwitched( final Map<String, ClusterInstanceId> comparedTo )
         {
             return addAction( new ClusterAction()
             {
                 @Override
                 public void run()
                 {
-                    HashMap<String, InstanceId> roles = new HashMap<String, InstanceId>();
+                    HashMap<String, ClusterInstanceId> roles = new HashMap<String, ClusterInstanceId>();
                     ClusterMockTest.this.getRoles( roles );
-                    InstanceId oldCoordinator = comparedTo.get( ClusterConfiguration.COORDINATOR );
-                    InstanceId newCoordinator = roles.get( ClusterConfiguration.COORDINATOR );
+                    ClusterInstanceId oldCoordinator = comparedTo.get( ClusterConfiguration.COORDINATOR );
+                    ClusterInstanceId newCoordinator = roles.get( ClusterConfiguration.COORDINATOR );
                     assertNotNull( "Should have had a coordinator before bringing it down", oldCoordinator );
                     assertNotNull( "Should have a new coordinator after the previous failed", newCoordinator );
                     assertTrue( "Should have elected a new coordinator", !oldCoordinator.equals( newCoordinator ) );
@@ -807,7 +807,7 @@ public class ClusterMockTest
         }
     }
 
-    private void getRoles( Map<String, InstanceId> roles )
+    private void getRoles( Map<String, ClusterInstanceId> roles )
     {
         List<TestProtocolServer> protocolServers = network.getServers();
         for ( int j = 0; j < protocolServers.size(); j++ )

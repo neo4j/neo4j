@@ -19,12 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.neo4j.cluster.com.message.Message.internal;
-import static org.neo4j.cluster.com.message.Message.respond;
-import static org.neo4j.cluster.com.message.Message.timeout;
-import static org.neo4j.cluster.com.message.Message.to;
-import static org.neo4j.helpers.collection.Iterables.count;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,13 +26,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
+
+import static org.neo4j.cluster.com.message.Message.internal;
+import static org.neo4j.cluster.com.message.Message.respond;
+import static org.neo4j.cluster.com.message.Message.timeout;
+import static org.neo4j.cluster.com.message.Message.to;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 /**
  * State machine for the Cluster API
@@ -142,8 +142,9 @@ public enum ClusterState
                                         ", got " + state.getClusterName() + "." );
                             }
 
-                            HashMap<InstanceId, URI> memberList = new HashMap<InstanceId, URI>( state.getMembers() );
-                            context.discoveredLastReceivedInstanceId( state.getLatestReceivedInstanceId().getId() );
+                            HashMap<ClusterInstanceId, URI> memberList = new HashMap<>( state.getMembers() );
+                            context.discoveredLastReceivedInstanceId( state.getLatestReceivedInstanceId().getId(),
+                                    context.getIdForUri( new URI(message.getHeader( Message.FROM )) ) );
 
                             context.acquiredConfiguration( memberList, state.getRoles() );
 
@@ -160,7 +161,7 @@ public enum ClusterState
                                 newState.join(context.getMyId(), context.boundAt());
 
                                 // Let the coordinator propose this if possible
-                                InstanceId coordinator = state.getRoles().get( ClusterConfiguration.COORDINATOR );
+                                ClusterInstanceId coordinator = state.getRoles().get( ClusterConfiguration.COORDINATOR );
                                 if ( coordinator != null )
                                 {
                                     URI coordinatorUri = context.getConfiguration().getUriForId( coordinator );
@@ -422,7 +423,7 @@ public enum ClusterState
                             ClusterMessage.ConfigurationRequestState request = message.getPayload();
                             request = new ClusterMessage.ConfigurationRequestState( request.getJoiningId(), URI.create(message.getHeader( Message.FROM ) ));
 
-                            InstanceId joiningId = request.getJoiningId();
+                            ClusterInstanceId joiningId = request.getJoiningId();
                             URI joiningUri = request.getJoiningUri();
                             boolean isInCluster = context.getMembers().containsKey( joiningId );
                             boolean isCurrentlyAlive = context.isCurrentlyAlive(joiningId);

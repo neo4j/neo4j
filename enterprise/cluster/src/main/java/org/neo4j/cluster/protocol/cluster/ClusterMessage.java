@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -50,16 +50,16 @@ public enum ClusterMessage
     {
         private static final long serialVersionUID = -221752558518247157L;
 
-        private InstanceId joiningId;
+        private ClusterInstanceId joiningId;
         private URI joiningUri;
 
-        public ConfigurationRequestState( InstanceId joiningId, URI joiningUri )
+        public ConfigurationRequestState( ClusterInstanceId joiningId, URI joiningUri )
         {
             this.joiningId = joiningId;
             this.joiningUri = joiningUri;
         }
 
-        public InstanceId getJoiningId()
+        public ClusterInstanceId getJoiningId()
         {
             return joiningId;
         }
@@ -119,12 +119,12 @@ public enum ClusterMessage
     public static class ConfigurationResponseState
             implements Serializable
     {
-        private final Map<InstanceId, URI> nodes;
+        private final Map<ClusterInstanceId, URI> nodes;
         private final org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId;
-        private final Map<String, InstanceId> roles;
+        private final Map<String, ClusterInstanceId> roles;
         private final String clusterName;
 
-        public ConfigurationResponseState( Map<String, InstanceId> roles, Map<InstanceId, URI> nodes,
+        public ConfigurationResponseState( Map<String, ClusterInstanceId> roles, Map<ClusterInstanceId, URI> nodes,
                                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestReceivedInstanceId,
                                           String clusterName )
         {
@@ -134,12 +134,12 @@ public enum ClusterMessage
             this.clusterName = clusterName;
         }
 
-        public Map<InstanceId, URI> getMembers()
+        public Map<ClusterInstanceId, URI> getMembers()
         {
             return nodes;
         }
 
-        public Map<String, InstanceId> getRoles()
+        public Map<String, ClusterInstanceId> getRoles()
         {
             return roles;
         }
@@ -220,41 +220,41 @@ public enum ClusterMessage
     public static class ConfigurationChangeState
             implements Serializable
     {
-        private InstanceId join;
+        private ClusterInstanceId join;
         private URI joinUri;
 
-        private InstanceId leave;
+        private ClusterInstanceId leave;
 
         private String roleWon;
-        private InstanceId winner;
+        private ClusterInstanceId winner;
 
         private String roleLost;
-        private InstanceId loser;
+        private ClusterInstanceId loser;
 
-        public void join( InstanceId join, URI joinUri )
+        public void join( ClusterInstanceId join, URI joinUri )
         {
             this.join = join;
             this.joinUri = joinUri;
         }
 
-        public void leave( InstanceId uri )
+        public void leave( ClusterInstanceId uri )
         {
             this.leave = uri;
         }
 
-        public void elected( String role, InstanceId winner )
+        public void elected( String role, ClusterInstanceId winner )
         {
             this.roleWon = role;
             this.winner = winner;
         }
 
-        public void unelected( String role, InstanceId unelected )
+        public void unelected( String role, ClusterInstanceId unelected )
         {
             roleLost = role;
             loser = unelected;
         }
 
-        public InstanceId getJoin()
+        public ClusterInstanceId getJoin()
         {
             return join;
         }
@@ -264,7 +264,7 @@ public enum ClusterMessage
             return joinUri;
         }
 
-        public InstanceId getLeave()
+        public ClusterInstanceId getLeave()
         {
             return leave;
         }
@@ -292,7 +292,7 @@ public enum ClusterMessage
             }
         }
 
-        public boolean isLeaving( InstanceId me )
+        public boolean isLeaving( ClusterInstanceId me )
         {
             return me.equals( leave );
         }

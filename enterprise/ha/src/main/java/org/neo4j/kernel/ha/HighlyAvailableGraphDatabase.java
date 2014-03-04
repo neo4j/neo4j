@@ -28,8 +28,8 @@ import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
@@ -324,7 +324,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             }
 
             @Override
-            public void elected( String role, InstanceId instanceId, URI electedMember )
+            public void elected( String role, ClusterInstanceId instanceId, URI electedMember )
             {
                 if ( hasRequestedElection && role.equals( ClusterConfiguration.COORDINATOR ) )
                 {
@@ -344,13 +344,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                new InstanceId( config.get( ClusterSettings.server_id ) ) );
+                new ClusterInstanceId( config.get( ClusterSettings.server_id ) ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
-                .getConsoleLog( HighAvailabilityConsoleLogger.class ), new InstanceId( config.get( ClusterSettings
+                .getConsoleLog( HighAvailabilityConsoleLogger.class ), new ClusterInstanceId( config.get( ClusterSettings
                 .server_id ) ) );
         availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );

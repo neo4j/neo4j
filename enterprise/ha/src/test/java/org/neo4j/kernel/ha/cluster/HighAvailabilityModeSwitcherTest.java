@@ -23,7 +23,7 @@ import java.net.URI;
 
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.helpers.collection.Iterables;
@@ -58,7 +58,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
-                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+                HighAvailabilityMemberState.MASTER, new ClusterInstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -83,7 +83,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
-                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+                HighAvailabilityMemberState.SLAVE, new ClusterInstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -108,7 +108,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
-                HighAvailabilityMemberState.SLAVE, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+                HighAvailabilityMemberState.SLAVE, new ClusterInstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*
@@ -133,7 +133,7 @@ public class HighAvailabilityModeSwitcherTest
 
         // When
         toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
-                HighAvailabilityMemberState.MASTER, new InstanceId( 2 ), URI.create( "ha://someone" ) ) );
+                HighAvailabilityMemberState.MASTER, new ClusterInstanceId( 2 ), URI.create( "ha://someone" ) ) );
 
         // Then
           /*

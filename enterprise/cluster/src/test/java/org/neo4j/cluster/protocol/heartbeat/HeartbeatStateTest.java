@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
@@ -52,12 +52,12 @@ public class HeartbeatStateTest
     public void shouldIgnoreSuspicionsForOurselves() throws Throwable
     {
         // Given
-        InstanceId instanceId = new InstanceId( 1 );
+        ClusterInstanceId instanceId = new ClusterInstanceId( 1 );
         HeartbeatState heartbeat= HeartbeatState.heartbeat;
         ClusterConfiguration configuration = new ClusterConfiguration("whatever", StringLogger.DEV_NULL,
                                                                        "cluster://1", "cluster://2" );
         configuration.joined( instanceId, URI.create("cluster://1" ) );
-        configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
+        configuration.joined( new ClusterInstanceId( 2 ), URI.create("cluster://2" ));
 
         Logging logging = mock( Logging.class );
         when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
@@ -71,7 +71,7 @@ public class HeartbeatStateTest
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.toSet( Iterables.<InstanceId, InstanceId>iterable( instanceId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( Iterables.toSet( Iterables.<ClusterInstanceId, ClusterInstanceId>iterable( instanceId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" );
 
         // When
@@ -85,13 +85,13 @@ public class HeartbeatStateTest
     public void shouldIgnoreSuspicionsForOurselvesButKeepTheRest() throws Throwable
     {
         // Given
-        InstanceId myId = new InstanceId( 1 );
-        InstanceId foreignId = new InstanceId( 3 );
+        ClusterInstanceId myId = new ClusterInstanceId( 1 );
+        ClusterInstanceId foreignId = new ClusterInstanceId( 3 );
         HeartbeatState heartbeat= HeartbeatState.heartbeat;
         ClusterConfiguration configuration = new ClusterConfiguration("whatever", StringLogger.DEV_NULL,
                                                                       "cluster://1", "cluster://2" );
         configuration.joined( myId, URI.create("cluster://1" ) );
-        configuration.joined( new InstanceId( 2 ), URI.create("cluster://2" ));
+        configuration.joined( new ClusterInstanceId( 2 ), URI.create("cluster://2" ));
 
         Logging logging = mock( Logging.class );
         when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
@@ -105,7 +105,7 @@ public class HeartbeatStateTest
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.toSet( Iterables.<InstanceId, InstanceId>iterable( myId, foreignId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( Iterables.toSet( Iterables.<ClusterInstanceId, ClusterInstanceId>iterable( myId, foreignId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" );
 
         // When

@@ -36,7 +36,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.cluster.Cluster;
@@ -48,9 +48,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ClusterMembersTest
 {
-    private static InstanceId clusterId1 = new InstanceId( 1 );
-    private static InstanceId clusterId2 = new InstanceId( 2 );
-    private static InstanceId clusterId3 = new InstanceId( 3 );
+    private static ClusterInstanceId clusterId1 = new ClusterInstanceId( 1 );
+    private static ClusterInstanceId clusterId2 = new ClusterInstanceId( 2 );
+    private static ClusterInstanceId clusterId3 = new ClusterInstanceId( 3 );
     private static URI clusterUri1 = create( "cluster://server1" );
     private static URI clusterUri2 = create( "cluster://server2" );
     private static URI clusterUri3 = create( "cluster://server3" );

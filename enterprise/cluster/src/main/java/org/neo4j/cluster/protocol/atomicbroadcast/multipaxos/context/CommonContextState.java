@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.net.URI;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -29,6 +30,7 @@ class CommonContextState
     private URI boundAt;
     private long lastKnownLearnedInstanceInCluster = -1;
     private long nextInstanceId = 0;
+    private ClusterInstanceId lastKnownAliveUpToDateInstance;
     private ClusterConfiguration configuration;
 
     public CommonContextState( ClusterConfiguration configuration )
@@ -60,9 +62,23 @@ class CommonContextState
         return lastKnownLearnedInstanceInCluster;
     }
 
-    public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster )
+    public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, ClusterInstanceId instanceId )
     {
-        this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
+        if(this.lastKnownLearnedInstanceInCluster <= lastKnownLearnedInstanceInCluster)
+        {
+            this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
+            this.lastKnownAliveUpToDateInstance = instanceId;
+        }
+        else if(lastKnownLearnedInstanceInCluster == -1)
+        {
+            // Special case for clearing the state
+            this.lastKnownLearnedInstanceInCluster = -1;
+        }
+    }
+
+    public ClusterInstanceId lastKnownAliveUpToDateInstance()
+    {
+        return lastKnownAliveUpToDateInstance;
     }
 
     public long nextInstanceId()

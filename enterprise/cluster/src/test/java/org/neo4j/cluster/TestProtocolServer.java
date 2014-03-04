@@ -50,7 +50,7 @@ public class TestProtocolServer
     private URI serverUri;
 
     public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverUri,
-                               InstanceId instanceId, AcceptorInstanceStore acceptorInstanceStore,
+                               ClusterInstanceId instanceId, AcceptorInstanceStore acceptorInstanceStore,
                                ElectionCredentialsProvider electionCredentialsProvider )
     {
         this.serverUri = serverUri;

@@ -21,6 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastContext;
@@ -35,7 +36,7 @@ class AtomicBroadcastContextImpl
     private Iterable<AtomicBroadcastListener> listeners = Listeners.newListeners();
     private final Executor executor;
 
-    AtomicBroadcastContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
+    AtomicBroadcastContextImpl( ClusterInstanceId me, CommonContextState commonState,
                                 Logging logging,
                                 Timeouts timeouts, Executor executor )
     {

@@ -21,7 +21,7 @@ package org.neo4j.cluster.protocol.heartbeat;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerMessage;
@@ -62,7 +62,7 @@ public enum HeartbeatState
 
                         case join:
                         {
-                            for ( InstanceId instanceId : context.getOtherInstances() )
+                            for ( ClusterInstanceId instanceId : context.getOtherInstances() )
                             {
                                 // Setup heartbeat timeouts for the other instance
                                 context.setTimeout(
@@ -111,7 +111,7 @@ public enum HeartbeatState
                             if ( context.alive( state.getServer() ) )
                             {
                                 // Send suspicions messages to all non-failed servers
-                                for ( InstanceId aliveServer : context.getAlive() )
+                                for ( ClusterInstanceId aliveServer : context.getAlive() )
                                 {
                                     if ( !aliveServer.equals( context.getMyId() ) )
                                     {
@@ -145,7 +145,7 @@ public enum HeartbeatState
                         case timed_out:
                         {
 
-                            InstanceId server = message.getPayload();
+                            ClusterInstanceId server = message.getPayload();
                             context.getLogger( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
@@ -157,7 +157,7 @@ public enum HeartbeatState
                                         server, timeout( HeartbeatMessage.timed_out, message, server ) );
 
                                 // Send suspicions messages to all non-failed servers
-                                for ( InstanceId aliveServer : context.getAlive() )
+                                for ( ClusterInstanceId aliveServer : context.getAlive() )
                                 {
                                     if ( !aliveServer.equals( context.getMyId() ) )
                                     {
@@ -178,7 +178,7 @@ public enum HeartbeatState
 
                         case sendHeartbeat:
                         {
-                            InstanceId to = message.getPayload();
+                            ClusterInstanceId to = message.getPayload();
 
                             if (!context.isMe( to ) )
                             {
@@ -204,7 +204,7 @@ public enum HeartbeatState
 
                         case reset_send_heartbeat:
                         {
-                            InstanceId to = message.getPayload();
+                            ClusterInstanceId to = message.getPayload();
 
                             if ( !context.isMe( to ) )
                             {
@@ -223,7 +223,7 @@ public enum HeartbeatState
                                     .debug( "Received suspicions as " + suspicions );
 
                             URI from = new URI( message.getHeader( Message.FROM ) );
-                            InstanceId fromId = context.getIdForUri( from );
+                            ClusterInstanceId fromId = context.getIdForUri( from );
                             /*
                              * Remove ourselves from the suspicions received - we just received a message,
                              * it's not normal to be considered failed. Whatever it was, it was transient and now it has

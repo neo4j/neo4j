@@ -21,7 +21,7 @@ package org.neo4j.cluster.protocol.heartbeat;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -52,11 +52,11 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
             String from =  message.getHeader( Message.FROM );
             if ( !from.equals( message.getHeader( Message.TO ) )  )
             {
-                InstanceId theId;
+                ClusterInstanceId theId;
                 if ( message.hasHeader( Message.INSTANCE_ID ) )
                 {
                     // INSTANCE_ID is there since after 1.9.6
-                    theId = new InstanceId( Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
+                    theId = new ClusterInstanceId( Integer.parseInt( message.getHeader( Message.INSTANCE_ID ) ) );
                 }
                 else
                 {

@@ -19,19 +19,21 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.neo4j.cluster.ClusterInstanceId;
+
 public class Vote
         implements Comparable<Vote>
 {
-    private final org.neo4j.cluster.InstanceId suggestedNode;
+    private final ClusterInstanceId suggestedNode;
     private final Comparable<Object> voteCredentials;
 
-    public Vote( org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> voteCredentials )
+    public Vote( ClusterInstanceId suggestedNode, Comparable<Object> voteCredentials )
     {
         this.suggestedNode = suggestedNode;
         this.voteCredentials = voteCredentials;
     }
 
-    public org.neo4j.cluster.InstanceId getSuggestedNode()
+    public ClusterInstanceId getSuggestedNode()
     {
         return suggestedNode;
     }

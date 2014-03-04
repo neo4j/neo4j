@@ -29,7 +29,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -239,7 +239,7 @@ public class ClusterJoin
         }
 
         @Override
-        public void joinedCluster( InstanceId member, URI uri )
+        public void joinedCluster( ClusterInstanceId member, URI uri )
         {
             for ( HostnamePort host : initialHosts )
             {

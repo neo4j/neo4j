@@ -72,7 +72,7 @@ public class StateMachines
     public StateMachines( MessageSource source,
                           final MessageSender sender,
                           Timeouts timeouts,
-                          DelayedDirectExecutor executor, Executor stateMachineExecutor, InstanceId instanceId )
+                          DelayedDirectExecutor executor, Executor stateMachineExecutor, ClusterInstanceId instanceId )
     {
         this.sender = sender;
         this.executor = executor;

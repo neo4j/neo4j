@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
@@ -455,7 +456,7 @@ public enum ProposerState
             ClusterMessage.ConfigurationChangeState state = message.getPayload();
             List<URI> acceptors = context.getAcceptors();
 
-            Map<org.neo4j.cluster.InstanceId, URI> currentMembers = context.getMembers();
+            Map<ClusterInstanceId, URI> currentMembers = context.getMembers();
 
             // Never include node that is leaving
             if ( state.getLeave() != null )
