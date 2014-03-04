@@ -14,13 +14,22 @@ article.help
                     code CREATE
                     |  and&nbsp;
                     code MERGE
-                    |  to import tabular data into the graph.
+                    |  to import tabular data into the graph. If you are
+                    |  importing a substantially sized data set, you should
+                    |  consider using&nbsp;
+                    code LOAD CSV
+                    |  in combination with&nbsp;
+                    code USING PERIODIC COMMIT
+                    |  .
                 table.table-condensed.table-help
                     tr
                         th Reference:
                         td
                             code
                                 a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/cypher-import.html') LOAD CSV
+                            |  manual page;&nbsp;
+                            code
+                                a(href='http://docs.neo4j.org/chunked/{{neo4j.version}}/cypher-periodic-commit.html') USING PERIODIC COMMIT
                             |  manual page
                     tr
                         th Related:
@@ -34,8 +43,8 @@ article.help
             .span9.offset3
                 figure
                     pre.code.runnable.
-                      LOAD CSV FROM "http://<insert person.csv>" AS line
-                      MERGE (n:Person {id: line[0]})
+                      LOAD CSV FROM "file://./person.csv" AS line
+                      MERGE (n:Person {id: toInt(line[0])})
                       SET n.name = line[1]
                       RETURN n
                     figcaption Import Person nodes from a CSV file into the graph
