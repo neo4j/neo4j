@@ -17,31 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.spi
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.kernel.api.exceptions.KernelException
-
-trait TokenContext {
-  def getLabelName(id: Int): String
-
-  def getOptLabelId(labelName: String): Option[Int]
-
-  def getLabelId(labelName: String): Int
-
-  def getPropertyKeyName(id: Int): String
-
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Int]
-
-  def getPropertyKeyId(propertyKeyName: String): Int
-
-  def getRelTypeName(id: Int): String
-
-  def getOptRelTypeId(relType: String): Option[Int]
-
-  def getRelTypeId(relType: String): Int
-}
-
-object TokenContext
+public class RelationshipTypeNotFoundException extends KernelException
 {
-  def tryGet[T <: KernelException : Manifest](result: => Int) = try { Some(result) } catch { case (_: T) => None }
+    public RelationshipTypeNotFoundException( String message, Exception cause )
+    {
+        super( Status.Schema.NoSuchRelationshipType, cause, message);
+    }
 }
