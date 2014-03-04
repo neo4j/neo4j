@@ -7,9 +7,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Match
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SingleQuery
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId, PropertyKeyId, ast}
+import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.mockito.Mockito
+import org.mockito.Mockito._
 import org.neo4j.graphdb.Direction
 
 class SimpleTokenResolverTest extends CypherFunSuite {
@@ -18,9 +18,9 @@ class SimpleTokenResolverTest extends CypherFunSuite {
 
   val resolver = new SimpleTokenResolver
   
-  parseTest("match n where n.name = 'David' return *") { query =>
+  parseTest("match n where n.name = 'Resolved' return *") { query =>
     val planContext = mock[PlanContext]
-    Mockito.when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(12))
+    when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(12))
 
     resolver.resolve(query)(planContext) match {
       case Query(_,
@@ -29,7 +29,7 @@ class SimpleTokenResolverTest extends CypherFunSuite {
             false,
             Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
             Seq(),
-            Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("David"))))
+            Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Resolved"))))
           ),
           Return(false, ReturnAll(), None, None, None)
         ))) =>
@@ -38,9 +38,29 @@ class SimpleTokenResolverTest extends CypherFunSuite {
     }
   }
 
-  parseTest("match n where n:Person return *") { query =>
+  parseTest("match n where n.name = 'Unresolved' return *") { query =>
     val planContext = mock[PlanContext]
-    Mockito.when(planContext.getOptLabelId("Person")).thenReturn(Some(12))
+    when(planContext.getOptPropertyKeyId("name")).thenReturn(None)
+
+    resolver.resolve(query)(planContext) match {
+      case Query(_,
+        SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+            Seq(),
+            Some(Where(Equals(Property(Identifier("n"), pkToken), StringLiteral("Unresolved"))))
+          ),
+          Return(false, ReturnAll(), None, None, None)
+        ))) =>
+            pkToken.name should equal("name")
+            pkToken.id should equal(None)
+    }
+  }
+
+  parseTest("match n where n:Resolved return *") { query =>
+    val planContext = mock[PlanContext]
+    when(planContext.getOptLabelId("Resolved")).thenReturn(Some(12))
 
     resolver.resolve(query)(planContext) match {
       case Query(_,
@@ -53,14 +73,34 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         ),
         Return(false, ReturnAll(), None, None, None)
       ))) =>
-        labelToken.name should equal("Person")
+        labelToken.name should equal("Resolved")
         labelToken.id should equal(Some(LabelId(12)))
     }
   }
 
-  parseTest("match ()-[:KNOWS]->() return *") { query =>
+  parseTest("match n where n:Unresolved return *") { query =>
     val planContext = mock[PlanContext]
-    Mockito.when(planContext.getOptRelTypeId("KNOWS")).thenReturn(Some(12))
+    when(planContext.getOptLabelId("Unresolved")).thenReturn(None)
+
+    resolver.resolve(query)(planContext) match {
+      case Query(_,
+      SingleQuery(Seq(
+        Match(
+          false,
+          Pattern(Seq(EveryPath(NodePattern(Some(Identifier("n")), Seq(), None, true)))),
+          Seq(),
+          Some(Where(HasLabels(Identifier("n"), Seq(labelToken))))
+        ),
+        Return(false, ReturnAll(), None, None, None)
+      ))) =>
+        labelToken.name should equal("Unresolved")
+        labelToken.id should equal(None)
+    }
+  }
+
+  parseTest("match ()-[:RESOLVED]->() return *") { query =>
+    val planContext = mock[PlanContext]
+    when(planContext.getOptRelTypeId("RESOLVED")).thenReturn(Some(12))
 
     resolver.resolve(query)(planContext) match {
       case Query(_,
@@ -77,8 +117,32 @@ class SimpleTokenResolverTest extends CypherFunSuite {
         ),
         Return(false, ReturnAll(), None, None, None)
       ))) =>
-        relTypeToken.name should equal("KNOWS")
+        relTypeToken.name should equal("RESOLVED")
         relTypeToken.id should equal(Some(RelTypeId(12)))
+    }
+  }
+
+  parseTest("match ()-[:UNRESOLVED]->() return *") { query =>
+    val planContext = mock[PlanContext]
+    when(planContext.getOptRelTypeId("UNRESOLVED")).thenReturn(None)
+
+    resolver.resolve(query)(planContext) match {
+      case Query(_,
+      SingleQuery(Seq(
+        Match(
+          false,
+          Pattern(Seq(EveryPath(RelationshipChain(
+            NodePattern(None, Seq(), None, false),
+            RelationshipPattern(None, false, Seq(relTypeToken), None, None, Direction.OUTGOING),
+            NodePattern(None, Seq(), None, false)
+          )))),
+          Seq(),
+          None
+        ),
+        Return(false, ReturnAll(), None, None, None)
+      ))) =>
+        relTypeToken.name should equal("UNRESOLVED")
+        relTypeToken.id should equal(None)
     }
   }
 
