@@ -24,7 +24,7 @@ import commands.{GreaterThan, True}
 import pipes._
 import pipes.matching._
 import symbols.CTInteger
-import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache}
+import org.neo4j.cypher.internal.{CypherCompiler => Compiler, ExecutionPlan, LRUCache}
 import org.neo4j.cypher._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.Traverser.Order
@@ -42,6 +42,8 @@ import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
+import org.mockito.stubbing.Answer
+import org.mockito.invocation.InvocationOnMock
 
 class LazyTest extends ExecutionEngineFunSuite {
 
@@ -189,20 +191,28 @@ class LazyTest extends ExecutionEngineFunSuite {
     val fakeReadStatement = mock[ReadOperations]
     val fakeStatement = mock[Statement]
 
-    when(nodeManager.getAllNodes).thenReturn(counter)
-    when(bridge.instance()).thenReturn(fakeStatement)
-    when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
-    when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
-    when(fakeReadStatement.schemaStateGetOrCreate[ExecutionEngine,LRUCache[String, ExecutionPlan]](anyObject(), anyObject())).thenReturn(new LRUCache[String, ExecutionPlan](1))
-    when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
-    when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
-    when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
-    when(dependencies.resolveDependency(classOf[Monitors])).thenReturn(monitors)
     when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
     when(monitors.newMonitor(classOf[SemanticCheckMonitor])).thenReturn(mock[SemanticCheckMonitor])
     when(monitors.newMonitor(classOf[AstRewritingMonitor])).thenReturn(mock[AstRewritingMonitor])
     when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
+
+    when(nodeManager.getAllNodes).thenReturn(counter)
+    when(bridge.instance()).thenReturn(fakeStatement)
+    when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
+    when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
+    when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
+    when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
+    when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
+    when(dependencies.resolveDependency(classOf[Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
+
+    val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
+    when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(
+      new Answer[(LRUCache[String, (ExecutionPlan, Map[String, Any])], Compiler)]() {
+      def answer(invocation: InvocationOnMock) = {
+        (cache, new Compiler(fakeGraph, monitors, CypherVersion.v2_1))
+      }
+    })
 
     val engine = new ExecutionEngine(fakeGraph)
 
