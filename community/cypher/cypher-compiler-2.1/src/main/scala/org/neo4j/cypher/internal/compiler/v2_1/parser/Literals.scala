@@ -32,11 +32,11 @@ trait Literals extends Parser
     | EscapedIdentifier
   ).memoMismatches
 
-  def PropertyKeyToken: Rule1[ast.PropertyKeyToken] = Identifier ~~> (ast.PropertyKeyToken(_))
+  def PropertyKeyToken: Rule1[ast.PropertyKeyToken] = Identifier ~~> (ast.PropertyKeyToken.fromIdentifier(_))
 
-  def LabelToken: Rule1[ast.LabelToken] = Identifier ~~> (ast.LabelToken(_))
+  def LabelToken: Rule1[ast.LabelToken] = Identifier ~~> (ast.LabelToken.fromIdentifier(_))
 
-  def RelTypeToken: Rule1[ast.RelTypeToken] = Identifier ~~> (ast.RelTypeToken(_))
+  def RelTypeToken: Rule1[ast.RelTypeToken] = Identifier ~~> (ast.RelTypeToken.fromIdentifier(_))
 
   private def IdentifierString: Rule1[String] = rule("an identifier") {
     group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart

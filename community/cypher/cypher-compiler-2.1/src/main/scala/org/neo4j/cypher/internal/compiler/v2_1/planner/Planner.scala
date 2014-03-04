@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner() {

@@ -19,9 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.TokenContext
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.bottomUp
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.bottomUp
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 class SimpleTokenResolver {
-  def resolve(ast: Query)(tokenContext: TokenContext): Query = ast
+  def resolve(ast: Query)(implicit tokenContext: TokenContext): Query = ast.rewrite(bottomUp( Rewriter.lift {
+    case token @ PropertyKeyToken(name, None) => PropertyKeyToken(name, propertyKeyId(name))(token.position)
+    case token @ LabelToken(name, None)       => LabelToken(name, labelId(name))(token.position)
+    case token @ RelTypeToken(name, None)     => RelTypeToken(name, relTypeId(name))(token.position)
+  })).asInstanceOf[Query]
+
+  def propertyKeyId(name: String)(implicit tokenContext: TokenContext): Option[PropertyKeyId] = tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId)
+  def labelId(name: String)(implicit tokenContext: TokenContext): Option[LabelId] = tokenContext.getOptLabelId(name).map(LabelId)
+  def relTypeId(name: String)(implicit tokenContext: TokenContext): Option[RelTypeId] = tokenContext.getOptRelTypeId(name).map(RelTypeId)
 }

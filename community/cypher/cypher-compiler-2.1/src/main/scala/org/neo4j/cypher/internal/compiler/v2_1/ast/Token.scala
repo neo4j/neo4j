@@ -33,14 +33,13 @@ case class PropertyKeyToken(name: String, id: Option[PropertyKeyId] = None)(val 
 case class RelTypeToken(name: String, id: Option[RelTypeId] = None)(val position: InputPosition) extends Token[RelTypeId]
 
 object LabelToken {
-  def apply(identifier: Identifier): LabelToken = LabelToken(identifier.name)(identifier.position)
+  def fromIdentifier(identifier: Identifier): LabelToken = LabelToken(identifier.name)(identifier.position)
 }
 
 object PropertyKeyToken {
-  def apply(identifier: Identifier): PropertyKeyToken = PropertyKeyToken(identifier.name)(identifier.position)
+  def fromIdentifier(identifier: Identifier): PropertyKeyToken = PropertyKeyToken(identifier.name)(identifier.position)
 }
 
-
 object RelTypeToken {
-  def apply(identifier: Identifier): RelTypeToken = RelTypeToken(identifier.name)(identifier.position)
+  def fromIdentifier(identifier: Identifier): RelTypeToken = RelTypeToken(identifier.name)(identifier.position)
 }
