@@ -90,10 +90,11 @@ public class MultiPaxosContext
     private ClusterConfiguration configuration;
     private URI boundAt;
     private long lastKnownLearnedInstanceInCluster = -1;
+    private org.neo4j.cluster.InstanceId lastKnownAliveUpToDateInstance;
     private final ObjectInputStreamFactory objectInputStreamFactory;
     private final ObjectOutputStreamFactory objectOutputStreamFactory;
-    private long nextInstanceId = 0;
 
+    private long nextInstanceId = 0;
     private final ClusterContext clusterContext;
     private final ProposerContext proposerContext;
     private final AcceptorContext acceptorContext;
@@ -228,7 +229,7 @@ public class MultiPaxosContext
         }
 
         @Override
-        public URI getUriForId(org.neo4j.cluster.InstanceId node )
+        public URI getUriForId( org.neo4j.cluster.InstanceId node )
         {
             return configuration.getUriForId( node );
         }
@@ -287,10 +288,10 @@ public class MultiPaxosContext
 
         // ProposerContext
         final Deque<Message> pendingValues = new LinkedList<Message>();
-        final Map<InstanceId, Message> bookedInstances = new HashMap<InstanceId, Message>();
+        final Map<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId, Message> bookedInstances = new HashMap<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId, Message>();
 
         @Override
-        public InstanceId newInstanceId()
+        public org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId newInstanceId()
         {
             // Never propose something lower than last received instance id
             if ( lastKnownLearnedInstanceInCluster >= nextInstanceId )
@@ -298,7 +299,7 @@ public class MultiPaxosContext
                 nextInstanceId = lastKnownLearnedInstanceInCluster + 1;
             }
 
-            return new InstanceId( nextInstanceId++ );
+            return new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( nextInstanceId++ );
         }
 
         @Override
@@ -312,7 +313,7 @@ public class MultiPaxosContext
         }
 
         @Override
-        public void bookInstance( InstanceId instanceId, Message message )
+        public void bookInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId, Message message )
         {
             if ( message.getPayload() == null )
             {
@@ -322,7 +323,7 @@ public class MultiPaxosContext
         }
 
         @Override
-        public PaxosInstance getPaxosInstance( InstanceId instanceId )
+        public PaxosInstance getPaxosInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId )
         {
             return paxosInstances.getPaxosInstance( instanceId );
         }
@@ -352,13 +353,13 @@ public class MultiPaxosContext
         }
 
         @Override
-        public Message getBookedInstance( InstanceId id )
+        public Message getBookedInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId id )
         {
             return bookedInstances.get( id );
         }
 
         @Override
-        public Message<ProposerMessage> unbookInstance( InstanceId id )
+        public Message<ProposerMessage> unbookInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId id )
         {
             return bookedInstances.remove( id );
         }
@@ -394,7 +395,7 @@ public class MultiPaxosContext
         {
             if ( value.getJoin() != null )
             {
-                for ( InstanceId instanceId : bookedInstances.keySet() )
+                for ( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId : bookedInstances.keySet() )
                 {
                     PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                     if ( instance.getAcceptors() != null )
@@ -415,7 +416,7 @@ public class MultiPaxosContext
             }
             else if ( value.getLeave() != null )
             {
-                for ( InstanceId instanceId : bookedInstances.keySet() )
+                for ( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId : bookedInstances.keySet() )
                 {
                     PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                     if ( instance.getAcceptors() != null )
@@ -476,7 +477,7 @@ public class MultiPaxosContext
 
         @Override
         public void acquiredConfiguration( final Map<org.neo4j.cluster.InstanceId, URI> memberList, final Map<String,
-                org.neo4j.cluster.InstanceId> roles )
+          org.neo4j.cluster.InstanceId> roles )
         {
             configuration.setMembers( memberList );
             configuration.setRoles( roles );
@@ -717,7 +718,7 @@ public class MultiPaxosContext
             implements AcceptorContext
     {
         @Override
-        public AcceptorInstance getAcceptorInstance( InstanceId instanceId )
+        public AcceptorInstance getAcceptorInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId )
         {
             return instanceStore.getAcceptorInstance( instanceId );
         }
@@ -750,7 +751,7 @@ public class MultiPaxosContext
         private long lastLearnedInstanceId = -1;
 
         /** To minimize logging, keep track of the latest learn miss, only log when it changes. */
-        private InstanceId latestLearnMiss = null;
+        private org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestLearnMiss = null;
 
         @Override
         public long getLastDeliveredInstanceId()
@@ -762,7 +763,7 @@ public class MultiPaxosContext
         public void setLastDeliveredInstanceId( long lastDeliveredInstanceId )
         {
             this.lastDeliveredInstanceId = lastDeliveredInstanceId;
-            instanceStore.lastDelivered( new InstanceId( lastDeliveredInstanceId ) );
+            instanceStore.lastDelivered( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( lastDeliveredInstanceId ) );
         }
 
         @Override
@@ -771,16 +772,32 @@ public class MultiPaxosContext
             return lastLearnedInstanceId;
         }
 
+
         @Override
         public long getLastKnownLearnedInstanceInCluster()
         {
-            return lastKnownLearnedInstanceInCluster;
+            return lastKnownLearnedInstanceInCluster;  //To change body of implemented methods use File | Settings | File Templates.
         }
 
         @Override
-        public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster )
+        public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, org.neo4j.cluster.InstanceId instanceId )
         {
-            MultiPaxosContext.this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
+            if(MultiPaxosContext.this.lastKnownLearnedInstanceInCluster <= lastKnownLearnedInstanceInCluster)
+            {
+                MultiPaxosContext.this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
+                MultiPaxosContext.this.lastKnownAliveUpToDateInstance = instanceId;
+            }
+            else if(lastKnownLearnedInstanceInCluster == -1)
+            {
+                // Special case for clearing the state
+                MultiPaxosContext.this.lastKnownLearnedInstanceInCluster = -1;
+            }
+        }
+
+        @Override
+        public org.neo4j.cluster.InstanceId getLastKnownAliveUpToDateInstance()
+        {
+            return lastKnownAliveUpToDateInstance;
         }
 
         @Override
@@ -808,7 +825,7 @@ public class MultiPaxosContext
         }
 
         @Override
-        public PaxosInstance getPaxosInstance( InstanceId instanceId )
+        public PaxosInstance getPaxosInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId )
         {
             return paxosInstances.getPaxosInstance( instanceId );
         }
@@ -832,7 +849,7 @@ public class MultiPaxosContext
         }
 
        @Override
-       public void notifyLearnMiss( InstanceId instanceId )
+       public void notifyLearnMiss( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId )
        {
            if(latestLearnMiss != instanceId)
            {
@@ -849,8 +866,8 @@ public class MultiPaxosContext
         // HeartbeatContext
         Set<org.neo4j.cluster.InstanceId> failed = new HashSet<org.neo4j.cluster.InstanceId>();
 
-        Map<org.neo4j.cluster.InstanceId, Set<org.neo4j.cluster.InstanceId>> nodeSuspicions = new HashMap<org.neo4j
-                .cluster.InstanceId, Set<org.neo4j.cluster.InstanceId>>();
+        Map<org.neo4j.cluster.InstanceId, Set<org.neo4j.cluster.InstanceId>> nodeSuspicions = new HashMap<org.neo4j.cluster.InstanceId, Set<org.neo4j.cluster.InstanceId>>();
+
 
         Iterable<HeartbeatListener> heartBeatListeners = Listeners.newListeners();
 

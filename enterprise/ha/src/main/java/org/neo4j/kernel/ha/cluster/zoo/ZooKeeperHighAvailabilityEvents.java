@@ -22,8 +22,8 @@ package org.neo4j.kernel.ha.cluster.zoo;
 import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;

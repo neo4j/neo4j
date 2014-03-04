@@ -27,7 +27,7 @@ import org.neo4j.cluster.InstanceId;
 
 public interface ConfigurationContext
 {
-    org.neo4j.cluster.InstanceId getMyId();
+    InstanceId getMyId();
 
     List<URI> getMemberURIs();
 
@@ -37,7 +37,7 @@ public interface ConfigurationContext
 
     Map<InstanceId,URI> getMembers();
 
-    org.neo4j.cluster.InstanceId getCoordinator();
+    InstanceId getCoordinator();
 
     URI getUriForId( InstanceId id );
 
