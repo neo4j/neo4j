@@ -22,18 +22,24 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import ast._
 
-sealed abstract class MatchPredicateNormalizer extends Rewriter {
-  
+object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
+
+object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
+
+trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, Vector[Expression]]
-  val replace: PartialFunction[AnyRef, AnyRef] 
+  val replace: PartialFunction[AnyRef, AnyRef]
+}
+
+sealed class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
   
   def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case m@Match(_, pattern, _, where) =>
+   case m@Match(_, pattern, _, where) =>
       val predicates = pattern.fold(Vector.empty[Expression]) {
-        case pattern: AnyRef if extract.isDefinedAt(pattern) => acc => acc ++ extract(pattern)
-        case _                                               => identity
+        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
+        case _                                                          => identity
       }
 
       if (predicates.isEmpty)
@@ -42,7 +48,7 @@ sealed abstract class MatchPredicateNormalizer extends Rewriter {
         val rewrittenPredicates = predicates ++ where.map(_.expression)
         val rewrittenPredicate = rewrittenPredicates reduceLeftOption { (lhs, rhs) => And(lhs, rhs)(m.position) }
         m.copy(
-          pattern = pattern.rewrite(topDown(Rewriter.lift(replace))).asInstanceOf[Pattern],
+          pattern = pattern.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[Pattern],
           where = rewrittenPredicate.map(Where(_)(where.map(_.position).getOrElse(m.position)))
         )(m.position)
       }
@@ -81,3 +87,4 @@ object LabelPredicateNormalizer extends MatchPredicateNormalizer {
     case p@NodePattern(Some(id), labels, _, _) if !labels.isEmpty => p.copy(labels = Seq.empty)(p.position)
   }
 }
+
