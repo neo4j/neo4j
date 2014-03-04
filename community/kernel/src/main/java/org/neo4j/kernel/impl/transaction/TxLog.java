@@ -84,7 +84,7 @@ public class TxLog
         {
             this.bytes = bytes;
         }
-        
+
         @Override
         public int hashCode()
         {
@@ -102,11 +102,12 @@ public class TxLog
      * Initializes a transaction log using <CODE>filename</CODE>. If the file
      * isn't empty the position will be set to size of file so new records will
      * be appended.
-     * 
+     *
      * @param fileName
      *            Filename of file to use
      * @param fileSystem
      *            The concrete FileSystemAbstraction to use.
+     * @param monitors {@link Monitors}.
      * @throws IOException
      *             If unable to open file
      */
@@ -189,7 +190,7 @@ public class TxLog
 
     /**
      * Writes a <CODE>TX_START</CODE> record to the file.
-     * 
+     *
      * @param globalId
      *            The global id of the new transaction
      * @throws IOException
@@ -218,7 +219,7 @@ public class TxLog
 
     /**
      * Writes a <CODE>BRANCH_ADD</CODE> record to the file.
-     * 
+     *
      * @param globalId
      *            The global id of the transaction
      * @param branchId
@@ -250,7 +251,7 @@ public class TxLog
     /**
      * Writes a <CODE>MARK_COMMIT</CODE> record to the file and forces the
      * file to disk.
-     * 
+     *
      * @param globalId
      *            The global id of the transaction
      * @throws IOException
@@ -271,7 +272,7 @@ public class TxLog
 
     /**
      * Writes a <CODE>TX_DONE</CODE> record to the file.
-     * 
+     *
      * @param globalId
      *            The global id of the transaction completed
      * @throws IOException
@@ -335,6 +336,7 @@ public class TxLog
             return seqNr;
         }
 
+        @Override
         public String toString()
         {
             XidImpl xid = new XidImpl( globalId, branchId == null ? new byte[0] : branchId );
@@ -579,7 +581,7 @@ public class TxLog
     /**
      * Switches log file. Copies the dangling records in current log file to the
      * <CODE>newFile</CODE> and then makes the switch closing the old log file.
-     * 
+     *
      * @param newFile
      *            The filename of the new file to switch to
      * @throws IOException
@@ -603,6 +605,7 @@ public class TxLog
         }
         Collections.sort( records, new Comparator<Record>()
         {
+            @Override
             public int compare( Record r1, Record r2 )
             {
                 return r1.getSequenceNumber() - r2.getSequenceNumber();

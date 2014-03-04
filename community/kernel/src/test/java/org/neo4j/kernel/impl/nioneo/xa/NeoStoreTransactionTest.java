@@ -1322,12 +1322,12 @@ public class NeoStoreTransactionTest
 
         public CapturingIndexingService()
         {
-            super(  null,
+            super( null,
                     new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
                     new NeoStoreIndexStoreView( locks, neoStore ),
                     null,
                     new KernelSchemaStateStore(),
-                    new SingleLoggingService( DEV_NULL )
+                    new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR
                 );
         }
 

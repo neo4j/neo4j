@@ -35,7 +35,11 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
-/** A picture of the state of the cluster, including all messages waiting to get delivered. */
+/**
+ * A picture of the state of the cluster, including all messages waiting to get delivered.
+ * Important note: ClusterStates are equal on the states of the instances, not on the pending messages. Two states
+ * with the same cluster states but different pending messages will be considered equal.
+ */
 class ClusterState
 {
     public static final Predicate<ClusterInstance> HAS_TIMEOUTS = new Predicate<ClusterInstance>()
@@ -56,6 +60,14 @@ class ClusterState
         for ( ClusterInstance instance : instances )
         {
             this.instances.add( instance );
+        }
+    }
+
+    public void addPendingActions( ClusterAction ... actions )
+    {
+        for ( ClusterAction action : actions )
+        {
+            pendingActions.add( action );
         }
     }
 
@@ -183,7 +195,7 @@ class ClusterState
     public int hashCode()
     {
         int result = instances.hashCode();
-//        result = 31 * result + pendingActions.hashCode();
+        result = 31 * result + pendingActions.hashCode();
         return result;
     }
 

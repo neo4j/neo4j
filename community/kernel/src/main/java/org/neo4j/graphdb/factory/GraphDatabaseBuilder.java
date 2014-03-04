@@ -46,8 +46,8 @@ public class GraphDatabaseBuilder
         GraphDatabaseService newDatabase( Map<String, String> config );
     }
 
-    DatabaseCreator creator;
-    Map<String, String> config = new HashMap<>();
+    protected DatabaseCreator creator;
+    protected Map<String, String> config = new HashMap<>();
 
     public GraphDatabaseBuilder( DatabaseCreator creator )
     {
@@ -119,6 +119,7 @@ public class GraphDatabaseBuilder
      * @return the builder
      * @deprecated Use setConfig with explicit {@link Setting} instead
      */
+    @Deprecated
     @SuppressWarnings("deprecation")
     public GraphDatabaseBuilder setConfig( Map<String, String> config )
     {
@@ -197,7 +198,7 @@ public class GraphDatabaseBuilder
     {
         return creator.newDatabase( config );
     }
-    
+
     public static class Delegator extends GraphDatabaseBuilder
     {
         private final GraphDatabaseBuilder actual;

@@ -62,28 +62,36 @@ public class Prover
         {
             db.shutdown();
         }
+
+        // Generate .svg :
+        // dot -Tsvg proof.gs -o proof.svg
     }
 
     private void bootstrapCluster() throws Exception
     {
         Logging logging = new TestLogging();
+        String instance1 = "cluster://localhost:5001";
+        String instance2 = "cluster://localhost:5002";
+        String instance3 = "cluster://localhost:5003";
         ClusterConfiguration config = new ClusterConfiguration( "default",
                 logging.getMessagesLog( ClusterConfiguration.class ),
-                "cluster://localhost:5001",
-                "cluster://localhost:5002",
-                "cluster://localhost:5003" );
+                instance1,
+                instance2,
+                instance3 );
 
         ClusterState state = new ClusterState(
                 asList(
-                        newClusterInstance( new InstanceId( 1 ), new URI("cluster://localhost:5001"), config, logging ),
-                        newClusterInstance( new InstanceId( 2 ), new URI("cluster://localhost:5002"), config, logging ),
-                        newClusterInstance( new InstanceId( 3 ), new URI("cluster://localhost:5003"), config, logging )),
+                        newClusterInstance( new InstanceId( 1 ), new URI( instance1 ), config, logging ),
+                        newClusterInstance( new InstanceId( 2 ), new URI( instance2 ), config, logging ),
+                        newClusterInstance( new InstanceId( 3 ), new URI( instance3 ), config, logging )),
                 emptySetOf( ClusterAction.class ));
 
         state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.create,
-                new URI( "cluster://localhost:5003" ), "defaultcluster" ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, "cluster://localhost:5003" ) ) );
-        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join, new URI( "cluster://localhost:5002" ), new Object[]{"defaultcluster", new URI[]{new URI( "cluster://localhost:5003" )}} ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, "cluster://localhost:5002" ) ) );
-        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join, new URI( "cluster://localhost:5001" ), new Object[]{"defaultcluster", new URI[]{new URI( "cluster://localhost:5003" )}} ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, "cluster://localhost:5001" ) ) );
+                new URI( instance3 ), "defaultcluster" ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance3 ) ) );
+        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join, new URI( instance2 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance2 ) ) );
+        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join, new URI( instance1 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance1 ) ) );
+
+        state.addPendingActions( new InstanceCrashedAction( instance3 ) );
 
         unexploredKnownStates.add( state );
 
