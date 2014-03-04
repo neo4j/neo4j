@@ -630,7 +630,7 @@ public class MultiPaxosContext
         {
             MultiPaxosContext.this.boundAt = boundAt;
         }
-        
+
         @Override
         public void joinDenied( ConfigurationResponseState configurationResponseState )
         {
@@ -866,7 +866,7 @@ public class MultiPaxosContext
         @Override
         public boolean alive( final org.neo4j.cluster.InstanceId node )
         {
-            Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = suspicionsFor( getMyId() );
             boolean suspected = serverSuspicions.remove( node );
 
             if ( !isFailed( node ) && failed.remove( node ) )
@@ -888,7 +888,7 @@ public class MultiPaxosContext
         @Override
         public void suspect( final org.neo4j.cluster.InstanceId node )
         {
-            Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = suspicionsFor( getMyId() );
 
             if ( !serverSuspicions.contains( node ) )
             {
@@ -915,7 +915,7 @@ public class MultiPaxosContext
         @Override
         public void suspicions( org.neo4j.cluster.InstanceId from, Set<org.neo4j.cluster.InstanceId> suspicions )
         {
-            Set<org.neo4j.cluster.InstanceId> serverSuspicions = getSuspicionsFor( from );
+            Set<org.neo4j.cluster.InstanceId> serverSuspicions = suspicionsFor( from );
 
             // Check removals
             Iterator<org.neo4j.cluster.InstanceId> suspicionsIterator = serverSuspicions.iterator();
@@ -1037,6 +1037,12 @@ public class MultiPaxosContext
 
         @Override
         public Set<org.neo4j.cluster.InstanceId> getSuspicionsFor( org.neo4j.cluster.InstanceId uri )
+        {
+            Set<org.neo4j.cluster.InstanceId> suspicions = suspicionsFor( uri );
+            return new HashSet<org.neo4j.cluster.InstanceId>( suspicions );
+        }
+
+        private Set<org.neo4j.cluster.InstanceId> suspicionsFor( org.neo4j.cluster.InstanceId uri )
         {
             Set<org.neo4j.cluster.InstanceId> serverSuspicions = nodeSuspicions.get( uri );
             if ( serverSuspicions == null )
