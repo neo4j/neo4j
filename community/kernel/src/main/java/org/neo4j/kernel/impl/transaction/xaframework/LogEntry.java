@@ -142,7 +142,7 @@ public abstract class LogEntry
         }
     }
 
-    static class Prepare extends LogEntry
+    public static class Prepare extends LogEntry
     {
         private final long timeWritten;
 

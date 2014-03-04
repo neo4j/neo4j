@@ -21,8 +21,10 @@ package org.neo4j.ha;
 
 import java.io.File;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -30,8 +32,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -42,11 +44,11 @@ import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.test.RepeatRule;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertFalse;
-
+import static org.junit.Assert.*;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 /**
@@ -64,6 +66,9 @@ import static org.neo4j.test.TargetDirectory.forTest;
  */
 public class TestPullUpdatesApplied
 {
+    @Rule
+    public RepeatRule repeatRule = new RepeatRule();
+
     private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     private final TargetDirectory dir = forTest( getClass() );
 
@@ -161,8 +166,12 @@ public class TestPullUpdatesApplied
                     }
                 } );
 
+        // Temporary debugging
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Starting instance " + toKill + " in separate process..");
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
+        // Temporary debugging
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Waiting for instance to start..");
         if ( !latch2.await( 60, TimeUnit.SECONDS ) )
         {
             throw new IllegalStateException( "Timeout waiting for instance to fail" );
@@ -180,6 +189,7 @@ public class TestPullUpdatesApplied
     public static void main( String[] args ) throws Exception
     {
         int i = Integer.parseInt( args[1] );
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Starting instance " + i);
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( args[0] )
                 .setConfig( ClusterSettings.server_id, "" + i )
@@ -189,6 +199,7 @@ public class TestPullUpdatesApplied
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Done, commencing sepukku.");
         // this is the bug trigger
         // no shutdown, emulates a crash.
     }

@@ -79,7 +79,7 @@ public class XaDataSourceManager
     {
         this.msgLog = msgLog;
     }
-    
+
     public static DataSourceRegistrationListener filterListener( final DataSourceRegistrationListener listener,
             final Predicate<XaDataSource> filter )
     {
@@ -93,7 +93,7 @@ public class XaDataSourceManager
                     listener.registeredDataSource( ds );
                 }
             }
-            
+
             @Override
             public void unregisteredDataSource( XaDataSource ds )
             {
@@ -104,7 +104,7 @@ public class XaDataSourceManager
             }
         };
     }
-    
+
     public static DataSourceRegistrationListener neoStoreListener( DataSourceRegistrationListener listener )
     {
         return filterListener( listener, new Predicate<XaDataSource>()
@@ -441,13 +441,28 @@ public class XaDataSourceManager
             // doesn't get lost.
             for ( XaDataSource participant : MapUtil.reverse( resourceMap ).keySet() )
             {
+                participant.recoveryCompleted();
                 participant.rotateLogicalLog();
+            }
+
+            // For all data source that didn't actively participate in recovery
+            // notify them that recovery process has completed.
+            for ( XaDataSource ds : allOtherDataSources( resourceMap.values() ) )
+            {
+                ds.recoveryCompleted();
             }
         }
         catch ( IOException | XAException e )
         {
             throw logAndReturn( "TM: recovery failed", new TransactionFailureException( "Recovery failed.", e ) );
         }
+    }
+
+    private Collection<XaDataSource> allOtherDataSources( Collection<XaDataSource> recoveredDataSources )
+    {
+        Collection<XaDataSource> dataSources = new HashSet<>( this.dataSources.values() );
+        dataSources.removeAll( recoveredDataSources );
+        return dataSources;
     }
 
     private void buildRecoveryInfo( List<NonCompletedTransaction> commitList,

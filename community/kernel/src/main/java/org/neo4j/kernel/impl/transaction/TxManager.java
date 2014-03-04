@@ -740,7 +740,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             throw new ThreadAssociatedWithOtherTransactionException( Thread.currentThread(), associatedTx, tx );
         }
-        
+
         TransactionImpl txImpl = (TransactionImpl) tx;
         if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
         {
