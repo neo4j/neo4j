@@ -33,5 +33,6 @@ trait CardinalityEstimator {
   def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
 }
 
-case class LabelId(id:Long) extends AnyVal
-case class RelTypeId(id:Long) extends AnyVal
+case class LabelId(id: Int) extends AnyVal
+
+case class RelTypeId(id: Int) extends AnyVal

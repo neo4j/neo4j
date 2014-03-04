@@ -17,21 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast
+package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.spi.TokenContext
 
-sealed trait RemoveItem extends ASTNode with SemanticCheckable
-
-case class RemoveLabelItem(expression: Expression, labels: Seq[LabelToken])(val position: InputPosition) extends RemoveItem {
-  def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.expectType(CTNode.covariant)
-}
-
-case class RemovePropertyItem(property: Property) extends RemoveItem {
-  def position = property.position
-
-  def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
+class SimpleTokenResolver {
+  def resolve(ast: Query)(tokenContext: TokenContext): Query = ast
 }

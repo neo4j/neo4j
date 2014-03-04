@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.parboiled.Context
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
 
 trait Literals extends Parser
   with Base with Strings {
@@ -33,6 +31,12 @@ trait Literals extends Parser
       IdentifierString ~~>> (ast.Identifier(_))
     | EscapedIdentifier
   ).memoMismatches
+
+  def PropertyKeyToken: Rule1[ast.PropertyKeyToken] = Identifier ~~> (ast.PropertyKeyToken(_))
+
+  def LabelToken: Rule1[ast.LabelToken] = Identifier ~~> (ast.LabelToken(_))
+
+  def RelTypeToken: Rule1[ast.RelTypeToken] = Identifier ~~> (ast.RelTypeToken(_))
 
   private def IdentifierString: Rule1[String] = rule("an identifier") {
     group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
@@ -54,7 +58,7 @@ trait Literals extends Parser
 
   def MapLiteral: Rule1[ast.MapExpression] = rule {
     group(
-      ch('{') ~~ zeroOrMore(Identifier ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
+      ch('{') ~~ zeroOrMore(PropertyKeyToken ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
     ) ~~>> (ast.MapExpression(_))
   }
 
@@ -89,12 +93,12 @@ trait Literals extends Parser
     | UnsignedIntegerLiteral ~~>> (l => ast.Range(Some(l), Some(l)))
   )
 
-  def NodeLabels: Rule1[Seq[ast.Identifier]] = rule("node labels") {
+  def NodeLabels: Rule1[Seq[ast.LabelToken]] = rule("node labels") {
     (oneOrMore(NodeLabel, separator = WS) memoMismatches).suppressSubnodes
   }
 
-  def NodeLabel: Rule1[ast.Identifier] = rule {
-    ((operator(":") ~~ Identifier) memoMismatches).suppressSubnodes
+  def NodeLabel: Rule1[ast.LabelToken] = rule {
+    ((operator(":") ~~ LabelToken) memoMismatches).suppressSubnodes
   }
 
   def StringLiteral: Rule1[ast.StringLiteral] = rule("\"...string...\"") {

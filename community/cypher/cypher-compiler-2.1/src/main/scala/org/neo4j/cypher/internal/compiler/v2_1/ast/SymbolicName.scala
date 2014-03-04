@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
-sealed trait RemoveItem extends ASTNode with SemanticCheckable
+trait SymbolicName {
+  self: ASTNode =>
 
-case class RemoveLabelItem(expression: Expression, labels: Seq[LabelToken])(val position: InputPosition) extends RemoveItem {
-  def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.expectType(CTNode.covariant)
+  def name: String
+  def position: InputPosition
 }
 
-case class RemovePropertyItem(property: Property) extends RemoveItem {
-  def position = property.position
-
-  def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
+object SymbolicName {
+  def unapply(v: Any): Option[String] = v match {
+    case astNode: SymbolicName => Some(astNode.name)
+    case _                     => None
+  }
 }
+

@@ -52,7 +52,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
   def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
 
     val PipeInfo(p, isUpdating, periodicCommitInfo, rowAlignment) = try {
-      execPlanBuilder.producePlan(ast)
+      execPlanBuilder.producePlan(ast)(planContext)
     } catch {
       case _: CantHandleQueryException => pipeBuilder.buildPipes(planContext, inputQuery)
     }

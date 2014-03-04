@@ -24,10 +24,10 @@ import symbols._
 
 sealed trait Hint extends ASTNode with SemanticCheckable
 
-case class UsingIndexHint(identifier: Identifier, label: Identifier, property: Identifier)(val position: InputPosition) extends Hint {
+case class UsingIndexHint(identifier: Identifier, label: LabelToken, property: Identifier)(val position: InputPosition) extends Hint {
   def semanticCheck = identifier.ensureDefined then identifier.expectType(CTNode.covariant)
 }
 
-case class UsingScanHint(identifier: Identifier, label: Identifier)(val position: InputPosition) extends Hint {
+case class UsingScanHint(identifier: Identifier, label: LabelToken)(val position: InputPosition) extends Hint {
   def semanticCheck = identifier.ensureDefined then identifier.expectType(CTNode.covariant)
 }

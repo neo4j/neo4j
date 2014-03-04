@@ -196,8 +196,8 @@ class SemanticStateTest extends CypherFunSuite {
   }
 
   test("should maintain separate TypeInfo for equivalent expressions") {
-    val exp1 = ast.Property(ast.Identifier("n")(DummyPosition(0)), ast.Identifier("prop")(DummyPosition(3)))(DummyPosition(0))
-    val exp2 = ast.Property(ast.Identifier("n")(DummyPosition(6)), ast.Identifier("prop")(DummyPosition(9)))(DummyPosition(6))
+    val exp1 = ast.Property(ast.Identifier("n")(DummyPosition(0)), ast.PropertyKeyToken("prop")(DummyPosition(3)))(DummyPosition(0))
+    val exp2 = ast.Property(ast.Identifier("n")(DummyPosition(6)), ast.PropertyKeyToken("prop")(DummyPosition(9)))(DummyPosition(6))
     val s1 = SemanticState.clean.specifyType(exp1, CTNode).right.get
     val s2 = s1.specifyType(exp2, CTRelationship).right.get
 
