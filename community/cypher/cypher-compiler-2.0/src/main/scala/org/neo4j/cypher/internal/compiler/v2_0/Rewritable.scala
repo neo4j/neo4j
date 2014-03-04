@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_0
 
 import java.lang.reflect.Method
 import scala.collection.mutable.{HashMap => MutableHashMap}
-import scala.collection.{GenIterable, IterableLike}
 
 object Rewriter {
   implicit class LiftedRewriter(f: (AnyRef => Option[AnyRef])) extends Rewriter {
