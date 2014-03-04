@@ -88,8 +88,8 @@ public class ManyMergesStressTest
             String ident = stringPair.first();
             String name = stringPair.other();
             String id = Long.toString( Math.abs( random.nextLong() ) );
-            String query = format( "MERGE (%s:Person {id: %s}) ON CREATE %s SET %s.name = \"%s\";",
-                    ident, id, ident, ident, name );
+            String query =
+                format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, ident, name );
 
             ExecutionResult result = engine.execute( query );
             result.iterator().close();

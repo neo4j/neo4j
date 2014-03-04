@@ -19,40 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import ast._
-
-object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
-
-object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.ast.NodePattern
+import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipPattern
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.MapExpression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
 trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, Vector[Expression]]
   val replace: PartialFunction[AnyRef, AnyRef]
 }
 
-sealed class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
-  
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
-
-  private val instance: Rewriter = Rewriter.lift {
-   case m@Match(_, pattern, _, where) =>
-      val predicates = pattern.fold(Vector.empty[Expression]) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
-      }
-
-      if (predicates.isEmpty)
-        m
-      else {
-        val rewrittenPredicates = predicates ++ where.map(_.expression)
-        val rewrittenPredicate = rewrittenPredicates reduceLeftOption { (lhs, rhs) => And(lhs, rhs)(m.position) }
-        m.copy(
-          pattern = pattern.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[Pattern],
-          where = rewrittenPredicate.map(Where(_)(where.map(_.position).getOrElse(m.position)))
-        )(m.position)
-      }
-  }
+case class MatchPredicateNormalizerChain(normalizers: MatchPredicateNormalizer*) extends MatchPredicateNormalizer {
+  val extract = PartialFunctionSupport.reduceAnyDefined(normalizers.map(_.extract))(Vector.empty[Expression])(_ ++ _)
+  val replace = PartialFunctionSupport.composeIfDefined(normalizers.map(_.replace))
 }
 
 object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
@@ -60,7 +42,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     case NodePattern(Some(id), _, Some(props), _)               => propertyPredicates(id, props)
     case RelationshipPattern(Some(id), _, _, _, Some(props), _) => propertyPredicates(id, props)
   }
-  
+
   override val replace: PartialFunction[AnyRef, AnyRef] = {
     case p@NodePattern(Some(_) ,_, Some(_), _)               => p.copy(properties = None)(p.position)
     case p@RelationshipPattern(Some(_), _, _, _, Some(_), _) => p.copy(properties = None)(p.position)

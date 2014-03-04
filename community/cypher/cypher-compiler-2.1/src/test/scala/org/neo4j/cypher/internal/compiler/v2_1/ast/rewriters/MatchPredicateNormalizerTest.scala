@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 class MatchPredicateNormalizerTest extends CypherFunSuite {
   import parser.ParserFixture._
 
+  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
+  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
+
   test("move single predicate from node to WHERE") {
     val original = parser.parse("MATCH (n {foo: 'bar'}) RETURN n")
     val expected = parser.parse("MATCH (n) WHERE n.foo = 'bar' RETURN n")
