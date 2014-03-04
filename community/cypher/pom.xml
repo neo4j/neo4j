@@ -144,6 +144,7 @@
             <failOnViolation>true</failOnViolation>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
             <failOnWarning>false</failOnWarning>
+            <inputEncoding>UTF-8</inputEncoding>
             <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
             <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
             <configLocation>${project.basedir}/../scalastyle_config.xml</configLocation>
