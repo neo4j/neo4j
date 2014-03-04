@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -32,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,6 +49,13 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class StoreMigratorTestIT
 {
@@ -94,6 +96,7 @@ public class StoreMigratorTestIT
         verifier.verifyRelationships();
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
+        verifier.verifyLegacyIndex();
 
         database.shutdown();
     }
@@ -161,7 +164,7 @@ public class StoreMigratorTestIT
             assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
             assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
         }
-
+    
         private void verifyNodeIdsReused()
         {
             try
@@ -201,6 +204,14 @@ public class StoreMigratorTestIT
             {
                 transaction.finish();
             }
+        }
+
+        public void verifyLegacyIndex()
+        {
+            String[] nodeIndexes = database.index().nodeIndexNames();
+            String[] relationshipIndexes = database.index().relationshipIndexNames();
+            assertArrayEquals( new String[] {"nodekey"}, nodeIndexes );
+            assertArrayEquals( new String[] {"relkey"}, relationshipIndexes );
         }
     }
 

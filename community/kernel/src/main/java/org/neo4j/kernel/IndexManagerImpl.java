@@ -268,9 +268,9 @@ class IndexManagerImpl implements IndexManager, IndexProviders
         {
             String provider = config.get( PROVIDER );
             String dataSourceName = getIndexProvider( provider ).getDataSourceName();
+            Transaction tx = graphDatabaseAPI.tx().begin();
             XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
             IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-            Transaction tx = graphDatabaseAPI.tx().begin();
             try
             {
                 javax.transaction.Transaction javaxTx = txManager.getTransaction();
