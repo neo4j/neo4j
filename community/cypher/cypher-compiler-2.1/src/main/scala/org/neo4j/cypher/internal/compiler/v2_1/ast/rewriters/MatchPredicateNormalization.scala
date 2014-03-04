@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import ast._
 
 object TheDefaultMatchPredicateNormalization
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)) {
-}
+  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
 
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
