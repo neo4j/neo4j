@@ -30,10 +30,6 @@
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
   
-  <modules>
-    <module>cypherdoc</module>
-  </modules>
-
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -339,9 +335,9 @@
               <includeProjectDependencies>false</includeProjectDependencies>
               <arguments>
                 <argument>${docs.sources}/cypherdoc</argument>
+                <argument>http://docs.neo4j.org/csv</argument>
                 <argument>${project.build.directory}/../src/tutorials/cypher</argument>
                 <argument>${project.build.directory}/../src/tutorials/modeling</argument>
-                <argument>${project.build.directory}/../src/cypher</argument>
               </arguments>
             </configuration>
           </execution>
@@ -363,7 +359,7 @@
         <dependencies>
           <dependency>
             <groupId>org.neo4j.doc</groupId>
-            <artifactId>neo4j-cypherdoc</artifactId>
+            <artifactId>neo4j-graphgist</artifactId>
             <version>${neo4j.version}</version>
           </dependency>
         </dependencies>
