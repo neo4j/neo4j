@@ -45,6 +45,15 @@
     <maven.site.deploy.skip>false</maven.site.deploy.skip>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.scalastyle</groupId>
+        <artifactId>scalastyle-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
 
     <!-- shared versions are defined in the parent pom -->
