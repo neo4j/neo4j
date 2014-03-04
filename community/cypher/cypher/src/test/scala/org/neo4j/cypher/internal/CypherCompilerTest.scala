@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal
 import org.scalatest.{Matchers, FunSuite}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class CypherCompilerTest extends FunSuite with Matchers with MockitoSugar {
+class CypherCompilerTest extends CypherFunSuite {
   test("isPeriodicCommit handles versioned queries") {
     val gds = mock[GraphDatabaseService]
     val compiler = new CypherCompiler(gds)
-    compiler.isPeriodicCommit("CYPHER 2.0 USING PERIODIC COMMIT CREATE n RETURN n") should be(true)
+    compiler.isPeriodicCommit("CYPHER 2.1 USING PERIODIC COMMIT CREATE n RETURN n") should be(true)
   }
 }
