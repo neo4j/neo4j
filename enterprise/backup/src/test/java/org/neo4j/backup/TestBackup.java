@@ -46,12 +46,17 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
+import static java.lang.Integer.parseInt;
+
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 public class TestBackup
 {
@@ -70,8 +75,6 @@ public class TestBackup
         otherServerPath = new File( base, "server2" );
         backupPath = new File( base, "backuedup-serverdb" );
     }
-
-    // TODO MP: What happens if the server database keeps growing, virtually making the files endless?
 
     @Test
     public void makeSureFullFailsWhenDbExists() throws Exception
@@ -328,7 +331,7 @@ public class TestBackup
 
     private DbRepresentation addMoreData( File path )
     {
-        GraphDatabaseService db = startGraphDatabase( path );
+        GraphDatabaseService db = startGraphDatabase( path, false );
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "backup", "Is great" );
@@ -341,18 +344,26 @@ public class TestBackup
         return result;
     }
 
-    private GraphDatabaseService startGraphDatabase( File path )
+    private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
     {
         return new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path.getPath() ).
-            setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
+            setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) ).
             setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
             newGraphDatabase();
     }
 
     private DbRepresentation createInitialDataSet( File path )
     {
-        GraphDatabaseService db = startGraphDatabase( path );
+        GraphDatabaseService db = startGraphDatabase( path, false );
+        createInitialDataset( db );
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
+    }
+
+    private void createInitialDataset( GraphDatabaseService db )
+    {
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "myKey", "myValue" );
@@ -362,9 +373,6 @@ public class TestBackup
                 DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
         tx.finish();
-        DbRepresentation result = DbRepresentation.of( db );
-        db.shutdown();
-        return result;
     }
 
     @Test
@@ -522,6 +530,36 @@ public class TestBackup
         {
             db.shutdown();
         }
+    }
+
+    @Test
+    public void shouldIncrementallyBackupDenseNodes() throws Exception
+    {
+        GraphDatabaseService db = startGraphDatabase( serverPath, true );
+        createInitialDataset( db );
+
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+        backup.full( backupPath.getPath() );
+
+        DbRepresentation representation = addLotsOfData( db );
+        backup.incremental( backupPath.getPath() );
+        assertEquals( representation, DbRepresentation.of( backupPath ) );
+        db.shutdown();
+    }
+
+    private DbRepresentation addLotsOfData( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            int threshold = parseInt( dense_node_threshold.getDefaultValue() );
+            for ( int i = 0; i < threshold*2; i++ )
+            {
+                node.createRelationshipTo( db.createNode(), TEST );
+            }
+            tx.success();
+        }
+        return DbRepresentation.of( db );
     }
 
     private static void assertStoreIsLocked( String path )
