@@ -110,6 +110,7 @@ The Neo4j Team""")
    */
   def prepare = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
+      new PredicateRewriter,
       new KeyTokenResolver,
       new AggregationPreparationRewriter(),
       new IndexLookupBuilder,

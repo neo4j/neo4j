@@ -31,6 +31,7 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
   def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
+
    case m@Match(_, pattern, _, where) =>
       val predicates = pattern.fold(Vector.empty[Expression]) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
