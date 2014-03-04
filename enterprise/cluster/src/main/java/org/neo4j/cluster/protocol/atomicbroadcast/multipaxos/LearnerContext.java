@@ -54,5 +54,5 @@ public interface LearnerContext
 
     void setNextInstanceId( long id );
 
-
+    void notifyLearnMiss( InstanceId instanceId );
 }

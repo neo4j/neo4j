@@ -90,5 +90,4 @@ public class MultiPaxosContextTest
         // Then
         assertEquals( ctx, snapshot );
     }
-
 }
