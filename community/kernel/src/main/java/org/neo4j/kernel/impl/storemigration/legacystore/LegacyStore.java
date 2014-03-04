@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -140,5 +141,13 @@ public class LegacyStore
         relationshipStoreReader.close();
         relationshipTypeNameStoreReader.close();
         propertyIndexKeyStoreReader.close();
+    }
+
+    public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
+    {
+        File legacyDirectory = storageFileName.getParentFile();
+        File fromFile = new File( legacyDirectory, IndexStore.INDEX_DB_FILE_NAME );
+        File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
+        fs.copyFile( fromFile, toFile );
     }
 }

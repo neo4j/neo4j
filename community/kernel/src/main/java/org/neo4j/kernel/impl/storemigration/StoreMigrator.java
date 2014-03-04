@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,6 +45,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyRecord;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 public class StoreMigrator
 {
@@ -86,6 +86,7 @@ public class StoreMigrator
             migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
             legacyStore.getPropertyStoreReader().close();
             migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
+            legacyStore.copyLegacyIndexStoreFile( neoStore.getStorageFileName().getParentFile() );
             legacyStore.close();
         }
 
