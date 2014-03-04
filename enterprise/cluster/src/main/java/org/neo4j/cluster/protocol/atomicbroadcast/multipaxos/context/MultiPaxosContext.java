@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.InstanceId;
@@ -29,14 +31,20 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceSto
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.Vote;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.election.ElectionContext;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
+import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -55,6 +63,11 @@ public class MultiPaxosContext
     private final AtomicBroadcastContextImpl atomicBroadcastContext;
     private final CommonContextState commonState;
     private final PaxosInstanceStore paxosInstances;
+
+    public interface WinnerStrategy
+    {
+        org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes );
+    }
 
     public MultiPaxosContext( InstanceId me,
                               Iterable<ElectionRole> roles,
@@ -238,5 +251,17 @@ public class MultiPaxosContext
         result = 31 * result + commonState.hashCode();
         result = 31 * result + paxosInstances.hashCode();
         return result;
+    }
+
+    public static List<Vote> removeBlankVotes( Collection<Vote> voteList )
+    {
+        return toList( Iterables.filter( new Predicate<Vote>()
+        {
+            @Override
+            public boolean accept( Vote item )
+            {
+                return !(item.getCredentials() instanceof NotElectableElectionCredentials);
+            }
+        }, voteList ) );
     }
 }
