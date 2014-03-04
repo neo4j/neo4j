@@ -32,16 +32,19 @@ hostname=$(uname -n)
 echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
 
+TC_HOME=/home/teamcity
+IDENTITY_FILE=${HOME-TC_HOME}/.ssh/neo_at_docs_neo4j_org
+
 # Create initial directories
-ssh -i ${HOME}/.ssh/neo_at_docs_neo4j_org $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
+ssh -i $IDENTIFY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
 #ssh $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
 
 # Copy artifacts
 rsync -r $DIR/target/text/ $DOCS_SERVER:$ROOTPATHDOCS/text/$VERSION/
 #rsync -r --delete $DIR/target/annotated/ $DOCS_SERVER:$ROOTPATHDOCS/annotated/
 rsync -r --delete $DIR/target/chunked/ $DOCS_SERVER:$ROOTPATHDOCS/chunked/$VERSION/
-ssh -i ${HOME}/.ssh/neo_at_docs_neo4j_org $DOCS_SERVER mkdir -p $ROOTPATHDOCS/pdf
-scp -i ${HOME}/.ssh/neo_at_docs_neo4j_org $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
+ssh -i $IDENTIFY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/pdf
+scp -i $IDENTIFY_FILE $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 
 # Symlink this version to a generic url
 #ssh $DOCS_SERVER "cd $ROOTPATHDOCS/text/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
