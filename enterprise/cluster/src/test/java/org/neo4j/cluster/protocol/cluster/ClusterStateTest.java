@@ -37,7 +37,7 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
@@ -52,8 +52,8 @@ public class ClusterStateTest
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
-        Map<InstanceId, URI> existingMembers = members( 1, 2 );
-        when( context.isCurrentlyAlive( any( InstanceId.class ) ) ).thenReturn( true );
+        Map<ClusterInstanceId, URI> existingMembers = members( 1, 2 );
+        when( context.isCurrentlyAlive( any( ClusterInstanceId.class ) ) ).thenReturn( true );
         when( context.getMembers() ).thenReturn( existingMembers );
         when( context.getConfiguration() ).thenReturn( clusterConfiguration( existingMembers ) );
         when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
@@ -78,7 +78,7 @@ public class ClusterStateTest
         ClusterContext context = mock( ClusterContext.class );
         when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
-        Map<InstanceId, URI> members = members( 1, 2 );
+        Map<ClusterInstanceId, URI> members = members( 1, 2 );
         
         // WHEN a joining instance receives a denial to join
         ClusterState.discovery.handle( context, to( joinDenied, uri( 2 ),
@@ -94,7 +94,7 @@ public class ClusterStateTest
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
-        Map<InstanceId, URI> existingMembers = members( 1, 2 );
+        Map<ClusterInstanceId, URI> existingMembers = members( 1, 2 );
         when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
         when( context.getJoiningInstances() ).thenReturn( Collections.<URI>emptyList() );
         when( context.hasJoinBeenDenied() ).thenReturn( true );
@@ -117,7 +117,7 @@ public class ClusterStateTest
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
-        Map<InstanceId, URI> existingMembers = members( 1, 2 );
+        Map<ClusterInstanceId, URI> existingMembers = members( 1, 2 );
         when( context.isCurrentlyAlive( id( 2 ) ) ).thenReturn( true );
         when( context.getMembers() ).thenReturn( existingMembers );
         when( context.getConfiguration() ).thenReturn( clusterConfiguration( existingMembers ) );
@@ -135,32 +135,32 @@ public class ClusterStateTest
         assertEquals( ClusterMessage.configurationResponse, response.getMessageType() );
     }
 
-    private ConfigurationResponseState configurationResponseState( Map<InstanceId, URI> existingMembers )
+    private ConfigurationResponseState configurationResponseState( Map<ClusterInstanceId, URI> existingMembers )
     {
-        return new ConfigurationResponseState( Collections.<String,InstanceId>emptyMap(),
+        return new ConfigurationResponseState( Collections.<String,ClusterInstanceId>emptyMap(),
                 existingMembers, null, "ClusterStateTest" );
     }
 
-    private ClusterConfiguration clusterConfiguration( Map<InstanceId, URI> members )
+    private ClusterConfiguration clusterConfiguration( Map<ClusterInstanceId, URI> members )
     {
         ClusterConfiguration config = new ClusterConfiguration( "ClusterStateTest", StringLogger.DEV_NULL );
         config.setMembers( members );
         return config;
     }
 
-    private Map<InstanceId,URI> members( int... memberIds )
+    private Map<ClusterInstanceId,URI> members( int... memberIds )
     {
-        Map<InstanceId,URI> members = new HashMap<>();
+        Map<ClusterInstanceId,URI> members = new HashMap<>();
         for ( int memberId : memberIds )
         {
-            members.put( new InstanceId( memberId ), uri( memberId ) );
+            members.put( new ClusterInstanceId( memberId ), uri( memberId ) );
         }
         return members;
     }
 
     private ConfigurationRequestState configuration( int joiningInstance )
     {
-        return new ConfigurationRequestState( new InstanceId( joiningInstance ), uri( joiningInstance ) );
+        return new ConfigurationRequestState( new ClusterInstanceId( joiningInstance ), uri( joiningInstance ) );
     }
 
     private URI uri( int i )
@@ -168,16 +168,16 @@ public class ClusterStateTest
         return URI.create( "http://localhost:" + (6000+i) + "?serverId=" + i );
     }
 
-    private InstanceId id( int i )
+    private ClusterInstanceId id( int i )
     {
-        return new InstanceId( i );
+        return new ClusterInstanceId( i );
     }
 
     private static class ConfigurationResponseStateMatcher extends ArgumentMatcher<ConfigurationResponseState>
     {
-        private Map<InstanceId, URI> members;
+        private Map<ClusterInstanceId, URI> members;
 
-        public ConfigurationResponseStateMatcher withMembers( Map<InstanceId, URI> members )
+        public ConfigurationResponseStateMatcher withMembers( Map<ClusterInstanceId, URI> members )
         {
             this.members = members;
             return this;

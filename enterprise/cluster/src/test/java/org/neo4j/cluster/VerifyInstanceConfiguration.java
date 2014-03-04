@@ -27,10 +27,10 @@ import java.util.Set;
 public class VerifyInstanceConfiguration
 {
     public final List<URI> members;
-    public final Map<String, InstanceId> roles;
-    public final Set<InstanceId> failed;
+    public final Map<String, ClusterInstanceId> roles;
+    public final Set<ClusterInstanceId> failed;
 
-    public VerifyInstanceConfiguration( List<URI> members, Map<String, InstanceId> roles, Set<InstanceId> failed )
+    public VerifyInstanceConfiguration( List<URI> members, Map<String, ClusterInstanceId> roles, Set<ClusterInstanceId> failed )
     {
         this.members = members;
         this.roles = roles;

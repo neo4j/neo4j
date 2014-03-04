@@ -36,7 +36,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
@@ -103,8 +103,8 @@ public class ElectionStateTest
         when( context.isElector() ).thenReturn( true );
 
           // Like it says on the box, we are the only instance
-        final InstanceId myInstanceId = new InstanceId( 1 );
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        final ClusterInstanceId myInstanceId = new ClusterInstanceId( 1 );
+        Map<ClusterInstanceId, URI> members = new HashMap<ClusterInstanceId, URI>();
         members.put( myInstanceId, URI.create( "ha://me" ) );
         when( context.getMembers() ).thenReturn( members );
 

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.LearnerContext;
@@ -56,8 +56,8 @@ class ClusterContextImpl
             .ConfigurationRequestState>();
     private Iterable<URI> joiningInstances;
     private ClusterMessage.ConfigurationResponseState joinDeniedConfigurationResponseState;
-    private final Map<InstanceId, URI> currentlyJoiningInstances =
-            new HashMap<InstanceId, URI>();
+    private final Map<ClusterInstanceId, URI> currentlyJoiningInstances =
+            new HashMap<ClusterInstanceId, URI>();
 
 
     private final Executor executor;
@@ -67,7 +67,7 @@ class ClusterContextImpl
     private final LearnerContext learnerContext;
     private final HeartbeatContext heartbeatContext;
 
-    ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging,
+    ClusterContextImpl( ClusterInstanceId me, CommonContextState commonState, Logging logging,
                         Timeouts timeouts, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
                         ObjectInputStreamFactory objectInputStreamFactory,
@@ -81,7 +81,7 @@ class ClusterContextImpl
         this.heartbeatContext = heartbeatContext;
     }
 
-    private ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
+    private ClusterContextImpl( ClusterInstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
                         Iterable<URI> joiningInstances, ClusterMessage.ConfigurationResponseState
             joinDeniedConfigurationResponseState, Executor executor,
                         ObjectOutputStreamFactory objectOutputStreamFactory,
@@ -130,8 +130,8 @@ class ClusterContextImpl
     }
 
     @Override
-    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String,
-            InstanceId> roles )
+    public void acquiredConfiguration( final Map<ClusterInstanceId, URI> memberList, final Map<String,
+            ClusterInstanceId> roles )
     {
         commonState.configuration().setMembers( memberList );
         commonState.configuration().setRoles( roles );
@@ -167,7 +167,7 @@ class ClusterContextImpl
     }
 
     @Override
-    public void joined( final InstanceId instanceId, final URI atURI )
+    public void joined( final ClusterInstanceId instanceId, final URI atURI )
     {
         commonState.configuration().joined( instanceId, atURI );
 
@@ -191,7 +191,7 @@ class ClusterContextImpl
     }
 
     @Override
-    public void left( final InstanceId node )
+    public void left( final ClusterInstanceId node )
     {
         commonState.configuration().left( node );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
@@ -205,7 +205,7 @@ class ClusterContextImpl
     }
 
     @Override
-    public void elected( final String roleName, final InstanceId instanceId )
+    public void elected( final String roleName, final ClusterInstanceId instanceId )
     {
         commonState.configuration().elected( roleName, instanceId );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
@@ -220,7 +220,7 @@ class ClusterContextImpl
     }
 
     @Override
-    public void unelected( final String roleName, final InstanceId instanceId )
+    public void unelected( final String roleName, final ClusterInstanceId instanceId )
     {
         commonState.configuration().unelected( roleName );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
@@ -314,21 +314,21 @@ class ClusterContextImpl
     }
 
     @Override
-    public Iterable<InstanceId> getOtherInstances()
+    public Iterable<ClusterInstanceId> getOtherInstances()
     {
         return Iterables.filter( not( in( me ) ), commonState.configuration().getMemberIds() );
     }
 
     /** Used to ensure that no other instance is trying to join with the same id from a different machine */
     @Override
-    public boolean isInstanceJoiningFromDifferentUri( InstanceId joiningId, URI uri )
+    public boolean isInstanceJoiningFromDifferentUri( ClusterInstanceId joiningId, URI uri )
     {
         return currentlyJoiningInstances.containsKey( joiningId )
                 && !currentlyJoiningInstances.get( joiningId ).equals(uri);
     }
 
     @Override
-    public void instanceIsJoining( InstanceId joiningId, URI uri )
+    public void instanceIsJoining( ClusterInstanceId joiningId, URI uri )
     {
         currentlyJoiningInstances.put( joiningId, uri );
     }
@@ -348,15 +348,15 @@ class ClusterContextImpl
     }
 
     @Override
-    public void discoveredLastReceivedInstanceId( long id )
+    public void discoveredLastReceivedInstanceId( long id, ClusterInstanceId serverId )
     {
         learnerContext.setLastDeliveredInstanceId( id );
-        learnerContext.learnedInstanceId( id );
+        learnerContext.learnedInstanceId( id, serverId );
         learnerContext.setNextInstanceId( id + 1 );
     }
 
     @Override
-    public boolean isCurrentlyAlive( InstanceId joiningId )
+    public boolean isCurrentlyAlive( ClusterInstanceId joiningId )
     {
         return !heartbeatContext.getFailed().contains( joiningId );
     }

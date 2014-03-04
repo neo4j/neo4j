@@ -23,7 +23,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
@@ -50,19 +50,19 @@ public interface ClusterContext
 
     void joining( String name, Iterable<URI> instanceList );
 
-    void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles );
+    void acquiredConfiguration( final Map<ClusterInstanceId, URI> memberList, final Map<String, ClusterInstanceId> roles );
 
     void joined();
 
     void left();
 
-    void joined( final InstanceId instanceId, final URI atURI );
+    void joined( final ClusterInstanceId instanceId, final URI atURI );
 
-    void left( final InstanceId node );
+    void left( final ClusterInstanceId node );
 
-    void elected( final String roleName, final InstanceId instanceId );
+    void elected( final String roleName, final ClusterInstanceId instanceId );
 
-    void unelected( final String roleName, final InstanceId instanceId );
+    void unelected( final String roleName, final ClusterInstanceId instanceId );
 
     ClusterConfiguration getConfiguration();
 
@@ -86,17 +86,17 @@ public interface ClusterContext
     
     ConfigurationResponseState getJoinDeniedConfigurationResponseState();
 
-    Iterable<InstanceId> getOtherInstances();
+    Iterable<ClusterInstanceId> getOtherInstances();
 
-    boolean isInstanceJoiningFromDifferentUri( InstanceId joiningId, URI joiningUri );
+    boolean isInstanceJoiningFromDifferentUri( ClusterInstanceId joiningId, URI joiningUri );
 
-    void instanceIsJoining( InstanceId joiningId, URI uri );
+    void instanceIsJoining( ClusterInstanceId joiningId, URI uri );
 
     String myName();
 
-    void discoveredLastReceivedInstanceId( long id );
+    void discoveredLastReceivedInstanceId( long id, ClusterInstanceId serverId );
 
-    boolean isCurrentlyAlive( InstanceId joiningId );
+    boolean isCurrentlyAlive( ClusterInstanceId joiningId );
 
     long getLastDeliveredInstanceId();
 }

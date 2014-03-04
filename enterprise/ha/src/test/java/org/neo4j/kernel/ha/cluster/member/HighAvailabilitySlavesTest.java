@@ -35,7 +35,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -46,13 +46,13 @@ import org.neo4j.kernel.ha.com.master.SlaveFactory;
 
 public class HighAvailabilitySlavesTest
 {
-    private static InstanceId instanceId1 = new InstanceId( 1 );
+    private static ClusterInstanceId instanceId1 = new ClusterInstanceId( 1 );
     private static URI clusterUri1 = create( "cluster://server1" );
     private static URI haUri1 = create( "ha://server1?serverId="+ instanceId1.toIntegerIndex() );
-    private static InstanceId instanceId2 = new InstanceId( 2 );
+    private static ClusterInstanceId instanceId2 = new ClusterInstanceId( 2 );
     private static URI clusterUri2 = create( "cluster://server2" );
     private static URI haUri2 = create( "ha://server2?serverId="+ instanceId2.toIntegerIndex() );
-    private static InstanceId instanceId3 = new InstanceId( 3 );
+    private static ClusterInstanceId instanceId3 = new ClusterInstanceId( 3 );
     private static URI clusterUri3 = create( "cluster://server3" );
     private static URI haUri3 = create( "ha://server3?serverId="+ instanceId3.toIntegerIndex() );
 

@@ -31,10 +31,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
 import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.StateMachines;
@@ -328,7 +328,7 @@ public class ClusterClient extends LifecycleAdapter
             }
         } );
 
-        server = protocolServerFactory.newProtocolServer( new InstanceId( config.getServerId() ), timeoutStrategy,
+        server = protocolServerFactory.newProtocolServer( new ClusterInstanceId( config.getServerId() ), timeoutStrategy,
                 receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory, objectOutputStreamFactory );
 
@@ -478,7 +478,7 @@ public class ClusterClient extends LifecycleAdapter
     }
 
     @Override
-    public void demote( InstanceId node )
+    public void demote( ClusterInstanceId node )
     {
         election.demote( node );
     }
@@ -490,7 +490,7 @@ public class ClusterClient extends LifecycleAdapter
     }
 
     @Override
-    public void promote( InstanceId node, String role )
+    public void promote( ClusterInstanceId node, String role )
     {
         election.promote( node, role );
     }
@@ -536,7 +536,7 @@ public class ClusterClient extends LifecycleAdapter
         }
     }
 
-    public InstanceId getServerId()
+    public ClusterInstanceId getServerId()
     {
         return server.getServerId();
     }

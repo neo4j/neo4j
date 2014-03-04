@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -44,14 +44,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class ClusterConfigurationTest
 {
     public static URI NEO4J_SERVER1_URI;
-    public static InstanceId NEO4J_SERVER_ID;
+    public static ClusterInstanceId NEO4J_SERVER_ID;
 
     static
     {
         try
         {
             NEO4J_SERVER1_URI = new URI( "neo4j://server1" );
-            NEO4J_SERVER_ID = new InstanceId( 1 );
+            NEO4J_SERVER_ID = new ClusterInstanceId( 1 );
         }
         catch ( URISyntaxException e )
         {
@@ -66,7 +66,7 @@ public class ClusterConfigurationTest
     {
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId, InstanceId>iterable( NEO4J_SERVER_ID ) ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<ClusterInstanceId, ClusterInstanceId>iterable( NEO4J_SERVER_ID ) ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( NEO4J_SERVER1_URI ) );
         assertThat( configuration.getMemberURIs(), equalTo( Arrays.asList( NEO4J_SERVER1_URI ) ) );
     }
@@ -77,7 +77,7 @@ public class ClusterConfigurationTest
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId, InstanceId>iterable( NEO4J_SERVER_ID ) ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<ClusterInstanceId, ClusterInstanceId>iterable( NEO4J_SERVER_ID ) ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( NEO4J_SERVER1_URI ) );
         assertThat( configuration.getMemberURIs(), equalTo( Arrays.asList( NEO4J_SERVER1_URI ) ) );
     }
@@ -88,7 +88,7 @@ public class ClusterConfigurationTest
         configuration.joined( NEO4J_SERVER_ID, NEO4J_SERVER1_URI );
         configuration.left( NEO4J_SERVER_ID );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId>empty() ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<ClusterInstanceId>empty() ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( null ) );
         assertThat( configuration.getMemberURIs(), equalTo( Collections.<URI>emptyList() ) );
 
@@ -101,7 +101,7 @@ public class ClusterConfigurationTest
         configuration.left( NEO4J_SERVER_ID );
         configuration.left( NEO4J_SERVER_ID );
 
-        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<InstanceId>empty() ) );
+        assertThat( configuration.getMemberIds(), matchesIterable( Iterables.<ClusterInstanceId>empty() ) );
         assertThat( configuration.getUriForId( NEO4J_SERVER_ID ), equalTo( null ) );
         assertThat( configuration.getMemberURIs(), equalTo( Collections.<URI>emptyList() ) );
 

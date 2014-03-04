@@ -22,7 +22,7 @@ package org.neo4j.cluster.protocol.heartbeat;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
@@ -38,29 +38,29 @@ public interface HeartbeatContext
     /**
      * @return True iff the node was suspected
      */
-    boolean alive( final InstanceId node );
+    boolean alive( final ClusterInstanceId node );
 
-    void suspect( final InstanceId node );
+    void suspect( final ClusterInstanceId node );
 
-    void suspicions( InstanceId from, Set<InstanceId> suspicions );
+    void suspicions( ClusterInstanceId from, Set<ClusterInstanceId> suspicions );
 
-    Set<InstanceId> getFailed();
+    Set<ClusterInstanceId> getFailed();
 
-    Iterable<InstanceId> getAlive();
+    Iterable<ClusterInstanceId> getAlive();
 
     void addHeartbeatListener( HeartbeatListener listener );
 
     void removeHeartbeatListener( HeartbeatListener listener );
 
-    void serverLeftCluster( InstanceId node );
+    void serverLeftCluster( ClusterInstanceId node );
 
-    boolean isFailed( InstanceId node );
+    boolean isFailed( ClusterInstanceId node );
 
-    List<InstanceId> getSuspicionsOf( InstanceId server );
+    List<ClusterInstanceId> getSuspicionsOf( ClusterInstanceId server );
 
-    Set<InstanceId> getSuspicionsFor( InstanceId uri );
+    Set<ClusterInstanceId> getSuspicionsFor( ClusterInstanceId uri );
 
-    Iterable<InstanceId> getOtherInstances();
+    Iterable<ClusterInstanceId> getOtherInstances();
 
     long getLastKnownLearnedInstanceInCluster();
 

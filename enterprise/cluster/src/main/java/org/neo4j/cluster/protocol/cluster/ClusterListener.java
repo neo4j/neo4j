@@ -21,7 +21,7 @@ package org.neo4j.cluster.protocol.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * Listener interface for cluster configuration changes. Register instances
@@ -48,7 +48,7 @@ public interface ClusterListener
      *
      * @param member
      */
-    void joinedCluster( InstanceId instanceId, URI member );
+    void joinedCluster( ClusterInstanceId instanceId, URI member );
 
     /**
      * When another instance leaves the cluster, this callback is invoked.
@@ -56,7 +56,7 @@ public interface ClusterListener
      *
      * @param member
      */
-    void leftCluster( InstanceId instanceId );
+    void leftCluster( ClusterInstanceId instanceId );
 
     /**
      * When a member (including potentially myself) has been elected to a particular role, this callback is invoked.
@@ -65,9 +65,9 @@ public interface ClusterListener
      * @param role
      * @param electedMember
      */
-    void elected( String role, InstanceId instanceId, URI electedMember );
+    void elected( String role, ClusterInstanceId instanceId, URI electedMember );
 
-    void unelected( String role, InstanceId instanceId, URI electedMember );
+    void unelected( String role, ClusterInstanceId instanceId, URI electedMember );
 
     public abstract class Adapter
             implements ClusterListener
@@ -78,12 +78,12 @@ public interface ClusterListener
         }
 
         @Override
-        public void joinedCluster( InstanceId instanceId, URI member )
+        public void joinedCluster( ClusterInstanceId instanceId, URI member )
         {
         }
 
         @Override
-        public void leftCluster( InstanceId instanceId )
+        public void leftCluster( ClusterInstanceId instanceId )
         {
         }
 
@@ -93,12 +93,12 @@ public interface ClusterListener
         }
 
         @Override
-        public void elected( String role, InstanceId instanceId, URI electedMember )
+        public void elected( String role, ClusterInstanceId instanceId, URI electedMember )
         {
         }
 
         @Override
-        public void unelected( String role, InstanceId instanceId, URI electedMember )
+        public void unelected( String role, ClusterInstanceId instanceId, URI electedMember )
         {
         }
     }

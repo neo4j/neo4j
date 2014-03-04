@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * Context used by the {@link HighAvailabilityMemberStateMachine}. Keeps track of what elections and previously
@@ -29,29 +29,29 @@ import org.neo4j.cluster.InstanceId;
  */
 public class SimpleHighAvailabilityMemberContext implements HighAvailabilityMemberContext
 {
-    private InstanceId electedMasterId;
+    private ClusterInstanceId electedMasterId;
     private URI availableHaMasterId;
-    private final InstanceId myId;
+    private final ClusterInstanceId myId;
 
-    public SimpleHighAvailabilityMemberContext( InstanceId myId )
+    public SimpleHighAvailabilityMemberContext( ClusterInstanceId myId )
     {
         this.myId = myId;
     }
 
     @Override
-    public InstanceId getMyId()
+    public ClusterInstanceId getMyId()
     {
         return myId;
     }
 
     @Override
-    public InstanceId getElectedMasterId()
+    public ClusterInstanceId getElectedMasterId()
     {
         return electedMasterId;
     }
 
     @Override
-    public void setElectedMasterId( InstanceId electedMasterId )
+    public void setElectedMasterId( ClusterInstanceId electedMasterId )
     {
         this.electedMasterId = electedMasterId;
     }

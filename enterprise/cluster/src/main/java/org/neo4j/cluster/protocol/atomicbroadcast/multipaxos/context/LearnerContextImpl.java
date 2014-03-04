@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -45,7 +46,7 @@ class LearnerContextImpl
     private final ObjectOutputStreamFactory objectOutputStreamFactory;
     private final PaxosInstanceStore paxosInstances;
 
-    LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
+    LearnerContextImpl( ClusterInstanceId me, CommonContextState commonState,
                         Logging logging,
                         Timeouts timeouts, PaxosInstanceStore paxosInstances,
                         AcceptorInstanceStore instanceStore,
@@ -61,7 +62,7 @@ class LearnerContextImpl
         this.paxosInstances = paxosInstances;
     }
 
-    private LearnerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+    private LearnerContextImpl( ClusterInstanceId me, CommonContextState commonState, Logging logging,
                                 Timeouts timeouts, long lastDeliveredInstanceId, long lastLearnedInstanceId,
                                 HeartbeatContext heartbeatContext,
                         AcceptorInstanceStore instanceStore, ObjectInputStreamFactory objectInputStreamFactory,
@@ -103,18 +104,24 @@ class LearnerContextImpl
     }
 
     @Override
-    public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster )
+    public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, ClusterInstanceId serverId )
     {
-        commonState.setLastKnownLearnedInstanceInCluster( lastKnownLearnedInstanceInCluster );
+        commonState.setLastKnownLearnedInstanceInCluster( lastKnownLearnedInstanceInCluster, serverId );
     }
 
     @Override
-    public void learnedInstanceId( long instanceId )
+    public ClusterInstanceId getLastKnownAliveUpToDateInstance()
     {
-        this.lastLearnedInstanceId = Math.max( lastLearnedInstanceId, instanceId );
+        return commonState.lastKnownAliveUpToDateInstance();
+    }
+
+    @Override
+    public void learnedInstanceId( long paxosInstanceId, ClusterInstanceId clusterInstanceId )
+    {
+        this.lastLearnedInstanceId = Math.max( lastLearnedInstanceId, paxosInstanceId );
         if ( lastLearnedInstanceId > commonState.lastKnownLearnedInstanceInCluster() )
         {
-            commonState.setLastKnownLearnedInstanceInCluster( lastLearnedInstanceId );
+            commonState.setLastKnownLearnedInstanceInCluster( lastLearnedInstanceId, clusterInstanceId );
         }
     }
 
@@ -129,7 +136,7 @@ class LearnerContextImpl
     {
         lastDeliveredInstanceId = -1;
         lastLearnedInstanceId = -1;
-        commonState.setLastKnownLearnedInstanceInCluster( -1 );
+        commonState.setLastKnownLearnedInstanceInCluster( -1, null );
     }
 
     @Override
@@ -145,7 +152,7 @@ class LearnerContextImpl
     }
 
     @Override
-    public Iterable<org.neo4j.cluster.InstanceId> getAlive()
+    public Iterable<ClusterInstanceId> getAlive()
     {
         return heartbeatContext.getAlive();
     }

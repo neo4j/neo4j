@@ -23,11 +23,11 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 public interface ConfigurationContext
 {
-    org.neo4j.cluster.InstanceId getMyId();
+    ClusterInstanceId getMyId();
 
     List<URI> getMemberURIs();
 
@@ -35,13 +35,13 @@ public interface ConfigurationContext
 
     List<URI> getAcceptors();
 
-    Map<InstanceId,URI> getMembers();
+    Map<ClusterInstanceId,URI> getMembers();
 
-    org.neo4j.cluster.InstanceId getCoordinator();
+    ClusterInstanceId getCoordinator();
 
-    URI getUriForId( InstanceId id );
+    URI getUriForId( ClusterInstanceId id );
 
-    InstanceId getIdForUri(URI uri);
+    ClusterInstanceId getIdForUri(URI uri);
 
-    boolean isMe( InstanceId server );
+    boolean isMe( ClusterInstanceId server );
 }

@@ -28,7 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -47,12 +47,12 @@ public class StateMachineProxyFactory
 {
     private final StateMachines stateMachines;
     private final StateMachineConversations conversations;
-    private volatile InstanceId me;
+    private volatile ClusterInstanceId me;
 
     private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
 
 
-    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
+    public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, ClusterInstanceId me )
     {
         this.stateMachines = stateMachines;
         this.conversations = conversations;

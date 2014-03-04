@@ -22,7 +22,7 @@ package org.neo4j.cluster.protocol.heartbeat;
 import java.io.Serializable;
 import java.util.Set;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.MessageType;
 
 /**
@@ -41,14 +41,14 @@ public enum HeartbeatMessage
     public static class IAmAliveState
             implements Serializable
     {
-        private final InstanceId server;
+        private final ClusterInstanceId server;
 
-        public IAmAliveState( InstanceId server )
+        public IAmAliveState( ClusterInstanceId server )
         {
             this.server = server;
         }
 
-        public InstanceId getServer()
+        public ClusterInstanceId getServer()
         {
             return server;
         }
@@ -94,14 +94,14 @@ public enum HeartbeatMessage
 
         private static final long serialVersionUID = 3152836192116904427L;
 
-        private Set<InstanceId> suspicions;
+        private Set<ClusterInstanceId> suspicions;
 
-        public SuspicionsState( Set<InstanceId> suspicions )
+        public SuspicionsState( Set<ClusterInstanceId> suspicions )
         {
             this.suspicions = suspicions;
         }
 
-        public Set<InstanceId> getSuspicions()
+        public Set<ClusterInstanceId> getSuspicions()
         {
             return suspicions;
         }

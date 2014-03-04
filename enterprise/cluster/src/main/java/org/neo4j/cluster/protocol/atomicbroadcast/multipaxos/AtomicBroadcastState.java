@@ -26,6 +26,7 @@ import static org.neo4j.cluster.com.message.Message.to;
 import java.net.URI;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
@@ -132,7 +133,7 @@ public enum AtomicBroadcastState
                         case broadcast:
                         case failed:
                         {
-                            org.neo4j.cluster.InstanceId coordinator = context.getCoordinator();
+                            ClusterInstanceId coordinator = context.getCoordinator();
                             if ( coordinator != null )
                             {
                                 URI coordinatorUri = context.getUriForId( coordinator );

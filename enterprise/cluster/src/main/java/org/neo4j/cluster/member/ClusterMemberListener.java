@@ -21,7 +21,7 @@ package org.neo4j.cluster.member;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * A HighAvailabilityListener is listening for events from elections and availability state.
@@ -35,7 +35,7 @@ public interface ClusterMemberListener
      *
      * @param coordinatorId the Id of the coordinator
      */
-    void coordinatorIsElected( InstanceId coordinatorId );
+    void coordinatorIsElected( ClusterInstanceId coordinatorId );
 
     /**
      * Called when a member announces that it is available to play a particular role, e.g. master or slave.
@@ -45,7 +45,7 @@ public interface ClusterMemberListener
      * @param availableId the role connection information for the new role holder
      * @param atUri the URI at which the instance is available at
      */
-    void memberIsAvailable( String role, InstanceId availableId, URI atUri );
+    void memberIsAvailable( String role, ClusterInstanceId availableId, URI atUri );
 
     /**
      * Called when a member is no longer available for fulfilling a particular role.
@@ -53,37 +53,37 @@ public interface ClusterMemberListener
      * @param role The role for which the member is unavailable
      * @param unavailableId The id of the member which became unavailable for that role
      */
-    void memberIsUnavailable( String role, InstanceId unavailableId );
+    void memberIsUnavailable( String role, ClusterInstanceId unavailableId );
 
-    void memberIsFailed( InstanceId instanceId );
+    void memberIsFailed( ClusterInstanceId instanceId );
 
-    void memberIsAlive( InstanceId instanceId );
+    void memberIsAlive( ClusterInstanceId instanceId );
 
     public abstract class Adapter
             implements ClusterMemberListener
     {
         @Override
-        public void coordinatorIsElected( InstanceId coordinatorId )
+        public void coordinatorIsElected( ClusterInstanceId coordinatorId )
         {
         }
 
         @Override
-        public void memberIsAvailable( String role, InstanceId availableId, URI atURI )
+        public void memberIsAvailable( String role, ClusterInstanceId availableId, URI atURI )
         {
         }
 
         @Override
-        public void memberIsUnavailable( String role, InstanceId unavailableId )
+        public void memberIsUnavailable( String role, ClusterInstanceId unavailableId )
         {
         }
 
         @Override
-        public void memberIsFailed( InstanceId instanceId )
+        public void memberIsFailed( ClusterInstanceId instanceId )
         {
         }
 
         @Override
-        public void memberIsAlive( InstanceId instanceId )
+        public void memberIsAlive( ClusterInstanceId instanceId )
         {
         }
     }

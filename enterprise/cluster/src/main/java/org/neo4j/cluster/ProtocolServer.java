@@ -37,14 +37,14 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class ProtocolServer implements BindingNotifier
 {
-    private final InstanceId me;
+    private final ClusterInstanceId me;
     private URI boundAt;
     protected StateMachineProxyFactory proxyFactory;
     protected final StateMachines stateMachines;
     private Iterable<BindingListener> bindingListeners = Listeners.newListeners();
     private final StringLogger msgLog;
 
-    public ProtocolServer( InstanceId me, StateMachines stateMachines, Logging logging )
+    public ProtocolServer( ClusterInstanceId me, StateMachines stateMachines, Logging logging )
     {
         this.me = me;
         this.stateMachines = stateMachines;
@@ -97,7 +97,7 @@ public class ProtocolServer implements BindingNotifier
      *
      * @return server id
      */
-    public InstanceId getServerId()
+    public ClusterInstanceId getServerId()
     {
         return me;
     }

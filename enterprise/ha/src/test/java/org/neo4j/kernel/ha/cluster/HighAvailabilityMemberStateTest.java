@@ -33,7 +33,7 @@ import java.net.URI;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 
 /**
  * This is the full specification for state switching in HA according to incoming cluster
@@ -45,13 +45,13 @@ import org.neo4j.cluster.InstanceId;
 public class HighAvailabilityMemberStateTest
 {
     public static final URI SampleUri = URI.create( "ha://foo" );
-    private InstanceId myId;
+    private ClusterInstanceId myId;
     private HighAvailabilityMemberContext context;
 
     @Before
     public void setup()
     {
-        myId = new InstanceId( 1 );
+        myId = new ClusterInstanceId( 1 );
         context = mock( HighAvailabilityMemberContext.class );
         when( context.getMyId() ).thenReturn( myId );
     }
@@ -64,7 +64,7 @@ public class HighAvailabilityMemberStateTest
         assertEquals( TO_MASTER, newState );
 
         // CASE 2: Got MasterIsElected for someone else - should remain to PENDING
-        HighAvailabilityMemberState newStateCase2 = PENDING.masterIsElected( context, new InstanceId( 2 ) );
+        HighAvailabilityMemberState newStateCase2 = PENDING.masterIsElected( context, new ClusterInstanceId( 2 ) );
         assertEquals( PENDING, newStateCase2 );
     }
 
@@ -84,7 +84,7 @@ public class HighAvailabilityMemberStateTest
 
         // CASE 2: Got MasterIsAvailable for someone else - should transition to TO_SLAVE
         // TODO test correct info is passed through to context
-        HighAvailabilityMemberState newState = PENDING.masterIsAvailable( context, new InstanceId( 2 ), SampleUri );
+        HighAvailabilityMemberState newState = PENDING.masterIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
         assertEquals( TO_SLAVE, newState );
     }
 
@@ -103,7 +103,7 @@ public class HighAvailabilityMemberStateTest
         }
 
         // CASE 2: Got SlaveIsAvailable for someone else - it's ok, remain in PENDING
-        HighAvailabilityMemberState newState = PENDING.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
+        HighAvailabilityMemberState newState = PENDING.slaveIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
         assertEquals( PENDING, newState );
     }
 
@@ -115,7 +115,7 @@ public class HighAvailabilityMemberStateTest
         assertEquals( TO_MASTER, newState );
 
         // CASE 2: Got MasterIsElected for someone else - switch to PENDING
-        HighAvailabilityMemberState newStateCase2 = TO_MASTER.masterIsElected( context, new InstanceId( 2 ) );
+        HighAvailabilityMemberState newStateCase2 = TO_MASTER.masterIsElected( context, new ClusterInstanceId( 2 ) );
         assertEquals( PENDING, newStateCase2 );
     }
 
@@ -129,7 +129,7 @@ public class HighAvailabilityMemberStateTest
         // CASE 2: Got MasterIsAvailable for someone else - should not happen, should have received a MasterIsElected
         try
         {
-            TO_MASTER.masterIsAvailable( context, new InstanceId( 2 ), SampleUri );
+            TO_MASTER.masterIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
             fail( "Should not accept MasterIsAvailable for someone else from TO_MASTER" );
         }
         catch( RuntimeException e )
@@ -153,7 +153,7 @@ public class HighAvailabilityMemberStateTest
         }
 
         // CASE 2: Got SlaveIsAvailable for someone else - don't really care
-        HighAvailabilityMemberState newState = TO_MASTER.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
+        HighAvailabilityMemberState newState = TO_MASTER.slaveIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
         assertEquals( TO_MASTER, newState );
     }
 
@@ -165,7 +165,7 @@ public class HighAvailabilityMemberStateTest
         assertEquals( MASTER, newState );
 
         // CASE 2: Got MasterIsElected for someone else. Should switch to pending.
-        HighAvailabilityMemberState newStateCase2 = MASTER.masterIsElected( context, new InstanceId( 2 ) );
+        HighAvailabilityMemberState newStateCase2 = MASTER.masterIsElected( context, new ClusterInstanceId( 2 ) );
         assertEquals( PENDING, newStateCase2 );
     }
 
@@ -175,7 +175,7 @@ public class HighAvailabilityMemberStateTest
         // CASE 1: Got MasterIsAvailable for someone else - should fail.
         try
         {
-            MASTER.masterIsAvailable( context, new InstanceId( 2 ), SampleUri );
+            MASTER.masterIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
             fail( "Should not allow master switch with missing masterIsElected" );
         }
         catch ( RuntimeException e )
@@ -203,7 +203,7 @@ public class HighAvailabilityMemberStateTest
         }
 
         // CASE 2: Got SlaveIsAvailable for someone else - who cares? Should succeed.
-        HighAvailabilityMemberState newState = MASTER.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
+        HighAvailabilityMemberState newState = MASTER.slaveIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
         assertEquals( MASTER, newState );
     }
 
@@ -215,7 +215,7 @@ public class HighAvailabilityMemberStateTest
         assertEquals( TO_MASTER, newState );
 
         // CASE 2: Got MasterIsElected for someone else - should switch to PENDING
-        HighAvailabilityMemberState newStateCase2 = TO_SLAVE.masterIsElected( context, new InstanceId( 2 ) );
+        HighAvailabilityMemberState newStateCase2 = TO_SLAVE.masterIsElected( context, new ClusterInstanceId( 2 ) );
         assertEquals( PENDING, newStateCase2 );
     }
 
@@ -234,7 +234,7 @@ public class HighAvailabilityMemberStateTest
         }
 
         // CASE 2: Got MasterIsAvailable for someone else who is already the master - should continue switching
-        InstanceId currentMaster = new InstanceId( 2 );
+        ClusterInstanceId currentMaster = new ClusterInstanceId( 2 );
         when( context.getElectedMasterId() ).thenReturn( currentMaster );
         HighAvailabilityMemberState newState = TO_SLAVE.masterIsAvailable( context, currentMaster, SampleUri );
         assertEquals( TO_SLAVE, newState );
@@ -242,7 +242,7 @@ public class HighAvailabilityMemberStateTest
         // CASE 3: Got MasterIsAvailable for someone else who is not the master - should fail
         try
         {
-            TO_SLAVE.masterIsAvailable( context, new InstanceId( 3 ), SampleUri );
+            TO_SLAVE.masterIsAvailable( context, new ClusterInstanceId( 3 ), SampleUri );
             fail( "Should have gotten an election result first" );
         }
         catch( RuntimeException e )
@@ -259,7 +259,7 @@ public class HighAvailabilityMemberStateTest
         assertEquals( SLAVE, newState );
 
         // CASE 2: It is someone else that completed the switch - ignore, continue
-        HighAvailabilityMemberState newStateCase2 = TO_SLAVE.slaveIsAvailable( context, new InstanceId( 2 ), SampleUri );
+        HighAvailabilityMemberState newStateCase2 = TO_SLAVE.slaveIsAvailable( context, new ClusterInstanceId( 2 ), SampleUri );
 
         assertEquals( TO_SLAVE, newStateCase2 );
     }
@@ -271,10 +271,10 @@ public class HighAvailabilityMemberStateTest
         HighAvailabilityMemberState newState = SLAVE.masterIsElected( context, myId );
         assertEquals( TO_MASTER, newState );
 
-        InstanceId masterInstanceId = new InstanceId( 2 );
+        ClusterInstanceId masterInstanceId = new ClusterInstanceId( 2 );
         when( context.getElectedMasterId() ).thenReturn( masterInstanceId );
         // CASE 2: It is someone else that got elected master - should switch to PENDING
-        HighAvailabilityMemberState newStateCase2 = SLAVE.masterIsElected( context, new InstanceId( 3 ) );
+        HighAvailabilityMemberState newStateCase2 = SLAVE.masterIsElected( context, new ClusterInstanceId( 3 ) );
         assertEquals( PENDING, newStateCase2 );
 
         // CASE 3: It is the current master that got elected again - ignore
@@ -297,11 +297,11 @@ public class HighAvailabilityMemberStateTest
         }
 
         // CASE 2: It is someone else that is available as master and is not the master now - missed the election, fail
-        InstanceId masterInstanceId = new InstanceId( 2 );
+        ClusterInstanceId masterInstanceId = new ClusterInstanceId( 2 );
         when( context.getElectedMasterId() ).thenReturn( masterInstanceId );
         try
         {
-            SLAVE.masterIsAvailable( context, new InstanceId( 3 ), SampleUri );
+            SLAVE.masterIsAvailable( context, new ClusterInstanceId( 3 ), SampleUri );
             fail( "Should have gotten an election result first" );
         }
         catch( RuntimeException e )
@@ -318,6 +318,6 @@ public class HighAvailabilityMemberStateTest
     public void testSlaveSlaveIsAvailable()
     {
         // CASE 1 and only - always remain in SLAVE
-        assertEquals( SLAVE, SLAVE.slaveIsAvailable( mock( HighAvailabilityMemberContext.class ), mock( InstanceId.class), SampleUri ) );
+        assertEquals( SLAVE, SLAVE.slaveIsAvailable( mock( HighAvailabilityMemberContext.class ), mock( ClusterInstanceId.class), SampleUri ) );
     }
 }

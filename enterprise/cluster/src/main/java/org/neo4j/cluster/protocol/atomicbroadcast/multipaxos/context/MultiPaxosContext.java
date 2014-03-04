@@ -21,7 +21,7 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import java.util.concurrent.Executor;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorContext;
@@ -56,7 +56,7 @@ public class MultiPaxosContext
     private final CommonContextState commonState;
     private final PaxosInstanceStore paxosInstances;
 
-    public MultiPaxosContext( InstanceId me,
+    public MultiPaxosContext( ClusterInstanceId me,
                               Iterable<ElectionRole> roles,
                               ClusterConfiguration configuration,
                               Executor executor,

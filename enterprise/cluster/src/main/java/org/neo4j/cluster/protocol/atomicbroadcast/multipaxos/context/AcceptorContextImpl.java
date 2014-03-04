@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
@@ -32,7 +33,7 @@ class AcceptorContextImpl
 {
     private final AcceptorInstanceStore instanceStore;
 
-    AcceptorContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
+    AcceptorContextImpl( ClusterInstanceId me, CommonContextState commonState,
                          Logging logging,
                          Timeouts timeouts, AcceptorInstanceStore instanceStore )
     {

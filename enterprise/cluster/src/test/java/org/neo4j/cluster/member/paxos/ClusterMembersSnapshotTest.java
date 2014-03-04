@@ -31,7 +31,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents.ClusterMembersSnapshot;
 
 @Ignore("Ignored temporarily, pending review for extracting useful bits. The bulk of the test is now in HA, HaNewSnapshotFunctionTest")
@@ -44,7 +44,7 @@ public class ClusterMembersSnapshotTest
         // -- a snapshot containing one member with a role
         ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot( new PaxosClusterMemberEvents.UniqueRoleFilter(ROLE_1) );
         URI clusterUri = new URI( URI );
-        InstanceId instanceId = new InstanceId( 1 );
+        ClusterInstanceId instanceId = new ClusterInstanceId( 1 );
         MemberIsAvailable memberIsAvailable = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ) );
         snapshot.availableMember( memberIsAvailable );
 
@@ -71,7 +71,7 @@ public class ClusterMembersSnapshotTest
         // -- a snapshot containing one member with a role
         ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(null);
         URI clusterUri = new URI( URI );
-        InstanceId instanceId = new InstanceId( 1 );
+        ClusterInstanceId instanceId = new ClusterInstanceId( 1 );
         MemberIsAvailable event1 = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something" ) );
         snapshot.availableMember( event1 );
 
@@ -101,14 +101,14 @@ public class ClusterMembersSnapshotTest
         // -- a snapshot containing one member with a role
         ClusterMembersSnapshot snapshot = new ClusterMembersSnapshot(null);
         URI clusterUri = new URI( URI );
-        InstanceId instanceId = new InstanceId( 1 );
+        ClusterInstanceId instanceId = new ClusterInstanceId( 1 );
         MemberIsAvailable event = new MemberIsAvailable( ROLE_1, instanceId, clusterUri, new URI( URI + "?something1" ) );
         snapshot.availableMember( event );
 
         // WHEN
         // -- another member, but with same role, gets added to the snapshot
         URI otherClusterUri = new URI( URI );
-        InstanceId otherInstanceId = new InstanceId( 2 );
+        ClusterInstanceId otherInstanceId = new ClusterInstanceId( 2 );
         MemberIsAvailable otherEvent = new MemberIsAvailable( ROLE_1, otherInstanceId, otherClusterUri, new URI( URI + "?something2" ) );
         snapshot.availableMember( otherEvent );
 

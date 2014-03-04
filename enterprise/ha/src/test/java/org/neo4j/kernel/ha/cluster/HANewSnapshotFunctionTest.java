@@ -31,7 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 
 public class HANewSnapshotFunctionTest
@@ -168,7 +168,7 @@ public class HANewSnapshotFunctionTest
 
     private MemberIsAvailable roleForId( String role, int id )
     {
-        return new MemberIsAvailable( role, new InstanceId( id ),
+        return new MemberIsAvailable( role, new ClusterInstanceId( id ),
                 URI.create( "cluster://"+id ), URI.create( "ha://"+id ) );
     }
 

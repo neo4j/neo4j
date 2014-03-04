@@ -24,20 +24,21 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class InstanceId implements Externalizable, Comparable<InstanceId>
+/** This is the unique identifier for a server in the cluster */
+public class ClusterInstanceId implements Externalizable, Comparable<ClusterInstanceId>
 {
     private int serverId;
 
-    public InstanceId()
+    public ClusterInstanceId()
     {}
 
-    public InstanceId( int serverId )
+    public ClusterInstanceId( int serverId )
     {
         this.serverId = serverId;
     }
 
     @Override
-    public int compareTo( InstanceId o )
+    public int compareTo( ClusterInstanceId o )
     {
         return serverId - o.serverId;
     }
@@ -67,7 +68,7 @@ public class InstanceId implements Externalizable, Comparable<InstanceId>
             return false;
         }
 
-        InstanceId instanceId1 = (InstanceId) o;
+        ClusterInstanceId instanceId1 = (ClusterInstanceId) o;
 
         if ( serverId != instanceId1.serverId )
         {

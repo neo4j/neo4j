@@ -23,29 +23,29 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 
 public class ClusterMember
 {
-    private final InstanceId memberId;
+    private final ClusterInstanceId memberId;
     private final Map<String, URI> roles;
     private final boolean alive;
 
-    public ClusterMember( InstanceId memberId )
+    public ClusterMember( ClusterInstanceId memberId )
     {
         this( memberId, Collections.<String, URI>emptyMap(), true );
     }
 
-    ClusterMember( InstanceId memberId, Map<String, URI> roles, boolean alive )
+    ClusterMember( ClusterInstanceId memberId, Map<String, URI> roles, boolean alive )
     {
         this.memberId = memberId;
         this.roles = roles;
         this.alive = alive;
     }
 
-    public InstanceId getMemberId()
+    public ClusterInstanceId getMemberId()
     {
         return memberId;
     }

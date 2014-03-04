@@ -28,7 +28,7 @@ import java.net.URI;
 
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 
 import static junit.framework.Assert.assertEquals;
@@ -66,7 +66,7 @@ public class LenientObjectInputStreamTest
 
     private MemberIsAvailable memberIsAvailable()
     {
-        return new MemberIsAvailable( "r1", new InstanceId( 1 ), URI.create( "http://me" ), URI.create( "http://me?something" ) );
+        return new MemberIsAvailable( "r1", new ClusterInstanceId( 1 ), URI.create( "http://me" ), URI.create( "http://me?something" ) );
     }
 
     private Payload payloadFor( Object value ) throws IOException

@@ -34,7 +34,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
@@ -51,10 +51,10 @@ public class HeartbeatIAmAliveProcessorTest
         ClusterContext mockContext = mock( ClusterContext.class );
         ClusterConfiguration mockConfiguration = mock( ClusterConfiguration.class );
         when( mockConfiguration.getMembers() ).thenReturn(
-                new HashMap<InstanceId, URI>()
+                new HashMap<ClusterInstanceId, URI>()
             {{
-                put( new InstanceId( 1 ), URI.create( "ha://1" ) );
-                put( new InstanceId( 2 ), URI.create( "ha://2" ) );
+                put( new ClusterInstanceId( 1 ), URI.create( "ha://1" ) );
+                put( new ClusterInstanceId( 2 ), URI.create( "ha://2" ) );
             }}
         );
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
@@ -80,10 +80,10 @@ public class HeartbeatIAmAliveProcessorTest
         ClusterContext mockContext = mock( ClusterContext.class );
         ClusterConfiguration mockConfiguration = mock( ClusterConfiguration.class );
         when( mockConfiguration.getMembers() ).thenReturn(
-                new HashMap<InstanceId, URI>()
+                new HashMap<ClusterInstanceId, URI>()
                 {{
-                        put( new InstanceId( 1 ), URI.create( "ha://1" ) );
-                        put( new InstanceId( 2 ), URI.create( "ha://2" ) );
+                        put( new ClusterInstanceId( 1 ), URI.create( "ha://1" ) );
+                        put( new ClusterInstanceId( 2 ), URI.create( "ha://2" ) );
                     }}
         );
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
@@ -120,10 +120,10 @@ public class HeartbeatIAmAliveProcessorTest
         ClusterContext mockContext = mock( ClusterContext.class );
         ClusterConfiguration mockConfiguration = mock( ClusterConfiguration.class );
         when( mockConfiguration.getMembers() ).thenReturn(
-                new HashMap<InstanceId, URI>()
+                new HashMap<ClusterInstanceId, URI>()
                 {{
-                        put( new InstanceId( 1 ), URI.create( "ha://1" ) );
-                        put( new InstanceId( 2 ), URI.create( "ha://2" ) );
+                        put( new ClusterInstanceId( 1 ), URI.create( "ha://1" ) );
+                        put( new ClusterInstanceId( 2 ), URI.create( "ha://2" ) );
                     }}
         );
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
@@ -139,7 +139,7 @@ public class HeartbeatIAmAliveProcessorTest
         // THEN
         assertEquals( 1, sentOut.size() );
         assertEquals( HeartbeatMessage.i_am_alive, sentOut.get( 0 ).getMessageType() );
-        assertEquals( new InstanceId( 2 ), ((HeartbeatMessage.IAmAliveState) sentOut.get( 0 ).getPayload() ).getServer() );
+        assertEquals( new ClusterInstanceId( 2 ), ((HeartbeatMessage.IAmAliveState) sentOut.get( 0 ).getPayload() ).getServer() );
     }
 
     /*
@@ -167,12 +167,12 @@ public class HeartbeatIAmAliveProcessorTest
 
         ClusterContext mockContext = mock( ClusterContext.class );
         ClusterConfiguration mockConfiguration = mock( ClusterConfiguration.class );
-        when( mockConfiguration.getIdForUri( URI.create( instance2UriString ) ) ).thenReturn( new InstanceId( 2 ) );
+        when( mockConfiguration.getIdForUri( URI.create( instance2UriString ) ) ).thenReturn( new ClusterInstanceId( 2 ) );
         when( mockConfiguration.getMembers() ).thenReturn(
-                new HashMap<InstanceId, URI>()
+                new HashMap<ClusterInstanceId, URI>()
                 {{
-                        put( new InstanceId( 1 ), URI.create( "ha://1" ) );
-                        put( new InstanceId( 2 ), URI.create( "ha://2" ) );
+                        put( new ClusterInstanceId( 1 ), URI.create( "ha://1" ) );
+                        put( new ClusterInstanceId( 2 ), URI.create( "ha://2" ) );
                     }}
         );
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
@@ -188,6 +188,6 @@ public class HeartbeatIAmAliveProcessorTest
         // THEN
         assertEquals( 1, sentOut.size() );
         assertEquals( HeartbeatMessage.i_am_alive, sentOut.get( 0 ).getMessageType() );
-        assertEquals( new InstanceId( 2 ), ((HeartbeatMessage.IAmAliveState) sentOut.get( 0 ).getPayload() ).getServer() );
+        assertEquals( new ClusterInstanceId( 2 ), ((HeartbeatMessage.IAmAliveState) sentOut.get( 0 ).getPayload() ).getServer() );
     }
 }

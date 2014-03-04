@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
@@ -125,12 +125,12 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
     {
         @Override
-        public synchronized void coordinatorIsElected( InstanceId coordinatorId )
+        public synchronized void coordinatorIsElected( ClusterInstanceId coordinatorId )
         {
             try
             {
                 HighAvailabilityMemberState oldState = state;
-                InstanceId previousElected = context.getElectedMasterId();
+                ClusterInstanceId previousElected = context.getElectedMasterId();
 
                 // Check if same coordinator was elected
 //                if ( !coordinatorId.equals( previousElected ) )
@@ -179,7 +179,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
-        public synchronized void memberIsAvailable( String role, InstanceId instanceId, URI roleUri )
+        public synchronized void memberIsAvailable( String role, ClusterInstanceId instanceId, URI roleUri )
         {
             try
             {
@@ -263,7 +263,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
-        public void memberIsFailed( InstanceId instanceId )
+        public void memberIsFailed( ClusterInstanceId instanceId )
         {
             if ( !isQuorum(getAliveCount(), getTotalCount()) )
             {
@@ -299,7 +299,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
-        public void memberIsAlive( InstanceId instanceId )
+        public void memberIsAlive( ClusterInstanceId instanceId )
         {
             if ( isQuorum(getAliveCount(), getTotalCount()) && state.equals( HighAvailabilityMemberState.PENDING ) )
             {

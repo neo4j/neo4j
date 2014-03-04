@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
@@ -92,13 +92,13 @@ public enum ElectionState
                                 break;
                             }
 
-                            InstanceId demoteNode = message.getPayload();
+                            ClusterInstanceId demoteNode = message.getPayload();
                             // TODO  Could perhaps be done better?
                             context.nodeFailed( demoteNode );
                             if ( context.isInCluster() )
                             {
                                 // Only the first alive server should try elections. Everyone else waits
-                                List<InstanceId> aliveInstances = Iterables.toList(context.getAlive());
+                                List<ClusterInstanceId> aliveInstances = Iterables.toList(context.getAlive());
                                 Collections.sort( aliveInstances );
                                 boolean isElector = aliveInstances.indexOf( context.getMyId() ) == 0;
 
@@ -118,7 +118,7 @@ public enum ElectionState
                                             context.startDemotionProcess( role, demoteNode );
 
                                             // Allow other live nodes to vote which one should take over
-                                            for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
+                                            for ( Map.Entry<ClusterInstanceId, URI> server : context.getMembers().entrySet() )
                                             {
                                                 if ( !context.getFailed().contains( server.getKey() ) )
                                                 {
@@ -167,7 +167,7 @@ public enum ElectionState
 
                                             boolean sentSome = false;
                                             // Allow other live nodes to vote which one should take over
-                                            for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
+                                            for ( Map.Entry<ClusterInstanceId, URI> server : context.getMembers().entrySet() )
                                             {
                                                 /*
                                                  * Skip dead nodes and the current role holder. Dead nodes are not
@@ -210,7 +210,7 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    List<InstanceId> aliveInstances = Iterables.toList( context.getAlive() );
+                                    List<ClusterInstanceId> aliveInstances = Iterables.toList( context.getAlive() );
                                     Collections.sort( aliveInstances );
                                     outgoing.offer( message.setHeader( Message.TO,
                                             context.getUriForId( first( aliveInstances ) ).toString() ) );
@@ -222,7 +222,7 @@ public enum ElectionState
                         case promote:
                         {
                             Object[] args = message.getPayload();
-                            InstanceId promoteNode = (InstanceId) args[0];
+                            ClusterInstanceId promoteNode = (ClusterInstanceId) args[0];
                             String role = (String) args[1];
 
                             // Start election process for coordinator role
@@ -231,7 +231,7 @@ public enum ElectionState
                                 context.startPromotionProcess( role, promoteNode );
 
                                 // Allow other live nodes to vote which one should take over
-                                for ( Map.Entry<InstanceId, URI> server : context.getMembers().entrySet() )
+                                for ( Map.Entry<ClusterInstanceId, URI> server : context.getMembers().entrySet() )
                                 {
                                     if ( !context.getFailed().contains( server.getKey() ) )
                                     {
@@ -268,12 +268,12 @@ public enum ElectionState
                              * request less than needed (i.e. ask the master last) since, well, it doesn't exist. So
                              * the immediate effect is that the else (which checks for null) will never be called.
                              */
-                            InstanceId currentElected = context.getElected( data.getRole() );
+                            ClusterInstanceId currentElected = context.getElected( data.getRole() );
 
                             if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() )
                             {
                                 // We have all votes now
-                                InstanceId winner = context.getElectionWinner( data.getRole() );
+                                ClusterInstanceId winner = context.getElectionWinner( data.getRole() );
 
                                 if ( winner != null )
                                 {

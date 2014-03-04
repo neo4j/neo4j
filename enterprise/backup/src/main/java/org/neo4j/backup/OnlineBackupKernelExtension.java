@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 import java.net.URI;
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -159,7 +159,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
 
         @Override
-        public void memberIsAvailable( String role, InstanceId available, URI availableAtUri )
+        public void memberIsAvailable( String role, ClusterInstanceId available, URI availableAtUri )
         {
             if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
                     getServerId().equals( available ) && "master".equals( role ) )
@@ -181,7 +181,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
         }
 
         @Override
-        public void memberIsUnavailable( String role, InstanceId unavailableId )
+        public void memberIsUnavailable( String role, ClusterInstanceId unavailableId )
         {
             if ( graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterClient.class ).
                     getServerId().equals( unavailableId ) && "master".equals( role ) )

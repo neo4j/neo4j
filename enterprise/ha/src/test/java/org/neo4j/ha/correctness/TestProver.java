@@ -22,7 +22,7 @@ package org.neo4j.ha.correctness;
 import java.net.URI;
 
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
@@ -50,9 +50,9 @@ public class TestProver
 
         ClusterState state = new ClusterState(
                 asList(
-                        newClusterInstance( new InstanceId( 1 ), new URI("cluster://localhost:5001"), config, logging ),
-                        newClusterInstance( new InstanceId( 2 ), new URI("cluster://localhost:5002"), config, logging ),
-                        newClusterInstance( new InstanceId( 3 ), new URI("cluster://localhost:5003"), config, logging )),
+                        newClusterInstance( new ClusterInstanceId( 1 ), new URI("cluster://localhost:5001"), config, logging ),
+                        newClusterInstance( new ClusterInstanceId( 2 ), new URI("cluster://localhost:5002"), config, logging ),
+                        newClusterInstance( new ClusterInstanceId( 3 ), new URI("cluster://localhost:5003"), config, logging )),
                 emptySetOf( ClusterAction.class ));
 
         // When
@@ -76,9 +76,9 @@ public class TestProver
 
         ClusterState state = new ClusterState(
                 asList(
-                        newClusterInstance( new InstanceId( 1 ), new URI("cluster://localhost:5001"), config, logging ),
-                        newClusterInstance( new InstanceId( 2 ), new URI("cluster://localhost:5002"), config, logging ),
-                        newClusterInstance( new InstanceId( 3 ), new URI("cluster://localhost:5003"), config, logging )),
+                        newClusterInstance( new ClusterInstanceId( 1 ), new URI("cluster://localhost:5001"), config, logging ),
+                        newClusterInstance( new ClusterInstanceId( 2 ), new URI("cluster://localhost:5002"), config, logging ),
+                        newClusterInstance( new ClusterInstanceId( 3 ), new URI("cluster://localhost:5003"), config, logging )),
                 emptySetOf( ClusterAction.class ));
 
         // When

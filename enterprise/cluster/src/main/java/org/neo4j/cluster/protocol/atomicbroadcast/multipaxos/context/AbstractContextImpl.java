@@ -23,7 +23,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.ConfigurationContext;
@@ -40,12 +40,12 @@ import static org.neo4j.helpers.collection.Iterables.limit;
 class AbstractContextImpl
         implements TimeoutsContext, LoggingContext, ConfigurationContext
 {
-    protected final org.neo4j.cluster.InstanceId me;
+    protected final ClusterInstanceId me;
     protected final CommonContextState commonState;
     protected final Logging logging;
     protected final Timeouts timeouts;
 
-    AbstractContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
+    AbstractContextImpl( ClusterInstanceId me, CommonContextState commonState,
                          Logging logging,
                          Timeouts timeouts )
     {
@@ -82,7 +82,7 @@ class AbstractContextImpl
     }
 
     @Override
-    public org.neo4j.cluster.InstanceId getMyId()
+    public ClusterInstanceId getMyId()
     {
         return me;
     }
@@ -102,31 +102,31 @@ class AbstractContextImpl
     }
 
     @Override
-    public Map<InstanceId, URI> getMembers()
+    public Map<ClusterInstanceId, URI> getMembers()
     {
         return commonState.configuration().getMembers();
     }
 
     @Override
-    public InstanceId getCoordinator()
+    public ClusterInstanceId getCoordinator()
     {
         return commonState.configuration().getElected( ClusterConfiguration.COORDINATOR );
     }
 
     @Override
-    public URI getUriForId(InstanceId node )
+    public URI getUriForId(ClusterInstanceId node )
     {
         return commonState.configuration().getUriForId( node );
     }
 
     @Override
-    public InstanceId getIdForUri( URI uri )
+    public ClusterInstanceId getIdForUri( URI uri )
     {
         return commonState.configuration().getIdForUri( uri );
     }
 
     @Override
-    public synchronized boolean isMe( InstanceId server )
+    public synchronized boolean isMe( ClusterInstanceId server )
     {
         return me.equals( server );
     }

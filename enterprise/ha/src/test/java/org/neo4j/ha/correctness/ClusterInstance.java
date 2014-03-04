@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.DelayedDirectExecutor;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.com.message.Message;
@@ -80,7 +80,7 @@ class ClusterInstance
 
     private boolean online = true;
 
-    public static ClusterInstance newClusterInstance( InstanceId id, URI uri, ClusterConfiguration configuration, Logging logging )
+    public static ClusterInstance newClusterInstance( ClusterInstanceId id, URI uri, ClusterConfiguration configuration, Logging logging )
     {
         MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logging);
 
@@ -129,7 +129,7 @@ class ClusterInstance
         this.uri = uri;
     }
 
-    public InstanceId id()
+    public ClusterInstanceId id()
     {
         return server.getServerId();
     }

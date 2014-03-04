@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.snapshot;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -59,7 +59,7 @@ public enum SnapshotState
                             }
                             else
                             {
-                                InstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
+                                ClusterInstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
                                         ClusterConfiguration.COORDINATOR );
                                 if ( coordinator != null )
                                 {
@@ -133,7 +133,7 @@ public enum SnapshotState
                              }
                              else
                              {
-                                 InstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
+                                 ClusterInstanceId coordinator = context.getClusterContext().getConfiguration().getElected(
                                          ClusterConfiguration.COORDINATOR );
                                  if ( coordinator != null && !coordinator.equals( context.getClusterContext().getMyId() ) )
                                  {

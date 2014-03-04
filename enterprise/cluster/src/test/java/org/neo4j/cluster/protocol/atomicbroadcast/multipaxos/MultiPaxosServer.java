@@ -31,12 +31,12 @@ import java.util.List;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.slf4j.impl.StaticLoggerBinder;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
@@ -119,13 +119,13 @@ public class MultiPaxosServer
                 }
 
                 @Override
-                public void joinedCluster( InstanceId instanceId, URI member )
+                public void joinedCluster( ClusterInstanceId instanceId, URI member )
                 {
                     System.out.println( "Joined cluster:" + instanceId + " (at URI " + member +")" );
                 }
 
                 @Override
-                public void leftCluster( InstanceId instanceId )
+                public void leftCluster( ClusterInstanceId instanceId )
                 {
                     System.out.println( "Left cluster:" + instanceId );
                 }
@@ -137,13 +137,13 @@ public class MultiPaxosServer
                 }
 
                 @Override
-                public void elected( String role, InstanceId instanceId, URI electedMember )
+                public void elected( String role, ClusterInstanceId instanceId, URI electedMember )
                 {
                     System.out.println( instanceId + " at URI " + electedMember + " was elected as " + role );
                 }
 
                 @Override
-                public void unelected( String role, InstanceId instanceId, URI electedMember )
+                public void unelected( String role, ClusterInstanceId instanceId, URI electedMember )
                 {
                     System.out.println( instanceId + " at URI " + electedMember + " was removed from " + role );
                 }
@@ -153,13 +153,13 @@ public class MultiPaxosServer
             heartbeat.addHeartbeatListener( new HeartbeatListener()
             {
                 @Override
-                public void failed( InstanceId server )
+                public void failed( ClusterInstanceId server )
                 {
                     System.out.println( server + " failed" );
                 }
 
                 @Override
-                public void alive( InstanceId server )
+                public void alive( ClusterInstanceId server )
                 {
                     System.out.println( server + " alive" );
                 }
@@ -245,7 +245,7 @@ public class MultiPaxosServer
                 .getStateMachine( ClusterMessage.class )
                 .getContext()).getConfiguration();
 
-        Collection<org.neo4j.cluster.InstanceId> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
+        Collection<ClusterInstanceId> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
                 .class ).getContext()).getFailed();
         System.out.println( configuration + " Failed:" + failed );
     }

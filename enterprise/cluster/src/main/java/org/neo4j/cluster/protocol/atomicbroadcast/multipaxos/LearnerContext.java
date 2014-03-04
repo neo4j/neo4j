@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
@@ -38,9 +39,9 @@ public interface LearnerContext
 
     long getLastKnownLearnedInstanceInCluster();
 
-    void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster );
+    void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, ClusterInstanceId instance );
 
-    void learnedInstanceId( long instanceId );
+    void learnedInstanceId( long instanceId, ClusterInstanceId serverId );
 
     boolean hasDeliveredAllKnownInstances();
 
@@ -50,9 +51,9 @@ public interface LearnerContext
 
     AtomicBroadcastSerializer newSerializer();
 
-    Iterable<org.neo4j.cluster.InstanceId> getAlive();
+    Iterable<ClusterInstanceId> getAlive();
 
     void setNextInstanceId( long id );
 
-
+    ClusterInstanceId getLastKnownAliveUpToDateInstance();
 }

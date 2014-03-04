@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterInstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
@@ -243,7 +243,7 @@ public class StandaloneClusterClientIT
         return new ClusterListener.Adapter()
         {
             @Override
-            public void joinedCluster( InstanceId member, URI memberUri )
+            public void joinedCluster( ClusterInstanceId member, URI memberUri )
             {
                 port.set( memberUri.getPort() );
                 latch.countDown();
