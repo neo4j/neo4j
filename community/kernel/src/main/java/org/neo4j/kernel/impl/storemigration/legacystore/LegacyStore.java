@@ -147,7 +147,10 @@ public class LegacyStore
     {
         File legacyDirectory = storageFileName.getParentFile();
         File fromFile = new File( legacyDirectory, IndexStore.INDEX_DB_FILE_NAME );
-        File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
-        fs.copyFile( fromFile, toFile );
+        if ( fromFile.exists() )
+        {
+            File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
+            fs.copyFile( fromFile, toFile );
+        }
     }
 }
