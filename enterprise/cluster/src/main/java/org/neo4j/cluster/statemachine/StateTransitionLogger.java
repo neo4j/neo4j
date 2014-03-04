@@ -19,13 +19,13 @@
  */
 package org.neo4j.cluster.statemachine;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.FROM;
-import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
-
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.FROM;
+import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE;
 
 /**
  * Logs state transitions in {@link StateMachine}s. Use this for debugging mainly.
@@ -34,6 +34,9 @@ public class StateTransitionLogger
         implements StateTransitionListener
 {
     private Logging logging;
+
+    /** Throttle so don't flood occurences of the same message over and over */
+    private String lastLogMessage = "";
 
     public StateTransitionLogger( Logging logging )
     {
@@ -72,8 +75,16 @@ public class StateTransitionLogger
                 line.append( " conversation-id:" + transition.getMessage().getHeader( CONVERSATION_ID ) );
             }
 
+            // Throttle
+            String msg = line.toString();
+            if( msg.equals( lastLogMessage ) )
+            {
+                return;
+            }
+
             // Log it
             logger.debug( line.toString() );
+            lastLogMessage = msg;
         }
     }
 }
