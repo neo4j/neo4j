@@ -17,16 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast
+package org.neo4j.cypher.internal.compiler.v2_1
 
-import Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-
-case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes = CTMap
-
-  override def semanticCheck(ctx: SemanticContext) =
-    items.map(_._2).semanticCheck(ctx) then
-      super.semanticCheck(ctx)
+sealed trait NameId extends Any {
+  def id: Int
 }
+
+final case class LabelId(id: Int) extends AnyVal with NameId
+final case class RelTypeId(id: Int) extends AnyVal with NameId
+final case class PropertyKeyId(id: Int) extends AnyVal with NameId

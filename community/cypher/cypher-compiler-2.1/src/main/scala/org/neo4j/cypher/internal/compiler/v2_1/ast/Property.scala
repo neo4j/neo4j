@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class Property(map: Expression, identifier: Identifier)(val position: InputPosition) extends Expression with SimpleTyping {
+case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with SimpleTyping {
   protected def possibleTypes = CTAny.covariant
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -34,10 +34,10 @@ case class Property(map: Expression, identifier: Identifier)(val position: Input
 }
 
 object LegacyProperty {
-  def apply(map: Expression, identifier: Identifier, legacyOperator: String)(position: InputPosition) =
-    new Property(map, identifier)(position) {
+  def apply(map: Expression, propertyKey: PropertyKeyName, legacyOperator: String)(position: InputPosition) =
+    new Property(map, propertyKey)(position) {
       override def semanticCheck(ctx: SemanticContext): SemanticCheck = legacyOperator match {
-        case "?" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.${identifier.name})) OR <ident>.${identifier.name}=<value>) if you really need the old behavior.", position)
+        case "?" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null). Please use (not(has(<ident>.${propertyKey.name})) OR <ident>.${propertyKey.name}=<value>) if you really need the old behavior.", position)
         case "!" => SemanticError(s"This syntax is no longer supported (missing properties are now returned as null).", position)
         case _   => throw new ThisShouldNotHappenError("Stefan", s"Invalid legacy operator $legacyOperator following access to property.")
       }

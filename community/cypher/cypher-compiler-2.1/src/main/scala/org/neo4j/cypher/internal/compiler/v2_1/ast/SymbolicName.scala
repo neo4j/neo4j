@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import Expression.SemanticContext
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
-case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes = CTMap
+trait SymbolicName {
+  self: ASTNode =>
 
-  override def semanticCheck(ctx: SemanticContext) =
-    items.map(_._2).semanticCheck(ctx) then
-      super.semanticCheck(ctx)
+  def name: String
+  def position: InputPosition
 }
+
+object SymbolicName {
+  def unapply(v: Any): Option[String] = v match {
+    case astNode: SymbolicName => Some(astNode.name)
+    case _                     => None
+  }
+}
+
