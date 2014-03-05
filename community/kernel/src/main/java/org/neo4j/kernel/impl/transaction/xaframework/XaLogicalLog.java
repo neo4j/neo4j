@@ -1118,9 +1118,9 @@ public class XaLogicalLog implements LogLoader
     /**
      * @param logBasePath should be the log file base name, relative to the neo4j store directory.
      */
-    public LogWriter createLogWriter(final Function<Config, File> logBasePath)
+    public LogBufferFactory createLogWriter(final Function<Config, File> logBasePath)
     {
-        return new LogWriter()
+        return new LogBufferFactory()
         {
             @Override
             public LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException

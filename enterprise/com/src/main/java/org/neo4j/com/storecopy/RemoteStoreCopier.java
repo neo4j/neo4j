@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -135,7 +135,7 @@ public class RemoteStoreCopier
 
     private void writeTransactionsToActiveLogFile( Config tempConfig, TransactionStream transactions ) throws IOException
     {
-        Map</*dsName*/String, LogWriter> logWriters = createLogWriters( tempConfig );
+        Map</*dsName*/String, LogBufferFactory> logWriters = createLogWriters( tempConfig );
         Map</*dsName*/String, LogBuffer> logFiles = new HashMap<>();
         try
         {
@@ -156,7 +156,7 @@ public class RemoteStoreCopier
         }
     }
 
-    private LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers, Map<String, LogWriter> logWriters, String dsName, Long txId, Config config )
+    private LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers, Map<String, LogBufferFactory> logWriters, String dsName, Long txId, Config config )
             throws IOException
     {
         LogBuffer buffer = buffers.get(dsName);
@@ -177,9 +177,9 @@ public class RemoteStoreCopier
         return buffer;
     }
 
-    private Map<String, LogWriter> createLogWriters( Config config ) throws IOException
+    private Map<String, LogBufferFactory> createLogWriters( Config config ) throws IOException
     {
-        Map<String, LogWriter> writers = new HashMap<>();
+        Map<String, LogBufferFactory> writers = new HashMap<>();
         File tempStore = new File( config.get( GraphDatabaseSettings.store_dir ).getAbsolutePath() + ".tmp" );
         GraphDatabaseAPI db = newTempDatabase( tempStore );
         try
@@ -187,7 +187,7 @@ public class RemoteStoreCopier
             XaDataSourceManager dsManager = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
             for ( XaDataSource xaDataSource : dsManager.getAllRegisteredDataSources() )
             {
-                writers.put( xaDataSource.getName(), xaDataSource.createLogWriter() );
+                writers.put( xaDataSource.getName(), xaDataSource.createLogBufferFactory() );
             }
             return writers;
         }

@@ -86,19 +86,8 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
-import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
-import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 
 import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
@@ -949,7 +938,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     }
 
     @Override
-    public LogWriter createLogWriter()
+    public LogBufferFactory createLogBufferFactory()
     {
         return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>(){
             @Override

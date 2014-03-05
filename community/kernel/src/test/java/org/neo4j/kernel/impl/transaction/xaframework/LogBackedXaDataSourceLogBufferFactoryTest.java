@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class LogBackedXaDataSourceLogWriterTest
+public class LogBackedXaDataSourceLogBufferFactoryTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
@@ -59,7 +59,7 @@ public class LogBackedXaDataSourceLogWriterTest
             }
 
             @Override
-            public LogWriter createLogWriter()
+            public LogBufferFactory createLogBufferFactory()
             {
                 return logicalLog.createLogWriter( new Function<Config, File>(){
                     @Override
@@ -71,13 +71,13 @@ public class LogBackedXaDataSourceLogWriterTest
             }
         };
 
-        LogWriter logWriter = ds.createLogWriter();
+        LogBufferFactory logBufferFactory = ds.createLogBufferFactory();
 
         // When
         LogBuffer logFile = null;
         try
         {
-            logFile = logWriter.createActiveLogFile(
+            logFile = logBufferFactory.createActiveLogFile(
                     new Config(stringMap( store_dir.name(), testDir.absolutePath())), -1 );
             logFile.putLong( 1337l );
             logFile.force();

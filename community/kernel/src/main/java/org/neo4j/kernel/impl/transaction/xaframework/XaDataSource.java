@@ -291,7 +291,7 @@ public abstract class XaDataSource implements Lifecycle
      * This log writer is guaranteed to not be used against any existing store locations while this data source
      * is running.
      */
-    public LogWriter createLogWriter()
+    public LogBufferFactory createLogBufferFactory()
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }

@@ -23,7 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.kernel.configuration.Config;
 
-public interface LogWriter
+/**
+ * Instances of this interface are responsible for creating active log files with any necessary headers.
+ */
+public interface LogBufferFactory
 {
     /**
      * Create a new active log file (a file that will be picked up and used for recovery), and return
@@ -31,6 +34,7 @@ public interface LogWriter
      * headers and so on, and allow directly appending new transactions.
      *
      * @throws IllegalStateException if an active file already exists at the specified location
+     * @return LogBuffer that wraps the log file. Caller MUST call LogBuffer.getFileChannel.close() when done.
      */
     LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException;
 

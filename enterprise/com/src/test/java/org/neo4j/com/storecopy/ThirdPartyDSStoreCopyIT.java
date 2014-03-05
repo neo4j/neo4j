@@ -42,12 +42,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.DirectLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.util.ResourceIterators;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -216,9 +212,9 @@ public class ThirdPartyDSStoreCopyIT
         }
 
         @Override
-        public LogWriter createLogWriter()
+        public LogBufferFactory createLogBufferFactory()
         {
-            return new LogWriter()
+            return new LogBufferFactory()
             {
                 @Override
                 public LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException
