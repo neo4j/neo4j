@@ -23,7 +23,7 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-case class Identifier(name: String)(val position: InputPosition) extends Expression with SymbolicName {
+case class Identifier(name: String)(val position: InputPosition) extends Expression {
   // check the identifier is defined and, if not, define it so that later errors are suppressed
   def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)

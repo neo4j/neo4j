@@ -34,11 +34,11 @@ trait Command extends Parser
   )
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.CreateIndex(_, _))
+    group(keyword("CREATE INDEX ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.CreateIndex(_, _))
   }
 
   def DropIndex: Rule1[ast.DropIndex] = rule {
-    group(keyword("DROP INDEX ON") ~~ NodeLabel ~~ "(" ~~ PropertyKeyName ~~ ")") ~~>> (ast.DropIndex(_, _))
+    group(keyword("DROP INDEX ON") ~~ NodeLabel ~~ "(" ~~ Identifier ~~ ")") ~~>> (ast.DropIndex(_, _))
   }
 
   def CreateUniqueConstraint: Rule1[ast.CreateUniqueConstraint] = rule {
@@ -50,5 +50,5 @@ trait Command extends Parser
   }
 
   private def ConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Identifier ~~ NodeLabel ~~ ")" ~~
-    optional(keyword("ASSERT")) ~~ Identifier ~~ "." ~~ PropertyKeyName ~~ keyword("IS UNIQUE")
+    optional(keyword("ASSERT")) ~~ Identifier ~~ "." ~~ Identifier ~~ keyword("IS UNIQUE")
 }

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 
 /*
 This class is responsible for answering questions about cardinality. It does this by asking the database when this
@@ -33,3 +32,6 @@ trait CardinalityEstimator {
 
   def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
 }
+
+case class LabelId(id:Long) extends AnyVal
+case class RelTypeId(id:Long) extends AnyVal

@@ -135,7 +135,7 @@ object ExpressionConverters {
 
   implicit class PropertyConverter(val e: ast.Property) extends AnyVal {
     def asCommandProperty =
-      commandexpressions.Property(e.map.asCommandExpression, PropertyKey(e.propertyKey.name))
+      commandexpressions.Property(e.map.asCommandExpression, PropertyKey(e.identifier.name))
   }
 
   implicit class ParameterConverter(val e: ast.Parameter) extends AnyVal {

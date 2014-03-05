@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner() {
@@ -37,19 +35,16 @@ case class Planner() {
     def estimateAllNodes() = 1000
   }
 
-  val tokenResolver = new SimpleTokenResolver()
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
 
-  def producePlan(in: Statement)(planContext: PlanContext): PipeInfo = in match {
+  def producePlan(in: Statement): PipeInfo = in match {
     case ast: Query =>
-      val resolvedAst = tokenResolver.resolve(ast)(planContext)
-      val queryGraph = queryGraphBuilder.produce(resolvedAst)
+      val queryGraph = queryGraphBuilder.produce(ast)
       val logicalPlan = logicalPlanner.plan(queryGraph)
       executionPlanBuilder.build(logicalPlan)
 
-    case _ =>
-      throw new CantHandleQueryException
+    case _ => throw new CantHandleQueryException
   }
 }

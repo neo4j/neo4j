@@ -81,7 +81,7 @@ trait Patterns extends Parser
   private def RelationshipDetail: Rule5[
       Option[ast.Identifier],
       Boolean,
-      Seq[ast.RelTypeName],
+      Seq[ast.Identifier],
       Option[Option[ast.Range]],
       Option[ast.Expression]] = rule("[") {
     (
@@ -95,8 +95,8 @@ trait Patterns extends Parser
     )
   }
 
-  private def RelationshipTypes: Rule1[Seq[ast.RelTypeName]] = rule("relationship types") (
-      ":" ~~ oneOrMore(RelTypeName, separator = WS ~ "|" ~~ optional(":") ~ WS)
+  private def RelationshipTypes: Rule1[Seq[ast.Identifier]] = rule("relationship types") (
+      ":" ~~ oneOrMore(Identifier, separator = WS ~ "|" ~~ optional(":") ~ WS)
     | EMPTY ~ push(Seq())
   )
 
@@ -117,7 +117,7 @@ trait Patterns extends Parser
     optional(Identifier)
   }
 
-  private def MaybeNodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") (
+  private def MaybeNodeLabels: Rule1[Seq[ast.Identifier]] = rule("node labels") (
     WS ~ NodeLabels | EMPTY ~ push(Seq())
   )
 
