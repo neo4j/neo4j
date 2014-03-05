@@ -67,43 +67,38 @@ public class RemoteStoreCopierTest
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
         RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs );
 
+        final GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+
         // When
         copier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
         {
             @Override
             public Response<?> copyStore( StoreWriter writer )
             {
-                GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
-                try
+                // Data that should be available in the store files
+                try( Transaction tx = original.beginTx() )
                 {
-                    // Data that should be available in the store files
-                    try( Transaction tx = original.beginTx() )
-                    {
-                        original.createNode( label( "BeforeCopyBegins" ) );
-                        tx.success();
-                    }
-
-                    XaDataSourceManager dsManager = original.getDependencyResolver().resolveDependency(
-                            XaDataSourceManager.class );
-                    RequestContext ctx = ServerUtil.rotateLogsAndStreamStoreFiles( originalDir,
-                            dsManager,
-                            original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                            StringLogger.SYSTEM, false, writer, fs,
-                            original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
-                                    BackupMonitor.class ));
-
-                    // Data that should be made available as part of recovery
-                    try( Transaction tx = original.beginTx() )
-                    {
-                        original.createNode( label( "AfterCopy" ));
-                        tx.success();
-                    }
-
-                    return ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL );
-                } finally
-                {
-                    original.shutdown();
+                    original.createNode( label( "BeforeCopyBegins" ) );
+                    tx.success();
                 }
+
+                XaDataSourceManager dsManager = original.getDependencyResolver().resolveDependency(
+                        XaDataSourceManager.class );
+                RequestContext ctx = ServerUtil.rotateLogsAndStreamStoreFiles( originalDir,
+                        dsManager,
+                        original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
+                        StringLogger.SYSTEM, false, writer, fs,
+                        original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
+                                BackupMonitor.class ));
+
+                // Data that should be made available as part of recovery
+                try( Transaction tx = original.beginTx() )
+                {
+                    original.createNode( label( "AfterCopy" ));
+                    tx.success();
+                }
+
+                return ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL );
             }
         });
 
@@ -113,10 +108,17 @@ public class RemoteStoreCopierTest
         try( Transaction tx = copy.beginTx() )
         {
             GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
-            assertThat( Iterables.single(globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) )).getId(), equalTo(0l) );
+            assertThat( Iterables.single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
+                    equalTo( 0l ) );
             assertThat( Iterables.single(globalOps.getAllNodesWithLabel( label( "AfterCopy" ) )).getId(), equalTo(1l) );
             tx.success();
         }
+        finally
+        {
+            copy.shutdown();
+            original.shutdown();
+        }
+
 
     }
 
