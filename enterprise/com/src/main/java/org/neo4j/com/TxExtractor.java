@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -42,7 +44,27 @@ public abstract class TxExtractor
             @Override
             public void extract( LogBuffer buffer )
             {
-                throw new UnsupportedOperationException( "Not meant to be extracted to LogBuffer" );
+                int transferBufSize = 128;
+                ByteBuffer transferBuffer = ByteBuffer.allocateDirect( transferBufSize );
+                try
+                {
+                    for( int read; (read = data.read( transferBuffer )) > -1; )
+                    {
+                        transferBuffer.flip();
+                        // byte-by-byte should be reasonably fast still, since logbuffer generally is, as the
+                        // name implies, buffered.
+                        while(read --> 0)
+                        {
+                            byte b = transferBuffer.get();
+                            buffer.put( b );
+                        }
+                        transferBuffer.clear();
+                    }
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         };
     }

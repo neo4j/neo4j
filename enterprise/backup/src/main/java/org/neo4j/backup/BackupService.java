@@ -22,24 +22,26 @@ package org.neo4j.backup;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.ServerUtil.TxHandler;
-import org.neo4j.com.StoreWriter;
-import org.neo4j.com.ToFileStoreWriter;
-import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.com.storecopy.RemoteStoreCopier;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -48,18 +50,16 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.util.Collections.emptyMap;
 
 class BackupService
 {
@@ -96,7 +96,7 @@ class BackupService
         this.fileSystem = fileSystem;
     }
 
-    BackupOutcome doFullBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
+    BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
                                 boolean checkConsistency, Config tuningConfiguration )
     {
         if ( directoryContainsDb( targetDirectory ) )
@@ -104,159 +104,72 @@ class BackupService
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
 
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
-                new Monitors(), null );
-        client.start();
+        Map<String, String> params = tuningConfiguration.getParams();
+        params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory);
+        tuningConfiguration.applyChanges( params );
+
         long timestamp = System.currentTimeMillis();
-        Map<String, Long> lastCommittedTxs = emptyMap();
+        Map<String, Long> lastCommittedTxs = new TreeMap<>();
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
+
+        GraphDatabaseAPI targetDb = null;
         try
         {
-            Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
-                    new ToFileStoreWriter( new File( targetDirectory ) ) ) );
-            GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory,
-                    VerificationLevel.NONE /* run full check instead */ );
-            try
+            RemoteStoreCopier storeCopier = new RemoteStoreCopier( tuningConfiguration, loadKernelExtensions(),
+                    new ConsoleLogger( StringLogger.SYSTEM ), new DefaultFileSystemAbstraction() );
+            storeCopier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
             {
-                // First, receive all txs pending
-                lastCommittedTxs = unpackResponse( response,
-                        targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ),
-                        ServerUtil.txHandlerForFullCopy() );
-                // Then go over all datasources, try to extract the latest tx
-                Set<String> noTxPresent = new HashSet<String>();
-                for ( XaDataSource ds : dsManager( targetDb ).getAllRegisteredDataSources() )
+                @Override
+                public Response<?> copyStore( StoreWriter writer )
                 {
-                    long lastTx = ds.getLastCommittedTxId();
+                    BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
+                            new Monitors(), null );
+                    client.start();
                     try
                     {
-                        // This fails if the tx is not present with NSLVE
-                        ds.getMasterForCommittedTx( lastTx );
-                    }
-                    catch ( NoSuchLogVersionException e )
-                    {
-                        // Note the name of the datasource
-                        noTxPresent.add( ds.getName() );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                }
-                if ( !noTxPresent.isEmpty() )
-                {
-                    /*
-                     * Create a fake slave context, asking for the transactions that
-                     * span the next-to-last up to the latest for each datasource
-                     */
-                    BackupClient recoveryClient = new BackupClient(
-                    sourceHostNameOrIp, sourcePort,
-                        targetDb.getDependencyResolver().resolveDependency( Logging.class ),
-                        targetDb.getDependencyResolver().resolveDependency( Monitors.class ),
-                        targetDb.storeId() );
-                    recoveryClient.start();
-                    Response<Void> recoveryResponse = null;
-                    Map<String, Long> recoveryDiff = new HashMap<String, Long>();
-                    for ( String ds : noTxPresent )
-                    {
-                        recoveryDiff.put( ds, -1L );
-                    }
-                    RequestContext recoveryCtx = addDiffToSlaveContext(
-                            slaveContextOf( targetDb ), recoveryDiff );
-                    try
-                    {
-                        recoveryResponse = recoveryClient.incrementalBackup( recoveryCtx );
-                        // Ok, the response is here, apply it.
-                        TransactionStream txs = recoveryResponse.transactions();
-                        ByteBuffer scratch = ByteBuffer.allocate( 64 );
-                        while ( txs.hasNext() )
-                        {
-                            /*
-                             * For each tx stream in the response, create the latest archived
-                             * logical log file and write out in there the transaction.
-                             *
-                             */
-                            Triplet<String, Long, TxExtractor> tx = txs.next();
-                            scratch.clear();
-                            XaDataSource ds = dsManager( targetDb ).getXaDataSource(
-                                    tx.first() );
-                            long logVersion = ds.getCurrentLogVersion() - 1;
-                            FileChannel newLog = new RandomAccessFile(
-                                    ds.getFileName( logVersion ),
-                                    "rw" ).getChannel();
-                            newLog.truncate( 0 );
-                            LogIoUtils.writeLogHeader( scratch, logVersion, -1 );
-                            // scratch buffer is flipped by writeLogHeader
-                            newLog.write( scratch );
-                            ReadableByteChannel received = tx.third().extract();
-                            scratch.flip();
-                            while ( received.read( scratch ) > 0 )
-                            {
-                                scratch.flip();
-                                newLog.write( scratch );
-                                scratch.flip();
-                            }
-                            newLog.force( false );
-                            newLog.close();
-                            received.close();
-                        }
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
+                        return client.fullBackup( writer );
                     }
                     finally
                     {
-                        try
-                        {
-                            recoveryClient.stop();
-                        }
-                        catch ( Throwable throwable )
-                        {
-                            throw new RuntimeException( throwable );
-                        }
-                        if ( recoveryResponse != null )
-                        {
-                            recoveryResponse.close();
-                        }
-                        targetDb.shutdown();
+                        client.stop();
                     }
+
                 }
-            }
-            finally
-            {
-                targetDb.shutdown();
-            }
-            bumpLogFile( targetDirectory, timestamp );
-            if ( checkConsistency )
-            {
-                StringLogger logger = StringLogger.SYSTEM;
-                try
-                {
-                    consistent = new ConsistencyCheckService().runFullConsistencyCheck(
-                            targetDirectory,
-                            tuningConfiguration,
-                            ProgressMonitorFactory.textual( System.err ),
-                            logger ).isSuccessful();
-                }
-                catch ( ConsistencyCheckIncompleteException e )
-                {
-                    e.printStackTrace( System.err );
-                }
-                finally
-                {
-                    logger.flush();
-                }
-            }
+            });
+
+            targetDb = startTemporaryDb( targetDirectory, VerificationLevel.NONE /* run full check instead */ );
+            new LogicalLogSeeder().ensureAtLeastOneLogicalLogPresent( sourceHostNameOrIp, sourcePort, targetDb );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
         finally
         {
+            if(targetDb != null)
+            {
+                targetDb.shutdown();
+            }
+        }
+        bumpLogFile( targetDirectory, timestamp );
+        if ( checkConsistency )
+        {
+            StringLogger logger = StringLogger.SYSTEM;
             try
             {
-                client.stop();
+                consistent = new ConsistencyCheckService().runFullConsistencyCheck(
+                        targetDirectory,
+                        tuningConfiguration,
+                        ProgressMonitorFactory.textual( System.err ),
+                        logger ).isSuccessful();
             }
-            catch ( Throwable throwable )
+            catch ( ConsistencyCheckIncompleteException e )
             {
-                throw new RuntimeException( throwable );
+                e.printStackTrace( System.err );
+            }
+            finally
+            {
+                logger.flush();
             }
         }
         return new BackupOutcome( lastCommittedTxs, consistent );
@@ -314,30 +227,6 @@ class BackupService
         return RequestContext.anonymous( txs.toArray( new Tx[txs.size()] ) );
     }
 
-    private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
-    {
-        return new StoreWriter()
-        {
-            private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded( "Files copied", 1 );
-
-            @Override
-            public int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
-                               boolean hasData ) throws IOException
-            {
-                int written = actual.write( path, data, temporaryBuffer, hasData );
-                progress.add( 1 );
-                return written;
-            }
-
-            @Override
-            public void done()
-            {
-                actual.done();
-                progress.done();
-            }
-        };
-    }
-
     boolean directoryContainsDb( String targetDirectory )
     {
         return fileSystem.fileExists( new File( targetDirectory, NeoStore.DEFAULT_NAME ) );
@@ -356,27 +245,6 @@ class BackupService
         }
         return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( targetDirectory )
                 .setConfig( config ).newGraphDatabase();
-    }
-
-    private RequestContext addDiffToSlaveContext( RequestContext original,
-                                                  Map<String, Long> diffPerDataSource )
-    {
-        Tx[] oldTxs = original.lastAppliedTransactions();
-        Tx[] newTxs = new Tx[oldTxs.length];
-        for ( int i = 0; i < oldTxs.length; i++ )
-        {
-            Tx oldTx = oldTxs[i];
-            String dsName = oldTx.getDataSourceName();
-            long originalTxId = oldTx.getTxId();
-            Long diff = diffPerDataSource.get( dsName );
-            if ( diff == null )
-            {
-                diff = 0L;
-            }
-            long newTxId = originalTxId + diff;
-            newTxs[i] = RequestContext.lastAppliedTx( dsName, newTxId );
-        }
-        return RequestContext.anonymous( newTxs );
     }
 
     /**
@@ -518,6 +386,16 @@ class BackupService
         File to = new File( previous.getParentFile(), StringLogger.DEFAULT_NAME
                 + "." + toTimestamp );
         return previous.renameTo( to );
+    }
+
+    private List<KernelExtensionFactory<?>> loadKernelExtensions()
+    {
+        List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
+        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        {
+            kernelExtensions.add( factory );
+        }
+        return kernelExtensions;
     }
 
     private static class ProgressTxHandler implements TxHandler

@@ -45,7 +45,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -136,7 +138,8 @@ public class XaLogicalLogTest
     {
         // GIVEN
         long maxSize = 1000;
-        XaLogicalLog log = new XaLogicalLog( new File( "log" ), 
+        ephemeralFs.get().mkdir( new File("asd") );
+        XaLogicalLog log = new XaLogicalLog( new File( "asd/log" ),
                 mock( XaResourceManager.class ),
                 new FixedSizeXaCommandFactory(),
                 new VersionRespectingXaTransactionFactory(),
@@ -161,6 +164,43 @@ public class XaLogicalLogTest
         
         // THEN
         assertEquals( initialLogVersion+1, log.getHighestLogVersion() );
+    }
+
+    @Test
+    public void shouldDetermineHighestArchivedLogVersionFromFileNamesIfTheyArePresent() throws Exception
+    {
+        // Given
+        int lowAndIncorrectLogVersion = 0;
+        EphemeralFileSystemAbstraction fs = ephemeralFs.get();
+        File dir = new File( "db" );
+        fs.mkdir( dir );
+        fs.create( new File(dir, "log.v100") ).close();
+        fs.create( new File(dir, "log.v101") ).close();
+
+        FileChannel active = fs.create( new File(dir, "log.1" ) );
+        ByteBuffer buff = ByteBuffer.allocate( 128 );
+        LogIoUtils.writeLogHeader( buff, lowAndIncorrectLogVersion, 0 );
+        active.write( buff );
+        active.force( false );
+        active.close();
+
+        // When
+        XaLogicalLog log = new XaLogicalLog( new File(dir, "log" ),
+                mock( XaResourceManager.class ),
+                new FixedSizeXaCommandFactory(),
+                new VersionRespectingXaTransactionFactory(),
+                ephemeralFs.get(),
+                new Monitors(),
+                new DevNullLoggingService(),
+                NO_PRUNING,
+                mock( TransactionStateFactory.class ), 10,
+                ALLOW_ALL );
+        log.open();
+        log.rotate();
+
+        // Then
+        assertThat( fs.fileExists( new File( dir, "log.v102" ) ), equalTo( true ) );
+
     }
 
     private static class FixedSizeXaCommand extends XaCommand

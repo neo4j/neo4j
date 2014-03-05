@@ -107,7 +107,10 @@ public class TxLog
      *            Filename of file to use
      * @param fileSystem
      *            The concrete FileSystemAbstraction to use.
+<<<<<<< HEAD
      * @param monitors {@link Monitors}.
+=======
+>>>>>>> Replaces full backup and HA copy store with a common implementation.
      * @throws IOException
      *             If unable to open file
      */

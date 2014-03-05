@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.com.RequestContext.Tx;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
@@ -110,8 +111,7 @@ public class ServerUtil
         {
             try
             {
-                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(),
-                        ds.getXaContainer().getResourceManager().rotateLogicalLog() );
+                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(), ds.rotateLogicalLog() );
             }
             catch ( IOException e )
             {
@@ -318,16 +318,15 @@ public class ServerUtil
      * have. This way every response returned acts as an update for the slave.
      *
      * @param <T>      The type of the response
-     * @param graphDb  The graph database to use
      * @param context  The slave context
      * @param response The response being packed
-     * @param filter   A {@link Predicate} to apply on each txid, selecting only
+     * @param txFilter   A {@link Predicate} to apply on each txid, selecting only
      *                 those that evaluate to true
      * @return The response, packed with the latest transactions
      */
     // TODO update javadoc of ServerUtil.packResponse
     public static <T> Response<T> packResponse( StoreId storeId, XaDataSourceManager dsManager,
-                                                RequestContext context, T response, Predicate<Long> filter )
+                                                RequestContext context, T response, Predicate<Long> txFilter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<>();
@@ -350,7 +349,7 @@ public class ServerUtil
                 }
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
                         dataSource, txEntry.getTxId() + 1, serverLastTx, stream,
-                        filter );
+                        txFilter );
                 logExtractors.add( logExtractor );
             }
             return new Response<>( response, storeId, createTransactionStream( resourceNames,

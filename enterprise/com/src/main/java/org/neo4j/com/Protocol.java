@@ -29,6 +29,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 

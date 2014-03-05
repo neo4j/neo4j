@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,11 +38,10 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDe
 public class CurrentDatabase
 {
     private final StoreVersionCheck storeVersionCheck;
-    private final Map<String, String> fileNamesToTypeDescriptors = new HashMap<String, String>();
+    private static final Map<String, String> fileNamesToTypeDescriptors = new HashMap<String, String>();
 
-    public CurrentDatabase(StoreVersionCheck storeVersionCheck)
+    static
     {
-        this.storeVersionCheck = storeVersionCheck;
         fileNamesToTypeDescriptors.put( NeoStore.DEFAULT_NAME, NeoStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.nodestore.db", NodeStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.propertystore.db", PropertyStore.TYPE_DESCRIPTOR );
@@ -52,6 +52,11 @@ public class CurrentDatabase
         fileNamesToTypeDescriptors.put( "neostore.relationshipstore.db", RelationshipStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.relationshiptypestore.db", RelationshipTypeTokenStore.TYPE_DESCRIPTOR );
         fileNamesToTypeDescriptors.put( "neostore.relationshiptypestore.db.names", DynamicStringStore.TYPE_DESCRIPTOR );
+    }
+
+    public CurrentDatabase(StoreVersionCheck storeVersionCheck)
+    {
+        this.storeVersionCheck = storeVersionCheck;
     }
 
     public boolean storeFilesAtCurrentVersion( File storeDirectory )
@@ -67,5 +72,10 @@ public class CurrentDatabase
             }
         }
         return true;
+    }
+
+    public static Collection<String> fileNames()
+    {
+        return fileNamesToTypeDescriptors.keySet();
     }
 }

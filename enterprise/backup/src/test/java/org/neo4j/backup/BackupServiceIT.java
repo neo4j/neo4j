@@ -35,7 +35,6 @@ import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -62,8 +61,7 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.*;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 
@@ -353,16 +351,6 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
-    }
-
-    private void logMeThis( String val )
-    {
-        String prefix = padRight( System.currentTimeMillis() + ":" + Thread.currentThread().getName(), 40);
-        System.out.println( prefix + " => " + val );
-    }
-
-    public static String padRight(String s, int n) {
-        return String.format("%1$-" + n + "s", s);
     }
 
     private Map<String, String> defaultBackupPortHostParams()
