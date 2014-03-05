@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.spi
 
-import java.net.URL
+import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 import java.io._
 import au.com.bytecode.opencsv.CSVReader
 import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
@@ -33,7 +33,7 @@ object CSVResources {
 class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
-    val inputStream = ToStream(url).stream
+    val inputStream = openStream(url)
     val reader = new BufferedReader(new InputStreamReader(inputStream))
     val csvReader = new CSVReader(reader, fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR))
 
@@ -54,49 +54,32 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       }
     }
   }
-}
 
-object ToStream {
-  def apply(url: URL, separator: Char = File.separatorChar) = {
-    val isWindows = System.getProperty("os.name").startsWith("Windows")
-    if (isWindows) WindowsToStream(url, separator) else UnixToStream(url, separator)
-  }
-
-  final case class UnixToStream(url: URL, separator: Char) extends ToStream(url, separator) {
-    val path = url.getPath
-  }
-
-  final case class WindowsToStream(url: URL, separator: Char) extends ToStream(url, separator) {
-    val path = {
-      val urlPath = url.getPath
-      // This is to handle Windows file paths correctly.
-      if (urlPath.startsWith("/") && urlPath.contains(":/") && host == "" && separator == '\\')
-        urlPath.drop(1)
-      else
-        urlPath
+  private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
+    try {
+      if (url.getProtocol.startsWith("http"))
+        CookieManager.ensureEnabled()
+      val con = url.openConnection()
+      con.setConnectTimeout(connectionTimeout)
+      con.setReadTimeout(readTimeout)
+      con.getInputStream()
+    } catch {
+      case e: IOException =>
+        throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
     }
   }
 }
 
-sealed abstract class ToStream(url: URL, separator: Char) {
-  val protocol = url.getProtocol
-  val host = url.getHost
-  val path: String
+object CookieManager {
+  private lazy val cookieManager = create
 
-  val isFile = "file" == protocol
+  def ensureEnabled() { cookieManager != null }
 
-  def file =
-    if (isFile) {
-      if (host.nonEmpty) new File(host, path) else new File(path)
-    } else
-      throw new IllegalStateException(s"URL is not a file: $url")
-
-  def stream: InputStream = try {
-    if (isFile)
-      new FileInputStream(file) else url.openStream
-  } catch {
-    case e: IOException =>
-      throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
+  private def create = {
+    val cookieManager = new CookieManager
+    CookieHandler.setDefault(cookieManager)
+    cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL)
+    cookieManager
   }
 }
 

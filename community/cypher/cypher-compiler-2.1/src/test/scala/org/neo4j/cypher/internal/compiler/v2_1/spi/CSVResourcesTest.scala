@@ -19,30 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.spi
 
-import org.scalatest.{BeforeAndAfter, Matchers}
-import java.io.PrintWriter
-import scala.reflect.io.File
 import java.net.URL
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.commons.{CreateTempFileTestSupport, CypherFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
 
 
-class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar with BeforeAndAfter {
+class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   var resources: CSVResources = _
   var cleaner: TaskCloser = _
 
-  before {
+  override def beforeEach() {
     cleaner = mock[TaskCloser]
     resources = new CSVResources(cleaner)
   }
 
   test("should_handle_strings") {
     // given
-    val url = createFile {
+    val url = createCSVTempFileURL {
       writer =>
         writer.println("1")
         writer.println("2")
@@ -51,7 +47,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
     }
 
     //when
-    val result: List[Array[String]] = resources.getCsvIterator(url).toList
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url)).toList
 
     (result zip List(
       Array[String]("1"),
@@ -66,7 +62,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
 
   test("should handle with headers") {
     // given
-    val url = createFile {
+    val url = createCSVTempFileURL {
       writer =>
         writer.println("a,b")
         writer.println("1,2")
@@ -74,7 +70,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
     }
 
     //when
-    val result = resources.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(new URL(url)).toList
 
     //then
     (result zip List(
@@ -89,7 +85,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
 
   test("should handle with headers even for uneven files") {
     // given
-    val url = createFile {
+    val url = createCSVTempFileURL {
       writer =>
         writer.println("a,b")
         writer.println("1,2")
@@ -97,7 +93,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
     }
 
     //when
-    val result = resources.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(new URL(url)).toList
 
     //then
     (result zip List(
@@ -112,38 +108,17 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
 
   test("should give a helpful message when asking for headers with empty file") {
     // given
-    val url = createFile(_ => {})
+    val url = createCSVTempFileURL(_ => {})
 
     //when
-    val result = resources.getCsvIterator(url).toList
+    val result = resources.getCsvIterator(new URL(url)).toList
 
     result should equal(List.empty)
   }
 
-  // 2014-01-30 Andres & Jakub - Tries to get data from internet
-  ignore("should be able to handle an http file") {
-    // given
-    val url = new URL("https://dl.dropboxusercontent.com/u/47132/test.csv")
-
-    //when
-    val result = resources.getCsvIterator(url).toList
-
-    //then
-    (result zip List(
-      Array[String]("Stefan"),
-      Array[String]("Jakub"),
-      Array[String]("Andres"),
-      Array[String]("Davide"),
-      Array[String]("Chris")
-    )).foreach {
-      case (r, expected) =>
-        r should equal(expected)
-    }
-  }
-
   test("should register a task in the cleanupper") {
     // given
-    val url = createFile {
+    val url = createCSVTempFileURL {
       writer =>
         writer.println("a,b")
         writer.println("1,2")
@@ -151,7 +126,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
     }
 
     // when
-    resources.getCsvIterator(url)
+    resources.getCsvIterator(new URL(url))
 
     // then
     verify(cleaner, times(1)).addTask(any(classOf[Boolean => Unit]))
@@ -159,7 +134,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
 
   test("should accept and use a custom field terminator") {
     // given
-    val url = createFile {
+    val url = createCSVTempFileURL {
       writer =>
         writer.println("122\tfoo")
         writer.println("23\tbar")
@@ -168,7 +143,7 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
     }
 
     //when
-    val result: List[Array[String]] = resources.getCsvIterator(url, Some("\t")).toList
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url), Some("\t")).toList
 
     (result zip List(
       Array[String]("122", "foo"),
@@ -179,22 +154,5 @@ class CSVResourcesTest extends CypherFunSuite with Matchers with MockitoSugar wi
       case (r, expected) =>
         r should equal(expected)
     }
-  }
-
-  var files: Seq[File] = Seq.empty
-
-  private def createFile(f: PrintWriter => Unit): URL = synchronized {
-    val file = File.makeTemp("cypher", ".csv")
-    val writer = file.printWriter()
-    f(writer)
-    writer.flush()
-    writer.close()
-    files = files :+ file
-    file.toURI.toURL
-  }
-
-  after {
-    files.foreach(_.delete())
-    files = Seq.empty
   }
 }
