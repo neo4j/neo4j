@@ -33,7 +33,7 @@ class MatchPredicateNormalizerTest extends CypherFunSuite {
     val expected = parser.parse("MATCH (n) WHERE n.foo = 'bar' RETURN n")
 
     val result = original.rewrite(topDown(PropertyPredicateNormalization))
-    result should equal(expected) 
+    result should equal(expected)
   }
 
   test("move parameter predicate from node to WHERE") {

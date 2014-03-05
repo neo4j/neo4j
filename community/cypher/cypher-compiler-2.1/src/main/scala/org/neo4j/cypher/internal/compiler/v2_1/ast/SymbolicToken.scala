@@ -24,22 +24,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
-trait Token[T <: TokenId] extends ASTNode with SymbolicName {
+sealed trait SymbolicToken[T <: NameId]  {
+  self: SymbolicName =>
+  
   def id: Option[T]
 }
 
-case class LabelToken(name: String, id: Option[LabelId] = None)(val position: InputPosition) extends Token[LabelId]
-case class PropertyKeyToken(name: String, id: Option[PropertyKeyId] = None)(val position: InputPosition) extends Token[PropertyKeyId]
-case class RelTypeToken(name: String, id: Option[RelTypeId] = None)(val position: InputPosition) extends Token[RelTypeId]
+final case class LabelName(name: String, id: Option[LabelId] = None)(val position: InputPosition)
+  extends ASTNode with SymbolicName with SymbolicToken[LabelId]
 
-object LabelToken {
-  def fromIdentifier(identifier: Identifier): LabelToken = LabelToken(identifier.name)(identifier.position)
-}
+final case class PropertyKeyName(name: String, id: Option[PropertyKeyId] = None)(val position: InputPosition)
+  extends ASTNode with SymbolicName with SymbolicToken[PropertyKeyId]
 
-object PropertyKeyToken {
-  def fromIdentifier(identifier: Identifier): PropertyKeyToken = PropertyKeyToken(identifier.name)(identifier.position)
-}
-
-object RelTypeToken {
-  def fromIdentifier(identifier: Identifier): RelTypeToken = RelTypeToken(identifier.name)(identifier.position)
-}
+final case class RelTypeName(name: String, id: Option[RelTypeId] = None)(val position: InputPosition)
+  extends ASTNode with SymbolicName with SymbolicToken[RelTypeId]

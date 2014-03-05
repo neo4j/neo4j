@@ -33,7 +33,7 @@ class SetClauseTest extends Assertions {
   def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
 
     val mapLiteral = DummyExpression(CTMap)
-    val property = Property(mapLiteral, PropertyKeyToken("key")(DummyPosition(3)))(DummyPosition(5))
+    val property = Property(mapLiteral, PropertyKeyName("key")(DummyPosition(3)))(DummyPosition(5))
     val setItem = SetPropertyItem(property, DummyExpression(CTAny))(DummyPosition(42))
     val setClause = SetClause(Seq(setItem))(DummyPosition(6))
 

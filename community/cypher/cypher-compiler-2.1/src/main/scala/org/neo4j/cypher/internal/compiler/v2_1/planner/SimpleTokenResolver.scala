@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 class SimpleTokenResolver {
   def resolve(ast: Query)(implicit tokenContext: TokenContext): Query = ast.rewrite(bottomUp( Rewriter.lift {
-    case token @ PropertyKeyToken(name, None) => PropertyKeyToken(name, propertyKeyId(name))(token.position)
-    case token @ LabelToken(name, None)       => LabelToken(name, labelId(name))(token.position)
-    case token @ RelTypeToken(name, None)     => RelTypeToken(name, relTypeId(name))(token.position)
+    case token @ PropertyKeyName(name, None) => PropertyKeyName(name, propertyKeyId(name))(token.position)
+    case token @ LabelName(name, None)       => LabelName(name, labelId(name))(token.position)
+    case token @ RelTypeName(name, None)     => RelTypeName(name, relTypeId(name))(token.position)
   })).asInstanceOf[Query]
 
   def propertyKeyId(name: String)(implicit tokenContext: TokenContext): Option[PropertyKeyId] = tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId)
