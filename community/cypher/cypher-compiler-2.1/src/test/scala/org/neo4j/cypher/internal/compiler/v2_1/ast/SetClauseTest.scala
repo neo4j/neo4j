@@ -33,7 +33,7 @@ class SetClauseTest extends Assertions {
   def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
 
     val mapLiteral = DummyExpression(CTMap)
-    val property = Property(mapLiteral, PropertyKeyName("key")(DummyPosition(3)))(DummyPosition(5))
+    val property = Property(mapLiteral, PropertyKeyName("key")()(DummyPosition(3)))(DummyPosition(5))
     val setItem = SetPropertyItem(property, DummyExpression(CTAny))(DummyPosition(42))
     val setClause = SetClause(Seq(setItem))(DummyPosition(6))
 
@@ -43,5 +43,4 @@ class SetClauseTest extends Assertions {
     assert(result.errors.size === 1)
     assertThat(result.errors.head.msg, startsWith("Type mismatch: expected Node or Relationship but was Map"))
   }
-
 }

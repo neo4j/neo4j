@@ -21,20 +21,33 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 sealed trait SymbolicToken[T <: NameId]  {
   self: SymbolicName =>
   
   def id: Option[T]
+
+  protected def updatedId(newId: T): T = id match {
+    case Some(oldId) => throw new IllegalStateException("Attempt to update already set id")
+    case None        => newId
+  }
 }
 
-final case class LabelName(name: String, id: Option[LabelId] = None)(val position: InputPosition)
-  extends ASTNode with SymbolicName with SymbolicToken[LabelId]
+final case class LabelName(name: String)(val id: Option[LabelId] = None)(val position: InputPosition)
+  extends ASTNode with SymbolicName with SymbolicToken[LabelId] {
 
-final case class PropertyKeyName(name: String, id: Option[PropertyKeyId] = None)(val position: InputPosition)
-  extends ASTNode with SymbolicName with SymbolicToken[PropertyKeyId]
+  def withId(newId: LabelId) = copy()(id = Some(updatedId(newId)))(position)
+}
 
-final case class RelTypeName(name: String, id: Option[RelTypeId] = None)(val position: InputPosition)
-  extends ASTNode with SymbolicName with SymbolicToken[RelTypeId]
+final case class PropertyKeyName(name: String)(val id: Option[PropertyKeyId] = None)(val position: InputPosition)
+  extends ASTNode with SymbolicName with SymbolicToken[PropertyKeyId] {
+
+  def withId(newId: PropertyKeyId) = copy()(id = Some(updatedId(newId)))(position)
+}
+
+final case class RelTypeName(name: String)(val id: Option[RelTypeId] = None)(val position: InputPosition)
+  extends ASTNode with SymbolicName with SymbolicToken[RelTypeId] {
+
+  def withId(newId: RelTypeId) = copy()(id = Some(updatedId(newId)))(position)
+}
