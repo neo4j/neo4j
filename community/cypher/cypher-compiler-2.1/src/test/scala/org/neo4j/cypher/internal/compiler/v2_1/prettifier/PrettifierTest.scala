@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.prettifier
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class PrettifierTest extends CypherFunSuite {
-  
+
   test("should upcase keywords") {
     actual("create n") should equal(expected("CREATE n"))
   }
@@ -85,19 +85,19 @@ class PrettifierTest extends CypherFunSuite {
       expected("RETURN [x IN range(0,10) WHERE x + 2 = 0 | x^3] AS result")
     )
   }
-  
+
   test("should upcase extra keywords") {
     actual("match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson") should equal(
       expected("MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson")
     )
 
   }
-  
+
   test("should not break after OPTIONAL") {
     actual("optional MATCH (n)-->(x) return n, x") should equal(expected("OPTIONAL MATCH (n)-->(x)%nRETURN n, x"))
   }
 
-  
+
   test("should handle LOAD CSV") {
     actual("LOAD CSV FROM \"f\" AS line") should equal(expected("LOAD CSV FROM \"f\" AS line"))
   }
@@ -106,19 +106,19 @@ class PrettifierTest extends CypherFunSuite {
     actual("LOAD CSV wiTh HEADERS FROM \"f\" AS line") should equal(expected("LOAD CSV WITH HEADERS FROM \"f\" AS line"))
 
   }
-  
+
   test("should prettify and break LOAD CSV") {
     actual("MATCH (n) LOAD CSV FROM \"f\" AS line return (n)") should equal(
       expected("MATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)")
     )
   }
-  
+
   test("should prettify and break USING PERIODIC COMMIT LOAD CSV") {
     actual("using periodic commit match () MATCH (n) LOAD CSV FROM \"f\" AS line return (n)") should equal(
       expected("USING PERIODIC COMMIT%nMATCH ()%nMATCH (n)%nLOAD CSV FROM \"f\" AS line%nRETURN (n)")
     )
   }
-  
+
   test("should prettify with correct string quotes") {
     actual("mATCH a WhERE a.name='A' RETURN a.age > 30, \"I'm a literal\", a-->()") should equal(
       expected("MATCH a%nWHERE a.name='A'%nRETURN a.age > 30, \"I'm a literal\", a-->()")

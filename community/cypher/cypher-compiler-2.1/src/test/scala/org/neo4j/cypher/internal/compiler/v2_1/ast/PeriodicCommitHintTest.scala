@@ -66,7 +66,7 @@ class PeriodicCommitHintTest extends FunSuite with Positional {
     // Then
     assert(result.errors.size === 0)
   }
-  
+
   test("queries with periodic commit and no updates are not OK") {
     // Given USING PERIODIC COMMIT RETURN "Hello World!"
 

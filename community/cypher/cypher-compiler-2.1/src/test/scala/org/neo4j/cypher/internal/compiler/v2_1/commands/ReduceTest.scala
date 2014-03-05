@@ -70,7 +70,7 @@ class ReduceTest extends Assertions {
     assert(typ === CTNumber)
   }
 
-  @Test def reduce_has_the_expected_type_array() { 
+  @Test def reduce_has_the_expected_type_array() {
     val expression = Add(Identifier("acc"), Identifier("n"))
     val collection = Literal(Seq(1,2,3))
 

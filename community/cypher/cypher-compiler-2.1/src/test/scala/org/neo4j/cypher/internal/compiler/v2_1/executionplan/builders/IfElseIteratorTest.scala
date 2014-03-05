@@ -59,7 +59,7 @@ class IfElseIteratorTest extends Assertions {
     val result = new IfElseIterator(Iterator.empty, ifClause, elseClause, () => {})
     assert(result.toList === List())
   }
-  
+
   @Test def should_run_finally_block_when_if_succeeds() {
     var touched = false
     val ifClause = (_: ExecutionContext) => Iterator(a)
@@ -69,7 +69,7 @@ class IfElseIteratorTest extends Assertions {
     assert(result.toList === List(a))
     assert(touched, "The finally block was never run")
   }
-  
+
   @Test def should_run_finally_block_when_if_fails() {
     var touched = false
     val ifClause = (_: ExecutionContext) => Iterator(a)

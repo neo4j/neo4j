@@ -34,7 +34,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class CypherParserTest extends CypherFunSuite {
-  
+
   import ParserFixture._
 
   test("shouldParseEasiestPossibleQuery") {

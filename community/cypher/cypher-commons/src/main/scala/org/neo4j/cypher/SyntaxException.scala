@@ -23,7 +23,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.api.exceptions.Status
 
 class SyntaxException(message: String, val query:String,  val offset: Option[Int]) extends CypherException(message, null) {
-  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset)) 
+  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset))
   def this(message:String) = this(message,"",None)
 
   override def toString = offset match {

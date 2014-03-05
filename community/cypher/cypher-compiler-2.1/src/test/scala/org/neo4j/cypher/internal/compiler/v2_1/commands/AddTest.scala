@@ -27,10 +27,10 @@ import org.junit.Test
 import org.scalatest.Assertions
 
 class AddTest extends Assertions {
-  
+
   val m = ExecutionContext.empty
   val s = QueryStateHelper.empty
-  
+
   @Test def numbers() {
     val expr = Add(Literal(1), Literal(1))
     assert(expr(m)(s) === 2)

@@ -69,7 +69,7 @@ trait TypeSafeMathSupport {
 
     }
   }
-  
+
   def divide(left: Any, right: Any): Any = {
     (left, right) match {
       case (null, _) => null
@@ -119,7 +119,7 @@ trait TypeSafeMathSupport {
 
     }
   }
-  
+
   def minus(left: Any, right: Any): Any = {
     (left, right) match {
       case (null, _) => null
@@ -169,7 +169,7 @@ trait TypeSafeMathSupport {
 
     }
   }
-  
+
   def multiply(left: Any, right: Any): Any = {
     (left, right) match {
       case (null, _) => null

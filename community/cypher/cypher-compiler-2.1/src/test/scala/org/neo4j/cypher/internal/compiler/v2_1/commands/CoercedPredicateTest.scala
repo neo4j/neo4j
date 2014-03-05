@@ -51,7 +51,7 @@ class CoercedPredicateTest {
     // Then
     assertFalse(s"$collection should return false", result)
   }
-  
+
   @Test def should_pass_through_false() {
     // Given
     val inner = Not(True())

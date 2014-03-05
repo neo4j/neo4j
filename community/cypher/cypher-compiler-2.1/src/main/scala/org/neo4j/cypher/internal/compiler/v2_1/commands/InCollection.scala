@@ -31,7 +31,7 @@ abstract class InCollection(collection: Expression, id: String, predicate: Predi
   with Closure {
 
   type CollectionPredicate[U] = ((U) => Option[Boolean]) => Option[Boolean]
-  
+
   def seqMethod[U](f: Seq[U]): CollectionPredicate[U]
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {

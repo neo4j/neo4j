@@ -275,7 +275,7 @@ class LoadCsvAcceptanceTest
 
     builder.onPathRedirectTo(CSV_REDIRECT_PATH, CSV_COOKIE_PATH)
     builder.onPathTransformResponse(CSV_REDIRECT_PATH, HttpServerTestSupport.setCookie(MAGIC_COOKIE))
-    
+
     httpServer = builder.build()
     httpServer.start()
   }

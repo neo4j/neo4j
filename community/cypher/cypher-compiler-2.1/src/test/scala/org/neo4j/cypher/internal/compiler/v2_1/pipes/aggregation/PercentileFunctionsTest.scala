@@ -71,11 +71,11 @@ class PercentileDiscTest extends PercentileTest {
   @Test def oneTwoThreeFour() {
     val values = List(1.0, 2.0, 3.0, 4.0)
     assertEquals("0.00", 1.0, getPercentile(0.0, values))
-    assertEquals("0.25", 1.0, getPercentile(0.25, values)) 
+    assertEquals("0.25", 1.0, getPercentile(0.25, values))
     assertEquals("0.33", 2.0, getPercentile(0.33, values))
     assertEquals("0.50", 2.0, getPercentile(0.50, values))
     assertEquals("0.66", 3.0, getPercentile(0.66, values))
-    assertEquals("0.75", 3.0, getPercentile(0.75, values)) 
+    assertEquals("0.75", 3.0, getPercentile(0.75, values))
     assertEquals("0.99", 4.0, getPercentile(0.99, values))
     assertEquals("1.00", 4.0, getPercentile(1.00, values))
   }

@@ -35,7 +35,7 @@ class PercentileContFunction(val value: Expression, val percentile: Expression)
   private var perc:Double = 0
 
   def result: Any = {
-    temp = temp.sortBy((num:Any) => asDouble(num)) 
+    temp = temp.sortBy((num:Any) => asDouble(num))
 
     if(perc == 1.0 || count == 1) {
       temp.last
@@ -71,14 +71,14 @@ class PercentileDiscFunction(val value: Expression, val percentile: Expression)
   private var perc:Double = 0
 
   def result: Any = {
-    temp = temp.sortBy((num:Any) => asDouble(num)) 
+    temp = temp.sortBy((num:Any) => asDouble(num))
 
     if(perc == 1.0 || count == 1) {
       temp.last
     } else if(count > 1) {
-      val floatIdx = perc * count 
+      val floatIdx = perc * count
       var idx = floatIdx.toInt
-      idx = if(floatIdx != idx || idx == 0) idx 
+      idx = if(floatIdx != idx || idx == 0) idx
             else idx - 1
       temp(idx)
     } else {

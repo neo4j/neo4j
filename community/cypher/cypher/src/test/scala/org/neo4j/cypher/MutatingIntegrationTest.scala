@@ -567,7 +567,7 @@ return distinct center""")
     assertThat(createdNode, inTx(graph, hasLabels("FOO", "BAR")))
     assertStats(result, nodesCreated = 1, labelsAdded = 2);
   }
-  
+
   @Test
   def should_be_able_to_add_label_to_node() {
     createNode()

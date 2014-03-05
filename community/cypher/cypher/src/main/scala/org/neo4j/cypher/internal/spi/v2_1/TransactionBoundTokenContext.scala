@@ -1,4 +1,4 @@
-/**
+  /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v2_1
 
-import org.neo4j.kernel.api.exceptions.{RelationshipTypeNotFoundException, RelationshipTypeIdNotFoundKernelException, PropertyKeyNotFoundException, LabelNotFoundKernelException}
+import org.neo4j.kernel.api.exceptions.{RelationshipTypeNotFoundException, PropertyKeyNotFoundException, LabelNotFoundKernelException}
 import org.neo4j.kernel.api.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.TokenContext
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations

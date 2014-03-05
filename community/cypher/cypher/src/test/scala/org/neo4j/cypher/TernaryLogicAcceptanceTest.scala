@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -47,25 +46,25 @@ object TernaryLogicAcceptanceTest {
 
     add(null, "null = null")
     add(null, "null <> null")
-    
+
     add(null, "null and null")
     add(null, "null and true")
     add(null, "true and null")
     add(false, "false and null")
     add(false, "null and false")
-    
+
     add(null, "null or null")
     add(true, "null or true")
     add(true, "true or null")
     add(null, "false or null")
     add(null, "null or false")
-    
+
     add(null, "null xor null")
     add(null, "null xor true")
     add(null, "true xor null")
     add(null, "false xor null")
     add(null, "null xor false")
-    
+
     add(null, "null in [1,2,3]")
     add(null, "null in [1,2,3,null]")
     add(false, "null in []")

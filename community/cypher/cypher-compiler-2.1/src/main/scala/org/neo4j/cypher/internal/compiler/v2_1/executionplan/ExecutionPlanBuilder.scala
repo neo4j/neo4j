@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.{EagerMappingBuilder, MappingBuilder}
 
-case class PipeInfo(pipe: Pipe, 
+case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
                     periodicCommit: Option[PeriodicCommitInfo] = None,
                     rowAlignment: Boolean = true) {

@@ -32,7 +32,7 @@ class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource
 
   def notify(increment: Long) {
     updateCounter += increment
-    onNotify()   
+    onNotify()
   }
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
@@ -50,11 +50,11 @@ class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource
   private def onNotify() {
     updateCounter.resetIfPastLimit(batchSize * 2)(commitAndRestartTx())
   }
-  
+
   private def onNext() {
     updateCounter.resetIfPastLimit(batchSize)(commitAndRestartTx())
   }
-  
+
   private def commitAndRestartTx() {
       queryContext.commitAndRestartTx()
       loadCsvIterator.foreach(_.notifyCommit())
