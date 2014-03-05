@@ -30,9 +30,6 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter.Output;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class LogEntryVerifyingOutput implements Output
 {
     private final List<LogEntry> otherEntriesToVerify;
@@ -80,8 +77,8 @@ public class LogEntryVerifyingOutput implements Output
     @Override
     public void writeCommand( int identifier, XaCommand command ) throws IOException
     {
-        assertTrue( "Unexpected command " + command + ". I had these left to verify " + commandsToVerify,
-                commandsToVerify.remove( command ) );
+        boolean removed = commandsToVerify.remove( command );
+        assert removed  : "Unexpected command " + command + ". I had these left to verify " + commandsToVerify;
     }
 
     @Override
@@ -104,6 +101,6 @@ public class LogEntryVerifyingOutput implements Output
 
     public void done()
     {
-        assertEquals( "Unexpected commands found", Collections.emptyList(), commandsToVerify );
+        assert Collections.emptyList().equals( commandsToVerify ) : "Unexpected commands found" + commandsToVerify;
     }
 }

@@ -27,6 +27,10 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -38,19 +42,26 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 class PartialTransactionCopier
 {
     private final ByteBuffer sharedBuffer;
-    private final XaCommandFactory commandFactory;
+    private final XaCommandReader commandReader;
+    private final XaCommandWriter commandWriter;
+    private final XaCommandReaderFactory commandReaderFactory;
+    private final XaCommandWriterFactory commandWriterFactory;
     private final StringLogger log;
     private final LogExtractor.LogPositionCache positionCache;
     private final LogExtractor.LogLoader logLoader;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
     private final ByteCounterMonitor monitor;
 
-    PartialTransactionCopier( ByteBuffer sharedBuffer, XaCommandFactory commandFactory, StringLogger log,
+    PartialTransactionCopier( ByteBuffer sharedBuffer, XaCommandReaderFactory commandReaderFactory,
+                              XaCommandWriterFactory commandWriterFactory, StringLogger log,
                               LogExtractor.LogPositionCache positionCache, LogExtractor.LogLoader logLoader,
                               ArrayMap<Integer, LogEntry.Start> xidIdentMap, ByteCounterMonitor monitor )
     {
         this.sharedBuffer = sharedBuffer;
-        this.commandFactory = commandFactory;
+        this.commandReader = commandReaderFactory.newInstance( sharedBuffer );
+        this.commandWriter = commandWriterFactory.newInstance();
+        this.commandReaderFactory = commandReaderFactory;
+        this.commandWriterFactory = commandWriterFactory;
         this.log = log;
         this.positionCache = positionCache;
         this.logLoader = logLoader;
@@ -62,7 +73,7 @@ class PartialTransactionCopier
     {
         boolean foundFirstActiveTx = false;
         Map<Integer,LogEntry.Start> startEntriesEncountered = new HashMap<Integer,LogEntry.Start>();
-        for ( LogEntry entry = null; (entry = LogIoUtils.readEntry( sharedBuffer, sourceLog, commandFactory )) != null; )
+        for ( LogEntry entry = null; (entry = LogIoUtils.readEntry( sharedBuffer, sourceLog, commandReader )) != null; )
         {
             Integer identifier = entry.getIdentifier();
             boolean isActive = xidIdentMap.get( identifier ) != null;
@@ -101,7 +112,7 @@ class PartialTransactionCopier
                 }
                 if ( startEntriesEncountered.containsKey( identifier ) )
                 {
-                    LogIoUtils.writeLogEntry( entry, targetLog );
+                    LogIoUtils.writeLogEntry( entry, targetLog, commandWriter );
                 }
             }
         }
@@ -109,17 +120,18 @@ class PartialTransactionCopier
 
     private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId, LogBuffer target ) throws IOException
     {
-        LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandFactory, txId, txId );
+        LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandReaderFactory,
+                commandWriterFactory, txId, txId );
         InMemoryLogBuffer tempBuffer = new InMemoryLogBuffer();
         extractor.extractNext( tempBuffer );
         ByteBuffer localBuffer = newLogReaderBuffer();
-        for ( LogEntry readEntry = null; (readEntry = LogIoUtils.readEntry( localBuffer, tempBuffer, commandFactory )) != null; )
+        for ( LogEntry readEntry = null; (readEntry = LogIoUtils.readEntry( localBuffer, tempBuffer, commandReader )) != null; )
         {
             if ( readEntry instanceof LogEntry.Commit )
             {
                 break;
             }
-            LogIoUtils.writeLogEntry( readEntry, target );
+            LogIoUtils.writeLogEntry( readEntry, target, commandWriter );
         }
         return extractor.getLastStartEntry();
     }

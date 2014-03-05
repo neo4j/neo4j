@@ -48,15 +48,18 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -82,7 +85,23 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( FS, sourceDir, new Monitors().newMonitor( ByteCounterMonitor.class ) );
+            extractor = LogExtractor.from( FS, new XaCommandReaderFactory()
+                    {
+                        @Override
+                        public XaCommandReader newInstance( ByteBuffer scratch )
+                        {
+                            return new PhysicalLogNeoXaCommandReader( scratch );
+                        }
+                    },
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new PhysicalLogNeoXaCommandWriter();
+                        }
+                    },
+                    sourceDir, new Monitors().newMonitor( ByteCounterMonitor.class ) );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );
@@ -229,8 +248,8 @@ class RebuildFromLogs
             {
                 ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
                 txId = LogIoUtils.readLogHeader( buffer, channel, true )[1];
-                XaCommandFactory cf = new CommandFactory();
-                for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, cf )) != null; )
+                XaCommandReader reader = new PhysicalLogNeoXaCommandReader( buffer );
+                for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, reader )) != null; )
                 {
                     if ( entry instanceof LogEntry.Commit )
                     {
@@ -301,15 +320,6 @@ class RebuildFromLogs
             {
                 level.configure( config );
             }
-        }
-    }
-
-    private static class CommandFactory extends XaCommandFactory
-    {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
-        {
-            return Command.readCommand( null, null, byteChannel, buffer );
         }
     }
 }

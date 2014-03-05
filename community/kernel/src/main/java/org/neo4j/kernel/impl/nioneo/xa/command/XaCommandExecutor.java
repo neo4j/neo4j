@@ -17,11 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
-public interface LogApplier
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+public interface XaCommandExecutor
 {
-    void apply( LogEntry entry ) throws IOException;
+    void execute( XaCommand command ) throws IOException;
 }

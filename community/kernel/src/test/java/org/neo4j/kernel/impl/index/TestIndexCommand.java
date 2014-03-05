@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
-
 
 public class TestIndexCommand
 {
@@ -66,6 +66,22 @@ public class TestIndexCommand
     private static final String STRING_VALUE_2 = "Blabla";
     private static final int INT_VALUE = 345;
     private static final Map<String, String> SOME_CONFIG = stringMap( "type", "exact", "provider", "lucene" );
+
+    private final XaCommandWriter writer = new XaCommandWriter()
+    {
+        @Override
+        public void write( XaCommand command, LogBuffer buffer ) throws IOException
+        {
+            if( command instanceof IndexDefineCommand )
+            {
+                ((IndexDefineCommand) command).writeToFile( buffer );
+            }
+            else if ( command instanceof  IndexCommand )
+            {
+                ((IndexCommand) command).writeToFile( buffer );
+            }
+        }
+    };
     
     @Rule
     public TargetDirectory.TestDirectory directory = TargetDirectory.forTest( TestIndexCommand.class ).testDirectory();
@@ -177,7 +193,7 @@ public class TestIndexCommand
             for ( XaCommand command : commands )
             {
                 startPositions.add( writeBuffer.getFileChannelPosition() );
-                command.writeToFile( writeBuffer );
+                writer.write( command, writeBuffer );
             }
             writeBuffer.force();
             fileChannel.close();

@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
-
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
-import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
 /**
  * This class is for single threaded use only.
@@ -42,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
  * @author Tobias Lindaaker
  */
 public class TransactionReader
-{
+{/*
     public interface Visitor
     {
         void visitStart( int localId, byte[] globalTransactionId, int masterId, int myId, long startTimestamp );
@@ -53,37 +37,33 @@ public class TransactionReader
 
         void visitDone( int localId );
 
-        void visitUpdateNode( int localId, NodeRecord record );
+        void visitUpdateNode( int localId, NodeRecord node );
 
-        void visitDeleteNode( int localId, long id );
+        void visitDeleteNode( int localId, long node );
 
-        void visitUpdateRelationship( int localId, RelationshipRecord record );
+        void visitUpdateRelationship( int localId, RelationshipRecord node );
 
-        void visitDeleteRelationship( int localId, long id );
+        void visitDeleteRelationship( int localId, long node );
 
-        void visitUpdateRelationshipGroup( int localId, RelationshipGroupRecord record );
+        void visitUpdateProperty( int localId, PropertyRecord node );
 
-        void visitDeleteRelationshipGroup( int localId, long id );
+        void visitDeleteProperty( int localId, long node );
 
-        void visitUpdateProperty( int localId, PropertyRecord record );
+        void visitUpdateRelationshipTypeToken( int localId, RelationshipTypeTokenRecord node );
 
-        void visitDeleteProperty( int localId, long id );
+        void visitDeleteRelationshipTypeToken( int localId, int node );
 
-        void visitUpdateRelationshipTypeToken( int localId, RelationshipTypeTokenRecord record );
+        void visitUpdateLabelToken( int localId, LabelTokenRecord node );
 
-        void visitDeleteRelationshipTypeToken( int localId, int id );
-
-        void visitUpdateLabelToken( int localId, LabelTokenRecord record );
-
-        void visitDeleteLabelToken( int localId, int id );
+        void visitDeleteLabelToken( int localId, int node );
 
         void visitUpdatePropertyKeyToken( int localId, PropertyKeyTokenRecord node );
 
-        void visitDeletePropertyKeyToken( int localId, int id );
+        void visitDeletePropertyKeyToken( int localId, int node );
 
-        void visitUpdateNeoStore( int localId, NeoStoreRecord record );
+        void visitUpdateNeoStore( int localId, NeoStoreRecord node );
 
-        void visitDeleteNeoStore( int localId, long id );
+        void visitDeleteNeoStore( int localId, long node );
 
         void visitDeleteSchemaRule( int localId, Collection<DynamicRecord> records, long id );
 
@@ -117,7 +97,7 @@ public class TransactionReader
             {
                 LogEntry.Start start = (LogEntry.Start) entry;
                 visitor.visitStart( start.getIdentifier(), start.getXid().getGlobalTransactionId(), start.getMasterId(),
-                                    start.getLocalId(), start.getTimeWritten() );
+                        start.getLocalId(), start.getTimeWritten() );
             }
             else if ( entry instanceof LogEntry.Prepare )
             {
@@ -181,19 +161,6 @@ public class TransactionReader
             else
             {
                 visitor.visitUpdateRelationship( localId, record );
-            }
-        }
-
-        @Override
-        public void visitRelationshipGroup( RelationshipGroupRecord record )
-        {
-            if ( !record.inUse() )
-            {
-                visitor.visitDeleteRelationshipGroup( localId, record.getId() );
-            }
-            else
-            {
-                visitor.visitUpdateRelationshipGroup( localId, record );
             }
         }
 
@@ -291,5 +258,5 @@ public class TransactionReader
                 visitor.visitUpdateRelationshipGroup( localId, record );
             }
         }
-    }
+    }*/
 }

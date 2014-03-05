@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.junit.Test;
-
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -31,6 +26,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import org.junit.Test;
+import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 public class NeoStoreTransactionContextTest
 {
@@ -52,7 +52,7 @@ public class NeoStoreTransactionContextTest
 
         // THEN
         assertTrue( toClose.getNodeCommands().isEmpty() );
-        assertNull( toClose.getNeoStoreCommand() );
+        assertNull( toClose.getNeoStoreCommand().getRecord() );
     }
 
     @Test

@@ -28,8 +28,8 @@ import java.util.TimeZone;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
 public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
 {
@@ -59,9 +59,9 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
     }
 
     @Override
-    protected XaCommandFactory instantiateCommandFactory()
+    protected XaCommandReader instantiateCommandReader( ByteBuffer buffer )
     {
-        return new CommandFactory();
+        return new LuceneCommandReader( buffer );
     }
 
     @Override
@@ -69,14 +69,21 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
     {
         return "lucene.log";
     }
-    
-    private static class CommandFactory extends XaCommandFactory
+
+
+    private class LuceneCommandReader implements XaCommandReader
     {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer )
-                throws IOException
+        private ByteBuffer buffer;
+
+        private LuceneCommandReader( ByteBuffer buffer )
         {
-            return LuceneCommand.readCommand( byteChannel, buffer, null );
+            this.buffer = buffer;
+        }
+
+        @Override
+        public XaCommand read( ReadableByteChannel channel ) throws IOException
+        {
+            return LuceneCommand.readCommand( channel, buffer, null );
         }
     }
 }

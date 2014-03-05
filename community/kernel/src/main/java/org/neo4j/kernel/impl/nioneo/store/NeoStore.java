@@ -46,6 +46,11 @@ import static java.lang.String.format;
  */
 public class NeoStore extends AbstractStore
 {
+    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
+    {
+        return relTypeStore;
+    }
+
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {

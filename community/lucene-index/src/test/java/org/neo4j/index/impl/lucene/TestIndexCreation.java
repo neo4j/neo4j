@@ -19,6 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -29,25 +36,17 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -124,18 +123,18 @@ public class TestIndexCreation
         long version = ds.getCurrentLogVersion();
         ds.rotateLogicalLog();
         ReadableByteChannel log = ds.getLogicalLog( version );
-        ByteBuffer buffer = newLogReaderBuffer();
+        final ByteBuffer buffer = newLogReaderBuffer();
         readLogHeader( buffer, log, true );
-        XaCommandFactory cf = new XaCommandFactory()
+        XaCommandReader commandReader = new XaCommandReader()
         {
             @Override
-            public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+            public XaCommand read( ReadableByteChannel channel ) throws IOException
             {
-                return LuceneCommand.readCommand( byteChannel, buffer, null );
+                return LuceneCommand.readCommand( channel, buffer, null );
             }
         };
         int creationIdentifier = -1;
-        for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, log, cf )) != null; )
+        for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, log, commandReader )) != null; )
         {
             if ( entry instanceof LogEntry.Command && ((LogEntry.Command) entry).getXaCommand() instanceof LuceneCommand.CreateIndexCommand )
             {

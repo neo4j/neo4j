@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+
 import java.io.File;
 import java.util.List;
 
@@ -27,12 +29,12 @@ import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
 * TODO
@@ -49,8 +51,8 @@ public class XaFactory
     private final LogPruneStrategy pruneStrategy;
 
     public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
-                      FileSystemAbstraction fileSystemAbstraction,
-                      Monitors monitors, Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+                      FileSystemAbstraction fileSystemAbstraction, Monitors monitors, Logging logging,
+                      RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
@@ -62,16 +64,19 @@ public class XaFactory
         this.pruneStrategy = pruneStrategy;
     }
 
-    public XaContainer newXaContainer( final XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
-                                       InjectedTransactionValidator injectedTxValidator, XaTransactionFactory tf,
-                                       TransactionStateFactory stateFactory, TransactionInterceptorProviders providers,
-                                       boolean readOnly )
+    public XaContainer newXaContainer( final XaDataSource xaDataSource, File logicalLog,
+                                       XaCommandReaderFactory commandReaderFactory,
+                                       XaCommandWriterFactory commandWriterFactory,
+                                       InjectedTransactionValidator injectedTxValidator,
+                                       XaTransactionFactory tf, TransactionStateFactory stateFactory,
+                                       TransactionInterceptorProviders providers, boolean readOnly )
     {
-        if ( logicalLog == null || cf == null || tf == null )
+        if ( logicalLog == null || commandReaderFactory == null || commandWriterFactory == null || tf == null )
         {
             throw new IllegalArgumentException( "Null parameter, "
-                    + "LogicalLog[" + logicalLog + "] CommandFactory[" + cf
-                    + "TransactionFactory[" + tf + "]" );
+                    + "LogicalLog[" + logicalLog + "], CommandReaderFactory[" + commandReaderFactory
+                    + "CommandWriterFactory[" + commandWriterFactory
+                    + "], TransactionFactory[" + tf + "]" );
         }
 
         // TODO The dependencies between XaRM, LogicalLog and XaTF should be resolved to avoid the setter
@@ -89,13 +94,13 @@ public class XaFactory
             Function<List<LogEntry>, List<LogEntry>> interceptor = null;
             if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
             {
-                interceptor = new LogEntryVisitorAdapter( providers.resolveChain( xaDataSource ) );
+                interceptor = new LogEntryVisitorAdapter( providers, xaDataSource );
             }
             else
             {
                 interceptor = Functions.identity();
             }
-            log = new XaLogicalLog( logicalLog, rm, cf, tf, fileSystemAbstraction,
+            log = new XaLogicalLog( logicalLog, rm, commandReaderFactory, commandWriterFactory, tf, fileSystemAbstraction,
                     monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator, interceptor );
         }
 

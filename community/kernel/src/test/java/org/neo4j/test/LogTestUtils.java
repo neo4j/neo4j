@@ -19,6 +19,16 @@
  */
 package org.neo4j.test;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,27 +44,18 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -347,10 +348,10 @@ public class LogTestUtils
             LogIoUtils.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            List<LogEntry> entries = new ArrayList<>(  );
-            CommandFactory cmdFactory = new CommandFactory();
+            List<LogEntry> entries = new ArrayList<>();
+            XaCommandReader commandReader = new PhysicalLogNeoXaCommandReader( buffer );
             LogEntry entry;
-            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
+            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, commandReader ) ) != null )
             {
                 entries.add( entry );
             }
@@ -420,17 +421,19 @@ public class LogTestUtils
         LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
-        CommandFactory cf = new CommandFactory();
+        XaCommandReader commandReader = new PhysicalLogNeoXaCommandReader( buffer );
+        XaCommandWriter commandWriter = new PhysicalLogNeoXaCommandWriter();
+
         try
         {
             LogEntry entry = null;
-            while ( (entry = readEntry( buffer, in, cf ) ) != null )
+            while ( (entry = readEntry( buffer, in, commandReader ) ) != null )
             {
                 if ( !filter.accept( entry ) )
                 {
                     continue;
                 }
-                writeLogEntry( entry, outBuffer );
+                writeLogEntry( entry, outBuffer, commandWriter );
             }
         }
         finally

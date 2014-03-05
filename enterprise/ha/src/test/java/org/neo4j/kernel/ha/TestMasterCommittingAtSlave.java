@@ -19,8 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -45,7 +53,12 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -53,12 +66,9 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.LogMarker;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 
 public class TestMasterCommittingAtSlave
 {
@@ -286,7 +296,23 @@ public class TestMasterCommittingAtSlave
         @Override
         public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
         {
-            return LogExtractor.from( FS, dir, new Monitors().newMonitor( ByteCounterMonitor.class ), startTxId );
+            return LogExtractor.from( FS, dir,
+                    new XaCommandReaderFactory()
+                    {
+                        @Override
+                        public XaCommandReader newInstance( ByteBuffer scratch )
+                        {
+                            return new PhysicalLogNeoXaCommandReader( scratch );
+                        }
+                    },
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new PhysicalLogNeoXaCommandWriter();
+                        }
+                    }, new Monitors().newMonitor( ByteCounterMonitor.class ), startTxId );
         }
 
         @Override

@@ -99,16 +99,6 @@ class CheckingTransactionInterceptor implements TransactionInterceptor
     }
 
     @Override
-    public void visitRelationshipGroup( RelationshipGroupRecord record )
-    {
-        diffs.visitRelationshipGroup( record );
-        if ( next != null )
-        {
-            next.visitRelationshipGroup( record );
-        }
-    }
-
-    @Override
     public void visitProperty( PropertyRecord record )
     {
         diffs.visitProperty( record );

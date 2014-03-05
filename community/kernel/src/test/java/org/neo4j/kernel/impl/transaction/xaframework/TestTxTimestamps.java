@@ -19,30 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TestTxTimestamps
 {
@@ -84,11 +83,11 @@ public class TestTxTimestamps
         FileChannel channel = fileSystem.open( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
         try
         {
-            XaCommandFactory commandFactory = new CommandFactory();
+            XaCommandReader commandReader = new PhysicalLogNeoXaCommandReader( buffer );
             LogIoUtils.readLogHeader( buffer, channel, true );
             int foundTxCount = 0;
-            skipFirstTransaction( buffer, channel, commandFactory ); // Since it's the property index transaction
-            for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
+            skipFirstTransaction( buffer, channel, commandReader ); // Since it's the property index transaction
+            for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandReader )) != null; )
             {
                 if ( entry instanceof LogEntry.Start )
                 {
@@ -112,20 +111,10 @@ public class TestTxTimestamps
         }
     }
 
-    private void skipFirstTransaction( ByteBuffer buffer, FileChannel channel, XaCommandFactory commandFactory ) throws IOException
+    private void skipFirstTransaction( ByteBuffer buffer, FileChannel channel, XaCommandReader commandReader ) throws IOException
     {
-        for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
+        for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandReader )) != null; )
             if ( entry instanceof Commit )
                 break;
-    }
-
-    private static class CommandFactory extends XaCommandFactory
-    {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-                ByteBuffer buffer ) throws IOException
-        {
-            return Command.readCommand( null, null, byteChannel, buffer );
-        }
     }
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.util.TimeZone.getTimeZone;
+import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -26,7 +29,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
@@ -38,15 +40,10 @@ import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
-
-import static java.util.TimeZone.getTimeZone;
-
-import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 
 public class DumpLogicalLog
 {
@@ -84,8 +81,8 @@ public class DumpLogicalLog
             }
             out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
-            XaCommandFactory cf = instantiateCommandFactory();
-            while ( readAndPrintEntry( fileChannel, buffer, cf, out, timeZone ) )
+            XaCommandReader commandReader = instantiateCommandReader( buffer );
+            while ( readAndPrintEntry( fileChannel, buffer, commandReader, out, timeZone ) )
             {
                 ;
             }
@@ -100,10 +97,10 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf,
+    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandReader commandReader,
             PrintStream out, TimeZone timeZone ) throws IOException
     {
-        LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, cf );
+        LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, commandReader );
         if ( entry != null )
         {
             out.println( entry.toString( timeZone ) );
@@ -112,9 +109,9 @@ public class DumpLogicalLog
         return false;
     }
 
-    protected XaCommandFactory instantiateCommandFactory()
+    protected XaCommandReader instantiateCommandReader( ByteBuffer scratch )
     {
-        return new CommandFactory();
+        return new PhysicalLogNeoXaCommandReader( scratch );
     }
 
     protected String getLogPrefix()
@@ -253,15 +250,5 @@ public class DumpLogicalLog
                 return Integer.valueOf( string.substring( index + toFind.length() ) );
             }
         };
-    }
-
-    public static class CommandFactory extends XaCommandFactory
-    {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-                ByteBuffer buffer ) throws IOException
-        {
-            return Command.readCommand( null, null, byteChannel, buffer );
-        }
     }
 }

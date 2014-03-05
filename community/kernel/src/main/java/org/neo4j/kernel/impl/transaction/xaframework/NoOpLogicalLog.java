@@ -21,15 +21,18 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -37,9 +40,22 @@ public class NoOpLogicalLog extends XaLogicalLog
 {
     public NoOpLogicalLog( Logging logging )
     {
-        super( null, null, null, null, null, new Monitors(), logging, null, null, 10000l, null,
-                Functions.<List<LogEntry>>identity() );
-    }
+        super( null, null, new XaCommandReaderFactory()
+        {
+            @Override
+            public XaCommandReader newInstance( ByteBuffer scratch )
+            {
+                return null;
+            }
+        }, new XaCommandWriterFactory()
+        {
+            @Override
+            public XaCommandWriter newInstance()
+            {
+                return null;
+            }
+        }, null, null, new Monitors(), logging, null, null, 10000l, null, null );
+}
 
     @Override
     synchronized void open() throws IOException
@@ -195,12 +211,6 @@ public class NoOpLogicalLog extends XaLogicalLog
     public boolean deleteLogicalLog( long version )
     {
         return false;
-    }
-
-    @Override
-    protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel )
-    {
-        return null;
     }
 
     @Override

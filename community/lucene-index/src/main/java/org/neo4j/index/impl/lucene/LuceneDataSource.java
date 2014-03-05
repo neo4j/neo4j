@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -60,7 +63,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -85,12 +87,16 @@ import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -98,9 +104,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
-
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -261,7 +264,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         };
 
-        XaCommandFactory cf = new LuceneCommandFactory();
+        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory();
+        XaCommandWriterFactory commandWriterFactory = new LuceneCommandWriterFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
         DependencyResolver dummy = new DependencyResolver.Adapter()
         {
@@ -271,8 +275,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return (T) LuceneDataSource.this.config;
             }
         };
-        xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), cf,
-                InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
+        xaContainer = xaFactory.newXaContainer( this, new File( this.baseStorePath, "lucene.log"), commandReaderFactory,
+                commandWriterFactory, InjectedTransactionValidator.ALLOW_ALL, tf,
+                TransactionStateFactory.noStateFactory( null ),
                 new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false );
         closed = false;
         if ( !isReadOnly )
@@ -382,18 +387,35 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 .getResourceManager(), getBranchId() );
     }
 
-    private class LuceneCommandFactory extends XaCommandFactory
+    private class LuceneCommandReaderFactory implements XaCommandReaderFactory
     {
-        LuceneCommandFactory()
-        {
-            super();
-        }
-
         @Override
-        public XaCommand readCommand( ReadableByteChannel channel,
-                                      ByteBuffer buffer ) throws IOException
+        public XaCommandReader newInstance( final ByteBuffer scratch )
         {
-            return LuceneCommand.readCommand( channel, buffer, LuceneDataSource.this );
+            return new XaCommandReader()
+            {
+                @Override
+                public XaCommand read( ReadableByteChannel channel ) throws IOException
+                {
+                    return LuceneCommand.readCommand( channel, scratch, LuceneDataSource.this );
+                }
+            };
+        }
+    }
+
+    private static class LuceneCommandWriterFactory implements XaCommandWriterFactory
+    {
+        @Override
+        public XaCommandWriter newInstance()
+        {
+            return new XaCommandWriter()
+            {
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    ((LuceneCommand) command).writeToFile( buffer );
+                }
+            };
         }
     }
 

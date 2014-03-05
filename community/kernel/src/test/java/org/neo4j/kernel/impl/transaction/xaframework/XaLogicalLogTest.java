@@ -19,6 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,10 +48,13 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -48,21 +65,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
-
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
 
 public class XaLogicalLogTest
@@ -109,7 +111,8 @@ public class XaLogicalLogTest
         } );
         XaLogicalLog xaLogicalLog = new XaLogicalLog( new File( dir, "logical.log" ),
                                                       mock( XaResourceManager.class ),
-                                                      mock( XaCommandFactory.class ),
+                                                      mock( XaCommandReaderFactory.class ),
+                                                      mock( XaCommandWriterFactory.class),
                                                       xaTf,
                                                       fs,
                                                       new Monitors(),
@@ -117,8 +120,7 @@ public class XaLogicalLogTest
                                                       LogPruneStrategies.NO_PRUNING,
                                                       mock( TransactionStateFactory.class ),
                                                       25 * 1024 * 1024,
-                                                      ALLOW_ALL,
-                                                      Functions.<List<LogEntry>>identity() );
+                                                      ALLOW_ALL, Functions.<List<LogEntry>>identity() );
         xaLogicalLog.open();
         // -- set the log up with 10 transactions (with no commands, just start and commit)
         for ( int txId = 1; txId <= 10; txId++ )
@@ -143,7 +145,22 @@ public class XaLogicalLogTest
         long maxSize = 1000;
         XaLogicalLog log = new XaLogicalLog( new File( "log" ),
                 mock( XaResourceManager.class ),
-                new FixedSizeXaCommandFactory(),
+                new XaCommandReaderFactory()
+                {
+                    @Override
+                    public XaCommandReader newInstance( ByteBuffer scratch )
+                    {
+                        return new FixedSizeXaCommandReader( scratch );
+                    }
+                },
+                new XaCommandWriterFactory()
+                {
+                    @Override
+                    public XaCommandWriter newInstance()
+                    {
+                        return new FixedSizeXaCommandWriter();
+                    }
+                },
                 new VersionRespectingXaTransactionFactory(),
                 ephemeralFs.get(),
                 new Monitors(),
@@ -177,27 +194,39 @@ public class XaLogicalLogTest
             this.data = new byte[payloadSize-2/*2 bytes for describing which size will follow*/];
         }
 
-        @Override
-        public void execute()
-        {   // There's nothing to execute
-        }
-
-        @Override
-        public void writeToFile( LogBuffer buffer ) throws IOException
+        public byte[] getData()
         {
-            buffer.putShort( (short) (data.length+2) );
-            buffer.put( data );
+            return data;
         }
     }
 
-    private static class FixedSizeXaCommandFactory extends XaCommandFactory
+    private static class FixedSizeXaCommandReader implements XaCommandReader
     {
+        private ByteBuffer buffer;
+
+        private FixedSizeXaCommandReader( ByteBuffer buffer )
+        {
+            this.buffer = buffer;
+        }
+
         @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+        public XaCommand read( ReadableByteChannel byteChannel ) throws IOException
         {
             short dataSize = IoPrimitiveUtils.readShort( byteChannel, buffer );
             IoPrimitiveUtils.readBytes( byteChannel, new byte[dataSize] );
             return new FixedSizeXaCommand( dataSize );
+        }
+    }
+
+    private static class FixedSizeXaCommandWriter implements XaCommandWriter
+    {
+
+        @Override
+        public void write( XaCommand command, LogBuffer buffer ) throws IOException
+        {
+            FixedSizeXaCommand fixed = (FixedSizeXaCommand) command;
+            buffer.putShort( (short) (fixed.getData().length + 2) );
+            buffer.put( fixed.getData() );
         }
     }
 

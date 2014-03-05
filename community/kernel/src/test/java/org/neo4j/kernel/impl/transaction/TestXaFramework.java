@@ -54,13 +54,16 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
@@ -116,44 +119,55 @@ public class TestXaFramework extends AbstractNeo4jTestCase
 
     private static class DummyCommand extends XaCommand
     {
-        private int type = -1;
+        private final int type;
 
         DummyCommand( int type )
         {
             this.type = type;
         }
 
-        @Override
-        public void execute()
+        public int getType()
         {
-        }
-
-        // public void writeToFile( FileChannel fileChannel, ByteBuffer buffer )
-        // throws IOException
-        @Override
-        public void writeToFile( LogBuffer buffer ) throws IOException
-        {
-            // buffer.clear();
-            buffer.putInt( type );
-            // buffer.flip();
-            // fileChannel.write( buffer );
+            return type;
         }
     }
 
-    private static class DummyCommandFactory extends XaCommandFactory
+    private static class DummyCommandReaderFactory implements XaCommandReaderFactory
     {
         @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-                                      ByteBuffer buffer ) throws IOException
+        public XaCommandReader newInstance( final ByteBuffer buffer )
         {
-            buffer.clear();
-            buffer.limit( 4 );
-            if ( byteChannel.read( buffer ) == 4 )
+            return new XaCommandReader()
             {
-                buffer.flip();
-                return new DummyCommand( buffer.getInt() );
-            }
-            return null;
+                @Override
+                public XaCommand read( ReadableByteChannel channel ) throws IOException
+                {
+                    buffer.clear();
+                    buffer.limit( 4 );
+                    if ( channel.read( buffer ) == 4 )
+                    {
+                        buffer.flip();
+                        return new DummyCommand( buffer.getInt() );
+                    }
+                    return null;
+                }
+            };
+        }
+    }
+
+    private static class DummyCommandWriterFactory implements XaCommandWriterFactory
+    {
+        @Override
+        public XaCommandWriter newInstance()
+        {
+            return new XaCommandWriter()
+            {
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    buffer.putInt( ((DummyCommand)command).getType() );
+                }
+            };
         }
     }
 
@@ -262,7 +276,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
 
                 map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
-                        new DummyCommandFactory(),
+                        new DummyCommandReaderFactory(),
+                        new DummyCommandWriterFactory(),
                         ALLOW_ALL,
                         new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
                         Iterables.<TransactionInterceptorProvider>empty(),

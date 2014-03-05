@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,22 +40,12 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 
 public class TestLogPruneStrategy
 {
@@ -357,7 +355,16 @@ public class TestLogPruneStrategy
             InMemoryLogBuffer tempLogBuffer = new InMemoryLogBuffer();
             XidImpl xid = new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_XID );
             LogIoUtils.writeStart( tempLogBuffer, identifier, xid, -1, -1, date, Long.MAX_VALUE );
-            LogIoUtils.writeCommand( tempLogBuffer, identifier, new TestXaCommand( commandSize ) );
+            LogIoUtils.writeCommand( tempLogBuffer, identifier, new TestXaCommand( commandSize ), new XaCommandWriter()
+            {
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    TestXaCommand test = (TestXaCommand) command;
+                    buffer.putInt( test.getTotalSize() );
+                    buffer.put( new byte[test.getTotalSize()-4/*size of the totalSize integer*/] );
+                }
+            } );
             LogIoUtils.writeCommit( false, tempLogBuffer, identifier, ++tx, date );
             LogIoUtils.writeDone( tempLogBuffer, identifier );
             tempLogBuffer.read( activeBuffer );
@@ -483,17 +490,10 @@ public class TestLogPruneStrategy
         {
             this.totalSize = totalSize;
         }
-        
-        @Override
-        public void execute()
-        {   // Do nothing
-        }
 
-        @Override
-        public void writeToFile( LogBuffer buffer ) throws IOException
+        public int getTotalSize()
         {
-            buffer.putInt( totalSize );
-            buffer.put( new byte[totalSize-4/*size of the totalSize integer*/] );
+            return totalSize;
         }
     }
 }

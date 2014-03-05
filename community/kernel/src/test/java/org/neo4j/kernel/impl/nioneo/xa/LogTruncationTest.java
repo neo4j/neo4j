@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
@@ -42,17 +44,24 @@ import static org.junit.Assert.assertEquals;
 public class LogTruncationTest
 {
     InMemoryLogBuffer inMemoryBuffer = new InMemoryLogBuffer();
+    PhysicalLogNeoXaCommandReader reader = new PhysicalLogNeoXaCommandReader( ByteBuffer.allocate( 100 ) );
+    PhysicalLogNeoXaCommandWriter writer = new PhysicalLogNeoXaCommandWriter();
 
     @Test
     public void testSerializationInFaceOfLogTruncation() throws Exception
     {
         // TODO: add support for other commands and permutations as well...
-        assertHandlesLogTruncation( new Command.NodeCommand( null,
-                                                             new NodeRecord( 12l, false, 13l, 13l ),
-                                                             new NodeRecord( 0,false, 0,0 ) ) );
-        assertHandlesLogTruncation( new Command.LabelTokenCommand( null, new LabelTokenRecord( 1 )) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( new NodeRecord( 12l, false, 13l, 13l ),
+                new NodeRecord( 0,false, 0,0 ) );
+        assertHandlesLogTruncation( nodeCommand );
+        Command.LabelTokenCommand labelTokenCommand = new Command.LabelTokenCommand();
+        labelTokenCommand.init( new LabelTokenRecord( 1 ) );
+        assertHandlesLogTruncation( labelTokenCommand );
 
-        assertHandlesLogTruncation( new Command.NeoStoreCommand( null, new NeoStoreRecord() ) );
+        Command.NeoStoreCommand neoStoreCommand = new Command.NeoStoreCommand();
+        neoStoreCommand.init( new NeoStoreRecord() );
+        assertHandlesLogTruncation( neoStoreCommand );
 //        assertHandlesLogTruncation( new Command.PropertyCommand( null,
 //                new PropertyRecord( 1, true, new NodeRecord(1, 12, 12, true) ),
 //                new PropertyRecord( 1, true, new NodeRecord(1, 12, 12, true) ) ) );
@@ -61,20 +70,21 @@ public class LogTruncationTest
     private void assertHandlesLogTruncation( XaCommand cmd ) throws IOException
     {
         inMemoryBuffer.reset();
-        cmd.writeToFile( inMemoryBuffer );
+
+        writer.write( cmd,inMemoryBuffer );
 
         int bytesSuccessfullyWritten = inMemoryBuffer.bytesWritten();
-        assertEquals( cmd, Command.readCommand( null, null, inMemoryBuffer, ByteBuffer.allocate( 100 ) ));
+        assertEquals( cmd, reader.read( inMemoryBuffer ));
 
         bytesSuccessfullyWritten--;
 
         while(bytesSuccessfullyWritten --> 0)
         {
             inMemoryBuffer.reset();
-            cmd.writeToFile( inMemoryBuffer );
+            writer.write( cmd, inMemoryBuffer );
             inMemoryBuffer.truncateTo( bytesSuccessfullyWritten );
 
-            Command deserialized = Command.readCommand( null, null, inMemoryBuffer, ByteBuffer.allocate( 100 ) );
+            XaCommand deserialized = reader.read( inMemoryBuffer );
 
             assertNull( "Deserialization did not detect log truncation! Record: " + cmd +
                         ", deserialized: " + deserialized, deserialized );

@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.lang.System.currentTimeMillis;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_PREV_RELATIONSHIP;
+import static org.neo4j.kernel.impl.nioneo.store.TokenStore.NAME_STORE_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -40,19 +47,14 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-import static java.lang.System.currentTimeMillis;
-
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_PREV_RELATIONSHIP;
-import static org.neo4j.kernel.impl.nioneo.store.TokenStore.NAME_STORE_BLOCK_SIZE;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 
 /**
  * This class lives here instead of somewhere else in order to be able to access the {@link Command} implementations.
@@ -120,23 +122,30 @@ public class TransactionWriter
 
     public void propertyKey( int id, String key, int... dynamicIds ) throws IOException
     {
-        write( new Command.PropertyKeyTokenCommand( null, withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) ) );
+        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
+        command.init( withName( new PropertyKeyTokenRecord( id ), dynamicIds, key ) );
+        write( command );
     }
 
     public void label( int id, String name, int... dynamicIds ) throws IOException
     {
-        write( new Command.LabelTokenCommand( null, withName( new LabelTokenRecord( id ), dynamicIds, name ) ) );
+        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
+        command.init( withName( new LabelTokenRecord( id ), dynamicIds, name ) );
+        write( command );
     }
 
     public void relationshipType( int id, String label, int... dynamicIds ) throws IOException
     {
-        write( new Command.RelationshipTypeTokenCommand( null,
-                withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label ) ) );
+        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
+        command.init( withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label ) );
+        write( command );
     }
 
     public void update( NeoStoreRecord record ) throws IOException
     {
-        write( new Command.NeoStoreCommand( null, record ) );
+        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
+        command.init( record );
+        write( command );
     }
 
     public void create( NodeRecord node ) throws IOException
@@ -236,42 +245,58 @@ public class TransactionWriter
 
     private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords ) throws IOException
     {
-        write( new Command.SchemaRuleCommand( null, null, null, beforeRecords, afterRecords, null, Long.MAX_VALUE ) );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, null, Long.MAX_VALUE );
+        write( command );
     }
 
     public void add( NodeRecord before, NodeRecord after ) throws IOException
     {
-        write( new Command.NodeCommand( null, before, after ) );
+        Command.NodeCommand command = new Command.NodeCommand();
+        command.init(  before, after );
+        write( command );
     }
 
     public void add( RelationshipRecord relationship ) throws IOException
     {
-        write( new Command.RelationshipCommand( null, relationship ) );
+        Command.RelationshipCommand command = new Command.RelationshipCommand();
+        command.init( relationship );
+        write( command );
     }
 
     public void add( RelationshipGroupRecord group ) throws IOException
     {
-        write( new Command.RelationshipGroupCommand( null, group ) );
+        Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
+        command.init( group );
+        write( command );
     }
 
     public void add( PropertyRecord before, PropertyRecord property ) throws IOException
     {
-        write( new Command.PropertyCommand( null, before, property ) );
+        Command.PropertyCommand command = new Command.PropertyCommand();
+        command.init( before, property );
+        write( command );
     }
 
     public void add( RelationshipTypeTokenRecord record ) throws IOException
     {
-        write( new Command.RelationshipTypeTokenCommand( null, record ) );
+        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
+        command.init( record );
+        write( command );
     }
 
     public void add( PropertyKeyTokenRecord record ) throws IOException
     {
-        write( new Command.PropertyKeyTokenCommand( null, record ) );
+        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
+        command.init( record );
+        write( command );
     }
 
     public void add( NeoStoreRecord record ) throws IOException
     {
-        write( new Command.NeoStoreCommand( null, record ) );
+        Command.NeoStoreCommand command = new Command.NeoStoreCommand();
+        command.init( record );
+        write( command );
     }
 
     private void write( Command command ) throws IOException
@@ -483,7 +508,7 @@ public class TransactionWriter
         @Override
         public void writeCommand( int identifier, XaCommand command ) throws IOException
         {
-            LogIoUtils.writeCommand( buffer, identifier, command );
+            LogIoUtils.writeCommand( buffer, identifier, command, new PhysicalLogNeoXaCommandWriter() );
         }
 
         @Override

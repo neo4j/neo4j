@@ -24,9 +24,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
@@ -84,7 +87,7 @@ public class LogIoUtils
     }
 
     public static LogEntry readEntry( ByteBuffer buffer, ReadableByteChannel channel,
-            XaCommandFactory cf ) throws IOException
+            XaCommandReader cf ) throws IOException
     {
         try
         {
@@ -96,7 +99,7 @@ public class LogIoUtils
         }
     }
 
-    public static LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel, XaCommandFactory cf )
+    public static LogEntry readLogEntry( ByteBuffer buffer, ReadableByteChannel channel, XaCommandReader cf )
             throws IOException, ReadPastEndException
     {
         byte entry = readNextByte( buffer, channel );
@@ -170,11 +173,11 @@ public class LogIoUtils
     }
 
     private static LogEntry.Command readTxCommandEntry(
-            ByteBuffer buf, ReadableByteChannel channel, XaCommandFactory cf )
+            ByteBuffer buf, ReadableByteChannel channel, XaCommandReader cf )
             throws IOException, ReadPastEndException
     {
         int identifier = readNextInt( buf, channel );
-        XaCommand command = cf.readCommand( channel, buf );
+        XaCommand command = cf.read( channel );
         if ( command == null )
         {
             return null;
@@ -182,12 +185,12 @@ public class LogIoUtils
         return new LogEntry.Command( identifier, command );
     }
 
-    public static void writeLogEntry( LogEntry entry, LogBuffer buffer )
+    public static void writeLogEntry( LogEntry entry, LogBuffer buffer, XaCommandWriter writer )
         throws IOException
     {
         if ( entry instanceof LogEntry.Command )
         {
-            writeCommand( buffer, entry.getIdentifier(), ((LogEntry.Command) entry).getXaCommand() );
+            writeCommand( buffer, entry.getIdentifier(), ((LogEntry.Command) entry).getXaCommand(), writer );
         }
         else if ( entry instanceof LogEntry.Start )
         {
@@ -259,11 +262,11 @@ public class LogIoUtils
               .putLong( latestCommittedTxWhenStarted );
     }
 
-    public static void writeCommand( LogBuffer buffer, int identifier, XaCommand command )
+    public static void writeCommand( LogBuffer buffer, int identifier, XaCommand command, XaCommandWriter writer )
             throws IOException
     {
         buffer.put( LogEntry.COMMAND ).putInt( identifier );
-        command.writeToFile( buffer );
+        writer.write( command, buffer );
     }
 
     private static int readNextInt( ByteBuffer buf, ReadableByteChannel channel )

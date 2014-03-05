@@ -22,20 +22,24 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.util.List;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 public class LogEntryVisitorAdapter implements Function<List<LogEntry>, List<LogEntry>>
 {
-    private final TransactionInterceptor interceptor;
+    private final TransactionInterceptorProviders providers;
+    private final XaDataSource ds;
 
-    public LogEntryVisitorAdapter( TransactionInterceptor interceptor )
+    public LogEntryVisitorAdapter( TransactionInterceptorProviders providers, XaDataSource ds )
     {
-        this.interceptor = interceptor;
+        this.providers = providers;
+        this.ds = ds;
     }
 
     @Override
     public List<LogEntry> apply( List<LogEntry> entries )
     {
+        TransactionInterceptor interceptor = providers.resolveChain( ds );
         for ( LogEntry entry : entries )
         {
             if ( entry instanceof LogEntry.Command )

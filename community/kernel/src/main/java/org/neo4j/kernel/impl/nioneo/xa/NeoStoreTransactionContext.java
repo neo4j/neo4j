@@ -38,7 +38,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.CommandSet;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class NeoStoreTransactionContext
@@ -55,14 +56,14 @@ public class NeoStoreTransactionContext
     private TransactionState txState;
 
     private final RecordChangeSet recordChangeSet;
-    private final CommandSet commandSet;
+    private final org.neo4j.kernel.impl.nioneo.xa.command.CommandSet commandSet;
 
     public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
     {
         this.supplier = supplier;
 
         recordChangeSet = new RecordChangeSet( neoStore );
-        commandSet = new CommandSet( neoStore );
+        commandSet = new CommandSet();
 
         locker = new TransactionalRelationshipLocker();
         relationshipGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
@@ -141,37 +142,37 @@ public class NeoStoreTransactionContext
         supplier.release( this );
     }
 
-    public Map<Long, Command.NodeCommand> getNodeCommands()
+    public Map<Long, org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand> getNodeCommands()
     {
         return commandSet.getNodeCommands();
     }
 
-    public ArrayList<Command.PropertyCommand> getPropCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand> getPropCommands()
     {
         return commandSet.getPropCommands();
     }
 
-    public ArrayList<Command.RelationshipCommand> getRelCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand> getRelCommands()
     {
         return commandSet.getRelCommands();
     }
 
-    public ArrayList<Command.SchemaRuleCommand> getSchemaRuleCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand> getSchemaRuleCommands()
     {
         return commandSet.getSchemaRuleCommands();
     }
 
-    public ArrayList<Command.RelationshipTypeTokenCommand> getRelationshipTypeTokenCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand> getRelationshipTypeTokenCommands()
     {
         return commandSet.getRelationshipTypeTokenCommands();
     }
 
-    public ArrayList<Command.LabelTokenCommand> getLabelTokenCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand> getLabelTokenCommands()
     {
         return commandSet.getLabelTokenCommands();
     }
 
-    public ArrayList<Command.PropertyKeyTokenCommand> getPropertyKeyTokenCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand> getPropertyKeyTokenCommands()
     {
         return commandSet.getPropertyKeyTokenCommands();
     }
@@ -206,23 +207,22 @@ public class NeoStoreTransactionContext
         commandSet.generateNeoStoreCommand( neoStoreRecord );
     }
 
-    public XaCommand getNeoStoreCommand()
+    public Command.NeoStoreCommand getNeoStoreCommand()
     {
         return commandSet.getNeoStoreCommand();
     }
 
-    public ArrayList<Command.RelationshipGroupCommand> getRelGroupCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand> getRelGroupCommands()
     {
         return commandSet.getRelGroupCommands();
     }
 
     public void setNeoStoreCommand( Command.NeoStoreCommand xaCommand )
     {
-        commandSet.setNeoStoreCommand( xaCommand );
+        commandSet.getNeoStoreCommand().init( xaCommand.getRecord() );
     }
 
-    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node,
-                                                                                                    int type )
+    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();

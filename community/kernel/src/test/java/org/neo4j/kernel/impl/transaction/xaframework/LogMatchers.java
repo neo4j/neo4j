@@ -33,7 +33,7 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.DumpLogicalLog;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -56,9 +56,8 @@ public class LogMatchers
 
             // Read all log entries
             List<LogEntry> entries = new ArrayList<LogEntry>();
-            DumpLogicalLog.CommandFactory cmdFactory = new DumpLogicalLog.CommandFactory();
             LogEntry entry;
-            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
+            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, new PhysicalLogNeoXaCommandReader( buffer ) )) != null )
             {
                 entries.add( entry );
             }

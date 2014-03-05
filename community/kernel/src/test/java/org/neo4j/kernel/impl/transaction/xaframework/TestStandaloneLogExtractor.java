@@ -19,14 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.BatchTransaction.beginBatchTx;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -34,10 +43,6 @@ import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 public class TestStandaloneLogExtractor
 {
@@ -82,8 +87,23 @@ public class TestStandaloneLogExtractor
 
         XaDataSource ds = newDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource();
-        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ),
-                new Monitors().newMonitor( ByteCounterMonitor.class ) );
+        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ), new XaCommandReaderFactory()
+        {
+            @Override
+            public XaCommandReader newInstance( ByteBuffer scratch )
+            {
+                return new PhysicalLogNeoXaCommandReader( scratch );
+            }
+        },
+                new XaCommandWriterFactory()
+                {
+                    @Override
+                    public XaCommandWriter newInstance()
+                    {
+                        return new PhysicalLogNeoXaCommandWriter();
+                    }
+                },
+                new Monitors().newMonitor( ByteCounterMonitor.class ), 2 /* a magic first tx */ );
         long expectedTxId = 2;
         while ( true )
         {

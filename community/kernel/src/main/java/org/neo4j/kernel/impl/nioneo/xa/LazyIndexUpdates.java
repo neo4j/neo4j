@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,21 +33,17 @@ import java.util.Set;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
+import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.xa.Command.Mode;
-import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
-import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.LabelChangeSummary;
-
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
 
 class LazyIndexUpdates implements IndexUpdates
 {

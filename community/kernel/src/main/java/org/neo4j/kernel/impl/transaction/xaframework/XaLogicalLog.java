@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -37,8 +41,19 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.RecoveryLogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.LogFilter;
+import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
+import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.LogWriter;
+import org.neo4j.kernel.impl.nioneo.xa.command.MasterLogWriter;
+import org.neo4j.kernel.impl.nioneo.xa.command.SlaveLogWriter;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogPositionCache;
@@ -50,12 +65,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -94,42 +103,49 @@ public class XaLogicalLog implements LogLoader
 
     private File fileName = null;
     private final XaResourceManager xaRm;
-    private final XaCommandFactory cf;
+    private final XaCommandReader commandReader;
+    private final XaCommandWriter commandWriter;
     private final XaTransactionFactory xaTf;
     private char currentLog = CLEAN;
     private boolean autoRotate;
-    private long rotateAtSize;
 
+    private long rotateAtSize;
     private boolean doingRecovery;
+
     private long lastRecoveredTx = -1;
 
     private final StringLogger msgLog;
-
     private final LogPositionCache positionCache = new LogPositionCache();
-    private final FileSystemAbstraction fileSystem;
 
+    private final FileSystemAbstraction fileSystem;
+    private final Function<List<LogEntry>, List<LogEntry>> interceptor;
     private final LogPruneStrategy pruneStrategy;
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
+
     private final InjectedTransactionValidator injectedTxValidator;
 
     private final TransactionStateFactory stateFactory;
-
     // Monitors for counting bytes read/written in various parts
     // We need separate monitors to differentiate between network/disk I/O
     protected final ByteCounterMonitor bufferMonitor;
-    protected final ByteCounterMonitor logDeserializerMonitor;
-    private final Function<List<LogEntry>, List<LogEntry>> interceptor;
 
-    public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
+    protected final ByteCounterMonitor logDeserializerMonitor;
+    private final SomethingOrOtherSPI logWriterSPI;
+    private final XaCommandReaderFactory commandReaderFactory;
+    private final XaCommandWriterFactory commandWriterFactory;
+
+    public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandReaderFactory commandReaderFactory,
+                         XaCommandWriterFactory commandWriterFactory,
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
                          long rotateAtSize, InjectedTransactionValidator injectedTxValidator,
-                         Function<List<LogEntry>,List<LogEntry>> interceptor )
+                         Function<List<LogEntry>, List<LogEntry>> interceptor )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
-        this.cf = cf;
+        this.commandReaderFactory = commandReaderFactory;
+        this.commandWriterFactory = commandWriterFactory;
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
         this.interceptor = interceptor;
@@ -143,11 +159,16 @@ public class XaLogicalLog implements LogLoader
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
+        this.commandReader = commandReaderFactory.newInstance( sharedBuffer );
+        this.commandWriter = commandWriterFactory.newInstance();
+
         msgLog = logging.getMessagesLog( getClass() );
 
-        this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, cf, msgLog, positionCache, this,
-                xidIdentMap, monitors.newMonitor( ByteCounterMonitor.class, getClass(), "copier" ) );
+        this.partialTransactionCopier = new PartialTransactionCopier( sharedBuffer, commandReaderFactory,
+                commandWriterFactory, msgLog, positionCache, this, xidIdentMap,
+                monitors.newMonitor( ByteCounterMonitor.class, getClass(), "copier" ) );
         this.injectedTxValidator = injectedTxValidator;
+        logWriterSPI = new SomethingOrOtherSPI();
     }
 
     synchronized void open() throws IOException
@@ -439,103 +460,7 @@ public class XaLogicalLog implements LogLoader
     {
         checkLogRotation();
         assert xidIdentMap.get( identifier ) != null;
-        LogIoUtils.writeCommand( writeBuffer, identifier, command );
-    }
-
-    private void applyEntry( LogEntry entry ) throws IOException
-    {
-        if ( entry instanceof LogEntry.Start )
-        {
-            applyStartEntry( (LogEntry.Start) entry );
-        }
-        else if ( entry instanceof LogEntry.Prepare )
-        {
-            applyPrepareEntry( (LogEntry.Prepare) entry );
-        }
-        else if ( entry instanceof LogEntry.Command )
-        {
-            applyCommandEntry( (LogEntry.Command) entry );
-        }
-        else if ( entry instanceof LogEntry.OnePhaseCommit )
-        {
-            applyOnePhaseCommitEntry( (LogEntry.OnePhaseCommit) entry );
-        }
-        else if ( entry instanceof LogEntry.TwoPhaseCommit )
-        {
-            applyTwoPhaseCommitEntry( (LogEntry.TwoPhaseCommit) entry );
-        }
-        else if ( entry instanceof LogEntry.Done )
-        {
-            applyDoneEntry( (LogEntry.Done) entry );
-        }
-        else
-        {
-            throw new RuntimeException( "Unrecognized log entry " + entry );
-        }
-    }
-
-    private void applyStartEntry( LogEntry.Start entry ) throws IOException
-    {
-        int identifier = entry.getIdentifier();
-        if ( identifier >= nextIdentifier )
-        {
-            nextIdentifier = identifier + 1;
-        }
-        // re-create the transaction
-        Xid xid = entry.getXid();
-        xidIdentMap.put( identifier, entry );
-        XaTransaction xaTx = xaTf.create( entry.getLastCommittedTxWhenTransactionStarted(),
-                stateFactory.create( null ) );
-        xaTx.setIdentifier( identifier );
-        xaTx.setRecovered();
-        recoveredTxMap.put( identifier, xaTx );
-        xaRm.injectStart( xid, xaTx );
-        // force to make sure done record is there if 2PC tx and global log
-        // marks tx as committed
-        // fileChannel.force( false );
-    }
-
-    private void applyPrepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
-    {
-        // get the tx identifier
-        int identifier = prepareEntry.getIdentifier();
-        LogEntry.Start entry = xidIdentMap.get( identifier );
-        if ( entry == null )
-        {
-            throw new IOException( "Unknown xid for identifier " + identifier );
-        }
-        Xid xid = entry.getXid();
-        if ( xaRm.injectPrepare( xid ) )
-        {
-            // read only we can remove
-            xidIdentMap.remove( identifier );
-            recoveredTxMap.remove( identifier );
-        }
-    }
-
-    private void applyOnePhaseCommitEntry( LogEntry.OnePhaseCommit commit )
-            throws IOException
-    {
-        int identifier = commit.getIdentifier();
-        long txId = commit.getTxId();
-        LogEntry.Start startEntry = xidIdentMap.get( identifier );
-        if ( startEntry == null )
-        {
-            throw new IOException( "Unknown xid for identifier " + identifier );
-        }
-        Xid xid = startEntry.getXid();
-        try
-        {
-            XaTransaction xaTx = xaRm.getXaTransaction( xid );
-            xaTx.setCommitTxId( txId );
-            positionCache.cacheStartPosition( txId, startEntry, logVersion );
-            xaRm.injectOnePhaseCommit( xid );
-            registerRecoveredTransaction( txId );
-        }
-        catch ( XAException e )
-        {
-            throw new IOException( e );
-        }
+        LogIoUtils.writeCommand( writeBuffer, identifier, command, commandWriter );
     }
 
     private void registerRecoveredTransaction( long txId )
@@ -552,62 +477,6 @@ public class XaLogicalLog implements LogLoader
         {
             msgLog.logMessage( string, true );
         }
-    }
-
-    private void applyDoneEntry( LogEntry.Done done ) throws IOException
-    {
-        // get the tx identifier
-        int identifier = done.getIdentifier();
-        LogEntry.Start entry = xidIdentMap.get( identifier );
-        if ( entry == null )
-        {
-            throw new IOException( "Unknown xid for identifier " + identifier );
-        }
-        Xid xid = entry.getXid();
-        xaRm.pruneXid( xid );
-        xidIdentMap.remove( identifier );
-        recoveredTxMap.remove( identifier );
-    }
-
-    private void applyTwoPhaseCommitEntry( LogEntry.TwoPhaseCommit commit ) throws IOException
-    {
-        int identifier = commit.getIdentifier();
-        long txId = commit.getTxId();
-        LogEntry.Start startEntry = xidIdentMap.get( identifier );
-        if ( startEntry == null )
-        {
-            throw new IOException( "Unknown xid for identifier " + identifier );
-        }
-        Xid xid = startEntry.getXid();
-        if ( xid == null )
-        {
-            throw new IOException( "Xid null for identifier " + identifier );
-        }
-        try
-        {
-            XaTransaction xaTx = xaRm.getXaTransaction( xid );
-            xaTx.setCommitTxId( txId );
-            positionCache.cacheStartPosition( txId, startEntry, logVersion );
-            xaRm.injectTwoPhaseCommit( xid );
-            registerRecoveredTransaction( txId );
-        }
-        catch ( XAException e )
-        {
-            throw new IOException( e );
-        }
-    }
-
-    private void applyCommandEntry( LogEntry.Command entry ) throws IOException
-    {
-        int identifier = entry.getIdentifier();
-        XaCommand command = entry.getXaCommand();
-        if ( command == null )
-        {
-            throw new IOException( "Null command for identifier " + identifier );
-        }
-        command.setRecovered();
-        XaTransaction xaTx = recoveredTxMap.get( identifier );
-        xaTx.injectCommand( command );
     }
 
     private void checkLogRotation() throws IOException
@@ -791,21 +660,19 @@ public class XaLogicalLog implements LogLoader
         positionCache.putHeader( logVersion, previousLogLastCommittedTx );
         msgLog.logMessage( "[" + logFileName + "] logVersion=" + logVersion +
                 " with committed tx=" + lastCommittedTx, true );
-        long logEntriesFound = 0;
-        long lastEntryPos = fileChannel.position();
         fileChannel = new BufferedFileChannel( fileChannel );
-        LogEntry entry;
-        while ( (entry = readEntry()) != null )
-        {
-            applyEntry( entry );
-            logEntriesFound++;
-            lastEntryPos = fileChannel.position();
-        }
+
+        RecoveryLogDeserializer reader = new RecoveryLogDeserializer( sharedBuffer );
+        reader.setXaCommandReader( commandReader );
+        EntryCountingLogHandler counter = new EntryCountingLogHandler( new LogApplier() );
+        reader.setLogHandler( counter );
+        reader.read( fileChannel );
+        long lastEntryPos = fileChannel.position();
         // make sure we overwrite any broken records
         fileChannel = ((BufferedFileChannel) fileChannel).getSource();
         fileChannel.position( lastEntryPos );
 
-        msgLog.logMessage( "[" + logFileName + "] entries found=" + logEntriesFound +
+        msgLog.logMessage( "[" + logFileName + "] entries found=" + counter.getEntriesFound() +
                 " lastEntryPos=" + lastEntryPos, true );
 
         // zero out the slow way since windows don't support truncate very well
@@ -856,16 +723,6 @@ public class XaLogicalLog implements LogLoader
         recoveredTxMap.clear();
     }
 
-    private LogEntry readEntry() throws IOException
-    {
-        long position = fileChannel.position();
-        LogEntry entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf );
-        if ( entry instanceof LogEntry.Start )
-        {
-            ((LogEntry.Start) entry).setStartPosition( position );
-        }
-        return entry;
-    }
 
     private final ArrayMap<Thread, Integer> txIdentMap =
             new ArrayMap<Thread, Integer>( (byte) 5, true, true );
@@ -922,7 +779,7 @@ public class XaLogicalLog implements LogLoader
         LogEntry entry;
         boolean found = false;
         long startedAt = sharedBuffer.position();
-        while ( (entry = LogIoUtils.readEntry( sharedBuffer, logChannel, cf )) != null )
+        while ( (entry = LogIoUtils.readEntry( sharedBuffer, logChannel, commandReader )) != null )
         {
             // TODO For now just skip Prepare entries
             if ( entry.getIdentifier() != identifier )
@@ -935,7 +792,7 @@ public class XaLogicalLog implements LogLoader
             }
             if ( entry instanceof LogEntry.Start || entry instanceof LogEntry.Command )
             {
-                LogIoUtils.writeLogEntry( entry, targetBuffer );
+                LogIoUtils.writeLogEntry( entry, targetBuffer, commandWriter );
                 found = true;
             }
             else
@@ -974,7 +831,8 @@ public class XaLogicalLog implements LogLoader
 
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
-        return new LogExtractor( positionCache, this, bufferMonitor, cf, startTxId, endTxIdHint );
+        return new LogExtractor( positionCache, this, bufferMonitor, commandReaderFactory, commandWriterFactory,
+                startTxId, endTxIdHint );
     }
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -1111,116 +969,6 @@ public class XaLogicalLog implements LogLoader
         return fileSystem.fileExists( file ) ? fileSystem.deleteFile( file ) : false;
     }
 
-    protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel )
-    {
-        return new LogDeserializer( byteChannel, bufferMonitor, interceptor );
-    }
-
-    protected class LogDeserializer
-    {
-        private final ReadableByteChannel byteChannel;
-        private final ByteCounterMonitor monitor;
-        private final Function<List<LogEntry>, List<LogEntry>> interceptor;
-        private LogEntry.Start startEntry;
-        private LogEntry.Commit commitEntry;
-
-        private final List<LogEntry> logEntries;
-
-        protected LogDeserializer( ReadableByteChannel byteChannel, ByteCounterMonitor monitor,
-                Function<List<LogEntry>, List<LogEntry>> interceptor )
-        {
-            this.byteChannel = byteChannel;
-            this.monitor = monitor;
-            this.interceptor = interceptor;
-            this.logEntries = new LinkedList<LogEntry>();
-        }
-
-        public boolean readAndWriteAndApplyEntry( int newXidIdentifier )
-                throws IOException
-        {
-            long startedAtPosition = sharedBuffer.position();
-            LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel, cf );
-            monitor.bytesRead( sharedBuffer.position() - startedAtPosition );
-            if ( entry == null )
-            {
-                try
-                {
-                    apply( interceptor.apply( logEntries ) );
-                    return false;
-                }
-                catch ( Error e )
-                {
-                    startEntry = null;
-                    commitEntry = null;
-                    throw e;
-                }
-            }
-            entry.setIdentifier( newXidIdentifier );
-            logEntries.add( entry );
-            if ( entry instanceof LogEntry.Commit )
-            {
-                assert startEntry != null;
-                commitEntry = (LogEntry.Commit) entry;
-            }
-            else if ( entry instanceof LogEntry.Start )
-            {
-                startEntry = (LogEntry.Start) entry;
-            }
-            return true;
-        }
-
-        private void apply( List<LogEntry> logEntries ) throws IOException
-        {
-            for ( LogEntry entry : logEntries )
-            {
-                /*
-                 * You are wondering what is going on here. Let me take you on a journey
-                 * A transaction, call it A starts, prepares locally, goes to the master and commits there
-                 *  but doesn't quite make it back here, meaning its application is pending, with only the
-                 *  start, command  and possibly prepare entries but not the commit, the Xid in xidmap
-                 * Another transaction, B, does an operation that requires going to master and pull updates - does
-                 *  that, gets all transactions not present locally (hence, A as well) and injects it.
-                 *  The Start entry is the first one extracted - if we try to apply it it will throw a Start
-                 *  entry already injected exception, since the Xid will match an ongoing transaction. If we
-                 *  had written that to the log recovery would be impossible, constantly throwing the same
-                 *  exception. So first apply, then write to log.
-                 * However we cannot do that for every entry - commit must always be written to log first, then
-                 *  applied because a crash in the mean time could cause partially applied transactions.
-                 *  The start entry does not have this problem because if it fails nothing will ever be applied -
-                 *  the same goes for commands but we don't care about those.
-                 */
-                if ( entry instanceof Start )
-                {
-                    ((Start) entry).setStartPosition( writeBuffer.getFileChannelPosition() );
-                    applyEntry( entry );
-                    LogIoUtils.writeLogEntry( entry, writeBuffer );
-                }
-                else
-                {
-                    LogIoUtils.writeLogEntry( entry, writeBuffer );
-                    if ( entry instanceof LogEntry.Commit )
-                    {
-                        /*
-                         * Just writeOut(), don't force or performance will be impacted severely.
-                         */
-                        writeBuffer.writeOut();
-                    }
-                    applyEntry( entry );
-                }
-            }
-        }
-
-        protected Start getStartEntry()
-        {
-            return startEntry;
-        }
-
-        protected Commit getCommitEntry()
-        {
-            return commitEntry;
-        }
-    }
-
     private long[] readLogHeader( ReadableByteChannel source, String message ) throws IOException
     {
         try
@@ -1237,8 +985,6 @@ public class XaLogicalLog implements LogLoader
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
                                                           long nextTxId, ForceMode forceMode ) throws IOException
     {
-        int xidIdent = 0;
-        LogEntry.Start startEntry = null;
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {
             throw new IllegalStateException( "Tried to apply tx " +
@@ -1250,52 +996,16 @@ public class XaLogicalLog implements LogLoader
                 ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
 
         scanIsComplete = false;
-        LogDeserializer logApplier = getLogDeserializer( byteChannel );
-        xidIdent = getNextIdentifier();
 
-        long startEntryPosition = writeBuffer.getFileChannelPosition();
-        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
-        {
-        }
+        logWriterSPI.bind( forceMode, nextTxId );
+        LogReader<ReadableByteChannel> reader = new LogDeserializer( logDeserializerMonitor, sharedBuffer );
+        reader.setXidIdentifier( getNextIdentifier() );
+        reader.setLogHandler( new LogFilter( interceptor, new MasterLogWriter( new LogApplier(), logWriterSPI,
+                injectedTxValidator ) ) );
+        reader.setXaCommandReader( commandReader );
+
+        reader.read( byteChannel );
         byteChannel.close();
-        startEntry = logApplier.getStartEntry();
-        if ( startEntry == null )
-        {
-            throw new IOException( "Unable to find start entry" );
-        }
-
-        try
-        {
-            injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
-        }
-        catch ( XAException e )
-        {
-            throw new IOException( e );
-        }
-
-        startEntry.setStartPosition( startEntryPosition );
-        LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
-                xidIdent, nextTxId, System.currentTimeMillis() );
-
-        LogIoUtils.writeLogEntry( commit, writeBuffer );
-        // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
-        forceMode.force( writeBuffer );
-        Xid xid = startEntry.getXid();
-        try
-        {
-            XaTransaction xaTx = xaRm.getXaTransaction( xid );
-            xaTx.setCommitTxId( nextTxId );
-            positionCache.cacheStartPosition( nextTxId, startEntry, logVersion );
-            xaRm.commit( xid, true );
-            LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
-            LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
-            xidIdentMap.remove( startEntry.getIdentifier() );
-            recoveredTxMap.remove( startEntry.getIdentifier() );
-        }
-        catch ( XAException e )
-        {
-            throw new IOException( e );
-        }
 
         scanIsComplete = true;
 
@@ -1308,45 +1018,21 @@ public class XaLogicalLog implements LogLoader
             throws IOException
     {
         scanIsComplete = false;
-        LogDeserializer logApplier = getLogDeserializer( byteChannel );
-        int xidIdent = getNextIdentifier();
-        long startEntryPosition = writeBuffer.getFileChannelPosition();
-        boolean successfullyApplied = false;
+
+        LogReader<ReadableByteChannel> logApplier = new LogDeserializer( logDeserializerMonitor, sharedBuffer );
+        logApplier.setXidIdentifier( getNextIdentifier() );
+        logApplier.setLogHandler( new FuckingUglyHackDoesNotDoNothing( new SlaveLogWriter(
+                new LogApplier(),  logWriterSPI ) ) );
+        logApplier.setXaCommandReader( commandReader );
         try
         {
-            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
-            {
-                ;
-            }
-            successfullyApplied = true;
+            logApplier.read( byteChannel );
         }
         finally
         {
-            if ( !successfullyApplied && logApplier.getStartEntry() != null && xidIdentMap.get( xidIdent ) != null )
-            {   // Unmap this identifier if tx not applied correctly
-                try
-                {
-                    xaRm.forget( logApplier.getStartEntry().getXid() );
-                }
-                catch ( XAException e )
-                {
-                    throw new IOException( e );
-                }
-                finally
-                {
-                    xidIdentMap.remove( xidIdent );
-                }
-            }
+            byteChannel.close();
+            scanIsComplete = true;
         }
-        byteChannel.close();
-        scanIsComplete = true;
-        LogEntry.Start startEntry = logApplier.getStartEntry();
-        if ( startEntry == null )
-        {
-            throw new IOException( "Unable to find start entry" );
-        }
-        startEntry.setStartPosition( startEntryPosition );
-        positionCache.cacheStartPosition( logApplier.getCommitEntry().getTxId(), startEntry, logVersion );
         checkLogRotation();
     }
 
@@ -1665,7 +1351,7 @@ public class XaLogicalLog implements LogLoader
             log = getLogicalLog( version );
             LogIoUtils.readLogHeader( buffer, log, true );
             LogEntry entry = null;
-            while ( (entry = LogIoUtils.readEntry( buffer, log, cf )) != null )
+            while ( (entry = LogIoUtils.readEntry( buffer, log, commandReader )) != null )
             {
                 if ( entry instanceof LogEntry.Start )
                 {
@@ -1683,4 +1369,253 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
+    public class FuckingUglyHackDoesNotDoNothing extends LogHandler.Filter
+    {
+        private Start startEntry;
+
+        public FuckingUglyHackDoesNotDoNothing( LogHandler delegate )
+        {
+            super( delegate );
+        }
+
+        public void setDelegate( LogHandler delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void startEntry( Start startEntry ) throws IOException
+        {
+            this.startEntry = startEntry;
+            super.startEntry( startEntry );
+        }
+
+        @Override
+        public void endLog( boolean success ) throws IOException
+        {
+            try
+            {
+                super.endLog( success );
+            }
+            finally
+            {
+                if ( !success && startEntry != null && xidIdentMap.get( startEntry.getIdentifier() ) != null )
+                {   // Unmap this identifier if tx not applied correctly
+                    try
+                    {
+                        xaRm.forget( startEntry.getXid() );
+                    }
+                    catch ( XAException e )
+                    {
+                        throw new IOException( e );
+                    }
+                    finally
+                    {
+                        xidIdentMap.remove( startEntry.getIdentifier() );
+                    }
+                }
+            }
+        }
+    }
+
+    public class LogApplier implements LogHandler
+    {
+        @Override
+        public void startLog()
+        {
+        }
+
+        @Override
+        public void startEntry( LogEntry.Start startEntry ) throws IOException
+        {
+            int identifier = startEntry.getIdentifier();
+            if ( identifier >= nextIdentifier )
+            {
+                nextIdentifier = identifier + 1;
+            }
+            // re-create the transaction
+            Xid xid = startEntry.getXid();
+            xidIdentMap.put( identifier, startEntry );
+            XaTransaction xaTx = xaTf.create( startEntry.getLastCommittedTxWhenTransactionStarted(),
+                    stateFactory.create( null ) );
+            xaTx.setIdentifier( identifier );
+            xaTx.setRecovered();
+            recoveredTxMap.put( identifier, xaTx );
+            xaRm.injectStart( xid, xaTx );
+            // force to make sure done record is there if 2PC tx and global log
+            // marks tx as committed
+            // fileChannel.force( false );
+        }
+
+        @Override
+        public void prepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
+        {
+
+            int identifier = prepareEntry.getIdentifier();
+            LogEntry.Start entry = xidIdentMap.get( identifier );
+            if ( entry == null )
+            {
+                throw new IOException( "Unknown xid for identifier " + identifier );
+            }
+            Xid xid = entry.getXid();
+            if ( xaRm.injectPrepare( xid ) )
+            {
+                // read only we can remove
+                xidIdentMap.remove( identifier );
+                recoveredTxMap.remove( identifier );
+            }
+        }
+
+        @Override
+        public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
+        {
+            int identifier = onePhaseCommitEntry.getIdentifier();
+            long txId = onePhaseCommitEntry.getTxId();
+            LogEntry.Start startEntry = xidIdentMap.get( identifier );
+            if ( startEntry == null )
+            {
+                throw new IOException( "Unknown xid for identifier " + identifier );
+            }
+            Xid xid = startEntry.getXid();
+            try
+            {
+                XaTransaction xaTx = xaRm.getXaTransaction( xid );
+                xaTx.setCommitTxId( txId );
+                positionCache.cacheStartPosition( txId, startEntry, logVersion );
+                xaRm.injectOnePhaseCommit( xid );
+                registerRecoveredTransaction( txId );
+            }
+            catch ( XAException e )
+            {
+                throw new IOException( e );
+            }
+        }
+
+        @Override
+        public void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry ) throws IOException
+        {
+            int identifier = twoPhaseCommitEntry.getIdentifier();
+            long txId = twoPhaseCommitEntry.getTxId();
+            LogEntry.Start startEntry = xidIdentMap.get( identifier );
+            if ( startEntry == null )
+            {
+                throw new IOException( "Unknown xid for identifier " + identifier );
+            }
+            Xid xid = startEntry.getXid();
+            if ( xid == null )
+            {
+                throw new IOException( "Xid null for identifier " + identifier );
+            }
+            try
+            {
+                XaTransaction xaTx = xaRm.getXaTransaction( xid );
+                xaTx.setCommitTxId( txId );
+                positionCache.cacheStartPosition( txId, startEntry, logVersion );
+                xaRm.injectTwoPhaseCommit( xid );
+                registerRecoveredTransaction( txId );
+            }
+            catch ( XAException e )
+            {
+                throw new IOException( e );
+            }
+        }
+
+        @Override
+        public void doneEntry( LogEntry.Done doneEntry ) throws IOException
+        {
+            int identifier = doneEntry.getIdentifier();
+            LogEntry.Start entry = xidIdentMap.get( identifier );
+            if ( entry == null )
+            {
+                throw new IOException( "Unknown xid for identifier " + identifier );
+            }
+            Xid xid = entry.getXid();
+            xaRm.pruneXid( xid );
+            xidIdentMap.remove( identifier );
+            recoveredTxMap.remove( identifier );
+        }
+
+        @Override
+        public void commandEntry( LogEntry.Command commandEntry ) throws IOException
+        {
+            int identifier = commandEntry.getIdentifier();
+            XaCommand command = commandEntry.getXaCommand();
+            if ( command == null )
+            {
+                throw new IOException( "Null command for identifier " + identifier );
+            }
+            command.setRecovered();
+            XaTransaction xaTx = recoveredTxMap.get( identifier );
+            xaTx.injectCommand( command );
+        }
+
+        @Override
+        public void endLog( boolean success ) throws IOException
+        {
+        }
+    }
+
+    private class SomethingOrOtherSPI implements LogWriter.SPI
+    {
+        private ForceMode forceMode;
+        private long nextTxId;
+
+        @Override
+        public LogBuffer getWriteBuffer()
+        {
+            return writeBuffer;
+        }
+
+        @Override
+        public XaCommandWriter getXaCommandWriter()
+        {
+            return commandWriter;
+        }
+
+        @Override
+        public void doTheThing( LogEntry.Start startEntry ) throws IOException
+        {
+            if ( startEntry == null )
+            {
+                throw new IOException( "Unable to find start entry" );
+            }
+            try
+            {
+                injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
+            }
+            catch ( XAException e )
+            {
+                throw new IOException( e );
+            }
+
+            LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
+                    startEntry.getIdentifier(), nextTxId, System.currentTimeMillis() );
+
+            LogIoUtils.writeLogEntry( commit, writeBuffer, commandWriter );
+            // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
+            forceMode.force( writeBuffer );
+            Xid xid = startEntry.getXid();
+            try
+            {
+                XaTransaction xaTx = xaRm.getXaTransaction( xid );
+                xaTx.setCommitTxId( nextTxId );
+                positionCache.cacheStartPosition( nextTxId, startEntry, logVersion );
+                xaRm.commit( xid, true );
+                LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
+                LogIoUtils.writeLogEntry( doneEntry, writeBuffer, commandWriter );
+                xidIdentMap.remove( startEntry.getIdentifier() );
+                recoveredTxMap.remove( startEntry.getIdentifier() );
+            }
+            catch ( XAException e )
+            {
+                throw new IOException( e );
+            }
+        }
+
+        public void bind( ForceMode forceMode, long nextTxId )
+        {
+            this.forceMode = forceMode;
+            this.nextTxId = nextTxId;
+        }
+    }
 }

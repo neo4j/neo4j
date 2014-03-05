@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.fromRecordState;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.fromRecordState;
 
 import org.junit.Test;
 
@@ -31,11 +31,12 @@ public class TestCommandMode
     @Test
     public void shouldInferCorrectModes() throws Exception
     {
-        assertThat( fromRecordState( /* create */true, /* inUse */true ), equalTo(Command.Mode.CREATE));
-        assertThat( fromRecordState( /* create */false, /* inUse */true ), equalTo(Command.Mode.UPDATE));
+        assertThat( fromRecordState( /* create */true, /* inUse */true ), equalTo( org.neo4j.kernel.impl.nioneo.xa
+                .command.Command.Mode.CREATE));
+        assertThat( fromRecordState( /* create */false, /* inUse */true ), equalTo( org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.UPDATE));
 
-        assertThat( fromRecordState( /* create */false, /* inUse */false ), equalTo(Command.Mode.DELETE));
-        assertThat( fromRecordState( /* create */true, /* inUse */false ), equalTo(Command.Mode.DELETE));
+        assertThat( fromRecordState( /* create */false, /* inUse */false ), equalTo( org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE));
+        assertThat( fromRecordState( /* create */true, /* inUse */false ), equalTo( org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE));
     }
 
 }

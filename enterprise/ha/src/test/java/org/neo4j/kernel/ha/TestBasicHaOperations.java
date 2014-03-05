@@ -19,23 +19,21 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 /**
  * TODO
@@ -139,7 +137,7 @@ public class TestBasicHaOperations
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        long nodeId = 0;
+        long nodeId = 4;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         try ( Transaction tx = master.beginTx() )
         {
@@ -149,6 +147,8 @@ public class TestBasicHaOperations
 
             tx.success();
         }
+
+        Thread.sleep( 10000 );
 
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.IOException;
 import java.util.TimeZone;
 
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Format;
+import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
 public abstract class LogEntry
 {
@@ -48,6 +50,8 @@ public abstract class LogEntry
     {
         this.identifier = identifier;
     }
+
+    public abstract void accept( LogHandler handler ) throws IOException;
 
     public int getIdentifier()
     {
@@ -101,7 +105,7 @@ public abstract class LogEntry
             return startPosition;
         }
 
-        void setStartPosition( long position )
+        public void setStartPosition( long position )
         {
             this.startPosition = position;
         }
@@ -134,6 +138,12 @@ public abstract class LogEntry
         }
 
         @Override
+        public void accept( LogHandler handler ) throws IOException
+        {
+            handler.startEntry( this );
+        }
+
+        @Override
         public String toString( TimeZone timeZone )
         {
             return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" +
@@ -161,6 +171,12 @@ public abstract class LogEntry
         public String toString()
         {
             return toString( Format.DEFAULT_TIME_ZONE );
+        }
+
+        @Override
+        public void accept( LogHandler handler ) throws IOException
+        {
+            handler.prepareEntry( this );
         }
 
         @Override
@@ -213,6 +229,12 @@ public abstract class LogEntry
         {
             super( identifier, txId, timeWritten, "1PC" );
         }
+
+        @Override
+        public void accept( LogHandler handler ) throws IOException
+        {
+            handler.onePhaseCommitEntry( this );
+        }
     }
 
     public static class TwoPhaseCommit extends Commit
@@ -221,6 +243,12 @@ public abstract class LogEntry
         {
             super( identifier, txId, timeWritten, "2PC" );
         }
+
+        @Override
+        public void accept( LogHandler handler ) throws IOException
+        {
+            handler.twoPhaseCommitEntry( this );
+        }
     }
 
     public static class Done extends LogEntry
@@ -228,6 +256,12 @@ public abstract class LogEntry
         public Done( int identifier )
         {
             super( identifier );
+        }
+
+        @Override
+        public void accept( LogHandler handler ) throws IOException
+        {
+            handler.doneEntry( this );
         }
 
         @Override
@@ -256,6 +290,12 @@ public abstract class LogEntry
         public String toString()
         {
             return "Command[" + getIdentifier() + ", " + command + "]";
+        }
+
+        @Override
+        public void accept( LogHandler handler ) throws IOException
+        {
+            handler.commandEntry( this );
         }
     }
 
