@@ -245,31 +245,6 @@ class LoadCsvAcceptanceTest
     }
   }
 
-  private val CSV_DATA_CONTENT = "1,1,1\n2,2,2\n3,3,3\n".getBytes
-  private val CSV_PATH = "/test.csv"
-  private val CSV_COOKIE_PATH = "/cookie_test.csv"
-  private val CSV_REDIRECT_PATH = "/redirect_test.csv"
-  private val MAGIC_COOKIE = "neoCookie=Magic"
-  private var httpServer: HttpServerTestSupport = _
-
-  override def beforeAll() {
-    val  builder = new HttpServerTestSupportBuilder()
-    builder.onPathReplyWithData(CSV_PATH, CSV_DATA_CONTENT)
-
-    builder.onPathReplyWithData(CSV_COOKIE_PATH, CSV_DATA_CONTENT)
-    builder.onPathReplyOnlyWhen(CSV_COOKIE_PATH, HttpServerTestSupport.hasCookie(MAGIC_COOKIE))
-
-    builder.onPathRedirectTo(CSV_REDIRECT_PATH, CSV_COOKIE_PATH)
-    builder.onPathTransformResponse(CSV_REDIRECT_PATH, HttpServerTestSupport.setCookie(MAGIC_COOKIE))
-
-    httpServer = builder.build()
-    httpServer.start()
-  }
-
-  override def afterAll() {
-    httpServer.stop()
-  }
-
   private def createFile(f: PrintWriter => Unit): String = createFile()(f)
   private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv", f).cypherEscape
 }
