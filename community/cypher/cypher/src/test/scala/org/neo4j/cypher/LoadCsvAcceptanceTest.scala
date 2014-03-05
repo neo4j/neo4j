@@ -19,35 +19,34 @@
  */
 package org.neo4j.cypher
 
+import java.io.PrintWriter
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.scalatest.BeforeAndAfterAll
 
 class LoadCsvAcceptanceTest
-  extends ExecutionEngineFunSuite with BeforeAndAfterAll
-  with QueryStatisticsTestSupport with CreateTempFileTestSupport {
+  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
 
   test("import three strings") {
-    val url = createCSVTempFileURL({
+    val url = createFile({
       writer =>
         writer.println("'Foo'")
         writer.println("'Foo'")
         writer.println("'Foo'")
-    }).cypherEscape
+    })
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
   test("import three numbers") {
-    val url = createCSVTempFileURL({
+    val url = createFile({
       writer =>
         writer.println("1")
         writer.println("2")
         writer.println("3")
-    }).cypherEscape
+    })
 
     val result =
       execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {number: line[0]}) RETURN a.number")
@@ -57,25 +56,25 @@ class LoadCsvAcceptanceTest
   }
 
   test("import three rows numbers and strings") {
-    val url = createCSVTempFileURL({
+    val url = createFile({
       writer =>
         writer.println("1, 'Aadvark'")
         writer.println("2, 'Babs'")
         writer.println("3, 'Cash'")
-    }).cypherEscape
+    })
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
   test("import three rows with headers") {
-    val url = createCSVTempFileURL({
+    val url = createFile({
       writer =>
         writer.println("id,name")
         writer.println("1, 'Aadvark'")
         writer.println("2, 'Babs'")
         writer.println("3, 'Cash'")
-    }).cypherEscape
+    })
 
     val result = execute(
       s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
@@ -85,27 +84,27 @@ class LoadCsvAcceptanceTest
   }
 
   test("import three rows with headers messy data") {
-    val url = createCSVTempFileURL({
+    val url = createFile({
       writer =>
         writer.println("id,name,x")
         writer.println("1,'Aadvark',0")
         writer.println("2,'Babs'")
         writer.println("3,'Cash',1")
-    }).cypherEscape
+    })
 
     val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line RETURN line.x")
     assert(result.toList === List(Map("line.x" -> "0"), Map("line.x" -> null), Map("line.x" -> "1")))
   }
 
   test("should handle quotes") {
-    val url = createCSVTempFileURL()({
+    val url = createFile()({
       writer =>
         writer.println("String without quotes")
         writer.println("'String, with single quotes'")
         writer.println("\"String, with double quotes\"")
         writer.println(""""String with ""quotes"" in it"""")
         writer.println("""String with "quotes" in it""")
-    }).cypherEscape
+    })
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
     assert(result === List(
@@ -117,137 +116,124 @@ class LoadCsvAcceptanceTest
   }
 
   test("should open file containing strange chars with \"") {
-    val url = createCSVTempFileURL(filename = "cypher \"%^&!@#_)(098.,;[]{}\\~$*+-")({
+    val url = createFile(filename = "cypher \"%^&!@#_)(098.,;[]{}\\~$*+-")({
       writer =>
         writer.println("something")
-    }).cypherEscape
+    })
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
   test("should handle crlf line termination") {
-    val url = createCSVTempFileURL({
+    val url = createFile {
       writer =>
         writer.print("1,'Aadvark',0\r\n")
         writer.print("2,'Babs'\r\n")
         writer.print("3,'Cash',1\r\n")
-    }).cypherEscape
+    }
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
   test("should handle lf line termination") {
-    val url = createCSVTempFileURL({
+    val url = createFile {
       writer =>
         writer.print("1,'Aadvark',0\n")
         writer.print("2,'Babs'\n")
         writer.print("3,'Cash',1\n")
-    }).cypherEscape
+    }
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
   test("should handle cr line termination") {
-    val url = createCSVTempFileURL({
+    val url = createFile {
       writer =>
         writer.print("1,'Aadvark',0\r")
         writer.print("2,'Babs'\r")
         writer.print("3,'Cash',1\r")
-    }).cypherEscape
+    }
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
   test("should handle custom field terminator") {
-    val url = createCSVTempFileURL ({
+    val url = createFile {
       writer =>
         writer.println("1;'Aadvark';0")
         writer.println("2;'Babs'")
         writer.println("3;'Cash';1")
-    }).cypherEscape
+    }
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line FIELDTERMINATOR ';' RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
   test("should open file containing strange chars with '") {
-    val url = createCSVTempFileURL(filename = "cypher '%^&!@#_)(098.,;[]{}\\~$*+-")({
+    val url = createFile(filename = "cypher '%^&!@#_)(098.,;[]{}\\~$*+-")({
       writer =>
         writer.println("something")
-    }).cypherEscape
+    })
 
-    val result = execute("LOAD CSV FROM \"" + url + "\" AS line RETURN line as string").toList
+    val result = execute("LOAD CSV FROM \"" +url+"\" AS line RETURN line as string").toList
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
   test("empty file does not create anything") {
-    val url = createCSVTempFileURL(writer => {}).cypherEscape
+    val url = createFile(writer => {})
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 0)
   }
 
   test("should be able to open relative paths with dot") {
-    val url = createCSVTempFileURL(filename = "cypher", dir = "./")(
+    val url = createFile(filename = "cypher", dir = "./")(
       writer =>
-        writer.println("something")
-    ).cypherEscape
+        writer.println("something"))
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
   }
 
   test("should be able to open relative paths with dotdot") {
-    val url = createCSVTempFileURL(filename = "cypher", dir = "../")(
+    val url = createFile(filename = "cypher", dir = "../")(
       writer =>
-        writer.println("something")
-    ).cypherEscape
+        writer.println("something"))
 
     val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
   }
 
+  test("should be able to download data from the web") {
+    val url = "http://www.neo4j.org"
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line").toList
+    result.isEmpty should equal(false)
+  }
+
   test("should fail gracefully when loading missing file") {
     intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'file://./these_are_not_the_droids_you_are_looking_for.csv' AS line CREATE (a {name:line[0]})")
+      execute("LOAD CSV FROM 'file://missing file.csv' AS line CREATE (a {name:line[0]})")
     }
   }
 
-  test("should be able to download data from the web") {
-      val url = "http://127.0.0.1:8080/test.csv".cypherEscape
-
-      val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
-      result should equal(3)
-  }
-
-  test("should be able to download from a website when redirected and cookies are set") {
-      val url = "http://127.0.0.1:8080/redirect_test.csv".cypherEscape
-
-      val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
-      result should equal(3)
-  }
-
-  test("should fail gracefully when getting 404") {
+  test("should fail gracefully when loading non existent site") {
+    // If this test fails, check that you are not in a network that
+    // redirects http requests to unknown domains to some landing page
     intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'http://127.0.0.1:8080/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})")
-    }
-  }
-
-  test("should fail gracefully when loading non existent (local) site") {
-    intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'http://127.0.0.1:9999/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})")
+      execute("LOAD CSV FROM 'http://non-existing-site.com' AS line CREATE (a {name:line[0]})")
     }
   }
 
   test("should fail for file urls if local file access disallowed") {
-    val url = createCSVTempFileURL({
+    val url = createFile {
       writer =>
         writer.println("String without quotes")
-    }).cypherEscape
+    }
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.allow_file_urls, "false")
@@ -283,4 +269,7 @@ class LoadCsvAcceptanceTest
   override def afterAll() {
     httpServer.stop()
   }
+
+  private def createFile(f: PrintWriter => Unit): String = createFile()(f)
+  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv", f).cypherEscape
 }

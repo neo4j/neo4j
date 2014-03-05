@@ -35,12 +35,6 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
     }
   }
 
-  def createCSVTempFileURL(f: PrintWriter => Unit): String =
-    createCSVTempFileURL()(f)
-
-  def createCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =
-    createTempFileURL(filename, ".csv", f)
-
   def createTempFile(name: String, ext: String, f: PrintWriter => Unit): String = synchronized {
     withTempFileWriter(name, ext)(f).toAbsolute.path
   }
