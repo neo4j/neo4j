@@ -156,7 +156,7 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
 
 case class NodePattern(
   identifier: Option[Identifier],
-  labels: Seq[Identifier],
+  labels: Seq[LabelName],
   properties: Option[Expression],
   naked: Boolean)(val position: InputPosition) extends PatternElement with SemanticChecking {
 
@@ -195,7 +195,7 @@ case class NodePattern(
 case class RelationshipPattern(
     identifier: Option[Identifier],
     optional: Boolean,
-    types: Seq[Identifier],
+    types: Seq[RelTypeName],
     length: Option[Option[Range]],
     properties: Option[Expression],
     direction: Direction)(val position: InputPosition) extends ASTNode with SemanticChecking {
