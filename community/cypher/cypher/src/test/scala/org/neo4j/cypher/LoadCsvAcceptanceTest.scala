@@ -115,7 +115,7 @@ class LoadCsvAcceptanceTest
       Map("string" -> Seq("""String with "quotes" in it"""))))
   }
 
-  test("should open file containing strange chars with \"") {
+  ignore("should open file containing strange chars with \"") {
     val url = createFile(filename = "cypher \"%^&!@#_)(098.,;[]{}\\~$*+-")({
       writer =>
         writer.println("something")
@@ -173,7 +173,7 @@ class LoadCsvAcceptanceTest
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
-  test("should open file containing strange chars with '") {
+  ignore("should open file containing strange chars with '") {
     val url = createFile(filename = "cypher '%^&!@#_)(098.,;[]{}\\~$*+-")({
       writer =>
         writer.println("something")
