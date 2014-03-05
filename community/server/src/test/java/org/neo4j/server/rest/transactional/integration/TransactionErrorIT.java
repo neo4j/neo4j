@@ -19,13 +19,20 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoStackTraces;
@@ -76,9 +83,48 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    public void begin_and_execute_periodic_commit_that_fails() throws Exception
+    {
+        File file = File.createTempFile("begin_and_execute_periodic_commit_that_fails", ".csv").getAbsoluteFile();
+        try {
+            PrintStream out = new PrintStream( new FileOutputStream( file ) );
+            out.println("1");
+            out.println("2");
+            out.println("0");
+            out.println("3");
+            out.close();
+
+            String url = file.toURI().toURL().toString().replace("\\", "\\\\");
+            String query = "USING PERIODIC COMMIT 1 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ({name: 1/toInt(line[0])});";
+
+            // begin and execute and commit
+            HTTP.RawPayload payload = quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }");
+            HTTP.Response response = POST( txCommitUri(), payload);
+
+            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response, hasErrors(Status.Statement.ArithmeticError) );
+
+            JsonNode message = response.get( "errors" ).get( 0 ).get( "message" );
+            assertTrue("Expected LOAD CSV line number information",
+                    message
+                            .toString()
+                            .contains("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate."));
+        }
+        finally {
+            file.delete();
+        }
+    }
+
     private String txUri()
     {
         return getDataUri() + "transaction";
+    }
+
+    private String txCommitUri()
+    {
+        return getDataUri() + "transaction/commit";
     }
 
     private long countNodes()

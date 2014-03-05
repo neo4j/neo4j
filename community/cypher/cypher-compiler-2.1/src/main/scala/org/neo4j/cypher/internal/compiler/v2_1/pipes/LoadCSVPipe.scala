@@ -27,10 +27,10 @@ sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
 case object NoHeaders extends CSVFormat
 
-class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String) extends PipeWithSource(source) {
+class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String, fieldTerminator: Option[String]) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
-      val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url)
+      val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
 
       val nextRow: Array[String] => Iterable[Any] = format match {
         case HasHeaders =>

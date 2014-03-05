@@ -32,8 +32,8 @@ class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
     findNodeWithLabels(plan.query.patterns).nonEmpty ||
-    findPatternWithProperties(plan.query.patterns).nonEmpty ||
-    findVarlengthPatternWithProperties(plan.query.patterns).nonEmpty
+      findPatternWithProperties(plan.query.patterns).nonEmpty ||
+      findVarlengthPatternWithProperties(plan.query.patterns).nonEmpty
   }
 
   case class LabelExtraction(patternWithLabels: Unsolved[Pattern],

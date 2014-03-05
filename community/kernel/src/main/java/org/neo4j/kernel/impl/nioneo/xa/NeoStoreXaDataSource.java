@@ -174,6 +174,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private SchemaCache schemaCache;
 
     private LabelScanStore labelScanStore;
+    private final IndexingService.Monitor indexingServiceMonitor;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -269,7 +270,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, LockManager lockManager,
-                                 SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers )
+                                 SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
+                                 IndexingService.Monitor indexingServiceMonitor )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -287,6 +289,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.lockManager = lockManager;
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionEventHandlers = transactionEventHandlers;
+        this.indexingServiceMonitor = indexingServiceMonitor;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -357,7 +360,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                             providerMap,
                             new NeoStoreIndexStoreView( locks, neoStore ),
                             tokenNameLookup, updateableSchemaState,
-                            logging ) );
+                            logging, indexingServiceMonitor ) );
 
             integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
@@ -428,6 +431,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                     neoStore.getPropertyStore().getPropertyKeyTokenStore() );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
 
+            // TODO Problem here is that we don't know if recovery has been performed at this point
+            // if it hasn't then no index recovery will be performed since the node store is still in
+            // "not ok" state and forceGetRecord will always return place holder node records that are not in use.
+            // This issue will certainly introduce index inconsistencies.
             life.start();
         }
         catch ( Throwable e )
@@ -728,5 +735,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public NeoStore evaluate()
     {
         return neoStore;
+    }
+
+    @Override
+    public void recoveryCompleted() throws IOException
+    {
+        indexingService.startIndexes();
     }
 }

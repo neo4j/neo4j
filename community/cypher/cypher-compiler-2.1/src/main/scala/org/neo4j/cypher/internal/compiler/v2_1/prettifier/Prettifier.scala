@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.prettifier
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{Base, Strings}
 import org.parboiled.scala._
+import scala.collection.mutable
 
 sealed abstract class SyntaxToken {
   def text: String
@@ -34,11 +35,19 @@ sealed abstract class KeywordToken extends SyntaxToken {
 }
 
 final case class BreakingKeywords(text: String) extends KeywordToken
+
 final case class NonBreakingKeywords(text: String) extends KeywordToken
 
-sealed abstract class GroupingToken extends SyntaxToken
-final case class OpenGroup(text: String) extends GroupingToken
-final case class CloseGroup(text: String) extends GroupingToken
+final case class GroupToken(start: String, close: String, innerTokens: Seq[SyntaxToken]) extends SyntaxToken {
+  override def toString = s"$start${innerTokens.mkString(",")}$close"
+  def text = toString
+}
+
+sealed abstract class GroupingText extends SyntaxToken
+
+final case class OpenGroup(text: String) extends GroupingText
+
+final case class CloseGroup(text: String) extends GroupingText
 
 final case class EscapedText(text: String, quote: Char = '\"') extends SyntaxToken {
   override def toString = s"$quote$text$quote"
@@ -50,92 +59,140 @@ case object Comma extends SyntaxToken {
   override val text: String = ","
 }
 
-
 class PrettifierParser extends Parser with Base with Strings {
 
-  def reservedKeyword: Rule0 = rule("reservedKeyword") {
-    keyword("START") | keyword("CREATE") | keyword("SET") | keyword("DELETE") | keyword("FOREACH") |
-    keyword("MATCH") | keyword("WHERE") | keyword("WITH") | keyword("RETURN") | keyword("SKIP") |
-    keyword("LIMIT") | keyword("ORDER") | keyword("BY") | keyword("ASC") | keyword("DESC") |
-    keyword("ON") | keyword("WHEN") | keyword("CASE") | keyword("THEN") | keyword("ELSE") |
-    keyword("DROP") | keyword("USING") | keyword("MERGE") | keyword("CONSTRAINT") | keyword("ASSERT") |
-    keyword("SCAN") | keyword("REMOVE") | keyword("UNION") | keyword("LOAD")
-  }
+  def main: Rule1[Seq[SyntaxToken]] = rule("main") { oneOrMoreExteriorToken | noTokens }
 
-  def nonBreakingKeyword: Rule0 = rule("nonBreakingKeyword") {
-    keyword("ALL") | keyword("NULL") | keyword("TRUE") | keyword("FALSE") | keyword("DISTINCT") |
-    keyword("END") | keyword("NOT") | keyword("HAS") | keyword("ANY") | keyword("NONE") | keyword("SINGLE") |
-    keyword("OR") | keyword("XOR") | keyword("AND") | keyword("AS") | keyword("INDEX") | keyword("IN") |
-    keyword("IS") | keyword("UNIQUE") | keyword("BY") | keyword("ASSERT") | keyword("ASC") | keyword("DESC") |
-    keyword("SCAN") | keyword("ON") | keyword("FROM") | keyword("HEADERS")| keyword("CSV")
-  }
-
-  def allKeywords: Rule1[KeywordToken] = rule("allKeywords") {
-    ( group( keyword("LOAD") ~~ keyword("CSV") ) ~> BreakingKeywords ) |
-    ( group( keyword("WITH") ~~ keyword("HEADERS") ) ~> NonBreakingKeywords ) |
-    ( group( keyword("ON") ~~ keyword("CREATE") ) ~> BreakingKeywords ) |
-    ( group( keyword("ON") ~~ keyword("MATCH") ) ~> BreakingKeywords ) |
-    ( group( keyword("ORDER") ~~ keyword("BY") ) ~> BreakingKeywords ) |
-    ( group( keyword("OPTIONAL") ~~ keyword("MATCH") ) ~> BreakingKeywords ) |
-    ( group( oneOrMore(nonBreakingKeyword, WS) ) ~> NonBreakingKeywords ) |
-    ( group( oneOrMore(reservedKeyword, WS) ) ~> BreakingKeywords )
-  }
-
-  // Keywords for which we do not insert breaks while inside a grouping
-  def unbrokenKeywords: Rule1[KeywordToken] =
-    rule("allUnbrokenKeywords") { keyword("WHERE") ~> NonBreakingKeywords }
-
-  def openGroup: Rule1[OpenGroup] = rule("openGroup") { ( "(" | "[" | "{" ) ~> OpenGroup }
-
-  def closeGroup: Rule1[CloseGroup] = rule("closeGroup") { ( ")" | "]" | "}" ) ~> CloseGroup }
-
-  def grouped(inner: Rule1[Seq[SyntaxToken]]) = rule("grouped") {
-    (openGroup ~~ zeroOrMore(inner, WS) ~~ closeGroup) ~~>
-      ((start: OpenGroup, inner: List[Seq[SyntaxToken]], end: CloseGroup) => {
-        val builder = Seq.newBuilder[SyntaxToken]
-        builder.sizeHint(inner, 2)
-        builder += start
-        inner.foreach( builder ++= _ )
-        builder += end
-        builder.result()
-      })
-  }
-
-    def escapedText : Rule1[EscapedText] = rule("string") {
-      (((
-        ch('\'') ~ StringCharacters('\'') ~ ch('\'') ~ push('\'')
-          | ch('"') ~ StringCharacters('"') ~ ch('"')  ~ push('\"')
-        ) memoMismatches) suppressSubnodes) ~~> (EscapedText(_, _))
-    }
-
-  def comma: Rule1[Comma.type] = rule("comma") { "," ~> ( _ => Comma ) }
-
-  def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore( (!anyOf(" \n\r\t\f(){}[]")) ~ ANY ) ~> AnyText }
+  def oneOrMoreExteriorToken: Rule1[Seq[SyntaxToken]] =
+    rule("anyTokens") { oneOrMore(exteriorToken, WS) }
 
   def noTokens: Rule1[Seq[SyntaxToken]] = EMPTY ~ push(Seq.empty)
 
-  def simpleTokens: Rule1[Seq[SyntaxToken]] =
-    rule("simpleTokens") { seq1( allKeywords | comma | escapedText | anyText ) }
+  def exteriorToken: Rule1[SyntaxToken] =
+    rule("anyToken") { anyKeywords | comma | escapedText | anyText | grouping }
 
-  def anyTokens: Rule1[Seq[SyntaxToken]] =
-    rule("anyTokens") { flat( oneOrMore( simpleTokens | grouped( anyUnbrokenTokens ), WS ) ) }
+  def anyKeywords: Rule1[KeywordToken] = rule("anyKeywords") {
+    nonBreakingKeyword | breakingKeywords
+  }
 
-  def simpleUnbrokenTokens: Rule1[Seq[SyntaxToken]] =
-    rule("simpleUnbrokenTokens") { seq1( unbrokenKeywords ) | simpleTokens }
+  def nonBreakingKeyword: Rule1[NonBreakingKeywords] = rule("nonBreakingKeywords") {
+    group (
+      keyword("WITH HEADERS") |
+        keyword("IS UNIQUE") |
+        keyword("ALL") |
+        keyword("NULL") |
+        keyword("TRUE") |
+        keyword("FALSE") |
+        keyword("DISTINCT") |
+        keyword("END") |
+        keyword("NOT") |
+        keyword("HAS") |
+        keyword("ANY") |
+        keyword("NONE") |
+        keyword("SINGLE") |
+        keyword("OR") |
+        keyword("XOR") |
+        keyword("AND") |
+        keyword("AS") |
+        keyword("IN") |
+        keyword("IS") |
+        keyword("UNIQUE") |
+        keyword("BY") |
+        keyword("ASSERT") |
+        keyword("ASC") |
+        keyword("DESC") |
+        keyword("SCAN") |
+        keyword("FROM")
+    ) ~> NonBreakingKeywords
+  }
 
-  def anyUnbrokenTokens: Rule1[Seq[SyntaxToken]] =
-    rule("anyUnbrokenTokens") { flat( oneOrMore( simpleUnbrokenTokens | grouped( anyUnbrokenTokens ), WS ) ) }
+  def breakingKeywords: Rule1[BreakingKeywords] = rule("breakingKeywords") {
+    joinWithUpdatingBreakingKeywords |
+    plainBreakingKeywords |
+    updatingBreakingKeywords
+  }
 
-  def main: Rule1[Seq[SyntaxToken]] = rule("main") { anyTokens | noTokens }
+  def plainBreakingKeywords: Rule1[BreakingKeywords] = rule("plainBreakingKeywords") {
+    group (
+      keyword("LOAD CSV") |
+      keyword("ORDER BY") |
+      keyword("CREATE INDEX ON") |
+      keyword("DROP INDEX ON") |
+      keyword("CREATE CONSTRAINT ON") |
+      keyword("DROP CONSTRAINT ON") |
+      keyword("USING PERIODIC COMMIT") |
+      keyword("USING INDEX") |
+      keyword("USING SCAN") |
+      keyword("OPTIONAL MATCH") |
+      keyword("START") |
+      keyword("MATCH") |
+      keyword("WHERE") |
+      keyword("WITH") |
+      keyword("RETURN") |
+      keyword("SKIP") |
+      keyword("LIMIT") |
+      keyword("ORDER BY") |
+      keyword("ASC") |
+      keyword("DESC") |
+      keyword("ON") |
+      keyword("WHEN") |
+      keyword("CASE") |
+      keyword("THEN") |
+      keyword("ELSE") |
+      keyword("ASSERT") |
+      keyword("SCAN") |
+      keyword("UNION")
+    ) ~> BreakingKeywords
+  }
+
+  def joinWithUpdatingBreakingKeywords: Rule1[BreakingKeywords] =
+     group( joinedBreakingKeywords ~~ updatingBreakingKeywords ) ~~> ( (k1: BreakingKeywords, k2: BreakingKeywords) =>
+       BreakingKeywords(s"${k1.text} ${k2.text}")
+     )
+
+  def joinedBreakingKeywords = group( keyword("ON CREATE") | keyword("ON MATCH") ) ~> BreakingKeywords
+
+  def updatingBreakingKeywords: Rule1[BreakingKeywords] = rule("breakingUpdateKeywords") {
+    group (
+      keyword("CREATE") |
+      keyword("SET") |
+      keyword("DELETE") |
+      keyword("REMOVE") |
+      keyword("FOREACH") |
+      keyword("MERGE")   
+    ) ~> BreakingKeywords
+  }
+  def comma: Rule1[Comma.type] = rule("comma") { "," ~> ( _ => Comma ) }
+
+  def escapedText: Rule1[EscapedText] = rule("string") {
+    (((
+      ch('\'') ~ StringCharacters('\'') ~ ch('\'') ~ push('\'')
+        | ch('"') ~ StringCharacters('"') ~ ch('"')  ~ push('\"')
+      ) memoMismatches) suppressSubnodes) ~~> EscapedText
+  }
+
+  def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore( (!anyOf(" \n\r\t\f(){}[]")) ~ ANY ) ~> AnyText }
+
+  def grouping: Rule1[GroupToken] = rule("grouping") {
+      validGrouping("(", ")") | validGrouping("{", "}") | validGrouping("[", "]")
+  }
+
+  def validGrouping(start: String, close: String): Rule1[GroupToken] =
+    group( start ~ optional(WS) ~ zeroOrMoreInteriorToken ~ optional(WS) ~ close ) ~~> ( (innerTokens: Seq[SyntaxToken]) => GroupToken(start, close, innerTokens) )
+
+  def zeroOrMoreInteriorToken: Rule1[Seq[SyntaxToken]] = zeroOrMore(interiorToken, WS)
+
+  def interiorToken: Rule1[SyntaxToken] =
+    rule("interiorToken") { interiorNonBreakingKeywords | exteriorToken }
+
+  def interiorNonBreakingKeywords = rule("interiorNonBreakingKeywords") {
+    keyword("WHERE") ~> NonBreakingKeywords
+  }
 
   def parse(input: String): Seq[SyntaxToken] = parserunners.ReportingParseRunner(main).run(input) match {
     case (output: ParsingResult[_]) if output.matched => output.result.get
     case (output: ParsingResult[Seq[SyntaxToken]])    => throw new SyntaxException(output.parseErrors.mkString("\n"))
   }
-
-  private def seq1[T](r: Rule1[T]): Rule1[Seq[T]] = r ~~> ((t: T) => Seq(t))
-
-  private def flat[T](r: Rule1[Seq[Seq[T]]]): Rule1[Seq[T]] = r ~~> ((s: Seq[Seq[T]]) => s.flatten )
 }
 
 case object Prettifier extends (String => String) {
@@ -144,7 +201,9 @@ case object Prettifier extends (String => String) {
   def apply(input: String) = {
     val builder = new StringBuilder
 
-    var tokens = parser.parse(input)
+    val parsedTokens = parser.parse(input)
+    var tokens = flattenTokens(parsedTokens)
+
     while (tokens.nonEmpty) {
       val tail = tokens.tail
       builder ++= insertBreak(tokens.head, tail)
@@ -152,6 +211,25 @@ case object Prettifier extends (String => String) {
     }
 
     builder.toString()
+  }
+
+  def flattenTokens(tokens: Seq[SyntaxToken]): Seq[SyntaxToken] = {
+    val tokenBuilder: mutable.Builder[SyntaxToken, Seq[SyntaxToken]] = Seq.newBuilder[SyntaxToken]
+    flattenTokens(tokens, tokenBuilder)
+    tokenBuilder.result()
+  }
+
+  def flattenTokens(tokens: Seq[SyntaxToken], tokenBuilder: mutable.Builder[SyntaxToken, Seq[SyntaxToken]]) {
+    for (token <- tokens) {
+      token match {
+        case GroupToken(start, close, inner) =>
+          tokenBuilder += OpenGroup(start)
+          flattenTokens(inner, tokenBuilder)
+          tokenBuilder += CloseGroup(close)
+        case _ =>
+          tokenBuilder += token
+      }
+    }
   }
 
   val space = " "
@@ -169,11 +247,11 @@ case object Prettifier extends (String => String) {
         // <NON-BREAKING-KW> <NEXT>
         case (_: NonBreakingKeywords, _:SyntaxToken)                 => token.toString + space
 
-        // Never break between keywords
-        case (_:KeywordToken,         _:KeywordToken)                => token.toString + space
-
         // <HEAD> <BREAKING-KW>
         case (_:SyntaxToken,          _:BreakingKeywords)            => token.toString + newline
+
+        // Never break between keywords
+        case (_:KeywordToken,         _:KeywordToken)                => token.toString + space
 
         // <KW> <OPEN-GROUP>
         case (_:KeywordToken,         _:OpenGroup)                   => token.toString + space
@@ -185,7 +263,7 @@ case object Prettifier extends (String => String) {
         case (_:CloseGroup,           _:KeywordToken)                => token.toString + space
 
         // <GROUPING> <NEXT>
-        case (_:GroupingToken,        _:SyntaxToken)                 => token.toString
+        case (_:GroupingText,        _:SyntaxToken)                 => token.toString
 
         // <HEAD> <{>
         case (_:SyntaxToken,            OpenGroup("{"))              => token.toString + space
@@ -194,7 +272,7 @@ case object Prettifier extends (String => String) {
         case (_:SyntaxToken,            CloseGroup("}"))             => token.toString + space
 
         // <HEAD> <GROUPING>
-        case (_:SyntaxToken,          _:GroupingToken)               => token.toString
+        case (_:SyntaxToken,          _:GroupingText)               => token.toString
 
         // <HEAD> <COMMA>
         case (_:SyntaxToken,          Comma)                         => token.toString

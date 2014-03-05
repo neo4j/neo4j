@@ -33,6 +33,12 @@ trait TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int]
 
   def getPropertyKeyId(propertyKeyName: String): Int
+
+  def getRelTypeName(id: Int): String
+
+  def getOptRelTypeId(relType: String): Option[Int]
+
+  def getRelTypeId(relType: String): Int
 }
 
 object TokenContext

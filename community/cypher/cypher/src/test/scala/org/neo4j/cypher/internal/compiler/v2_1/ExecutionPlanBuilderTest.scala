@@ -163,7 +163,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     graph.inTx {
       // LOAD CSV "file:///tmp/foo.csv" AS line CREATE ()
       val q = Query
-        .start(LoadCSV(withHeaders = false, new URL("file:///tmp/foo.csv"), "line"))
+        .start(LoadCSV(withHeaders = false, new URL("file:///tmp/foo.csv"), "line", None))
         .tail(Query
           .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
           .returns()

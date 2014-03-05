@@ -32,6 +32,7 @@ public interface KeyReadOperations
 {
     int NO_SUCH_LABEL = StatementConstants.NO_SUCH_LABEL;
     int NO_SUCH_PROPERTY_KEY = StatementConstants.NO_SUCH_PROPERTY_KEY;
+    int NO_SUCH_RELATIONSHIP_TYPE = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
     /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
     int labelGetForName( Statement state, String labelName );

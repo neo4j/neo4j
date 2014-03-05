@@ -78,6 +78,8 @@ class ClusterInstance
         }
     };
 
+    private boolean online = true;
+
     public static ClusterInstance newClusterInstance( InstanceId id, URI uri, ClusterConfiguration configuration, Logging logging )
     {
         MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logging);
@@ -135,8 +137,15 @@ class ClusterInstance
     /** Process a message, returns all messages generated as output. */
     public Iterable<Message<? extends MessageType>> process( Message<? extends MessageType> message )
     {
-        input.process( message );
-        return output.messages();
+        if(online)
+        {
+            input.process( message );
+            return output.messages();
+        }
+        else
+        {
+            return Iterables.empty();
+        }
     }
 
     @Override
@@ -297,6 +306,13 @@ class ClusterInstance
     public ClusterAction popTimeout()
     {
         return timeouts.pop();
+    }
+
+    /** Make this instance stop responding to calls, and cancel all pending timeouts. */
+    public void crash()
+    {
+        timeouts.cancelAllTimeouts();
+        this.online = false;
     }
 
     private static class ClusterInstanceInput implements MessageSource, MessageProcessor

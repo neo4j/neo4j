@@ -62,8 +62,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -163,6 +163,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -202,7 +203,7 @@ public abstract class InternalAbstractGraphDatabase
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
-    private final TransactionInterceptorProviders transactionInterceptorProviders;
+    protected final TransactionInterceptorProviders transactionInterceptorProviders;
 
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
     protected final KernelExtensions kernelExtensions;
@@ -408,7 +409,7 @@ public abstract class InternalAbstractGraphDatabase
         this.logging = createLogging();
 
         // Component monitoring
-        this.monitors = new Monitors();
+        this.monitors = createMonitors();
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -473,7 +474,7 @@ public abstract class InternalAbstractGraphDatabase
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         stateFactory = createTransactionStateFactory();
-        
+
         Factory<byte[]> xidGlobalIdFactory = createXidGlobalIdFactory();
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
@@ -576,6 +577,11 @@ public abstract class InternalAbstractGraphDatabase
         life.add( new ConfigurationChangedRestarter() );
     }
 
+    protected Monitors createMonitors()
+    {
+        return new Monitors();
+    }
+
     protected Factory<byte[]> createXidGlobalIdFactory()
     {
         return new Factory<byte[]>()
@@ -593,6 +599,7 @@ public abstract class InternalAbstractGraphDatabase
         return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 1 );
     }
 
+    @Override
     public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
     }
@@ -778,8 +785,13 @@ public abstract class InternalAbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
+        return new StoreFactory( config, idGeneratorFactory, createWindowPoolFactory(), fileSystem,
                 logging.getMessagesLog( StoreFactory.class ), txHook );
+    }
+
+    protected DefaultWindowPoolFactory createWindowPoolFactory()
+    {
+        return new DefaultWindowPoolFactory();
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -903,7 +915,8 @@ public abstract class InternalAbstractGraphDatabase
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, this, transactionEventHandlers );
+                persistenceManager, lockManager, this, transactionEventHandlers,
+                monitors.newMonitor( IndexingService.Monitor.class ) );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 

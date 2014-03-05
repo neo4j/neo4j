@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
@@ -73,6 +74,7 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -327,14 +329,16 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                 idGeneratorFactory.switchToMaster();
 
-                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager );
+                Monitors monitors = graphDb.getDependencyResolver().resolveDependency( Monitors.class );
+
+                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager, monitors );
 
                 MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
                         logging, config );
 
                 MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
                         new BranchDetectingTxVerifier( graphDb ),
-                        graphDb.getDependencyResolver().resolveDependency( Monitors.class ));
+                        monitors );
                 haCommunicationLife.add( masterImpl );
                 haCommunicationLife.add( masterServer );
                 assignMaster( masterImpl );
@@ -378,7 +382,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
                 config.get( HaSettings.com_chunk_size ).intValue()  );
-        
+
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max wait time.
         final AtomicLong wait = new AtomicLong();
         scheduledExecutorService.schedule( new Runnable()
@@ -602,7 +606,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     resolver.resolveDependency( PersistenceManager.class ),
                     resolver.resolveDependency( LockManager.class ),
                     (SchemaWriteGuard)graphDb,
-                    resolver.resolveDependency( TransactionEventHandlers.class ) );
+                    resolver.resolveDependency( TransactionEventHandlers.class ),
+                    monitors.newMonitor( IndexingService.Monitor.class ));
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential
@@ -668,7 +673,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             Lifecycle service = (Lifecycle) graphDb.getDependencyResolver().resolveDependency( serviceClass );
             service.stop();
         }
-        
+
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 

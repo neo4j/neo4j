@@ -92,10 +92,14 @@ public abstract class GraphDatabaseSettings
     @Description("Enable this to specify a parser other than the default one.")
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0" ), NO_DEFAULT );
+            options( "1.9", "2.0", "2.1" ), NO_DEFAULT );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
+
+    @Description("Determines if Cypher will allow using file URL when importing data using LOAD CSV. Setting this " +
+            "value to false will cause Neo4j to fail LOAD CSV queries that import data from the file system")
+    public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
 
     // Store files
     @Description("The directory where the database files are located.")

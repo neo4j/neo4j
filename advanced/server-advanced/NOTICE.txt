@@ -49,7 +49,6 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
-  Jetty Orbit :: Servlet API
   JTA 1.1
   Lucene Core
   opencsv
@@ -71,19 +70,11 @@ Common Development and Distribution License Version 1.1
   jersey-core
   jersey-multipart
   jersey-server
+  Jetty Orbit :: Servlet API
   jsr311-api
   MIME streaming extension
 
 Eclipse Public License, Version 1.0
-  Jetty :: Http Utility
-  Jetty :: IO Utility
-  Jetty :: Security
-  Jetty :: Server Core
-  Jetty :: Servlet Handling
-  Jetty :: Utilities
-  Jetty :: Webapp Application Support
-  Jetty :: XML utilities
-  Jetty Orbit :: Servlet API
   Logback Access Module
   Logback Classic Module
   Logback Core Module
@@ -95,11 +86,11 @@ GNU General Public License, version 2 with the Classpath Exception
   jersey-core
   jersey-multipart
   jersey-server
+  Jetty Orbit :: Servlet API
   jsr311-api
   MIME streaming extension
 
 GNU Lesser General Public License, Version 2.1
-  JAX-RS provider for JSON content type
   Logback Access Module
   Logback Classic Module
   Logback Core Module
@@ -113,45 +104,9 @@ Mozilla Public License, Version 1.1
 Dependencies with multiple licenses
 -----------------------------------
 
-JAX-RS provider for JSON content type
-  Apache Software License, Version 2.0
-  GNU Lesser General Public License, Version 2.1
-
-Jetty :: Http Utility
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: IO Utility
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Security
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Server Core
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Servlet Handling
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Utilities
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: Webapp Application Support
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
-Jetty :: XML utilities
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
-
 Jetty Orbit :: Servlet API
-  Apache Software License, Version 2.0
-  Eclipse Public License, Version 1.0
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
 
 Logback Access Module
   Eclipse Public License, Version 1.0

@@ -22,35 +22,46 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ExternalResource
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import java.net.URL
+import org.neo4j.cypher.{CypherException, LoadCsvStatusWrapCypherException}
 
 class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource, queryContext: QueryContext)
-  extends UpdateObserver with ExternalResource {
+  extends UpdateObserver with ExternalResource with ((CypherException) => CypherException) {
 
-  var updates: Long = 0
-  var first = true
+  val updateCounter = new UpdateCounter
+  var loadCsvIterator: Option[LoadCsvIterator] = None
 
   def notify(increment: Long) {
-    updates += increment
-    maybeCommitAndRestartTx(batchSize * 2)
+    updateCounter += increment
+    onNotify()   
   }
 
-  def getCsvIterator(url: URL): Iterator[Array[String]] = if (first) {
-    first = false
-
-    resources.getCsvIterator(url).map {
-      csvRow =>
-        maybeCommitAndRestartTx(batchSize)
-        csvRow
+  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
+    val innerIterator = resources.getCsvIterator(url, fieldTerminator)
+    loadCsvIterator match {
+      case Some(_) =>
+        innerIterator
+      case None =>
+        val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
+        loadCsvIterator = Some(iterator)
+        iterator
     }
+  }
 
-  } else resources.getCsvIterator(url)
-
-  private def maybeCommitAndRestartTx(max: Long) {
-    if (updates > max) {
+  private def onNotify() {
+    updateCounter.resetIfPastLimit(batchSize * 2)(commitAndRestartTx())
+  }
+  
+  private def onNext() {
+    updateCounter.resetIfPastLimit(batchSize)(commitAndRestartTx())
+  }
+  
+  private def commitAndRestartTx() {
       queryContext.commitAndRestartTx()
-      updates = 0
-    }
+      loadCsvIterator.foreach(_.notifyCommit())
   }
 
+  def apply(e: CypherException): CypherException = loadCsvIterator match {
+    case Some(iterator) => new LoadCsvStatusWrapCypherException(iterator.msg, e)
+    case _ => e
+  }
 }
-

@@ -90,6 +90,7 @@ public class IndexingService extends LifecycleAdapter
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
     private final Set<Long> recoveredNodeIds = new HashSet<>();
+    private final Monitor monitor;
 
     enum State
     {
@@ -99,19 +100,45 @@ public class IndexingService extends LifecycleAdapter
         STOPPED
     }
 
+    public interface Monitor
+    {
+        void applyingRecoveredData( Collection<Long> nodeIds );
+
+        void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
+    }
+
+    public static abstract class MonitorAdapter implements Monitor
+    {
+        @Override
+        public void appliedRecoveredData( Iterable<NodePropertyUpdate> updates )
+        {   // Do nothing
+        }
+
+        @Override
+        public void applyingRecoveredData( Collection<Long> nodeIds )
+        {   // Do nothing
+        }
+    }
+
+    public static final Monitor NO_MONITOR = new MonitorAdapter()
+    {
+    };
+
     private volatile State state = State.NOT_STARTED;
+
 
     public IndexingService( JobScheduler scheduler,
                             SchemaIndexProviderMap providerMap,
                             IndexStoreView storeView,
                             TokenNameLookup tokenNameLookup,
                             UpdateableSchemaState updateableSchemaState,
-                            Logging logging )
+                            Logging logging, Monitor monitor )
     {
         this.scheduler = scheduler;
         this.providerMap = providerMap;
         this.storeView = storeView;
         this.logging = logging;
+        this.monitor = monitor;
         this.logger = logging.getMessagesLog( getClass() );
         this.updateableSchemaState = updateableSchemaState;
         this.tokenNameLookup = tokenNameLookup;
@@ -174,8 +201,7 @@ public class IndexingService extends LifecycleAdapter
     }
 
     // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
-    @Override
-    public void start() throws Exception
+    public void startIndexes() throws IOException
     {
         state = State.STARTING;
 
@@ -328,9 +354,10 @@ public class IndexingService extends LifecycleAdapter
         }
     }
 
-    private void applyRecoveredUpdates() throws IOException
+    protected void applyRecoveredUpdates() throws IOException
     {
         logger.debug( "Applying recovered updates: " + recoveredNodeIds );
+        monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
         {
             try ( IndexUpdaterMap updaterMap = indexMapReference.getIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
@@ -341,7 +368,9 @@ public class IndexingService extends LifecycleAdapter
                 }
                 for ( long nodeId : recoveredNodeIds )
                 {
-                    applyUpdates( storeView.nodeAsUpdates( nodeId ), updaterMap );
+                    Iterable<NodePropertyUpdate> updates = storeView.nodeAsUpdates( nodeId );
+                    applyUpdates( updates, updaterMap );
+                    monitor.appliedRecoveredData( updates );
                 }
             }
         }
@@ -574,7 +603,7 @@ public class IndexingService extends LifecycleAdapter
 
     private void dropRecoveringIndexes(
         IndexMap indexMap, Map<Long, Pair<IndexDescriptor,SchemaIndexProvider.Descriptor>> recoveringIndexes )
-            throws Exception
+            throws IOException
     {
         for ( long indexId : recoveringIndexes.keySet() )
         {

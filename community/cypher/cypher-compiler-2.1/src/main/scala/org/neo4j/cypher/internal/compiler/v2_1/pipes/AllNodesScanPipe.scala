@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{symbols, PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols._
 
 case class AllNodesScanPipe(id: String) extends Pipe {
@@ -29,7 +29,7 @@ case class AllNodesScanPipe(id: String) extends Pipe {
 
   override def exists(pred: (Pipe) => Boolean): Boolean = pred(this)
 
-  override def executionPlanDescription: PlanDescription = ???
+  override def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("identifier" -> id))
 
   override def symbols: SymbolTable = new SymbolTable(Map(id -> CTNode))
 }

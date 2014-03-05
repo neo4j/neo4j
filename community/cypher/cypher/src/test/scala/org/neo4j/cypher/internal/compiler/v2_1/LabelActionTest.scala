@@ -144,4 +144,10 @@ class SnitchingQueryContext extends QueryContext {
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = ???
 
   def commitAndRestartTx() { ??? }
+
+  def getRelTypeId(relType: String): Int = ???
+
+  def getOptRelTypeId(relType: String): Option[Int] = ???
+
+  def getRelTypeName(id: Int): String = ???
 }

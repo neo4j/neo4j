@@ -22,12 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 
 class PeriodicCommitObserver(batchSize: Long, queryContext: QueryContext) extends UpdateObserver {
-  var currentCount: Long = 0
+  val updates = new UpdateCounter
 
   def notify(increment: Long) {
-    assert(increment > 0, "increment must be positive")
-    currentCount+= increment
-    if (currentCount % batchSize == 0)
-      queryContext.commitAndRestartTx()
+    updates += increment
+    updates.resetIfPastLimit(batchSize)(queryContext.commitAndRestartTx())
   }
 }

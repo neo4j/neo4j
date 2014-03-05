@@ -34,7 +34,8 @@ trait ParserTest[T, J] extends Assertions {
 
     def shouldGive(expected: J) {
       actuals foreach {
-        actual => assert(actual === expected, s"'$text' was not parsed successfully")
+        actual =>
+          assert(actual === expected, s"'$text' was not parsed successfully")
       }
     }
 

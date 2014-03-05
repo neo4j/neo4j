@@ -19,16 +19,6 @@
  */
 package org.neo4j.test;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.xa.Xid;
 
@@ -57,9 +48,22 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static java.lang.Math.max;
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
+
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
- * 
+ *
  * @author Mattias Persson
  */
 public class LogTestUtils
@@ -70,7 +74,7 @@ public class LogTestUtils
 
         void done( File file );
     }
-    
+
     public static abstract class LogHookAdapter<RECORD> implements LogHook<RECORD>
     {
         @Override
@@ -93,7 +97,7 @@ public class LogTestUtils
             return item.first().byteValue() != TxLog.TX_DONE;
         }
     };
-    
+
     public static final LogHook<Pair<Byte, List<byte[]>>> NO_FILTER = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
     {
         @Override
@@ -102,11 +106,11 @@ public class LogTestUtils
             return true;
         }
     };
-    
+
     public static final LogHook<Pair<Byte, List<byte[]>>> PRINT_DANGLING = new LogHook<Pair<Byte,List<byte[]>>>()
     {
         private final Map<ByteArray,List<Xid>> xids = new HashMap<>();
-        
+
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
         {
@@ -149,11 +153,11 @@ public class LogTestUtils
             }
         }
     };
-    
+
     public static final LogHook<Pair<Byte, List<byte[]>>> DUMP = new LogHook<Pair<Byte,List<byte[]>>>()
     {
         private int recordCount = 0;
-        
+
         @Override
         public boolean accept( Pair<Byte, List<byte[]>> item )
         {
@@ -162,21 +166,34 @@ public class LogTestUtils
             recordCount++;
             return true;
         }
-        
+
         @Override
         public void file( File file )
         {
             System.out.println( "=== File:" + file + " ===" );
             recordCount = 0;
         }
-        
+
         @Override
         public void done( File file )
         {
             System.out.println( "===> Read " + recordCount + " records from " + file );
         }
     };
-    
+
+    public static LogHook<LogEntry> findLastTransactionIdentifier( final AtomicInteger target )
+    {
+        return new LogHookAdapter<LogEntry>()
+        {
+            @Override
+            public boolean accept( LogEntry item )
+            {
+                target.set( max( target.get(), item.getIdentifier() ) );
+                return true;
+            }
+        };
+    }
+
     private static String stringifyTxLogType( byte recordType )
     {
         switch ( recordType )
@@ -188,7 +205,7 @@ public class LogTestUtils
         default: return "Unknown " + recordType;
         }
     }
-    
+
     private static String stringifyTxLogBody( List<byte[]> list )
     {
         if ( list.size() == 2 )
@@ -201,13 +218,13 @@ public class LogTestUtils
         }
         throw new RuntimeException( list.toString() );
     }
-    
+
     private static String stripFromBranch( String xidToString )
     {
         int index = xidToString.lastIndexOf( ", BranchId" );
         return xidToString.substring( 0, index );
     }
-    
+
     private static class ByteArray
     {
         private final byte[] bytes;
@@ -216,20 +233,20 @@ public class LogTestUtils
         {
             this.bytes = bytes;
         }
-        
+
         @Override
         public boolean equals( Object obj )
         {
             return Arrays.equals( bytes, ((ByteArray)obj).bytes );
         }
-        
+
         @Override
         public int hashCode()
         {
             return Arrays.hashCode( bytes );
         }
     }
-    
+
     public static class CountingLogHook<RECORD> extends LogHookAdapter<RECORD>
     {
         private int count;
@@ -240,19 +257,19 @@ public class LogTestUtils
             count++;
             return true;
         }
-        
+
         public int getCount()
         {
             return count;
         }
     }
-    
+
     public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
             LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
     {
         filterTxLog( fileSystem, storeDir, filter, 0 );
     }
-    
+
     public static void filterTxLog( FileSystemAbstraction fileSystem, String storeDir,
             LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
     {
@@ -261,17 +278,18 @@ public class LogTestUtils
             filterTxLog( fileSystem, file, filter, startPosition );
         }
     }
-    
+
     public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
             LogHook<Pair<Byte, List<byte[]>>> filter ) throws IOException
     {
         filterTxLog( fileSystem, file, filter, 0 );
     }
-    
+
     public static void filterTxLog( FileSystemAbstraction fileSystem, File file,
             LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
     {
         File tempFile = new File( file.getPath() + ".tmp" );
+        fileSystem.deleteFile( tempFile );
         FileChannel in = fileSystem.open( file, "r" );
         in.position( startPosition );
         FileChannel out = fileSystem.open( tempFile, "rw" );
@@ -326,7 +344,7 @@ public class LogTestUtils
             safeClose( out );
             filter.done( file );
         }
-        
+
         if ( changed )
         {
             replace( tempFile, file );
@@ -375,7 +393,7 @@ public class LogTestUtils
         }
     }
 
-    
+
     private static void replace( File tempFile, File file )
     {
         file.renameTo( new File( file.getAbsolutePath() + "." + System.currentTimeMillis() ) );
@@ -416,6 +434,7 @@ public class LogTestUtils
     {
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
+        fileSystem.deleteFile( tempFile );
         FileChannel in = fileSystem.open( file, "r" );
         FileChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
@@ -505,7 +524,7 @@ public class LogTestUtils
         return bytes;
     }
 
-    private static File[] oneOrTwo( FileSystemAbstraction fileSystem, File file )
+    public static File[] oneOrTwo( FileSystemAbstraction fileSystem, File file )
     {
         List<File> files = new ArrayList<>();
         File one = new File( file.getPath() + ".1" );
@@ -560,26 +579,26 @@ public class LogTestUtils
                 new FileBackup( activeLog, activeLogBackup, fileSystem ),
                 new FileBackup( currentLog, currentLogBackup, fileSystem ) );
     }
-    
+
     private static class FileBackup
     {
         private final File file, backup;
         private final FileSystemAbstraction fileSystem;
-        
+
         FileBackup( File file, File backup, FileSystemAbstraction fileSystem )
         {
             this.file = file;
             this.backup = backup;
             this.fileSystem = fileSystem;
         }
-        
+
         public void restore() throws IOException
         {
             fileSystem.deleteFile( file );
             fileSystem.renameFile( backup, file );
         }
     }
-    
+
     public static class NonCleanLogCopy
     {
         private final FileBackup[] backups;
@@ -588,7 +607,7 @@ public class LogTestUtils
         {
             this.backups = backups;
         }
-        
+
         public void reinstate() throws IOException
         {
             for ( FileBackup backup : backups )

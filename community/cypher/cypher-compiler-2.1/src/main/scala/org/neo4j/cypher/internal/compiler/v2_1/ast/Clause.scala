@@ -51,7 +51,7 @@ sealed trait ClosingClause extends Clause {
     s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 }
 
-case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: Identifier, fieldTerminator: Option[StringLiteral], rowTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   val name = "LOAD CSV"
 
   private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
@@ -61,6 +61,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: I
     urlString.expectType(CTString) then
     urlString.checkURL ifOkThen
     checkProtocolSupported then
+    checkFieldTerminator then
     typeCheck
 
   private def checkProtocolSupported: SemanticCheck = {
@@ -69,6 +70,14 @@ case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: I
       SemanticCheckResult.success
     else
       SemanticError(s"Unsupported URL protocol: $protocol", position)
+  }
+
+  private def checkFieldTerminator: SemanticCheck = {
+    fieldTerminator match {
+      case Some(literal) if literal.value.length != 1 =>
+        SemanticError("CSV field terminator can only be one character wide", literal.position)
+      case _ => SemanticCheckResult.success
+    }
   }
 
   private def typeCheck: SemanticCheck = {
@@ -147,10 +156,12 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
 
   def semanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.expectType(CTCollection(CTAny).covariant) then withScopedState {
+    expression.expectType(CTCollection(CTAny).covariant) then
+    updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkThen
+    withScopedState {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
       identifier.declare(possibleInnerTypes) then updates.semanticCheck
-    } then updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position))
+    }
 }
 
 case class With(

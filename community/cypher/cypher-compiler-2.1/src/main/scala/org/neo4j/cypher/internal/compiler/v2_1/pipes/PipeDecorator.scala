@@ -32,7 +32,7 @@ trait PipeDecorator {
   def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription
 }
 
-object NullDecorator extends PipeDecorator {
+object NullPipeDecorator extends PipeDecorator {
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
   def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan

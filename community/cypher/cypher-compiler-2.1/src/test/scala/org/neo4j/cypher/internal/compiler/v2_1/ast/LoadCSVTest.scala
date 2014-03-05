@@ -29,13 +29,13 @@ class LoadCSVTest extends CypherFunSuite {
   val identifier = Identifier("a")(DummyPosition(4))
 
   test("cannot overwrite existing identifier") {
-    val loadCSV = LoadCSV(withHeaders = true, literalURL, identifier, None, None)(DummyPosition(6))
+    val loadCSV = LoadCSV(withHeaders = true, literalURL, identifier, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Seq())
   }
 
   test("when expecting headers, the identifier has a map type") {
-    val loadCSV = LoadCSV(withHeaders = true, literalURL, identifier, None, None)(DummyPosition(6))
+    val loadCSV = LoadCSV(withHeaders = true, literalURL, identifier, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(identifier).actual
 
@@ -43,7 +43,7 @@ class LoadCSVTest extends CypherFunSuite {
   }
 
   test("when not expecting headers, the identifier has a collection type") {
-    val loadCSV = LoadCSV(withHeaders = false, literalURL, identifier, None, None)(DummyPosition(6))
+    val loadCSV = LoadCSV(withHeaders = false, literalURL, identifier, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(identifier).actual
 
@@ -52,15 +52,29 @@ class LoadCSVTest extends CypherFunSuite {
 
   test("should reject URLs that are not file://, http://, https://, ftp://") {
     val literal = StringLiteral("morsecorba://sos")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None, None)(DummyPosition(6))
+    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Vector(SemanticError("invalid URL specified (unknown protocol: morsecorba)", DummyPosition(4))))
   }
 
   test("should accept http:// URLs") {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None, None)(DummyPosition(6))
+    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Vector.empty)
+  }
+
+  test("should accept one-character wide field terminators") {
+    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
+    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, Some(StringLiteral("\t")(DummyPosition(0))))(DummyPosition(6))
+    val result = loadCSV.semanticCheck(SemanticState.clean)
+    assert(result.errors === Vector.empty)
+  }
+
+  test("should reject more-than-one-character wide field terminators") {
+    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
+    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, Some(StringLiteral("  ")(DummyPosition(0))))(DummyPosition(6))
+    val result = loadCSV.semanticCheck(SemanticState.clean)
+    assert(result.errors === Vector(SemanticError("CSV field terminator can only be one character wide", DummyPosition(0))))
   }
 }

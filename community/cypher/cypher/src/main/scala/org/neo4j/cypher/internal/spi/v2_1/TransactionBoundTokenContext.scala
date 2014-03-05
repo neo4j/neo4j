@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v2_1
 
-import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, LabelNotFoundKernelException}
+import org.neo4j.kernel.api.exceptions.{RelationshipTypeNotFoundException, RelationshipTypeIdNotFoundKernelException, PropertyKeyNotFoundException, LabelNotFoundKernelException}
 import org.neo4j.kernel.api.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.TokenContext
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
@@ -28,25 +28,19 @@ abstract class TransactionBoundTokenContext(statement: Statement) extends TokenC
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
     TokenContext.tryGet[PropertyKeyNotFoundException](getPropertyKeyId(propertyKeyName))
 
-  def getPropertyKeyId(propertyKeyName: String) =
-  {
+  def getPropertyKeyId(propertyKeyName: String) = {
     val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
     if ( propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-    {
       throw new PropertyKeyNotFoundException("No such property.", null)
-    }
     propertyId
   }
 
   def getPropertyKeyName(propertyKeyId: Int): String = statement.readOperations().propertyKeyGetName(propertyKeyId)
 
-  def getLabelId(labelName: String): Int =
-  {
+  def getLabelId(labelName: String): Int = {
     val labelId: Int = statement.readOperations().labelGetForName(labelName)
-    if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
-    {
+    if (labelId == KeyReadOperations.NO_SUCH_LABEL)
       throw new LabelNotFoundKernelException("No such label", null)
-    }
     labelId
   }
 
@@ -54,4 +48,16 @@ abstract class TransactionBoundTokenContext(statement: Statement) extends TokenC
     TokenContext.tryGet[LabelNotFoundKernelException](getLabelId(labelName))
 
   def getLabelName(labelId: Int): String = statement.readOperations().labelGetName(labelId)
+
+  def getOptRelTypeId(relType: String): Option[Int] =
+    TokenContext.tryGet[RelationshipTypeNotFoundException](getRelTypeId(relType))
+
+  def getRelTypeId(relType: String): Int = {
+    val relTypeId: Int = statement.readOperations().relationshipTypeGetForName(relType)
+    if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE)
+      throw new RelationshipTypeNotFoundException("No such relationship.", null)
+    relTypeId
+  }
+
+  def getRelTypeName(id: Int): String = statement.readOperations().relationshipTypeGetName(id)
 }

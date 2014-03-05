@@ -94,6 +94,12 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
   override def commitAndRestartTx() {
     inner.commitAndRestartTx()
   }
+
+  def getRelTypeId(relType: String): Int = inner.getRelTypeId(relType)
+
+  def getOptRelTypeId(relType: String): Option[Int] = inner.getOptRelTypeId(relType)
+
+  def getRelTypeName(id: Int): String = inner.getRelTypeName(id)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {

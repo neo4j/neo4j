@@ -130,7 +130,12 @@ object StatementConverters {
 
   implicit class LoadCsvConverter(inner: ast.LoadCSV) {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
-      val items: Seq[StartItem] = builder.startItems :+ commands.LoadCSV(inner.withHeaders, inner.urlString.asURL, inner.identifier.name)
+      val items: Seq[StartItem] = builder.startItems :+ commands.LoadCSV(
+        inner.withHeaders,
+        inner.urlString.asURL,
+        inner.identifier.name,
+        inner.fieldTerminator.map(_.value)
+      )
       builder.startItems(items: _*)
     }
   }
