@@ -70,25 +70,34 @@ public class LogBackedXaDataSourceLogWriterTest
                 } );
             }
         };
+
         LogWriter logWriter = ds.createLogWriter();
 
         // When
-        LogBuffer logFile = logWriter.createActiveLogFile(
-                new Config(stringMap( store_dir.name(), testDir.absolutePath())), -1 );
-        logFile.putLong( 1337l );
-        logFile.force();
+        LogBuffer logFile = null;
+        try
+        {
+            logFile = logWriter.createActiveLogFile(
+                    new Config(stringMap( store_dir.name(), testDir.absolutePath())), -1 );
+            logFile.putLong( 1337l );
+            logFile.force();
 
-        // Then the header should be correct
-        FileChannel channel = logFile.getFileChannel();
-        channel.position( 0 );
-        long[] headerLongs = LogIoUtils.readLogHeader( scratch, channel, true );
-        assertThat(headerLongs[0], equalTo(0l));
-        assertThat(headerLongs[1], equalTo(-1l));
+            // Then the header should be correct
+            FileChannel channel = logFile.getFileChannel();
+            channel.position( 0 );
+            long[] headerLongs = LogIoUtils.readLogHeader( scratch, channel, true );
+            assertThat(headerLongs[0], equalTo(0l));
+            assertThat(headerLongs[1], equalTo(-1l));
 
-        // And the data I wrote should immediately follow
-        scratch.clear();
-        channel.read( scratch );
-        scratch.flip();
-        assertThat(scratch.getLong(), equalTo(1337l));
+            // And the data I wrote should immediately follow
+            scratch.clear();
+            channel.read( scratch );
+            scratch.flip();
+            assertThat(scratch.getLong(), equalTo(1337l));
+        } finally
+        {
+            if (logFile != null)
+                logFile.getFileChannel().close();
+        }
     }
 }
