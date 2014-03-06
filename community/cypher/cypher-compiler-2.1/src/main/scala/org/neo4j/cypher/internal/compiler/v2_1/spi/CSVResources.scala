@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.spi
 
-import java.net.{CookiePolicy, CookieHandler, CookieManager, URL}
+import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
 import java.io._
 import au.com.bytecode.opencsv.CSVReader
 import org.neo4j.cypher.internal.compiler.v2_1.TaskCloser
