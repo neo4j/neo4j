@@ -20,23 +20,30 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Id, AllNodesScan, SingleRow, Projection}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ProjectionPipe, AllNodesScanPipe, NullPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LabelNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
 
 class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
 
   val planner = new SimpleExecutionPlanBuilder
 
   test("projection only query") {
-    val logicalPlan = Projection(SingleRow(), Seq("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
+    val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(ProjectionPipe(NullPipe(), Map("42" -> legacy.Literal(42))))
+    pipeInfo.pipe should equal(ProjectionNewPipe(NullPipe(), Map("42" -> legacy.Literal(42))))
   }
 
   test("simple pattern query") {
@@ -46,5 +53,14 @@ class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
     pipeInfo.pipe should equal(AllNodesScanPipe("n"))
+  }
+
+  test("simple label scan query") {
+    val logicalPlan = LabelNodesScan(Id("n"), Right(LabelId(12)), 1000)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(LabelNodesScanPipe("n", Right(LabelId(12))))
   }
 }

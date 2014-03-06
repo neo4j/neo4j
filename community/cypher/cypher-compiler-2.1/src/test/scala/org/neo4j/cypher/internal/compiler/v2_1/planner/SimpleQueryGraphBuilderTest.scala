@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
-
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, SimpleQueryGraphBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
@@ -28,21 +28,22 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
   val parser = new CypherParser()
+  val pos = DummyPosition(0)
 
   test("projection only query") {
     val ast = parse("RETURN 42")
     val builder = new SimpleQueryGraphBuilder
     val qg = builder.produce(ast)
-    qg.projection should equal(Seq("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
+    qg.projections should equal(Map("42" -> SignedIntegerLiteral("42")(pos)))
   }
 
   test("multiple projection query") {
     val ast = parse("RETURN 42, 'foo'")
     val builder = new SimpleQueryGraphBuilder
     val qg = builder.produce(ast)
-    qg.projection should equal(Seq(
-      "42" -> SignedIntegerLiteral("42")(DummyPosition(0)),
-      "'foo'" -> StringLiteral("foo")(DummyPosition(0))
+    qg.projections should equal(Map(
+      "42" -> SignedIntegerLiteral("42")(pos),
+      "'foo'" -> StringLiteral("foo")(pos)
     ))
   }
 
@@ -51,14 +52,30 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     val builder = new SimpleQueryGraphBuilder
     val qg = builder.produce(ast)
 
-    qg.projection should equal(Seq(
-      "n" -> Identifier("n")(DummyPosition(0))
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
     ))
+
+    qg.identifiers should equal(Set(Id("n")))
+  }
+
+  test("match n where n:Awesome return n") {
+    val ast = parse("MATCH n WHERE n:Awesome:Foo RETURN n")
+    val builder = new SimpleQueryGraphBuilder
+    val qg = builder.produce(ast)
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(Seq(
+      Set(Id("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos),
+      Set(Id("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Foo")()(pos)))(pos)
+    )))
 
     qg.identifiers should equal(Set(Id("n")))
   }
 
   def parse(s: String): Query =
     parser.parse(s).asInstanceOf[Query]
-
 }

@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) extends LogicalPlan {
-  def coveredIds: Set[Id] = left.coveredIds
-
-  def cardinality: Int = left.cardinality
+case class LabelNodesScan(id: Id, label: Either[String, LabelId], cardinality: Int) extends LogicalPlan {
+  def coveredIds: Set[Id] = Set(id)
 
   def cost: Int = ???
 
-  def rhs = None
-
-  def lhs: Option[LogicalPlan] = Some(left)
+  def rhs: Option[LogicalPlan] = None
+  def lhs: Option[LogicalPlan] = None
 }

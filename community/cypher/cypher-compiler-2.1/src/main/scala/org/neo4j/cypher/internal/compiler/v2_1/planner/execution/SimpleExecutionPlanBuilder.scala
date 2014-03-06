@@ -40,9 +40,10 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val right = plan.rhs.map(buildPipe)
 
       plan match {
-        case Projection(_, expressions) => ProjectionPipe(left.get, toLegacyExpressions(expressions))
-        case SingleRow() => NullPipe()
-        case AllNodesScan(Id(id), _) => AllNodesScanPipe(id)
+        case Projection(_, expressions)  => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
+        case SingleRow()                 => NullPipe()
+        case AllNodesScan(Id(id), _)     => AllNodesScanPipe(id)
+        case LabelNodesScan(Id(id), label, _) => LabelNodesScanPipe(id, label)
       }
     }
 
@@ -51,8 +52,5 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
     PipeInfo(topLevelPipe, updating, None)
   }
 
-  def toLegacyExpressions(expressions: Seq[(String, Expression)]): Map[String, legacy.Expression] =
-    expressions.map {
-      case (k: String, v: Expression) => (k, v.asCommandExpression)
-    }.toMap
+  def toLegacyExpressions(expressions: Map[String, Expression]) = expressions.mapValues(_.asCommandExpression)
 }

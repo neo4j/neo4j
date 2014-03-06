@@ -19,18 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, symbols, PlanDescription, ExecutionContext}
 import symbols._
 
-case class AllNodesScanPipe(id: String) extends Pipe {
+case class LabelNodesScanPipe(id: String, label: Either[String, LabelId]) extends Pipe {
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    state.query.nodeOps.all.map(n => ExecutionContext.from(id -> n))
+    val optLabelId = label match {
+      case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
+      case Right(labelId) => Some(labelId)
+    }
+
+    optLabelId match {
+      case Some(labelId) =>
+        state.query.getNodesByLabel(labelId.id).map(n => ExecutionContext.from(id -> n))
+      case None =>
+        Iterator.empty
+    }
   }
 
   override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  override def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("identifier" -> id))
+  override def executionPlanDescription: PlanDescription = ???
 
   override def symbols: SymbolTable = new SymbolTable(Map(id -> CTNode))
 }
