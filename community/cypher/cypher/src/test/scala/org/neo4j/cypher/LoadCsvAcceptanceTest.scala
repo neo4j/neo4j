@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import java.io.File
+import java.io.{PrintWriter, File}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -301,4 +301,7 @@ class LoadCsvAcceptanceTest
   override def afterAll() {
     httpServer.stop()
   }
+
+  private def createFile(f: PrintWriter => Unit): String = createFile()(f)
+  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv")(f).cypherEscape
 }

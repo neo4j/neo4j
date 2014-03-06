@@ -24,43 +24,34 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import java.net.URL
 import org.neo4j.cypher.{CypherException, LoadCsvStatusWrapCypherException}
 
-class LoadCsvPeriodicCommitObserver(batchSize: Long, resources: ExternalResource, queryContext: QueryContext)
-  extends UpdateObserver with ExternalResource with ((CypherException) => CypherException) {
+class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalResource, queryContext: QueryContext)
+  extends ExternalResource with ((CypherException) => CypherException) {
 
   val updateCounter = new UpdateCounter
-  var loadCsvIterator: Option[LoadCsvIterator] = None
-
-  def notify(increment: Long) {
-    updateCounter += increment
-    onNotify()
-  }
+  var outerLoadCSVIterator: Option[LoadCsvIterator] = None
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
     val innerIterator = resources.getCsvIterator(url, fieldTerminator)
-    loadCsvIterator match {
-      case Some(_) =>
-        innerIterator
-      case None =>
-        val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
-        loadCsvIterator = Some(iterator)
-        iterator
+    if (outerLoadCSVIterator.isEmpty) {
+      val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
+      outerLoadCSVIterator = Some(iterator)
+      iterator
+    } else {
+      innerIterator
     }
   }
 
-  private def onNotify() {
-    updateCounter.resetIfPastLimit(batchSize * 2)(commitAndRestartTx())
-  }
-
   private def onNext() {
-    updateCounter.resetIfPastLimit(batchSize)(commitAndRestartTx())
+    updateCounter += 1
+    updateCounter.resetIfPastLimit(batchRowCount)(commitAndRestartTx())
   }
 
   private def commitAndRestartTx() {
-      queryContext.commitAndRestartTx()
-      loadCsvIterator.foreach(_.notifyCommit())
+    queryContext.commitAndRestartTx()
+    outerLoadCSVIterator.foreach(_.notifyCommit())
   }
 
-  def apply(e: CypherException): CypherException = loadCsvIterator match {
+  def apply(e: CypherException): CypherException = outerLoadCSVIterator match {
     case Some(iterator) => new LoadCsvStatusWrapCypherException(iterator.msg, e)
     case _ => e
   }

@@ -26,9 +26,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+
+import org.neo4j.test.server.HTTP;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class ServerTestUtils
 {
@@ -149,5 +157,28 @@ public class ServerTestUtils
         File file = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
         file.deleteOnExit();
         return file;
+    }
+
+    public interface BlockWithCSVFileURL {
+        void execute(String url) throws Exception;
+    }
+
+    public static void withCSVFile( int rowCount, BlockWithCSVFileURL block ) throws Exception
+    {
+        File file = File.createTempFile( "file", ".csv", null );
+        try {
+            try ( PrintWriter writer = new PrintWriter( file ) ) {
+                for (int i = 0; i < rowCount; ++i) {
+                    writer.println("1,2,3");
+                }
+            }
+
+            String url = file.toURI().toURL().toString().replace( "\\", "\\\\" );
+            block.execute( url );
+        }
+        finally
+        {
+            file.delete();
+        }
     }
 }

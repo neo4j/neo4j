@@ -39,6 +39,6 @@ class CypherCompilerTest extends CypherFunSuite {
     when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
 
     val compiler = new CypherCompiler(gds, monitors)
-    compiler.isPeriodicCommit("CYPHER 2.1 USING PERIODIC COMMIT CREATE n RETURN n") should equal(true)
+    compiler.isPeriodicCommit("CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()") should equal(true)
   }
 }

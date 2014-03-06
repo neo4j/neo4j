@@ -21,122 +21,88 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.Node
+import java.io.PrintWriter
+import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 
-class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite with TxCountsTrackingTestSupport {
+class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
+  with TxCountsTrackingTestSupport with QueryStatisticsTestSupport
+  with CreateTempFileTestSupport {
 
-  test("should reject periodic commit when not updating") {
+  def unwrapLoadCSVStatus[T](f: => T) = {
+    try {
+      f
+    }
+    catch {
+      case e: LoadCsvStatusWrapCypherException => throw e.getCause
+    }
+  }
+
+  def createTempCSVFile(numberOfLines: Int): String =
+    createTempFileURL("file", ".csv") { writer: PrintWriter =>
+      1.to(numberOfLines).foreach { n: Int => writer.println(n.toString) }
+    }
+
+  test("should reject periodic commit when not followed by LOAD CSV") {
     evaluating {
       executeScalar("USING PERIODIC COMMIT 200 MATCH (n) RETURN count(n)")
     } should produce[SyntaxException]
   }
 
   test("should produce data from periodic commit") {
-    val result = execute("USING PERIODIC COMMIT 200 CREATE (n {id: 42}) RETURN n.id")
+    val url = createTempFileURL("foo", ".csv") { writer: PrintWriter =>
+      writer.println("42")
+    }
+    val result = execute(s"USING PERIODIC COMMIT 200 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id")
 
-    result.toList should equal(List(Map("n.id" -> 42)))
+    result.toList should equal(List(Map("n.id" -> "42")))
     result.columns should equal(List("n.id"))
   }
 
-  test("should support simple periodic commit with aligned batch size commits") {
+  test("should support simple periodic commit") {
     // given
+    val url = createTempCSVFile(5)
     val queryText =
       "USING PERIODIC COMMIT 2 " +
-      "CREATE () " +
-      "CREATE () " +
-      "WITH * MATCH (n) RETURN count(n) AS updates"
+      s"LOAD CSV FROM '$url' AS line " +
+      "CREATE ()";
 
     // when
-    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
+    val (result, txCounts) = executeAndTrackTxCounts(queryText)
 
     // then
-    expectedUpdates should equal(2)
-
-    // and then
-    txCounts should equal(TxCounts(commits = 2))
-  }
-
-  test("should support simple periodic commit with unaligned batch size") {
-    // given
-    val queryText =
-      "USING PERIODIC COMMIT 3 " +
-      "CREATE () " +
-      "CREATE () " +
-      "CREATE () " +
-      "CREATE () " +
-      "WITH * MATCH (n) RETURN count(n) AS updates"
-
-    // when
-    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
-
-    // then
-    expectedUpdates should equal(4)
-
-    // and then
-    txCounts should equal(TxCounts(commits = 2))
-  }
-
-  test("should support periodic commit with aligned batch size") {
-    /*
-      10 x nodes         => 30 updates
-      4  y nodes         => 12 updates
-      40 r relationships => 40 updates
-     */
-
-    // given
-    val queryText =
-        "USING PERIODIC COMMIT 41 " +
-        "FOREACH (x IN range(0, 9) | " +
-        "  MERGE (n:X {x: x}) " +
-        "  FOREACH (y IN range(0, 3) | " +
-        "    MERGE (m:Y {y: y}) " +
-        "    MERGE (n:X)-[:R]->(m:Y)) " +
-        ") " +
-        "WITH * MATCH (:X)-[r:R]->(:Y) RETURN 30 + 12 + count(r) AS updates"
-
-    // when
-    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
-
-    // then
-    expectedUpdates should equal(82)
+    assertStats(result, nodesCreated = 5)
 
     // and then
     txCounts should equal(TxCounts(commits = 3))
   }
 
-  test("should support periodic commit with unaligned batch size") {
-    /*
-      10 x nodes         => 30 updates
-      4  y nodes         => 12 updates
-      40 r relationships => 40 updates
-     */
-
+  test("should support simple periodic commit with unaligned batch size") {
     // given
+    val url = createTempCSVFile(4)
     val queryText =
-      "USING PERIODIC COMMIT 20 " +
-        "FOREACH (x IN range(0, 9) | " +
-        "  MERGE (n:X {x: x}) " +
-        "  FOREACH (y IN range(0, 3) | " +
-        "    MERGE (m:Y {y: y}) " +
-        "    MERGE (n:X)-[:R]->(m:Y)) " +
-        ") " +
-        "WITH * MATCH (:X)-[r:R]->(:Y) RETURN 30 + 12 + count(r) AS updates"
+      "USING PERIODIC COMMIT 3 " +
+      s"LOAD CSV FROM '$url' AS line " +
+      "CREATE ()";
 
     // when
-    val (expectedUpdates, txCounts) = executeScalarAndTrackTxCounts[Number](queryText)
+    val (result, txCounts) = executeAndTrackTxCounts(queryText)
 
     // then
-    expectedUpdates should equal(82)
+    assertStats(result, nodesCreated = 4)
 
     // and then
-    txCounts should equal(TxCounts(commits = 5))
+    txCounts should equal(TxCounts(commits = 2))
   }
 
   test("should abort first tx when failing on first batch during periodic commit") {
     // given
-    val queryText = "USING PERIODIC COMMIT 256 FOREACH (x IN range(0, 1023) | CREATE ({x: 1/0}))"
+    val url = createTempCSVFile(20)
+    val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: (toInt(line[0]) - 8)/0})"
 
     // when
-    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](executeScalar[Number](queryText)))
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](
+      unwrapLoadCSVStatus(executeScalar[Number](queryText))
+    ))
 
     // then
     txCounts should equal(TxCounts(rollbacks = 1))
@@ -144,35 +110,41 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite with TxCounts
 
   test("should commit first tx and abort second tx when failing on second batch during periodic commit") {
     // given
-    // creating 256 means 512 updates, indeed 1) create node and set the label
-    val queryText = "USING PERIODIC COMMIT 256 FOREACH (x IN range(0, 1023) | CREATE ({x: 1/(300-x)}))"
+    val url = createTempCSVFile(20)
+    val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: 1 / (toInt(line[0]) - 16)})"
 
     // when
-    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](executeScalar[Number](queryText)))
+    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](
+      unwrapLoadCSVStatus(executeScalar[Number](queryText))
+    ))
 
     // then
-    txCounts should equal(TxCounts(commits = 2, rollbacks = 1))
+    txCounts should equal(TxCounts(commits = 1, rollbacks = 1))
   }
 
   test("should support periodic commit hint without explicit size") {
-    executeScalar[Node]("USING PERIODIC COMMIT CREATE (n) RETURN n")
+    val url = createTempCSVFile(1)
+    executeScalar[Node](s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
   }
 
   test("should support periodic commit hint with explicit size") {
-    executeScalar[Node]("USING PERIODIC COMMIT 400 CREATE (n) RETURN n")
+    val url = createTempCSVFile(1)
+    executeScalar[Node](s"USING PERIODIC COMMIT 400 LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
   }
 
   test("should reject periodic commit hint with negative size") {
+    val url = createTempCSVFile(1)
     evaluating {
-      executeScalar[Node]("USING PERIODIC COMMIT -1 CREATE (n) RETURN n")
+      executeScalar[Node](s"USING PERIODIC COMMIT -1 LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
     } should produce[SyntaxException]
   }
 
   test("should fail if periodic commit is executed in an open transaction") {
     // given
     evaluating {
+      val url = createTempCSVFile(3)
       graph.inTx {
-        execute("USING PERIODIC COMMIT CREATE ()")
+        execute(s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE ()")
       }
     } should produce[PeriodicCommitInOpenTransactionException]
   }

@@ -50,13 +50,13 @@ class PeriodicCommitTest
   }
 
   @Test def periodic_commit_with_load_csv() {
-    val url = createTempFileURL("cypher", ".csv", { writer =>
+    val url = createTempFileURL("cypher", ".csv") { writer =>
       writer.println("name")
       writer.println("Davide")
       writer.println("Jakub")
       writer.println("Andres")
       writer.println("Stefan")
-    }).cypherEscape
+    }.cypherEscape
 
     testQuery(
       title = "Import using periodic commit",

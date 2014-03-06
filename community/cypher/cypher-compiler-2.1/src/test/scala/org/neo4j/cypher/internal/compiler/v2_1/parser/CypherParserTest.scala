@@ -26,7 +26,7 @@ import commands.values.{UnresolvedLabel, TokenType, KeyToken}
 import commands.values.TokenType.PropertyKey
 import helpers.LabelSupport
 import mutation._
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{MissingIndexException, SyntaxException}
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
@@ -2990,28 +2990,44 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("should parse an periodic commit query with size") {
+  test("should parse a periodic commit query with size followed by LOAD CSV") {
     expectQuery(
-      "USING PERIODIC COMMIT 10 CREATE (n)",
+      "USING PERIODIC COMMIT 10 LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE x",
       PeriodicCommitQuery(
         Query.
-          start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
-          returns(),
+          start(LoadCSV(withHeaders = false, url = new URL("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
+          tail(Query.
+            start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
+            returns()
+          ).
+          returns(AllIdentifiers()),
         Some(10)
       )
     )
   }
 
-  test("should parse an periodic commit query without size") {
+  test("should parse a periodic commit query without size followed by LOAD CSV") {
     expectQuery(
-      "USING PERIODIC COMMIT CREATE (n) ",
+      "USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE x",
       PeriodicCommitQuery(
         Query.
-          start(CreateNodeStartItem(CreateNode("n", Map.empty, Seq.empty))).
-          returns(),
+          start(LoadCSV(withHeaders = false, url = new URL("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
+          tail(Query.
+            start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
+            returns()
+          ).
+          returns(AllIdentifiers()),
         None
       )
     )
+  }
+
+  test("should reject a periodic commit query not followed by LOAD CSV") {
+    intercept[SyntaxException](parser.parse("USING PERIODIC COMMIT CREATE ()"))
+  }
+
+  test("should reject a periodic commit query followed by LOAD CSV and a union") {
+    intercept[SyntaxException](parser.parse("USING PERIODIC COMMIT LOAD CSV  FROM 'file:///tmp/foo.csv' AS line CREATE x UNION MATCH n RETURN n"))
   }
 
   private def expectQuery(query: String, expectedQuery: AbstractQuery) {

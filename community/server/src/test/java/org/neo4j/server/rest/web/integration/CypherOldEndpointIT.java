@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web.integration;
 
 import org.junit.Test;
 
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
@@ -36,13 +37,18 @@ public class CypherOldEndpointIT extends AbstractRestFunctionalTestBase
     @Test
     public void periodicCommitTest() throws Exception
     {
-        // begin
-        HTTP.Response begin = http.POST(
-                "/db/data/cypher",
-                quotedJson( "{ 'query': 'USING PERIODIC COMMIT 10 CREATE ()' }" )
-        );
-
-        assertThat( begin.status(), equalTo( 200 ) );
+        ServerTestUtils.withCSVFile(2, new ServerTestUtils.BlockWithCSVFileURL() {
+            @Override
+            public void execute( String url )
+            {
+                // begin
+                HTTP.Response begin = http.POST(
+                        "/db/data/cypher",
+                        quotedJson( "{ 'query': 'USING PERIODIC COMMIT 100 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ();' }" )
+                );
+                assertThat( begin.status(), equalTo( 200 ) );
+            }
+        });
     }
 }
 

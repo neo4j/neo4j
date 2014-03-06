@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell;
 
+import java.io.File;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -554,18 +556,28 @@ public class TestApps extends AbstractShellTest
         assertThat( findNodesByLabelAndProperty( label( "Person" ), "name", "Andres", db ), hasSize( 1 ) );
     }
 
+
     @Test
     public void use_cypher_periodic_commit() throws Exception
     {
-        try
+        File file = File.createTempFile( "file", "csv", null );
+        try ( PrintWriter writer = new PrintWriter( file ) )
         {
+            String url = file.toURI().toURL().toString().replace("\\", "\\\\");
+            writer.println("1,2,3");
+            writer.println("4,5,6");
+
             // WHEN
-            executeCommand( "USING PERIODIC COMMIT 100 CREATE n;" );
+            executeCommand( "USING PERIODIC COMMIT 100 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
         }
         catch ( ShellException e )
         {
             // THEN NOT
             fail( "Failed to execute PERIODIC COMMIT query" );
+        }
+        finally
+        {
+            file.delete();
         }
     }
 
