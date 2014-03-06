@@ -20,15 +20,20 @@
 package org.neo4j.doc.cypherdoc;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 
 /**
  * Parses AsciiDoc files with some special markup to produce Cypher tutorials.
  */
 public class Main
 {
-    private static final String[] EXTENSIONS = new String[] { "asciidoc", "adoc" };
+    private static final String[] EXTENSIONS = new String[] { ".asciidoc", ".adoc" };
+    private static final IOFileFilter fileFilter = new SuffixFileFilter( EXTENSIONS );
 
     /**
      * Transforms the given files or directories (searched recursively for
@@ -52,48 +57,54 @@ public class Main
         for ( int i = 2; i < args.length; i++ )
         {
             String name = args[i];
-            File file = FileUtils.getFile( name );
-            if ( destinationDir == null )
+            File source = FileUtils.getFile( name ).getCanonicalFile();
+            if ( source.isFile() )
             {
-                if ( file.exists() && !file.isDirectory() )
-                {
-                    throw new IllegalArgumentException(
-                            "Destination directory must either not exist or be a directory." );
-                }
-                destinationDir = file;
+                executeFile( source, destinationDir, destinationUrl );
+            }
+            else if ( source.isDirectory() )
+            {
+                executeDirectory( source, destinationDir, destinationUrl, true );
+            }
+        }
+    }
+
+    private static void executeDirectory( File sourceDir, File destinationDir, String destinationUrl, boolean isTopLevelDir )
+    {
+        String sourceDirName = sourceDir.getName();
+        File nestedDestinationDir = isTopLevelDir ? destinationDir : new File( destinationDir, sourceDirName );
+        String nestedDestinationUrl = isTopLevelDir ? destinationUrl : destinationUrl + '/' + sourceDirName;
+        File[] files = sourceDir.listFiles( new FileFilter()
+        {
+            @Override
+            public boolean accept( File file )
+            {
+                return file.isDirectory() || fileFilter.accept( file );
+            }
+        } );
+        for ( File fileInDir : files )
+        {
+            if ( fileInDir.isDirectory() )
+            {
+                executeDirectory( fileInDir, nestedDestinationDir, nestedDestinationUrl, false );
             }
             else
             {
-                if ( file.isFile() )
+                try
                 {
-                    executeFile( file, file.getName(), destinationDir, destinationUrl );
+                    executeFile( fileInDir, nestedDestinationDir, nestedDestinationUrl );
                 }
-                else if ( file.isDirectory() )
+                catch ( Throwable e )
                 {
-                    for ( File fileInDir : FileUtils.listFiles( file,
-                            EXTENSIONS, true ) )
-                    {
-                        String fileInDirName = fileInDir.getAbsolutePath()
-                                .substring( file.getAbsolutePath().length() + 1 )
-                                .replace( '/', '-' )
-                                .replace( '\\', '-' );
-                        try
-                        {
-                            executeFile( fileInDir, fileInDirName, destinationDir, destinationUrl );
-                        }
-                        catch ( Throwable e )
-                        {
-                            throw new RuntimeException( String.format( "Failed while executing file: %s in the " +
-                                    "directory %s",
-                                    fileInDirName, destinationDir.getAbsolutePath() ) );
-                        }
-                    }
+                    throw new RuntimeException( String.format( "Failed while executing file: %s in the "
+                                                               + "directory %s", fileInDir.getName(),
+                            destinationDir.getAbsolutePath() ) );
                 }
             }
         }
     }
 
-    private static File getDestinationDir( String arg )
+    private static File getDestinationDir( String arg ) throws IOException
     {
         String name = arg;
         File file = FileUtils.getFile( name );
@@ -102,18 +113,19 @@ public class Main
             throw new IllegalArgumentException(
                     "Destination directory must either not exist or be a directory." );
         }
-        return file;
+        return file.getCanonicalFile();
     }
 
     /**
      * Parse a single file.
      */
-    private static void executeFile( File file, String name, File destinationDir, String url ) throws Exception
+    private static void executeFile( File sourceFile, File destinationDir, String url ) throws Exception
     {
         try
         {
-            String input = FileUtils.readFileToString( file );
-            String output = CypherDoc.parse( input, file.getParentFile(), url );
+            String name = sourceFile.getName();
+            String input = FileUtils.readFileToString( sourceFile );
+            String output = CypherDoc.parse( input, sourceFile.getParentFile(), url );
 
             FileUtils.forceMkdir( destinationDir );
             File targetFile = FileUtils.getFile( destinationDir, name );

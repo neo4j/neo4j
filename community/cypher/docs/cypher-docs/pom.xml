@@ -117,8 +117,8 @@
                             <includePluginDependencies>true</includePluginDependencies>
                             <includeProjectDependencies>false</includeProjectDependencies>
                             <arguments>
-                                <argument>${project.build.directory}/docs/graphgists</argument>
-                                <argument>http://docs.neo4j.org/csv</argument>
+                                <argument>${project.build.directory}/docs/parsed-graphgists</argument>
+                                <argument>http://docs.neo4j.org/chunked/${project.version}/csv</argument>
                                 <argument>${project.build.directory}/../src/docs/graphgists</argument>
                             </arguments>
                         </configuration>

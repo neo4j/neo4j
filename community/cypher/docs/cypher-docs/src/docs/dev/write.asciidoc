@@ -33,6 +33,10 @@ include::ql/foreach/index.asciidoc[]
 
 :leveloffset: 2
 
+include::../parsed-graphgists/import/import-csv-with-cypher.asciidoc[]
+
+:leveloffset: 2
+
 include::ql/periodic-commit/index.asciidoc[]
 
 :leveloffset: 0

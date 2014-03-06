@@ -335,9 +335,8 @@
               <includeProjectDependencies>false</includeProjectDependencies>
               <arguments>
                 <argument>${docs.sources}/cypherdoc</argument>
-                <argument>http://docs.neo4j.org/csv</argument>
-                <argument>${project.build.directory}/../src/tutorials/cypher</argument>
-                <argument>${project.build.directory}/../src/tutorials/modeling</argument>
+                <argument>http://docs.neo4j.org/chunked/${project.version}/csv</argument>
+                <argument>${project.build.directory}/../src/tutorials/gists</argument>
               </arguments>
             </configuration>
           </execution>
@@ -562,39 +561,6 @@
       </properties>
     </profile>
     <profile>
-      <id>annotated</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>annotated</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>execute-asciidoc</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>make</executable>
-                  <arguments>
-                    <argument>init</argument>
-                    <argument>commented</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <id>neo-full-manual-build</id>
       <activation>
         <activeByDefault>false</activeByDefault>
@@ -619,6 +585,31 @@
                   <arguments>
                     <argument>dist</argument>
                   </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>com.github.goldin</groupId>
+            <artifactId>copy-maven-plugin</artifactId>
+            <version>0.2.5</version>
+            <executions>
+              <execution>
+                <id>copy-images</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <verbose>true</verbose>
+                  <resources>
+                    <resource>
+                      <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
+                      <targetPath>${project.build.directory}/chunked/csv</targetPath>
+                      <preservePath>true</preservePath>
+                      <include>**/*.csv</include>
+                    </resource>
+                  </resources>
                 </configuration>
               </execution>
             </executions>

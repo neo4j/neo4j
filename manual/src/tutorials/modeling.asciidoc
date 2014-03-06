@@ -9,11 +9,11 @@ The examples use Cypher queries a lot, read <<cypher-query-lang>> for more infor
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/linked-list.asciidoc[]
+include::{importdir}/cypherdoc/modeling/linked-list.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/cypherdoc/tvshows.asciidoc[]
+include::{importdir}/cypherdoc/modeling/tvshows.asciidoc[]
 
 :leveloffset: 2
 

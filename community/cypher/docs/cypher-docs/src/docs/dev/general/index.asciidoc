@@ -19,7 +19,7 @@ include::transactions.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-docs-docs-jar/graphgists/uniqueness/uniqueness.asciidoc[]
+include::../../parsed-graphgists/uniqueness/uniqueness.asciidoc[]
 
 :leveloffset: 2
 
