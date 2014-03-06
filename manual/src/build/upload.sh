@@ -40,9 +40,9 @@ ssh -i $IDENTITY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSIO
 #ssh $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
 
 # Copy artifacts
-rsync -r $DIR/target/text/ $DOCS_SERVER:$ROOTPATHDOCS/text/$VERSION/
+rsync -e "ssh -i $IDENTITY_FILE" -r $DIR/target/text/ $DOCS_SERVER:$ROOTPATHDOCS/text/$VERSION/
 #rsync -r --delete $DIR/target/annotated/ $DOCS_SERVER:$ROOTPATHDOCS/annotated/
-rsync -r --delete $DIR/target/chunked/ $DOCS_SERVER:$ROOTPATHDOCS/chunked/$VERSION/
+rsync -e "ssh -i $IDENTITY_FILE" -r --delete $DIR/target/chunked/ $DOCS_SERVER:$ROOTPATHDOCS/chunked/$VERSION/
 ssh -i $IDENTITY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/pdf
 scp -i $IDENTITY_FILE $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 
