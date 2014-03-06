@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -115,16 +115,6 @@ class LoadCsvAcceptanceTest
       Map("string" -> Seq("""String with "quotes" in it"""))))
   }
 
-  ignore("should open file containing strange chars with \"") {
-    val url = createFile(filename = "cypher \"%^&!@#_)(098.,;[]{}\\~$*+-")({
-      writer =>
-        writer.println("something")
-    })
-
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
-    assert(result === List(Map("string" -> Seq("something"))))
-  }
-
   test("should handle crlf line termination") {
     val url = createFile {
       writer =>
@@ -173,13 +163,25 @@ class LoadCsvAcceptanceTest
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
-  ignore("should open file containing strange chars with '") {
-    val url = createFile(filename = "cypher '%^&!@#_)(098.,;[]{}\\~$*+-")({
+  test("should open file containing strange chars with '") {
+    val filename = ensureNoIllegalCharsInWindowsFilePath("cypher '%^&!@#_)(098.:,;[]{}\\~$*+-")
+    val url = createFile(filename)({
       writer =>
         writer.println("something")
     })
 
     val result = execute("LOAD CSV FROM \"" +url+"\" AS line RETURN line as string").toList
+    assert(result === List(Map("string" -> Seq("something"))))
+  }
+
+  test("should open file containing strange chars with \"") {
+    val filename = ensureNoIllegalCharsInWindowsFilePath("cypher \"%^&!@#_)(098.:,;[]{}\\~$*+-")
+    val url = createFile(filename)({
+      writer =>
+        writer.println("something")
+    })
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
@@ -242,6 +244,18 @@ class LoadCsvAcceptanceTest
     intercept[LoadExternalResourceException] {
       val engine = new ExecutionEngine(db)
       engine.execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name:line[0]})")
+    }
+  }
+
+  private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
+    // isWindows?
+    if ('\\' == File.separatorChar) {
+      // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspxs
+      val illegalCharsInWidnowsFilePath = "/?<>\\:*|\""
+      // just replace the illegal chars with a 'a'
+      illegalCharsInWidnowsFilePath.foldLeft(filename)((current, c) => current.replace(c, 'a'))
+    } else {
+      filename
     }
   }
 
