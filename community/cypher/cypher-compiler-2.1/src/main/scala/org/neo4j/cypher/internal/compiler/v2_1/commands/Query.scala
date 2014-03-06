@@ -140,7 +140,7 @@ case class Query(returns: Return,
       includeIfNotEmpty((if(optional) "optional " else "") + "match  : ", matching) +
       includeIfNotEmpty("paths  : ", namedPaths) +
       includeIfNotEmpty("hints  : ", hints) +
-      (if (where == True()) "" else where.toString) +
+      (if (where == True()) "" else "where  : " + where.toString + "\n") +
       includeIfNotEmpty("aggreg : ", aggregation) +
       includeIfNotEmpty("return : ", returns.returnItems) +
       includeIfNotEmpty("order  : ", sort) +

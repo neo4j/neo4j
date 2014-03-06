@@ -24,7 +24,7 @@ import commands.{GreaterThan, True}
 import pipes._
 import pipes.matching._
 import symbols.CTInteger
-import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache, CypherCompiler => GeneralCypherCompiler}
+import org.neo4j.cypher.internal.{ExecutionPlan, LRUCache}
 import org.neo4j.cypher._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.Traverser.Order
@@ -34,43 +34,43 @@ import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.tooling.GlobalGraphOperations
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
-import org.junit.{Ignore, Test, Before}
 import org.junit.Assert._
 import collection.JavaConverters._
-import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.kernel.impl.api.OperationsFacade
+import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccessRateMonitor
+import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 
-class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
+class LazyTest extends ExecutionEngineFunSuite {
 
-  var a: Node = null
-  var b: Node = null
-  var c: Node = null
+  var aNode: Node = null
+  var bNode: Node = null
+  var cNode: Node = null
 
   override protected def initTest() {
     super.initTest()
 
-    a = createNode()
-    b = createNode()
-    c = createNode()
-    relate(a, b)
-    relate(a, c)
-    relate(a, createNode())
-    relate(a, createNode())
-    relate(a, createNode())
-    relate(a, createNode())
-    relate(a, createNode())
-    relate(a, createNode())
-    relate(a, createNode())
-    relate(a, createNode())
+    aNode = createNode()
+    bNode = createNode()
+    cNode = createNode()
+    relate(aNode, bNode)
+    relate(aNode, cNode)
+    relate(aNode, createNode())
+    relate(aNode, createNode())
+    relate(aNode, createNode())
+    relate(aNode, createNode())
+    relate(aNode, createNode())
+    relate(aNode, createNode())
+    relate(aNode, createNode())
+    relate(aNode, createNode())
   }
 
-  @Test def get_first_relationship_does_not_iterate_through_all() {
+  test("get first relationship does not iterate through all") {
     //Given:
     val limiter = new Limiter(1)
-    val monitoredNode = new MonitoredNode(a, limiter.monitor)
+    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
 
     //When:
     graph.inTx(monitoredNode.getRelationships(Direction.OUTGOING).iterator().next())
@@ -78,11 +78,11 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     //Then does not throw exception
   }
 
-  @Test def traversal_matcher_is_lazy() {
+  test("traversal matcher is lazy") {
     //Given:
     val tx = graph.beginTx()
     val limiter = new Limiter(2)
-    val monitoredNode = new MonitoredNode(a, limiter.monitor)
+    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
     val producer = EntityProducer[Node]("test") { (ctx, state) => Iterator(monitoredNode) }
@@ -100,10 +100,10 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     tx.close()
   }
 
-  @Test def execution_of_query_is_lazy() {
+  test("execution of query is lazy") {
     //Given:
     val limiter = new Limiter(3)
-    val monitoredNode = new MonitoredNode(a, limiter.monitor)
+    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
 
     val engine = new ExecutionEngine(graph)
 
@@ -118,7 +118,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     iter.close()
   }
 
-  @Test def distinct_is_lazy() {
+  test("distinct is lazy") {
     //Given:
     val a = createNode(Map("name" -> "Andres"))
     val b = createNode(Map("name" -> "Jake"))
@@ -140,7 +140,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     iter.close()
   }
 
-  @Test def union_is_lazy() {
+  test("union is lazy") {
     //Given:
     val a = createNode(Map("name" -> "Andres"))
     val b = createNode(Map("name" -> "Jake"))
@@ -160,10 +160,10 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     iter.close()
   }
 
-  @Test def execution_of_query_is_eager() {
+  test("execution of query is eager") {
     //Given:
     var touched = false
-    val monitoredNode = new MonitoredNode(a, () => touched = true)
+    val monitoredNode = new MonitoredNode(aNode, () => touched = true)
 
     val engine = new ExecutionEngine(graph)
 
@@ -174,7 +174,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     assert(touched, "Query should have been executed")
   }
 
-  @Test def graph_global_queries_are_lazy() {
+  test("graph global queries are lazy") {
     //Given:
     val counter = new CountingJIterator()
 
@@ -183,6 +183,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
+    val monitors = mock[Monitors]
 
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
@@ -196,6 +197,11 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
+    when(dependencies.resolveDependency(classOf[Monitors])).thenReturn(monitors)
+    when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
+    when(monitors.newMonitor(classOf[SemanticCheckMonitor])).thenReturn(mock[SemanticCheckMonitor])
+    when(monitors.newMonitor(classOf[AstRewritingMonitor])).thenReturn(mock[AstRewritingMonitor])
+    when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
     when(fakeGraph.beginTx()).thenReturn(tx)
 
     val engine = new ExecutionEngine(fakeGraph)
@@ -210,7 +216,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     assert(counter.count === 5, "Should not have fetched more than this many nodes.")
   }
 
-  @Test def traversalmatcherpipe_is_lazy() {
+  test("traversalmatcherpipe is lazy") {
     //Given:
     val tx = graph.beginTx()
     val limiter = new Limiter(2)
@@ -227,7 +233,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
     tx.close()
   }
 
-  @Test def filterpipe_is_lazy() {
+  test("filterpipe is lazy") {
     //Given:
     val limited = new LimitedIterator[Map[String, Any]](4, (x) => Map("val" -> x))
     val input = new FakePipe(limited, "val" -> CTInteger)
@@ -244,7 +250,7 @@ class LazyTest extends ExecutionEngineJUnitSuite with MockitoSugar {
   }
 
   private def createTraversalMatcherPipe(limiter: Limiter): TraversalMatchPipe = {
-    val monitoredNode = new MonitoredNode(a, limiter.monitor)
+    val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
 
     val end = EndPoint("b")
     val trail = SingleStepTrail(end, Direction.OUTGOING, "r", Seq(), "a", True(), True(), null, Seq())

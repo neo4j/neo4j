@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.rewriters._
-import ast.convert.StatementConverters._
-import commands.AbstractQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.parboiled.scala._
-import org.parboiled.errors.InvalidInputError
+import org.parboiled.errors.{ParseError, InvalidInputError}
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 
-case class CypherParser() extends Parser
+case class CypherParser(monitor: ParserMonitor) extends Parser
   with Statement
   with Expressions {
 
@@ -37,40 +35,39 @@ case class CypherParser() extends Parser
   }
 
   @throws(classOf[SyntaxException])
-  def parse(text: String): ast.Statement = {
-    val parsingResult = ReportingParseRunner(SingleStatement).run(text)
+  def parse(queryText: String): ast.Statement = {
+    monitor.startParsing(queryText)
+    val parsingResult = ReportingParseRunner(SingleStatement).run(queryText)
+
     parsingResult.result match {
-      case Some(statement: ast.Statement) => statement
-      case _ => {
-        parsingResult.parseErrors.map { error =>
-          val message = if (error.getErrorMessage != null) {
-            error.getErrorMessage
-          } else {
-            error match {
-              case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-              case _                               => error.getClass.getSimpleName
+      case Some(statement: ast.Statement) =>
+        monitor.finishParsingSuccess(queryText, statement)
+        statement
+
+      case _ =>
+        val parseErrors: List[ParseError] = parsingResult.parseErrors
+        monitor.finishParsingError(queryText, parseErrors)
+        parseErrors.map {
+          error =>
+            val message = if (error.getErrorMessage != null) {
+              error.getErrorMessage
+            } else {
+              error match {
+                case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
+                case _ => error.getClass.getSimpleName
+              }
             }
-          }
-          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          throw new SyntaxException(s"$message ($position)", text, position.offset)
+            val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+            throw new SyntaxException(s"$message ($position)", queryText, position.offset)
         }
-      }
+
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
     }
   }
+}
 
-  @throws(classOf[SyntaxException])
-  def parseToQuery(query: String): (AbstractQuery, ast.Statement) = {
-    val statement: ast.Statement = parse(query)
-    statement.semanticCheck(SemanticState.clean).errors.map { error =>
-      throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
-    }
-
-    val normalizedStatement = statement.rewrite(bottomUp(
-      normalizeArithmeticExpressions,
-      patternElementNamer,
-      TheDefaultMatchPredicateNormalization
-    )).asInstanceOf[ast.Statement]
-    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(query)), statement)
-  }
+trait ParserMonitor {
+  def startParsing(query: String)
+  def finishParsingSuccess(query: String, statement: ast.Statement)
+  def finishParsingError(query:String, errors: Seq[ParseError])
 }

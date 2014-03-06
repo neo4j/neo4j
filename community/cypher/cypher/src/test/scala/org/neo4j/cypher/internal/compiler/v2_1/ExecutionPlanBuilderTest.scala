@@ -53,7 +53,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val epi = new ExecutionPlanBuilder(graph, new FakePipeBuilder(Seq(new BadBuilder)))
+      val epi = new ExecutionPlanBuilder(graph, mock[NewQueryPlanSuccessRateMonitor], new FakePipeBuilder(Seq(new BadBuilder)))
       epi.build(planContext, q, ast)
     })
 
@@ -66,7 +66,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val tx = graph.beginTx()
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, new FakePipeBuilder(Seq(new ExplodingPipeBuilder)))
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, mock[NewQueryPlanSuccessRateMonitor], new FakePipeBuilder(Seq(new ExplodingPipeBuilder)))
     val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
 
     // when

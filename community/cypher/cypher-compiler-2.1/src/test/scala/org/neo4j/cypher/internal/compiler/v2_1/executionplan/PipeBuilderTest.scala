@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, TraversalMatchPipe, DistinctPipe}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.ast
+import ast.convert.StatementConverters._
+
 
 class PipeBuilderTest extends MockitoSugar {
   val planContext: PlanContext = mock[PlanContext]
-  val parser = CypherParser()
+  val parser = CypherParser(mock[ParserMonitor])
   val planBuilder = new PipeBuilder()
 
   @Test def should_use_distinct_pipe_for_distinct() {
@@ -47,7 +50,7 @@ class PipeBuilderTest extends MockitoSugar {
   }
 
   private def buildExecutionPipe(q: String): Pipe = {
-    val (abstractQuery, _) = parser.parseToQuery(q)
+    val abstractQuery = parser.parse(q).asQuery
     planBuilder.buildPipes(planContext, abstractQuery).pipe
   }
 }
