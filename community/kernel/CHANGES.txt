@@ -1,3 +1,7 @@
+2.1.0-SNAPSHOT
+--------------
+o Performance improvements for upgrade process.
+
 2.1.0-M01
 ------------
 o Introduces utility methods for printing paths into a new class, org.neo4j.graphdb.traveral.Paths

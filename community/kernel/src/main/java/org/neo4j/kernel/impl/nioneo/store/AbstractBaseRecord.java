@@ -23,14 +23,8 @@ import org.neo4j.helpers.CloneableInPublic;
 
 public abstract class AbstractBaseRecord implements CloneableInPublic
 {
-    private boolean inUse;
+    private boolean inUse = false;
     private boolean created = false;
-
-    AbstractBaseRecord( boolean inUse )
-    {
-        // limit subclasses to this package only
-        this.inUse = inUse;
-    }
     
     public abstract long getLongId();
 
