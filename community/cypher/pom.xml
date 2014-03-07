@@ -39,7 +39,8 @@
     <module>cypher-commons</module>
     <module>cypher-compiler-2.1</module>
     <module>cypher</module>
-    <module>cypher-docs</module>
+    <module>docs/cypher-docs</module>
+    <module>docs/graphgist</module>
   </modules>
 
   <repositories>
