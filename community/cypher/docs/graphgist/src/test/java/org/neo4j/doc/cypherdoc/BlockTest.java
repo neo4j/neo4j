@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +46,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.junit.Assume.assumeFalse;
 
 public class BlockTest
 {
@@ -209,6 +211,7 @@ public class BlockTest
     @Test
     public void should_replace_filenames_in_queries()
     {
+        assumeFalse( System.getProperty("os.name").toLowerCase().startsWith( "win" ) );
         // given
         List<String> myQuery = Arrays.asList(
                 "[source, cypher]",
