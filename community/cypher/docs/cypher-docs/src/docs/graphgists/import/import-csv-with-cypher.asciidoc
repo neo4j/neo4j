@@ -69,6 +69,11 @@ USING PERIODIC COMMIT
 LOAD CSV FROM "roles.csv" AS csvLine
 MATCH (p:Person {id: csvLine[0]}), (m:Movie {id: csvLine[1]})
 CREATE (p)-[:PLAYED {role: csvLine[2]}]->(m)
+
+USING PERIODIC COMMIT
+LOAD CSV WITH HEADERS FROM "roles.csv" AS csvLine
+MATCH (p:Person { id: toInt(csvLine.personId)}),(m:Movie { id: toInt(csvLine.movieId)})
+CREATE (p)-[:PLAYED { role: csvLine.role }]->(m)
 ----
 
 In the query above, we used +USING PERIODIC COMMIT+.
