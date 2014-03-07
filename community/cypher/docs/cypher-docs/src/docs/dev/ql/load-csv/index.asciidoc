@@ -1,0 +1,13 @@
+[[query-load-csv]]
+Load CSV
+========
+
++LOAD CSV+ allows you to import data from CSV files.
+
+include::import-data-from-a-csv-file.asciidoc[]
+
+include::import-data-from-a-csv-file-containing-headers.asciidoc[]
+
+include::import-data-from-a-csv-file-with-a-custom-field-delimiter.asciidoc[]
+
+include::importing-large-amounts-of-data.asciidoc[]

@@ -42,12 +42,13 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
     testQuery(
       title = "Import data from a CSV file",
-      text = "Load CSV allows to import data into Neo4j from a csv file.",
+      text = "To import data from a CSV file into Neo4j, you can use +LOAD CSV+ to get the data into your query, and " +
+        "then write it to your database using the normal updating clauses of Cypher.",
       queryText = s"LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation =
         "A new node with the Artist label is created for each row in the CSV file. In addition, two columns " +
         "from the CSV file are set as properties on the nodes.",
-      assertions = (p) => { assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4) })
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_headers() {
@@ -61,12 +62,12 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
     testQuery(
       title = "Import data from a CSV file containing headers",
-      text = "Load CSV allows to import data into Neo4j from a csv file.",
+      text = "When your CSV file has headers, you can view each row in the file as a map instead of as an array of string.",
       queryText = s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (:Artist {name: line.Name, year: toInt(line.Year)})",
       optionalResultExplanation =
         "This time, the file starts with a single row containing column names and WITH HEADERS allows you to directly " +
         "access specific fields by their corresponding column name",
-      assertions = (p) => { assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4) })
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_custom_field_terminator() {
@@ -78,12 +79,13 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     )
 
     testQuery(
-      title = "Import data from a CSV file with a ';' field delimiter",
-      text = "Load CSV allows to import data into Neo4j from a csv file.",
+      title = "Import data from a CSV file with a custom field delimiter",
+      text = "Sometimes, your CSV file has other field delimiters than commas. You can specify which delimiter your " +
+        "file uses using +FIELDTERMINATOR+.",
       queryText = s"LOAD CSV FROM '${url}' AS line FIELDTERMINATOR ';' CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation =
         "As values in this file are separated by a semicolon, a custom FIELDTERMINATOR is specified in the LOAD CSV clause.",
-      assertions = (p) => { assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4) })
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_periodic_commit() {
@@ -95,13 +97,13 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     )
 
     testQuery(
-      title = "Import data from a CSV file with a ';' field delimiter",
-      text = "Load CSV allows to import data into Neo4j from a csv file.",
-      queryText = s"USING PERIODIC COMMIT LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
-      optionalResultExplanation =
-        "Here, if the file contains a significant number of rows (approaching hundreds of thousands or millions), USING PERIODIC COMMIT " +
-        "can be used to instruct Neo4j to perform a commit multiple times at a certain interval (defaults to 10000 updates) " +
+      title = "Importing large amounts of data",
+      text = "Here, if the file contains a significant number of rows (approaching hundreds of thousands or millions), USING PERIODIC COMMIT " +
+        "can be used to instruct Neo4j to perform a commit after a specified number of rows (defaults to 1000 rows)," +
         "so as to reduce the memory overhead of the transaction state.",
-      assertions = (p) => { assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4) })
+      queryText = s"USING PERIODIC COMMIT LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4)
+    )
   }
 }
