@@ -145,7 +145,7 @@ public class BlockTest
                         containsString( "cypherdoc-xyz" ),
                         containsString( ".svg" ), containsString( "neoviz" ) ) );
     }
-   
+
     @Test
     public void graphWithoutId()
     {
@@ -226,7 +226,7 @@ public class BlockTest
 
         when( engine.prettify( httpQuery.capture() ) ).
                 thenReturn( "apa" );
-        state = new State( engine, database, new File( "/dev/null" ), "http://myurl" );
+        state = new State( engine, database, new File( File.listRoots()[0], "something" ), "http://myurl" );
         state.knownFiles.add( "my_file.csv" );
 
 
@@ -234,7 +234,7 @@ public class BlockTest
         block.process( state );
 
         // then
-        assertThat( fileQuery.getValue(), containsString( "file:/dev/null/my_file.csv" ) );
+        assertThat( fileQuery.getValue(), containsString( "file:" + File.listRoots()[0] + "something/my_file.csv" ) );
         assertThat( httpQuery.getValue(), containsString( "http://myurl/my_file.csv" ) );
     }
 }
