@@ -96,7 +96,7 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
     )).asInstanceOf[ast.Statement]
     rewritingMonitor.finishRewriting(queryText, normalizedStatement)
 
-    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(queryText)), statement)
+    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(queryText)), normalizedStatement)
   }
 
 
