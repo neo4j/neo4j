@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols._
 
-case class AllNodesScanPipe(id: String) extends Pipe {
+case class AllNodesScanPipe(ident: String) extends Pipe {
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.nodeOps.all.map(n => ExecutionContext.from(id -> n))
+    state.query.nodeOps.all.map(n => ExecutionContext.from(ident -> n))
 
   override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  override def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("identifier" -> id))
+  override def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("identifier" -> ident))
 
-  override def symbols: SymbolTable = new SymbolTable(Map(id -> CTNode))
+  override def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 }

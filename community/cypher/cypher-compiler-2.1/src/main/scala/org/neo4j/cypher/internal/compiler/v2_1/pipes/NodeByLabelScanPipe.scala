@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, symbols, PlanDescription, ExecutionContext}
 import symbols._
 
-case class LabelNodesScanPipe(id: String, label: Either[String, LabelId]) extends Pipe {
+case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) extends Pipe {
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {
@@ -32,7 +32,7 @@ case class LabelNodesScanPipe(id: String, label: Either[String, LabelId]) extend
 
     optLabelId match {
       case Some(labelId) =>
-        state.query.getNodesByLabel(labelId.id).map(n => ExecutionContext.from(id -> n))
+        state.query.getNodesByLabel(labelId.id).map(n => ExecutionContext.from(ident -> n))
       case None =>
         Iterator.empty
     }
@@ -42,5 +42,5 @@ case class LabelNodesScanPipe(id: String, label: Either[String, LabelId]) extend
 
   override def executionPlanDescription: PlanDescription = ???
 
-  override def symbols: SymbolTable = new SymbolTable(Map(id -> CTNode))
+  override def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 }

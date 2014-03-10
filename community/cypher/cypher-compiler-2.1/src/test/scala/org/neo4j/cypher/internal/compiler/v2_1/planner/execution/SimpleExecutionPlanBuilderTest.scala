@@ -61,6 +61,6 @@ class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(LabelNodesScanPipe("n", Right(LabelId(12))))
+    pipeInfo.pipe should equal(NodeByLabelScanPipe("n", Right(LabelId(12))))
   }
 }

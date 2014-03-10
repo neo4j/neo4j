@@ -43,7 +43,7 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
         case Projection(_, expressions)  => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
         case SingleRow()                 => NullPipe()
         case AllNodesScan(Id(id), _)     => AllNodesScanPipe(id)
-        case LabelNodesScan(Id(id), label, _) => LabelNodesScanPipe(id, label)
+        case LabelNodesScan(Id(id), label, _) => NodeByLabelScanPipe(id, label)
       }
     }
 

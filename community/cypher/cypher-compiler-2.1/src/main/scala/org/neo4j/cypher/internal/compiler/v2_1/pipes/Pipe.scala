@@ -54,7 +54,7 @@ trait Pipe {
   /*
   Runs the predicate on all the inner Pipe until no pipes are left, or one returns true.
    */
-  def exists(pred: Pipe => Boolean):Boolean
+  def exists(pred: Pipe => Boolean): Boolean
 }
 
 case class NullPipe(symbols: SymbolTable = SymbolTable(),

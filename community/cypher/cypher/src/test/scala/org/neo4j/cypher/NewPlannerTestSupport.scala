@@ -62,6 +62,12 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     self.monitors.addMonitorListener(newPlannerMonitor)
   }
 
+  def executeScalarWithNewPlanner[T](queryText: String, params: (String, Any)*): T =
+    monitoringNewPlanner(self.executeScalar[T](queryText, params: _*)) { trace =>
+      trace should contain(NewQuerySeen(queryText))
+      trace should not contain(UnableToHandleQuery(queryText))
+    }
+
   def executeWithNewPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
     monitoringNewPlanner(self.execute(queryText, params: _*)) { trace =>
       trace should contain(NewQuerySeen(queryText))
