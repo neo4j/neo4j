@@ -101,11 +101,11 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
 
 
   case class CountNewQueryPlanSuccessRateMonitor(var queries: Long = 0L, var fallbacks: Long = 0L) extends NewQueryPlanSuccessRateMonitor {
-    override def newQuerySeen(ast: Statement) {
+    override def newQuerySeen(queryText: String, ast: Statement) {
       queries += 1
     }
 
-    override def unableToHandleQuery(ast: Statement) {
+    override def unableToHandleQuery(queryText: String, ast: Statement) {
       fallbacks += 1
     }
   }

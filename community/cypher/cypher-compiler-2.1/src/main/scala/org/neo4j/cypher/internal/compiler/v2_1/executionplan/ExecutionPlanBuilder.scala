@@ -45,8 +45,8 @@ case class PeriodicCommitInfo(size: Option[Long]) {
 }
 
 trait NewQueryPlanSuccessRateMonitor {
-  def newQuerySeen(ast:Statement)
-  def unableToHandleQuery(ast:Statement)
+  def newQuerySeen(queryText: String, ast:Statement)
+  def unableToHandleQuery(queryText: String, ast:Statement)
 }
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService, monitor: NewQueryPlanSuccessRateMonitor, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
@@ -54,12 +54,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, monitor: NewQueryPlanSuc
   def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
 
     val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
-      monitor.newQuerySeen(ast)
-      execPlanBuilder.producePlan(ast)(planContext)
-    } catch {
-      case _: CantHandleQueryException => {
-        monitor.unableToHandleQuery(ast)
-        pipeBuilder.buildPipes(planContext, inputQuery)
+      val queryText = inputQuery.getQueryText
+      try {
+        monitor.newQuerySeen(queryText, ast)
+        execPlanBuilder.producePlan(ast)(planContext)
+      } catch {
+        case _: CantHandleQueryException => {
+          monitor.unableToHandleQuery(queryText, ast)
+          pipeBuilder.buildPipes(planContext, inputQuery)
+        }
       }
     }
 

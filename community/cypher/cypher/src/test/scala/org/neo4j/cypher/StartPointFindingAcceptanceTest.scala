@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
-import symbols._
+import org.neo4j.graphdb.Node
 
-case class AllNodesScanPipe(id: String) extends Pipe {
+class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.nodeOps.all.map(n => ExecutionContext.from(id -> n))
+  test("Scan all nodes") {
+    val nodes = Set(createNode("a"), createNode("b"), createNode("c"))
 
-  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
-
-  override def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("identifier" -> id))
-
-  override def symbols: SymbolTable = new SymbolTable(Map(id -> CTNode))
+    executeWithNewPlanner("match n return n").columnAs[Node]("n").toSet should equal(nodes)
+  }
 }
+
