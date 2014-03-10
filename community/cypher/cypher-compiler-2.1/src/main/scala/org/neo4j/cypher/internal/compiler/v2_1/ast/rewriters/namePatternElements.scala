@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import ast._
 
-object patternElementNamer extends Rewriter {
+object namePatternElements extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val instance: Rewriter = Rewriter.lift {

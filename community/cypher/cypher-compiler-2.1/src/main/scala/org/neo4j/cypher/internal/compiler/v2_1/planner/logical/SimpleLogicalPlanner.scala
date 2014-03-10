@@ -19,15 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, CardinalityEstimator, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, CardinalityEstimator}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {

@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
 import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
 
 /*
 An abstract representation of the query graph being solved at the current step

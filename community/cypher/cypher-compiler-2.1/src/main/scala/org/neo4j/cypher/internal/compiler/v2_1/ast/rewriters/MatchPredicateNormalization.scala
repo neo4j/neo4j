@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import ast._
 
-object TheDefaultMatchPredicateNormalization
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
-
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
   def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)

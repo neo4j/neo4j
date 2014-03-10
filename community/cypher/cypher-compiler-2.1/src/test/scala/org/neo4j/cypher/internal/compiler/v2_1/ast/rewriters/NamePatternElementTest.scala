@@ -19,23 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{FunctionInvocation, Identifier, Equals}
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+class NamePatternElementTest extends CypherFunSuite {
 
-  private val instance: Rewriter = Rewriter.lift {
-    // moved identifiers on equals to the left
-    case predicate @ Equals(Identifier(_), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ Identifier(_)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+  import parser.ParserFixture._
 
-    // move id(n) on equals to the left
-    case predicate @ Equals(FunctionInvocation(Identifier("id"), _, _), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(Identifier("id"), _, _)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+  test("name all NodePatterns in Query" ) {
+    val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
+    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
+
+    val result = original.rewrite(topDown(namePatternElements))
+    assert(result === expected)
   }
+
+  test("name all RelationshipPatterns in Query") {
+    val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
+    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
+
+    val result = original.rewrite(bottomUp(namePatternElements))
+    assert(result === expected)
+  }
+
 }
