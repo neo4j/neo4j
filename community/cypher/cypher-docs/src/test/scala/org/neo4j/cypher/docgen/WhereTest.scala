@@ -142,7 +142,7 @@ class WhereTest extends DocumentingTestBase {
       text = "Sometimes you might want to test if a value or an identifier is +NULL+. This is done just like SQL does it, " +
         "with `IS NULL`. Also like SQL, the negative is `IS NOT NULL`, although `NOT(IS NULL x)` also works.",
       queryText = """match (person) where person.name = 'Peter' AND person.belt is null return person""",
-      optionalResultExplanation = "Nodes that Tobias is not connected to are returned.",
+      optionalResultExplanation = "Nodes that have name 'Peter' but no belt property are returned.",
       assertions = (p) => assertEquals(List(Map("person" -> node("Peter"))), p.toList))
   }
 
