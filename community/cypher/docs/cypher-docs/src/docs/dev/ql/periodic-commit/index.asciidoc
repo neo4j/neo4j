@@ -15,10 +15,6 @@ However it will also break transactional isolation thus it should only be used w
 
 :leveloffset: 2
 
-include::periodic-commit-without-update-limit.asciidoc[]
-
-include::periodic-commit-with-update-limit.asciidoc[]
-
 include::import-using-periodic-commit.asciidoc[]
 
 
