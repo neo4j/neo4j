@@ -26,12 +26,25 @@ trait Query extends Parser
   with Clauses
   with Base {
 
-  def Query: Rule1[ast.Query] = rule {
-    group(optional(PeriodicCommitHint ~ WS) ~ SingleQuery ~ zeroOrMore(WS ~ Union)) ~~>> (ast.Query(_, _))
+  def Query: Rule1[ast.Query] = (
+      RegularQuery
+    | BulkImportQuery
+  )
+
+  def RegularQuery: Rule1[ast.Query] = rule {
+    SingleQuery ~ zeroOrMore(WS ~ Union) ~~>> (ast.Query(None, _))
   }
 
   def SingleQuery: Rule1[ast.SingleQuery] = rule {
     oneOrMore(Clause, separator = WS) ~~>> (ast.SingleQuery(_))
+  }
+
+  def BulkImportQuery: Rule1[ast.Query] = rule {
+    group(PeriodicCommitHint ~ WS ~ LoadCSVQuery) ~~>> ((hint, query) => ast.Query(Some(hint), query))
+  }
+
+  def LoadCSVQuery: Rule1[ast.SingleQuery] = rule {
+    LoadCSV ~ WS ~ zeroOrMore(Clause, separator = WS) ~~>> ((loadCSV, tail) => ast.SingleQuery(Seq(loadCSV) ++ tail))
   }
 
   def Clause: Rule1[ast.Clause] = (

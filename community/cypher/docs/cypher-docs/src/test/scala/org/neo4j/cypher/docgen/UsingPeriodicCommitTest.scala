@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import java.io.File
 
 class UsingPeriodicCommitTest extends DocumentingTestBase with QueryStatisticsTestSupport {
@@ -30,6 +30,7 @@ class UsingPeriodicCommitTest extends DocumentingTestBase with QueryStatisticsTe
 
   def section = "Using Periodic Commit"
 
+  @Ignore
   @Test def simple_periodic_commit() {
     testQuery(
       title = "USING PERIODIC COMMIT",
@@ -40,6 +41,7 @@ class UsingPeriodicCommitTest extends DocumentingTestBase with QueryStatisticsTe
       assertions = (p) => { assertStats(p, nodesCreated = 0, propertiesSet = 0, labelsAdded = 0) })
   }
 
+  @Ignore
   @Test def explicit_periodic_commit() {
     testQuery(
       title = "USING PERIODIC COMMIT with explicit size",

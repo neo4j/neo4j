@@ -40,7 +40,7 @@ class PipeBuilder extends PatternGraphBuilder {
   val unionBuilder = new UnionBuilder(this)
 
   def buildUnionQuery(union: Union, context: PlanContext): PipeInfo =
-    unionBuilder.buildUnionQuery(union, context).withRowAlignment(false)
+    unionBuilder.buildUnionQuery(union, context)
 
   def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true)
 
@@ -77,7 +77,7 @@ class PipeBuilder extends PatternGraphBuilder {
       }
     }
 
-    PipeInfo(planInProgress.pipe, planInProgress.isUpdating).withRowAlignment(!planInProgress.query.containsAggregation)
+    PipeInfo(planInProgress.pipe, planInProgress.isUpdating)
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {
