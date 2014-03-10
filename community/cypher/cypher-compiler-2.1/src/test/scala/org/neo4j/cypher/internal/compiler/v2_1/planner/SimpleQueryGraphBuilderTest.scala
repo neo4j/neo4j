@@ -96,25 +96,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     qg.identifiers should equal(Set(IdName("n")))
   }
 
-  test("match n where 12 = id(n) return n") {
-    val ast = parse("MATCH n WHERE 12 = id(n) RETURN n")
-    val builder = new SimpleQueryGraphBuilder
-    val qg = builder.produce(ast)
-
-    qg.projections should equal(Map(
-      "n" -> Identifier("n")(pos)
-    ))
-
-    qg.selections should equal(Selections(List(
-      Set(IdName("n")) -> Equals(
-        SignedIntegerLiteral("12")(pos),
-        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos)
-      )(pos)
-    )))
-
-    qg.identifiers should equal(Set(IdName("n")))
-  }
-
   def parse(s: String): Query =
     parser.parse(s).asInstanceOf[Query]
 }

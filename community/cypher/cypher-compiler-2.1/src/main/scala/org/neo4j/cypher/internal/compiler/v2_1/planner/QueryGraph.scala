@@ -47,8 +47,6 @@ object SelectionPredicates {
     // id(n) = 12
     case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
       Seq(Set(IdName(ident)) -> predicate)
-    case predicate@Equals(_, FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident)))) =>
-      Seq(Set(IdName(ident)) -> predicate)
 
     case _ =>
       throw new CantHandleQueryException

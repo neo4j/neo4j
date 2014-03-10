@@ -62,9 +62,6 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
       case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(identName))), nodeIdExpr) =>
         val idName = IdName(identName)
         NodeByIdScan(idName, nodeIdExpr, estimator.estimateNodeByIdScan())
-      case Equals(nodeIdExpr, FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(identName)))) =>
-        val idName = IdName(identName)
-        NodeByIdScan(idName, nodeIdExpr, estimator.estimateNodeByIdScan())
 
     }).getOrElse(AllNodesScan(id, estimator.estimateAllNodes()))
     idSet -> source

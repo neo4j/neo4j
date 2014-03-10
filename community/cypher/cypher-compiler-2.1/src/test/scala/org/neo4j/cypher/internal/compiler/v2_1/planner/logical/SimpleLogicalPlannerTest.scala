@@ -110,29 +110,12 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId), 100))
   }
 
-  test("simple node by id scan with a node id expression given on the right") {
+  test("simple node by id scan with a node id expression") {
     // given
     val projections = Map("n" -> Identifier("n")(pos))
     val expr = Equals(
       FunctionInvocation(Identifier("id")(pos), distinct = false, Array(Identifier("n")(pos)))(pos),
       SignedIntegerLiteral("42")(pos)
-    )(pos)
-    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")))
-
-    // when
-    when(estimator.estimateNodeByIdScan()).thenReturn(1)
-    val resultPlan = planner.plan(qg)
-
-    // then
-    resultPlan should equal(NodeByIdScan(IdName("n"), SignedIntegerLiteral("42")(pos), 1))
-  }
-
-  test("simple node by id scan with a node id expression given on the left") {
-    // given
-    val projections = Map("n" -> Identifier("n")(pos))
-    val expr = Equals(
-      SignedIntegerLiteral("42")(pos),
-      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(Identifier("n")(pos)))(pos)
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")))
 
