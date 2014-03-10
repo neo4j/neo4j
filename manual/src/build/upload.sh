@@ -32,8 +32,7 @@ hostname=$(uname -n)
 echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
 
-TC_HOME=/home/teamcity
-IDENTITY_FILE=${HOME-$TC_HOME}/.ssh/neo_at_docs_neo4j_org
+IDENTITY_FILE=${HOME}/.ssh/neo_at_docs_neo4j_org
 
 # Create initial directories
 ssh -i $IDENTITY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
