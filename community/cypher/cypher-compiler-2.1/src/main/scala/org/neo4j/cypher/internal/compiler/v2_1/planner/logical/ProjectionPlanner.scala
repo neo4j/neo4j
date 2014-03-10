@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Identifier}
 class ProjectionPlanner {
   def amendPlan(in: QueryGraph, plan: LogicalPlan): LogicalPlan = {
     val ids: Map[String, Expression] = plan.coveredIds.map {
-      case Id(id) => id -> Identifier(id)(null)
+      case IdName(id) => id -> Identifier(id)(null)
     }.toMap
 
     if (ids != in.projections)

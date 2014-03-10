@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
-case class LabelNodesScan(id: Id, label: Either[String, LabelId], cardinality: Int) extends LogicalPlan {
-  def coveredIds: Set[Id] = Set(id)
+case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId], cardinality: Int) extends LogicalPlan {
+  def coveredIds: Set[IdName] = Set(idName)
 
   def cost: Int = ???
 

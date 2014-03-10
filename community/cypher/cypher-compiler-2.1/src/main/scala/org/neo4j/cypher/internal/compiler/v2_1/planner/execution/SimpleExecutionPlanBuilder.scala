@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters.
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
@@ -40,10 +40,11 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val right = plan.rhs.map(buildPipe)
 
       plan match {
-        case Projection(_, expressions)  => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
-        case SingleRow()                 => NullPipe()
-        case AllNodesScan(Id(id), _)     => AllNodesScanPipe(id)
-        case LabelNodesScan(Id(id), label, _) => NodeByLabelScanPipe(id, label)
+        case Projection(_, expressions)              => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
+        case SingleRow()                             => NullPipe()
+        case AllNodesScan(IdName(id), _)             => AllNodesScanPipe(id)
+        case NodeByLabelScan(IdName(id), label, _)   => NodeByLabelScanPipe(id, label)
+        case NodeByIdScan(IdName(id), nodeIdExpr, _) => NodeByIdScanPipe(id, nodeIdExpr.asCommandExpression)
       }
     }
 

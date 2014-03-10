@@ -37,11 +37,19 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeWithNewPlanner("match (n:Animal) return n").columnAs[Node]("n").toSet should equal(animals)
   }
 
-  ignore("Scan single node by id") {
+  test("Scan single node by id given on the right") {
     createNode("a")
     val node = createNode("b")
 
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
+  }
+
+
+  test("Scan single node by id given on the left") {
+    createNode("a")
+    val node = createNode("b")
+
+    executeScalarWithNewPlanner[Node](s"match n where  ${node.getId} = id(n) return n") should equal(node)
   }
 }
 

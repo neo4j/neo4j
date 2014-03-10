@@ -20,25 +20,30 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, DummyPosition}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LabelNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 
 class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
 
   val planner = new SimpleExecutionPlanBuilder
+  val pos = DummyPosition(0)
 
   test("projection only query") {
-    val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
+    val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(pos)))
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -47,7 +52,7 @@ class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
   }
 
   test("simple pattern query") {
-    val logicalPlan = AllNodesScan(Id("n"), 1000)
+    val logicalPlan = AllNodesScan(IdName("n"), 1000)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -56,11 +61,22 @@ class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
   }
 
   test("simple label scan query") {
-    val logicalPlan = LabelNodesScan(Id("n"), Right(LabelId(12)), 1000)
+    val logicalPlan = NodeByLabelScan(IdName("n"), Right(LabelId(12)), 1000)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
     pipeInfo.pipe should equal(NodeByLabelScanPipe("n", Right(LabelId(12))))
+  }
+
+
+  test("simple node by id scan query") {
+    val astLiteral = SignedIntegerLiteral("42")(pos)
+    val logicalPlan = NodeByIdScan(IdName("n"), astLiteral, 1)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(NodeByIdScanPipe("n", astLiteral.asCommandExpression))
   }
 }

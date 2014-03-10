@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, SimpleQueryGraphBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
@@ -57,7 +57,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "n" -> Identifier("n")(pos)
     ))
 
-    qg.identifiers should equal(Set(Id("n")))
+    qg.identifiers should equal(Set(IdName("n")))
   }
 
   test("match n where n:Awesome return n") {
@@ -70,11 +70,49 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     ))
 
     qg.selections should equal(Selections(Seq(
-      Set(Id("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos),
-      Set(Id("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Foo")()(pos)))(pos)
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos),
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Foo")()(pos)))(pos)
     )))
 
-    qg.identifiers should equal(Set(Id("n")))
+    qg.identifiers should equal(Set(IdName("n")))
+  }
+
+  test("match n where id(n) = 42 return n") {
+    val ast = parse("MATCH n WHERE id(n) = 42 RETURN n")
+    val builder = new SimpleQueryGraphBuilder
+    val qg = builder.produce(ast)
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(List(
+      Set(IdName("n")) -> Equals(
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos)
+    )))
+
+    qg.identifiers should equal(Set(IdName("n")))
+  }
+
+  test("match n where 12 = id(n) return n") {
+    val ast = parse("MATCH n WHERE 12 = id(n) RETURN n")
+    val builder = new SimpleQueryGraphBuilder
+    val qg = builder.produce(ast)
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(List(
+      Set(IdName("n")) -> Equals(
+        SignedIntegerLiteral("12")(pos),
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos)
+      )(pos)
+    )))
+
+    qg.identifiers should equal(Set(IdName("n")))
   }
 
   def parse(s: String): Query =

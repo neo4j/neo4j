@@ -20,14 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, CardinalityEstimator, QueryGraph}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
 
   val projectionPlanner = new ProjectionPlanner
 
   override def plan(qg: QueryGraph): LogicalPlan = {
-    val planTableBuilder = Map.newBuilder[Set[Id], LogicalPlan]
+    val planTableBuilder = Map.newBuilder[Set[IdName], LogicalPlan]
     qg.identifiers.foreach( planTableBuilder += identifierSource(_, qg) )
     val planTable = planTableBuilder.result()
 
@@ -40,13 +48,24 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     projectionPlanner.amendPlan(qg, logicalPlan)
   }
 
-  def identifierSource(id: Id, qg: QueryGraph) = {
+  def identifierSource(id: IdName, qg: QueryGraph) = {
     val idSet = Set(id)
     val predicates = qg.selections.apply(idSet)
     val source = predicates.collectFirst({
+
+      // n:Label
       case HasLabels(Identifier(id.name), label :: Nil) =>
         val labelId = label.id
-        LabelNodesScan(id, labelId.toRight(label.name), estimator.estimateLabelScan(labelId))
+        NodeByLabelScan(id, labelId.toRight(label.name), estimator.estimateNodeByLabelScan(labelId))
+
+      // id(n) = 12
+      case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(identName))), nodeIdExpr) =>
+        val idName = IdName(identName)
+        NodeByIdScan(idName, nodeIdExpr, estimator.estimateNodeByIdScan())
+      case Equals(nodeIdExpr, FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(identName)))) =>
+        val idName = IdName(identName)
+        NodeByIdScan(idName, nodeIdExpr, estimator.estimateNodeByIdScan())
+
     }).getOrElse(AllNodesScan(id, estimator.estimateAllNodes()))
     idSet -> source
   }

@@ -30,8 +30,8 @@ trait LogicalPlan {
   def rhs: Option[LogicalPlan]
   def cost: Int
   def cardinality: Int
-  def coveredIds: Set[Id]
+  def coveredIds: Set[IdName]
   def covers(other: LogicalPlan): Boolean = (other.coveredIds -- coveredIds).isEmpty
 }
 
-case class Id(name: String)
+final case class IdName(name: String) extends AnyVal

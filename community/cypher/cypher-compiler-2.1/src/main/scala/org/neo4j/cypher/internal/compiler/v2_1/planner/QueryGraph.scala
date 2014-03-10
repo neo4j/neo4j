@@ -20,26 +20,42 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelName, Identifier, HasLabels, Where}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
 
 /*
 An abstract representation of the query graph being solved at the current step
  */
 case class QueryGraph(projections: Map[String, ast.Expression],
                       selections: Selections,
-                      identifiers: Set[Id])
+                      identifiers: Set[IdName])
 
 object SelectionPredicates {
-  def fromWhere(where: Where): Seq[(Set[Id], ast.Expression)] = where.expression match {
-    case expr@HasLabels(identifier@Identifier(name), labels) =>
-      labels.map( (label: LabelName) => Set(Id(name)) -> HasLabels(identifier, Seq(label))(expr.position) )
+  // TODO Handle multiple predicates
+  def fromWhere(where: Where): Seq[(Set[IdName], ast.Expression)] = where.expression match {
+
+    // n:Label
+    case predicate@HasLabels(identifier@Identifier(name), labels) =>
+      labels.map( (label: LabelName) => Set(IdName(name)) -> HasLabels(identifier, Seq(label))(predicate.position) )
+
+    // id(n) = 12
+    case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
+      Seq(Set(IdName(ident)) -> predicate)
+    case predicate@Equals(_, FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident)))) =>
+      Seq(Set(IdName(ident)) -> predicate)
+
     case _ =>
       throw new CantHandleQueryException
   }
 }
 
-case class Selections(predicates: Seq[(Set[Id], ast.Expression)] = Seq.empty) {
-  def apply(availableIds: Set[Id]): Seq[ast.Expression] =
+case class Selections(predicates: Seq[(Set[IdName], ast.Expression)] = Seq.empty) {
+  def apply(availableIds: Set[IdName]): Seq[ast.Expression] =
     predicates.collect { case (k, v) if k.subsetOf(availableIds) => v }
 }

@@ -28,7 +28,7 @@ import org.scalatest.mock.MockitoSugar
 
 class ProjectionPlannerTest extends CypherFunSuite with MockitoSugar {
   test("should add projection for expressions not already covered") {
-    val input = fakePlan(Set(Id("n")))
+    val input = fakePlan(Set(IdName("n")))
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
     val planner = new ProjectionPlanner
@@ -39,7 +39,7 @@ class ProjectionPlannerTest extends CypherFunSuite with MockitoSugar {
   }
 
   test("does not add projection when not needed") {
-    val input = fakePlan(Set(Id("n")))
+    val input = fakePlan(Set(IdName("n")))
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
     val planner = new ProjectionPlanner
@@ -49,7 +49,7 @@ class ProjectionPlannerTest extends CypherFunSuite with MockitoSugar {
     result should equal(input)
   }
 
-  def fakePlan(coveredIds: Set[Id]): LogicalPlan = {
+  def fakePlan(coveredIds: Set[IdName]): LogicalPlan = {
     val plan = mock[LogicalPlan]
     when(plan.coveredIds).thenReturn(coveredIds)
     plan
