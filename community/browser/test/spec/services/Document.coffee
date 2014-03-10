@@ -38,3 +38,19 @@ describe 'Service: Document', () ->
       len = Document.length
       Document.remove(f)
       expect(Document.length).toBe len-1
+
+  describe '#update', ->
+    it 'should update document properties', ->
+      d = Document.create()
+      expect(d.attr).toBeUndefined()
+      Document.update(d, { attr: 'it works'})
+      d2 = Document.get(d.id)
+      expect(d2.attr).toBe 'it works'
+
+    it 'should update the update count', ->
+      d = Document.create()
+      expect(d.metrics.updates).toBeUndefined()
+      Document.update(d, title: 'Hello')
+      expect(d.metrics.updates).toBe 1
+
+

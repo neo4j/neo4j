@@ -1,0 +1,12 @@
+div(fullscreen)
+  include partials/frame-common-actions
+  .inner
+    .view-result.help(ng-hide='frame.hasErrors')
+      pre(output-raw = "frame.response")
+
+
+    .status-bar.error(ng-show='frame.hasErrors')
+      div
+        span
+          .icon-warning-sign
+          {{frame.errorText}}

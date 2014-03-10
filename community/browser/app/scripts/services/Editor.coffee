@@ -23,11 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo4jApp.services')
   .service 'Editor', [
     'Document'
+    'EventQueue'
     'Frame'
     'Settings'
     'localStorageService'
     'motdService'
-    (Document, Frame, Settings, localStorageService, motdService) ->
+    'Utils'
+    (Document, EventQueue, Frame, Settings, localStorageService, motdService, Utils) ->
       storageKey = 'history'
       class Editor
         constructor: ->
@@ -42,12 +44,29 @@ angular.module('neo4jApp.services')
         execScript: (input) ->
           @showMessage = no
           frame = Frame.create(input: input)
+          doc = @document
+
+          # Increase script play count and average run time
+          # TODO: this probably shouldn't be handled here
+          if doc?.id
+            EventQueue.trigger('document.update.metrics', doc, {
+              total_runs: (doc.metrics.total_runs or 0) + 1
+            })
+            frame?.then(=>
+              {average_runtime, total_runs} = doc.metrics
+              EventQueue.trigger('document.update.metrics', doc, {
+                average_runtime: Utils.updateAverage(frame.runTime, average_runtime, total_runs-1)
+              })
+            )
 
           if !frame and input != ''
             @setMessage("<b>Unrecognized:</b> <i>#{input}</i>.", 'error')
           else
-            @addToHistory(input)
+            if !(Settings.fileMode and @document?.id)
+              @addToHistory(input)
             @maximize(no)
+
+          return
 
         addToHistory: (input) ->
           @current = ''
@@ -91,6 +110,7 @@ angular.module('neo4jApp.services')
           @document = null
 
         loadDocument: (id) ->
+          # return if @hasChanged() && !confirm("Are you sure you want to throw away your changes?")
           doc = Document.get(id)
           return unless doc
           @content = doc.content
@@ -106,12 +126,15 @@ angular.module('neo4jApp.services')
           # re-fetch document from collection
           @document = Document.get(@document.id) if @document?.id
           if @document?.id
-            @document.content = input
-            Document.save()
+            EventQueue.trigger('document.update', @document, {
+              content: input
+            })
           else
-            @document = Document.create(content: @content)
+            @document = EventQueue.trigger('document.create'
+              content: @content, name: "title")
 
         setContent: (content = '') ->
+          # return if @hasChanged() && !confirm("Are you sure you want to throw away your changes?")
           @content = content
           @focusEditor()
           @document = null

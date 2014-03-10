@@ -28,3 +28,28 @@ describe 'Service: Persistable', () ->
 
     MyClass.fetch()
     expect(Storage.get).toHaveBeenCalledWith('myclass')
+
+  it 'should add timestamps object to newly created objects', ->
+    doc = new Persistable()
+    now = (new Date()).getTime()
+    expect(doc.timestamps).toEqual(jasmine.any(Object))
+    expect(doc.timestamps.created_at).toBeCloseTo(now)
+    expect(doc.timestamps.updated_at).toBeCloseTo(now)
+
+  it 'should set created_at/updated_at keys with provided data for new objects', ->
+    now = 1234
+    doc = new Persistable(timestamps: {
+      created_at: now
+      updated_at: now
+    })
+    expect(doc.timestamps.created_at).toEqual(now)
+    expect(doc.timestamps.updated_at).toEqual(now)
+
+  describe '#update', ->
+    it 'should update updated_at with current time', ->
+      doc = new Persistable(timestamps: {
+        updated_at: 0
+      })
+      now = (new Date()).getTime()
+      doc.update(title: 'hello')
+      expect(doc.timestamps.updated_at).toBeCloseTo(now)

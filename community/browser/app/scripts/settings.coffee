@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #baseURL = 'http://localhost:7474'
 baseURL = ''
 restAPI = "#{baseURL}/db/data"
+# ntnURL = "http://tintin-reference.herokuapp.com"
+#ntnURL = "http://localhost:9292"
 
 angular.module('neo4jApp.settings', [])
   .constant('Settings', {
@@ -28,11 +30,15 @@ angular.module('neo4jApp.settings', [])
     endpoint:
       console: "#{baseURL}/db/manage/server/console"
       jmx: "#{baseURL}/db/manage/server/jmx/query"
+      # login: "#{ntnURL}/browser/login"
+      # logout: "#{ntnURL}/logout"
+      # ntn: "#{ntnURL}/browser/ajax"
       rest: restAPI
       cypher: "#{restAPI}/cypher"
       transaction: "#{restAPI}/transaction"
     host: baseURL
-    maxExecutionTime: 60000
+    maxExecutionTime: 600000
+    heartbeat: 30000
     maxFrames: 50
     maxHistory: 100
     maxNeighbours: 100
@@ -40,4 +46,5 @@ angular.module('neo4jApp.settings', [])
     maxRows: 1000
     maxRawSize: 5000 # bytes
     scrollToTop: yes # When new frames are inserted in to the stream
+    fileMode: false
   })

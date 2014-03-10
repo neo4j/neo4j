@@ -25,9 +25,11 @@ angular.module('neo4jApp.controllers')
     '$scope'
     'Editor'
     'motdService'
-    ($scope, Editor, motdService) ->
+    'Settings'
+    ($scope, Editor, motdService, Settings) ->
       $scope.editor = Editor
       $scope.motd = motdService
+      $scope.settings = Settings
 
       $scope.star = ->
         unless Editor.document

@@ -24,7 +24,8 @@ angular.module('neo4jApp.services')
   .factory 'Document', [
     'Collection'
     'Persistable'
-    (Collection, Persistable) ->
+    'Settings'
+    (Collection, Persistable, Settings) ->
       class Document extends Persistable
         @storageKey = 'documents'
 
@@ -32,9 +33,14 @@ angular.module('neo4jApp.services')
           super data
           @name ?= 'Unnamed document'
           @folder ?= no
+          @metrics ?= {}
+
+        update: (data, silent = no) ->
+          super
+          @metrics.updates = (@metrics.updates or 0) + 1 unless silent
 
         toJSON: ->
-          {@id, @name, @folder, @content}
+          angular.extend(super, {@folder, @content, @metrics})
 
       class Documents extends Collection
         create: (data) ->
@@ -46,6 +52,15 @@ angular.module('neo4jApp.services')
         new: (args) -> new Document(args)
         remove: (doc) ->
           super
+          @save()
+
+        update: (doc, args...) ->
+          doc.update.apply(doc, args)
+          @save()
+
+        # separate method for this since we don't want to update timestamps
+        updateMetrics: (doc, data) ->
+          angular.extend(doc.metrics, data)
           @save()
 
       new Documents(null, Document).fetch()

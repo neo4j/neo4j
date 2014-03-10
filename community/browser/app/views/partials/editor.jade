@@ -1,5 +1,12 @@
-#editor
-  .view-editor(ng-mousedown="focusEditor($event)", ng-controller = "EditorCtrl")
+#editor(ng-controller = "EditorCtrl", ng-mousedown="focusEditor($event)")
+  .file-bar.slide-down(ng-if="settings.fileMode && editor.document.id")
+    .title.icon-star
+      {{editor.document.content | autotitle}}
+      span.edited.icon-circle-blank(ng-if='editor.hasChanged()')
+    .actions
+      a.icon.icon-remove(ng-click='editor.setContent("")')
+      a.button(ng-if='editor.hasChanged()', ng-click='star()') Save
+  .view-editor
     span(ng-class="{'one-line': editorOneLine, 'disable-highlighting': disableHighlighting}")
       .prompt.code-style $
       textarea('ui-codemirror'="{theme: 'neo', mode: 'cypher', autofocus: true, lineNumbers: true, lineWrapping: true, onLoad: codemirrorLoaded}",
@@ -7,14 +14,14 @@
         placeholder='{{motd.tip}}'
         )
     ul.controls.inline
-      li(tooltip-placement='bottom', tooltip='Save')
+      li(ng-if="!(settings.fileMode && editor.document.id)")
         a.balled.golden(ng-class="{active: editor.content, 'enabled': editor.document.id, 'changed': editor.hasChanged()}", ng-click='star()')
           i.icon-star(ng-class="{'icon-exclamation': editor.hasChanged()}")
-      li(tooltip-placement='bottom', tooltip='New')
+      li(ng-if="!settings.fileMode")
         a.balled.add(ng-click='editor.setContent("")', ng-class="{active: editor.content}")
-          i.icon-plus
-      li.divider &nbsp;
-      li(tooltip-placement='bottom', tooltip='Execute')
+            i.icon-plus
+      //- li.divider &nbsp;
+      li
         a.balled.success('ng-click' = 'editor.execScript(editor.content)', ng-class="{active: editor.content}")
           i.icon-play
 

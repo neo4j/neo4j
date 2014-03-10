@@ -110,6 +110,76 @@ angular.module('neo4jApp')
           q.promise
       ]
 
+    FrameProvider.interpreters.push
+      type: 'account'
+      templateUrl: 'views/frame-login.html'
+      matches: ["#{cmdchar}login"]
+      exec: ['NTN', (NTN) ->
+        (input, q) ->
+          NTN.open()
+          .then(q.resolve, ->
+            q.reject(message: "Unable to log in")
+          )
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'account'
+      templateUrl: 'views/frame-logout.html'
+      matches: ["#{cmdchar}logout"]
+      exec: ['NTN', (NTN) ->
+        (input, q) ->
+          p = NTN.logout()
+          p.then(q.resolve, -> q.reject(message: "Unable to log out"))
+          q.promise
+      ]
+
+    FrameProvider.interpreters.push
+      type: 'config'
+      templateUrl: 'views/frame-config.html'
+      matches: ["#{cmdchar}config"]
+      exec: ['Settings', (Settings) ->
+        (input, q) ->
+          matches = /^[^\w]*config\s+([^:]+):?([\S\s]+)?$/.exec(input)
+
+          if (matches?)
+            [key, value] = [matches[1], matches[2]]
+            if (value?) 
+              Settings[key] = value
+              console.log("SET")
+            else
+              value = Settings[key]
+              console.log("GET")
+
+            console.log(key, value, Settings[key])
+            property = {}
+            property[key] = value
+            q.resolve(property)
+          else 
+            q.resolve(Settings)
+
+          # try
+          #   [key, value] = [matches[1], matches[2]]
+          # catch e
+          #   q.reject(error("Unparseable configuration command."))
+          #   return q.promise
+
+          # verb = verb?.toLowerCase()
+          # if not verb
+          #   q.reject(error("Invalid verb, expected 'GET, PUT, POST or DELETE'"))
+          #   return q.promise
+
+
+          # if (matches)
+          #   [_, feature, action] = [matches[1], matches[2], matches[3]]
+
+          #   # extend this when more features are introduced
+          #   Settings.fileMode = feature == 'filemode' and action == 'enable'
+
+          q.promise
+          
+      ]
+
     # about handler
     # FrameProvider.interpreters.push
     #   type: 'info'
@@ -132,10 +202,10 @@ angular.module('neo4jApp')
     FrameProvider.interpreters.push
       type: 'http'
       templateUrl: 'views/frame-rest.html'
-      matches: ["#{cmdchar}get", "#{cmdchar}post", "#{cmdchar}delete", "#{cmdchar}put"]
+      matches: ["#{cmdchar}get", "#{cmdchar}post", "#{cmdchar}delete", "#{cmdchar}put", "#{cmdchar}head"]
       exec: ['Server', (Server) ->
         (input, q) ->
-          regex = /^[^\w]*(get|GET|put|PUT|post|POST|delete|DELETE)\s+(\S+)\s*([\S\s]+)?$/i
+          regex = /^[^\w]*(get|GET|put|PUT|post|POST|delete|DELETE|head|HEAD)\s+(\S+)\s*([\S\s]+)?$/i
           result = regex.exec(input)
 
           try
@@ -196,7 +266,7 @@ angular.module('neo4jApp')
     # Cypher handler
     FrameProvider.interpreters.push
       type: 'cypher'
-      matches: ['cypher', 'start', 'match', 'create', 'drop', 
+      matches: ['cypher', 'start', 'match', 'create', 'drop',
         'return', 'set', 'remove', 'delete', 'merge', 'optional',
         'where', 'foreach', 'with', 'load', 'using'
       ]

@@ -35,7 +35,7 @@ angular.module('neo4jApp.services')
           @name ?= 'Unnamed folder'
 
         toJSON: ->
-          {@id, @name, @expanded}
+          angular.extend(super, {@name, @expanded})
 
       class Folders extends Collection
         create: (data) ->

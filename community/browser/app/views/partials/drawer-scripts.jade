@@ -1,5 +1,5 @@
 h4 Saved scripts
-  a.create-folder(ng-click='folders.create()', tooltip-placement='bottom', tooltip='Create folder')
+  a.create-folder(ng-click="events.trigger('folder.create')", tooltip-placement='bottom', tooltip='Create folder')
     .icon-plus-sign-alt
 .inner
   .droppable(
@@ -9,7 +9,7 @@ h4 Saved scripts
       div(edit-in-place='folder.name', on-blur='folders.save()')
       a.icon-trash(ng-click='removeFolder(folder)', tooltip-placement='left', tooltip='Remove folder')
     ul.starred.indented(ng-show='folder.expanded')
-      li(ng-repeat="document in documents.where({folder: folder.id})", ng-animate="{leave:'pop-out', enter:'pop-in'}")
+      li(ng-repeat="document in documents.where({folder: folder.id})")
         include list-item
   .droppable(ui-sortable="sortableOptions")
     ul.starred

@@ -1,0 +1,31 @@
+!!! 5
+html
+  head
+    link(rel="stylesheet", href="styles/login.css")
+  body
+    .expand
+      .wrapper
+        h1 Welcome to the Neo4j cloud
+        p
+          a.btn(href='#') Login with GitHub
+  script(src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js')
+  script(src='components/postmessage/postmessage.js')
+  script(type="text/javascript")
+    function send(channel, data) {
+      pm({
+        target: window.parent,
+        type: channel,
+        data: data
+      })
+    }
+
+    $(function(){
+      send('login.ready');
+      $('.expand').fadeIn(200);
+    });
+
+    $('.expand').click(function(e){
+      if(e.target === this) {
+        $('.expand').fadeOut(200, function() { send('login.close'); })
+      }
+    })

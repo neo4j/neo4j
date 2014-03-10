@@ -57,7 +57,7 @@ module.exports = (grunt) ->
         tasks: ["coffee:test"]
 
       stylus:
-        files: 'app/styles/*.styl',
+        files: 'app/styles/{,*/}*.styl',
         tasks: ["stylus"]
 
       livereload:
@@ -65,7 +65,7 @@ module.exports = (grunt) ->
         tasks: ["livereload"]
 
       jade:
-        files: ['app/index.jade', 'app/views/**/*.jade', 'app/content/**/*.jade']
+        files: ['app/index.jade','app/login.jade', 'app/protected.jade', 'app/views/**/*.jade', 'app/content/**/*.jade']
         tasks: ['jade']
 
     connect:
@@ -149,12 +149,13 @@ module.exports = (grunt) ->
       compile:
         files:
           '<%= yeoman.app %>/styles/main.css': ['<%= yeoman.app %>/styles/*.styl']
+          '<%= yeoman.app %>/styles/login.css': ['<%= yeoman.app %>/styles/login/login.styl']
       options:
         paths: ["<%= yeoman.app %>/vendor/foundation", "<%= yeoman.app %>/images"]
 
     jade:
       index:
-        src: ["<%= yeoman.app %>/index.jade"]
+        src: ["<%= yeoman.app %>/index.jade", "<%= yeoman.app %>/login.jade", "<%= yeoman.app %>/protected.jade"]
         dest: '<%= yeoman.app %>'
         options:
           client: false

@@ -1,0 +1,38 @@
+!!! 5
+html
+  head
+  body
+  script(src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js')
+  script(src='components/postmessage/postmessage.js')
+  script(type="text/javascript")
+    function send(channel, data) {
+      pm({
+        target: window.parent,
+        type: channel,
+        data: data
+      })
+    }
+
+    $(function() { send('ajax.ready'); })
+
+    // Proxy AJAX calls
+    pm.bind("ajax", function(data, done) {
+      $.ajax(data)
+      .done(function(r, b, c) {
+        done({
+          responseJSON: r,
+          status: c.status
+        })
+      })
+      .fail(function(r) {
+        json = null
+        try {
+          json = JSON.parse(r.responseText || null)
+        }
+        catch(e) {}
+        done({
+          responseJSON: json,
+          status: r.status
+        })
+      });
+    }, null, null, true);
