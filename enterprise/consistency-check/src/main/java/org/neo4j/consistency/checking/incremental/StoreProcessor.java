@@ -23,16 +23,17 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.AbstractStoreProcessor;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-
-import static org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 
 class StoreProcessor extends AbstractStoreProcessor
 {
@@ -102,5 +103,12 @@ class StoreProcessor extends AbstractStoreProcessor
                                       RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
     {
         report.forDynamicLabelBlockChange( type, store.forceGetRaw( string ), string, checker );
+    }
+
+    @Override
+    protected void checkRelationshipGroup( RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+    {
+        report.forRelationshipGroupChange( store.forceGetRaw( record ), record, checker );
     }
 }

@@ -496,7 +496,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
                         lastUpdateTime ) );
     }
-    
+
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {

@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -30,12 +36,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -311,7 +311,7 @@ public class TransactionHandle
     }
 
 
-    private void executePeriodicCommitStatement( 
+    private void executePeriodicCommitStatement(
            StatementDeserializer statements, ExecutionResultSerializer output, List<Neo4jError> errors )
     {
         try

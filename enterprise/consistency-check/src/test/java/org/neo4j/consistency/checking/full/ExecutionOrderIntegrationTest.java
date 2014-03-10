@@ -37,6 +37,7 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
@@ -288,6 +289,13 @@ public class ExecutionOrderIntegrationTest
         @Override
         public RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> decorateLabelMatchChecker(
                 RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+                RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
         {
             return logging( checker );
         }

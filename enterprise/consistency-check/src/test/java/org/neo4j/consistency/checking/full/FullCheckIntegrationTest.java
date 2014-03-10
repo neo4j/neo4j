@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.Pair;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
@@ -92,6 +94,7 @@ import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullBy
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.util.Bits.bits;
@@ -118,6 +121,8 @@ public class FullCheckIntegrationTest
                 Node node1 = set( graphDb.createNode( label( "label1" ) ) );
                 Node node2 = set( graphDb.createNode( label( "label2" ) ), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, withName( "C" ) );
+                // Just to create one more rel type
+                graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "T" ) );
                 indexedNodes.add( set( graphDb.createNode( label( "label3" ) ), property( "key", "value" ) ).getId() );
                 set( graphDb.createNode( label( "label4" ) ), property( "key", "value" ) );
                 tx.success();
@@ -140,6 +145,12 @@ public class FullCheckIntegrationTest
 
     private void verifyInconsistency( ConsistencySummaryStatistics stats, RecordType... recordTypes )
     {
+        verifyInconsistency( stats, 1, recordTypes );
+    }
+
+    private void verifyInconsistency( ConsistencySummaryStatistics stats, int expectedNumberOfInconsistencies,
+            RecordType... recordTypes )
+    {
         int totalInconsistencyCount = 0;
         for ( RecordType recordType : recordTypes )
         {
@@ -149,6 +160,7 @@ public class FullCheckIntegrationTest
         }
         assertEquals( "Expected only inconsistencies of type " + Arrays.toString( recordTypes ) + ", got:\n" + log,
                       totalInconsistencyCount, stats.getTotalInconsistencyCount() );
+        assertEquals( "Unexpected number of inconsistencies", expectedNumberOfInconsistencies, totalInconsistencyCount );
     }
 
     @Test
@@ -228,7 +240,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        verifyInconsistency( stats, 2, RecordType.NODE );
     }
 
     @Test
@@ -256,7 +268,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        verifyInconsistency( stats, 2, RecordType.NODE );
     }
 
     @Test
@@ -350,7 +362,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.INDEX, RecordType.LABEL_SCAN_DOCUMENT );
+        verifyInconsistency( stats, 2, RecordType.INDEX, RecordType.LABEL_SCAN_DOCUMENT );
     }
 
     @Test
@@ -498,7 +510,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE, RecordType.INDEX );
+        verifyInconsistency( stats, 3, RecordType.NODE, RecordType.INDEX );
     }
 
     private long inlinedLabelsLongRepresentation( long... labelIds )
@@ -544,7 +556,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        verifyInconsistency( stats, 2, RecordType.NODE );
     }
 
     private Pair<List<DynamicRecord>, List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount ) throws IOException
@@ -617,7 +629,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.NODE );
+        verifyInconsistency( stats, 2, RecordType.NODE );
     }
 
     @Test
@@ -667,7 +679,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.RELATIONSHIP );
+        verifyInconsistency( stats, 2, RecordType.RELATIONSHIP );
     }
 
     @Test
@@ -693,7 +705,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.PROPERTY );
+        verifyInconsistency( stats, 4, RecordType.PROPERTY );
     }
 
     @Test
@@ -757,7 +769,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.SCHEMA );
+        verifyInconsistency( stats, 3, RecordType.SCHEMA );
     }
 
     @Test
@@ -804,7 +816,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.SCHEMA );
+        verifyInconsistency( stats, 4, RecordType.SCHEMA );
     }
 
     @Test
@@ -851,7 +863,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        verifyInconsistency( stats, RecordType.SCHEMA );
+        verifyInconsistency( stats, 2, RecordType.SCHEMA );
     }
 
     public static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
@@ -964,7 +976,7 @@ public class FullCheckIntegrationTest
         // given
         StoreAccess access = fixture.directStoreAccess().nativeStores();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = access.getRelationshipTypeTokenStore();
-        RelationshipTypeTokenRecord record = relTypeStore.forceGetRecord( relTypeStore.nextId() );
+        RelationshipTypeTokenRecord record = relTypeStore.forceGetRecord( (int) relTypeStore.nextId() );
         record.setNameId( 20 );
         record.setInUse( true );
         relTypeStore.updateRecord( record );
@@ -973,6 +985,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check( fixture.directStoreAccess() );
 
         // then
+        access.close();
         verifyInconsistency( stats, RecordType.RELATIONSHIP_TYPE );
     }
 
@@ -1018,6 +1031,277 @@ public class FullCheckIntegrationTest
 
         // then
         verifyInconsistency( stats, RecordType.PROPERTY_KEY );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupTypeInconsistencies() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                tx.create( new RelationshipGroupRecord( next.relationshipGroup(), 11 /*non-existent type*/ ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupChainInconsistencies() throws Exception
+    {
+        // given
+        final int typeId = 0; // created in test setup
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long groupId = next.relationshipGroup();
+                tx.create( withNext( new RelationshipGroupRecord( groupId, typeId ),
+                        groupId+1 /*non-existent group id*/ ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupUnsortedChainInconsistencies() throws Exception
+    {
+        // given
+        final int firstTypeId = 0, otherTypeId = 1;
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long firstGroupId = next.relationshipGroup();
+                long otherGroupId = next.relationshipGroup();
+                tx.create( withNext( new RelationshipGroupRecord( firstGroupId, otherTypeId ), otherGroupId ) );
+                tx.create( new RelationshipGroupRecord( otherGroupId, firstTypeId ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupRelationshipNotInUseInconsistencies() throws Exception
+    {
+        // given
+        final int typeId = 0;
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                long groupId = next.relationshipGroup();
+                long rel = next.relationship();
+                tx.create( withRelationships( new RelationshipGroupRecord( groupId, typeId ), rel, rel, rel ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, 3, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupRelationshipNotFirstInconsistencies() throws Exception
+    {
+        // given
+        final int typeId = 0;
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                /*
+                 *   node ----------------> group
+                 *                             |
+                 *                             v
+                 *   otherNode <--> relA <--> relB
+                 */
+                long node = next.node();
+                long otherNode = next.node();
+                long group = next.relationshipGroup();
+                long relA = next.relationship();
+                long relB = next.relationship();
+                tx.create( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( new NodeRecord( otherNode, false, relA, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( withNext( new RelationshipRecord( relA, otherNode, otherNode, typeId ), relB ) );
+                tx.create( withPrev( new RelationshipRecord( relB, otherNode, otherNode, typeId ), relA ) );
+                tx.create( withRelationships( new RelationshipGroupRecord( group, typeId ), relB, relB, relB ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, 3, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    protected RelationshipRecord withNext( RelationshipRecord relationship, long next )
+    {
+        relationship.setFirstNextRel( next );
+        relationship.setSecondNextRel( next );
+        return relationship;
+    }
+
+    protected RelationshipRecord withPrev( RelationshipRecord relationship, long prev )
+    {
+        relationship.setFirstInFirstChain( false );
+        relationship.setFirstInSecondChain( false );
+        relationship.setFirstPrevRel( prev );
+        relationship.setSecondPrevRel( prev );
+        return relationship;
+    }
+
+    @Test
+    public void shouldReportRelationshipGroupRelationshipOfOtherTypeInconsistencies() throws Exception
+    {
+        // given
+        final int typeA = 0, typeB = 1;
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                /*
+                 *   node -----> groupA
+                 *                   |
+                 *                   v
+                 *   otherNode <--> relB
+                 */
+                long node = next.node();
+                long otherNode = next.node();
+                long group = next.relationshipGroup();
+                long rel = next.relationship();
+                tx.create( new NodeRecord( node, true, group, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( new NodeRecord( otherNode, false, rel, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( new RelationshipRecord( rel, otherNode, otherNode, typeB ) );
+                tx.create( withRelationships( new RelationshipGroupRecord( group, typeA ), rel, rel, rel ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        verifyInconsistency( stats, 3, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    protected RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
+            long in, long loop )
+    {
+        group.setFirstOut( out );
+        group.setFirstIn( in );
+        group.setFirstLoop( loop );
+        return group;
+    }
+
+    // TODO out/in/loop rel is of other type than group
+
+    @Test
+    public void shouldNotReportRelationshipGroupInconsistenciesForConsistentRecords() throws Exception
+    {
+        // given
+        final int typeA = 0, typeB = 1; // created in test setup
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                /* Create a little mini consistent structure:
+                 *
+                 *    nodeA --> groupA -[next]-> groupB
+                 *      ^          |
+                 *       \       [out]
+                 *        \        v
+                 *       [start]- rel -[end]-> nodeB
+                 */
+
+                long nodeA = next.node();
+                long nodeB = next.node();
+                long rel = next.relationship();
+                long groupA = next.relationshipGroup();
+                long groupB = next.relationshipGroup();
+
+                tx.create( new NodeRecord( nodeA, true, groupA, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( new NodeRecord( nodeB, false, rel, NO_NEXT_PROPERTY.intValue() ) );
+                tx.create( firstInChains( new RelationshipRecord( rel, nodeA, nodeB, typeA ), 1 ) );
+
+                tx.create( withRelationship( withNext( new RelationshipGroupRecord( groupA, typeA ), groupB ),
+                        Direction.OUTGOING, rel ) );
+                tx.create( new RelationshipGroupRecord( groupB, typeB ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        assertTrue( "should be consistent", stats.isConsistent() );
+    }
+
+    protected RelationshipGroupRecord withRelationship( RelationshipGroupRecord group, Direction direction,
+            long rel )
+    {
+        switch ( direction )
+        {
+        case OUTGOING:
+            group.setFirstOut( rel );
+            break;
+        case INCOMING:
+            group.setFirstIn( rel );
+            break;
+        case BOTH:
+            group.setFirstLoop( rel );
+            break;
+        default:
+            throw new IllegalArgumentException( direction.name() );
+        }
+        return group;
+    }
+
+    protected RelationshipRecord firstInChains( RelationshipRecord relationship, int count )
+    {
+        relationship.setFirstInFirstChain( true );
+        relationship.setFirstPrevRel( count );
+        relationship.setFirstInSecondChain( true );
+        relationship.setSecondPrevRel( count );
+        return relationship;
+    }
+
+    protected RelationshipGroupRecord withNext( RelationshipGroupRecord group, long next )
+    {
+        group.setNext( next );
+        return group;
     }
 
     private static class Reference<T>

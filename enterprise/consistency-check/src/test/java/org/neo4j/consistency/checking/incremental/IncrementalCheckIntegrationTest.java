@@ -203,7 +203,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportRelationshipInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.RELATIONSHIP, 1, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.RELATIONSHIP, 2, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -218,7 +218,7 @@ public class IncrementalCheckIntegrationTest
     @Test
     public void shouldReportPropertyInconsistency() throws Exception
     {
-        verifyInconsistencyReported( RecordType.PROPERTY, 1, new GraphStoreFixture.Transaction()
+        verifyInconsistencyReported( RecordType.PROPERTY, 2, new GraphStoreFixture.Transaction()
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
@@ -300,6 +300,8 @@ public class IncrementalCheckIntegrationTest
             }
         } );
     }
+
+    // Remember to add relationship group inconsistency checks if we add prev pointer to relationship groups
 
     private static String LONG_STRING, LONG_SHORT_STRING;
 

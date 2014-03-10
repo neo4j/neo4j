@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -151,6 +152,11 @@ public abstract class GraphStoreFixture implements TestRule
         public long relationship()
         {
             return relId++;
+        }
+
+        public long relationshipGroup()
+        {
+            return relGroupId++;
         }
 
         public long property()
@@ -320,6 +326,42 @@ public abstract class GraphStoreFixture implements TestRule
             }
         }
 
+        public void create( RelationshipGroupRecord group )
+        {
+            try
+            {
+                writer.create( group );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
+        public void update(  RelationshipGroupRecord group )
+        {
+            try
+            {
+                writer.update( group );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
+        public void delete(  RelationshipGroupRecord group )
+        {
+            try
+            {
+                writer.delete( group );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
         public void create( PropertyRecord property )
         {
             try
@@ -422,6 +464,7 @@ public abstract class GraphStoreFixture implements TestRule
     private int labelId;
     private long nodeLabelsId;
     private long relId;
+    private long relGroupId;
     private int propId;
     private long stringPropId;
     private long arrayPropId;
@@ -440,6 +483,7 @@ public abstract class GraphStoreFixture implements TestRule
             labelId = (int) stores.getLabelTokenStore().getHighId();
             nodeLabelsId = stores.getNodeDynamicLabelStore().getHighId();
             relId = stores.getRelationshipStore().getHighId();
+            relGroupId = stores.getRelationshipGroupStore().getHighId();
             propId = (int) stores.getPropertyStore().getHighId();
             stringPropId = stores.getStringStore().getHighId();
             arrayPropId = stores.getArrayStore().getHighId();

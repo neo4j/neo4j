@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.annotations;
 
-import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
-import static org.neo4j.kernel.impl.util.FileUtils.newFilePrintWriter;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -43,6 +40,9 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
+import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
+import static org.neo4j.kernel.impl.util.FileUtils.newFilePrintWriter;
+
 public abstract class AnnotationProcessor extends AbstractProcessor
 {
     private CompilationManipulator manipulator = null;
@@ -53,8 +53,10 @@ public abstract class AnnotationProcessor extends AbstractProcessor
         super.init( processingEnv );
         manipulator = CompilationManipulator.load( this, processingEnv );
         if ( manipulator == null )
+        {
             processingEnv.getMessager().printMessage( Kind.NOTE,
                     "Cannot write values to this compiler: " + processingEnv.getClass().getName() );
+        }
     }
 
     @Override
@@ -161,7 +163,10 @@ public abstract class AnnotationProcessor extends AbstractProcessor
         {
             for ( String previous : nl.split( fo.getCharContent( true ), 0 ) )
             {
-                if ( line.equals( previous ) ) return;
+                if ( line.equals( previous ) )
+                {
+                    return;
+                }
             }
         }
         else

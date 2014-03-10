@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
@@ -150,6 +151,36 @@ public class TransactionWriter
         update( relationship );
     }
 
+    public void update( RelationshipRecord relationship ) throws IOException
+    {
+        relationship.setInUse( true );
+        add( relationship );
+    }
+
+    public void delete( RelationshipRecord relationship ) throws IOException
+    {
+        relationship.setInUse( false );
+        add( relationship );
+    }
+
+    public void create( RelationshipGroupRecord group ) throws IOException
+    {
+        group.setCreated();
+        update( group );
+    }
+
+    public void update( RelationshipGroupRecord group ) throws IOException
+    {
+        group.setInUse( true );
+        add( group );
+    }
+
+    public void delete( RelationshipGroupRecord group ) throws IOException
+    {
+        group.setInUse( false );
+        add( group );
+    }
+
     public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord ) throws IOException
     {
         for ( DynamicRecord record : afterRecord )
@@ -166,18 +197,6 @@ public class TransactionWriter
             record.setInUse( true );
         }
         addSchema( beforeRecords, afterRecords );
-    }
-
-    public void update( RelationshipRecord relationship ) throws IOException
-    {
-        relationship.setInUse( true );
-        add( relationship );
-    }
-
-    public void delete( RelationshipRecord relationship ) throws IOException
-    {
-        relationship.setInUse( false );
-        add( relationship );
     }
 
     public void create( PropertyRecord property ) throws IOException
@@ -222,6 +241,11 @@ public class TransactionWriter
     public void add( RelationshipRecord relationship ) throws IOException
     {
         write( new Command.RelationshipCommand( null, relationship ) );
+    }
+
+    public void add( RelationshipGroupRecord group ) throws IOException
+    {
+        write( new Command.RelationshipGroupCommand( null, group ) );
     }
 
     public void add( PropertyRecord before, PropertyRecord property ) throws IOException

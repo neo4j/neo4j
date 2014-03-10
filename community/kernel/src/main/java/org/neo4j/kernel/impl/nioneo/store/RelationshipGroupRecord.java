@@ -26,61 +26,61 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     private long firstOut = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long firstIn = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long firstLoop = Record.NO_NEXT_RELATIONSHIP.intValue();
-    
+
     // Not stored, just kept in memory temporarily when loading the group chain
     private long prev = Record.NO_NEXT_RELATIONSHIP.intValue();
-    
+
     public RelationshipGroupRecord( long id, int type )
     {
         super( id );
         this.type = type;
     }
-    
+
     public int getType()
     {
         return type;
     }
-    
+
     public long getFirstOut()
     {
         return firstOut;
     }
-    
+
     public void setFirstOut( long firstOut )
     {
         this.firstOut = firstOut;
     }
-    
+
     public long getFirstIn()
     {
         return firstIn;
     }
-    
+
     public void setFirstIn( long firstIn )
     {
         this.firstIn = firstIn;
     }
-    
+
     public long getFirstLoop()
     {
         return firstLoop;
     }
-    
+
     public void setFirstLoop( long firstLoop )
     {
         this.firstLoop = firstLoop;
     }
-    
+
     public long getNext()
     {
         return next;
     }
-    
+
     public void setNext( long next )
     {
         this.next = next;
     }
-    
+
     /**
      * The previous pointer, i.e. previous group in this chain of groups isn't
      * persisted in the store, but only set during reading of the group
@@ -91,7 +91,7 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     {
         this.prev = prev;
     }
-    
+
     /**
      * The previous pointer, i.e. previous group in this chain of groups isn't
      * persisted in the store, but only set during reading of the group
@@ -102,7 +102,7 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     {
         return prev;
     }
-    
+
     @Override
     public String toString()
     {
@@ -113,7 +113,7 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
                 .append( ",loop=" + firstLoop )
                 .append( ",prev=" + prev )
                 .append( ",next=" + next )
-                .append( ",inUse=" + inUse() )
+                .append( ",used=" + inUse() )
                 .append( "]" ).toString();
     }
 }

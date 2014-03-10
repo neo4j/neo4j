@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
@@ -47,6 +48,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     private final RecordCheck<PropertyKeyTokenRecord, ConsistencyReport.PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
     private final RecordCheck<RelationshipTypeTokenRecord, ConsistencyReport.RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
     private final RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> labelTokenChecker;
+    private final RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> relationshipGroupChecker;
 
     public AbstractStoreProcessor()
     {
@@ -63,6 +65,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
         this.relationshipTypeTokenChecker = decorator.decorateRelationshipTypeTokenChecker( new
                 RelationshipTypeTokenRecordCheck() );
         this.labelTokenChecker = decorator.decorateLabelTokenChecker( new LabelTokenRecordCheck() );
+        this.relationshipGroupChecker = decorator.decorateRelationshipGroupChecker( new RelationshipGroupRecordCheck() );
     }
 
     protected abstract void checkNode(
@@ -99,6 +102,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     protected abstract void checkDynamicLabel(
             RecordType type, RecordStore<DynamicRecord> store, DynamicRecord string,
             RecordCheck<DynamicRecord, ConsistencyReport.DynamicLabelConsistencyReport> checker );
+
+    protected abstract void checkRelationshipGroup(
+            RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
+            RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
 
     @Override
     public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
@@ -192,5 +199,12 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
     {
         checkLabelToken( store, record, labelTokenChecker );
+    }
+
+    @Override
+    public void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record )
+            throws RuntimeException
+    {
+        checkRelationshipGroup( store, record, relationshipGroupChecker );
     }
 }

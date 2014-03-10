@@ -33,6 +33,7 @@ public class StoreIdIterator implements PrimitiveLongIterator
     public StoreIdIterator( RecordStore<?> store )
     {
         this.store = store;
+        this.id = store.getNumberOfReservedLowIds();
     }
 
     @Override
