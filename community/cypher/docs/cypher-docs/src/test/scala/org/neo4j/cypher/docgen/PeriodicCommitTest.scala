@@ -29,6 +29,7 @@ class PeriodicCommitTest
 
   def section: String = "PERIODIC COMMIT"
 
+  @Ignore
   @Test def periodic_commit_default() {
     testQuery(
       title = "Periodic commit without update limit",
@@ -39,6 +40,7 @@ class PeriodicCommitTest
     )
   }
 
+  @Ignore
   @Test def periodicCommit() {
     testQuery(
       title = "Periodic commit with update limit",
