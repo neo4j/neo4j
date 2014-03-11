@@ -615,11 +615,11 @@ public class IndexingService extends LifecycleAdapter
     public void activateIndex( long indexId ) throws
             IndexNotFoundKernelException, IndexActivationFailedKernelException, IndexPopulationFailedKernelException
     {
-        IndexProxy index = getProxyForRule( indexId );
         try
         {
             if ( state == State.RUNNING ) // don't do this during recovery.
             {
+                IndexProxy index = getProxyForRule( indexId );
                 index.awaitStoreScanCompleted();
                 index.activate();
             }
