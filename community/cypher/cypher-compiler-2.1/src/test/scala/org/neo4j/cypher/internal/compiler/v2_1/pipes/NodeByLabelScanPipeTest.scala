@@ -19,17 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
-import symbols._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import org.neo4j.graphdb.Node
+import org.mockito.Mockito
 
-case class AllNodesScanPipe(ident: String) extends Pipe {
+class NodeByLabelScanPipeTest extends CypherFunSuite {
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.nodeOps.all.map(n => ExecutionContext.from(ident -> n))
+  import Mockito.when
 
-  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
+  test("should scan labeled nodes") {
+    // given
+    val nodes = List(mock[Node], mock[Node])
+    val queryState = QueryStateHelper.emptyWith(
+      query = when(mock[QueryContext].getNodesByLabel(12)).thenReturn(nodes.iterator).getMock[QueryContext]
+    )
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("ident" -> ident))
+    // when
+    val result = NodeByLabelScanPipe("a", Right(LabelId(12))).createResults(queryState)
 
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+    // then
+    result.map(_("a")).toList should equal(nodes)
+  }
 }

@@ -44,7 +44,7 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
         case SingleRow()                             => NullPipe()
         case AllNodesScan(IdName(id), _)             => AllNodesScanPipe(id)
         case NodeByLabelScan(IdName(id), label, _)   => NodeByLabelScanPipe(id, label)
-        case NodeByIdScan(IdName(id), nodeIdExpr, _) => NodeByIdScanPipe(id, nodeIdExpr.asCommandExpression)
+        case NodeByIdScan(IdName(id), nodeIdExpr, _) => NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
       }
     }
 

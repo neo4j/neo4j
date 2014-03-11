@@ -19,12 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, symbols, PlanDescription, ExecutionContext}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.symbols
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import scala.Some
 
 case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) extends Pipe {
 
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {
       case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
       case Right(labelId) => Some(labelId)
@@ -38,9 +43,9 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) ex
     }
   }
 
-  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
+  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  override def executionPlanDescription: PlanDescription = ???
+  def executionPlanDescription =new PlanDescriptionImpl(this, "LabelScan", Seq.empty, Seq("ident" -> ident, "label" -> label))
 
-  override def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 }
