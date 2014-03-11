@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
 
   val projectionPlanner = new ProjectionPlanner
 
-  override def plan(qg: QueryGraph): LogicalPlan = {
+  override def plan(qg: QueryGraph)(implicit planContext: PlanContext): LogicalPlan = {
     val planTableBuilder = Map.newBuilder[Set[IdName], LogicalPlan]
     qg.identifiers.foreach( planTableBuilder += identifierSource(_, qg) )
     val planTable = planTableBuilder.result()
@@ -43,11 +44,10 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     projectionPlanner.amendPlan(qg, logicalPlan)
   }
 
-  def identifierSource(id: IdName, qg: QueryGraph) = {
+  def identifierSource(id: IdName, qg: QueryGraph)(implicit planContext: PlanContext) = {
     val idSet = Set(id)
     val predicates = qg.selections.apply(idSet)
     val source = predicates.collectFirst({
-
       // n:Label
       case HasLabels(Identifier(id.name), label :: Nil) =>
         val labelId = label.id

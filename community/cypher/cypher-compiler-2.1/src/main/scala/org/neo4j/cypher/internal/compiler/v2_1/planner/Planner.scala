@@ -44,15 +44,15 @@ case class Planner() {
   }
 
   val tokenResolver = new SimpleTokenResolver()
-  val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val queryGraphBuilder = new SimpleQueryGraphBuilder
+  val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
 
   def producePlan(in: Statement)(planContext: PlanContext): PipeInfo = in match {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
-      val logicalPlan = logicalPlanner.plan(queryGraph)
+      val logicalPlan = logicalPlanner.plan(queryGraph)(planContext)
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>

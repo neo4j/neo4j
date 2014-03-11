@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 trait LogicalPlanner {
-  def plan(in: QueryGraph): LogicalPlan
+  def plan(in: QueryGraph)(implicit planContext: PlanContext): LogicalPlan
 }

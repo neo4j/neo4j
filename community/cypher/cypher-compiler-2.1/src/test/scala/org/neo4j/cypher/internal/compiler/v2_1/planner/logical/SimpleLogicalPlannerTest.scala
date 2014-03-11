@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
@@ -53,6 +54,7 @@ import scala.Some
 class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
   val estimator = mock[CardinalityEstimator]
+  val planContext = mock[PlanContext]
   val planner = new SimpleLogicalPlanner(estimator)
   val pos = DummyPosition(0)
 
@@ -62,7 +64,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val qg = QueryGraph(projections, Selections(), Set.empty)
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(qg)(planContext)
 
     // then
     resultPlan should equal(Projection(SingleRow(), projections))
@@ -75,7 +77,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateAllNodes()).thenReturn(1000)
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(qg)(planContext)
 
     // then
     resultPlan should equal(AllNodesScan(IdName("n"), 1000))
@@ -89,7 +91,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateNodeByLabelScan(None)).thenReturn(0)
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(qg)(planContext)
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Left("Awesome"), 0))
@@ -104,7 +106,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(qg)(planContext)
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId), 100))
@@ -121,7 +123,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateNodeByIdScan()).thenReturn(1)
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(qg)(planContext)
 
     // then
     resultPlan should equal(NodeByIdScan(IdName("n"), SignedIntegerLiteral("42")(pos), 1))
