@@ -35,9 +35,9 @@ case class QueryGraph(projections: Map[String, ast.Expression],
                       identifiers: Set[IdName])
 
 object SelectionPredicates {
-  // TODO Handle multiple predicates
-  def fromWhere(where: Where): Seq[(Set[IdName], ast.Expression)] = where.expression match {
+  def fromWhere(where: Where) = extractPredicates(where.expression)
 
+  private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], ast.Expression)] = predicate match {
     // n:Label
     case predicate@HasLabels(identifier@Identifier(name), labels) =>
       labels.map( (label: LabelName) => Set(IdName(name)) -> HasLabels(identifier, Seq(label))(predicate.position) )
@@ -45,6 +45,10 @@ object SelectionPredicates {
     // id(n) = 12
     case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
       Seq(Set(IdName(ident)) -> predicate)
+
+    // and
+    case predicate@And(predicateLhs, predicateRhs) =>
+      extractPredicates(predicateLhs) ++ extractPredicates(predicateRhs)
 
     case _ =>
       throw new CantHandleQueryException

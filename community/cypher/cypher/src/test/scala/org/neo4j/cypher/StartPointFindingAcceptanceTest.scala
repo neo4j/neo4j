@@ -44,12 +44,25 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
   }
 
-
   test("Scan single node by id given on the left") {
     createNode("a")
     val node = createNode("b")
 
     executeScalarWithNewPlanner[Node](s"match n where  ${node.getId} = id(n) return n") should equal(node)
+  }
+
+  test("Can use both label scan (left) and node by id (right)") {
+    createLabeledNode("Person")
+    val node = createLabeledNode("Person")
+
+    executeScalarWithNewPlanner[Node](s"match n where n:Person and ${node.getId} = id(n) return n") should equal(node)
+  }
+
+  test("Can use both label scan (right) and node by id (left)") {
+    createLabeledNode("Person")
+    val node = createLabeledNode("Person")
+
+    executeScalarWithNewPlanner[Node](s"match n where ${node.getId} = id(n) and n:Person return n") should equal(node)
   }
 }
 

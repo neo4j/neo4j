@@ -31,23 +31,24 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
   val projectionPlanner = new ProjectionPlanner
 
   override def plan(qg: QueryGraph)(implicit planContext: PlanContext): LogicalPlan = {
-    val planTableBuilder = Map.newBuilder[Set[IdName], LogicalPlan]
-    qg.identifiers.foreach( planTableBuilder += identifierSource(_, qg) )
-    val planTable = planTableBuilder.result()
+    val planTableBuilder = Map.newBuilder[Set[IdName], Seq[LogicalPlan]]
+    qg.identifiers.foreach { id =>
+      planTableBuilder += (Set(id) -> identifierSources(id, qg))
+    }
 
+    val planTable = planTableBuilder.result()
     while (planTable.size > 1) {
       throw new CantHandleQueryException
     }
 
-    val logicalPlan = if (planTable.size == 0) SingleRow() else planTable.values.head
-
+    val logicalPlan = planTable.values.headOption.map(_.sortBy(_.cardinality).head).getOrElse(SingleRow())
     projectionPlanner.amendPlan(qg, logicalPlan)
   }
 
-  def identifierSource(id: IdName, qg: QueryGraph)(implicit planContext: PlanContext) = {
-    val idSet = Set(id)
-    val predicates = qg.selections.apply(idSet)
-    val source = predicates.collectFirst({
+  def identifierSources(id: IdName, qg: QueryGraph)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
+    val predicates = qg.selections.apply(Set(id))
+    val allNodesScan = AllNodesScan(id, estimator.estimateAllNodes())
+    Seq(allNodesScan) ++ predicates.collect({
       // n:Label
       case HasLabels(Identifier(id.name), label :: Nil) =>
         val labelId = label.id
@@ -57,8 +58,6 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
       case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(identName))), nodeIdExpr) =>
         val idName = IdName(identName)
         NodeByIdScan(idName, nodeIdExpr, estimator.estimateNodeByIdScan())
-
-    }).getOrElse(AllNodesScan(id, estimator.estimateAllNodes()))
-    idSet -> source
+    })
   }
 }

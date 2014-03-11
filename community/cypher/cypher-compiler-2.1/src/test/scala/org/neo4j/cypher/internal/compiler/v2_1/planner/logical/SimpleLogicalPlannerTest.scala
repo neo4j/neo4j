@@ -128,4 +128,49 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     // then
     resultPlan should equal(NodeByIdScan(IdName("n"), SignedIntegerLiteral("42")(pos), 1))
   }
+
+  test("simple label scan with a compile-time label ID and node ID predicate when label scan is cheaper") {
+    // given
+    val projections = Map("n" -> Identifier("n")(pos))
+    val labelId = LabelId(12)
+    val predicates = Seq(
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos),
+      Set(IdName("n")) ->  Equals(
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Array(Identifier("n")(pos)))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos)
+    )
+    val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
+
+    // when
+    when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(1)
+    when(estimator.estimateNodeByIdScan()).thenReturn(100)
+    val resultPlan = planner.plan(qg)(planContext)
+
+    // then
+    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId), 1))
+  }
+
+  test("simple label scan with a compile-time label ID and node ID predicate when node by ID is cheaper") {
+    // given
+    val projections = Map("n" -> Identifier("n")(pos))
+    val labelId = LabelId(12)
+    val predicates = Seq(
+      Set(IdName("n")) ->  Equals(
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Array(Identifier("n")(pos)))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos),
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    )
+    val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
+
+    // when
+    when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
+    when(estimator.estimateNodeByIdScan()).thenReturn(1)
+    val resultPlan = planner.plan(qg)(planContext)
+
+    // then
+    resultPlan should equal(NodeByIdScan(IdName("n"), SignedIntegerLiteral("42")(pos), 1))
+  }
+
 }
