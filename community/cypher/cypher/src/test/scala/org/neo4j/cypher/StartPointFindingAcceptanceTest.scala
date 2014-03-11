@@ -44,6 +44,12 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
   }
 
+  test("Scan two nodes by a tautological id() comparison") {
+    val nodes = Set(createNode("a"), createNode("b"))
+
+    executeWithNewPlanner(s"MATCH n WHERE id(n) = id(n) RETURN n").columnAs[Node]("n").toSet should equal(nodes)
+  }
+
   test("Scan single node by id given on the left") {
     createNode("a")
     val node = createNode("b")
