@@ -28,7 +28,7 @@
     "grunt-contrib-stylus": "~0.5.0",
     "nib": "~0.9.1",
     "grunt-jade": "~0.4.0",
-    "karma": "~0.10.2",
+    "karma": "0.10.6",
     "karma-ng-scenario": "~0.1.0",
     "karma-junit-reporter": "~0.1",
     "karma-sauce-launcher": "~0.1",
