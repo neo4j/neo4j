@@ -31,6 +31,9 @@ import org.neo4j.kernel.api.index.IndexDescriptor
  * to index rule lookup in QueryContext as that should happen at query compile time.
  */
 trait PlanContext extends TokenContext {
+
+  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]

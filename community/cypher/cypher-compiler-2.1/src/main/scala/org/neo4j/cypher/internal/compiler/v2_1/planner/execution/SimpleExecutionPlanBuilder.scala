@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, PropertyKeyId}
 
 class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
   def build(plan: LogicalPlan): PipeInfo = {
@@ -40,12 +41,20 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val right = plan.rhs.map(buildPipe)
 
       plan match {
-        case Projection(_, expressions)                     => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
-        case SingleRow()                                    => NullPipe()
-        case AllNodesScan(IdName(id), _)                    => AllNodesScanPipe(id)
-        case NodeByLabelScan(IdName(id), label, _)          => NodeByLabelScanPipe(id, label)
-        case NodeByIdSeek(IdName(id), nodeIdExpr, _)        => NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
-        case RelationshipByIdSeek(IdName(id), relIdExpr, _) => RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
+        case Projection(_, expressions) =>
+          ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
+        case SingleRow() =>
+          NullPipe()
+        case AllNodesScan(IdName(id), _) =>
+          AllNodesScanPipe(id)
+        case NodeByLabelScan(IdName(id), label, _) =>
+          NodeByLabelScanPipe(id, label)
+        case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
+          NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
+        case RelationshipByIdSeek(IdName(id), relIdExpr, _) =>
+          RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
+        case NodeIndexScan(IdName(id), labelId, propertyKeyId, valueExpr, _) =>
+          NodeIndexScanPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
       }
     }
 

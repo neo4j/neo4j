@@ -29,10 +29,15 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import collection.JavaConverters._
 
 class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
+  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
+    statement.readOperations().indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
+
+  @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
     val labelId = statement.readOperations().labelGetForName(labelName)
     val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyKey)

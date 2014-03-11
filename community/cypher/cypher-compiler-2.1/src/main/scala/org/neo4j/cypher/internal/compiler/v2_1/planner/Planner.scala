@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{SemanticState, RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner() {
@@ -41,6 +41,8 @@ case class Planner() {
       case Some(id) => 100
       case None => 0
     }
+
+    def estimateNodeByIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
 
     def estimateAllNodes() = 1000
   }

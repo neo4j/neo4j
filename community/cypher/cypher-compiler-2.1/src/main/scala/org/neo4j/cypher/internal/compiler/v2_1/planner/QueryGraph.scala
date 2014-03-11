@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Literal
 
 /*
 An abstract representation of the query graph being solved at the current step
@@ -39,15 +40,19 @@ object SelectionPredicates {
 
   private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], ast.Expression)] = predicate match {
     // n:Label
-    case predicate@HasLabels(identifier@Identifier(name), labels) =>
+    case HasLabels(identifier@Identifier(name), labels) =>
       labels.map( (label: LabelName) => Set(IdName(name)) -> HasLabels(identifier, Seq(label))(predicate.position) )
 
-    // id(n) = 12
-    case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
+    // id(n) = value
+    case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
       Seq(Set(IdName(ident)) -> predicate)
 
+    // n.prop = value
+    case Equals(Property(Identifier(name), PropertyKeyName(_)), literal) if literal.isInstanceOf[Literal] =>
+      Seq(Set(IdName(name)) -> predicate)
+
     // and
-    case predicate@And(predicateLhs, predicateRhs) =>
+    case And(predicateLhs, predicateRhs) =>
       extractPredicates(predicateLhs) ++ extractPredicates(predicateRhs)
 
     case _ =>

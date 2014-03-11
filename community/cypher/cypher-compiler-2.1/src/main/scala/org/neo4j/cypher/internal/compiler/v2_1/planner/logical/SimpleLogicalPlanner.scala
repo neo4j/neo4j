@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Literal
 
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
 
@@ -44,16 +45,62 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     projectionPlanner.amendPlan(qg, logicalPlan)
   }
 
-  def identifierSources(id: IdName, qg: QueryGraph, semanticQuery: SemanticTable)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
+  /*
+
+    // add unique index seek pipe
+
+    for each identifier: find cheapest logical plan
+
+    split single predicate into seq[predicate]
+
+     map<identifier, (cost, plan)>, seq<predicate>
+
+     map<identifier, seq<labels>>
+
+     for each predicate:
+         check if we can seek using id
+         // check if we can seek using unique index
+         check if we can can using index
+
+     for each identifier:
+        update to use label scans
+        update to use all nodes scans
+
+
+      for each plan that we produce:
+        generate predicates that should be removed
+
+      remove predicates from selections
+
+      fail if selections not empty
+
+  */
+  private def identifierSources(id: IdName, qg: QueryGraph, semanticQuery: SemanticTable)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
+
     val predicates = qg.selections.apply(Set(id))
-    val allNodesScan = AllNodesScan(id, estimator.estimateAllNodes())
-    Seq(allNodesScan) ++ predicates.collect({
+
+    val labelScanPlans = predicates.collect {
       // n:Label
       case HasLabels(Identifier(id.name), label :: Nil) =>
         val labelId = label.id
         NodeByLabelScan(id, labelId.toRight(label.name), estimator.estimateNodeByLabelScan(labelId))
+    }
 
-      // id(n) = 12
+    val labelIds = labelScanPlans.flatMap(_.label.right.toOption)
+    val indexSeekPlans = labelIds.flatMap { labelId =>
+
+      val indexedPropertyKeyIds = planContext.indexesGetForLabel(labelId.id).map(_.getPropertyKeyId).toSet
+      predicates.collect {
+        // n.prop = value
+        case Equals(Property(Identifier(id.name), propertyKey), valueExpr) if valueExpr.isInstanceOf[Literal] =>
+          propertyKey.id.filter(x => indexedPropertyKeyIds(x.id)).map { propertyKeyId =>
+            NodeIndexScan(id, labelId, propertyKeyId, valueExpr, estimator.estimateNodeByIndexSeek(labelId, propertyKeyId))
+          }
+      }.flatten
+    }
+
+    val idLookupPlans = predicates.collect {
+      // id(n) = value
       case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq( ident @ Identifier(identName))), idExpr)
         if idExpr.isInstanceOf[Literal] || idExpr.isInstanceOf[Parameter] =>
         val idName = IdName(identName)
@@ -61,6 +108,27 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
           RelationshipByIdSeek(idName, idExpr, estimator.estimateRelationshipByIdSeek())
         else
           NodeByIdSeek(idName, idExpr, estimator.estimateNodeByIdSeek())
-    })
+    }
+
+    /*
+     * FIXME: since we do not have FilterPipe in the plan
+     * we need to allow start points only when we have the exact number of predicates to activate a pipe
+     * this code should go away for good as soon as we can add filtering so we can actually avoid failing
+     */
+    val plans = if (predicates.size == 0) {
+      val allNodesScan = AllNodesScan(id, estimator.estimateAllNodes())
+      Seq(allNodesScan)
+    } else if (predicates.size == 1)
+      labelScanPlans ++ idLookupPlans
+    else if (predicates.size == 2)
+      idLookupPlans ++ indexSeekPlans
+    else
+      idLookupPlans
+
+    if (plans.isEmpty)
+      throw new CantHandleQueryException
+
+    plans
   }
 }
+
