@@ -40,11 +40,12 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val right = plan.rhs.map(buildPipe)
 
       plan match {
-        case Projection(_, expressions)              => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
-        case SingleRow()                             => NullPipe()
-        case AllNodesScan(IdName(id), _)             => AllNodesScanPipe(id)
-        case NodeByLabelScan(IdName(id), label, _)   => NodeByLabelScanPipe(id, label)
-        case NodeByIdScan(IdName(id), nodeIdExpr, _) => NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
+        case Projection(_, expressions)                     => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
+        case SingleRow()                                    => NullPipe()
+        case AllNodesScan(IdName(id), _)                    => AllNodesScanPipe(id)
+        case NodeByLabelScan(IdName(id), label, _)          => NodeByLabelScanPipe(id, label)
+        case NodeByIdSeek(IdName(id), nodeIdExpr, _)        => NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
+        case RelationshipByIdSeek(IdName(id), relIdExpr, _) => RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
       }
     }
 

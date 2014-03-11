@@ -37,24 +37,24 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeWithNewPlanner("match (n:Animal) return n").columnAs[Node]("n").toSet should equal(animals)
   }
 
-  test("Scan single node by id given on the right") {
+  test("Seek node by id given on the left") {
+    createNode("a")
+    val node = createNode("b")
+
+    executeScalarWithNewPlanner[Node](s"match n where  ${node.getId} = id(n) return n") should equal(node)
+  }
+
+  test("Seek node by id given on the right") {
     createNode("a")
     val node = createNode("b")
 
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
   }
 
-  test("Scan two nodes by a tautological id() comparison") {
+  test("Seeking two nodes by a tautological id() comparison") {
     val nodes = Set(createNode("a"), createNode("b"))
 
-    executeWithNewPlanner(s"MATCH n WHERE id(n) = id(n) RETURN n").columnAs[Node]("n").toSet should equal(nodes)
-  }
-
-  test("Scan single node by id given on the left") {
-    createNode("a")
-    val node = createNode("b")
-
-    executeScalarWithNewPlanner[Node](s"match n where  ${node.getId} = id(n) return n") should equal(node)
+    executeWithNewPlanner(s"match n where id(n) = id(n) return n").columnAs[Node]("n").toSet should equal(nodes)
   }
 
   test("Can use both label scan (left) and node by id (right)") {
@@ -71,7 +71,15 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where ${node.getId} = id(n) and n:Person return n") should equal(node)
   }
 
-  test("Scan single relationship by id given on the right") {
+  // 2014-03-12 SP: Enable once Ronja accepts relationship patterns
+  ignore("Seek relationship by id given on the left") {
+    val rel = relate(createNode("a"), createNode("b"))
+
+    executeScalarWithNewPlanner[Node](s"match ()-[r]->() where ${rel.getId} = id(r) return r") should equal(rel)
+  }
+
+  // 2014-03-12 SP: Enable once Ronja accepts relationship patterns
+  ignore("Seek relationship by id given on the right") {
     val rel = relate(createNode("a"), createNode("b"))
 
     executeScalarWithNewPlanner[Node](s"match ()-[r]->() where id(r) = ${rel.getId} return r") should equal(rel)

@@ -23,9 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.symbols
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
-import scala.Some
 
 case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) extends Pipe {
 

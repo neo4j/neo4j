@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class NamePatternElementTest extends CypherFunSuite {
+class NameMatchPatternElementTest extends CypherFunSuite {
 
   import parser.ParserFixture._
 
@@ -30,15 +30,15 @@ class NamePatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
 
-    val result = original.rewrite(topDown(namePatternElements))
+    val result = original.rewrite(bottomUp(nameMatchPatternElements))
     assert(result === expected)
   }
 
   test("name all RelationshipPatterns in Query") {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
-    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
+    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
 
-    val result = original.rewrite(bottomUp(namePatternElements))
+    val result = original.rewrite(bottomUp(nameMatchPatternElements))
     assert(result === expected)
   }
 

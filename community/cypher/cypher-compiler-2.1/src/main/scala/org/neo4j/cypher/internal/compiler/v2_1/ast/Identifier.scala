@@ -33,10 +33,13 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
   // double-dispatch helpers
   def declare(possibleTypes: TypeSpec) =
     (_: SemanticState).declareIdentifier(this, possibleTypes)
+
   def declare(typeGen: SemanticState => TypeSpec) =
     (s: SemanticState) => s.declareIdentifier(this, typeGen(s))
+
   def implicitDeclaration(possibleType: CypherType) =
     (_: SemanticState).implicitIdentifier(this, possibleType)
+
   def ensureDefined() =
     (_: SemanticState).ensureIdentifierDefined(this)
 }

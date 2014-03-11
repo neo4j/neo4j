@@ -23,8 +23,16 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
@@ -32,10 +40,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
 
 class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
 
@@ -69,14 +79,23 @@ class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
     pipeInfo.pipe should equal(NodeByLabelScanPipe("n", Right(LabelId(12))))
   }
 
-
-  test("simple node by id scan query") {
+  test("simple node by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = NodeByIdScan(IdName("n"), astLiteral, 1)
+    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral, 1)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
     pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astLiteral.asCommandExpression))
+  }
+
+  test("simple relationship by id seek query") {
+    val astLiteral = SignedIntegerLiteral("42")(pos)
+    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral, 1)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(RelationshipByIdSeekPipe("r", astLiteral.asCommandExpression))
   }
 }

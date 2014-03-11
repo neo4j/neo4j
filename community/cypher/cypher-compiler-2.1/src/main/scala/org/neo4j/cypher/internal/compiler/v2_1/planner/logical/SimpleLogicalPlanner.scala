@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{SemanticQuery, CantHandleQueryException, CardinalityEstimator, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
@@ -30,10 +29,10 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
 
   val projectionPlanner = new ProjectionPlanner
 
-  override def plan(qg: QueryGraph)(implicit planContext: PlanContext): LogicalPlan = {
+  override def plan(qg: QueryGraph, semanticQuery: SemanticQuery)(implicit planContext: PlanContext): LogicalPlan = {
     val planTableBuilder = Map.newBuilder[Set[IdName], Seq[LogicalPlan]]
     qg.identifiers.foreach { id =>
-      planTableBuilder += (Set(id) -> identifierSources(id, qg))
+      planTableBuilder += (Set(id) -> identifierSources(id, qg, semanticQuery))
     }
 
     val planTable = planTableBuilder.result()
@@ -45,7 +44,7 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     projectionPlanner.amendPlan(qg, logicalPlan)
   }
 
-  def identifierSources(id: IdName, qg: QueryGraph)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
+  def identifierSources(id: IdName, qg: QueryGraph, semanticQuery: SemanticQuery)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
     val predicates = qg.selections.apply(Set(id))
     val allNodesScan = AllNodesScan(id, estimator.estimateAllNodes())
     Seq(allNodesScan) ++ predicates.collect({
@@ -55,9 +54,12 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
         NodeByLabelScan(id, labelId.toRight(label.name), estimator.estimateNodeByLabelScan(labelId))
 
       // id(n) = 12
-      case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(identName))), nodeIdExpr) if nodeIdExpr.isInstanceOf[Literal] =>
+      case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq( ident @ Identifier(identName))), idExpr) if idExpr.isInstanceOf[Literal] =>
         val idName = IdName(identName)
-        NodeByIdScan(idName, nodeIdExpr, estimator.estimateNodeByIdScan())
+        if (semanticQuery.isRelationship(ident))
+          RelationshipByIdSeek(idName, idExpr, estimator.estimateRelationshipByIdSeek())
+        else
+          NodeByIdSeek(idName, idExpr, estimator.estimateNodeByIdSeek())
     })
   }
 }

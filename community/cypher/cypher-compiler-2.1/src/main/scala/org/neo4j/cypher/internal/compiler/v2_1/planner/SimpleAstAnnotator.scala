@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.{IdentityMap, symbols, ExpressionTypeInfo, SemanticState}
+import org.neo4j.cypher.InternalException
 
-/*
-This class is responsible for answering questions about cardinality. It does this by asking the database when this
-information is available, or guessing when that's not possible.
- */
-trait CardinalityEstimator {
-  def estimateNodeByIdSeek(): Int
-  def estimateRelationshipByIdSeek(): Int
-  def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
-  def estimateAllNodes(): Int
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
+class SimpleAstAnnotator {
+
+  def annotate(query: Query): SemanticQuery = {
+    val semanticCheck = query.semanticCheck(SemanticState.clean)
+    if (semanticCheck.errors.nonEmpty)
+      throw new InternalException(s"Failed to retype rewritten ast: ${semanticCheck.errors.mkString(", ")}")
+    else {
+      val state = semanticCheck.state
+      SemanticQuery(state.typeTable)
+    }
+  }
 }
