@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.{IdentityMap, ExpressionTypeInfo}
 
-/*
-This class is responsible for answering questions about cardinality. It does this by asking the database when this
-information is available, or guessing when that's not possible.
- */
-trait CardinalityEstimator {
-  def estimateNodeByIdSeek(): Int
-  def estimateRelationshipByIdSeek(): Int
-  def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
-  def estimateAllNodes(): Int
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
+object SemanticQueryBuilder {
+  def apply() = new SemanticQueryBuilder
 }
+
+class SemanticQueryBuilder {
+  val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
+
+  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticQueryBuilder = {
+    typeBuilder += typing
+    this
+  }
+
+  def result() = SemanticQuery(types = IdentityMap(typeBuilder.result(): _*))
+}
+
+

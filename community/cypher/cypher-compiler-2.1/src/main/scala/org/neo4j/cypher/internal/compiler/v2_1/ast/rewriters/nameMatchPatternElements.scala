@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import ast._
 
-object namePatternElements extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+object nameMatchPatternElements extends Rewriter {
+  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val namingRewriter: Rewriter = Rewriter.lift {
     case pattern: NodePattern if !pattern.identifier.isDefined =>
       val syntheticName = "  UNNAMED" + (pattern.position.offset + 1)
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
@@ -34,5 +34,11 @@ object namePatternElements extends Rewriter {
     case pattern: RelationshipPattern if !pattern.identifier.isDefined && !pattern.length.isDefined =>
       val syntheticName = "  UNNAMED" + pattern.position.offset
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+  }
+
+  private val findingRewriter: Rewriter = Rewriter.lift {
+    case m: Match =>
+      val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
+      m.copy(pattern = rewrittenPattern)(m.position)
   }
 }

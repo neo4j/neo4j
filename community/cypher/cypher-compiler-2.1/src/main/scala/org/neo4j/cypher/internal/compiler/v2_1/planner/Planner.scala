@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.{SemanticState, RelTypeId, LabelId}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner() {
@@ -33,7 +33,9 @@ case class Planner() {
 
     def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
 
-    def estimateNodeByIdScan() = 1
+    def estimateNodeByIdSeek() = 1
+
+    def estimateRelationshipByIdSeek() = 2
 
     def estimateNodeByLabelScan(labelId: Option[LabelId]) = labelId match {
       case Some(id) => 100
@@ -44,6 +46,7 @@ case class Planner() {
   }
 
   val tokenResolver = new SimpleTokenResolver()
+  val astAnnotator = new SimpleAstAnnotator()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
@@ -51,8 +54,9 @@ case class Planner() {
   def producePlan(in: Statement)(planContext: PlanContext): PipeInfo = in match {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
+      val semanticQuery = astAnnotator.annotate(ast)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
-      val logicalPlan = logicalPlanner.plan(queryGraph)(planContext)
+      val logicalPlan = logicalPlanner.plan(queryGraph, semanticQuery)(planContext)
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>

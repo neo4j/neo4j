@@ -19,30 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
+import symbols.{SymbolTable, CTRelationship}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
+import org.neo4j.cypher.EntityNotFoundException
 
-case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) extends Pipe {
+case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression) extends Pipe with NumericHelper {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val optLabelId = label match {
-      case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
-      case Right(labelId) => Some(labelId)
-    }
+    val nodeId = asLongEntityId(relIdExpr(ExecutionContext.empty)(state))
 
-    optLabelId match {
-      case Some(labelId) =>
-        state.query.getNodesByLabel(labelId.id).map(n => ExecutionContext.from(ident -> n))
-      case None =>
+    try {
+      val node = state.query.relationshipOps.getById(nodeId)
+      Iterator(ExecutionContext.from(ident -> node))
+    } catch {
+      case _: EntityNotFoundException =>
         Iterator.empty
     }
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription =new PlanDescriptionImpl(this, "LabelScan", Seq.empty, Seq("ident" -> ident, "label" -> label))
+  def executionPlanDescription = new PlanDescriptionImpl(this, "RelationshipByIdSeek", Seq.empty, Seq("ident" -> ident))
 
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTRelationship))
 }

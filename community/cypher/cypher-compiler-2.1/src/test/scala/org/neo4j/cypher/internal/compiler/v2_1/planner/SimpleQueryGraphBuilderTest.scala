@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
-  // TODO: we may want to have normalized queries instead that simply parsed queries
+  // TODO: we may want to have normalized queries instead than simply parse queries
   val parser = new CypherParser(mock[ParserMonitor])
   val pos = DummyPosition(0)
 

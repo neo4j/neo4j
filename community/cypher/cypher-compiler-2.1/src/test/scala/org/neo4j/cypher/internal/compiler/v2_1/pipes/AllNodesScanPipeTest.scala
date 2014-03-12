@@ -17,29 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.mockito.Mockito
+import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
 
-class NamePatternElementTest extends CypherFunSuite {
+class AllNodesScanPipeTest extends CypherFunSuite {
 
-  import parser.ParserFixture._
+  import Mockito.when
 
-  test("name all NodePatterns in Query" ) {
-    val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
-    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
+  test("should scan all nodes") {
+    // given
+    val nodes = List(mock[Node], mock[Node])
+    val nodeOps = when(mock[Operations[Node]].all).thenReturn(nodes.iterator).getMock[Operations[Node]]
+    val queryState = QueryStateHelper.emptyWith(
+      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
+    )
 
-    val result = original.rewrite(topDown(namePatternElements))
-    assert(result === expected)
+    // when
+    val result = AllNodesScanPipe("a").createResults(queryState)
+
+    // then
+    result.map(_("a")).toList should equal(nodes)
   }
-
-  test("name all RelationshipPatterns in Query") {
-    val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
-    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
-
-    val result = original.rewrite(bottomUp(namePatternElements))
-    assert(result === expected)
-  }
-
 }

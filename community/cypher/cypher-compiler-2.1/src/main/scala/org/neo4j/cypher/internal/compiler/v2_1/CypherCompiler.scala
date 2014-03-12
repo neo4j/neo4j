@@ -28,7 +28,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{normalizeEqualsArgumentOrder, normalizeMatchPredicates, namePatternElements, normalizeArithmeticExpressions}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{normalizeEqualsArgumentOrder, normalizeMatchPredicates, nameMatchPatternElements, normalizeArithmeticExpressions}
 import ast.convert.StatementConverters._
 
 trait SemanticCheckMonitor {
@@ -91,7 +91,7 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
     rewritingMonitor.startRewriting(queryText, statement)
     val normalizedStatement = statement.rewrite(bottomUp(
       normalizeArithmeticExpressions,
-      namePatternElements,
+      nameMatchPatternElements,
       normalizeMatchPredicates,
       normalizeEqualsArgumentOrder
     )).asInstanceOf[ast.Statement]

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{SemanticQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 trait LogicalPlanner {
-  def plan(in: QueryGraph)(implicit planContext: PlanContext): LogicalPlan
+  def plan(qg: QueryGraph, semanticQuery: SemanticQuery)(implicit planContext: PlanContext): LogicalPlan
 }
