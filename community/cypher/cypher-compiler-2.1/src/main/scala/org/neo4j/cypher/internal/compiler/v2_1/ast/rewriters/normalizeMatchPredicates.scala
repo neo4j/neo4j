@@ -19,27 +19,5 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-
-class PatternElementNamerTest extends CypherFunSuite {
-
-  import parser.ParserFixture._
-
-  test("name all NodePatterns in Query" ) {
-    val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
-    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
-
-    val result = original.rewrite(topDown(patternElementNamer))
-    assert(result === expected)
-  }
-
-  test("name all RelationshipPatterns in Query") {
-    val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
-    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
-
-    val result = original.rewrite(bottomUp(patternElementNamer))
-    assert(result === expected)
-  }
-
-}
+object normalizeMatchPredicates
+  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))

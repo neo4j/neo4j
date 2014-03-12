@@ -28,7 +28,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{TheDefaultMatchPredicateNormalization, patternElementNamer, normalizeArithmeticExpressions}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{normalizeEqualsArgumentOrder, normalizeMatchPredicates, namePatternElements, normalizeArithmeticExpressions}
 import ast.convert.StatementConverters._
 
 trait SemanticCheckMonitor {
@@ -91,21 +91,22 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
     rewritingMonitor.startRewriting(queryText, statement)
     val normalizedStatement = statement.rewrite(bottomUp(
       normalizeArithmeticExpressions,
-      patternElementNamer,
-      TheDefaultMatchPredicateNormalization
+      namePatternElements,
+      normalizeMatchPredicates,
+      normalizeEqualsArgumentOrder
     )).asInstanceOf[ast.Statement]
     rewritingMonitor.finishRewriting(queryText, normalizedStatement)
 
-    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(queryText)), statement)
+    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(queryText)), normalizedStatement)
   }
 
 
   case class CountNewQueryPlanSuccessRateMonitor(var queries: Long = 0L, var fallbacks: Long = 0L) extends NewQueryPlanSuccessRateMonitor {
-    override def newQuerySeen(ast: Statement) {
+    override def newQuerySeen(queryText: String, ast: Statement) {
       queries += 1
     }
 
-    override def unableToHandleQuery(ast: Statement) {
+    override def unableToHandleQuery(queryText: String, ast: Statement) {
       fallbacks += 1
     }
   }

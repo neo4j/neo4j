@@ -30,9 +30,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner() {
   val estimator = new CardinalityEstimator {
+
     def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
 
-    def estimateLabelScan(labelId: Option[LabelId]) = labelId match {
+    def estimateNodeByIdScan() = 1
+
+    def estimateNodeByLabelScan(labelId: Option[LabelId]) = labelId match {
       case Some(id) => 100
       case None => 0
     }
@@ -41,15 +44,15 @@ case class Planner() {
   }
 
   val tokenResolver = new SimpleTokenResolver()
-  val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val queryGraphBuilder = new SimpleQueryGraphBuilder
+  val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
 
   def producePlan(in: Statement)(planContext: PlanContext): PipeInfo = in match {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
-      val logicalPlan = logicalPlanner.plan(queryGraph)
+      val logicalPlan = logicalPlanner.plan(queryGraph)(planContext)
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>

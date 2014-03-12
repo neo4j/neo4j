@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
+import org.neo4j.kernel.monitoring.Monitors
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherTestSuite  =>
@@ -211,6 +212,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+
+  def monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
 }

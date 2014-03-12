@@ -27,8 +27,8 @@ This class is responsible for answering questions about cardinality. It does thi
 information is available, or guessing when that's not possible.
  */
 trait CardinalityEstimator {
-  def estimateLabelScan(labelId: Option[LabelId]): Int
-
+  def estimateNodeByIdScan(): Int
+  def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
   def estimateAllNodes(): Int
 
   def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int

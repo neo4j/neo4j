@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, symbols, PlanDescription, ExecutionContext}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.{symbols, PlanDescription, ExecutionContext}
+import symbols.{SymbolTable, CTNode}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
+import org.neo4j.cypher.EntityNotFoundException
 
-case class LabelNodesScanPipe(id: String, label: Either[String, LabelId]) extends Pipe {
+case class NodeByIdScanPipe(ident: String, nodeIdExpr: Expression) extends Pipe with NumericHelper {
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val optLabelId = label match {
-      case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
-      case Right(labelId) => Some(labelId)
-    }
+    val nodeId = asLongEntityId(nodeIdExpr(ExecutionContext.empty)(state))
 
-    optLabelId match {
-      case Some(labelId) =>
-        state.query.getNodesByLabel(labelId.id).map(n => ExecutionContext.from(id -> n))
-      case None =>
+    try {
+      val node = state.query.nodeOps.getById(nodeId)
+      Iterator(ExecutionContext.from(ident -> node))
+    } catch {
+      case _: EntityNotFoundException =>
         Iterator.empty
     }
   }
@@ -42,5 +42,5 @@ case class LabelNodesScanPipe(id: String, label: Either[String, LabelId]) extend
 
   override def executionPlanDescription: PlanDescription = ???
 
-  override def symbols: SymbolTable = new SymbolTable(Map(id -> CTNode))
+  override def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 }

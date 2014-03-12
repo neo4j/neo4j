@@ -27,6 +27,7 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.kernel.monitoring.Monitors
 
 
 case class ExpectedException[T <: Throwable](e: T) {
