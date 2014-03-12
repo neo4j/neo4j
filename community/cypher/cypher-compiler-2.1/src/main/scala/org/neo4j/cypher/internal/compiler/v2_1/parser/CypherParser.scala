@@ -30,14 +30,11 @@ case class CypherParser(monitor: ParserMonitor) extends Parser
   with Statement
   with Expressions {
 
-  val SingleStatement: Rule1[ast.Statement] = rule {
-    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
-  }
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): ast.Statement = {
     monitor.startParsing(queryText)
-    val parsingResult = ReportingParseRunner(SingleStatement).run(queryText)
+    val parsingResult = ReportingParseRunner(CypherParser.SingleStatement).run(queryText)
 
     parsingResult.result match {
       case Some(statement: ast.Statement) =>
@@ -63,6 +60,12 @@ case class CypherParser(monitor: ParserMonitor) extends Parser
 
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")
     }
+  }
+}
+
+object CypherParser extends Parser with Statement with Expressions {
+  val SingleStatement: Rule1[ast.Statement] = rule {
+    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
   }
 }
 
