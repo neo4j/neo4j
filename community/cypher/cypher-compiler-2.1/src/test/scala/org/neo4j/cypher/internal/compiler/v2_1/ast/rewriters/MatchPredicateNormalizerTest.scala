@@ -36,25 +36,9 @@ class MatchPredicateNormalizerTest extends CypherFunSuite {
     result should equal(expected)
   }
 
-  test("move parameter predicate from node to WHERE") {
-    val original = parser.parse("MATCH (n {param}) RETURN n")
-    val expected = parser.parse("MATCH (n) WHERE n = {param} RETURN n")
-
-    val result = original.rewrite(topDown(PropertyPredicateNormalization))
-    result should equal(expected)
-  }
-
   test("move single predicates from rel to WHERE") {
     val original = parser.parse("MATCH (n)-[r:Foo {foo: 1}]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->() WHERE r.foo = 1 RETURN n")
-
-    val result = original.rewrite(bottomUp(PropertyPredicateNormalization))
-    assert(result.toString === expected.toString)
-  }
-
-  test("move parameter predicate from rel to WHERE") {
-    val original = parser.parse("MATCH (n)-[r:Foo {foo}]->() RETURN n")
-    val expected = parser.parse("MATCH (n)-[r:Foo]->() WHERE r = {foo} RETURN n")
 
     val result = original.rewrite(bottomUp(PropertyPredicateNormalization))
     assert(result.toString === expected.toString)

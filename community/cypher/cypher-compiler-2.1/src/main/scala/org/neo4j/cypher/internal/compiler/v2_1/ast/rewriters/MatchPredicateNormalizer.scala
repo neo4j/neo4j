@@ -39,13 +39,18 @@ case class MatchPredicateNormalizerChain(normalizers: MatchPredicateNormalizer*)
 
 object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, Vector[Expression]] = {
-    case NodePattern(Some(id), _, Some(props), _)               => propertyPredicates(id, props)
-    case RelationshipPattern(Some(id), _, _, _, Some(props), _) => propertyPredicates(id, props)
+    case NodePattern(Some(id), _, Some(props), false) if !isParameter(props)           => propertyPredicates(id, props)
+    case RelationshipPattern(Some(id), _, _, _, Some(props), _) if !isParameter(props) => propertyPredicates(id, props)
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(_) ,_, Some(_), _)               => p.copy(properties = None)(p.position)
-    case p@RelationshipPattern(Some(_), _, _, _, Some(_), _) => p.copy(properties = None)(p.position)
+    case p@NodePattern(Some(_) ,_, Some(props), false) if !isParameter(props)           => p.copy(properties = None)(p.position)
+    case p@RelationshipPattern(Some(_), _, _, _, Some(props), _) if !isParameter(props) => p.copy(properties = None)(p.position)
+  }
+
+  private def isParameter(expr: Expression) = expr match {
+    case Parameter(_) => true
+    case _            => false
   }
 
   private def propertyPredicates(id: Identifier, props: Expression): Vector[Expression] = props match {
@@ -62,11 +67,11 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
 
 object LabelPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, Vector[Expression]] = {
-    case p@NodePattern(Some(id), labels, _, _) if !labels.isEmpty => Vector(HasLabels(id, labels)(p.position))
+    case p@NodePattern(Some(id), labels, _, false) if !labels.isEmpty => Vector(HasLabels(id, labels)(p.position))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(id), labels, _, _) if !labels.isEmpty => p.copy(labels = Seq.empty)(p.position)
+    case p@NodePattern(Some(id), labels, _, false) if !labels.isEmpty => p.copy(labels = Seq.empty)(p.position)
   }
 }
 

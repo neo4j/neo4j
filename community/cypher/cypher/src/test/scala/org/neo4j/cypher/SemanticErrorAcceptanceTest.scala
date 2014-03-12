@@ -19,242 +19,239 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.hamcrest.CoreMatchers.equalTo
 
-class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
-  @Test def returnNodeThatsNotThere() {
-    test(
+class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
+
+  test("return node that's not there") {
+    executeAndEnsureError(
       "start x=node(0) return bar",
       "bar not defined (line 1, column 24)"
     )
   }
 
-  @Test def defineNodeAndTreatItAsARelationship() {
-    test(
+  test("define node and treat it as a relationship") {
+    executeAndEnsureError(
       "start r=node(0) match a-[r]->b return r",
       "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 26)"
     )
   }
 
-  @Test def redefineSymbolInMatch() {
-    test(
+  test("redefine symbol in match") {
+    executeAndEnsureError(
       "start a=node(0) match a-[r]->b-->r return r",
       "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 34)"
     )
   }
 
-  @Test def cantUseTYPEOnNodes() {
-    test(
+  test("cant use TYPE on nodes") {
+    executeAndEnsureError(
       "start r=node(0) return type(r)",
       "Type mismatch: expected Relationship but was Node (line 1, column 29)"
     )
   }
 
-  @Test def cantUseLENGTHOnNodes() {
-    test(
+  test("cant use LENGTH on nodes") {
+    executeAndEnsureError(
       "start n=node(0) return length(n)",
       "Type mismatch: expected Path, String or Collection<T> but was Node (line 1, column 31)"
     )
   }
 
-  @Test def cantReUseRelationshipIdentifier() {
-    test(
+  test("cant re-use relationship identifier") {
+    executeAndEnsureError(
       "start a=node(0) match a-[r]->b-[r]->a return r",
       "Can't re-use pattern relationship 'r' with different start/end nodes."
     )
   }
 
-  @Test def shouldKnowNotToCompareStringsAndNumbers() {
-    test(
+  test("should know not to compare strings and numbers") {
+    executeAndEnsureError(
       "start a=node(0) where a.age =~ 13 return a",
       "Type mismatch: expected String but was Integer (line 1, column 32)"
     )
   }
 
-  @Test def shouldComplainAboutUsingNotWithANonBoolean() {
-    test(
+  test("should complain about using not with a non-boolean") {
+    executeAndEnsureError(
       "RETURN NOT 'foo'",
       "Type mismatch: expected Boolean but was String (line 1, column 12)"
     )
   }
 
-  @Test def shouldComplainAboutUnknownIdentifier() {
-    test(
+  test("should complain about unknown identifier") {
+    executeAndEnsureError(
       "start s = node(0) where s.name = Name and s.age = 10 return s",
       "Name not defined (line 1, column 34)"
     )
   }
 
-  @Test def shouldComplainIfVarLengthRelInCreate() {
-    test(
+  test("should complain if var length rel in create") {
+    executeAndEnsureError(
       "create (a)-[:FOO*2]->(b)",
       "Variable length relationships cannot be used in CREATE (line 1, column 11)"
     )
   }
 
-  @Test def shouldComplainIfVarLengthRelInMerge() {
-    test(
+  test("should complain if var length rel in merge") {
+    executeAndEnsureError(
       "MERGE (a)-[:FOO*2]->(b)",
       "Variable length relationships cannot be used in MERGE (line 1, column 10)"
     )
   }
 
-  @Test def shouldRejectMapParamInMatchPattern() {
-    test(
+  test("should reject map param in match pattern") {
+    executeAndEnsureError(
       "MATCH (n:Person {param}) RETURN n",
       "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 17)"
     )
 
-    test(
+    executeAndEnsureError(
       "MATCH (n:Person)-[:FOO {param}]->(m) RETURN n",
       "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 24)"
     )
   }
 
-  @Test def shouldRejectMapParamInMergePattern() {
-    test(
+  test("should reject map param in merge pattern") {
+    executeAndEnsureError(
       "MERGE (n:Person {param}) RETURN n",
       "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 17)"
     )
 
-    test(
+    executeAndEnsureError(
       "MATCH (n:Person) MERGE (n)-[:FOO {param}]->(m) RETURN n",
       "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\") (line 1, column 34)"
     )
   }
 
-  @Test def shouldComplainIfShortestPathHasNoRelationship() {
-    test(
+  test("should complain if shortest path has no relationship") {
+    executeAndEnsureError(
       "start n=node(0) match p=shortestPath(n) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 25)"
     )
-    test(
+    executeAndEnsureError(
       "start n=node(0) match p=allShortestPaths(n) return p",
       "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 25)"
     )
   }
 
-  @Test def shouldComplainIfShortestPathHasMultipleRelationships() {
-    test(
+  test("should complain if shortest path has multiple relationships") {
+    executeAndEnsureError(
       "start a=node(0), b=node(1) match p=shortestPath(a--()--b) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
     )
-    test(
+    executeAndEnsureError(
       "start a=node(0), b=node(1) match p=allShortestPaths(a--()--b) return p",
       "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 36)"
     )
   }
 
-  @Test def shouldComplainIfShortestPathHasAMinimalLength() {
-    test(
+  test("should complain if shortest path has a minimal length") {
+    executeAndEnsureError(
       "start a=node(0), b=node(1) match p=shortestPath(a-[*1..2]->b) return p",
       "shortestPath(...) does not support a minimal length (line 1, column 36)"
     )
-    test(
+    executeAndEnsureError(
       "start a=node(0), b=node(1) match p=allShortestPaths(a-[*1..2]->b) return p",
       "allShortestPaths(...) does not support a minimal length (line 1, column 36)"
     )
   }
 
-  @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInCreateConstraint() {
-    test(
+  test("should be semantically incorrect to refer to unknown identifier in create constraint") {
+    executeAndEnsureError(
       "create constraint on (foo:Foo) bar.name is unique",
       "Unknown identifier `bar`, was expecting `foo`"
     )
   }
 
-  @Test def shouldBeSemanticallyIncorrectToReferToUnknownIdentifierInDropConstraint() {
-    test(
+  test("should be semantically incorrect to refer to unknown identifier in drop constraint") {
+    executeAndEnsureError(
       "drop constraint on (foo:Foo) bar.name is unique",
       "Unknown identifier `bar`, was expecting `foo`"
     )
   }
 
-  @Test def shouldFailTypeCheckWhenDeleting() {
-    test(
+  test("should fail type check when deleting") {
+    executeAndEnsureError(
       "start a=node(0) delete 1 + 1",
       "Type mismatch: expected Node, Path or Relationship but was Integer (line 1, column 26)"
     )
   }
 
-  @Test def shouldNotAllowIdentifierToBeOverwrittenByCreate() {
-    test(
+  test("should not allow identifier to be overwritten by create") {
+    executeAndEnsureError(
       "start a=node(0) create (a)",
       "a already declared (line 1, column 25)"
     )
   }
 
-  @Test def shouldNotAllowIdentifierToBeOverwrittenByMerge() {
-    test(
+  test("should not allow identifier to be overwritten by merge") {
+    executeAndEnsureError(
       "start a=node(0) merge (a)",
       "a already declared (line 1, column 24)"
     )
   }
 
-  @Test def shouldNotAllowIdentifierToBeOverwrittenByCreateRelationship() {
-    test(
+  test("should not allow identifier to be overwritten by create relationship") {
+    executeAndEnsureError(
       "start a=node(0), r=rel(1) create (a)-[r:TYP]->()",
       "r already declared (line 1, column 39)"
     )
   }
 
-  @Test def shouldNotAllowIdentifierToBeOverwrittenByMergeRelationship() {
-    test(
+  test("should not allow identifier to be overwritten by merge relationship") {
+    executeAndEnsureError(
       "start a=node(0), r=rel(1) merge (a)-[r:TYP]->()",
       "r already declared (line 1, column 38)"
     )
   }
 
-  @Test def shouldNotAllowIdentifierToBeIntroducedInPatternExpression() {
-    test(
+  test("should not allow identifier to be introduced in pattern expression") {
+    executeAndEnsureError(
       "match (n) return (n)-[:TYP]->(b)",
       "b not defined (line 1, column 31)"
     )
 
-    test(
+    executeAndEnsureError(
       "match (n) return (n)-[r:TYP]->()",
       "r not defined (line 1, column 23)"
     )
   }
 
-  @Test def shouldFailWhenTryingToCreateShortestPaths() {
-    test(
+  test("should fail when trying to create shortest paths") {
+    executeAndEnsureError(
       "match a, b create shortestPath((a)-[:T]->(b))",
       "shortestPath(...) cannot be used to CREATE (line 1, column 19)"
     )
-    test(
+    executeAndEnsureError(
       "match a, b create allShortestPaths((a)-[:T]->(b))",
       "allShortestPaths(...) cannot be used to CREATE (line 1, column 19)"
     )
   }
 
-  @Test def shouldFailWhenTryingToMergeShortestPaths() {
-    test(
+  test("should fail when trying to merge shortest paths") {
+    executeAndEnsureError(
       "match a, b MERGE shortestPath((a)-[:T]->(b))",
       "shortestPath(...) cannot be used to MERGE (line 1, column 18)"
     )
-    test(
+    executeAndEnsureError(
       "match a, b MERGE allShortestPaths((a)-[:T]->(b))",
       "allShortestPaths(...) cannot be used to MERGE (line 1, column 18)"
     )
   }
 
-  @Test def shouldFailWhenTryingToUniquelyCreateShortestPaths() {
-    test(
+  test("should fail when trying to uniquely create shortest paths") {
+    executeAndEnsureError(
       "match a, b create unique shortestPath((a)-[:T]->(b))",
       "shortestPath(...) cannot be used to CREATE (line 1, column 26)"
     )
-    test(
+    executeAndEnsureError(
       "match a, b create unique allShortestPaths((a)-[:T]->(b))",
       "allShortestPaths(...) cannot be used to CREATE (line 1, column 26)"
     )
   }
 
-  @Test def shouldFailWhenReduceUsedWithWrongSeparator() {
-    test("""
+  test("should fail when reduce used with wrong separator") {
+    executeAndEnsureError("""
         |START s=node(1), e=node(2)
         |MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
         |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
@@ -264,143 +261,140 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineJUnitSuite {
     )
   }
 
-  @Test def shouldFailIfOldIterableSeparator() {
-    test(
+  test("should fail if old iterable separator") {
+    executeAndEnsureError(
       "start a=node(0) return filter(x in a.collection : x.prop = 1)",
       "filter(...) requires a WHERE predicate (line 1, column 24)"
     )
 
-    test(
+    executeAndEnsureError(
       "start a=node(0) return extract(x in a.collection : x.prop)",
       "extract(...) requires '| expression' (an extract expression) (line 1, column 24)"
     )
 
-    test(
+    executeAndEnsureError(
       "start a=node(0) return reduce(i = 0, x in a.collection : i + x.prop)",
       "reduce(...) requires '| expression' (an accumulation expression) (line 1, column 24)"
     )
 
-    test(
+    executeAndEnsureError(
       "start a=node(0) return any(x in a.collection : x.prop = 1)",
       "any(...) requires a WHERE predicate (line 1, column 24)"
     )
 
-    test(
+    executeAndEnsureError(
       "start a=node(0) return all(x in a.collection : x.prop = 1)",
       "all(...) requires a WHERE predicate (line 1, column 24)"
     )
 
-    test(
+    executeAndEnsureError(
       "start a=node(0) return single(x in a.collection : x.prop = 1)",
       "single(...) requires a WHERE predicate (line 1, column 24)"
     )
 
-    test(
+    executeAndEnsureError(
       "start a=node(0) return none(x in a.collection : x.prop = 1)",
       "none(...) requires a WHERE predicate (line 1, column 24)"
     )
   }
 
-  @Test def shouldFailIfUsingAnHintWithAnUnknownIdentifier() {
-    test(
+  test("should fail if using an hint with an unknown identifier") {
+    executeAndEnsureError(
       "match (n:Person)-->() using index m:Person(name) where n.name = \"kabam\" return n",
       "m not defined (line 1, column 35)"
     )
   }
 
-  @Test def shouldFailIfNoParensAroundNode() {
-    test(
+  test("should fail if no parens around node") {
+    executeAndEnsureError(
       "match n:Person return n",
       "Parentheses are required to identify nodes in patterns (line 1, column 7)"
     )
-    test(
+    executeAndEnsureError(
       "match n {foo: 'bar'} return n",
       "Parentheses are required to identify nodes in patterns (line 1, column 7)"
     )
   }
 
-  @Test def shouldFailIfUnknownIdentifierInMergeActionSetClause() {
-    test(
+  test("should fail if unknown identifier in merge action set clause") {
+    executeAndEnsureError(
       "MERGE (n:Person) ON CREATE SET x.foo = 1",
       "x not defined (line 1, column 32)"
     )
-    test(
+    executeAndEnsureError(
       "MERGE (n:Person) ON MATCH SET x.foo = 1",
       "x not defined (line 1, column 31)")
   }
 
-  @Test def shouldFailIfUsingLegacyOptionalsMatch() {
-    test(
+  test("should fail if using legacy optionals match") {
+    executeAndEnsureError(
       "start n = node(0) match (n)-[?]->(m) return n",
       "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
     )
   }
 
-  @Test def shouldFailIfUsingLegacyOptionalsMatch2() {
-    test(
+  test("should fail if using legacy optionals match2") {
+    executeAndEnsureError(
       "start n = node(0) match (n)-[?*]->(m) return n",
       "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 28)"
     )
   }
 
-  @Test def shouldFailIfUsingLegacyOptionalsMatch3() {
-    test(
+  test("should fail if using legacy optionals match3") {
+    executeAndEnsureError(
       "start n = node(0) match shortestPath((n)-[?*]->(m)) return n",
       "Question mark is no longer used for optional patterns - use OPTIONAL MATCH instead (line 1, column 41)"
     )
   }
 
-  @Test def shouldRequireWithAfterOptionalMatch() {
-    test(
+  test("should require with after optional match") {
+    executeAndEnsureError(
       "OPTIONAL MATCH (a)-->(b) MATCH (c)-->(d) return d",
       "MATCH cannot follow OPTIONAL MATCH (perhaps use a WITH clause between them) (line 1, column 26)"
     )
   }
 
-  @Test def shouldRequireWithBeforeStart() {
-    test(
+  test("should require with before start") {
+    executeAndEnsureError(
       "MATCH (a)-->(b) START c=node(0) return c",
       "WITH is required between MATCH and START (line 1, column 1)"
     )
   }
 
-  @Test def shouldWarnOnOverSizedInteger() {
-    test(
+  test("should warn on over sized integer") {
+    executeAndEnsureError(
       "RETURN 1766384027365849394756747201203756",
       "integer is too large (line 1, column 8)"
     )
   }
 
-  @Test def shouldWarnOnOverSizedDouble() {
-    test(
+  test("should warn on over sized double") {
+    executeAndEnsureError(
       "RETURN 1.34E999",
       "floating point number is too large (line 1, column 8)"
     )
   }
 
-  @Test def shouldGiveTypeErrorForActionsOnMixedCollection() {
-    test(
+  test("should give type error for actions on mixed collection") {
+    executeAndEnsureError(
       "RETURN (['a', 1][0]).prop",
       "Type mismatch: expected Map, Node or Relationship but was Any (line 1, column 19)"
     )
   }
 
-  @Test def shouldFailIfUsingNonUpdateClauseInsideForeach() {
-    test(
+  test("should fail if using non update clause inside foreach") {
+    executeAndEnsureError(
       "FOREACH (n in [1] | WITH foo RETURN bar)",
       "Invalid use of WITH inside FOREACH (line 1, column 21)"
     )
   }
 
-  def test(query: String, message: String) {
+  def executeAndEnsureError(query: String, message: String) {
     try {
-      val result = execute(query)
-      result.toList
+      execute(query).toList
       fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
-      case x: CypherException =>
-        val actual = x.getMessage.lines.next().trim
-        assertThat(actual, equalTo(message))
+      case x: CypherException => x.getMessage.lines.next().trim should equal(message)
     }
   }
 }
