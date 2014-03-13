@@ -1,3 +1,0 @@
-// this page has temporarily been moved to manual/src/cypher
-// it should live somewhere in cypher-docs later on.
-

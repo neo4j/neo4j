@@ -195,11 +195,13 @@ public class NeoStoreTransaction extends XaTransaction
                    context.getRelCommands().isEmpty() && context.getSchemaRuleCommands().isEmpty() &&
                     context.getRelationshipTypeTokenCommands().isEmpty() &&
                    context.getLabelTokenCommands().isEmpty() &&
+                   context.getRelGroupCommands().isEmpty() &&
                     context.getPropertyKeyTokenCommands().isEmpty() && kernelTransaction.isReadOnly();
         }
         return context.getNodeRecords().changeSize() == 0 && context.getRelRecords().changeSize() == 0 &&
                 context.getSchemaRuleChanges().changeSize() == 0 &&
                context.getPropertyRecords().changeSize() == 0 && relationshipTypeTokenRecords == null &&
+               context.getRelGroupRecords().changeSize() == 0 &&
                labelTokenRecords == null && propertyKeyTokenRecords == null && kernelTransaction.isReadOnly();
     }
 

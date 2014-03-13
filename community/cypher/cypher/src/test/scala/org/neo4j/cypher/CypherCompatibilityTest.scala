@@ -29,7 +29,7 @@ class CypherCompatibilityTest {
   val QUERY_2_0_ONLY = "MATCH (n:Label) RETURN n"
   val QUERY_1_9_ONLY = "START n=node(*) RETURN n.prop?"
   val QUERY_FOR_BOTH = "START n=node(*) RETURN n"
-  
+
   @Test
   def should_accept_1_9_queries_with_db_config() {
     runWithConfig("cypher_parser_version" -> "1.9") {
@@ -85,7 +85,7 @@ class CypherCompatibilityTest {
   @Test
   def should_use_default_version_by_default() {
     runWithConfig() {
-      engine =>        
+      engine =>
         assert(engine.execute(QUERY_2_0_ONLY).toList.isEmpty)
     }
   }

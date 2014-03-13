@@ -36,29 +36,43 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.{EagerMappingBuilder, MappingBuilder}
 
-case class PipeInfo(pipe: Pipe, 
+case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
-                    periodicCommit: Option[PeriodicCommitInfo] = None,
-                    rowAlignment: Boolean = true) {
-  def withRowAlignment(alignment: Boolean) = copy(rowAlignment = rowAlignment && alignment)
-}
+                    periodicCommit: Option[PeriodicCommitInfo] = None)
 
 case class PeriodicCommitInfo(size: Option[Long]) {
-  def provideBatchSize = size.getOrElse(/* defaultSize */ 10000L)
+  def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
+trait NewQueryPlanSuccessRateMonitor {
+  def newQuerySeen(queryText: String, ast:Statement)
+  def unableToHandleQuery(queryText: String, ast:Statement)
+}
 
-  def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
+class ExecutionPlanBuilder(graph: GraphDatabaseService,
+                           monitor: NewQueryPlanSuccessRateMonitor,
+                           pipeBuilder: PipeBuilder = new PipeBuilder,
+                           execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
 
-    val PipeInfo(p, isUpdating, periodicCommitInfo, rowAlignment) = try {
-      execPlanBuilder.producePlan(ast)
-    } catch {
-      case _: CantHandleQueryException => pipeBuilder.buildPipes(planContext, inputQuery)
+  def build(planContext: PlanContext, inputQuery: ParsedQuery): ExecutionPlan = {
+    val ast = inputQuery.statement
+    val abstractQuery = inputQuery.abstractQuery
+    val semanticQuery = inputQuery.semanticQuery
+
+    val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
+      val queryText = abstractQuery.getQueryText
+      try {
+        monitor.newQuerySeen(queryText, ast)
+        execPlanBuilder.producePlan(ast, semanticQuery)(planContext)
+      } catch {
+        case _: CantHandleQueryException =>
+          monitor.unableToHandleQuery(queryText, ast)
+          pipeBuilder.buildPipes(planContext, abstractQuery)
+      }
     }
 
-    val columns = getQueryResultColumns(inputQuery, p.symbols)
-    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating, rowAlignment)
+    val columns = getQueryResultColumns(abstractQuery, p.symbols)
+    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
@@ -93,8 +107,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
   private def getExecutionPlanFunction(pipe: Pipe,
                                        columns: List[String],
                                        periodicCommit: Option[PeriodicCommitInfo],
-                                       updating: Boolean,
-                                       rowAlignment: Boolean) =
+                                       updating: Boolean) =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
 
       val builder = new ExecutionWorkflowBuilder(queryContext)
@@ -102,12 +115,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, pipeBuilder: PipeBuilder
       if (periodicCommit.isDefined) {
         if (!queryContext.isTopLevelTx)
           throw new PeriodicCommitInOpenTransactionException()
-
-        val batchSize = periodicCommit.get.provideBatchSize
-        if (containsLoadCsv(pipe) && rowAlignment)
-          builder.setLoadCsvPeriodicCommitObserver(batchSize)
-        else
-          builder.setPeriodicCommitObserver(batchSize)
+        builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
       }
 
       builder.transformQueryContext(new UpdateCountingQueryContext(_))
@@ -142,15 +150,10 @@ class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
     queryContextBuilder += f
   }
 
-  def setPeriodicCommitObserver(batchSize: Long) {
-    addUpdateObserver(new PeriodicCommitObserver(batchSize, queryContext))
-  }
-
-  def setLoadCsvPeriodicCommitObserver(batchSize: Long) {
-    val observer = new LoadCsvPeriodicCommitObserver(batchSize, externalResource, queryContext)
+  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long) {
+    val observer = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
     externalResource = observer
     setExceptionDecorator(observer)
-    addUpdateObserver(observer)
   }
 
   def setPipeDecorator(newDecorator: PipeDecorator) {
@@ -187,8 +190,4 @@ class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
   }
 
   private def queryContext = queryContextBuilder.result()
-
-  private def addUpdateObserver(newObserver: UpdateObserver) {
-    transformQueryContext(new UpdateObservableQueryContext(newObserver, _))
-  }
 }

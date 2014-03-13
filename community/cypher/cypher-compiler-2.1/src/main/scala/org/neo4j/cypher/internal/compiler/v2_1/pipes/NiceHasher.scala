@@ -23,12 +23,12 @@ class NiceHasher(val original: Seq[Any]) {
   override def equals(p1: Any): Boolean = {
     if(p1 == null || !p1.isInstanceOf[NiceHasher])
       return false
-    
+
     val other = p1.asInstanceOf[NiceHasher]
 
     hash == other.hash && comperableValues.equals(other.comperableValues)
   }
-  
+
   lazy val comperableValues = original.map {
     case x:Array[_] => x.deep
     case x => x

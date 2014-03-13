@@ -22,6 +22,8 @@ package org.neo4j.server.rest;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.codehaus.jackson.JsonNode;
 import org.json.JSONException;
 import org.junit.Test;
@@ -29,13 +31,12 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -729,39 +730,46 @@ public class BatchOperationDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldFailWhenUsingPeriodicCommitViaNewTxEndpoint() throws Exception
     {
-        // Given
-        String jsonString = new PrettyJSON()
-                .array()
-                .object()
-                .key("method") .value("POST")
-                .key("to")     .value("/transaction/commit")
-                .key("body")   .object()
-                    .key("statements").array()
-                        .object().key("statement").value("USING PERIODIC COMMIT CREATE ()").endObject()
-                    .endArray()
-                .endObject()
-                .endObject()
-                .endArray()
-                .toString();
+        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
+        {
+            @Override
+            public void execute( String url ) throws Exception
+            {
+                // Given
+                String jsonString = new PrettyJSON()
+                        .array()
+                        .object()
+                        .key( "method" ).value("POST")
+                        .key( "to" ).value("/transaction/commit")
+                        .key( "body" ).object()
+                        .key("statements").array()
+                        .object().key( "statement" ).value( "USING PERIODIC COMMIT LOAD CSV FROM '" + url + "' AS line CREATE ()" ).endObject()
+                        .endArray()
+                        .endObject()
+                        .endObject()
+                        .endArray()
+                        .toString();
 
-        // When
-        JsonNode result = JsonHelper.jsonNode(gen.get()
-                .expectedStatus(200)
-                .payload(jsonString)
-                .post(batchUri())
-                .entity());
+                // When
+                JsonNode result = JsonHelper.jsonNode(gen.get()
+                        .expectedStatus(200)
+                        .payload(jsonString)
+                        .post(batchUri())
+                        .entity());
 
-        // Then
-        JsonNode results = result.get(0).get("body").get("results");
-        JsonNode errors = result.get(0).get("body").get("errors");
+                // Then
+                JsonNode results = result.get(0).get("body").get("results");
+                JsonNode errors = result.get(0).get("body").get("errors");
 
-        assertTrue( "Results not an array", results.isArray() );
-        assertTrue( "Results not empty", 0 == results.size() );
-        assertTrue( "Errors not an array", errors.isArray() );
-        assertTrue("Didn't find exactly one error", 1 == errors.size());
+                assertTrue( "Results not an array", results.isArray() );
+                assertTrue( "Results not empty", 0 == results.size() );
+                assertTrue( "Errors not an array", errors.isArray() );
+                assertTrue("Didn't find exactly one error", 1 == errors.size());
 
-        String errorCode = errors.get(0).get("code").getTextValue();
-        assertEquals( "Neo.ClientError.Statement.InvalidSemantics", errorCode );
+                String errorCode = errors.get(0).get("code").getTextValue();
+                assertEquals( "Neo.ClientError.Statement.InvalidSemantics", errorCode );
+            }
+        } );
     }
 
     private int countNodes()

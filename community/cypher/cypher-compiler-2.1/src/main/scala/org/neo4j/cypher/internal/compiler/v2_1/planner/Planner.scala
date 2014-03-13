@@ -24,27 +24,40 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.{SemanticState, RelTypeId, LabelId}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner() {
   val estimator = new CardinalityEstimator {
+
     def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
 
-    def estimateLabelScan(labelId: LabelId) = 100
+    def estimateNodeByIdSeek() = 1
+
+    def estimateRelationshipByIdSeek() = 2
+
+    def estimateNodeByLabelScan(labelId: Option[LabelId]) = labelId match {
+      case Some(id) => 100
+      case None => 0
+    }
 
     def estimateAllNodes() = 1000
   }
 
-  val logicalPlanner = new SimpleLogicalPlanner(estimator)
+  val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
+  val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
 
-  def producePlan(in: Statement): PipeInfo = in match {
+  def producePlan(statement: Statement, semanticQuery: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
-      val queryGraph = queryGraphBuilder.produce(ast)
-      val logicalPlan = logicalPlanner.plan(queryGraph)
+      val resolvedAst = tokenResolver.resolve(ast)(planContext)
+      val queryGraph = queryGraphBuilder.produce(resolvedAst)
+      val logicalPlan = logicalPlanner.plan(queryGraph, semanticQuery)(planContext)
       executionPlanBuilder.build(logicalPlan)
 
-    case _ => throw new CantHandleQueryException
+    case _ =>
+      throw new CantHandleQueryException
   }
 }

@@ -33,7 +33,7 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
     val nonOptionalQuery = in.query.copy(optional = false)
     val postMatchPlan = solveMatch(in.copy(pipe = listeningPipe, query = nonOptionalQuery), context)
     val matchPipe = postMatchPlan.pipe
-    
+
     val optionalMatchPipe = OptionalMatchPipe(in.pipe, matchPipe, matchPipe.symbols)
     postMatchPlan.copy(pipe = optionalMatchPipe)
   }

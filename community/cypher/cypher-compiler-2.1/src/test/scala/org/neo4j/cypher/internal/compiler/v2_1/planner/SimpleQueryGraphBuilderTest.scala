@@ -17,48 +17,94 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, Selections, SimpleQueryGraphBuilder}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
-  val parser = new CypherParser()
+  // TODO: we may want to have normalized queries instead than simply parse queries
+  val parser = new CypherParser(mock[ParserMonitor])
+  val pos = DummyPosition(0)
+
+  val builder = new SimpleQueryGraphBuilder
+  def buildQueryGraph(query: String): QueryGraph = {
+    val ast = parser.parse(query).asInstanceOf[Query]
+    builder.produce(ast)
+  }
 
   test("projection only query") {
-    val ast = parse("RETURN 42")
-    val builder = new SimpleQueryGraphBuilder
-    val qg = builder.produce(ast)
-    qg.projection should equal(Seq("42" -> SignedIntegerLiteral("42")(DummyPosition(0))))
+    val qg = buildQueryGraph("RETURN 42")
+    qg.projections should equal(Map("42" -> SignedIntegerLiteral("42")(pos)))
   }
 
   test("multiple projection query") {
-    val ast = parse("RETURN 42, 'foo'")
-    val builder = new SimpleQueryGraphBuilder
-    val qg = builder.produce(ast)
-    qg.projection should equal(Seq(
-      "42" -> SignedIntegerLiteral("42")(DummyPosition(0)),
-      "'foo'" -> StringLiteral("foo")(DummyPosition(0))
+    val qg = buildQueryGraph("RETURN 42, 'foo'")
+    qg.projections should equal(Map(
+      "42" -> SignedIntegerLiteral("42")(pos),
+      "'foo'" -> StringLiteral("foo")(pos)
     ))
   }
 
   test("match n return n") {
-    val ast = parse("MATCH n RETURN n")
-    val builder = new SimpleQueryGraphBuilder
-    val qg = builder.produce(ast)
-
-    qg.projection should equal(Seq(
-      "n" -> Identifier("n")(DummyPosition(0))
+    val qg = buildQueryGraph("MATCH n RETURN n")
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
     ))
 
-    qg.identifiers should equal(Set(Id("n")))
+    qg.identifiers should equal(Set(IdName("n")))
   }
 
-  def parse(s: String): Query =
-    parser.parse(s).asInstanceOf[Query]
+  test("match n where n:Awesome return n") {
+    val qg = buildQueryGraph("MATCH n WHERE n:Awesome:Foo RETURN n")
 
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(Seq(
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos),
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Foo")()(pos)))(pos)
+    )))
+
+    qg.identifiers should equal(Set(IdName("n")))
+  }
+
+  test("match n where id(n) = 42 return n") {
+    val qg = buildQueryGraph("MATCH n WHERE id(n) = 42 RETURN n")
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(List(
+      Set(IdName("n")) -> Equals(
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos)
+    )))
+
+    qg.identifiers should equal(Set(IdName("n")))
+  }
+
+  test("match n where n:Label and id(n) = 42 return n") {
+    val qg = buildQueryGraph("MATCH n WHERE n:Label AND id(n) = 42 RETURN n")
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(List(
+      Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Label")()(pos)))(pos),
+      Set(IdName("n")) -> Equals(
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos)
+    )))
+
+    qg.identifiers should equal(Set(IdName("n")))
+  }
 }

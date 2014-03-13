@@ -30,9 +30,10 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
 import org.neo4j.kernel.impl.util.FileUtils
-import java.io.File
+import java.io.{PrintWriter, File}
+import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 
-class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
+class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
   @Test def shouldGetRelationshipById() {
     val n = createNode()
     val r = relate(n, createNode(), "KNOWS")
@@ -1032,9 +1033,13 @@ order by a.COL1""")
   }
 
   @Test
-  def should_handle_cypher_version_and_autocommit() {
-    val result = execute("cypher 2.1 using periodic commit create () with * match n return n")
-    assert(result.size === 1)
+  def should_handle_cypher_version_and_periodic_commit() {
+    val url = createTempFileURL("foo", ".csv") { writer: PrintWriter =>
+      writer.println("1,2,3")
+      writer.println("4,5,6")
+    }
+    val result = execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
+    assert(result.size === 2)
   }
 
 }

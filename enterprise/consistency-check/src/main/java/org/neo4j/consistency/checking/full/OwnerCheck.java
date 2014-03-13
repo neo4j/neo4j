@@ -34,6 +34,7 @@ import org.neo4j.consistency.checking.DynamicStore;
 import org.neo4j.consistency.checking.PrimitiveRecordCheck;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
@@ -138,6 +140,7 @@ class OwnerCheck implements CheckDecorator
         }
         return new PrimitiveCheckerDecorator<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport>( checker )
         {
+            @Override
             PropertyOwner owner( NeoStoreRecord record )
             {
                 return PropertyOwner.OWNING_GRAPH;
@@ -155,6 +158,7 @@ class OwnerCheck implements CheckDecorator
         }
         return new PrimitiveCheckerDecorator<NodeRecord, ConsistencyReport.NodeConsistencyReport>( checker )
         {
+            @Override
             PropertyOwner owner( NodeRecord record )
             {
                 return new PropertyOwner.OwningNode( record );
@@ -173,6 +177,7 @@ class OwnerCheck implements CheckDecorator
         return new PrimitiveCheckerDecorator<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>(
                 checker )
         {
+            @Override
             PropertyOwner owner( RelationshipRecord record )
             {
                 return new PropertyOwner.OwningRelationship( record );
@@ -368,6 +373,14 @@ class OwnerCheck implements CheckDecorator
                 checker.checkChange( oldRecord, newRecord, engine, records );
             }
         };
+    }
+
+    @Override
+    public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+    {
+        // TODO implement owner checking for relationship groups?
+        return checker;
     }
 
     private ConcurrentMap<Long, DynamicOwner> dynamicOwners( RecordType type )

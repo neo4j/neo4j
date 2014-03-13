@@ -271,7 +271,7 @@ object StatementConverters {
           case remItem: ast.RemoveLabelItem =>
             commands.LabelAction(remItem.expression.asCommandExpression, commands.LabelRemoveOp, remItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
           case remItem: ast.RemovePropertyItem =>
-            mutation.DeletePropertyAction(remItem.property.map.asCommandExpression, commandvalues.KeyToken.Unresolved(remItem.property.identifier.name, commandvalues.TokenType.PropertyKey))
+            mutation.DeletePropertyAction(remItem.property.map.asCommandExpression, commandvalues.KeyToken.Unresolved(remItem.property.propertyKey.name, commandvalues.TokenType.PropertyKey))
         }
       case c: ast.Foreach =>
         Seq(mutation.ForeachAction(c.expression.asCommandExpression, c.identifier.name, c.updates.flatMap {

@@ -178,6 +178,12 @@ public class TransactionWriter
         update( relationship );
     }
 
+    public void delete( RelationshipGroupRecord group ) throws IOException
+    {
+        group.setInUse( false );
+        add( group );
+    }
+
     public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord ) throws IOException
     {
         for ( DynamicRecord record : afterRecord )

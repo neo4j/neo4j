@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters.
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
@@ -40,9 +40,12 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val right = plan.rhs.map(buildPipe)
 
       plan match {
-        case Projection(_, expressions) => ProjectionPipe(left.get, toLegacyExpressions(expressions))
-        case SingleRow() => NullPipe()
-        case AllNodesScan(Id(id), _) => AllNodesScanPipe(id)
+        case Projection(_, expressions)                     => ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
+        case SingleRow()                                    => NullPipe()
+        case AllNodesScan(IdName(id), _)                    => AllNodesScanPipe(id)
+        case NodeByLabelScan(IdName(id), label, _)          => NodeByLabelScanPipe(id, label)
+        case NodeByIdSeek(IdName(id), nodeIdExpr, _)        => NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
+        case RelationshipByIdSeek(IdName(id), relIdExpr, _) => RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
       }
     }
 
@@ -51,8 +54,5 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
     PipeInfo(topLevelPipe, updating, None)
   }
 
-  def toLegacyExpressions(expressions: Seq[(String, Expression)]): Map[String, legacy.Expression] =
-    expressions.map {
-      case (k: String, v: Expression) => (k, v.asCommandExpression)
-    }.toMap
+  def toLegacyExpressions(expressions: Map[String, Expression]) = expressions.mapValues(_.asCommandExpression)
 }

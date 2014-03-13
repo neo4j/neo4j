@@ -26,12 +26,14 @@ import java.util.concurrent.Executors
 import scala.collection.mutable.HashMap
 
 trait HttpServerTestSupport {
+  def boundInfo: InetSocketAddress
   def start()
   def stop()
 }
 
 class HttpServerTestSupportBuilder {
-  private var port = 8080
+  val ASK_OS_TO_PROVIDE_A_PORT = 0
+  private var port = ASK_OS_TO_PROVIDE_A_PORT
   private var allowedMethods: Set[String] = Set()
   private val mapping = new HashMap[String, (HttpExchange => Unit)]()
   private val filters = new HashMap[String, (HttpExchange => Boolean)]()
@@ -89,6 +91,8 @@ class HttpServerTestSupportBuilder {
           throw new IllegalStateException("Error in creating and/or binding the server.", ex)
       }
     }
+
+    def boundInfo = optServer.get.getAddress
 
     def start {
       optServer = Some(provideServer)

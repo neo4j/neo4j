@@ -96,7 +96,7 @@ object MergePatternBuilder {
   def createActions(in: SymbolTable, createRels: Seq[UpdateAction]): (SymbolTable, Seq[UpdateAction]) =
     createRels.foldLeft((in, Seq[UpdateAction]())) {
       case ((s0, acc), rel@CreateRelationship(_, lhs, rhs, _, _)) =>
-        val (s1, r1) = optCreateNode(s0, lhs) 
+        val (s1, r1) = optCreateNode(s0, lhs)
         val (s2, r2) = optCreateNode(s1, rhs)
         (s2, acc ++ r1 ++ r2 :+ rel)
 
@@ -105,7 +105,7 @@ object MergePatternBuilder {
     }
 
   def optCreateNode(symbols: SymbolTable, ep: RelationshipEndpoint): (SymbolTable, Option[CreateNode]) = ep match {
-    case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) => 
+    case RelationshipEndpoint(Identifier(name), props, labels) if !symbols.hasIdentifierNamed(name) =>
       (symbols.add(name, CTNode), Some(CreateNode(name, props, labels)))
     case _ =>
       (symbols, None)

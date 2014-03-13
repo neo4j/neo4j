@@ -19,43 +19,54 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{PeriodicCommitQuery, AbstractQuery}
-import executionplan.{ExecutionPlanBuilder, ExecutionPlan}
-import executionplan.verifiers.HintVerifier
-import parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanBuilder, ExecutionPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
 import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Query, Statement}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
+import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
 
-case class CypherCompiler(graph: GraphDatabaseService, queryCache: (String, => Object) => Object) {
-  val parser = CypherParser()
-  val verifiers = Seq(HintVerifier)
-  val planBuilder = new ExecutionPlanBuilder(graph)
+trait SemanticCheckMonitor {
+  def startSemanticCheck(query: String)
+  def finishSemanticCheckSuccess(query: String)
+  def finishSemanticCheckError(query: String, errors: Seq[SemanticError])
+}
 
-  @throws(classOf[SyntaxException])
-  def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
-    case (_: PeriodicCommitQuery, _) => true
-    case _ => false
+trait AstRewritingMonitor {
+  def startRewriting(queryText: String, statement: Statement)
+  def finishRewriting(queryText: String, statement: Statement)
+}
+
+object CypherCompiler {
+  type CacheKey = Statement
+  type CacheValue = ExecutionPlan
+  type PlanCache = (Statement, => CacheValue) => CacheValue
+}
+
+case class CypherCompiler(parser: CypherParser,
+                          semanticChecker: SemanticChecker,
+                          executionPlanBuilder: ExecutionPlanBuilder,
+                          astRewriter: ASTRewriter,
+                          planCache: CypherCompiler.PlanCache,
+                          monitors: Monitors) {
+
+  def prepare(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
+    val parsedStatement = parser.parse(queryText)
+    semanticChecker.check(queryText, parsedStatement)
+    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
+    val table = semanticChecker.check(queryText, parsedStatement)
+    val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
+    val parsedQuery = ParsedQuery(rewrittenStatement, query, table)
+
+    val plan = planCache(rewrittenStatement, executionPlanBuilder.build(context, parsedQuery))
+    (plan, extractedParams)
   }
 
   @throws(classOf[SyntaxException])
-  def prepare(queryText: String, context: PlanContext): ExecutionPlan = {
-    val (query: AbstractQuery, statement: Statement) = cachedQuery(queryText)
-    planBuilder.build(context, query, statement)
+  def isPeriodicCommit(queryText: String) = parser.parse(queryText) match {
+    case q:Query => q.periodicCommitHint.nonEmpty
+    case _       => false
   }
-
-  private def cachedQuery(queryText: String): (AbstractQuery, Statement) =
-    queryCache(queryText, {
-      verify(parse(queryText))
-    }).asInstanceOf[(AbstractQuery, Statement)]
-
-  private def verify(query: (AbstractQuery, Statement)): (AbstractQuery, Statement) = {
-    query._1.verifySemantics()
-    for (verifier <- verifiers)
-      verifier.verify(query._1)
-    query
-  }
-
-  private def parse(query: String): (AbstractQuery, Statement) = parser.parseToQuery(query)
 }

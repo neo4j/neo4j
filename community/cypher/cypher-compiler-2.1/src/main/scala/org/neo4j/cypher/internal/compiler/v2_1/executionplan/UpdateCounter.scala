@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 class UpdateCounter {
-  private var uncommittedUpdates = 0L
-  private var totalUpdates = 0L
+  private var uncommittedRows = 0L
+  private var totalRows = 0L
 
   def +=(increment: Long) {
     assert(increment > 0L, s"increment must be positive but was: $increment")
-    uncommittedUpdates += increment
-    totalUpdates += increment
+    uncommittedRows += increment
+    totalRows += increment
   }
 
   def resetIfPastLimit(limit: Long)(f: => Unit) {
-    if (uncommittedUpdates >= limit) {
+    if (uncommittedRows >= limit) {
       f
-      uncommittedUpdates = 0
+      uncommittedRows = 0
     }
   }
 }

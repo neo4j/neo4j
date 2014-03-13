@@ -20,28 +20,40 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Id
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
-  override def produce(ast: Query): QueryGraph = {
-    val (projection, identifiers: Set[Id]) = ast match {
-      case Query(None, SingleQuery(Seq(Return(false, ListedReturnItems(expressions), None, None, None)))) =>
-        (expressions.map(e => e.name -> e.expression), Set.empty)
 
+  override def produce(ast: Query): QueryGraph = {
+
+    val (projections:  Seq[(String, Expression)], selections, identifiers: Set[IdName]) = ast match {
+
+      // return 42
+      case Query(None, SingleQuery(Seq(Return(false, ListedReturnItems(expressions), None, None, None)))) =>
+        val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
+        val selections = Selections()
+        val identifiers = Set.empty
+        (projections, selections, identifiers)
+
+      // match (n ...) return ...
       case Query(None, SingleQuery(Seq(
-        Match(false, Pattern(Seq(EveryPath(NodePattern(Some(Identifier(s)), Seq(), None, _)))), Seq(), None),
+        Match(false, Pattern(Seq(EveryPath(NodePattern(Some(Identifier(s)), Seq(), None, _)))), Seq(), optWhere),
         Return(false, ListedReturnItems(expressions), None, None, None)
       ))) =>
-        (expressions.map(e => e.name -> e.expression), Set(Id(s)))
+        val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
+        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
+        val identifiers = Set(IdName(s))
+        (projections, selections, identifiers)
 
-      case _ => throw new CantHandleQueryException
+      case _ =>
+        throw new CantHandleQueryException
     }
 
-    if (projection.exists {
+    if (projections.exists {
       case (_,e) => e.asCommandExpression.containsAggregate
     }) throw new CantHandleQueryException
 
-    QueryGraph(projection, identifiers)
+    QueryGraph(projections.toMap, selections, identifiers)
   }
 }

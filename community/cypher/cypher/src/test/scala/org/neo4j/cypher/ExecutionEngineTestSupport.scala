@@ -27,6 +27,7 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.kernel.monitoring.Monitors
 
 
 case class ExpectedException[T <: Throwable](e: T) {
@@ -45,7 +46,7 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
 
   def execute(q: String, params: (String, Any)*): ExecutionResult =
     RewindableExecutionResult(engine.execute(q, params.toMap))
-  
+
   def profile(q: String, params: (String, Any)*): ExecutionResult =
     RewindableExecutionResult(engine.profile(q, params.toMap))
 

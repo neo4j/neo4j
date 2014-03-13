@@ -25,8 +25,10 @@ import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.data.{SimpleVal, MapVal, SeqVal}
 import org.neo4j.cypher.internal.helpers.TxCounts
+import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 
-class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
+class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport {
 
   test("unfinished profiler complains") {
     //GIVEN
@@ -180,7 +182,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should handle PERIODIC COMMIT when profiling") {
-    val query = "USING PERIODIC COMMIT 10 FOREACH(n IN range(0,99) | CREATE()) WITH * MATCH n RETURN n"
+    val url = createTempFileURL("cypher", ".csv")(writer => {
+      1.to(100).foreach { i =>
+        writer.println(i.toString)
+      }
+    }).cypherEscape
+
+    val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE()"
 
     // given
     execute(query).toList
@@ -191,7 +199,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite {
     val result = profile(query)
 
     // then
-    result.toList.size should equal(100)
     graph.txCounts-initialTxCounts should equal(TxCounts(commits = 11))
     result.executionPlanDescription().asJava should not equal(null)
     result.queryStatistics().containsUpdates should equal(true)

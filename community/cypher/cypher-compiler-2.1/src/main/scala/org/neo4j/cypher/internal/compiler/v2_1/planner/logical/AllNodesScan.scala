@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-case class AllNodesScan(id: Id, cardinality: Int) extends LogicalPlan {
-  def coveredIds: Set[Id] = Set(id)
+case class AllNodesScan(idName: IdName, cardinality: Int) extends LogicalPlan {
+  def coveredIds: Set[IdName] = Set(idName)
 
   def cost: Int = ???
 

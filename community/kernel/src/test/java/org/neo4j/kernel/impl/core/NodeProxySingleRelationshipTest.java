@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -29,9 +30,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+
 import static junit.framework.Assert.assertNotNull;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.primitiveLongIterator;
 
 public class NodeProxySingleRelationshipTest

@@ -63,7 +63,9 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
     int getRecordHeaderSize();
 
     void close();
-    
+
+    int getNumberOfReservedLowIds();
+
     Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
     {
         @Override
@@ -142,11 +144,15 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
             processRecord(LabelTokenRecord.class, store, record);
         }
 
-        @SuppressWarnings("UnusedParameters")
+        public void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,
+                RelationshipGroupRecord record ) throws FAILURE
+        {
+            processRecord( RelationshipGroupRecord.class, store, record );
+        }
+
         protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record ) throws FAILURE
         {
-            throw new UnsupportedOperationException( this + " does not process "
-                                                     + type.getSimpleName().replace( "Record", "" ) + " records" );
+            processRecord( type, store, record );
         }
 
         @SafeVarargs
@@ -170,7 +176,10 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                                 R record = getRecord( store, ids.next() );
                                 for ( Predicate<? super R> filter : filters )
                                 {
-                                    if ( !filter.accept( record ) ) continue scan;
+                                    if ( !filter.accept( record ) )
+                                    {
+                                        continue scan;
+                                    }
                                 }
                                 return record;
                             }
@@ -202,7 +211,9 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
         public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids ) throws FAILURE
         {
             for ( R record : scanById( store, ids ) )
+            {
                 store.accept( this, record );
+            }
         }
 
         public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, Predicate<? super R>... filters ) throws FAILURE
@@ -226,6 +237,5 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
             }
             progressListener.done();
         }
-
     }
 }

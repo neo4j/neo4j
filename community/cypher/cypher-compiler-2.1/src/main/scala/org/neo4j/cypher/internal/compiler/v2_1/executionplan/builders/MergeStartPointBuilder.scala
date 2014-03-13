@@ -54,12 +54,12 @@ class MergeStartPointBuilder extends PlanBuilder {
   }
 
   private def solveUnsolvedMergePoints(ctx: PlanContext, symbols: SymbolTable): (UpdateAction => UpdateAction) = {
-    case merge: MergeNodeAction if merge.maybeNodeProducer.isEmpty => 
+    case merge: MergeNodeAction if merge.maybeNodeProducer.isEmpty =>
       findNodeProducer(merge, ctx, symbols)
-      
-    case foreach: ForeachAction                                    => 
+
+    case foreach: ForeachAction                                    =>
       foreach.copy(actions = foreach.actions.map(solveUnsolvedMergePoints(ctx, symbols)))
-      
+
     case x                                                         => x
   }
 

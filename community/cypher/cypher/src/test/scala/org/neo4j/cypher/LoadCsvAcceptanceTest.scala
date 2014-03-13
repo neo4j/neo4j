@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import java.io.{PrintWriter, File}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -116,16 +117,6 @@ class LoadCsvAcceptanceTest
       Map("string" -> Seq("""String with "quotes" in it"""))))
   }
 
-  test("should open file containing strange chars with \"") {
-    val url = createCSVTempFileURL(filename = "cypher \"%^&!@#_)(098.,;[]{}\\~$*+-")({
-      writer =>
-        writer.println("something")
-    }).cypherEscape
-
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
-    assert(result === List(Map("string" -> Seq("something"))))
-  }
-
   test("should handle crlf line termination") {
     val url = createCSVTempFileURL({
       writer =>
@@ -175,12 +166,24 @@ class LoadCsvAcceptanceTest
   }
 
   test("should open file containing strange chars with '") {
-    val url = createCSVTempFileURL(filename = "cypher '%^&!@#_)(098.,;[]{}\\~$*+-")({
+    val filename = ensureNoIllegalCharsInWindowsFilePath("cypher '%^&!@#_)(098.:,;[]{}\\~$*+-")
+    val url = createCSVTempFileURL (filename)({
       writer =>
         writer.println("something")
     }).cypherEscape
 
     val result = execute("LOAD CSV FROM \"" + url + "\" AS line RETURN line as string").toList
+    assert(result === List(Map("string" -> Seq("something"))))
+  }
+
+  test("should open file containing strange chars with \"") {
+    val filename = ensureNoIllegalCharsInWindowsFilePath("cypher \"%^&!@#_)(098.:,;[]{}\\~$*+-")
+    val url = createCSVTempFileURL (filename)({
+      writer =>
+        writer.println("something")
+    })
+
+    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
@@ -218,14 +221,14 @@ class LoadCsvAcceptanceTest
   }
 
   test("should be able to download data from the web") {
-      val url = "http://127.0.0.1:8080/test.csv".cypherEscape
+      val url = s"http://127.0.0.1:${port}/test.csv".cypherEscape
 
       val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
       result should equal(3)
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
-      val url = "http://127.0.0.1:8080/redirect_test.csv".cypherEscape
+      val url = s"http://127.0.0.1:${port}/redirect_test.csv".cypherEscape
 
       val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
       result should equal(3)
@@ -233,7 +236,7 @@ class LoadCsvAcceptanceTest
 
   test("should fail gracefully when getting 404") {
     intercept[LoadExternalResourceException] {
-      execute("LOAD CSV FROM 'http://127.0.0.1:8080/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})")
+      execute(s"LOAD CSV FROM 'http://127.0.0.1:${port}/these_are_not_the_droids_you_are_looking_for/' AS line CREATE (a {name:line[0]})")
     }
   }
 
@@ -259,12 +262,25 @@ class LoadCsvAcceptanceTest
     }
   }
 
+  private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
+    // isWindows?
+    if ('\\' == File.separatorChar) {
+      // http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspxs
+      val illegalCharsInWidnowsFilePath = "/?<>\\:*|\""
+      // just replace the illegal chars with a 'a'
+      illegalCharsInWidnowsFilePath.foldLeft(filename)((current, c) => current.replace(c, 'a'))
+    } else {
+      filename
+    }
+  }
+
   private val CSV_DATA_CONTENT = "1,1,1\n2,2,2\n3,3,3\n".getBytes
   private val CSV_PATH = "/test.csv"
   private val CSV_COOKIE_PATH = "/cookie_test.csv"
   private val CSV_REDIRECT_PATH = "/redirect_test.csv"
   private val MAGIC_COOKIE = "neoCookie=Magic"
   private var httpServer: HttpServerTestSupport = _
+  private var port = -1
 
   override def beforeAll() {
     val  builder = new HttpServerTestSupportBuilder()
@@ -275,12 +291,17 @@ class LoadCsvAcceptanceTest
 
     builder.onPathRedirectTo(CSV_REDIRECT_PATH, CSV_COOKIE_PATH)
     builder.onPathTransformResponse(CSV_REDIRECT_PATH, HttpServerTestSupport.setCookie(MAGIC_COOKIE))
-    
+
     httpServer = builder.build()
     httpServer.start()
+    port = httpServer.boundInfo.getPort
+    assert(port > 0)
   }
 
   override def afterAll() {
     httpServer.stop()
   }
+
+  private def createFile(f: PrintWriter => Unit): String = createFile()(f)
+  private def createFile(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String = createTempFileURL(filename, ".csv")(f).cypherEscape
 }

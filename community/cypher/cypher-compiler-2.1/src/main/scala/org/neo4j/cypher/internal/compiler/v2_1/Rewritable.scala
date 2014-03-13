@@ -27,6 +27,8 @@ object Rewriter {
     def apply(that: AnyRef): Option[AnyRef] = f.apply(that)
   }
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.lift
+
+  def noop = Rewriter.lift(Map.empty)
 }
 
 trait Rewriter extends (AnyRef => Option[AnyRef])
@@ -109,28 +111,4 @@ case class bottomUp(rewriters: Rewriter*) extends Rewriter {
     Some(rewriters.foldLeft(that.dup(t => this.apply(t).get)) {
       (t, r) => t.rewrite(r)
     })
-}
-
-case class bottomUpRepeated(rewriter: Rewriter) extends Rewriter {
-  import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] = {
-    val rewrittenThat = that.dup(t => this.apply(t).get)
-    rewriter.apply(rewrittenThat).fold(Some(rewrittenThat)) {
-      t => if (t eq that)
-        Some(t)
-      else
-        Some(t.rewrite(this))
-    }
-  }
-}
-
-case class repeat(rewriter: Rewriter) extends Rewriter {
-  import Rewritable._
-  def apply(that: AnyRef): Option[AnyRef] =
-    rewriter.apply(that).map {
-      t => if (t eq that)
-        that
-      else
-        t.rewrite(this)
-    }
 }

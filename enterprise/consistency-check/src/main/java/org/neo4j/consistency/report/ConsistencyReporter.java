@@ -30,6 +30,7 @@ import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.RecordReference;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 
@@ -76,6 +78,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.LabelScanConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.IndexConsistencyReport> INDEX =
             ProxyFactory.create( ConsistencyReport.IndexConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.RelationshipGroupConsistencyReport> RELATIONSHIP_GROUP_REPORT =
+            ProxyFactory.create( ConsistencyReport.RelationshipGroupConsistencyReport.class );
 
     private final DiffRecordAccess records;
     private final InconsistencyReport report;
@@ -501,6 +505,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                                             RecordCheck<DynamicRecord, DynamicLabelConsistencyReport> checker )
     {
         dispatchChange( type, DYNAMIC_LABEL_REPORT, oldRecord, newRecord, checker );
+    }
+
+    @Override
+    public void forRelationshipGroup( RelationshipGroupRecord record,
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+    {
+        dispatch( RecordType.RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_REPORT, record, checker );
+    }
+
+    @Override
+    public void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
+            RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
+    {
+        dispatchChange( RecordType.RELATIONSHIP_GROUP, RELATIONSHIP_GROUP_REPORT, oldRecord, newRecord, checker );
     }
 
     static class ProxyFactory<T>

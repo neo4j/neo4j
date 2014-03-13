@@ -31,8 +31,8 @@ CREATE (a {name:'A'})-[:KNOWS]->(b {name:'B'})
 
 is expanded into:
 
-CREATE (a {name:'A'}), 
-       (b {name:'B'}), 
+CREATE (a {name:'A'}),
+       (b {name:'B'}),
        (a)-[:KNOWS]->(b)
  */
 trait UpdateCommandExpander {

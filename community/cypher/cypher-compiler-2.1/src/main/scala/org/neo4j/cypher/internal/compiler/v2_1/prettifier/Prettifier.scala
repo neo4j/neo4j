@@ -159,7 +159,7 @@ class PrettifierParser extends Parser with Base with Strings {
       keyword("DELETE") |
       keyword("REMOVE") |
       keyword("FOREACH") |
-      keyword("MERGE")   
+      keyword("MERGE")
     ) ~> BreakingKeywords
   }
   def comma: Rule1[Comma.type] = rule("comma") { "," ~> ( _ => Comma ) }

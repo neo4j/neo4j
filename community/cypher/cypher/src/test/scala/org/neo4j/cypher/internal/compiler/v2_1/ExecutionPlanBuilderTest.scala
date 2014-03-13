@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import javax.transaction.TransactionManager
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
   val ast = mock[Statement]
@@ -53,8 +54,8 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val epi = new ExecutionPlanBuilder(graph, new FakePipeBuilder(Seq(new BadBuilder)))
-      epi.build(planContext, q, ast)
+      val epi = new ExecutionPlanBuilder(graph, mock[NewQueryPlanSuccessRateMonitor], new FakePipeBuilder(Seq(new BadBuilder)))
+      epi.build(planContext, ParsedQuery(ast, q, SemanticTable(), Map.empty))
     })
 
     assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
@@ -66,12 +67,12 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
     val tx = graph.beginTx()
     val q = Query.start(NodeById("x", 0)).returns(ReturnItem(Identifier("x"), "x"))
 
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, new FakePipeBuilder(Seq(new ExplodingPipeBuilder)))
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, mock[NewQueryPlanSuccessRateMonitor], new FakePipeBuilder(Seq(new ExplodingPipeBuilder)))
     val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
 
     // when
     intercept[ExplodingException] {
-      val executionPlan = execPlanBuilder.build(planContext, q, ast)
+      val executionPlan = execPlanBuilder.build(planContext, ParsedQuery(ast, q, SemanticTable(), Map.empty))
       executionPlan.execute(queryContext, Map())
     }
 
@@ -147,7 +148,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(AllIdentifiers())
 
       val execPlanBuilder = new PipeBuilder
-      val PipeInfo(pipe, _, _, _) = execPlanBuilder.buildPipes(planContext, q)
+      val PipeInfo(pipe, _, _) = execPlanBuilder.buildPipes(planContext, q)
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -171,7 +172,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
         .returns(AllIdentifiers())
 
       val execPlanBuilder = new PipeBuilder
-      val PipeInfo(pipe, _, _, _) = execPlanBuilder.buildPipes(planContext, q)
+      val PipeInfo(pipe, _, _) = execPlanBuilder.buildPipes(planContext, q)
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],

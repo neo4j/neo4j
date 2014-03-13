@@ -120,6 +120,12 @@ public interface ConsistencyReport
                             RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker );
 
         void forNodeLabelMatch( NodeRecord nodeRecord, RecordCheck<NodeRecord, LabelsMatchReport> nodeLabelCheck );
+
+        void forRelationshipGroup( RelationshipGroupRecord record,
+                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
+
+        void forRelationshipGroupChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
+                RecordCheck<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> checker );
     }
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
@@ -510,6 +516,66 @@ public interface ConsistencyReport
         /** The string record referred from this key is also referred from a another key. */
         @Documented
         void nameMultipleOwners( PropertyKeyTokenRecord otherOwner );
+    }
+
+    interface RelationshipGroupConsistencyReport extends ConsistencyReport
+    {
+        /** The relationship type field has an illegal value. */
+        @Documented
+        void illegalRelationshipType();
+
+        /** The relationship type record is not in use. */
+        @Documented
+        void relationshipTypeNotInUse( RelationshipTypeTokenRecord referred );
+
+        /** The next relationship group reference has changed, but the previously referenced record has not been updated. */
+        @Documented
+        @IncrementalOnly
+        void nextNotUpdated();
+
+        /** The next relationship group is not in use. */
+        @Documented
+        void nextGroupNotInUse();
+
+        /** The location of group in the chain is invalid, should be sorted by type ascending. */
+        @Documented
+        void invalidTypeSortOrder();
+
+        /** The first outgoing relationship is not in use. */
+        @Documented
+        void firstOutgoingRelationshipNotInUse();
+
+        /** The first incoming relationship is not in use. */
+        @Documented
+        void firstIncomingRelationshipNotInUse();
+
+        /** The first loop relationship is not in use. */
+        @Documented
+        void firstLoopRelationshipNotInUse();
+
+        /** The first outgoing relationship is not the first in its chain. */
+        @Documented
+        void firstOutgoingRelationshipNotFirstInChain();
+
+        /** The first incoming relationship is not the first in its chain. */
+        @Documented
+        void firstIncomingRelationshipNotFirstInChain();
+
+        /** The first loop relationship is not the first in its chain. */
+        @Documented
+        void firstLoopRelationshipNotFirstInChain();
+
+        /** The first outgoing relationship is of a different type than its group. */
+        @Documented
+        void firstOutgoingRelationshipOfOfOtherType();
+
+        /** The first incoming relationship is of a different type than its group. */
+        @Documented
+        void firstIncomingRelationshipOfOfOtherType();
+
+        /** The first loop relationship is of a different type than its group. */
+        @Documented
+        void firstLoopRelationshipOfOfOtherType();
     }
 
     interface DynamicConsistencyReport extends ConsistencyReport

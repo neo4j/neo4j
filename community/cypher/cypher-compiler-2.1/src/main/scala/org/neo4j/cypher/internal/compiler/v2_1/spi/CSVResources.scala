@@ -58,7 +58,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
   private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
     try {
       if (url.getProtocol.startsWith("http"))
-        CookieManager.ensureEnabled()
+        TheCookieManager.ensureEnabled()
       val con = url.openConnection()
       con.setConnectTimeout(connectionTimeout)
       con.setReadTimeout(readTimeout)
@@ -70,10 +70,13 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
   }
 }
 
-object CookieManager {
-  private lazy val cookieManager = create
+object TheCookieManager {
+  private lazy val theCookieManager = create
 
-  def ensureEnabled() { cookieManager != null }
+  def ensureEnabled() {
+    // Force lazy val to be evaluated
+    theCookieManager != null
+  }
 
   private def create = {
     val cookieManager = new CookieManager

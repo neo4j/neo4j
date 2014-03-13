@@ -62,9 +62,13 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
 
     public void markDirty( long id )
     {
-        if ( !diff.containsKey( id ) ) diff.put( id, null );
+        if ( !diff.containsKey( id ) )
+        {
+            diff.put( id, null );
+        }
     }
 
+    @Override
     public R forceGetRaw( R record )
     {
         if ( diff.containsKey( record.getLongId() ) )
@@ -140,8 +144,14 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     private R getRecord( long id, boolean force )
     {
         R record = diff.get( id );
-        if ( record == null ) return force ? actual.forceGetRecord( id ) : actual.getRecord( id );
-        if ( !force && !record.inUse() ) throw new InvalidRecordException( record.getClass().getSimpleName() + "[" + id + "] not in use" );
+        if ( record == null )
+        {
+            return force ? actual.forceGetRecord( id ) : actual.getRecord( id );
+        }
+        if ( !force && !record.inUse() )
+        {
+            throw new InvalidRecordException( record.getClass().getSimpleName() + "[" + id + "] not in use" );
+        }
         return record;
     }
 
@@ -166,7 +176,10 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     @Override
     public void updateRecord( R record )
     {
-        if ( record.getLongId() > highId ) highId = record.getLongId();
+        if ( record.getLongId() > highId )
+        {
+            highId = record.getLongId();
+        }
         diff.put( record.getLongId(), record );
     }
 
@@ -203,6 +216,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public boolean hasChanges()
     {
         return !diff.isEmpty();
+    }
+
+    @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return actual.getNumberOfReservedLowIds();
     }
 
     @SuppressWarnings( "unchecked" )

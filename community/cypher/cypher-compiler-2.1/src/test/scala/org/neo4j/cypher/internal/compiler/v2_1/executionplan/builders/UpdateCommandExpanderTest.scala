@@ -79,7 +79,7 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     // then
     assert(expanded === List(createA, createB, createRelationship1, createC, createRelationship2))
   }
-  
+
   @Test
   def should_not_create_already_existing_nodes_with_foreach() {
     // given

@@ -19,30 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.parboiled.Context
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, ast}
 import org.parboiled.scala._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SymbolicName
 
 trait Literals extends Parser
   with Base with Strings {
 
   def Expression: Rule1[ast.Expression]
 
-  def Identifier: Rule1[ast.Identifier] = rule("an identifier") (
-      IdentifierString ~~>> (ast.Identifier(_))
-    | EscapedIdentifier
-  ).memoMismatches
+  def Identifier: Rule1[ast.Identifier] =
+    rule("an identifier") { SymbolicNameString ~~>> (ast.Identifier(_) ) }.memoMismatches
 
-  private def IdentifierString: Rule1[String] = rule("an identifier") {
+  def EscapedIdentifier: Rule1[ast.Identifier] =
+    rule("an identifier") { EscapedSymbolicNameString ~~>> (ast.Identifier(_)) }
+
+  def PropertyKeyName: Rule1[ast.PropertyKeyName] =
+    rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_)() ) }.memoMismatches
+
+  def LabelName: Rule1[ast.LabelName] =
+    rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_)() ) }.memoMismatches
+
+  def RelTypeName: Rule1[ast.RelTypeName] =
+    rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_)() ) }.memoMismatches
+
+  private def SymbolicNameString: Rule1[String] = UnescapedSymbolicNameString | EscapedSymbolicNameString
+
+  private def UnescapedSymbolicNameString: Rule1[String] = rule("an identifier") {
     group(IdentifierStart ~ zeroOrMore(IdentifierPart)) ~> (_.toString) ~ !IdentifierPart
   }
 
-  def EscapedIdentifier: Rule1[ast.Identifier] = rule("an identifier") {
-    EscapedIdentifierString ~~>> (ast.Identifier(_))
-  }
-
-  private def EscapedIdentifierString: Rule1[String] = rule("an identifier") {
+  private def EscapedSymbolicNameString: Rule1[String] = rule("an identifier") {
     (oneOrMore(
       ch('`') ~ zeroOrMore(!ch('`') ~ ANY) ~> (_.toString) ~ ch('`')
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
@@ -54,12 +61,12 @@ trait Literals extends Parser
 
   def MapLiteral: Rule1[ast.MapExpression] = rule {
     group(
-      ch('{') ~~ zeroOrMore(Identifier ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
+      ch('{') ~~ zeroOrMore(PropertyKeyName ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')
     ) ~~>> (ast.MapExpression(_))
   }
 
   def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
-    ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_))
+    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_))
   }
 
   def NumberLiteral: Rule1[ast.Literal] = rule("a number") (
@@ -89,12 +96,12 @@ trait Literals extends Parser
     | UnsignedIntegerLiteral ~~>> (l => ast.Range(Some(l), Some(l)))
   )
 
-  def NodeLabels: Rule1[Seq[ast.Identifier]] = rule("node labels") {
+  def NodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") {
     (oneOrMore(NodeLabel, separator = WS) memoMismatches).suppressSubnodes
   }
 
-  def NodeLabel: Rule1[ast.Identifier] = rule {
-    ((operator(":") ~~ Identifier) memoMismatches).suppressSubnodes
+  def NodeLabel: Rule1[ast.LabelName] = rule {
+    ((operator(":") ~~ LabelName) memoMismatches).suppressSubnodes
   }
 
   def StringLiteral: Rule1[ast.StringLiteral] = rule("\"...string...\"") {

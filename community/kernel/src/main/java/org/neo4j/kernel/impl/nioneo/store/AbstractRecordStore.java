@@ -50,4 +50,10 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
     {
         return null;
     }
+
+    @Override
+    public int getNumberOfReservedLowIds()
+    {
+        return 0;
+    }
 }

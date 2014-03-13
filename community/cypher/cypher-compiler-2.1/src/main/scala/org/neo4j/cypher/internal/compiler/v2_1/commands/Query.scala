@@ -100,7 +100,6 @@ case class Query(returns: Return,
       tailQ.slice.isEmpty &&
       tailQ.aggregation.isEmpty &&
       !tailQ.updatedCommands.exists(containsMergeForPattern)
-      
 
     // If we have updating actions, we can't merge with a tail part that has updating start items
     // That would mess with the order of actions
@@ -141,7 +140,7 @@ case class Query(returns: Return,
       includeIfNotEmpty((if(optional) "optional " else "") + "match  : ", matching) +
       includeIfNotEmpty("paths  : ", namedPaths) +
       includeIfNotEmpty("hints  : ", hints) +
-      (if (where == True()) "" else where.toString) +
+      (if (where == True()) "" else "where  : " + where.toString + "\n") +
       includeIfNotEmpty("aggreg : ", aggregation) +
       includeIfNotEmpty("return : ", returns.returnItems) +
       includeIfNotEmpty("order  : ", sort) +

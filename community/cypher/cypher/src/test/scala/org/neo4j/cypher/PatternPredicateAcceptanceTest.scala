@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.graphdb.Node
 
 class PatternPredicateAcceptanceTest extends ExecutionEngineJUnitSuite with Matchers {
-  
+
   @Test
   def should_filter_relationships_with_properties() {
     // given
@@ -45,10 +45,10 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineJUnitSuite with Matc
     def createPath(value: Any): Node = {
       val node0 = createLabeledNode("Start")
       val node1 = createNode()
-      
+
       relate(node0, node1, "prop" -> value)
       relate(node1, createNode(), "prop" -> value)
-      
+
       node0
     }
 

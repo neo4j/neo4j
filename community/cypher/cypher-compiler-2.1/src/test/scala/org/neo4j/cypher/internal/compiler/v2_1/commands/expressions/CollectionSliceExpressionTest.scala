@@ -51,11 +51,11 @@ class CollectionSliceExpressionTest extends Assertions {
 
     assert(slice(from = -3, to = -1) === null, "null[-3..-1]")
   }
-  
+
   @Test def should_handle_out_of_bounds_by_returning_null() {
     val fullSeq = Seq(1, 2, 3, 4)
     implicit val collection = Literal(fullSeq)
-    
+
     assert(slice(from = 2, to = 10) === Seq(3,4), "[1,2,3,4][2..10]")
 
     assert(slice(to = -10) === Seq.empty, "[1,2,3,4][..-10]")

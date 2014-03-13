@@ -77,8 +77,8 @@ public class ConsistencySummaryStatistics
     {
         if ( errors > 0 )
         {
-            inconsistentRecordCount.get( recordType ).incrementAndGet();
-            totalInconsistencyCount.incrementAndGet();
+            inconsistentRecordCount.get( recordType ).addAndGet( errors );
+            totalInconsistencyCount.addAndGet( errors );
             errorCount.addAndGet( errors );
         }
         if ( warnings > 0 )
