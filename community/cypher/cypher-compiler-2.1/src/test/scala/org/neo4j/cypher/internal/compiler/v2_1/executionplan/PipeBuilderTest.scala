@@ -31,7 +31,7 @@ import ast.convert.StatementConverters._
 
 class PipeBuilderTest extends MockitoSugar {
   val planContext: PlanContext = mock[PlanContext]
-  val parser = CypherParser(mock[ParserMonitor])
+  val parser = new CypherParser(mock[ParserMonitor])
   val planBuilder = new PipeBuilder()
 
   @Test def should_use_distinct_pipe_for_distinct() {

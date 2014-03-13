@@ -50,10 +50,11 @@ object CypherCompiler {
 class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
 
   val monitorTag = "compiler2.1"
+  val size: Int = getQueryCacheSize
 
-  private val queryCache2_1 = new LRUCache[CypherCompiler2_1.CacheKey, CypherCompiler2_1.CacheValue](getQueryCacheSize)
-  private val queryCache2_0 = new LRUCache[String, Object](getQueryCacheSize)
-  private val queryCache1_9 = new LRUCache[String, Object](getQueryCacheSize)
+  private val planCacheFactory = () => new LRUCache[CypherCompiler2_1.CacheKey, CypherCompiler2_1.CacheValue](size)
+  private val queryCache2_0 = new LRUCache[String, Object](size)
+  private val queryCache1_9 = new LRUCache[String, Object](size)
 
   private val compiler2_1 = buildCompiler2_1()
   private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
@@ -110,10 +111,9 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
     val parser = new CypherParser(monitors.newMonitor(classOf[ParserMonitor], monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor(classOf[SemanticCheckMonitor], monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor(classOf[AstRewritingMonitor], monitorTag))
-    val cache: CypherCompiler2_1.PlanCache = (q, f) => queryCache2_1.getOrElseUpdate(q, f)
     val planBuilderMonitor = monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], monitorTag)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, planBuilderMonitor)
-    new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, cache, monitors)
+    new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, planCacheFactory, monitors)
   }
 }
 

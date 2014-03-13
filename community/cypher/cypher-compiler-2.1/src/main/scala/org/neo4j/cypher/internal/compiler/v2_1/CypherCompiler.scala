@@ -49,7 +49,7 @@ case class CypherCompiler(parser: CypherParser,
                           semanticChecker: SemanticChecker,
                           executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
-                          planCache: CypherCompiler.PlanCache,
+                          cacheFactory: () => CypherCompiler.PlanCache,
                           monitors: Monitors) {
 
   def prepare(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
@@ -57,10 +57,12 @@ case class CypherCompiler(parser: CypherParser,
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
     val table = semanticChecker.check(queryText, parsedStatement)
-    val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
+    val query: AbstractQuery = ReattachAliasedExpressions(rewrittenStatement.asQuery.setQueryText(queryText))
     val parsedQuery = ParsedQuery(rewrittenStatement, query, table)
 
-    val plan = planCache(rewrittenStatement, executionPlanBuilder.build(context, parsedQuery))
+    val cache = context.getOrCreateFromSchemaState(this, cacheFactory())
+
+    val plan = cache(rewrittenStatement, executionPlanBuilder.build(context, parsedQuery))
     (plan, extractedParams)
   }
 

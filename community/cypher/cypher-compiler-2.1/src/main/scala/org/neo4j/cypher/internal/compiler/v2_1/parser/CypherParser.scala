@@ -26,7 +26,7 @@ import org.parboiled.scala._
 import org.parboiled.errors.{ParseError, InvalidInputError}
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 
-case class CypherParser(monitor: ParserMonitor) extends Parser
+class CypherParser(monitor: ParserMonitor) extends Parser
   with Statement
   with Expressions {
 

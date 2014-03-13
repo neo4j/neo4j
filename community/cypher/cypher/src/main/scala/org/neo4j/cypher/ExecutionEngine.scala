@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.CypherCompiler.{CacheValue, CacheKey}
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
@@ -78,8 +80,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val statement = txBridge.instance()
       val (plan, extractedParameters) = try {
         // fetch plan cache
-        val (planCache, compiler) = getOrCreateFromSchemaState(statement, {
-          (new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize), createCompiler())
+        val planCache = getOrCreateFromSchemaState(statement, {
+          new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
 
         // get plan or build it

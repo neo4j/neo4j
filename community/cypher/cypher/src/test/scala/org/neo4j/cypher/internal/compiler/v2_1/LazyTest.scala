@@ -208,10 +208,8 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(
-      new Answer[(LRUCache[String, (ExecutionPlan, Map[String, Any])], Compiler)]() {
-      def answer(invocation: InvocationOnMock) = {
-        (cache, new Compiler(fakeGraph, monitors, CypherVersion.v2_1))
-      }
+      new Answer[LRUCache[String, (ExecutionPlan, Map[String, Any])]]() {
+        def answer(invocation: InvocationOnMock) = { cache }
     })
 
     val engine = new ExecutionEngine(fakeGraph)
