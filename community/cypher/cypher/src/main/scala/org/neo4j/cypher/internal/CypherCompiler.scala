@@ -45,7 +45,7 @@ object CypherCompiler {
 }
 
 class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
-  private val queryCache2_1 = new LRUCache[String, Object](getQueryCacheSize)
+  private val queryCache2_1 = new LRUCache[CypherCompiler2_1.CacheKey, CypherCompiler2_1.CacheValue](getQueryCacheSize)
   private val queryCache2_0 = new LRUCache[String, Object](getQueryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](getQueryCacheSize)
 
@@ -54,26 +54,25 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
                                                   monitors.newMonitor(classOf[SemanticCheckMonitor]),
                                                   monitors.newMonitor(classOf[AstRewritingMonitor]),
                                                   (q, f) => queryCache2_1.getOrElseUpdate(q, f))
-
   private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
   private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String, context: GraphDatabaseService, statement: Statement): ExecutionPlan = {
+  def prepare(query: String, context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
     val (version, remainingQuery) = versionedQuery(query)
 
     version match {
       case CypherVersion.v2_1 =>
-        val plan = compiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, context))
-        new ExecutionPlanWrapperForV2_1(plan)
+        val (plan, extractedParameters) = compiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, context))
+        (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
 
       case CypherVersion.v2_0 =>
         val plan = compiler2_0.prepare(remainingQuery, new PlanContext_v2_0(statement, context))
-        new ExecutionPlanWrapperForV2_0(plan)
+        (new ExecutionPlanWrapperForV2_0(plan), Map.empty)
 
       case CypherVersion.v1_9 =>
         val plan = compiler1_9.prepare(remainingQuery)
-        new ExecutionPlanWrapperForV1_9(plan)
+        (new ExecutionPlanWrapperForV1_9(plan), Map.empty)
     }
   }
 

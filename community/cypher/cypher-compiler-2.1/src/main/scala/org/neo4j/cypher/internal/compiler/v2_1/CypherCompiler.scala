@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder, ExecutionPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.verifiers.{Verifier, HintVerifier}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.verifiers.HintVerifier
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
@@ -39,7 +39,13 @@ trait AstRewritingMonitor {
   def finishRewriting(queryText: String, statement: Statement)
 }
 
-case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, semanticCheckMonitor: SemanticCheckMonitor, rewritingMonitor: AstRewritingMonitor, queryCache: (String, => Object) => Object) {
+object CypherCompiler {
+  type CacheKey = Statement
+  type CacheValue = ExecutionPlan
+  type PlanCache = (Statement, => CacheValue) => CacheValue
+}
+
+case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, semanticCheckMonitor: SemanticCheckMonitor, rewritingMonitor: AstRewritingMonitor, planCache: CypherCompiler.PlanCache) {
   val verifiers = Seq(HintVerifier)
   private val monitorTag: String = "compiler2.1"
   val planBuilder = new ExecutionPlanBuilder(graph, monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], monitorTag))
@@ -48,17 +54,19 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
   monitors.addMonitorListener(CountNewQueryPlanSuccessRateMonitor, monitorTag)
 
   @throws(classOf[SyntaxException])
-  def isPeriodicCommit(queryText: String) = cachedQuery(queryText).isPeriodicCommit
+  def isPeriodicCommit(queryText: String) = parseToQuery(queryText).isPeriodicCommit
 
   @throws(classOf[SyntaxException])
-  def prepare(queryText: String, context: PlanContext): ExecutionPlan =
-    planBuilder.build(context, cachedQuery(queryText))
+  def prepare(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
+    val parsedQuery: ParsedQuery = parseToQuery(queryText)
+    val plan: ExecutionPlan = planCache(parsedQuery.statement, planBuilder.build(context, parsedQuery))
 
-  private def cachedQuery(queryText: String): ParsedQuery =
-    queryCache(queryText, parseToQuery(queryText).verified(verifiers)).asInstanceOf[ParsedQuery]
+    (plan, parsedQuery.extractedParameters)
+  }
 
   private def parseToQuery(queryText: String): ParsedQuery =
-    ParsedQuery.fromStatement(queryText, parser.parse(queryText))(rewritingMonitor, semanticCheckMonitor)
+    ParsedQuery.fromStatement(queryText, parser.parse(queryText))(rewritingMonitor, semanticCheckMonitor).
+      verified(verifiers)
 
   case class CountNewQueryPlanSuccessRateMonitor(var queries: Long = 0L, var fallbacks: Long = 0L) extends NewQueryPlanSuccessRateMonitor {
     override def newQuerySeen(queryText: String, ast: Statement) {

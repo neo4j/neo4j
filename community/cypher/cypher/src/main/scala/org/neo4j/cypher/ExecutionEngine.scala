@@ -44,15 +44,14 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
-
   @throws(classOf[SyntaxException])
   def profile(query: String, params: JavaMap[String, Any]): ExecutionResult = profile(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    val (plan, txInfo) = prepare(query)
-    plan.profile(graphAPI, txInfo, params)
+    val (plan, extractedParams, txInfo) = prepare(query)
+    plan.profile(graphAPI, txInfo, params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
@@ -64,13 +63,12 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    val (plan, txInfo) = prepare(query)
-    plan.execute(graphAPI, txInfo, params)
+    val (plan, extractedParams, txInfo) = prepare(query)
+    plan.execute(graphAPI, txInfo, params ++ extractedParams)
   }
 
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, TransactionInfo) = {
-
+  private def prepare(query: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
@@ -78,10 +76,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
       val statement = txBridge.instance()
-      val plan = try {
+      val (plan, extractedParameters) = try {
         // fetch plan cache
-        val planCache = getOrCreateFromSchemaState(statement, {
-          new LRUCache[String, ExecutionPlan](getPlanCacheSize)
+        val (planCache, compiler) = getOrCreateFromSchemaState(statement, {
+          (new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize), createCompiler())
         })
 
         // get plan or build it
@@ -107,7 +105,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
         statement.close()
-        return (plan, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
+        return (plan, extractedParameters, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
       }
 
       n += 1

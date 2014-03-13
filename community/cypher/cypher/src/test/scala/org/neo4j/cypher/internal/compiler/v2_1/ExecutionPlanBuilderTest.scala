@@ -55,7 +55,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val epi = new ExecutionPlanBuilder(graph, mock[NewQueryPlanSuccessRateMonitor], new FakePipeBuilder(Seq(new BadBuilder)))
-      epi.build(planContext, ParsedQuery(ast, q, SemanticQuery()))
+      epi.build(planContext, ParsedQuery(ast, q, SemanticQuery(), Map.empty))
     })
 
     assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
@@ -72,7 +72,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
 
     // when
     intercept[ExplodingException] {
-      val executionPlan = execPlanBuilder.build(planContext, ParsedQuery(ast, q, SemanticQuery()))
+      val executionPlan = execPlanBuilder.build(planContext, ParsedQuery(ast, q, SemanticQuery(), Map.empty))
       executionPlan.execute(queryContext, Map())
     }
 

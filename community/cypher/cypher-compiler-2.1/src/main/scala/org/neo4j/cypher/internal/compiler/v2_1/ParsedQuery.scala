@@ -20,22 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticQuery
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.verifiers.Verifier
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{PeriodicCommitQuery, AbstractQuery}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{normalizeEqualsArgumentOrder, normalizeMatchPredicates, nameMatchPatternElements, normalizeArithmeticExpressions}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.PeriodicCommitQuery
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticQuery
 
 object ParsedQuery {
 
   def fromStatement(queryText: String, parsedStatement: Statement)
                    (implicit rewritingMonitor: AstRewritingMonitor, semanticCheckMonitor: SemanticCheckMonitor) = {
-    val statement = normalizeStatement(queryText, parsedStatement)
+    semanticCheckStatement(queryText, parsedStatement)
+    val (statement, extractedParams) = normalizeStatement(queryText, parsedStatement)
     val semanticQuery = semanticCheckStatement(queryText, statement)
     val abstractQuery = ReattachAliasedExpressions(statement.asQuery.setQueryText(queryText))
 
-    ParsedQuery(statement, abstractQuery, semanticQuery)
+    ParsedQuery(statement, abstractQuery, semanticQuery, extractedParams)
   }
 
   private def semanticCheckStatement(queryText: String, statement: Statement)
@@ -54,20 +56,29 @@ object ParsedQuery {
     SemanticQuery(types = semanticState.typeTable)
   }
 
-  private def normalizeStatement(queryText: String, statement: Statement)(implicit rewritingMonitor: AstRewritingMonitor): Statement = {
+  private def normalizeStatement(queryText: String, statement: Statement)(implicit rewritingMonitor: AstRewritingMonitor): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
-    val rewrittenStatement = statement.rewrite(bottomUp(
+
+    val (extractParameters: Rewriter, extractedParameters: Map[String, Any]) = literalReplacement(statement)
+
+    val rewriter: Rewriter = bottomUp(
       normalizeArithmeticExpressions,
+      extractParameters,
       nameMatchPatternElements,
       normalizeMatchPredicates,
       normalizeEqualsArgumentOrder
-    )).asInstanceOf[ast.Statement]
+    )
+
+    val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
-    rewrittenStatement
+    (rewrittenStatement, extractedParameters)
   }
 }
 
-case class ParsedQuery(statement: Statement, abstractQuery: AbstractQuery, semanticQuery: SemanticQuery) {
+case class ParsedQuery(statement: Statement,
+                       abstractQuery: AbstractQuery,
+                       semanticQuery: SemanticQuery,
+                       extractedParameters: Map[String, Any]) {
   def verified(verifiers: Seq[Verifier]): ParsedQuery = {
     abstractQuery.verifySemantics()
     verifiers.foreach(_.verify(abstractQuery))
