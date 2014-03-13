@@ -46,15 +46,13 @@ case class Planner() {
   }
 
   val tokenResolver = new SimpleTokenResolver()
-  val astAnnotator = new SimpleAstAnnotator()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
 
-  def producePlan(in: Statement)(planContext: PlanContext): PipeInfo = in match {
+  def producePlan(statement: Statement, semanticQuery: SemanticQuery)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
-      val semanticQuery = astAnnotator.annotate(ast)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
       val logicalPlan = logicalPlanner.plan(queryGraph, semanticQuery)(planContext)
       executionPlanBuilder.build(logicalPlan)

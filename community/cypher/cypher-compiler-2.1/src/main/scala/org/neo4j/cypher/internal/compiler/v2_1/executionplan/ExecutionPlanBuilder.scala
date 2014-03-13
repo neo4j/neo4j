@@ -51,22 +51,23 @@ trait NewQueryPlanSuccessRateMonitor {
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService, monitor: NewQueryPlanSuccessRateMonitor, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
 
-  def build(planContext: PlanContext, inputQuery: AbstractQuery, ast: Statement): ExecutionPlan = {
+  def build(planContext: PlanContext, inputQuery: ParsedQuery): ExecutionPlan = {
+    val ParsedQuery(ast, abstractQuery, semanticQuery) = inputQuery
 
     val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
-      val queryText = inputQuery.getQueryText
+      val queryText = abstractQuery.getQueryText
       try {
         monitor.newQuerySeen(queryText, ast)
-        execPlanBuilder.producePlan(ast)(planContext)
+        execPlanBuilder.producePlan(ast, semanticQuery)(planContext)
       } catch {
         case _: CantHandleQueryException => {
           monitor.unableToHandleQuery(queryText, ast)
-          pipeBuilder.buildPipes(planContext, inputQuery)
+          pipeBuilder.buildPipes(planContext, abstractQuery)
         }
       }
     }
 
-    val columns = getQueryResultColumns(inputQuery, p.symbols)
+    val columns = getQueryResultColumns(abstractQuery, p.symbols)
     val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating)
 
     new ExecutionPlan {

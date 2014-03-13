@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{PeriodicCommitQuery, AbstractQuery}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder, ExecutionPlan}
-import executionplan.verifiers.HintVerifier
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.verifiers.{Verifier, HintVerifier}
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{normalizeEqualsArgumentOrder, normalizeMatchPredicates, nameMatchPatternElements, normalizeArithmeticExpressions}
-import ast.convert.StatementConverters._
 
 trait SemanticCheckMonitor {
   def startSemanticCheck(query: String)
@@ -51,55 +48,17 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
   monitors.addMonitorListener(CountNewQueryPlanSuccessRateMonitor, monitorTag)
 
   @throws(classOf[SyntaxException])
-  def isPeriodicCommit(queryText: String) = cachedQuery(queryText) match {
-    case (_: PeriodicCommitQuery, _) => true
-    case _ => false
-  }
+  def isPeriodicCommit(queryText: String) = cachedQuery(queryText).isPeriodicCommit
 
   @throws(classOf[SyntaxException])
-  def prepare(queryText: String, context: PlanContext): ExecutionPlan = {
-    val (query: AbstractQuery, statement: Statement) = cachedQuery(queryText)
-    planBuilder.build(context, query, statement)
-  }
+  def prepare(queryText: String, context: PlanContext): ExecutionPlan =
+    planBuilder.build(context, cachedQuery(queryText))
 
-  private def cachedQuery(queryText: String): (AbstractQuery, Statement) =
-    queryCache(queryText, {
-      verify(parseToQuery(queryText))
-    }).asInstanceOf[(AbstractQuery, Statement)]
+  private def cachedQuery(queryText: String): ParsedQuery =
+    queryCache(queryText, parseToQuery(queryText).verified(verifiers)).asInstanceOf[ParsedQuery]
 
-  private def verify(query: (AbstractQuery, Statement)): (AbstractQuery, Statement) = {
-    query._1.verifySemantics()
-    for (verifier <- verifiers)
-      verifier.verify(query._1)
-    query
-  }
-
-  private def parseToQuery(queryText: String): (AbstractQuery, ast.Statement) = {
-    val statement: ast.Statement = parser.parse(queryText)
-    semanticCheckMonitor.startSemanticCheck(queryText)
-    val semanticErrors: Seq[SemanticError] = statement.semanticCheck(SemanticState.clean).errors
-
-    if (semanticErrors.nonEmpty)
-      semanticCheckMonitor.finishSemanticCheckError(queryText, semanticErrors)
-    else
-      semanticCheckMonitor.finishSemanticCheckSuccess(queryText)
-
-    semanticErrors.map { error =>
-      throw new SyntaxException(s"${error.msg} (${error.position})", queryText, error.position.offset)
-    }
-
-    rewritingMonitor.startRewriting(queryText, statement)
-    val normalizedStatement = statement.rewrite(bottomUp(
-      normalizeArithmeticExpressions,
-      nameMatchPatternElements,
-      normalizeMatchPredicates,
-      normalizeEqualsArgumentOrder
-    )).asInstanceOf[ast.Statement]
-    rewritingMonitor.finishRewriting(queryText, normalizedStatement)
-
-    (ReattachAliasedExpressions(normalizedStatement.asQuery.setQueryText(queryText)), normalizedStatement)
-  }
-
+  private def parseToQuery(queryText: String): ParsedQuery =
+    ParsedQuery.fromStatement(queryText, parser.parse(queryText))(rewritingMonitor, semanticCheckMonitor)
 
   case class CountNewQueryPlanSuccessRateMonitor(var queries: Long = 0L, var fallbacks: Long = 0L) extends NewQueryPlanSuccessRateMonitor {
     override def newQuerySeen(queryText: String, ast: Statement) {
@@ -111,3 +70,4 @@ case class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, seman
     }
   }
 }
+
