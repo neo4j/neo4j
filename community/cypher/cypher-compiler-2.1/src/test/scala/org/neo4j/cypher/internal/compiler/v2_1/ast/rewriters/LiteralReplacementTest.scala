@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.parser
+import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, parser}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class LiteralReplacementTest extends CypherFunSuite  {
@@ -85,7 +85,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
 
     val (rewriter, replacedLiterals) = literalReplacement(original)
 
-    val result = original.rewrite(bottomUpExpressions(rewriter))
+    val result = original.rewrite(bottomUp(rewriter))
     assert(result === expected)
     assert(replacements === replacedLiterals)
   }
