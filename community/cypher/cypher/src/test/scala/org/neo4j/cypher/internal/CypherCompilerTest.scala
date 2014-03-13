@@ -34,8 +34,8 @@ class CypherCompilerTest extends CypherFunSuite {
 
     val monitors: Monitors = mock[Monitors]
     when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
-    when(monitors.newMonitor(classOf[SemanticCheckMonitor])).thenReturn(mock[SemanticCheckMonitor])
-    when(monitors.newMonitor(classOf[AstRewritingMonitor])).thenReturn(mock[AstRewritingMonitor])
+    when(monitors.newMonitor(classOf[SemanticCheckMonitor], "compiler2.1")).thenReturn(mock[SemanticCheckMonitor])
+    when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
     when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
 
     val compiler = new CypherCompiler(gds, monitors)

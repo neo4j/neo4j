@@ -23,10 +23,12 @@ import org.neo4j.cypher._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, AstRewritingMonitor, SemanticCheckMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, ASTRewriter, SemanticChecker,
+AstRewritingMonitor, SemanticCheckMonitor}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1,
+NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
@@ -38,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryCon
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -45,15 +48,14 @@ object CypherCompiler {
 }
 
 class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
+
+  val monitorTag = "compiler2.1"
+
   private val queryCache2_1 = new LRUCache[CypherCompiler2_1.CacheKey, CypherCompiler2_1.CacheValue](getQueryCacheSize)
   private val queryCache2_0 = new LRUCache[String, Object](getQueryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](getQueryCacheSize)
 
-  private val compiler2_1 = new CypherCompiler2_1(graph,
-                                                  monitors,
-                                                  monitors.newMonitor(classOf[SemanticCheckMonitor]),
-                                                  monitors.newMonitor(classOf[AstRewritingMonitor]),
-                                                  (q, f) => queryCache2_1.getOrElseUpdate(q, f))
+  private val compiler2_1 = buildCompiler2_1()
   private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
   private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
@@ -102,6 +104,16 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
 
   private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
     case (db: T) => db
+  }
+
+  private def buildCompiler2_1() = {
+    val parser = new CypherParser(monitors.newMonitor(classOf[ParserMonitor], monitorTag))
+    val checker = new SemanticChecker(monitors.newMonitor(classOf[SemanticCheckMonitor], monitorTag))
+    val rewriter = new ASTRewriter(monitors.newMonitor(classOf[AstRewritingMonitor], monitorTag))
+    val cache: CypherCompiler2_1.PlanCache = (q, f) => queryCache2_1.getOrElseUpdate(q, f)
+    val planBuilderMonitor = monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], monitorTag)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, planBuilderMonitor)
+    new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, cache, monitors)
   }
 }
 

@@ -34,7 +34,7 @@ class SemanticQueryBuilder {
     this
   }
 
-  def result() = SemanticQuery(types = IdentityMap(typeBuilder.result(): _*))
+  def result() = SemanticTable(types = IdentityMap(typeBuilder.result(): _*))
 }
 
 

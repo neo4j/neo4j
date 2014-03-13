@@ -20,11 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
-import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 
+class ASTRewriter(rewritingMonitor: AstRewritingMonitor) {
 
-case class ParsedQuery(statement: Statement,
-                       abstractQuery: AbstractQuery,
-                       semanticQuery: SemanticTable)
+  def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
+    rewritingMonitor.startRewriting(queryText, statement)
 
+    val (extractParameters: Rewriter, extractedParameters: Map[String, Any]) = literalReplacement(statement)
+
+    val rewriter: Rewriter = bottomUp(
+      foldConstants,
+      extractParameters,
+      nameMatchPatternElements,
+      normalizeMatchPredicates,
+      normalizeEqualsArgumentOrder
+    )
+
+    val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
+    rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
+    (rewrittenStatement, extractedParameters)
+  }
+}
