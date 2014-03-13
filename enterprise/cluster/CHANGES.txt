@@ -1,3 +1,8 @@
+2.0.2
+-----
+o Fixes issue where failed instances would not be able to rejoin the cluster after restart
+o Throttles output of learn failure messages that could create big messages.log files
+
 2.0.1
 -----
 o Fixes message reordering issue

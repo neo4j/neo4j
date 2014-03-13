@@ -1,3 +1,7 @@
+2.0.2
+-----
+o Fixes github issues #1872, #961 that deal with Content-Encoding headers
+
 2.0.1
 -----
 o Fixes issue with transactions leaking when there is an exception while rendering the response

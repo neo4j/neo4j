@@ -1,3 +1,7 @@
+2.0.2
+-----
+o Fixes potential deadlock when concurrently shutting down the database and role switching
+
 2.0.1
 -----
 o HA Backup now properly resolves the master URI, solving a bug where ha:// backups not running
