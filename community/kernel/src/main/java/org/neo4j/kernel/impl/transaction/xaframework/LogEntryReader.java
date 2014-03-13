@@ -17,15 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa.command;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.util.Cursor;
-
-public interface LogReader<T extends ReadableByteChannel>
+public interface LogEntryReader<S>
 {
-    public Cursor<LogEntry, IOException> cursor( T channel );
+    LogEntry readLogEntry( byte type, S source ) throws IOException;
 }

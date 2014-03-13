@@ -40,10 +40,13 @@ import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class DumpLogicalLog
 {
@@ -67,26 +70,29 @@ public class DumpLogicalLog
             long logVersion, prevLastCommittedTx;
             try
             {
-                long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, true );
+                long[] header = LogEntryReaderv1.readLogHeader( buffer, fileChannel, true );
                 logVersion = header[0];
                 prevLastCommittedTx = header[1];
             }
             catch ( IOException ex )
             {
-                out.println( "Unable to read timestamp information, "
-                    + "no records in logical log." );
+                out.println( "Unable to read timestamp information, no records in logical log." );
                 out.println( ex.getMessage() );
                 fileChannel.close();
                 throw ex;
             }
             out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
-            XaCommandReader commandReader = instantiateCommandReader( buffer );
-            while ( readAndPrintEntry( fileChannel, buffer, commandReader, out, timeZone ) )
+
+            LogDeserializer deserializer =
+                    new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class, getClass() ), buffer,
+                            instantiateCommandReader( buffer ) );
+            PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
             {
-                ;
+                while( cursor.next( consumer ) );
             }
-            fileChannel.close();
         }
         return logsFound;
     }
@@ -95,18 +101,6 @@ public class DumpLogicalLog
     {
         File file = new File( fileName );
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
-    }
-
-    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandReader commandReader,
-            PrintStream out, TimeZone timeZone ) throws IOException
-    {
-        LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, commandReader );
-        if ( entry != null )
-        {
-            out.println( entry.toString( timeZone ) );
-            return true;
-        }
-        return false;
     }
 
     protected XaCommandReader instantiateCommandReader( ByteBuffer scratch )
@@ -250,5 +244,25 @@ public class DumpLogicalLog
                 return Integer.valueOf( string.substring( index + toFind.length() ) );
             }
         };
+    }
+
+    private class PrintingConsumer implements Consumer<LogEntry, IOException>
+    {
+
+        private final PrintStream out;
+        private final TimeZone timeZone;
+
+        private PrintingConsumer( PrintStream out, TimeZone timeZone )
+        {
+            this.out = out;
+            this.timeZone = timeZone;
+        }
+
+        @Override
+        public boolean accept( LogEntry entry ) throws IOException
+        {
+            out.println( entry.toString( timeZone ) );
+            return true;
+        }
     }
 }

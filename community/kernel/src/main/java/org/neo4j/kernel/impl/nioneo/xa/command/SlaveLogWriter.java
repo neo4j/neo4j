@@ -23,17 +23,19 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriter;
 
 public class SlaveLogWriter extends LogHandler.Filter
 {
     private LogBuffer writeBuffer;
 
     private final LogWriter.SPI spi;
+    private final LogEntryWriter logEntryWriter;
 
-    public SlaveLogWriter( LogHandler applier, LogWriter.SPI spi )
+    public SlaveLogWriter( LogHandler applier, LogWriter.SPI spi, LogEntryWriter logEntryWriter )
     {
         super( applier );
+        this.logEntryWriter = logEntryWriter;
         this.spi = spi;
     }
 
@@ -65,20 +67,20 @@ public class SlaveLogWriter extends LogHandler.Filter
          */
         startEntry.setStartPosition( writeBuffer.getFileChannelPosition() );
         super.startEntry( startEntry );
-        LogIoUtils.writeLogEntry( startEntry, writeBuffer, spi.getXaCommandWriter() );
+        logEntryWriter.writeLogEntry( startEntry, writeBuffer );
     }
 
     @Override
     public void prepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
     {
-        LogIoUtils.writeLogEntry( prepareEntry, writeBuffer, spi.getXaCommandWriter() );
+        logEntryWriter.writeLogEntry( prepareEntry, writeBuffer );
         super.prepareEntry( prepareEntry );
     }
 
     @Override
     public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
     {
-        LogIoUtils.writeLogEntry( onePhaseCommitEntry, writeBuffer, spi.getXaCommandWriter() );
+        logEntryWriter.writeLogEntry( onePhaseCommitEntry, writeBuffer );
         writeBuffer.writeOut();
         super.onePhaseCommitEntry( onePhaseCommitEntry );
     }
@@ -86,7 +88,7 @@ public class SlaveLogWriter extends LogHandler.Filter
     @Override
     public void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry ) throws IOException
     {
-        LogIoUtils.writeLogEntry( twoPhaseCommitEntry, writeBuffer, spi.getXaCommandWriter() );
+        logEntryWriter.writeLogEntry( twoPhaseCommitEntry, writeBuffer );
         writeBuffer.writeOut();
         super.twoPhaseCommitEntry( twoPhaseCommitEntry );
     }
@@ -94,14 +96,14 @@ public class SlaveLogWriter extends LogHandler.Filter
     @Override
     public void doneEntry( LogEntry.Done doneEntry ) throws IOException
     {
-        LogIoUtils.writeLogEntry( doneEntry, writeBuffer, spi.getXaCommandWriter() );
+        logEntryWriter.writeLogEntry( doneEntry, writeBuffer );
         super.doneEntry( doneEntry );
     }
 
     @Override
     public void commandEntry( LogEntry.Command commandEntry ) throws IOException
     {
-        LogIoUtils.writeLogEntry( commandEntry, writeBuffer, spi.getXaCommandWriter() );
+        logEntryWriter.writeLogEntry( commandEntry, writeBuffer );
         super.commandEntry( commandEntry );
     }
 }

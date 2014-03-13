@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
@@ -42,8 +41,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 class PartialTransactionCopier
 {
     private final ByteBuffer sharedBuffer;
-    private final XaCommandReader commandReader;
-    private final XaCommandWriter commandWriter;
+    private final LogEntryWriterv1 logEntryWriter;
     private final XaCommandReaderFactory commandReaderFactory;
     private final XaCommandWriterFactory commandWriterFactory;
     private final StringLogger log;
@@ -51,15 +49,16 @@ class PartialTransactionCopier
     private final LogExtractor.LogLoader logLoader;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
     private final ByteCounterMonitor monitor;
+    private final DoesSomethingConsumer consumer;
 
     PartialTransactionCopier( ByteBuffer sharedBuffer, XaCommandReaderFactory commandReaderFactory,
                               XaCommandWriterFactory commandWriterFactory, StringLogger log,
                               LogExtractor.LogPositionCache positionCache, LogExtractor.LogLoader logLoader,
+                              LogEntryWriterv1 logEntryWriter,
                               ArrayMap<Integer, LogEntry.Start> xidIdentMap, ByteCounterMonitor monitor )
     {
         this.sharedBuffer = sharedBuffer;
-        this.commandReader = commandReaderFactory.newInstance( sharedBuffer );
-        this.commandWriter = commandWriterFactory.newInstance();
+        this.logEntryWriter = logEntryWriter;
         this.commandReaderFactory = commandReaderFactory;
         this.commandWriterFactory = commandWriterFactory;
         this.log = log;
@@ -67,15 +66,39 @@ class PartialTransactionCopier
         this.logLoader = logLoader;
         this.xidIdentMap = xidIdentMap;
         this.monitor = monitor;
+        consumer = new DoesSomethingConsumer();
     }
 
     public void copy( FileChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
     {
-        boolean foundFirstActiveTx = false;
-        Map<Integer,LogEntry.Start> startEntriesEncountered = new HashMap<Integer,LogEntry.Start>();
-        for ( LogEntry entry = null; (entry = LogIoUtils.readEntry( sharedBuffer, sourceLog, commandReader )) != null; )
+        LogDeserializer deserializer = new LogDeserializer( monitor, sharedBuffer,
+                commandReaderFactory.newInstance( sharedBuffer ) );
+        consumer.init( targetLog, targetLogVersion );
+        Cursor<LogEntry, IOException> cursor = deserializer.cursor( sourceLog );
+        while( cursor.next( consumer ) ); // let exceptions propagate, the channel is closed outside
+    }
+
+    private class DoesSomethingConsumer implements Consumer<LogEntry, IOException>
+    {
+        private final Map<Integer,LogEntry.Start> startEntriesEncountered = new HashMap<>();
+        private final IAmNotReallySureWhatThisDoes consumer = new IAmNotReallySureWhatThisDoes();
+        private boolean foundFirstActiveTx;
+
+        private LogBuffer targetLog;
+        private long targetLogVersion;
+
+        public void init( LogBuffer targetLog, long targetLogVersion )
         {
-            Integer identifier = entry.getIdentifier();
+            this.targetLog = targetLog;
+            this.targetLogVersion = targetLogVersion;
+            foundFirstActiveTx = false;
+            startEntriesEncountered.clear();
+        }
+
+        @Override
+        public boolean accept( LogEntry logEntry ) throws IOException
+        {
+            Integer identifier = logEntry.getIdentifier();
             boolean isActive = xidIdentMap.get( identifier ) != null;
             if ( !foundFirstActiveTx && isActive )
             {
@@ -84,55 +107,65 @@ class PartialTransactionCopier
 
             if ( foundFirstActiveTx )
             {
-                if ( entry instanceof LogEntry.Start )
+                if ( logEntry instanceof LogEntry.Start )
                 {
-                    LogEntry.Start startEntry = (LogEntry.Start) entry;
+                    LogEntry.Start startEntry = (LogEntry.Start) logEntry;
                     startEntriesEncountered.put( identifier, startEntry );
                     startEntry.setStartPosition( targetLog.getFileChannelPosition() );
                     // If the transaction is active then update it with the new one
                     if ( isActive ) xidIdentMap.put( identifier, startEntry );
                 }
-                else if ( entry instanceof LogEntry.Commit )
+                else if ( logEntry instanceof LogEntry.Commit )
                 {
-                    LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
+                    LogEntry.Commit commitEntry = (LogEntry.Commit) logEntry;
                     LogEntry.Start startEntry = startEntriesEncountered.get( identifier );
                     if ( startEntry == null )
                     {
                         // Fetch from log extractor instead (all entries except done records, which will be copied from the source).
-                        startEntry = fetchTransactionBulkFromLogExtractor( commitEntry.getTxId(), targetLog );
+                        startEntry = fetchTransactionBulkFromLogExtractor( commitEntry.getTxId() );
                         startEntriesEncountered.put( identifier, startEntry );
                     }
                     else
                     {
                         LogExtractor.TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
                         LogExtractor.TxPosition newPos = positionCache.cacheStartPosition( commitEntry.getTxId(), startEntry, targetLogVersion );
-                        log.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
+                        log.logMessage( "Updated tx " + ((LogEntry.Commit) logEntry ).getTxId() +
                                 " from " + oldPos + " to " + newPos );
                     }
                 }
                 if ( startEntriesEncountered.containsKey( identifier ) )
                 {
-                    LogIoUtils.writeLogEntry( entry, targetLog, commandWriter );
+                    logEntryWriter.writeLogEntry( logEntry, targetLog );
                 }
-            }
+            };
+            return true;
         }
-    }
 
-    private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId, LogBuffer target ) throws IOException
-    {
-        LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandReaderFactory,
-                commandWriterFactory, txId, txId );
-        InMemoryLogBuffer tempBuffer = new InMemoryLogBuffer();
-        extractor.extractNext( tempBuffer );
-        ByteBuffer localBuffer = newLogReaderBuffer();
-        for ( LogEntry readEntry = null; (readEntry = LogIoUtils.readEntry( localBuffer, tempBuffer, commandReader )) != null; )
+        private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId ) throws IOException
         {
-            if ( readEntry instanceof LogEntry.Commit )
+            LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandReaderFactory,
+                    commandWriterFactory, logEntryWriter, txId, txId );
+
+            try (Cursor<LogEntry, IOException> cursor = extractor.cursor( new InMemoryLogBuffer() ) )
             {
-                break;
+                while ( cursor.next( consumer ) );
             }
-            LogIoUtils.writeLogEntry( readEntry, target, commandWriter );
+
+            return extractor.getLastStartEntry();
         }
-        return extractor.getLastStartEntry();
+
+        private class IAmNotReallySureWhatThisDoes implements Consumer<LogEntry, IOException>
+        {
+            @Override
+            public boolean accept( LogEntry entry ) throws IOException
+            {
+                if ( entry instanceof LogEntry.Commit )
+                {
+                    return false;
+                }
+                logEntryWriter.writeLogEntry( entry, targetLog );
+                return true;
+            }
+        }
     }
 }

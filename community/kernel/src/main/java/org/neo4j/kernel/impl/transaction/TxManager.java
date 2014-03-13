@@ -461,7 +461,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             try
             {
-                tx.doCommit();
+               tx.doCommit();
             }
             catch ( XAException e )
             {

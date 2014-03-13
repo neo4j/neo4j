@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 /**
@@ -492,41 +492,53 @@ public class TransactionWriter
     public static class LogBufferOutput implements Output
     {
         private final LogBuffer buffer;
+        private final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
 
         public LogBufferOutput( LogBuffer buffer )
         {
             this.buffer = buffer;
+            logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
         }
 
         @Override
         public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
                 long latestCommittedTxWhenTxStarted ) throws IOException
         {
-            LogIoUtils.writeStart( buffer, identifier, xid, masterId, myId, startTimestamp, latestCommittedTxWhenTxStarted );
+            logEntryWriter.writeLogEntry( new LogEntry.Start( xid, identifier, masterId, myId, -1,
+                    startTimestamp, latestCommittedTxWhenTxStarted ), buffer );
         }
 
         @Override
         public void writeCommand( int identifier, XaCommand command ) throws IOException
         {
-            LogIoUtils.writeCommand( buffer, identifier, command, new PhysicalLogNeoXaCommandWriter() );
+            logEntryWriter.writeLogEntry( new LogEntry.Command( identifier, command ), buffer );
         }
 
         @Override
         public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
         {
-            LogIoUtils.writePrepare( buffer, identifier, prepareTimestamp );
+            logEntryWriter.writeLogEntry( new LogEntry.Prepare( identifier, prepareTimestamp ), buffer );
         }
 
         @Override
         public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
         {
-            LogIoUtils.writeCommit( twoPhase, buffer, identifier, txId, commitTimestamp );
+            LogEntry.Commit commit;
+            if ( twoPhase )
+            {
+                commit = new LogEntry.TwoPhaseCommit( identifier, txId, commitTimestamp );
+            }
+            else
+            {
+                commit = new LogEntry.OnePhaseCommit( identifier, txId, commitTimestamp );
+            }
+            logEntryWriter.writeLogEntry( commit, buffer );
         }
 
         @Override
         public void writeDone( int identifier ) throws IOException
         {
-            LogIoUtils.writeDone( buffer, identifier );
+            logEntryWriter.writeLogEntry( new LogEntry.Done( identifier ), buffer );
         }
     }
 

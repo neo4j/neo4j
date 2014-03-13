@@ -58,7 +58,6 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
         }
     }
 
-    @Override
     protected XaCommandReader instantiateCommandReader( ByteBuffer buffer )
     {
         return new LuceneCommandReader( buffer );

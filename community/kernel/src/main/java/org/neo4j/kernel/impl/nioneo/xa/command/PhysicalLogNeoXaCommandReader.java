@@ -68,11 +68,15 @@ public class PhysicalLogNeoXaCommandReader implements XaCommandReader
         // for the reader to pick up
         this.byteChannel = byteChannel;
 
-        if ( !readAndFlip( byteChannel, scratch, 1 ) )
+        byte commandType = 0;
+        while( commandType == 0)
         {
-            return null;
+            if ( !readAndFlip( byteChannel, scratch, 1 ) )
+            {
+                return null;
+            }
+            commandType = scratch.get();
         }
-        byte commandType = scratch.get();
 
         PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
         Command command;
@@ -134,7 +138,7 @@ public class PhysicalLogNeoXaCommandReader implements XaCommandReader
                 throw new IOException( "Unknown command type[" + commandType + "]" );
             }
         }
-        if (! command.accept( reader ) )
+        if ( command != null && !command.accept( reader ) )
         {
             return null;
         }

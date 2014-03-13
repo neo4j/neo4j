@@ -45,9 +45,11 @@ public abstract class LogEntry
     public static final byte TX_2P_COMMIT = (byte) 6;
 
     private int identifier;
+    private final byte type;
 
-    LogEntry( int identifier )
+    LogEntry( byte type, int identifier )
     {
+        this.type = type;
         this.identifier = identifier;
     }
 
@@ -56,6 +58,11 @@ public abstract class LogEntry
     public int getIdentifier()
     {
         return identifier;
+    }
+
+    public byte getType()
+    {
+        return type;
     }
 
     public String toString( TimeZone timeZone )
@@ -76,7 +83,7 @@ public abstract class LogEntry
         public Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten,
                long lastCommittedTxWhenTransactionStarted )
         {
-            super( identifier );
+            super( TX_START, identifier );
             this.xid = xid;
             this.masterId = masterId;
             this.myId = myId;
@@ -158,7 +165,7 @@ public abstract class LogEntry
 
         public Prepare( int identifier, long timeWritten )
         {
-            super( identifier );
+            super( TX_PREPARE, identifier );
             this.timeWritten = timeWritten;
         }
 
@@ -192,9 +199,9 @@ public abstract class LogEntry
         private final long timeWritten;
         protected final String name;
 
-        Commit( int identifier, long txId, long timeWritten, String name )
+        Commit( byte type, int identifier, long txId, long timeWritten, String name )
         {
-            super( identifier );
+            super( type, identifier );
             this.txId = txId;
             this.timeWritten = timeWritten;
             this.name = name;
@@ -227,7 +234,7 @@ public abstract class LogEntry
     {
         public OnePhaseCommit( int identifier, long txId, long timeWritten )
         {
-            super( identifier, txId, timeWritten, "1PC" );
+            super( TX_1P_COMMIT, identifier, txId, timeWritten, "1PC" );
         }
 
         @Override
@@ -241,7 +248,7 @@ public abstract class LogEntry
     {
         public TwoPhaseCommit( int identifier, long txId, long timeWritten )
         {
-            super( identifier, txId, timeWritten, "2PC" );
+            super( TX_2P_COMMIT, identifier, txId, timeWritten, "2PC" );
         }
 
         @Override
@@ -255,7 +262,7 @@ public abstract class LogEntry
     {
         public Done( int identifier )
         {
-            super( identifier );
+            super( DONE, identifier );
         }
 
         @Override
@@ -277,7 +284,7 @@ public abstract class LogEntry
 
         public Command( int identifier, XaCommand command )
         {
-            super( identifier );
+            super( COMMAND, identifier );
             this.command = command;
         }
 

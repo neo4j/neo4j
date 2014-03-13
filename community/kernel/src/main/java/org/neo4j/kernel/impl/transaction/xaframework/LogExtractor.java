@@ -39,12 +39,13 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class LogExtractor
@@ -69,9 +70,9 @@ public class LogExtractor
     private final LogPositionCache cache;
 
     private final LogLoader logLoader;
-    private final XaCommandReader commandReader;
-    private final XaCommandWriter commandWriter;
-    private final ByteCounterMonitor monitor;
+    private final LogDeserializer deserializer;
+    private final XaCommandReaderFactory commandReaderFactory;
+    private final LogEntryWriter logEntryWriter;
 
     public static class LogPositionCache
     {
@@ -162,13 +163,13 @@ public class LogExtractor
     public LogExtractor( LogPositionCache cache, LogLoader logLoader, ByteCounterMonitor monitor,
                          XaCommandReaderFactory commandReaderFactory,
                          XaCommandWriterFactory commandWriterFactory,
+                         LogEntryWriter logEntryWriter,
                          long startTxId, long endTxIdHint ) throws IOException
     {
         this.cache = cache;
         this.logLoader = logLoader;
-        this.monitor = monitor;
-        this.commandReader = commandReaderFactory.newInstance( localBuffer );
-        this.commandWriter = commandWriterFactory.newInstance();
+        this.commandReaderFactory = commandReaderFactory;
+        this.logEntryWriter = logEntryWriter;
         this.startTxId = startTxId;
         this.nextExpectedTxId = startTxId;
         long diff = endTxIdHint-startTxId + 1/*since they are inclusive*/;
@@ -192,7 +193,9 @@ public class LogExtractor
             // To get to the right position to start reading entries from
             readAndAssertLogHeader( localBuffer, source, version );
         }
-        this.collector = new KnownTxIdCollector( startTxId, commandWriter );
+        this.collector = new KnownTxIdCollector( startTxId, logEntryWriter );
+
+        this.deserializer = new LogDeserializer( monitor, localBuffer, commandReaderFactory.newInstance( localBuffer ) );
     }
 
     private TxPosition getEarliestStartPosition( long startTxId, long endTxIdHint )
@@ -208,6 +211,48 @@ public class LogExtractor
             }
         }
         return earliest;
+    }
+
+    public Cursor<LogEntry, IOException> cursor( LogBuffer temp ) throws IOException
+    {
+        return new LogEntryCursor( temp );
+    }
+
+    private class LogEntryCursor implements Cursor<LogEntry, IOException>
+    {
+        private final Cursor<LogEntry, IOException> cursor;
+
+        public LogEntryCursor( LogBuffer temp ) throws IOException
+        {
+            extractNext( temp );
+            LogDeserializer logDeserializer = new LogDeserializer( new ByteCounterMonitor()
+            {
+                @Override
+                public void bytesWritten( long numberOfBytes )
+                {
+
+                }
+
+                @Override
+                public void bytesRead( long numberOfBytes )
+                {
+
+                }
+            } , localBuffer, commandReaderFactory.newInstance( localBuffer ) );
+            cursor = logDeserializer.cursor( temp.getFileChannel() );
+        }
+
+        @Override
+        public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
+        {
+            return cursor.next( consumer );
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            cursor.close();
+        }
     }
 
     /**
@@ -266,25 +311,53 @@ public class LogExtractor
 
     private long collectNextFromCurrentSource( LogBuffer target ) throws IOException
     {
+        Cursor<LogEntry, IOException> cursor = deserializer.cursor( source );
+        LogEntryCollectingConsumer consumer = new LogEntryCollectingConsumer();
+
+        long lastCommitEntryTxId = -1;
         LogEntry entry = null;
-        long startingPosition = localBuffer.position();
-        while ( collector.hasInFutureQueue() || // if something in queue then don't read next entry
-                (entry = LogIoUtils.readEntry( localBuffer, source, commandReader ) ) != null )
+        while ( true )
         {
-            long readUpTo = localBuffer.position();
-            long bytesRead = readUpTo - startingPosition;
-            startingPosition = readUpTo;
-            monitor.bytesRead( bytesRead );
+            if ( !collector.hasInFutureQueue() )
+            {
+                cursor.next( consumer );
+                entry = consumer.getLastEntry();
+            }
+            if ( entry == null )
+            {
+                break;
+            }
             LogEntry foundEntry = collector.collect( entry, target );
             if ( foundEntry != null )
             {   // It just wrote the transaction, w/o the done record though. Add it
                 previousCommitEntry = lastCommitEntry;
-                LogIoUtils.writeLogEntry( new LogEntry.Done( collector.getIdentifier() ), target, commandWriter );
-                lastCommitEntry = (LogEntry.Commit)foundEntry;
-                return lastCommitEntry.getTxId();
+                logEntryWriter.writeLogEntry( new LogEntry.Done( collector.getIdentifier() ), target );
+                lastCommitEntry = (LogEntry.Commit) foundEntry;
+                lastCommitEntryTxId =  lastCommitEntry.getTxId();
+                break;
             }
         }
-        return -1;
+
+        return lastCommitEntryTxId;
+    }
+
+    private class LogEntryCollectingConsumer implements Consumer<LogEntry, IOException>
+    {
+        private LogEntry lastEntry;
+
+        @Override
+        public boolean accept( LogEntry entry ) throws IOException
+        {
+            lastEntry = entry;
+            return true;
+        }
+
+        public LogEntry getLastEntry()
+        {
+            LogEntry result = lastEntry;
+            lastEntry = null;
+            return result;
+        }
     }
 
     public void close()
@@ -368,7 +441,7 @@ public class LogExtractor
         }
         return new long[] { version, committedTx };
     }
-    
+
     private interface LogEntryCollector
     {
         LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException;
@@ -382,19 +455,19 @@ public class LogExtractor
 
     private static class KnownTxIdCollector implements LogEntryCollector
     {
-        private final Map<Integer,List<LogEntry>> transactions = new HashMap<Integer,List<LogEntry>>();
+        private final Map<Integer,List<LogEntry>> transactions = new HashMap<>();
         private final long startTxId;
         private int identifier;
-        private final Map<Long, List<LogEntry>> futureQueue = new HashMap<Long, List<LogEntry>>();
+        private final Map<Long, List<LogEntry>> futureQueue = new HashMap<>();
         private long nextExpectedTxId;
-        private final XaCommandWriter commandWriter;
         private LogEntry.Start lastStartEntry;
+        private LogEntryWriter logEntryWriter;
 
-        KnownTxIdCollector( long startTxId, XaCommandWriter commandWriter )
+        KnownTxIdCollector( long startTxId, LogEntryWriter logEntryWriter )
         {
             this.startTxId = startTxId;
             this.nextExpectedTxId = startTxId;
-            this.commandWriter = commandWriter;
+            this.logEntryWriter = logEntryWriter;
         }
 
         @Override
@@ -499,7 +572,7 @@ public class LogExtractor
             {
                 for ( LogEntry entry : entries )
                 {
-                    LogIoUtils.writeLogEntry( entry, target, commandWriter );
+                    logEntryWriter.writeLogEntry( entry, target );
                 }
             }
         }
@@ -538,17 +611,17 @@ public class LogExtractor
 
     public static LogExtractor from( FileSystemAbstraction fileSystem,
                                      XaCommandReaderFactory commandReaderFactory,
-                                     XaCommandWriterFactory commandWriterFactory,
-                                     File storeDir,
-            ByteCounterMonitor monitor ) throws IOException
+                                     XaCommandWriterFactory commandWriterFactory, LogEntryWriter logEntryWriter,
+                                     File storeDir, ByteCounterMonitor monitor ) throws IOException
     {
         // 2 is a "magic" first tx :)
-        return from( fileSystem, storeDir, commandReaderFactory, commandWriterFactory, monitor, 2 );
+        return from( fileSystem, storeDir, commandReaderFactory, commandWriterFactory, logEntryWriter, monitor, 2 );
     }
     
     public static LogExtractor from( final FileSystemAbstraction fileSystem, final File storeDir,
                                      XaCommandReaderFactory commandReaderFactory,
                                      XaCommandWriterFactory commandWriterFactory,
+                                     LogEntryWriter logEntryWriter,
                                      ByteCounterMonitor monitor, long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
@@ -587,7 +660,7 @@ public class LogExtractor
                     File candidateFile = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + postfix );
                     if ( !fileSystem.fileExists( candidateFile ) )
                         continue;
-                    long[] header = LogIoUtils.readLogHeader( fileSystem, candidateFile );
+                    long[] header = LogEntryReaderv1.readLogHeader( fileSystem, candidateFile );
                     result.put( header[0], candidateFile );
                 }
                 return result;
@@ -631,6 +704,6 @@ public class LogExtractor
         };
         
         return new LogExtractor( new LogPositionCache(), loader, monitor, commandReaderFactory, commandWriterFactory,
-                startTxId, Long.MAX_VALUE );
+                logEntryWriter, startTxId, Long.MAX_VALUE );
     }
 }

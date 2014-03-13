@@ -19,89 +19,91 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class LogDeserializer implements LogReader<ReadableByteChannel>
 {
     private final ByteCounterMonitor monitor;
-    private LogHandler handler;
     private final ByteBuffer scratch;
+    private final LogEntryReaderv1 logEntryReader;
 
-    private XaCommandReader xaCommandReader;
-    private int xidIdentifier;
-
-
-    public LogDeserializer( ByteCounterMonitor monitor, ByteBuffer scratch )
+    public LogDeserializer( ByteCounterMonitor monitor, ByteBuffer scratch, XaCommandReader reader )
     {
         this.monitor = monitor;
         this.scratch = scratch;
+        logEntryReader = new LogEntryReaderv1();
+        logEntryReader.setByteBuffer( scratch );
+        logEntryReader.setCommandReader( reader );
     }
 
     @Override
-    public void setXaCommandReader( XaCommandReader xaCommandReader )
+    public Cursor<LogEntry, IOException> cursor( ReadableByteChannel channel )
     {
-        this.xaCommandReader = xaCommandReader;
+        return new LogCursor( channel );
     }
 
-    @Override
-    public void setXidIdentifier( int xidIdentifier )
+    private class LogCursor implements Cursor<LogEntry, IOException>
     {
-        this.xidIdentifier = xidIdentifier;
-    }
+        private final ReadableByteChannel channel;
 
-    @Override
-    public void setLogHandler( LogHandler handler )
-    {
-        this.handler = handler;
-    }
+        public LogCursor( ReadableByteChannel channel )
+        {
+            this.channel = channel;
+        }
 
-    public void read( ReadableByteChannel channel ) throws IOException
-    {
-        try
+        @Override
+        public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
         {
             long startedAtPosition = scratch.position();
-            LogEntry entry = LogIoUtils.readEntry( scratch, channel, xaCommandReader );
+
+            scratch.clear();
+            scratch.limit( 1 );
+            if ( channel.read( scratch ) != scratch.limit() )
+            {
+                return false;
+            }
+            scratch.flip();
+
+            byte type = scratch.get();
+
+            if ( type < 0 )
+            {
+                scratch.clear();
+                scratch.limit( 1 );
+                if ( channel.read( scratch ) != scratch.limit() )
+                {
+                    return false;
+                }
+                scratch.flip();
+
+                type = scratch.get();
+            }
+
+            LogEntry entry = logEntryReader.readLogEntry( type, channel );
             monitor.bytesRead( scratch.position() - startedAtPosition );
 
-            if ( entry == null || !(entry instanceof LogEntry.Start ) )
+            if ( entry == null )
             {
-                throw new IOException( "Unable to find start entry" );
+                return false;
             }
 
-            handler.startLog();
-
-            while( entry != null )
-            {
-                entry.setIdentifier( xidIdentifier );
-                entry.accept( handler );
-
-                startedAtPosition = scratch.position();
-                entry = LogIoUtils.readEntry( scratch, channel, xaCommandReader );
-                monitor.bytesRead( scratch.position() - startedAtPosition );
-            }
+            return consumer.accept( entry );
         }
-        catch( IOException e )
+
+        @Override
+        public void close() throws IOException
         {
-            handler.endLog( false );
-            throw e;
+            channel.close();
         }
-
-        /*
-         * This is placed here instead of in the try because if one of the delegates in the handler chain
-         * throws an exception in endLog(), some will have been called with endLog( true ) and will be called again
-         * with endLog( false ) from the catch clause.
-         * Having the endLog() here at least ensures that all of them will be called once with the same argument and
-         * if that fails the exception will be thrown.
-         */
-        handler.endLog( true );
     }
 }

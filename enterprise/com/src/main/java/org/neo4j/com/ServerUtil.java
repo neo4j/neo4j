@@ -19,6 +19,9 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -53,9 +56,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
 
 public class ServerUtil
 {

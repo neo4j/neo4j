@@ -19,46 +19,43 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
-public class RecoveryLogDeserializer implements LogReader<FileChannel>
+public class SlaveLogDeserializer implements LogReader<ReadableByteChannel>
 {
+    private final ByteCounterMonitor monitor;
     private final ByteBuffer scratch;
     private final LogEntryReaderv1 logEntryReader;
 
-    public RecoveryLogDeserializer( ByteBuffer scratch )
+    public SlaveLogDeserializer( ByteCounterMonitor monitor, ByteBuffer scratch, XaCommandReader reader )
     {
+        this.monitor = monitor;
         this.scratch = scratch;
         logEntryReader = new LogEntryReaderv1();
-        logEntryReader.setCommandReader( new PhysicalLogNeoXaCommandReader( scratch ) );
         logEntryReader.setByteBuffer( scratch );
+        logEntryReader.setCommandReader( reader );
     }
 
-    public void setXaCommandReader( XaCommandReader xaCommandReader )
+    @Override
+    public Cursor<LogEntry, IOException> cursor( ReadableByteChannel channel )
     {
-        logEntryReader.setCommandReader( xaCommandReader );
+        return new LogCursor( channel );
     }
 
-    public Cursor<LogEntry, IOException> cursor( FileChannel channel )
+    private class LogCursor implements Cursor<LogEntry, IOException>
     {
-        return new RecoveryCursor( channel );
-    }
+        private final ReadableByteChannel channel;
 
-    private class RecoveryCursor implements Cursor<LogEntry, IOException>
-    {
-        private final FileChannel channel;
-
-        private RecoveryCursor( FileChannel channel )
+        public LogCursor( ReadableByteChannel channel )
         {
             this.channel = channel;
         }
@@ -67,7 +64,7 @@ public class RecoveryLogDeserializer implements LogReader<FileChannel>
         public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
         {
             // TODO SETUP LOG ENTRY READER
-            long position = channel.position();
+            long startedAtPosition = scratch.position();
 
             scratch.clear();
             scratch.limit( 1 );
@@ -93,18 +90,14 @@ public class RecoveryLogDeserializer implements LogReader<FileChannel>
             }
 
             LogEntry entry = logEntryReader.readLogEntry( type, channel );
-            if ( entry instanceof LogEntry.Start )
-            {
-                ((LogEntry.Start) entry).setStartPosition( position );
-            }
-            else if ( entry == null )
+            monitor.bytesRead( scratch.position() - startedAtPosition );
+
+            if ( entry == null )
             {
                 return false;
             }
 
-            consumer.accept( entry );
-
-            return true;
+            return consumer.accept( entry );
         }
 
         @Override

@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import static java.nio.ByteBuffer.allocate;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
@@ -83,6 +83,8 @@ public class TestPartialTransactionCopier
         readLogHeader( buffer, brokenLog, true );
 
         // And I have an awesome partial transaction copier
+        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+        logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
         PartialTransactionCopier copier = new PartialTransactionCopier(
                 buffer, new XaCommandReaderFactory()
         {
@@ -99,9 +101,13 @@ public class TestPartialTransactionCopier
                 return new PhysicalLogNeoXaCommandWriter();
             }
         },
-        StringLogger.DEV_NULL, new LogExtractor.LogPositionCache(),
-        null, createXidMapWithOneStartEntry( masterId, /*txId=*/brokenTxIdentifier ),
-        new Monitors().newMonitor( ByteCounterMonitor.class ) );
+        StringLogger.DEV_NULL,
+                new LogExtractor.LogPositionCache(),
+                null,
+                logEntryWriter,
+                createXidMapWithOneStartEntry( masterId, /*txId=*/brokenTxIdentifier ),
+                new Monitors().newMonitor( ByteCounterMonitor.class )
+        );
 
         // When
         File newLogFile = new File( "new.log" );
@@ -127,8 +133,6 @@ public class TestPartialTransactionCopier
                         doneEntry( 6 )
                 ));
     }
-
-
 
     private ArrayMap<Integer, LogEntry.Start> createXidMapWithOneStartEntry( int masterId, Integer brokenTxId )
     {

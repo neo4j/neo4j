@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -312,7 +313,7 @@ public class TestMasterCommittingAtSlave
                         {
                             return new PhysicalLogNeoXaCommandWriter();
                         }
-                    }, new Monitors().newMonitor( ByteCounterMonitor.class ), startTxId );
+                    }, new LogEntryWriterv1(), new Monitors().newMonitor( ByteCounterMonitor.class ), startTxId );
         }
 
         @Override

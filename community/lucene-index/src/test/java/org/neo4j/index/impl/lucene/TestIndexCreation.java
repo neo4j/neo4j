@@ -22,9 +22,8 @@ package org.neo4j.index.impl.lucene;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,6 +31,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,12 +40,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
@@ -133,25 +137,47 @@ public class TestIndexCreation
                 return LuceneCommand.readCommand( channel, buffer, null );
             }
         };
-        int creationIdentifier = -1;
-        for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, log, commandReader )) != null; )
+
+        LogDeserializer deserializer = new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class ), buffer, commandReader );
+
+
+        final AtomicBoolean success = new AtomicBoolean( false );
+
+        Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
         {
-            if ( entry instanceof LogEntry.Command && ((LogEntry.Command) entry).getXaCommand() instanceof LuceneCommand.CreateIndexCommand )
+            int creationIdentifier = -1;
+
+            @Override
+            public boolean accept( LogEntry entry ) throws IOException
             {
-                if ( creationIdentifier != -1 )
-                    throw new IllegalArgumentException( "More than one creation command" );
-                creationIdentifier = entry.getIdentifier();
+                if ( entry instanceof LogEntry.Command &&
+                        ((LogEntry.Command) entry).getXaCommand() instanceof LuceneCommand.CreateIndexCommand )
+                {
+                    if ( creationIdentifier != -1 )
+                    {
+                        throw new IllegalArgumentException( "More than one creation command" );
+                    }
+                    creationIdentifier = entry.getIdentifier();
+                }
+
+                if ( entry instanceof LogEntry.Commit )
+                {
+                    // The first COMMIT
+                    assertTrue( "Index creation transaction wasn't the first one", creationIdentifier != -1 );
+                    assertEquals( "Index creation transaction wasn't the first one", creationIdentifier, entry.getIdentifier() );
+                    success.set( true );
+                    return false;
+                }
+                return true;
             }
-            
-            if ( entry instanceof LogEntry.Commit )
-            {
-                // The first COMMIT
-                assertTrue( "Index creation transaction wasn't the first one", creationIdentifier != -1 );
-                assertEquals( "Index creation transaction wasn't the first one", creationIdentifier, entry.getIdentifier() );
-                return;
-            }
+        };
+
+        try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( log ) )
+        {
+            while ( cursor.next( consumer ) );
         }
-        
-        fail( "Didn't find any commit record in log " + version );
+
+
+        assertTrue( "Didn't find any commit record in log " + version, success.get() );
     }
 }

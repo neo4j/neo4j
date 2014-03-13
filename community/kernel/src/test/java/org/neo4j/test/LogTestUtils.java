@@ -19,6 +19,15 @@
  */
 package org.neo4j.test;
 
+import static java.lang.Math.max;
+import static java.util.Arrays.asList;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,8 +44,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.TxLog;
@@ -44,22 +52,12 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileName;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -363,15 +361,28 @@ public class LogTestUtils
         try ( FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" ) )
         {
             // Always a header
-            LogIoUtils.readLogHeader( buffer, fileChannel, true );
+            LogEntryReaderv1.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            List<LogEntry> entries = new ArrayList<>();
-            XaCommandReader commandReader = new PhysicalLogNeoXaCommandReader( buffer );
-            LogEntry entry;
-            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, commandReader ) ) != null )
+            final List<LogEntry> entries = new ArrayList<>();
+            LogDeserializer deserializer = new LogDeserializer(
+                    new Monitors().newMonitor( ByteCounterMonitor.class, LogTestUtils.class ), buffer,
+                    new PhysicalLogNeoXaCommandReader( buffer ) );
+
+
+            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
             {
-                entries.add( entry );
+                @Override
+                public boolean accept( LogEntry entry ) throws IOException
+                {
+                    entries.add( entry );
+                    return true;
+                }
+            };
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            {
+                cursor.next( consumer );
             }
 
             // Assert entries are what we expected
@@ -429,7 +440,7 @@ public class LogTestUtils
         }
     }
 
-    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file, LogHook<LogEntry> filter )
+    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
@@ -437,23 +448,33 @@ public class LogTestUtils
         fileSystem.deleteFile( tempFile );
         FileChannel in = fileSystem.open( file, "r" );
         FileChannel out = fileSystem.open( tempFile, "rw" );
-        LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
+        final LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
-        XaCommandReader commandReader = new PhysicalLogNeoXaCommandReader( buffer );
-        XaCommandWriter commandWriter = new PhysicalLogNeoXaCommandWriter();
+        final LogEntryWriterv1 writer = new LogEntryWriterv1();
+        writer.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
 
-        try
+        LogDeserializer deserializer =
+                new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class, LogTestUtils.class ), buffer,
+                        new PhysicalLogNeoXaCommandReader( buffer ) );
+
+        Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
         {
-            LogEntry entry = null;
-            while ( (entry = readEntry( buffer, in, commandReader ) ) != null )
+            @Override
+            public boolean accept( LogEntry entry ) throws IOException
             {
-                if ( !filter.accept( entry ) )
+                boolean accepted = filter.accept( entry );
+                if ( accepted )
                 {
-                    continue;
+                    writer.writeLogEntry( entry, outBuffer );
                 }
-                writeLogEntry( entry, outBuffer, commandWriter );
+                return true;
             }
+        };
+
+        try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( in ) )
+        {
+            while ( cursor.next( consumer ) );
         }
         finally
         {
@@ -469,8 +490,8 @@ public class LogTestUtils
     private static void transferLogicalLogHeader( FileChannel in, LogBuffer outBuffer,
             ByteBuffer buffer ) throws IOException
     {
-        long[] header = LogIoUtils.readLogHeader( buffer, in, true );
-        LogIoUtils.writeLogHeader( buffer, header[0], header[1] );
+        long[] header = LogEntryReaderv1.readLogHeader( buffer, in, true );
+        LogEntryReaderv1.writeLogHeader( buffer, header[0], header[1] );
         byte[] headerBytes = new byte[buffer.limit()];
         buffer.get( headerBytes );
         outBuffer.put( headerBytes );

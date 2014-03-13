@@ -26,14 +26,20 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.LogTestUtils;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -52,14 +58,28 @@ public class LogMatchers
         try
         {
             // Always a header
-            LogIoUtils.readLogHeader( buffer, fileChannel, true );
+            LogEntryReaderv1.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            List<LogEntry> entries = new ArrayList<LogEntry>();
-            LogEntry entry;
-            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, new PhysicalLogNeoXaCommandReader( buffer ) )) != null )
+            final List<LogEntry> entries = new ArrayList<>();
+            LogDeserializer deserializer = new LogDeserializer(
+                    new Monitors().newMonitor( ByteCounterMonitor.class, LogTestUtils.class ), buffer,
+                    new PhysicalLogNeoXaCommandReader( buffer ) );
+
+
+            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
             {
-                entries.add( entry );
+                @Override
+                public boolean accept( LogEntry entry ) throws IOException
+                {
+                    entries.add( entry );
+                    return true;
+                }
+            };
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            {
+                while ( cursor.next( consumer ) );
             }
 
             return entries;

@@ -40,19 +40,23 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 public class PhysicalLogNeoXaCommandWriter implements XaCommandWriter
 {
-    private LogBuffer buffer;
-    private PhysicalLogNeoCommandWriter writer = new PhysicalLogNeoCommandWriter();
-
     @Override
     public void write( XaCommand command, LogBuffer buffer ) throws IOException
     {
-        this.buffer = buffer;
         Command neoCommand = (Command) command;
-        neoCommand.accept( writer );
+        // TODO this is super suboptimal, the command writer must be provided from the outside so it can be thread bound
+        neoCommand.accept( new PhysicalLogNeoCommandWriter(buffer) );
     }
 
     public class PhysicalLogNeoCommandWriter implements NeoCommandVisitor
     {
+        private final LogBuffer buffer;
+
+        public PhysicalLogNeoCommandWriter( LogBuffer buffer )
+        {
+            this.buffer = buffer;
+        }
+
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
         {
@@ -117,10 +121,10 @@ public class PhysicalLogNeoXaCommandWriter implements XaCommandWriter
             buffer.putLong( command.getKey() ); // 8
 
             // BEFORE
-            writeToFile( command.getBefore() );
+            writePropertyRecord( command.getBefore() );
 
             // AFTER
-            writeToFile( command.getAfter() );
+            writePropertyRecord( command.getAfter() );
             return true;
         }
 
@@ -273,7 +277,7 @@ public class PhysicalLogNeoXaCommandWriter implements XaCommandWriter
             }
         }
 
-        private void writeToFile( PropertyRecord record ) throws IOException
+        private void writePropertyRecord( PropertyRecord record ) throws IOException
         {
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                     : Record.NOT_IN_USE.byteValue();

@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import static java.util.Collections.emptyMap;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -26,7 +28,15 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
@@ -51,15 +61,13 @@ import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.util.Collections.emptyMap;
 
 class BackupService
 {
@@ -78,7 +86,7 @@ class BackupService
         {
             return Collections.unmodifiableMap( lastCommittedTxs );
         }
-        
+
         public boolean isConsistent()
         {
             return consistent;
@@ -184,7 +192,7 @@ class BackupService
                                     ds.getFileName( logVersion ),
                                     "rw" ).getChannel();
                             newLog.truncate( 0 );
-                            LogIoUtils.writeLogHeader( scratch, logVersion, -1 );
+                            LogEntryReaderv1.writeLogHeader( scratch, logVersion, -1 );
                             // scratch buffer is flipped by writeLogHeader
                             newLog.write( scratch );
                             ReadableByteChannel received = tx.third().extract();

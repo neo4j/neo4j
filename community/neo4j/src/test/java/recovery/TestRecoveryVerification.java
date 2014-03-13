@@ -23,8 +23,7 @@ import static java.nio.ByteBuffer.allocate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.readLogHeader;
 import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
 
 import java.io.File;
@@ -32,6 +31,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,14 +43,18 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestRecoveryVerification
 {
@@ -131,22 +135,35 @@ public class TestRecoveryVerification
         {
             FileChannel channel = file.getChannel();
             readLogHeader( buffer, channel, true );
-            long lastOne = -1;
-            int counted = 0;
-            for ( LogEntry entry; (entry = readEntry( buffer, channel, reader )) != null; )
+            final AtomicInteger counted = new AtomicInteger(  );
+            LogDeserializer deserializer = new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class ), buffer, reader );
+
+
+            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
             {
-                if ( entry instanceof TwoPhaseCommit )
+                long lastOne = -1;
+
+                @Override
+                public boolean accept( LogEntry entry ) throws IOException
                 {
-                    long txId = ((TwoPhaseCommit) entry).getTxId();
-                    if ( lastOne != -1 )
+                    if ( entry instanceof LogEntry.TwoPhaseCommit )
                     {
-                        assertEquals( lastOne + 1, txId );
+                        long txId = ((LogEntry.TwoPhaseCommit) entry).getTxId();
+                        if ( lastOne != -1 )
+                        {
+                            assertEquals( lastOne + 1, txId );
+                        }
+                        lastOne = txId;
+                        counted.incrementAndGet();
                     }
-                    lastOne = txId;
-                    counted++;
+                    return true;
                 }
-            }
-            assertEquals( expectedCount, counted );
+            };
+
+            Cursor<LogEntry, IOException> c = deserializer.cursor( channel );
+            while ( c.next( consumer ) );
+
+            assertEquals( expectedCount, counted.get() );
         }
         finally
         {

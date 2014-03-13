@@ -87,7 +87,9 @@ public class TestStandaloneLogExtractor
 
         XaDataSource ds = newDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource();
-        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ), new XaCommandReaderFactory()
+        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+        logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+        LogExtractor extractor = LogExtractor.from( snapshot, new XaCommandReaderFactory()
         {
             @Override
             public XaCommandReader newInstance( ByteBuffer scratch )
@@ -95,15 +97,15 @@ public class TestStandaloneLogExtractor
                 return new PhysicalLogNeoXaCommandReader( scratch );
             }
         },
-                new XaCommandWriterFactory()
-                {
-                    @Override
-                    public XaCommandWriter newInstance()
-                    {
-                        return new PhysicalLogNeoXaCommandWriter();
-                    }
-                },
-                new Monitors().newMonitor( ByteCounterMonitor.class ), 2 /* a magic first tx */ );
+        new XaCommandWriterFactory()
+        {
+            @Override
+            public XaCommandWriter newInstance()
+            {
+                return new PhysicalLogNeoXaCommandWriter();
+            }
+        }, logEntryWriter, new File( storeDir ),
+        new Monitors().newMonitor( ByteCounterMonitor.class ) );
         long expectedTxId = 2;
         while ( true )
         {

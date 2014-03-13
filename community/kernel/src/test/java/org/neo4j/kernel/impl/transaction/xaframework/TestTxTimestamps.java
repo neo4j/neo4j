@@ -35,11 +35,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -83,27 +87,19 @@ public class TestTxTimestamps
         FileChannel channel = fileSystem.open( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
         try
         {
-            XaCommandReader commandReader = new PhysicalLogNeoXaCommandReader( buffer );
-            LogIoUtils.readLogHeader( buffer, channel, true );
-            int foundTxCount = 0;
-            skipFirstTransaction( buffer, channel, commandReader ); // Since it's the property index transaction
-            for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandReader )) != null; )
+            LogEntryReaderv1.readLogHeader( buffer, channel, true );
+
+            AConsumer consumer = new AConsumer( expectedCommitTimestamps, expectedStartTimestamps );
+
+            LogDeserializer deserializer = new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class ),
+                    buffer, new PhysicalLogNeoXaCommandReader( buffer ) );
+
+            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
             {
-                if ( entry instanceof LogEntry.Start )
-                {
-                    long diff = ((LogEntry.Start) entry).getTimeWritten()-expectedStartTimestamps[foundTxCount];
-                    long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
-                    assertTrue( diff + " <= " + exp, diff <= exp );
-                }
-                else if ( entry instanceof LogEntry.Commit )
-                {
-                    long diff = ((LogEntry.Commit) entry).getTimeWritten()-expectedCommitTimestamps[foundTxCount];
-                    long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
-                    assertTrue( diff + " <= " + exp, diff <= exp );
-                    foundTxCount++;
-                }
+                while( cursor.next( consumer ) );
             }
-            assertEquals( expectedCommitTimestamps.length, foundTxCount );
+
+            assertEquals( expectedCommitTimestamps.length, consumer.getFoundTxCount() );
         }
         finally
         {
@@ -111,10 +107,49 @@ public class TestTxTimestamps
         }
     }
 
-    private void skipFirstTransaction( ByteBuffer buffer, FileChannel channel, XaCommandReader commandReader ) throws IOException
+    private class AConsumer implements Consumer<LogEntry, IOException>
     {
-        for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandReader )) != null; )
-            if ( entry instanceof Commit )
-                break;
+        private int foundTxCount;
+        private boolean skippedFirstTx = false;
+        private final long[] expectedCommitTimestamps;
+        private final long[] expectedStartTimestamps;
+
+        private AConsumer( long[] expectedCommitTimestamps, long[] expectedStartTimestamps )
+        {
+            this.expectedCommitTimestamps = expectedCommitTimestamps;
+            this.expectedStartTimestamps = expectedStartTimestamps;
+        }
+
+        public int getFoundTxCount()
+        {
+            return foundTxCount;
+        }
+
+        @Override
+        public boolean accept( LogEntry entry ) throws IOException
+        {
+            if ( !skippedFirstTx )
+            {   // Since it's the property index transaction
+                if ( entry instanceof Commit )
+                {
+                    skippedFirstTx = true;
+                }
+                return true;
+            }
+            if ( entry instanceof LogEntry.Start )
+            {
+                long diff = ((LogEntry.Start) entry).getTimeWritten() - expectedStartTimestamps[foundTxCount];
+                long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
+                assertTrue( diff + " <= " + exp, diff <= exp );
+            }
+            else if ( entry instanceof LogEntry.Commit )
+            {
+                long diff = ((LogEntry.Commit) entry).getTimeWritten()-expectedCommitTimestamps[foundTxCount];
+                long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
+                assertTrue( diff + " <= " + exp, diff <= exp );
+                foundTxCount++;
+            }
+            return true;
+        }
     }
 }

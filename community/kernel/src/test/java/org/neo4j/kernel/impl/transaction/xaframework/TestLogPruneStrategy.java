@@ -254,7 +254,7 @@ public class TestLogPruneStrategy
                     " and prune strategy " + log.pruning, FS.fileExists( file ) );
             if ( empty.contains( i ) )
             {
-                assertEquals( "Log v" + i + " should be empty", LogIoUtils.LOG_HEADER_SIZE, FS.getFileSize( file ) );
+                assertEquals( "Log v" + i + " should be empty", LogEntryReaderv1.LOG_HEADER_SIZE, FS.getFileSize( file ) );
                 empty.remove( i );
             }
             else
@@ -318,11 +318,11 @@ public class TestLogPruneStrategy
         private void clearAndWriteHeader()
         {
             activeBuffer.clear();
-            LogIoUtils.writeLogHeader( activeBuffer, version, tx );
+            LogEntryReaderv1.writeLogHeader( activeBuffer, version, tx );
             
             // Because writeLogHeader does flip()
             activeBuffer.limit( activeBuffer.capacity() );
-            activeBuffer.position( LogIoUtils.LOG_HEADER_SIZE );
+            activeBuffer.position( LogEntryReaderv1.LOG_HEADER_SIZE );
         }
         
         @Override
@@ -352,21 +352,27 @@ public class TestLogPruneStrategy
          */
         public boolean addTransaction( int commandSize, long date ) throws IOException
         {
-            InMemoryLogBuffer tempLogBuffer = new InMemoryLogBuffer();
-            XidImpl xid = new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_XID );
-            LogIoUtils.writeStart( tempLogBuffer, identifier, xid, -1, -1, date, Long.MAX_VALUE );
-            LogIoUtils.writeCommand( tempLogBuffer, identifier, new TestXaCommand( commandSize ), new XaCommandWriter()
+            LogEntryWriterv1 writer = new LogEntryWriterv1();
+
+            writer.setCommandWriter(new XaCommandWriter()
             {
                 @Override
                 public void write( XaCommand command, LogBuffer buffer ) throws IOException
                 {
                     TestXaCommand test = (TestXaCommand) command;
                     buffer.putInt( test.getTotalSize() );
-                    buffer.put( new byte[test.getTotalSize()-4/*size of the totalSize integer*/] );
+                    buffer.put( new byte[test.getTotalSize() - 4/*size of the totalSize integer*/] );
                 }
             } );
-            LogIoUtils.writeCommit( false, tempLogBuffer, identifier, ++tx, date );
-            LogIoUtils.writeDone( tempLogBuffer, identifier );
+
+            InMemoryLogBuffer tempLogBuffer = new InMemoryLogBuffer();
+            XidImpl xid = new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_XID );
+            writer.writeLogEntry( new LogEntry.Start( xid, identifier, -1, -1, date, -1, Long.MAX_VALUE), tempLogBuffer );
+
+            writer.writeLogEntry( new LogEntry.Command( identifier, new TestXaCommand( commandSize ) ), tempLogBuffer );
+
+            writer.writeLogEntry( new LogEntry.OnePhaseCommit( identifier, ++tx, date ), tempLogBuffer );
+            writer.writeLogEntry( new LogEntry.Done( identifier), tempLogBuffer );
             tempLogBuffer.read( activeBuffer );
             if ( !timestamps.containsKey( version ) )
              {
