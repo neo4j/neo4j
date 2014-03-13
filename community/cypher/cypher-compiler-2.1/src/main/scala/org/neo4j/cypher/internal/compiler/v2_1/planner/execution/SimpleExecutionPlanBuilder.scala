@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
   def build(plan: LogicalPlan): PipeInfo = {
@@ -55,6 +55,8 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
           RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
         case NodeIndexScan(IdName(id), labelId, propertyKeyId, valueExpr, _) =>
           NodeIndexScanPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
+        case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr, _) =>
+          NodeIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
       }
     }
 

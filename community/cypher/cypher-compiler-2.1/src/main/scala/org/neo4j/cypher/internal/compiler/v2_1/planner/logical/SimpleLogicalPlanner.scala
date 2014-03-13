@@ -62,6 +62,7 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     val bestLeafPlan =
       LeafPlanTable()
         .introduceIdSeekPlans(predicates, semanticTable.isRelationship)
+        .introduceIndexSeekPlans(predicates, labelPredicateMap)
         .introduceIndexScanPlans(predicates, labelPredicateMap)
         .introduceLabelScanPlans(qg, labelPredicateMap)
         .introduceAllNodesScanPlans(qg)
@@ -96,6 +97,36 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
                   NodeByIdSeek(idName, idExpr, estimator.estimateNodeByIdSeek())
 
               planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(expression)))
+            case _ =>
+              planTable
+          }
+      }
+
+    def introduceIndexSeekPlans(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) =
+      predicates.foldLeft(planTable) {
+        (planTable, expression) =>
+          expression match {
+            // n.prop = value
+            case Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
+              val idName = IdName(name)
+              val propertyKeyId = propertyKey.id.get
+              val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
+              labelPredicates.foldLeft(planTable) {
+                (planTable, hasLabels) =>
+                  hasLabels.labels.foldLeft(planTable) {
+                    (planTable, labelName) =>
+                      labelName.id match {
+                        case Some(labelId)
+                          if planContext.uniqueIndexesGetForLabel(labelId.id).exists(_.getPropertyKeyId == propertyKeyId.id) =>
+
+                          val alternative = NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr,
+                            estimator.estimateNodeIndexScan(labelId, propertyKeyId))
+                          planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(expression, hasLabels)))
+                        case _ =>
+                          planTable
+                      }
+                  }
+              }
             case _ =>
               planTable
           }

@@ -188,8 +188,9 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1))
   }
 
-  test("index seek when there is an index on the property") {
+  test("index scan when there is an index on the property") {
     when(planContext.indexesGetForLabel(12)).thenReturn(Iterator(new IndexDescriptor(12, 15)))
+    when(planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     // given
     val identifier = Identifier("n")(pos)
@@ -213,5 +214,33 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // then
     resultPlan should equal(NodeIndexScan(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos), 1))
+  }
+
+  test("index seek when there is an index on the property") {
+    when(planContext.indexesGetForLabel(12)).thenReturn(Iterator())
+    when(planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator(new IndexDescriptor(12, 15)))
+
+    // given
+    val identifier = Identifier("n")(pos)
+    val projections = Map("n" -> identifier)
+    val labelId = LabelId(12)
+    val propertyKeyId = PropertyKeyId(15)
+    val predicates = Seq(
+      Set(IdName("n")) ->  Equals(
+        Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))(pos))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos),
+      Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    )
+    when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
+    when(estimator.estimateNodeIndexScan(LabelId(12), propertyKeyId)).thenReturn(1)
+    val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
+    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+
+    // when
+    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+
+    // then
+    resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos), 1))
   }
 }

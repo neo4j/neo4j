@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.{Label, Node}
-import org.neo4j.graphdb.Neo4jMatchers._
+import org.neo4j.graphdb.Node
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -50,13 +49,6 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val node = createNode("b")
 
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
-  }
-
-  // 2014-03-13 - Davide: this is not done by NodeByIdSeek so it is not support by Ronja, we need Filter Pipe for this
-  ignore("Seeking two nodes by a tautological id() comparison") {
-    val nodes = Set(createNode("a"), createNode("b"))
-
-    executeWithNewPlanner(s"match n where id(n) = id(n) return n").columnAs[Node]("n").toSet should equal(nodes)
   }
 
   // 2014-03-13 - Davide: this is not done by NodeByIdSeek so it is not support by Ronja, we need Filter Pipe for this
@@ -91,11 +83,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
 
   test("Scan index with property given in where") {
     createLabeledNode("Person")
-
-    val indexDefinition = graph.inTx {
-      graph.schema.indexFor(new Label() { def name = "Person" }).on("prop").create
-    }
-    waitForIndex(graph, indexDefinition)
+    graph.createIndex("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
     executeScalarWithNewPlanner[Node](s"match (n:Person) where n.prop = 42 return n") should equal(node)
@@ -103,11 +91,23 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
 
   test("Scan index with property given in node pattern") {
     createLabeledNode("Person")
+    graph.createIndex("Person", "prop")
 
-    val indexDefinition = graph.inTx {
-      graph.schema.indexFor(new Label() { def name = "Person" }).on("prop").create
-    }
-    waitForIndex(graph, indexDefinition)
+    val node = createLabeledNode(Map("prop" -> 42), "Person")
+    executeScalarWithNewPlanner[Node](s"match (n:Person {prop: 42}) return n") should equal(node)
+  }
+
+  test("Seek index with property given in where") {
+    createLabeledNode("Person")
+    graph.createConstraint("Person", "prop")
+
+    val node = createLabeledNode(Map("prop" -> 42), "Person")
+    executeScalarWithNewPlanner[Node](s"match (n:Person) where n.prop = 42 return n") should equal(node)
+  }
+
+  test("Seek index with property given in node pattern") {
+    createLabeledNode("Person")
+    graph.createConstraint("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
     executeScalarWithNewPlanner[Node](s"match (n:Person {prop: 42}) return n") should equal(node)

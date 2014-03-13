@@ -37,6 +37,9 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     statement.readOperations().indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
 
+  def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
+    statement.readOperations().uniqueIndexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
+
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
     val labelId = statement.readOperations().labelGetForName(labelName)
