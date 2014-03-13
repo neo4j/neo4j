@@ -93,5 +93,11 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Chris Vest|https://github.com/chrisvest[chrisvest]
 |Ben Butler-Cole|https://github.com/benbc[benbc]
 |Tatham Oddie|https://github.com/tathamoddie[tathamoddie]
+|Chris Skardon|https://github.com/cskardon[cskardon]
+|Davide Grohmann|https://github.com/davidegrohmann[davidegrohmann]
+|Jakub Wieczorek|https://github.com/jakub-[jakub-]
+|Magnus Vejlstrup|https://github.com/magnusvejlstrup[magnusvejlstrup]
+|Nikul Ukani|https://github.com/nikulukani[nikulukani]
+|Sebastian Wallin|https://github.com/wallin[wallin]
 |=======
 
