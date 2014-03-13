@@ -20,10 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.{Label, Node}
-import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.Neo4jMatchers._
-import org.neo4j.kernel.api.exceptions.Status.Transaction
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -45,7 +42,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createNode("a")
     val node = createNode("b")
 
-    executeScalarWithNewPlanner[Node](s"match n where  ${node.getId} = id(n) return n") should equal(node)
+    executeScalarWithNewPlanner[Node](s"match n where ${node.getId} = id(n) return n") should equal(node)
   }
 
   test("Seek node by id given on the right") {
@@ -62,14 +59,16 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeWithNewPlanner(s"match n where id(n) = id(n) return n").columnAs[Node]("n").toSet should equal(nodes)
   }
 
-  test("Can use both label scan (left) and node by id (right)") {
+  // 2014-03-13 - Davide: this is not done by NodeByIdSeek so it is not support by Ronja, we need Filter Pipe for this
+  ignore("Can use both label scan (left) and node by id (right)") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
     executeScalarWithNewPlanner[Node](s"match n where n:Person and ${node.getId} = id(n) return n") should equal(node)
   }
 
-  test("Can use both label scan (right) and node by id (left)") {
+  // 2014-03-13 - Davide: this is not done by NodeByIdSeek so it is not support by Ronja, we need Filter Pipe for this
+  ignore("Can use both label scan (right) and node by id (left)") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 

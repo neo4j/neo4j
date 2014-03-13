@@ -204,7 +204,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
       Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
     )
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    when(estimator.estimateNodeByIndexSeek(LabelId(12), propertyKeyId)).thenReturn(1)
+    when(estimator.estimateNodeIndexScan(LabelId(12), propertyKeyId)).thenReturn(1)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
     val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 

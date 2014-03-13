@@ -17,20 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
-
-/*
-This class is responsible for answering questions about cardinality. It does this by asking the database when this
-information is available, or guessing when that's not possible.
- */
-trait CardinalityEstimator {
-  def estimateNodeByIdSeek(): Int
-  def estimateRelationshipByIdSeek(): Int
-  def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
-  def estimateAllNodes(): Int
-  def estimateNodeIndexScan(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
+object ConstantExpression {
+  def unapply(v: AnyRef): Option[Expression] = v match {
+    case expr: Literal => Some(expr)
+    case expr: Parameter => Some(expr)
+  }
 }

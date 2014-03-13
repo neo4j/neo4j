@@ -42,7 +42,7 @@ case class Planner() {
       case None => 0
     }
 
-    def estimateNodeByIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
+    def estimateNodeIndexScan(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
 
     def estimateAllNodes() = 1000
   }
