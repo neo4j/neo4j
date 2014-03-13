@@ -49,7 +49,10 @@ trait NewQueryPlanSuccessRateMonitor {
   def unableToHandleQuery(queryText: String, ast:Statement)
 }
 
-class ExecutionPlanBuilder(graph: GraphDatabaseService, monitor: NewQueryPlanSuccessRateMonitor, pipeBuilder: PipeBuilder = new PipeBuilder, execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
+class ExecutionPlanBuilder(graph: GraphDatabaseService,
+                           monitor: NewQueryPlanSuccessRateMonitor,
+                           pipeBuilder: PipeBuilder = new PipeBuilder,
+                           execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: ParsedQuery): ExecutionPlan = {
     val ast = inputQuery.statement

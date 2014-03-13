@@ -50,7 +50,7 @@ case class Planner() {
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
 
-  def producePlan(statement: Statement, semanticQuery: SemanticQuery)(planContext: PlanContext): PipeInfo = statement match {
+  def producePlan(statement: Statement, semanticQuery: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)

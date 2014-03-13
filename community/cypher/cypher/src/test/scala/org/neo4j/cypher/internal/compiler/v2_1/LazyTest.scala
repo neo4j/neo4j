@@ -192,8 +192,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val fakeStatement = mock[Statement]
 
     when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
-    when(monitors.newMonitor(classOf[SemanticCheckMonitor])).thenReturn(mock[SemanticCheckMonitor])
-    when(monitors.newMonitor(classOf[AstRewritingMonitor])).thenReturn(mock[AstRewritingMonitor])
+    when(monitors.newMonitor(classOf[SemanticCheckMonitor], "compiler2.1")).thenReturn(mock[SemanticCheckMonitor])
+    when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
     when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
 
     when(nodeManager.getAllNodes).thenReturn(counter)
