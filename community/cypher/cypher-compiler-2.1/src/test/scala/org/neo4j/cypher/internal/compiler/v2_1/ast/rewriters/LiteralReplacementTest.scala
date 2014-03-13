@@ -79,6 +79,14 @@ class LiteralReplacementTest extends CypherFunSuite  {
     )
   }
 
+  test("should not rewrite queries that already have params in them") {
+    assertRewrite(
+      "CREATE (a:Person {name:'Jakub', age:{age} })",
+      "CREATE (a:Person {name:'Jakub', age:{age} })",
+      Map.empty
+    )
+  }
+
   private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any]) {
     val original = parser.parse(originalQuery)
     val expected = parser.parse(expectedQuery)
