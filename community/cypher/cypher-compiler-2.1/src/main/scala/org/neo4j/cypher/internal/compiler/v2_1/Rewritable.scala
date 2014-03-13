@@ -27,8 +27,6 @@ object Rewriter {
     def apply(that: AnyRef): Option[AnyRef] = f.apply(that)
   }
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.lift
-
-  def noop = Rewriter.lift(Map.empty)
 }
 
 trait Rewriter extends (AnyRef => Option[AnyRef])

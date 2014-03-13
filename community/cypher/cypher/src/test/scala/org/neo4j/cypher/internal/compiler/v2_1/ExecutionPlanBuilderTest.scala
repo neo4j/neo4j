@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import javax.transaction.TransactionManager
-import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticQuery
 
 class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
   val ast = mock[Statement]
@@ -55,7 +55,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
       val epi = new ExecutionPlanBuilder(graph, mock[NewQueryPlanSuccessRateMonitor], new FakePipeBuilder(Seq(new BadBuilder)))
-      epi.build(planContext, ParsedQuery(ast, q, SemanticTable(), Map.empty))
+      epi.build(planContext, ParsedQuery(ast, q, SemanticQuery(), Map.empty))
     })
 
     assertTrue("Execution plan builder didn't throw expected exception - was " + exception.getMessage,
@@ -72,7 +72,7 @@ class ExecutionPlanBuilderTest extends CypherFunSuite with GraphDatabaseTestSupp
 
     // when
     intercept[ExplodingException] {
-      val executionPlan = execPlanBuilder.build(planContext, ParsedQuery(ast, q, SemanticTable(), Map.empty))
+      val executionPlan = execPlanBuilder.build(planContext, ParsedQuery(ast, q, SemanticQuery(), Map.empty))
       executionPlan.execute(queryContext, Map())
     }
 

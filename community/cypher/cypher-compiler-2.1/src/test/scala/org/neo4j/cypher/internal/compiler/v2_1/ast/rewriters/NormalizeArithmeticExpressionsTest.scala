@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class FoldConstantsTest extends CypherFunSuite {
+class NormalizeArithmeticExpressionsTest extends CypherFunSuite {
   import parser.ParserFixture._
 
   test("solve literal expressions") {
@@ -44,7 +44,7 @@ class FoldConstantsTest extends CypherFunSuite {
     val original = parser.parse(originalQuery)
     val expected = parser.parse(expectedQuery)
 
-    val result = original.rewrite(bottomUp(foldConstants))
+    val result = original.rewrite(bottomUp(normalizeArithmeticExpressions))
     assert(result === expected)
   }
 }

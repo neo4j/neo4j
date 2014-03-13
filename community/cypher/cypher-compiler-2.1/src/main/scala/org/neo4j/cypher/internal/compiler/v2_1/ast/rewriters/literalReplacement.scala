@@ -54,23 +54,10 @@ object literalReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    val containsParameter: Boolean = term.fold(false) {
-      case term: Parameter =>
-        (acc: Boolean) => true
-      case _ =>
-        identity
-    }
+    val replaceableLiterals = term.foldt(IdentityMap.empty: LiteralReplacements)(literalMatcher)
 
-    if (containsParameter) {
-      (Rewriter.noop, Map.empty)
-    } else {
-      val replaceableLiterals = term.foldt(IdentityMap.empty: LiteralReplacements)(literalMatcher)
-
-      val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
-        case (l, p) => (p.name, l.value)
-      }
-
-      (ExtractParameterRewriter(replaceableLiterals), extractedParams)
-    }
+    (ExtractParameterRewriter(replaceableLiterals), replaceableLiterals.map {
+      case (l, p) => (p.name, l.value)
+    })
   }
 }

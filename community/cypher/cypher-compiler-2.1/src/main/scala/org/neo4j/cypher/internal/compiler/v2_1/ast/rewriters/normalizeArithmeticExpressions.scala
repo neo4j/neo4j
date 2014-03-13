@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import ast._
 import org.neo4j.cypher
 
-object foldConstants extends Rewriter {
+object normalizeArithmeticExpressions extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] =
   try {
     instance.apply(that)

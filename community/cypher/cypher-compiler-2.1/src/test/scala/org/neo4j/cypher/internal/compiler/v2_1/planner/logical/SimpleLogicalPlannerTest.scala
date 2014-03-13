@@ -18,13 +18,66 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticQuery
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticQuery
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import scala.Some
+import scala.Some
+import scala.Some
+import scala.Some
 
 class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
@@ -39,7 +92,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val qg = QueryGraph(projections, Selections(), Set.empty)
 
     // when
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+    val resultPlan = planner.plan(qg, SemanticQuery())(planContext)
 
     // then
     resultPlan should equal(Projection(SingleRow(), projections))
@@ -52,7 +105,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateAllNodes()).thenReturn(1000)
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+    val resultPlan = planner.plan(qg, SemanticQuery())(planContext)
 
     // then
     resultPlan should equal(AllNodesScan(IdName("n"), 1000))
@@ -66,7 +119,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateNodeByLabelScan(None)).thenReturn(0)
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+    val resultPlan = planner.plan(qg, SemanticQuery())(planContext)
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Left("Awesome"), 0))
@@ -81,7 +134,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
     // when
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+    val resultPlan = planner.plan(qg, SemanticQuery())(planContext)
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId), 100))

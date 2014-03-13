@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{SemanticTable, CantHandleQueryException, CardinalityEstimator, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{SemanticQuery, CantHandleQueryException, CardinalityEstimator, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
@@ -29,7 +29,7 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
 
   val projectionPlanner = new ProjectionPlanner
 
-  override def plan(qg: QueryGraph, semanticQuery: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
+  override def plan(qg: QueryGraph, semanticQuery: SemanticQuery)(implicit planContext: PlanContext): LogicalPlan = {
     val planTableBuilder = Map.newBuilder[Set[IdName], Seq[LogicalPlan]]
     qg.identifiers.foreach { id =>
       planTableBuilder += (Set(id) -> identifierSources(id, qg, semanticQuery))
@@ -44,7 +44,7 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     projectionPlanner.amendPlan(qg, logicalPlan)
   }
 
-  def identifierSources(id: IdName, qg: QueryGraph, semanticQuery: SemanticTable)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
+  def identifierSources(id: IdName, qg: QueryGraph, semanticQuery: SemanticQuery)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
     val predicates = qg.selections.apply(Set(id))
     val allNodesScan = AllNodesScan(id, estimator.estimateAllNodes())
     Seq(allNodesScan) ++ predicates.collect({
