@@ -22,6 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.ExecutionResult
+
+trait PipeMonitor {
+  def startSetup(queryId: AnyRef, pipe: Pipe)
+  def stopSetup(queryId: AnyRef, pipe: Pipe)
+  def startStep(queryId: AnyRef, pipe: Pipe)
+  def stopStep(queryId: AnyRef, pipe: Pipe)
+}
+
+object NoopPipeMonitor extends PipeMonitor {
+  def startSetup(queryId: AnyRef, pipe: Pipe) {}
+  def stopSetup(queryId: AnyRef, pipe: Pipe) {}
+  def startStep(queryId: AnyRef, pipe: Pipe) {}
+  def stopStep(queryId: AnyRef, pipe: Pipe) {}
+}
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -30,9 +45,23 @@ import org.neo4j.helpers.ThisShouldNotHappenError
  * the execute the query.
  */
 trait Pipe {
+  def monitor: PipeMonitor = NoopPipeMonitor
+
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(this, state)
-    val result = internalCreateResults(decoratedState)
+    monitor.startSetup(state.queryId, this)
+    val that = this
+    val innerResult = internalCreateResults(decoratedState)
+    val result = new Iterator[ExecutionContext] {
+      def hasNext = innerResult.hasNext
+      def next() = {
+        monitor.startStep(state.queryId, that)
+        val value = innerResult.next()
+        monitor.stopStep(state.queryId, that)
+        value
+      }
+    }
+    monitor.stopSetup(state.queryId, this)
     state.decorator.decorate(this, result)
   }
 

@@ -61,7 +61,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
     val PipeInfo(pipe, isUpdating, periodicCommitInfo) = pipeBuilder.producePlan(inputQuery, planContext)
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
-    val func = getExecutionPlanFunction(pipe, columns, periodicCommitInfo, isUpdating)
+    val func = getExecutionPlanFunction(pipe, columns, periodicCommitInfo, isUpdating, abstractQuery.getQueryText)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
@@ -96,7 +96,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
   private def getExecutionPlanFunction(pipe: Pipe,
                                        columns: List[String],
                                        periodicCommit: Option[PeriodicCommitInfo],
-                                       updating: Boolean) =
+                                       updating: Boolean,
+                                       queryId: AnyRef) =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
 
       val builder = new ExecutionWorkflowBuilder(queryContext)
@@ -112,7 +113,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       if (profile)
         builder.setPipeDecorator(new Profiler())
 
-      builder.runWithQueryState(graph, params) {
+      builder.runWithQueryState(graph, queryId, params) {
         state =>
           val results = pipe.createResults(state)
           val closingIterator = builder.buildClosingIterator(results)
@@ -159,9 +160,9 @@ class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
   def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean) =
     () => pipeDecorator.decorate(pipe.executionPlanDescription, isProfileReady)
 
-  def runWithQueryState[T](graph: GraphDatabaseService, params: Map[String, Any])(f: QueryState => T) = {
+  def runWithQueryState[T](graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any])(f: QueryState => T) = {
     taskCloser.addTask(queryContext.close)
-    val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator)
+    val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator, queryId = queryId)
     try {
       try {
         f(state)

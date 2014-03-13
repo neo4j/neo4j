@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
-case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) extends Pipe {
+case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {
@@ -34,7 +34,8 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) ex
 
     optLabelId match {
       case Some(labelId) =>
-        state.query.getNodesByLabel(labelId.id).map(n => ExecutionContext.from(ident -> n))
+        val nodes = state.query.getNodesByLabel(labelId.id)
+        nodes.map(n => ExecutionContext.from(ident -> n))
       case None =>
         Iterator.empty
     }
@@ -45,4 +46,6 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) ex
   def executionPlanDescription = new PlanDescriptionImpl(this, "LabelScan", Seq.empty, Seq("ident" -> ident, "label" -> label))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+
+  override def monitor = pipeMonitor
 }

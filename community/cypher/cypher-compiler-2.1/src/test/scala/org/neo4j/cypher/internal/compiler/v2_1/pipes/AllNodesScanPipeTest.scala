@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
 
 class AllNodesScanPipeTest extends CypherFunSuite {
 
+  implicit val monitor = NoopPipeMonitor
   import Mockito.when
 
   test("should scan all nodes") {
