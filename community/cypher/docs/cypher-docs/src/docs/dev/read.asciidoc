@@ -24,9 +24,6 @@ include::ql/start/index.asciidoc[]
 
 include::ql/aggregation/index.asciidoc[]
 
-:leveloffset: 0
+:leveloffset: 2
 
 include::ql/load-csv/index.asciidoc[]
-
-:leveloffset: 0
-
