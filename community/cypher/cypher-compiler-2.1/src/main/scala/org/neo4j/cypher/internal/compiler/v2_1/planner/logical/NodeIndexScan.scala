@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.{symbols, ExpressionTypeInfo, IdentityMap}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SemanticTable(types: IdentityMap[Expression, ExpressionTypeInfo] = IdentityMap.empty) {
-  def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
-  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
+case class NodeIndexScan(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression, cardinality: Int) extends LogicalPlan {
+  def coveredIds: Set[IdName] = Set(idName)
+
+  def cost: Int = ???
+
+  def rhs: Option[LogicalPlan] = None
+  def lhs: Option[LogicalPlan] = None
 }

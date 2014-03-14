@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 /*
 An abstract representation of the query graph being solved at the current step
@@ -39,15 +40,19 @@ object SelectionPredicates {
 
   private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], ast.Expression)] = predicate match {
     // n:Label
-    case predicate@HasLabels(identifier@Identifier(name), labels) =>
+    case HasLabels(identifier@Identifier(name), labels) =>
       labels.map( (label: LabelName) => Set(IdName(name)) -> HasLabels(identifier, Seq(label))(predicate.position) )
 
-    // id(n) = 12
-    case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
+    // id(n) = value
+    case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
       Seq(Set(IdName(ident)) -> predicate)
 
+    // n.prop = value
+    case Equals(Property(Identifier(name), PropertyKeyName(_)), ConstantExpression(_)) =>
+      Seq(Set(IdName(name)) -> predicate)
+
     // and
-    case predicate@And(predicateLhs, predicateRhs) =>
+    case And(predicateLhs, predicateRhs) =>
       extractPredicates(predicateLhs) ++ extractPredicates(predicateRhs)
 
     case _ =>
@@ -58,4 +63,33 @@ object SelectionPredicates {
 case class Selections(predicates: Seq[(Set[IdName], ast.Expression)] = Seq.empty) {
   def apply(availableIds: Set[IdName]): Seq[ast.Expression] =
     predicates.collect { case (k, v) if k.subsetOf(availableIds) => v }
+
+  def flatPredicates: Seq[ast.Expression] = {
+    val flatPredicatesBuilder = Seq.newBuilder[Expression]
+    predicates.foreach( flatPredicatesBuilder += _._2 )
+    flatPredicatesBuilder.result()
+  }
+
+  def labelPredicates: Map[IdName, Set[ast.HasLabels]] = {
+    predicates.foldLeft(Map.empty[IdName, Set[ast.HasLabels]]) { (m: Map[IdName, Set[ast.HasLabels]], pair: (Set[IdName], ast.Expression)) =>
+      val (_, expr) = pair
+      expr match {
+        case hasLabels @ HasLabels(Identifier(name), labels) =>
+          // FIXME: remove when we have test for checking that we construct the expected plan
+          if (labels.size > 1) {
+            throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
+          }
+          val idName = IdName(name)
+          m.updated(idName, m.getOrElse(idName, Set.empty) + hasLabels)
+        case _ =>
+          m
+      }
+    }
+  }
+
+  def unsolvedPredicates(solvedPredicates: Seq[Expression]): Seq[Expression] = {
+    def solving(candidate: Expression) = solvedPredicates.exists { _ == candidate }
+
+    flatPredicates.filter(!solving(_))
+  }
 }

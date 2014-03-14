@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.{symbols, ExpressionTypeInfo, IdentityMap}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
-
-case class SemanticTable(types: IdentityMap[Expression, ExpressionTypeInfo] = IdentityMap.empty) {
-  def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
-  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
+object ConstantExpression {
+  def unapply(v: AnyRef): Option[Expression] = v match {
+    case expr: Literal => Some(expr)
+    case expr: Parameter => Some(expr)
+  }
 }

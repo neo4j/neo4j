@@ -21,54 +21,54 @@ package org.neo4j.cypher
 
 import org.junit.Test
 
-class CypherTypeAcceptanceTest extends ExecutionEngineJUnitSuite {
-  @Test def does_not_loose_precision() {
+class CypherTypeAcceptanceTest extends ExecutionEngineFunSuite {
+  test("does not loose precision") {
     // Given
     execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
     val result = executeScalar[Number]("match (p:Label) return p.id")
 
-    assert(result === 4611686018427387905L)
+    result should equal(4611686018427387905L)
   }
 
-  @Test def equality_takes_the_full_value_into_consideration1() {
-    // Given
+  test("equality takes the full value into consideration 1") {
+    // Givenss
     execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
     val result = execute("match (p:Label {id: 4611686018427387905}) return p")
 
-    assert(result.nonEmpty, "Should find the node")
+    result should not be(empty)
   }
 
-  @Test def equality_takes_the_full_value_into_consideration2() {
+  test("equality takes the full value into consideration 2") {
     // Given
     execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
     val result = execute("match (p:Label) where p.id = 4611686018427387905 return p")
 
-    assert(result.nonEmpty, "Should find the node")
+    result should not be(empty)
   }
 
-  @Test def equality_takes_the_full_value_into_consideration3() {
+  test("equality takes the full value into consideration 3") {
     // Given
     execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
     val result = execute("match (p:Label) where p.id = 4611686018427387900 return p")
 
-    assert(result.isEmpty, "Should not find the node")
+    result should be(empty)
   }
 
-  @Test def equality_takes_the_full_value_into_consideration4() {
+  test("equality takes the full value into consideration 4") {
     // Given
     execute("CREATE (:Label { id: 4611686018427387905 })")
 
     // When
     val result = execute("match (p:Label {id : 4611686018427387900}) return p")
 
-    assert(result.isEmpty, "Should not find the node")
+    result should be(empty)
   }
 }

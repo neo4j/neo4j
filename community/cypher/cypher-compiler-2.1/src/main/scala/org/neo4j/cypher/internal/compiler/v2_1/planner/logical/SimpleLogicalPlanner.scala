@@ -24,43 +24,164 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import scala.collection.immutable.HashMap
 
+object SimpleLogicalPlanner {
+  case class LeafPlan(plan: LogicalPlan, solvedPredicates: Seq[Expression])
+
+  case class LeafPlanTable(table: Map[IdName, LeafPlan] = new HashMap) {
+    def updateIfCheaper(id: IdName, alternative: LeafPlan) = {
+      val bestCost = table.get(id).map(_.plan.cardinality).getOrElse(Int.MaxValue)
+      val cost = alternative.plan.cardinality
+
+      if (cost < bestCost)
+        LeafPlanTable(table.updated(id, alternative))
+      else
+        this
+    }
+
+    def bestLeafPlan = {
+      if (table.size > 1)
+        throw new CantHandleQueryException
+
+      if (table.isEmpty) None else Some(table.values.toSeq.minBy(_.plan.cardinality))
+    }
+  }
+}
+
+// TODO: check if we can seek using unique index
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
+  import SimpleLogicalPlanner.{LeafPlan, LeafPlanTable}
 
   val projectionPlanner = new ProjectionPlanner
 
-  override def plan(qg: QueryGraph, semanticQuery: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
-    val planTableBuilder = Map.newBuilder[Set[IdName], Seq[LogicalPlan]]
-    qg.identifiers.foreach { id =>
-      planTableBuilder += (Set(id) -> identifierSources(id, qg, semanticQuery))
+  def plan(qg: QueryGraph, semanticTable: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
+    val predicates = qg.selections.flatPredicates
+    val labelPredicateMap = qg.selections.labelPredicates
+
+    val bestLeafPlan =
+      LeafPlanTable()
+        .introduceIdSeekPlans(predicates, semanticTable.isRelationship)
+        .introduceIndexSeekPlans(predicates, labelPredicateMap)
+        .introduceIndexScanPlans(predicates, labelPredicateMap)
+        .introduceLabelScanPlans(qg, labelPredicateMap)
+        .introduceAllNodesScanPlans(qg)
+        .bestLeafPlan
+
+    val bestPlan = bestLeafPlan match {
+      case Some(leafPlan) =>
+        // TODO: to be replace with a selection-plan when we support that
+        if (!qg.selections.unsolvedPredicates(leafPlan.solvedPredicates).isEmpty)
+          throw new CantHandleQueryException
+        leafPlan.plan
+      case _ =>
+        SingleRow()
     }
 
-    val planTable = planTableBuilder.result()
-    while (planTable.size > 1) {
-      throw new CantHandleQueryException
-    }
-
-    val logicalPlan = planTable.values.headOption.map(_.sortBy(_.cardinality).head).getOrElse(SingleRow())
-    projectionPlanner.amendPlan(qg, logicalPlan)
+    projectionPlanner.amendPlan(qg, bestPlan)
   }
 
-  def identifierSources(id: IdName, qg: QueryGraph, semanticQuery: SemanticTable)(implicit planContext: PlanContext): Seq[LogicalPlan] = {
-    val predicates = qg.selections.apply(Set(id))
-    val allNodesScan = AllNodesScan(id, estimator.estimateAllNodes())
-    Seq(allNodesScan) ++ predicates.collect({
-      // n:Label
-      case HasLabels(Identifier(id.name), label :: Nil) =>
-        val labelId = label.id
-        NodeByLabelScan(id, labelId.toRight(label.name), estimator.estimateNodeByLabelScan(labelId))
+  private implicit class LeafPlanTableBuilder(planTable: LeafPlanTable)(implicit planContext: PlanContext) {
+    def introduceIdSeekPlans(predicates: Seq[Expression], isRelationship: Identifier => Boolean) =
+      predicates.foldLeft(planTable) {
+        (planTable, expression) =>
+          expression match {
+            // id(n) = value
+            case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(id@Identifier(identName))), ConstantExpression(idExpr)) =>
 
-      // id(n) = 12
-      case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq( ident @ Identifier(identName))), idExpr)
-        if idExpr.isInstanceOf[Literal] || idExpr.isInstanceOf[Parameter] =>
-        val idName = IdName(identName)
-        if (semanticQuery.isRelationship(ident))
-          RelationshipByIdSeek(idName, idExpr, estimator.estimateRelationshipByIdSeek())
-        else
-          NodeByIdSeek(idName, idExpr, estimator.estimateNodeByIdSeek())
-    })
+              val idName = IdName(identName)
+              val alternative =
+                if (isRelationship(id))
+                  RelationshipByIdSeek(idName, idExpr, estimator.estimateRelationshipByIdSeek())
+                else
+                  NodeByIdSeek(idName, idExpr, estimator.estimateNodeByIdSeek())
+
+              planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(expression)))
+            case _ =>
+              planTable
+          }
+      }
+
+    def introduceIndexSeekPlans(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) =
+      predicates.foldLeft(planTable) {
+        (planTable, expression) =>
+          expression match {
+            // n.prop = value
+            case Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
+              val idName = IdName(name)
+              val propertyKeyId = propertyKey.id.get
+              val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
+              labelPredicates.foldLeft(planTable) {
+                (planTable, hasLabels) =>
+                  hasLabels.labels.foldLeft(planTable) {
+                    (planTable, labelName) =>
+                      labelName.id match {
+                        case Some(labelId)
+                          if planContext.uniqueIndexesGetForLabel(labelId.id).exists(_.getPropertyKeyId == propertyKeyId.id) =>
+
+                          val alternative = NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr,
+                            estimator.estimateNodeIndexScan(labelId, propertyKeyId))
+                          planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(expression, hasLabels)))
+                        case _ =>
+                          planTable
+                      }
+                  }
+              }
+            case _ =>
+              planTable
+          }
+      }
+
+    def introduceIndexScanPlans(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) =
+      predicates.foldLeft(planTable) {
+        (planTable, expression) =>
+          expression match {
+            // n.prop = value
+            case Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
+              val idName = IdName(name)
+              val propertyKeyId = propertyKey.id.get
+              val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
+              labelPredicates.foldLeft(planTable) {
+                (planTable, hasLabels) =>
+                  hasLabels.labels.foldLeft(planTable) {
+                    (planTable, labelName) =>
+                      labelName.id match {
+                        case Some(labelId)
+                          if planContext.indexesGetForLabel(labelId.id).exists(_.getPropertyKeyId == propertyKeyId.id) =>
+
+                          val alternative = NodeIndexScan(idName, labelId, propertyKeyId, valueExpr,
+                            estimator.estimateNodeIndexScan(labelId, propertyKeyId))
+                          planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(expression, hasLabels)))
+                        case _ =>
+                          planTable
+                      }
+                  }
+              }
+            case _ =>
+              planTable
+          }
+      }
+
+    def introduceAllNodesScanPlans(qg: QueryGraph) =
+      qg.identifiers.foldLeft(planTable) {
+        (planTable, idName) =>
+          val cost = estimator.estimateAllNodes()
+          planTable.updateIfCheaper(idName, LeafPlan(AllNodesScan(idName, cost), Seq()))
+      }
+
+    def introduceLabelScanPlans(qg: QueryGraph, labelPredicateMap: Map[IdName, Set[HasLabels]]) =
+      qg.identifiers.foldLeft(planTable) {
+        (planTable, idName) =>
+          labelPredicateMap.getOrElse(idName, Set.empty).foldLeft(planTable) {
+            (planTable, hasLabels) =>
+              hasLabels.labels.foldLeft(planTable) {
+                (planTable, labelName) =>
+                  val cost = estimator.estimateNodeByLabelScan(labelName.id)
+                  val plan = NodeByLabelScan(idName, labelName.toEither(), cost)
+                  planTable.updateIfCheaper(idName, LeafPlan(plan, Seq(hasLabels)))
+              }
+          }
+      }
   }
 }
+

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
 
 /*
 This class is responsible for answering questions about cardinality. It does this by asking the database when this
@@ -31,5 +31,7 @@ trait CardinalityEstimator {
   def estimateRelationshipByIdSeek(): Int
   def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
   def estimateAllNodes(): Int
+  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
+  def estimateNodeIndexScan(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
   def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
 }
