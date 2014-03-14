@@ -19,59 +19,61 @@
  */
 package org.neo4j.cypher
 
-import internal.helpers.GraphIcing
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.graphdb.NotFoundException
 
-class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
+class UsingAcceptanceTest extends ExecutionEngineFunSuite {
 
-  @Test
-  def failIfUsingIndexWithStartClause() {
+  test("fail if using index with start clause") {
     // GIVEN
     graph.createIndex("Person", "name")
 
     // WHEN & THEN
     intercept[SyntaxException](
-      execute("start n=node(*) using index n:Person(name) where n:Person and n.name = \"kabam\" return n"))
+      execute("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
   }
 
-  @Test
-  def failIfUsingAnIdentifierWithLabelNotUsedInMatch() {
+  test("fail if using an identifier with label not used in match") {
     // GIVEN
     graph.createIndex("Person", "name")
 
     // WHEN
-    intercept[IndexHintException](
-      execute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n"))
+    intercept[SyntaxException](
+      execute("match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
-  @Test
-  def failIfUsingAnHintForANonExistingIndex() {
+  test("fail if using an hint for a non existing index") {
     // GIVEN: NO INDEX
 
     // WHEN
     intercept[IndexHintException](
-      execute("match (n:Person)-->() using index n:Person(name) where n.name = \"kabam\" return n"))
+      execute("match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
-  @Test
-  def failIfUsingHintsWithUnusableEqualityPredicate() {
+  test("fail if using hints with unusable equality predicate") {
     // GIVEN
     graph.createIndex("Person", "name")
 
     // WHEN
-    intercept[IndexHintException](
-      execute("match (n:Person)-->() using index n:Person(name) where n.name <> \"kabam\" return n"))
+    intercept[SyntaxException](
+      execute("match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
   }
 
-  @Test
-  def failIfJoiningIndexHintsInEqualityPredicates() {
+  test("fail if joining index hints in equality predicates") {
     // GIVEN
     graph.createIndex("Person", "name")
     graph.createIndex("Food", "name")
 
     // WHEN
-    intercept[IndexHintException](
+    intercept[NotFoundException](
       execute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+  }
+
+  test("fail when equality checks are done with OR") {
+    // GIVEN
+    graph.createIndex("Person", "name")
+
+    // WHEN
+    intercept[SyntaxException](
+      execute("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
   }
 }
