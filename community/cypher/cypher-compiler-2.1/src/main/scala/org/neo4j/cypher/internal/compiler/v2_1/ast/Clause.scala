@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -100,9 +101,67 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   def name = "MATCH"
 
   def semanticCheck =
-      pattern.semanticCheck(Pattern.SemanticContext.Match) then
-      hints.semanticCheck then
-      where.semanticCheck
+    pattern.semanticCheck(Pattern.SemanticContext.Match) then
+    hints.semanticCheck then
+    where.semanticCheck then
+    checkHints
+
+  def checkHints: SemanticCheck = {
+    val error: Option[SemanticCheck] = hints.collectFirst {
+      case hint@UsingIndexHint(Identifier(identifier), LabelName(labelName), Identifier(property))
+        if !containsLabelPredicate(identifier, labelName)
+          || !containsPropertyPredicate(identifier, property) =>
+        SemanticError(
+          """|Cannot use index hint in this context.
+             | Index hints require using a simple equality comparison in WHERE (either directly or as part of a
+             | top-level AND).
+             | Note that the label and property comparison must be specified on a
+             | non-optional node""".stripLinesAndMargins, hint.position)
+      case hint@UsingScanHint(Identifier(identifier), LabelName(labelName))
+        if !containsLabelPredicate(identifier, labelName) =>
+        SemanticError(
+          """|Cannot use label scan hint in this context.
+             | Label scan hints require using a simple label test in WHERE (either directly or as part of a
+             | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
+    }
+    error.getOrElse(SemanticCheckResult.success)
+  }
+
+  def containsPropertyPredicate(identifier: String, property: String): Boolean = {
+    val properties: Seq[String] = where match {
+      case Some(where) => where.foldt(Seq.empty[String]) {
+        case Equals(Property(Identifier(identifier), PropertyKeyName(name)), _) =>
+          (acc, _) => acc :+ name
+        case Equals(_, Property(Identifier(identifier), PropertyKeyName(name))) =>
+          (acc, _) => acc :+ name
+        case _: Where | _: And =>
+          (acc, children) => children(acc)
+        case _ =>
+          (acc, _) => acc
+      }
+      case None => Seq.empty
+    }
+    properties.contains(property)
+  }
+
+  def containsLabelPredicate(identifier: String, label: String): Boolean = {
+    var labels = pattern.fold(Seq.empty[String]) {
+      case NodePattern(Some(Identifier(identifier)), labels, _, _) =>
+        list => list ++ labels.map(_.name)
+    }
+    labels = where match {
+      case Some(where) => where.foldt(labels) {
+        case HasLabels(Identifier(identifier), labels) =>
+          (acc, _) => acc ++ labels.map(_.name)
+        case _: Where | _: And =>
+          (acc, children) => children(acc)
+        case _ =>
+          (acc, _) => acc
+      }
+      case None => labels
+    }
+    labels.contains(label)
+  }
 }
 
 case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {

@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import internal.helpers.GraphIcing
 import org.junit.Test
 import org.scalatest.Assertions
+import org.neo4j.graphdb.NotFoundException
 
 class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
 
@@ -41,7 +42,7 @@ class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
     graph.createIndex("Person", "name")
 
     // WHEN
-    intercept[IndexHintException](
+    intercept[SyntaxException](
       execute("match n-->() using index n:Person(name) where n.name = \"kabam\" return n"))
   }
 
@@ -60,7 +61,7 @@ class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
     graph.createIndex("Person", "name")
 
     // WHEN
-    intercept[IndexHintException](
+    intercept[SyntaxException](
       execute("match (n:Person)-->() using index n:Person(name) where n.name <> \"kabam\" return n"))
   }
 
@@ -71,7 +72,7 @@ class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
     graph.createIndex("Food", "name")
 
     // WHEN
-    intercept[IndexHintException](
+    intercept[NotFoundException](
       execute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 }
