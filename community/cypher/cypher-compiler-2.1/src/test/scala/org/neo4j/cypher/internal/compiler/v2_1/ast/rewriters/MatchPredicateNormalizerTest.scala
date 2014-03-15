@@ -128,9 +128,11 @@ class MatchPredicateNormalizerTest extends CypherFunSuite {
     val original = parser.parse("MATCH (a:A {foo:'v1', bar:'v2'})-[r:R {baz: 'v1'}]->(b:B {foo:'v2', baz:'v2'}) RETURN *")
     val expected = parser.parse("MATCH (a)-[r:R]->(b) WHERE (a:A AND b:B) AND (a.foo = 'v1' AND a.bar = 'v2' AND r.baz = 'v1' AND b.foo = 'v2' AND b.baz = 'v2') RETURN *")
 
-    val step1 = Rewritable.RewritableAny(original).rewrite(topDown(PropertyPredicateNormalization))
-    val step2 = Rewritable.RewritableAny(step1).rewrite(topDown(LabelPredicateNormalization))
+    val result = original.rewrite(inSequence(
+      topDown(PropertyPredicateNormalization),
+      topDown(LabelPredicateNormalization)
+    ))
 
-    step2 should equal(expected)
+    result should equal(expected)
   }
 }
