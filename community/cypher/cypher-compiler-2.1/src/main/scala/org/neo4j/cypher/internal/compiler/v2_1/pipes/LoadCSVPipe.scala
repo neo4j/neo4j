@@ -22,14 +22,40 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.{CollectionType, AnyType, MapType, SymbolTable}
 import org.neo4j.cypher.internal.compiler.v2_1.{ExecutionContext, PlanDescription}
 import java.net.URL
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.LoadExternalResourceException
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
 case object NoHeaders extends CSVFormat
 
-class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String, fieldTerminator: Option[String]) extends PipeWithSource(source) {
+class LoadCSVPipe(source: Pipe, format: CSVFormat, urlExpression: Expression, identifier: String, fieldTerminator: Option[String]) extends PipeWithSource(source) {
+  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
+
+  protected def checkURL(urlString: String, context: QueryContext): URL = {
+    val url: URL = try {
+      new URL(urlString)
+    } catch {
+      case e: java.net.MalformedURLException =>
+        throw new LoadExternalResourceException(s"Invalid URL specified (${e.getMessage})", null)
+    }
+
+    val protocol = url.getProtocol
+    if (!protocolWhiteList.contains(protocol)) {
+      throw new LoadExternalResourceException(s"Unsupported URL protocol: $protocol", null)
+    }
+    if (url.getProtocol == "file" && !context.hasLocalFileAccess) {
+      throw new LoadExternalResourceException("Accessing local files not allowed by the configuration")
+    }
+    url
+  }
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
+      implicit val s = state
+      val url = checkURL(urlExpression(context).asInstanceOf[String], state.query)
+
       val iterator: Iterator[Array[String]] = state.resources.getCsvIterator(url, fieldTerminator)
 
       val nextRow: Array[String] => Iterable[Any] = format match {

@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, LoadCSV, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.LoadCSVPipe
-import java.net.URL
-import org.neo4j.cypher.CypherException
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 
 class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
   var builder: LoadCSVBuilder = _
@@ -35,11 +33,10 @@ class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
   def init() {
     builder = new LoadCSVBuilder
     context = mock[PlanContext]
-    when(context.hasLocalFileAccess).thenReturn(true)
   }
 
   @Test def should_accept_queries_containing_unsolved_load_csv_items() {
-    val loadCSV = LoadCSV(withHeaders = false, new URL("file:///tmp/data.csv"), "row", None)
+    val loadCSV = LoadCSV(withHeaders = false, new Literal("file:///tmp/data.csv"), "row", None)
     val q = Query.
       start(loadCSV).
       returns(AllIdentifiers())
@@ -48,19 +45,6 @@ class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
 
     assert(result.query.start === Seq(Solved(loadCSV)))
     assert(result.pipe.isInstanceOf[LoadCSVPipe])
-  }
-
-  @Test def should_fail_queries_with_local_file_urls_when_told_to() {
-    context = mock[PlanContext]
-    when(context.hasLocalFileAccess).thenReturn(false)
-    val loadCSV = LoadCSV(withHeaders = false, new URL("file:///tmp/data.csv"), "row", None)
-    val q = Query.
-      start(loadCSV).
-      returns(AllIdentifiers())
-
-    builder = new LoadCSVBuilder
-
-    intercept[CypherException](assertAccepts(q))
   }
 
   @Test def should_reject_queries_containing_no_unsolved_load_csv_items() {

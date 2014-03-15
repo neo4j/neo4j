@@ -46,7 +46,5 @@ trait PlanContext extends TokenContext {
 
   def checkRelIndex(idxName: String)
 
-  def hasLocalFileAccess: Boolean
-
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T
 }

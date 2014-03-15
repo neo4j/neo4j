@@ -31,18 +31,4 @@ class StringLiteralTest extends CypherFunSuite {
 
     assert(expressionType === CTString.invariant)
   }
-
-  test("should recognise URLs") {
-    val literal = StringLiteral("http://foo.bar")(DummyPosition(4))
-    val result = literal.checkURL(SemanticState.clean)
-    assert(result.errors.isEmpty)
-    assert(literal.asURL.getProtocol === "http")
-    assert(literal.asURL.getHost === "foo.bar")
-  }
-
-  test("should recognise invalid URLs") {
-    val literal = StringLiteral("foo.bar")(DummyPosition(4))
-    val result = literal.checkURL(SemanticState.clean)
-    assert(result.errors === Vector(SemanticError("invalid URL specified (no protocol: foo.bar)", DummyPosition(4))))
-  }
 }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Literal, Identifier}
 import commands.values.TokenType.{Label, PropertyKey}
 import pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
@@ -142,7 +142,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
     graph.inTx {
       // LOAD CSV "file:///tmp/foo.csv" AS line CREATE ()
       val q = Query
-        .start(LoadCSV(withHeaders = false, new URL("file:///tmp/foo.csv"), "line", None))
+        .start(LoadCSV(withHeaders = false, new Literal("file:///tmp/foo.csv"), "line", None))
         .tail(Query
           .updates(CreateNode("  UNNAMED3456", Map.empty, Seq.empty))
           .returns()
