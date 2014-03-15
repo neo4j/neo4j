@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler
 AstRewritingMonitor, SemanticCheckMonitor}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1,
-NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1, LegacyPipeBuilder, LegacyVsNewPipeBuilder, NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
@@ -41,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryCon
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -112,7 +112,8 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
     val checker = new SemanticChecker(monitors.newMonitor(classOf[SemanticCheckMonitor], monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor(classOf[AstRewritingMonitor], monitorTag))
     val planBuilderMonitor = monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], monitorTag)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, planBuilderMonitor)
+    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(), new Planner(), planBuilderMonitor)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
     new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, planCacheFactory, monitors)
   }
 }
