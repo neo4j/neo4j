@@ -34,7 +34,8 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor) {
       extractParameters,
       nameMatchPatternElements,
       normalizeMatchPredicates,
-      normalizeEqualsArgumentOrder
+      normalizeEqualsArgumentOrder,
+      reattachAliasedExpressions
     )
 
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
