@@ -42,7 +42,7 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId]) ex
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription =new PlanDescriptionImpl(this, "LabelScan", Seq.empty, Seq("ident" -> ident, "label" -> label))
+  def executionPlanDescription = new PlanDescriptionImpl(this, "LabelScan", Seq.empty, Seq("ident" -> ident, "label" -> label))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 }

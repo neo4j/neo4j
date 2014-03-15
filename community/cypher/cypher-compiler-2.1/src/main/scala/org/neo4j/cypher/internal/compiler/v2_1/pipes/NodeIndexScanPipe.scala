@@ -28,7 +28,7 @@ import scala.Some
 
 case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], propertyKey: Either[String, PropertyKeyId], valueExpr: Expression) extends Pipe {
 
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {
       case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
       case Right(labelId) => Some(labelId)
@@ -50,9 +50,12 @@ case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], prop
     }
   }
 
-  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
+  def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  override def executionPlanDescription: PlanDescription = ???
+  def executionPlanDescription = new PlanDescriptionImpl(this, "NodeIndexSeek", Seq.empty, Seq(
+    "ident" -> ident,
+    "label" -> label,
+    "propertyKey"-> propertyKey))
 
-  override def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 }
