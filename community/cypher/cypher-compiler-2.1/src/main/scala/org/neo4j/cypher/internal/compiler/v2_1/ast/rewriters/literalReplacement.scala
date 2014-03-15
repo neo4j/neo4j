@@ -54,11 +54,11 @@ object literalReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    val containsParameter: Boolean = term.fold(false) {
+    val containsParameter: Boolean = term.foldt(false) {
       case term: Parameter =>
-        (acc: Boolean) => true
+        (acc, _) => true
       case _ =>
-        identity
+        (acc, children) => if (acc) true else children(acc)
     }
 
     if (containsParameter) {
