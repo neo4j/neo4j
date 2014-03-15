@@ -84,26 +84,32 @@ trait Rewritable {
   def dup(children: Seq[AnyRef]): this.type
 }
 
-case class topDown(rewriters: Rewriter*) extends Rewriter {
+object topDown {
   import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] = {
-    val rewrittenThat = rewriters.foldLeft(that) {
-      (t, r) => t.rewrite(r)
+
+  class TopDownRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+    def apply(that: AnyRef): Some[AnyRef] = {
+      val rewrittenThat = rewriters.foldLeft(that) {
+        (t, r) => t.rewrite(r)
+      }
+      Some(rewrittenThat.dup(t => this.apply(t).get))
     }
-    Some(rewrittenThat.dup(t => this.apply(t).get))
   }
+
+  def apply(rewriters: Rewriter*) = new TopDownRewriter(rewriters)
 }
 
-case class untilMatched(rewriter: Rewriter) extends Rewriter {
+object bottomUp {
   import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] =
-    Some(rewriter.apply(that).getOrElse(that.dup(t => this.apply(t).get)))
-}
 
-case class bottomUp(rewriters: Rewriter*) extends Rewriter {
-  import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] =
-    Some(rewriters.foldLeft(that.dup(t => this.apply(t).get)) {
-      (t, r) => t.rewrite(r)
-    })
+  class BottomUpRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+    def apply(that: AnyRef): Some[AnyRef] = {
+      val acc = that.dup(t => this.apply(t).get)
+      Some(rewriters.foldLeft(acc) {
+        (t, r) => t.rewrite(r)
+      })
+    }
+  }
+
+  def apply(rewriters: Rewriter*) = new BottomUpRewriter(rewriters)
 }
