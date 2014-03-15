@@ -57,7 +57,7 @@ case class CypherCompiler(parser: CypherParser,
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
     val table = semanticChecker.check(queryText, parsedStatement)
-    val query: AbstractQuery = ReattachAliasedExpressions(rewrittenStatement.asQuery.setQueryText(queryText))
+    val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
     val parsedQuery = ParsedQuery(rewrittenStatement, query, table, queryText)
 
     val cache = context.getOrCreateFromSchemaState(this, cacheFactory())
