@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast
 import ast.convert.StatementConverters._
 
 
-class PipeBuilderTest extends MockitoSugar {
+class LegacyPipeBuilderTest extends MockitoSugar {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser(mock[ParserMonitor])
-  val planBuilder = new PipeBuilder()
+  val planBuilder = new LegacyPipeBuilder()
 
   @Test def should_use_distinct_pipe_for_distinct() {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")

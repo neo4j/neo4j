@@ -26,8 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
+import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
 
-class PipeBuilder extends PatternGraphBuilder {
+class LegacyPipeBuilder extends PatternGraphBuilder with PipeBuilder {
+
+  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
+    buildPipes(planContext, inputQuery.abstractQuery)
 
   def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeInfo = in match {
     case q: PeriodicCommitQuery => buildPipes(planContext, q.query).copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))

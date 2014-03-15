@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Statement, Query}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PipeBuilder, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.{ParsedQuery, PropertyKeyId, RelTypeId, LabelId}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner() {
+case class Planner() extends PipeBuilder {
   val estimator = new CardinalityEstimator {
 
     def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
@@ -53,6 +53,10 @@ case class Planner() {
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
   val executionPlanBuilder = new SimpleExecutionPlanBuilder
+
+
+  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
+    producePlan(inputQuery.statement, inputQuery.semanticTable)(planContext)
 
   def producePlan(statement: Statement, semanticQuery: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>

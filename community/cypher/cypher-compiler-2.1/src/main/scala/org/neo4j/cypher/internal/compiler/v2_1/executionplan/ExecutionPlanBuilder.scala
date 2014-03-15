@@ -26,7 +26,6 @@ import pipes._
 import profiler.Profiler
 import org.neo4j.cypher.{CypherException, PeriodicCommitInOpenTransactionException}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Planner}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{UpdateCountingQueryContext, CSVResources, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.PeriodicCommitQuery
@@ -49,30 +48,20 @@ trait NewQueryPlanSuccessRateMonitor {
   def unableToHandleQuery(queryText: String, ast:Statement)
 }
 
+trait PipeBuilder {
+  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo
+}
+
 class ExecutionPlanBuilder(graph: GraphDatabaseService,
-                           monitor: NewQueryPlanSuccessRateMonitor,
-                           pipeBuilder: PipeBuilder = new PipeBuilder,
-                           execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
+                           pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: ParsedQuery): ExecutionPlan = {
-    val ast = inputQuery.statement
     val abstractQuery = inputQuery.abstractQuery
-    val semanticQuery = inputQuery.semanticQuery
 
-    val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
-      val queryText = abstractQuery.getQueryText
-      try {
-        monitor.newQuerySeen(queryText, ast)
-        execPlanBuilder.producePlan(ast, semanticQuery)(planContext)
-      } catch {
-        case _: CantHandleQueryException =>
-          monitor.unableToHandleQuery(queryText, ast)
-          pipeBuilder.buildPipes(planContext, abstractQuery)
-      }
-    }
+    val PipeInfo(pipe, isUpdating, periodicCommitInfo) = pipeBuilder.producePlan(inputQuery, planContext)
 
-    val columns = getQueryResultColumns(abstractQuery, p.symbols)
-    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating)
+    val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
+    val func = getExecutionPlanFunction(pipe, columns, periodicCommitInfo, isUpdating)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
