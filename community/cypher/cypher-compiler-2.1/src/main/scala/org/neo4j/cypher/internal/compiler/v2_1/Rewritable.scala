@@ -41,17 +41,20 @@ object Rewritable {
   }
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
-    def dup(rewriter: AnyRef => AnyRef): AnyRef = that match {
-      case p: Product with AnyRef =>
-        val rewrittenChildren = p.productIterator.asInstanceOf[Iterator[AnyRef]].map(rewriter).toList
-        if (p.productIterator.asInstanceOf[Iterator[AnyRef]] eqElements rewrittenChildren.iterator)
+    import Foldable._
+
+    def dup(children: Seq[AnyRef]): AnyRef = that match {
+      case a: Rewritable =>
+        a.dup(children)
+      case p: Product =>
+        if (children.iterator eqElements p.children)
           p
         else
-          p.dup(rewrittenChildren).asInstanceOf[AnyRef]
+          p.copyConstructor.invoke(p, children: _*)
       case s: IndexedSeq[_] =>
-        s.asInstanceOf[IndexedSeq[AnyRef]].map(rewriter)
+        children.toIndexedSeq
       case s: Seq[_] =>
-        s.asInstanceOf[Seq[AnyRef]].map(rewriter)
+        children
       case t =>
         t
     }
@@ -62,11 +65,16 @@ object Rewritable {
   }
 
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
+    import Foldable._
+
     def dup(children: Seq[AnyRef]): Product = product match {
       case a: Rewritable =>
         a.dup(children)
       case _ =>
-        copyConstructor.invoke(product, children.toSeq: _*).asInstanceOf[Product]
+        if (children.iterator eqElements product.children)
+          product
+        else
+          copyConstructor.invoke(product, children: _*).asInstanceOf[Product]
     }
 
     def copyConstructor: Method = {
@@ -98,12 +106,13 @@ object inSequence {
 }
 
 object topDown {
+  import Foldable._
   import Rewritable._
 
   class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): Some[AnyRef] = {
       val rewrittenThat = that.rewrite(rewriter)
-      Some(rewrittenThat.dup(t => this.apply(t).get))
+      Some(rewrittenThat.dup(rewrittenThat.children.map(t => this.apply(t).get).toList))
     }
   }
 
@@ -111,11 +120,12 @@ object topDown {
 }
 
 object bottomUp {
+  import Foldable._
   import Rewritable._
 
   class BottomUpRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): Some[AnyRef] = {
-      val rewrittenThat = that.dup(t => this.apply(t).get)
+      val rewrittenThat = that.dup(that.children.map(t => this.apply(t).get).toList)
       Some(rewrittenThat.rewrite(rewriter))
     }
   }
