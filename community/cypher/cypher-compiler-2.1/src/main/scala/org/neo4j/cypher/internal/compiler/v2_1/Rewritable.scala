@@ -84,32 +84,41 @@ trait Rewritable {
   def dup(children: Seq[AnyRef]): this.type
 }
 
+object inSequence {
+  import Rewritable._
+
+  class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+    def apply(that: AnyRef): Some[AnyRef] =
+      Some(rewriters.foldLeft(that) {
+        (t, r) => t.rewrite(r)
+      })
+  }
+
+  def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
+}
+
 object topDown {
   import Rewritable._
 
-  class TopDownRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+  class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): Some[AnyRef] = {
-      val rewrittenThat = rewriters.foldLeft(that) {
-        (t, r) => t.rewrite(r)
-      }
+      val rewrittenThat = that.rewrite(rewriter)
       Some(rewrittenThat.dup(t => this.apply(t).get))
     }
   }
 
-  def apply(rewriters: Rewriter*) = new TopDownRewriter(rewriters)
+  def apply(rewriter: Rewriter) = new TopDownRewriter(rewriter)
 }
 
 object bottomUp {
   import Rewritable._
 
-  class BottomUpRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+  class BottomUpRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): Some[AnyRef] = {
-      val acc = that.dup(t => this.apply(t).get)
-      Some(rewriters.foldLeft(acc) {
-        (t, r) => t.rewrite(r)
-      })
+      val rewrittenThat = that.dup(t => this.apply(t).get)
+      Some(rewrittenThat.rewrite(rewriter))
     }
   }
 
-  def apply(rewriters: Rewriter*) = new BottomUpRewriter(rewriters)
+  def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
 }

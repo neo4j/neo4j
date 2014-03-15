@@ -29,14 +29,14 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor) {
 
     val (extractParameters: Rewriter, extractedParameters: Map[String, Any]) = literalReplacement(statement)
 
-    val rewriter: Rewriter = bottomUp(
+    val rewriter: Rewriter = bottomUp(inSequence(
       foldConstants,
       extractParameters,
       nameMatchPatternElements,
       normalizeMatchPredicates,
       normalizeEqualsArgumentOrder,
       reattachAliasedExpressions
-    )
+    ))
 
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
