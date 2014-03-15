@@ -907,7 +907,7 @@ RETURN x0.name""")
     result.toList should equal (List(Map("n" -> jake)))
   }
 
-  test("should be Able to use label as start point") {
+  test("should be able to use label as start point") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
     val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
