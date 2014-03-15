@@ -26,6 +26,8 @@ package object v2_1 {
   type SemanticCheck = SemanticState => SemanticCheckResult
   type TypeGenerator = SemanticState => TypeSpec
 
+  type Rewriter = (AnyRef => Option[AnyRef])
+
   // Allows joining of two (SemanticState => SemanticCheckResult) funcs together (using then)
   implicit def chainableSemanticCheck(check: SemanticCheck) = new ChainableSemanticCheck(check)
   // Allows joining of a (SemanticState => SemanticCheckResult) func to a (SemanticState => Either[SemanticError, SemanticState]) func
