@@ -23,15 +23,10 @@ import java.lang.reflect.Method
 import scala.collection.mutable.{HashMap => MutableHashMap}
 
 object Rewriter {
-  implicit class LiftedRewriter(f: (AnyRef => Option[AnyRef])) extends Rewriter {
-    def apply(that: AnyRef): Option[AnyRef] = f.apply(that)
-  }
   def lift(f: PartialFunction[AnyRef, AnyRef]): Rewriter = f.lift
 
   def noop = Rewriter.lift(Map.empty)
 }
-
-trait Rewriter extends (AnyRef => Option[AnyRef])
 
 
 object Rewritable {
@@ -46,17 +41,20 @@ object Rewritable {
   }
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
-    def dup(rewriter: AnyRef => AnyRef): AnyRef = that match {
-      case p: Product with AnyRef =>
-        val rewrittenChildren = p.productIterator.asInstanceOf[Iterator[AnyRef]].map(rewriter).toList
-        if (p.productIterator.asInstanceOf[Iterator[AnyRef]] eqElements rewrittenChildren.iterator)
+    import Foldable._
+
+    def dup(children: Seq[AnyRef]): AnyRef = that match {
+      case a: Rewritable =>
+        a.dup(children)
+      case p: Product =>
+        if (children.iterator eqElements p.children)
           p
         else
-          p.dup(rewrittenChildren).asInstanceOf[AnyRef]
+          p.copyConstructor.invoke(p, children: _*)
       case s: IndexedSeq[_] =>
-        s.asInstanceOf[IndexedSeq[AnyRef]].map(rewriter)
+        children.toIndexedSeq
       case s: Seq[_] =>
-        s.asInstanceOf[Seq[AnyRef]].map(rewriter)
+        children
       case t =>
         t
     }
@@ -67,11 +65,16 @@ object Rewritable {
   }
 
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
+    import Foldable._
+
     def dup(children: Seq[AnyRef]): Product = product match {
       case a: Rewritable =>
         a.dup(children)
       case _ =>
-        copyConstructor.invoke(product, children.toSeq: _*).asInstanceOf[Product]
+        if (children.iterator eqElements product.children)
+          product
+        else
+          copyConstructor.invoke(product, children: _*).asInstanceOf[Product]
     }
 
     def copyConstructor: Method = {
@@ -89,26 +92,43 @@ trait Rewritable {
   def dup(children: Seq[AnyRef]): this.type
 }
 
-case class topDown(rewriters: Rewriter*) extends Rewriter {
+object inSequence {
   import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] = {
-    val rewrittenThat = rewriters.foldLeft(that) {
-      (t, r) => t.rewrite(r)
-    }
-    Some(rewrittenThat.dup(t => this.apply(t).get))
+
+  class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
+    def apply(that: AnyRef): Some[AnyRef] =
+      Some(rewriters.foldLeft(that) {
+        (t, r) => t.rewrite(r)
+      })
   }
+
+  def apply(rewriters: Rewriter*) = new InSequenceRewriter(rewriters)
 }
 
-case class untilMatched(rewriter: Rewriter) extends Rewriter {
+object topDown {
+  import Foldable._
   import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] =
-    Some(rewriter.apply(that).getOrElse(that.dup(t => this.apply(t).get)))
+
+  class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
+    def apply(that: AnyRef): Some[AnyRef] = {
+      val rewrittenThat = that.rewrite(rewriter)
+      Some(rewrittenThat.dup(rewrittenThat.children.map(t => this.apply(t).get).toList))
+    }
+  }
+
+  def apply(rewriter: Rewriter) = new TopDownRewriter(rewriter)
 }
 
-case class bottomUp(rewriters: Rewriter*) extends Rewriter {
+object bottomUp {
+  import Foldable._
   import Rewritable._
-  def apply(that: AnyRef): Some[AnyRef] =
-    Some(rewriters.foldLeft(that.dup(t => this.apply(t).get)) {
-      (t, r) => t.rewrite(r)
-    })
+
+  class BottomUpRewriter(rewriter: Rewriter) extends Rewriter {
+    def apply(that: AnyRef): Some[AnyRef] = {
+      val rewrittenThat = that.dup(that.children.map(t => this.apply(t).get).toList)
+      Some(rewrittenThat.rewrite(rewriter))
+    }
+  }
+
+  def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
 }
