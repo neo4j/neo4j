@@ -31,14 +31,12 @@ object Foldable {
     }
 
     def reverseChildren: Iterator[AnyRef] = that match {
-      case p: Product => p.reverseProductIterator
+      case p: Product => reverseProductIterator(p)
       case s: Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
       case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
-  }
 
-  implicit class ProductIteration(val p: Product) extends AnyVal {
-    def reverseProductIterator: Iterator[AnyRef] = p.productArity match {
+    private def reverseProductIterator(p: Product) = p.productArity match {
       case 0 => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
       case 1 => Iterator.single[AnyRef](p.productElement(0).asInstanceOf[AnyRef])
       case _ => new Iterator[AnyRef] {
@@ -53,8 +51,8 @@ object Foldable {
     def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
       foldAcc(mutable.ArrayStack(that), init, f.lift)
 
-    def foldt[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
-      foldtAcc(mutable.ArrayStack(that), init, f)
+    def treeFold[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
+      treeFoldAcc(mutable.ArrayStack(that), init, f)
   }
 
   @tailrec
@@ -67,15 +65,15 @@ object Foldable {
     }
 
   // partially tail-recursive (recursion is unavoidable for partial function matches)
-  private def foldtAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: PartialFunction[Any, (R, R => R) => R]): R =
+  private def treeFoldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: PartialFunction[Any, (R, R => R) => R]): R =
     if (remaining.isEmpty)
       acc
     else {
       val that = remaining.pop()
       if (f.isDefinedAt(that))
-        foldtAcc(remaining, f(that)(acc, foldtAcc(mutable.ArrayStack() ++= that.reverseChildren, _, f)), f)
+        treeFoldAcc(remaining, f(that)(acc, treeFoldAcc(mutable.ArrayStack() ++= that.reverseChildren, _, f)), f)
       else
-        foldtAcc(remaining ++= that.reverseChildren, acc, f)
+        treeFoldAcc(remaining ++= that.reverseChildren, acc, f)
   }
 }
 

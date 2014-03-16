@@ -117,7 +117,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
 
   def containsPropertyPredicate(identifier: String, property: String): Boolean = {
     val properties: Seq[String] = where match {
-      case Some(where) => where.foldt(Seq.empty[String]) {
+      case Some(where) => where.treeFold(Seq.empty[String]) {
         case Equals(Property(Identifier(identifier), PropertyKeyName(name)), _) =>
           (acc, _) => acc :+ name
         case Equals(_, Property(Identifier(identifier), PropertyKeyName(name))) =>
@@ -138,7 +138,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
         list => list ++ labels.map(_.name)
     }
     labels = where match {
-      case Some(where) => where.foldt(labels) {
+      case Some(where) => where.treeFold(labels) {
         case HasLabels(Identifier(identifier), labels) =>
           (acc, _) => acc ++ labels.map(_.name)
         case _: Where | _: And =>

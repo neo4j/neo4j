@@ -51,9 +51,9 @@ object Rewritable {
           p
         else
           p.copyConstructor.invoke(p, children: _*)
-      case s: IndexedSeq[_] =>
+      case _: IndexedSeq[_] =>
         children.toIndexedSeq
-      case s: Seq[_] =>
+      case _: Seq[_] =>
         children
       case t =>
         t
