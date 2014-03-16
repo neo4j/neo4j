@@ -132,7 +132,7 @@ object StatementConverters {
     def addToQueryBuilder(builder: commands.QueryBuilder) = {
       val items: Seq[StartItem] = builder.startItems :+ commands.LoadCSV(
         inner.withHeaders,
-        inner.urlString.asURL,
+        inner.urlString.asCommandExpression,
         inner.identifier.name,
         inner.fieldTerminator.map(_.value)
       )

@@ -38,9 +38,6 @@ class LoadCSVBuilder extends PlanBuilder {
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
     val item: LoadCSV = findLoadCSVItem(plan).get
-    if (item.url.getProtocol == "file" && !ctx.hasLocalFileAccess) {
-      throw new LoadExternalResourceException("Accessing local files not allowed by the configuration")
-    }
     plan.copy(
       query = plan.query.copy(start = plan.query.start.replace(Unsolved(item), Solved(item))),
       pipe = new LoadCSVPipe(plan.pipe, if (item.withHeaders) HasHeaders else NoHeaders, item.url, item.identifier, item.fieldTerminator)

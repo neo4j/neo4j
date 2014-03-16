@@ -52,25 +52,22 @@ sealed trait ClosingClause extends Clause {
     s => (skip ++ limit).semanticCheck(SemanticState.clean).errors
 }
 
-case class LoadCSV(withHeaders: Boolean, urlString: StringLiteral, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Identifier, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   val name = "LOAD CSV"
-
-  private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   def semanticCheck: SemanticCheck =
     urlString.semanticCheck(Expression.SemanticContext.Simple) then
-    urlString.expectType(CTString) then
-    urlString.checkURL ifOkThen
-    checkProtocolSupported then
+    urlString.expectType(CTString.covariant) then
+    checkURLString then
     checkFieldTerminator then
     typeCheck
 
-  private def checkProtocolSupported: SemanticCheck = {
-    val protocol = urlString.asURL.getProtocol
-    if (protocolWhiteList.contains(protocol))
+  private def checkURLString: SemanticCheck = {
+    if (urlString.isInstanceOf[Parameter] || urlString.isInstanceOf[StringLiteral]) {
       SemanticCheckResult.success
-    else
-      SemanticError(s"Unsupported URL protocol: $protocol", position)
+    } else {
+      SemanticError("URL string can only be a string literal or a parameter", urlString.position)
+    }
   }
 
   private def checkFieldTerminator: SemanticCheck = {

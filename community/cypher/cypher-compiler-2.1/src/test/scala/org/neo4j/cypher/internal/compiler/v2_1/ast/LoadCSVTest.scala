@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.{SemanticError, SemanticState, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_1.{DummyExpression, SemanticError, SemanticState, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.CaseExpression
 
 class LoadCSVTest extends CypherFunSuite {
 
@@ -50,18 +51,17 @@ class LoadCSVTest extends CypherFunSuite {
     assert(expressionType === CTCollection(CTString).invariant)
   }
 
-  test("should reject URLs that are not file://, http://, https://, ftp://") {
-    val literal = StringLiteral("morsecorba://sos")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck(SemanticState.clean)
-    assert(result.errors === Vector(SemanticError("invalid URL specified (unknown protocol: morsecorba)", DummyPosition(4))))
-  }
+  test("should reject a file URL that is not a parameter or a string literal") {
+    val url = Property(
+      MapExpression(Seq.empty)(DummyPosition(0)),
+      PropertyKeyName("prop")(None)(DummyPosition(0))
+    )(DummyPosition(2))
 
-  test("should accept http:// URLs") {
-    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None)(DummyPosition(6))
+    val loadCSV = LoadCSV(withHeaders = false, url, identifier, None)(DummyPosition(6))
     val result = loadCSV.semanticCheck(SemanticState.clean)
-    assert(result.errors === Vector.empty)
+    val expressionType = result.state.expressionType(identifier).actual
+
+    assert(result.errors === Vector(SemanticError("URL string can only be a string literal or a parameter", DummyPosition(2))))
   }
 
   test("should accept one-character wide field terminators") {

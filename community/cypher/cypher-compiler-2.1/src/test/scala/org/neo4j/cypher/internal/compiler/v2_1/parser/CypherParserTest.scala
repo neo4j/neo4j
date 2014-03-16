@@ -2976,7 +2976,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "LOAD CSV WITH HEADERS FROM 'file:///tmp/file.cvs' AS line RETURN line.key",
       Query.
-        start(LoadCSV(withHeaders = true, new URL("file:///tmp/file.cvs"), "line", None)).
+        start(LoadCSV(withHeaders = true, new Literal("file:///tmp/file.cvs"), "line", None)).
         returns(ReturnItem(Property(Identifier("line"), PropertyKey("key")), "line.key"))
     )
   }
@@ -2985,7 +2985,7 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery(
       "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
       Query.
-        start(LoadCSV(withHeaders = false, new URL("file:///tmp/file.cvs"), "line", None)).
+        start(LoadCSV(withHeaders = false, new Literal("file:///tmp/file.cvs"), "line", None)).
         returns(ReturnItem(Identifier("line"), "line"))
     )
   }
@@ -2995,7 +2995,7 @@ class CypherParserTest extends CypherFunSuite {
       "USING PERIODIC COMMIT 10 LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE x",
       PeriodicCommitQuery(
         Query.
-          start(LoadCSV(withHeaders = false, url = new URL("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
+          start(LoadCSV(withHeaders = false, url = new Literal("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
           tail(Query.
             start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
             returns()
@@ -3011,7 +3011,7 @@ class CypherParserTest extends CypherFunSuite {
       "USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE x",
       PeriodicCommitQuery(
         Query.
-          start(LoadCSV(withHeaders = false, url = new URL("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
+          start(LoadCSV(withHeaders = false, url = new Literal("file:///tmp/foo.csv"), identifier = "line", fieldTerminator = None)).
           tail(Query.
             start(CreateNodeStartItem(CreateNode("x", Map.empty, Seq.empty))).
             returns()

@@ -86,11 +86,6 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
     }
   }
 
-  def hasLocalFileAccess: Boolean = gdb match {
-    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)
-    case _ => true
-  }
-
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
     val javaCreator = new org.neo4j.helpers.Function[Any, T]() {
       def apply(key: Any) = f

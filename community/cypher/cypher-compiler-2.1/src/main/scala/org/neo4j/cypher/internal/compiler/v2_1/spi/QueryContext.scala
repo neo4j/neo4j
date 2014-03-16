@@ -88,6 +88,8 @@ trait QueryContext extends TokenContext {
 
   def getOptStatistics: Option[QueryStatistics] = None
 
+  def hasLocalFileAccess: Boolean = false
+
   /**
    * This should not be used. We'll remove sooner (or later). Don't do it.
    */

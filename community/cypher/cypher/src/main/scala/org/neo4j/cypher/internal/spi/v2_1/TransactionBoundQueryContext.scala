@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_1
 
 import org.neo4j.graphdb._
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{InternalAbstractGraphDatabase, GraphDatabaseAPI}
 import collection.JavaConverters._
 import collection.mutable
 import scala.collection.Iterator
@@ -37,6 +37,7 @@ import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_1.spi._
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                        var tx: Transaction,
@@ -260,6 +261,11 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
+
+  override def hasLocalFileAccess: Boolean = graph match {
+    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)
+    case _ => true
+  }
 
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
 
