@@ -233,7 +233,8 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
       Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
     )
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    when(estimator.estimateNodeIndexScan(LabelId(12), propertyKeyId)).thenReturn(1)
+    val cost = 99
+    when(estimator.estimateNodeIndexSeek(LabelId(12), propertyKeyId)).thenReturn(cost)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
     val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
@@ -241,6 +242,6 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val resultPlan = planner.plan(qg, semanticQuery)(planContext)
 
     // then
-    resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos), 1))
+    resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos), cost))
   }
 }
