@@ -87,9 +87,6 @@ case class Selections(predicates: Seq[(Set[IdName], ast.Expression)] = Seq.empty
     }
   }
 
-  def unsolvedPredicates(solvedPredicates: Seq[Expression]): Seq[Expression] = {
-    def solving(candidate: Expression) = solvedPredicates.exists { _ == candidate }
-
-    flatPredicates.filter(!solving(_))
-  }
+  def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
+    flatPredicates.forall( solvedPredicates.contains )
 }

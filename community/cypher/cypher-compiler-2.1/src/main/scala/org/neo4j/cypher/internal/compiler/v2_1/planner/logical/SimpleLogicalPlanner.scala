@@ -22,19 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
+import scala.annotation.tailrec
 
 object SimpleLogicalPlanner {
 
-  trait LeafPlanner {
-    self: LeafPlanner =>
-
-    def apply(planTable: LeafPlanTable)(implicit context: LogicalPlanContext): LeafPlanTable
-
-    def andThen(other: LeafPlanner): LeafPlanner =
-      new LeafPlanner() {
-        def apply(planTable: LeafPlanTable)(implicit context: LogicalPlanContext) = other(self.apply(planTable))
-      }
-  }
+  trait LeafPlanner extends FunctionWithImplicit[LeafPlanTable, LeafPlanTable]
 
   case class LeafPlan(plan: LogicalPlan, solvedPredicates: Seq[Expression])
 
@@ -49,27 +42,68 @@ object SimpleLogicalPlanner {
         this
     }
 
-    def bestLeafPlan: Option[LeafPlan] = {
-      if (table.size > 1)
-        throw new CantHandleQueryException
-
-      if (table.isEmpty) None else Some(table.values.toSeq.minBy(_.plan.cardinality))
-    }
+    def toPlanTable: PlanTable = PlanTable(table.map {
+      case (k, v) => Set(k) -> PlanTableEntry(v.plan, v.solvedPredicates)
+    })
   }
+
+  case class CandidateList(plans: Seq[PlanTableEntry]) {
+    def pruned: CandidateList = {
+      def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
+
+      @tailrec
+      def recurse(covered: Set[IdName], todo: Seq[PlanTableEntry], result: Seq[PlanTableEntry]): Seq[PlanTableEntry] = todo match {
+        case entry :: tail if overlap(covered, entry.coveredIds) =>
+          recurse(covered, tail, result)
+        case entry :: tail =>
+          recurse(covered ++ entry.coveredIds, tail, result :+ entry)
+        case _ =>
+          result
+      }
+
+      CandidateList(recurse(Set.empty, plans, Seq.empty))
+    }
+
+    def sorted = CandidateList(plans.sortBy(_.cost))
+
+    def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
+  }
+
 }
 
 case class LogicalPlanContext(planContext: PlanContext, estimator: CardinalityEstimator)
 
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
-  import SimpleLogicalPlanner.LeafPlanTable
 
   val projectionPlanner = new ProjectionPlanner
 
   def plan(qg: QueryGraph, semanticTable: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
+    implicit val context = LogicalPlanContext(planContext, estimator)
+
+    val initialPlanTable = initialisePlanTable(qg, semanticTable)
+
+    val bestPlan = if (initialPlanTable.isEmpty)
+      SingleRow()
+    else {
+      val convergedPlans = if (initialPlanTable.size > 1) {
+        expandAndJoin(initialPlanTable)
+      } else {
+        initialPlanTable
+      }
+
+      val bestPlanEntry = convergedPlans.plans.head
+      if (!qg.selections.coveredBy(bestPlanEntry.solvedPredicates))
+        throw new CantHandleQueryException
+
+      bestPlanEntry.plan
+    }
+
+    projectionPlanner.amendPlan(qg, bestPlan)
+  }
+
+  private def initialisePlanTable(qg: QueryGraph, semanticTable: SemanticTable)(implicit context: LogicalPlanContext): PlanTable = {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
-
-    implicit val context = LogicalPlanContext(planContext, estimator)
 
     val leafPlanners =
       idSeekLeafPlanner(predicates, semanticTable.isRelationship) andThen
@@ -78,19 +112,21 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
       labelScanLeafPlanner(qg, labelPredicateMap) andThen
       allNodesLeafPlanner(qg)
 
-    val bestLeafPlan = leafPlanners(LeafPlanTable()).bestLeafPlan
-
-    val bestPlan = bestLeafPlan match {
-      case Some(leafPlan) =>
-        // TODO: to be replace with a selection-plan when we support that
-        if (!qg.selections.unsolvedPredicates(leafPlan.solvedPredicates).isEmpty)
-          throw new CantHandleQueryException
-        leafPlan.plan
-      case _ =>
-        SingleRow()
-    }
-
-    projectionPlanner.amendPlan(qg, bestPlan)
+    val initialPlanTable = leafPlanners(LeafPlanTable()).toPlanTable
+    initialPlanTable
   }
 }
+
+trait FunctionWithImplicit[A, B] {
+  self: FunctionWithImplicit[A, B] =>
+
+  def apply(planTable: A)(implicit context: LogicalPlanContext): B
+
+  def andThen[C](other: FunctionWithImplicit[B, C]): FunctionWithImplicit[A,C] =
+    new FunctionWithImplicit[A,C]() {
+      def apply(in: A)(implicit context: LogicalPlanContext) = other(self.apply(in))
+    }
+}
+
+
 
