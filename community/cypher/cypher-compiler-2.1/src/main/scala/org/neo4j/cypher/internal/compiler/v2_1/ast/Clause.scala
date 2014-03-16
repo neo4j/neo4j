@@ -58,17 +58,8 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Iden
   def semanticCheck: SemanticCheck =
     urlString.semanticCheck(Expression.SemanticContext.Simple) then
     urlString.expectType(CTString.covariant) then
-    checkURLString then
     checkFieldTerminator then
     typeCheck
-
-  private def checkURLString: SemanticCheck = {
-    if (urlString.isInstanceOf[Parameter] || urlString.isInstanceOf[StringLiteral]) {
-      SemanticCheckResult.success
-    } else {
-      SemanticError("URL string can only be a string literal or a parameter", urlString.position)
-    }
-  }
 
   private def checkFieldTerminator: SemanticCheck = {
     fieldTerminator match {

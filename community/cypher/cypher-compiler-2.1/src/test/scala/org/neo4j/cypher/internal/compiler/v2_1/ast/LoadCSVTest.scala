@@ -51,19 +51,6 @@ class LoadCSVTest extends CypherFunSuite {
     assert(expressionType === CTCollection(CTString).invariant)
   }
 
-  test("should reject a file URL that is not a parameter or a string literal") {
-    val url = Property(
-      MapExpression(Seq.empty)(DummyPosition(0)),
-      PropertyKeyName("prop")(None)(DummyPosition(0))
-    )(DummyPosition(2))
-
-    val loadCSV = LoadCSV(withHeaders = false, url, identifier, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck(SemanticState.clean)
-    val expressionType = result.state.expressionType(identifier).actual
-
-    assert(result.errors === Vector(SemanticError("URL string can only be a string literal or a parameter", DummyPosition(2))))
-  }
-
   test("should accept one-character wide field terminators") {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
     val loadCSV = LoadCSV(withHeaders = false, literal, identifier, Some(StringLiteral("\t")(DummyPosition(0))))(DummyPosition(6))

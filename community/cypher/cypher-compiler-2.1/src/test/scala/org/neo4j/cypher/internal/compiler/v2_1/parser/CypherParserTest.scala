@@ -2981,6 +2981,21 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("should handle LOAD CSV with the file URL specified as a parameter") {
+    expectQuery(
+      "LOAD CSV WITH HEADERS FROM {path} AS line RETURN line.key",
+      Query.
+        start(LoadCSV(withHeaders = true, new ParameterExpression("path"), "line", None)).
+        returns(ReturnItem(Property(Identifier("line"), PropertyKey("key")), "line.key"))
+    )
+  }
+
+  test("should not handle LOAD CSV with the file URL specified being an arbitrary expression") {
+    intercept[SyntaxException](parser.parse(
+      "MATCH n WITH n LOAD CSV WITH HEADERS FROM n.path AS line RETURN line.key"
+    ))
+  }
+
   test("should handle load and return") {
     expectQuery(
       "LOAD CSV FROM 'file:///tmp/file.cvs' AS line RETURN line",
