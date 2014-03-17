@@ -29,6 +29,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeIndexScanPipeTest extends CypherFunSuite {
 
+  implicit val monitor = NoopPipeMonitor
+
   test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
     // given
     val node = mock[Node]

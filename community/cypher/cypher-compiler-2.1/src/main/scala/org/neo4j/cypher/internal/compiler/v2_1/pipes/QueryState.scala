@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.ParameterNotFoundException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
+import java.util.UUID
 
 case class QueryState(db: GraphDatabaseService,
                       query: QueryContext,
@@ -31,7 +32,8 @@ case class QueryState(db: GraphDatabaseService,
                       params: Map[String, Any],
                       decorator: PipeDecorator,
                       timeReader: TimeReader = new TimeReader,
-                      var initialContext: Option[ExecutionContext] = None) {
+                      var initialContext: Option[ExecutionContext] = None,
+                      val queryId: AnyRef = UUID.randomUUID().toString) {
   def readTimeStamp(): Long = timeReader.getTime
 
   def graphDatabaseAPI: GraphDatabaseAPI = db match {

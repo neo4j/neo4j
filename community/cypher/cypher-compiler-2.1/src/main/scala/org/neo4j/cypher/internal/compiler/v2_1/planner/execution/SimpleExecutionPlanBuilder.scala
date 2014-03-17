@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
@@ -30,9 +29,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.kernel.monitoring.Monitors
 
-class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
+class SimpleExecutionPlanBuilder(monitors: Monitors) extends ExecutionPlanBuilder {
   def build(plan: LogicalPlan): PipeInfo = {
     val updating = false
 
@@ -40,6 +39,7 @@ class SimpleExecutionPlanBuilder extends ExecutionPlanBuilder {
       val left = plan.lhs.map(buildPipe)
       val right = plan.rhs.map(buildPipe)
 
+      implicit val monitor = monitors.newMonitor(classOf[PipeMonitor])
       plan match {
         case Projection(_, expressions) =>
           ProjectionNewPipe(left.get, toLegacyExpressions(expressions))

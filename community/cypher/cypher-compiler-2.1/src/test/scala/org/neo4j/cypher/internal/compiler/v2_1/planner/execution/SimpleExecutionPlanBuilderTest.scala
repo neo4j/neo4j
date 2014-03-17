@@ -46,11 +46,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
+import org.neo4j.kernel.monitoring.Monitors
+import org.mockito.Mockito
 
 class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
 
-  val planner = new SimpleExecutionPlanBuilder
+  implicit val monitor = NoopPipeMonitor
+  val monitors: Monitors = mock[Monitors]
+  val planner = new SimpleExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)
+
+  Mockito.when(monitors.newMonitor(classOf[PipeMonitor])).thenReturn(NoopPipeMonitor)
 
   test("projection only query") {
     val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(pos)))

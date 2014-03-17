@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import scala.Some
 
-case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], propertyKey: Either[String, PropertyKeyId], valueExpr: Expression) extends Pipe {
+case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], propertyKey: Either[String, PropertyKeyId], valueExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {
@@ -58,4 +58,6 @@ case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], prop
     "propertyKey"-> propertyKey))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+
+  override def monitor = pipeMonitor
 }

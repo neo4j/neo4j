@@ -24,7 +24,7 @@ import symbols.{SymbolTable, CTRelationship}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
 import org.neo4j.cypher.EntityNotFoundException
 
-case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression) extends Pipe with NumericHelper {
+case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe with NumericHelper {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val nodeId = asLongEntityId(relIdExpr(ExecutionContext.empty)(state))
@@ -43,4 +43,6 @@ case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression) extend
   def executionPlanDescription = new PlanDescriptionImpl(this, "RelationshipByIdSeek", Seq.empty, Seq("ident" -> ident))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTRelationship))
+
+  override def monitor = pipeMonitor
 }

@@ -25,10 +25,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{ParsedQuery, PropertyKeyId, RelTypeId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
+import org.neo4j.kernel.monitoring.Monitors
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner() extends PipeBuilder {
+case class Planner(monitors: Monitors) extends PipeBuilder {
   val estimator = new CardinalityEstimator {
 
     def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
@@ -52,7 +54,7 @@ case class Planner() extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
-  val executionPlanBuilder = new SimpleExecutionPlanBuilder
+  val executionPlanBuilder = new SimpleExecutionPlanBuilder(monitors)
 
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
