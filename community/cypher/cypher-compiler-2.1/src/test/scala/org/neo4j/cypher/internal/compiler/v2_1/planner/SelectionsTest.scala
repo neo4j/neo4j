@@ -45,13 +45,21 @@ class SelectionsTest extends CypherFunSuite {
     Selections().flatPredicates should equal(Seq())
   }
 
-  test("can extract unresolved predicates") {
+  test("should be able to sense that predicates are not covered") {
     val selections = Selections(Seq(
       idNames("a") -> aIsPerson,
       idNames("b") -> bIsAnimal
     ))
 
-    selections.unsolvedPredicates(Seq(aIsPerson)) should equal(Seq(bIsAnimal))
+    selections.coveredBy(Seq(aIsPerson)) should be(false)
+  }
+
+  test("should be able to tell when all predicates are covered") {
+    val selections = Selections(Seq(
+      idNames("a") -> aIsPerson
+    ))
+
+    selections.coveredBy(Seq(aIsPerson)) should be(true)
   }
 
   test("can extract HasLabels Predicates") {
