@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.CandidateList
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
-object expandAndJoin extends FunctionWithImplicit[PlanTable, PlanTable] {
+object expandAndJoin {
   def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
     var currentPlans = initialPlanTable
     var continue = true

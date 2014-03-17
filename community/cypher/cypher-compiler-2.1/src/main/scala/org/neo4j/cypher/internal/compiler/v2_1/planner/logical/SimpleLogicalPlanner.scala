@@ -27,24 +27,8 @@ import scala.annotation.tailrec
 
 object SimpleLogicalPlanner {
 
-  trait LeafPlanner extends FunctionWithImplicit[LeafPlanTable, LeafPlanTable]
-
-  case class LeafPlan(plan: LogicalPlan, solvedPredicates: Seq[Expression])
-
-  case class LeafPlanTable(table: Map[IdName, LeafPlan] = Map.empty) {
-    def updateIfCheaper(id: IdName, alternative: LeafPlan): LeafPlanTable = {
-      val bestCost = table.get(id).map(_.plan.cardinality).getOrElse(Int.MaxValue)
-      val cost = alternative.plan.cardinality
-
-      if (cost < bestCost)
-        LeafPlanTable(table.updated(id, alternative))
-      else
-        this
-    }
-
-    def toPlanTable: PlanTable = PlanTable(table.map {
-      case (k, v) => Set(k) -> PlanTableEntry(v.plan, v.solvedPredicates)
-    })
+  trait LeafPlanner {
+    def apply()(implicit context: LogicalPlanContext): CandidateList
   }
 
   case class CandidateList(plans: Seq[PlanTableEntry]) {
@@ -64,7 +48,7 @@ object SimpleLogicalPlanner {
       CandidateList(recurse(Set.empty, plans, Seq.empty))
     }
 
-    def sorted = CandidateList(plans.sortBy(_.cost))
+    def sorted = CandidateList(plans.sortBy(_.cardinality))
 
     def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
   }
@@ -105,28 +89,14 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
 
-    val leafPlanners =
-      idSeekLeafPlanner(predicates, semanticTable.isRelationship) andThen
-      indexSeekLeafPlanner(predicates, labelPredicateMap) andThen
-      indexScanLeafPlanner(predicates, labelPredicateMap) andThen
-      labelScanLeafPlanner(qg, labelPredicateMap) andThen
+    val leafPlanners = Seq(
+      idSeekLeafPlanner(predicates, semanticTable.isRelationship),
+      indexSeekLeafPlanner(predicates, labelPredicateMap),
+      indexScanLeafPlanner(predicates, labelPredicateMap),
+      labelScanLeafPlanner(qg, labelPredicateMap),
       allNodesLeafPlanner(qg)
-
-    val initialPlanTable = leafPlanners(LeafPlanTable()).toPlanTable
-    initialPlanTable
+    )
+    val candidateList = leafPlanners.map(_.apply).fold(CandidateList(Seq.empty))(_ ++ _)
+    PlanTable() ++ candidateList.sorted.pruned
   }
 }
-
-trait FunctionWithImplicit[A, B] {
-  self: FunctionWithImplicit[A, B] =>
-
-  def apply(planTable: A)(implicit context: LogicalPlanContext): B
-
-  def andThen[C](other: FunctionWithImplicit[B, C]): FunctionWithImplicit[A,C] =
-    new FunctionWithImplicit[A,C]() {
-      def apply(in: A)(implicit context: LogicalPlanContext) = other(self.apply(in))
-    }
-}
-
-
-

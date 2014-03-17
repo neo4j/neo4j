@@ -44,6 +44,7 @@ case class PlanTable(m: Map[Set[IdName], PlanTableEntry] = Map.empty) {
 case class PlanTableEntry(plan: LogicalPlan, solvedPredicates: Seq[Expression]) {
   def coveredIds = plan.coveredIds
 
+  def cardinality = plan.cardinality
   def cost = plan.cost
 
   def covers(other: PlanTableEntry): Boolean = {

@@ -24,17 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
 case class labelScanLeafPlanner(qg: QueryGraph, labelPredicateMap: Map[IdName, Set[HasLabels]]) extends LeafPlanner {
-  def apply(planTable: LeafPlanTable)(implicit context: LogicalPlanContext): LeafPlanTable =
-    qg.identifiers.foldLeft(planTable) {
-      (planTable, idName) =>
-        labelPredicateMap.getOrElse(idName, Set.empty).foldLeft(planTable) {
-          (planTable, hasLabels) =>
-            hasLabels.labels.foldLeft(planTable) {
-              (planTable, labelName) =>
-                val cost = context.estimator.estimateNodeByLabelScan(labelName.id)
-                val plan = NodeByLabelScan(idName, labelName.toEither(), cost)
-                planTable.updateIfCheaper(idName, LeafPlan(plan, Seq(hasLabels)))
-            }
+  def apply()(implicit context: LogicalPlanContext): CandidateList =
+    CandidateList(qg.identifiers.toSeq.collect {
+      case (idName) =>
+        val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
+        labelPredicates.flatMap(predicate => predicate.labels.map(predicate -> _)).collect {
+          case (predicate, labelName) =>
+            val plan = NodeByLabelScan(idName, labelName.toEither(), context.estimator.estimateNodeByLabelScan(labelName.id))
+            PlanTableEntry(plan, Seq(predicate))
         }
-    }
+    }.flatten)
 }

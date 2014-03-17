@@ -25,36 +25,25 @@ import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 abstract class IndexLeafPlanner extends LeafPlanner {
-  def apply(planTable: LeafPlanTable)(implicit context: LogicalPlanContext): LeafPlanTable =
-    predicates.foldLeft(planTable) {
-      (planTable, expression) =>
-        expression match {
-          // n.prop = value
-          case Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
-            val idName = IdName(name)
-            val propertyKeyId = propertyKey.id.get
-            val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
-            labelPredicates.foldLeft(planTable) {
-
-              (planTable, hasLabels) =>
-                hasLabels.labels.foldLeft(planTable) {
-                  (planTable, labelName) =>
-                    labelName.id match {
-                      case Some(labelId)
-                        if findIndexesForLabel(labelId.id).exists(_.getPropertyKeyId == propertyKeyId.id) =>
-
-                        val alternative = constructPlan(idName, labelId, propertyKeyId, valueExpr)
-                        planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(expression, hasLabels)))
-                      case _ =>
-                        planTable
-                    }
-                }
+  def apply()(implicit context: LogicalPlanContext): CandidateList =
+    CandidateList(predicates.collect {
+      // n.prop = value
+      case expression@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
+        val idName = IdName(name)
+        val propertyKeyId = propertyKey.id.get
+        val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
+        labelPredicates.flatMap { predicate =>
+          // For some reason, a sugared partial function with a condition (case x if foo) throws a MatchError here. :(
+          predicate.labels.flatMap(_.id).collect ( new PartialFunction[LabelId, PlanTableEntry] {
+            def isDefinedAt(labelId: LabelId) =
+              findIndexesForLabel(labelId.id).exists(_.getPropertyKeyId == propertyKeyId.id)
+            def apply(labelId: LabelId) = {
+              val plan = constructPlan(idName, labelId, propertyKeyId, valueExpr)
+              PlanTableEntry(plan, Seq(expression, predicate))
             }
-
-          case _ =>
-            planTable
+          } )
         }
-    }
+    }.flatten)
 
   def predicates: Seq[Expression]
 

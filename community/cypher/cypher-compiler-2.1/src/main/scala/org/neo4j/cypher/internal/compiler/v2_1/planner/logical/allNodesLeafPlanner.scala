@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
 case class allNodesLeafPlanner(qg: QueryGraph) extends LeafPlanner {
-  def apply(planTable: LeafPlanTable)(implicit context: LogicalPlanContext): LeafPlanTable =
-    qg.identifiers.foldLeft(planTable) {
-      (planTable, idName) =>
-        val cost = context.estimator.estimateAllNodes()
-        planTable.updateIfCheaper(idName, LeafPlan(AllNodesScan(idName, cost), Seq()))
-    }
+  def apply()(implicit context: LogicalPlanContext): CandidateList =
+    CandidateList(qg.identifiers.toSeq.collect {
+      case (idName) =>
+        val plan = AllNodesScan(idName, context.estimator.estimateAllNodes())
+        PlanTableEntry(plan, Seq.empty)
+    })
 }

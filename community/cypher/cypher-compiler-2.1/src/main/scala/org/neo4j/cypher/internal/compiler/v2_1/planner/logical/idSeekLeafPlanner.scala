@@ -23,23 +23,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
 case class idSeekLeafPlanner(predicates: Seq[Expression], isRelationship: Identifier => Boolean) extends LeafPlanner {
-  def apply(planTable: LeafPlanTable)(implicit context: LogicalPlanContext): LeafPlanTable =
-    predicates.foldLeft(planTable) {
-      (planTable, predicate) =>
-        predicate match {
-          // id(n) = value
-          case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(id@Identifier(identName))), ConstantExpression(idExpr)) =>
-            val idName = IdName(identName)
-            val alternative =
-              if (isRelationship(id))
-                RelationshipByIdSeek(idName, idExpr, context.estimator.estimateRelationshipByIdSeek())
-              else
-                NodeByIdSeek(idName, idExpr, context.estimator.estimateNodeByIdSeek())
+  def apply()(implicit context: LogicalPlanContext): CandidateList =
+    CandidateList(predicates.collect {
+      // id(n) = value
+      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(id@Identifier(identName))), ConstantExpression(idExpr)) =>
+        val idName = IdName(identName)
+        val plan =
+          if (isRelationship(id))
+            RelationshipByIdSeek(idName, idExpr, context.estimator.estimateRelationshipByIdSeek())
+          else
+            NodeByIdSeek(idName, idExpr, context.estimator.estimateNodeByIdSeek())
 
-            planTable.updateIfCheaper(idName, LeafPlan(alternative, Seq(predicate)))
-
-          case _ =>
-            planTable
-        }
-    }
+        PlanTableEntry(plan, Seq(predicate))
+    })
 }
