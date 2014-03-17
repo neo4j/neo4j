@@ -376,6 +376,31 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>com.github.goldin</groupId>
+        <artifactId>copy-maven-plugin</artifactId>
+        <version>0.2.5</version>
+        <executions>
+          <execution>
+            <id>copy-images</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <verbose>true</verbose>
+              <resources>
+                <resource>
+                  <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
+                  <targetPath>${project.build.directory}/chunked/csv</targetPath>
+                  <preservePath>true</preservePath>
+                  <include>**/*.csv</include>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -585,31 +610,6 @@
                   <arguments>
                     <argument>dist</argument>
                   </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.github.goldin</groupId>
-            <artifactId>copy-maven-plugin</artifactId>
-            <version>0.2.5</version>
-            <executions>
-              <execution>
-                <id>copy-images</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <verbose>true</verbose>
-                  <resources>
-                    <resource>
-                      <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
-                      <targetPath>${project.build.directory}/chunked/csv</targetPath>
-                      <preservePath>true</preservePath>
-                      <include>**/*.csv</include>
-                    </resource>
-                  </resources>
                 </configuration>
               </execution>
             </executions>
