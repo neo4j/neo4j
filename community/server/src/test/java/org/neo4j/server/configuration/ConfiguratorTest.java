@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.validation.Validator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -47,7 +46,7 @@ public class ConfiguratorTest
     {
         File configFile = PropertyFileBuilder.builder(folder.newFile())
                 .build();
-        Configuration config = new PropertyFileConfigurator( new Validator(), configFile ).configuration();
+        Configuration config = new PropertyFileConfigurator( configFile ).configuration();
         assertNotNull( config );
     }
 
@@ -59,7 +58,7 @@ public class ConfiguratorTest
                 .withNameValue( "foo", "bar" )
                 .build();
 
-        Configuration testConf = new PropertyFileConfigurator( new Validator(), configFile ).configuration();
+        Configuration testConf = new PropertyFileConfigurator( configFile ).configuration();
 
         final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.getString( "foo" ) );

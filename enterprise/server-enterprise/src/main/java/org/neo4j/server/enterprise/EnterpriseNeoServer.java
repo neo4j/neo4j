@@ -21,6 +21,7 @@ package org.neo4j.server.enterprise;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -38,46 +39,47 @@ import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.mix;
 
-public class EnterpriseNeoServer extends AdvancedNeoServer {
-
-	public EnterpriseNeoServer( Configurator configurator )
+public class EnterpriseNeoServer extends AdvancedNeoServer
+{
+	public EnterpriseNeoServer( Configurator configurator, Logging logging )
     {
+	    super( logging );
         this.configurator = configurator;
         init();
     }
 
     @Override
-	protected PreFlightTasks createPreflightTasks() 
+	protected PreFlightTasks createPreflightTasks()
     {
-		return new PreFlightTasks(
+		return new PreFlightTasks( logging,
 				// TODO: This check should be done in the bootrapper,
 				// and verification of config should be done by the new
 				// config system.
 				//new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
 				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out),
-				new PerformRecoveryIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out));
+				new PerformUpgradeIfNecessary(getConfiguration(),
+						configurator.getDatabaseTuningProperties(), System.out, logging),
+				new PerformRecoveryIfNecessary(getConfiguration(),
+						configurator.getDatabaseTuningProperties(), System.out, logging));
 	}
-    
+
     @Override
-	protected Database createDatabase() 
+	protected Database createDatabase()
     {
-    	return new EnterpriseDatabase( configurator );
+    	return new EnterpriseDatabase( configurator, logging );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
         return mix( asList(
-                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration() ) ), 
+                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration(), logging ) ),
                 super.createServerModules() );
     }
-    
+
     @Override
-	protected InterruptThreadTimer createInterruptStartupTimer() 
+	protected InterruptThreadTimer createInterruptStartupTimer()
     {
     	// If we are in HA mode, database startup can take a very long time, so
     	// we default to disabling the startup timeout here, unless explicitly overridden
@@ -86,7 +88,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
     	{
     		long startupTimeout = getConfiguration().getInt(Configurator.STARTUP_TIMEOUT, 0) * 1000;
     		InterruptThreadTimer stopStartupTimer;
-    		if(startupTimeout > 0) 
+    		if(startupTimeout > 0)
             {
     			stopStartupTimer = InterruptThreadTimer.createTimer(
     					startupTimeout,
@@ -96,7 +98,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer {
             	stopStartupTimer = InterruptThreadTimer.createNoOpTimer();
             }
     		return stopStartupTimer;
-    	} else 
+    	} else
     	{
     		return super.createInterruptStartupTimer();
     	}

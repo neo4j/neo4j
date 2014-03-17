@@ -23,14 +23,20 @@ import java.io.File;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DefaultLogging;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.logging.JulAdapter;
-import org.neo4j.server.logging.Logger;
+
+import static java.lang.String.format;
 
 public abstract class Bootstrapper
 {
@@ -38,11 +44,12 @@ public abstract class Bootstrapper
     public static final Integer WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final Integer GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
-    private static Logger log = Logger.getLogger( CommunityBootstrapper.class );
-
+    protected final LifeSupport life = new LifeSupport();
     protected NeoServer server;
-	private Configurator configurator;
+	protected Configurator configurator;
     private Thread shutdownHook;
+    protected Logging logging;
+    private ConsoleLogger log;
 
     public static void main( String[] args )
     {
@@ -59,7 +66,10 @@ public abstract class Bootstrapper
         Bootstrapper winner = new CommunityBootstrapper();
         for ( Bootstrapper candidate : Service.load( Bootstrapper.class ) )
         {
-            if ( candidate.isMoreDerivedThan( winner ) ) winner = candidate;
+            if ( candidate.isMoreDerivedThan( winner ) )
+            {
+                winner = candidate;
+            }
         }
         return winner;
     }
@@ -79,9 +89,15 @@ public abstract class Bootstrapper
     {
         try
         {
-            checkCompatibility();
+            BufferingConsoleLogger consoleBuffer = new BufferingConsoleLogger();
+        	configurator = createConfigurator( consoleBuffer );
+        	logging = createLogging( configurator );
+        	log = logging.getConsoleLog( getClass() );
+        	consoleBuffer.replayInto( log );
 
-        	configurator = createConfigurator();
+        	life.start();
+
+        	checkCompatibility();
 
             server = createNeoServer();
             server.start();
@@ -92,32 +108,36 @@ public abstract class Bootstrapper
         }
         catch ( TransactionFailureException tfe )
         {
-            log.error(tfe);
-            log.error( String.format( "Failed to start Neo Server on port [%d], because ",
-            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) )
+            log.error( format( "Failed to start Neo Server on port [%d], because ",
+            		configurator.configuration().getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT ) )
                        + tfe + ". Another process may be using database location " + server.getDatabase()
-                               .getLocation() );
+                       .getLocation(), tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
         catch ( IllegalArgumentException e )
         {
-            log.error(e.getMessage());
-            log.error( "Failed to start Neo Server on port [%s]",
-            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) );
+            log.error( format( "Failed to start Neo Server on port [%s]",
+            		configurator.configuration().getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT ) ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
         {
-            log.error(e);
-            log.error( "Failed to start Neo Server on port [%s]",
-            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT) );
+            log.error( format( "Failed to start Neo Server on port [%s]",
+            		configurator.configuration().getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT ) ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
 
+    private Logging createLogging( Configurator configurator )
+    {
+        Config config = new Config( configurator.getDatabaseTuningProperties() );
+        return life.add( DefaultLogging.createDefaultLogging( config ) );
+    }
+
     private void checkCompatibility()
     {
-        new JvmChecker( new JulAdapter( log ), new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker( logging.getMessagesLog( JvmChecker.class ),
+                new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 
     protected abstract NeoServer createNeoServer();
@@ -136,18 +156,20 @@ public abstract class Bootstrapper
             {
                 server.stop();
             }
-            log.info( "Successfully shutdown Neo Server on port [%d], database [%s]",
+            log.log( "Successfully shutdown Neo Server on port [%d], database [%s]",
             		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT),
                     location );
 
             removeShutdownHook();
 
+            life.shutdown();
+
             return 0;
         }
         catch ( Exception e )
         {
-            log.error( e, "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ",
-            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT), location, e.getMessage() );
+            log.error( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ",
+            		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT), location, e.getMessage(), e );
             return 1;
         }
     }
@@ -175,7 +197,7 @@ public abstract class Bootstrapper
             @Override
             public void run()
             {
-                log.info( "Neo4j Server shutdown initiated by request" );
+                log.log( "Neo4j Server shutdown initiated by request" );
                 if ( server != null )
                 {
                     server.stop();
@@ -186,11 +208,12 @@ public abstract class Bootstrapper
                 .addShutdownHook( shutdownHook );
     }
 
-    protected Configurator createConfigurator()
+    protected Configurator createConfigurator( ConsoleLogger log )
     {
         File configFile = new File( System.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY,
                 Configurator.DEFAULT_CONFIG_DIR ) );
-        return new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile );
+        return new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ),
+                configFile, log );
     }
 
     protected boolean isMoreDerivedThan( Bootstrapper other )

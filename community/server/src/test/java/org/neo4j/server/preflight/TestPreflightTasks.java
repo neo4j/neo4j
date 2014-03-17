@@ -19,58 +19,59 @@
  */
 package org.neo4j.server.preflight;
 
+import org.junit.Test;
+
+import org.neo4j.kernel.logging.Logging;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.preflight.PreflightTask;
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
+import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
 
 public class TestPreflightTasks
 {
-
     @Test
     public void shouldPassWithNoRules()
     {
-        PreFlightTasks check = new PreFlightTasks();
+        PreFlightTasks check = new PreFlightTasks( DEV_NULL );
         assertTrue( check.run() );
     }
 
     @Test
     public void shouldRunAllHealthChecksToCompletionIfNonFail()
     {
-        PreFlightTasks check = new PreFlightTasks( getPassingRules() );
+        PreFlightTasks check = new PreFlightTasks( DEV_NULL, getPassingRules() );
         assertTrue( check.run() );
     }
 
     @Test
     public void shouldFailIfOneOrMoreHealthChecksFail()
     {
-        PreFlightTasks check = new PreFlightTasks( getWithOneFailingRule() );
+        PreFlightTasks check = new PreFlightTasks( DEV_NULL, getWithOneFailingRule() );
         assertFalse( check.run() );
     }
 
     @Test
     public void shouldLogFailedRule()
     {
-        PreFlightTasks check = new PreFlightTasks( getWithOneFailingRule() );
-        InMemoryAppender appender = new InMemoryAppender( PreFlightTasks.log );
+        Logging logging = bufferingLogging();
+        PreFlightTasks check = new PreFlightTasks( logging, getWithOneFailingRule() );
         check.run();
 
         // Previously we tested on "SEVERE: blah blah" but that's a string
         // depending
         // on the regional settings of the OS.
-        assertThat( appender.toString(), containsString( ": blah blah" ) );
+        assertThat( logging.toString(), containsString( "blah blah" ) );
     }
 
     @Test
     public void shouldAdvertiseFailedRule()
     {
-        PreFlightTasks check = new PreFlightTasks( getWithOneFailingRule() );
+        PreFlightTasks check = new PreFlightTasks( DEV_NULL, getWithOneFailingRule() );
         check.run();
         assertNotNull( check.failedTask() );
     }

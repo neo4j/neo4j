@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -30,6 +28,9 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class DiagnosticsLoggingTest
 {

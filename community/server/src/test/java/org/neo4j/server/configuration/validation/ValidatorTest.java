@@ -19,11 +19,13 @@
  */
 package org.neo4j.server.configuration.validation;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ValidatorTest
 {
@@ -32,14 +34,14 @@ public class ValidatorTest
     {
         Validator v = new Validator( new ValidationRule()
         {
-
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 throw new RuleFailedException( "dummy rule failed during unit test" );
             }
         } );
 
-        assertFalse( v.validate( null ) );
+        assertFalse( v.validate( null, ConsoleLogger.DEV_NULL ) );
     }
 
     @Test
@@ -48,6 +50,7 @@ public class ValidatorTest
         Validator v = new Validator( new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
@@ -55,6 +58,7 @@ public class ValidatorTest
         }, new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 throw new RuleFailedException( "dummy rule failed during unit test" );
@@ -62,6 +66,7 @@ public class ValidatorTest
         }, new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
@@ -69,13 +74,14 @@ public class ValidatorTest
         }, new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
             }
         } );
 
-        assertFalse( v.validate( null ) );
+        assertFalse( v.validate( null, ConsoleLogger.DEV_NULL ) );
     }
 
     @Test
@@ -84,6 +90,7 @@ public class ValidatorTest
         Validator v = new Validator( new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
@@ -91,6 +98,7 @@ public class ValidatorTest
         }, new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
@@ -98,6 +106,7 @@ public class ValidatorTest
         }, new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
@@ -105,12 +114,13 @@ public class ValidatorTest
         }, new ValidationRule()
         {
 
+            @Override
             public void validate( Configuration configuration ) throws RuleFailedException
             {
                 // do nothing
             }
         } );
 
-        assertTrue( v.validate( null ) );
+        assertTrue( v.validate( null, ConsoleLogger.DEV_NULL ) );
     }
 }

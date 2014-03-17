@@ -33,6 +33,6 @@ public class CypherSessionCreator implements ConsoleSessionCreator
     @Override
     public ScriptSession newSession( Database database, CypherExecutor cypherExecutor )
     {
-        return new CypherSession( cypherExecutor );
+        return new CypherSession( cypherExecutor, database.getLogging() );
     }
 }

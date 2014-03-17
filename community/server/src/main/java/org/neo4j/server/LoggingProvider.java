@@ -17,28 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.server;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import javax.ws.rs.ext.Provider;
 
-/**
- * Logging service that is used for creating loggers with specific names.
- *
- * Individual loggers can end up in different targets potentially.
- */
-public interface Logging
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.database.InjectableProvider;
+
+import com.sun.jersey.api.core.HttpContext;
+
+@Provider
+public class LoggingProvider extends InjectableProvider<Logging>
 {
-    /**
-     * @param loggingClass the context for the return logger.
-     * @return a {@link StringLogger} that logs messages with the {@code loggingClass} as context.
-     */
-    StringLogger getMessagesLog( Class loggingClass );
+    private final Logging logging;
 
-    /**
-     * 
-     * @param loggingClass
-     * @return a {@link ConsoleLogger} that logs message with the {@code loggingClass} as context.
-     * Messages logged with a {@link ConsoleLogger} will be logged to a console 
-     */
-    ConsoleLogger getConsoleLog( Class loggingClass );
+    public LoggingProvider( Logging logging )
+    {
+        super( Logging.class );
+        this.logging = logging;
+    }
+
+    @Override
+    public Logging getValue( HttpContext c )
+    {
+        return logging;
+    }
 }

@@ -32,9 +32,11 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.server.logging.Logger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.shell.ShellSettings;
+
 import org.rrd4j.core.RrdDb;
 
 /**
@@ -44,8 +46,6 @@ import org.rrd4j.core.RrdDb;
  */
 public class Database implements Lifecycle
 {
-    public static final Logger log = Logger.getLogger( Database.class );
-
     /**
      * Please use {@link #getGraph()} instead. This will be removed in
      * version 1.10
@@ -55,15 +55,16 @@ public class Database implements Lifecycle
 
     private RrdDb rrdDb;
     private final StatisticCollector statisticCollector = new StatisticCollector();
+    private final Logging logging;
 
     /**
      * This constructor should not be used,
      * please use a subclass of this class instead.
      */
     @Deprecated
-    public Database()
+    public Database( Logging logging )
     {
-
+        this.logging = logging;
     }
 
     /**
@@ -75,6 +76,8 @@ public class Database implements Lifecycle
     @Deprecated
     public Database( AbstractGraphDatabase db )
     {
+        // Here we already have a database, so use its Logging mechanisms.
+        this( db.getDependencyResolver().resolveDependency( Logging.class ) );
         graph = db;
     }
 
@@ -86,7 +89,7 @@ public class Database implements Lifecycle
     public Database( GraphDatabaseFactory factory, String databaseStoreDirectory )
     {
         this( (AbstractGraphDatabase) createDatabase( factory, databaseStoreDirectory, null ) );
-        log.warn(
+        console( graph, getClass() ).warn(
                 "No database tuning properties set in the property file, using defaults. Please specify the " +
                         "performance properties file with org.neo4j.server.db.tuning.properties in the server " +
                         "properties file [%s].",
@@ -104,11 +107,14 @@ public class Database implements Lifecycle
         this( (AbstractGraphDatabase) createDatabase( factory, databaseStoreDirectory, databaseTuningProperties ) );
     }
 
-    private static GraphDatabaseAPI createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
-                                                    Map<String, String> databaseProperties )
+    private static ConsoleLogger console( GraphDatabaseAPI db, Class<?> cls )
     {
-        log.info( "Using database at " + databaseStoreDirectory );
+        return db.getDependencyResolver().resolveDependency( Logging.class ).getConsoleLog( cls );
+    }
 
+    private static GraphDatabaseAPI createDatabase( GraphDatabaseFactory factory, String databaseStoreDirectory,
+            Map<String, String> databaseProperties )
+    {
         if ( databaseProperties == null )
         {
             databaseProperties = new HashMap<String, String>();
@@ -126,7 +132,9 @@ public class Database implements Lifecycle
             // UDC is not on classpath, ignore
         }
 
-        return factory.createDatabase( databaseStoreDirectory, databaseProperties );
+        GraphDatabaseAPI db = factory.createDatabase( databaseStoreDirectory, databaseProperties );
+        console( db, Database.class ).log( "Using database at " + databaseStoreDirectory );
+        return db;
     }
 
     private static void putIfAbsent( Map<String, String> databaseProperties, String configKey, String configValue )
@@ -248,5 +256,10 @@ public class Database implements Lifecycle
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public Logging getLogging()
+    {
+        return logging;
     }
 }

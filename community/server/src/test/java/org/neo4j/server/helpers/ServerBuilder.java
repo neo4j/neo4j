@@ -31,6 +31,12 @@ import java.util.Properties;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
@@ -47,13 +53,17 @@ import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.FakeClock;
 
+import static java.lang.String.format;
+
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class ServerBuilder
 {
+    protected LoggingFactory loggingFactory;
     private String portNo = "7474";
     private String maxThreads = null;
     protected String dbDir = null;
@@ -76,12 +86,17 @@ public class ServerBuilder
     private String[] autoIndexedRelationshipKeys = null;
     private String host = null;
     private String[] securityRuleClassNames;
-    public boolean persistent;
+    protected boolean persistent;
     private Boolean httpsEnabled = false;
+
+    public static ServerBuilder server( Logging logging )
+    {
+        return new ServerBuilder( given( logging ) );
+    }
 
     public static ServerBuilder server()
     {
-        return new ServerBuilder();
+        return new ServerBuilder( null );
     }
 
     public CommunityNeoServer build() throws IOException
@@ -90,22 +105,14 @@ public class ServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        File configFile = createPropertiesFiles();
+        File configFile = buildBefore();
 
-        if ( preflightTasks == null )
-        {
-            preflightTasks = new PreFlightTasks()
-            {
-                @Override
-                public boolean run()
-                {
-                    return true;
-                }
-            };
-        }
-
-        return new CommunityNeoServer( new PropertyFileConfigurator( new Validator(
-                new DatabaseLocationMustBeSpecifiedRule() ), configFile ) )
+        BufferingConsoleLogger console = new BufferingConsoleLogger();
+        Validator validator = new Validator( new DatabaseLocationMustBeSpecifiedRule() );
+        Configurator configurator = new PropertyFileConfigurator( validator, configFile, console );
+        Logging logging = loggingFactory().create( configurator );
+        console.replayInto( logging.getConsoleLog( getClass() ) );
+        return new CommunityNeoServer( configurator, logging )
         {
             @Override
             protected PreFlightTasks createPreflightTasks()
@@ -117,24 +124,56 @@ public class ServerBuilder
             protected Database createDatabase()
             {
                 return persistent ?
-                        new CommunityDatabase( configurator ) :
+                        new CommunityDatabase( configurator, logging ) :
                         new EphemeralDatabase( configurator );
             }
 
             @Override
             protected DatabaseActions createDatabaseActions()
             {
-                Clock clockToUse = (clock != null) ? clock : Clock.REAL_CLOCK;
-
-                return new DatabaseActions(
-                        database,
-                        new LeaseManager( clockToUse ),
-                        ForceMode.forced,
-                        configurator.configuration().getBoolean(
-                                Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+                return createDatabaseActionsObject( database, configurator );
             }
         };
+    }
+
+    private LoggingFactory loggingFactory()
+    {
+        if ( loggingFactory != null )
+        {
+            return loggingFactory;
+        }
+        return persistent ? LoggingFactory.DEFAULT_LOGGING : LoggingFactory.IMPERMANENT_LOGGING;
+    }
+
+    protected DatabaseActions createDatabaseActionsObject( Database database, Configurator configurator )
+    {
+        Clock clockToUse = (clock != null) ? clock : Clock.REAL_CLOCK;
+
+        return new DatabaseActions(
+                database,
+                new LeaseManager( clockToUse ),
+                ForceMode.forced,
+                configurator.configuration().getBoolean(
+                        Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                        Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+    }
+
+    protected File buildBefore() throws IOException
+    {
+        File configFile = createPropertiesFiles();
+
+        if ( preflightTasks == null )
+        {
+            preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL )
+            {
+                @Override
+                public boolean run()
+                {
+                    return true;
+                }
+            };
+        }
+        return configFile;
     }
 
     public File createPropertiesFiles() throws IOException
@@ -265,8 +304,9 @@ public class ServerBuilder
         return f;
     }
 
-    protected ServerBuilder()
+    protected ServerBuilder( LoggingFactory loggingFactory )
     {
+        this.loggingFactory = loggingFactory;
     }
 
     public ServerBuilder persistent()
@@ -343,7 +383,7 @@ public class ServerBuilder
 
     public ServerBuilder withFailingPreflightTasks()
     {
-        preflightTasks = new PreFlightTasks()
+        preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL )
         {
             @Override
             public boolean run()
@@ -374,19 +414,19 @@ public class ServerBuilder
         return this;
     }
 
-    public ServerBuilder withDefaultDatabaseTuning() throws IOException
+    public ServerBuilder withDefaultDatabaseTuning()
     {
         action = WhatToDo.CREATE_GOOD_TUNING_FILE;
         return this;
     }
 
-    public ServerBuilder withNonResolvableTuningFile() throws IOException
+    public ServerBuilder withNonResolvableTuningFile()
     {
         action = WhatToDo.CREATE_DANGLING_TUNING_FILE_PROPERTY;
         return this;
     }
 
-    public ServerBuilder withCorruptTuningFile() throws IOException
+    public ServerBuilder withCorruptTuningFile()
     {
         action = WhatToDo.CREATE_CORRUPT_TUNING_FILE;
         return this;
@@ -442,8 +482,35 @@ public class ServerBuilder
 
     public ServerBuilder withPreflightTasks( PreflightTask... tasks )
     {
-        this.preflightTasks = new PreFlightTasks( tasks );
+        this.preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL, tasks );
         return this;
     }
 
+    public static Logging bufferingLogging()
+    {
+        final BufferingLogger log = new BufferingLogger();
+        final BufferingConsoleLogger console = new BufferingConsoleLogger();
+        return new Logging()
+        {
+            @Override
+            public StringLogger getMessagesLog( Class loggingClass )
+            {
+                return log;
+            }
+
+            @Override
+            public ConsoleLogger getConsoleLog( Class loggingClass )
+            {
+                return console;
+            }
+
+            @Override
+            public String toString()
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.append( log.toString() ).append( format( "%n" ) ).append( console.toString() );
+                return builder.toString();
+            }
+        };
+    }
 }

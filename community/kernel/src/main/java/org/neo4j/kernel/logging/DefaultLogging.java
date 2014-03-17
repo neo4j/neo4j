@@ -17,45 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.kernel.logging;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import java.util.Map;
 
-public class WrappedDatabase extends Database {
+import org.neo4j.kernel.configuration.Config;
 
-	@SuppressWarnings("deprecation")
-	public WrappedDatabase(AbstractGraphDatabase db) {
-		this.graph = db;
-	}
-	
-	@Override
-	public void init() throws Throwable 
-	{
-		
-	}
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
-	@Override
-	public void start() throws Throwable 
-	{
-		
-	}
-
-	@Override
-	public void stop() throws Throwable 
-	{
-		
-	}
-
-    @Override
-	public void shutdown()
+public class DefaultLogging
+{
+    public static Logging createDefaultLogging( Map<String, String> config )
     {
-        
-    }
-    
-    @Override
-	public String getLocation()
-    {
-        return graph.getStoreDir();
+        return createDefaultLogging( new Config( config ) );
     }
 
+    public static Logging createDefaultLogging( Config config )
+    {
+        return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
+    }
 }

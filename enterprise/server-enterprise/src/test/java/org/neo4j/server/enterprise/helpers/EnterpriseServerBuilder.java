@@ -22,7 +22,8 @@ package org.neo4j.server.enterprise.helpers;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -30,19 +31,29 @@ import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.helpers.LoggingFactory;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.tooling.Clock;
 
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.helpers.LoggingFactory.IMPERMANENT_LOGGING;
 
 public class EnterpriseServerBuilder extends ServerBuilder
 {
+    protected EnterpriseServerBuilder( LoggingFactory loggingFactory )
+    {
+        super( loggingFactory );
+    }
+
     public static EnterpriseServerBuilder server()
     {
-        return new EnterpriseServerBuilder();
+        return server( IMPERMANENT_LOGGING );
+    }
+
+    public static EnterpriseServerBuilder server( LoggingFactory loggingFactory )
+    {
+        return new EnterpriseServerBuilder( loggingFactory );
     }
 
     @Override
@@ -52,22 +63,14 @@ public class EnterpriseServerBuilder extends ServerBuilder
         {
             this.dbDir = createTempDir().getAbsolutePath();
         }
-        File configFile = createPropertiesFiles();
+        File configFile = buildBefore();
 
-        if ( preflightTasks == null )
-        {
-            preflightTasks = new PreFlightTasks()
-            {
-                @Override
-                public boolean run()
-                {
-                    return true;
-                }
-            };
-        }
-
-        return new EnterpriseNeoServer( new PropertyFileConfigurator( new Validator(
-                new DatabaseLocationMustBeSpecifiedRule() ), configFile ) )
+        BufferingConsoleLogger console = new BufferingConsoleLogger();
+        Validator validator = new Validator( new DatabaseLocationMustBeSpecifiedRule() );
+        Configurator configurator = new PropertyFileConfigurator( validator, configFile, console );
+        Logging logging = loggingFactory.create( configurator );
+        console.replayInto( logging.getConsoleLog( getClass() ) );
+        return new EnterpriseNeoServer( configurator, logging )
         {
             @Override
             protected PreFlightTasks createPreflightTasks()
@@ -86,14 +89,7 @@ public class EnterpriseServerBuilder extends ServerBuilder
             @Override
             protected DatabaseActions createDatabaseActions()
             {
-                Clock clockToUse = (clock != null) ? clock : Clock.REAL_CLOCK;
-
-                return new DatabaseActions( database,
-                        new LeaseManager( clockToUse ),
-                        ForceMode.forced,
-                        configurator.configuration().getBoolean(
-                                Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                                Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ) );
+                return createDatabaseActionsObject( database, configurator );
             }
         };
     }

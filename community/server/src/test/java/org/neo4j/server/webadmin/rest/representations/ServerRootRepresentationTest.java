@@ -19,24 +19,29 @@
  */
 package org.neo4j.server.webadmin.rest.representations;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.rest.AdvertisableService;
 import org.neo4j.server.webadmin.rest.console.ConsoleService;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ServerRootRepresentationTest
 {
     @Test
     public void shouldProvideAListOfServiceUris() throws Exception
     {
-        ConsoleService consoleService = new ConsoleService( null, null, null );
+        ConsoleService consoleService = new ConsoleService( null, mockDatabase(), null );
         ServerRootRepresentation srr = new ServerRootRepresentation( new URI( "http://example.org:9999" ),
                 Collections.<AdvertisableService>singletonList( consoleService ) );
         Map<String, Map<String, String>> map = srr.serialize();
@@ -46,5 +51,12 @@ public class ServerRootRepresentationTest
         assertThat( map.get( "services" )
                 .get( consoleService.getName() ), containsString( consoleService.getServerPath() ) );
 
+    }
+
+    private Database mockDatabase()
+    {
+        Database db = mock( Database.class );
+        when( db.getLogging() ).thenReturn( DevNullLoggingService.DEV_NULL );
+        return db;
     }
 }

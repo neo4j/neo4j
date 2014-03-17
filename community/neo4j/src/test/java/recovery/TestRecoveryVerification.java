@@ -19,14 +19,6 @@
  */
 package recovery;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,23 +27,30 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+
+import static java.nio.ByteBuffer.allocate;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+
+import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
 
 public class TestRecoveryVerification
 {
@@ -61,10 +60,7 @@ public class TestRecoveryVerification
 
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
-            super( dir, stringMap(), Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
-                    , Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
-                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+            super( dir, stringMap(), new DefaultGraphDatabaseDependencies() );
             this.verifier = recoveryVerifier;
             run();
         }

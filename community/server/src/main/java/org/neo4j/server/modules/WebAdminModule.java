@@ -22,38 +22,43 @@ package org.neo4j.server.modules;
 import java.io.IOException;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.impl.util.StringLogger;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.web.WebServer;
+
 import org.rrd4j.core.RrdDb;
 
 public class WebAdminModule implements ServerModule
 {
-    private static final Logger log = Logger.getLogger( WebAdminModule.class );
-
     private static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
     private static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
 
-    private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
+    private final RoundRobinJobScheduler jobScheduler;
 
 	private final Configuration config;
 	private final WebServer webServer;
 	private final Database database;
 
 	private RrdDb rrdDb;
+    private final ConsoleLogger log;
+    private final Logging logging;
 
-    public WebAdminModule(WebServer webServer, Configuration config, Database database)
+    public WebAdminModule(WebServer webServer, Configuration config, Logging logging, Database database)
     {
     	this.webServer = webServer;
     	this.config = config;
+        this.logging = logging;
+    	this.log = logging.getConsoleLog( getClass() );
     	this.database = database;
+    	this.jobScheduler = new RoundRobinJobScheduler( logging );
     }
 
     @Override
-	public void start(StringLogger logger)
+	public void start()
     {
         try {
             startRoundRobinDB( );
@@ -62,8 +67,7 @@ public class WebAdminModule implements ServerModule
         }
 
         webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
-        log.info( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
-        if ( logger != null ) logger.logMessage( "Mounted webadmin at: " + DEFAULT_WEB_ADMIN_PATH );
+        log.log( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
     }
 
     @Override
@@ -83,7 +87,7 @@ public class WebAdminModule implements ServerModule
 
     private void startRoundRobinDB( ) throws IOException
     {
-        RrdFactory rrdFactory = new RrdFactory( config );
+        RrdFactory rrdFactory = new RrdFactory( config, logging );
         this.rrdDb = rrdFactory.createRrdDbAndSampler( database, jobScheduler );
         database.setRrdDb( rrdDb );
     }

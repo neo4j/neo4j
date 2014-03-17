@@ -33,6 +33,7 @@ import org.neo4j.helpers.RunCarefully;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
@@ -42,7 +43,6 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
@@ -69,8 +69,7 @@ import static org.neo4j.helpers.collection.Iterables.option;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
-    public static final Logger log = Logger.getLogger( AbstractNeoServer.class );
-
+    protected final Logging logging;
     protected Database database;
     protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
@@ -83,6 +82,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
+    protected final ConsoleLogger log;
 
     private final DependencyResolver dependencyResolver = new DependencyResolver.Adapter()
     {
@@ -116,6 +116,12 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     };
 
+    public AbstractNeoServer( Logging logging )
+    {
+        this.logging = logging;
+        this.log = logging.getConsoleLog( getClass() );
+    }
+
     protected abstract PreFlightTasks createPreflightTasks();
 
     protected abstract Iterable<ServerModule> createServerModules();
@@ -147,11 +153,6 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    protected Logging getLogging()
-    {
-        return dependencyResolver.resolveDependency( Logging.class );
-    }
-
     @Override
     public void start() throws ServerStartupException
     {
@@ -170,7 +171,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 databaseActions = createDatabaseActions();
 
-                cypherExecutor = new CypherExecutor( database, getLogging().getMessagesLog( CypherExecutor.class ) );
+                cypherExecutor = new CypherExecutor( database, logging.getMessagesLog( CypherExecutor.class ) );
 
                 configureWebServer();
 
@@ -183,9 +184,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
 
-                startModules( logger );
+                startModules();
 
-                startWebServer( logger );
+                startWebServer();
 
                 logger.logMessage( "--- SERVER STARTED END ---", true );
             }
@@ -225,7 +226,7 @@ public abstract class AbstractNeoServer implements NeoServer
         InterruptThreadTimer stopStartupTimer;
         if ( startupTimeout > 0 )
         {
-            log.info( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
+            log.log( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
                     Configurator.STARTUP_TIMEOUT, -1 ) );
             stopStartupTimer = InterruptThreadTimer.createTimer(
                     startupTimeout,
@@ -246,11 +247,11 @@ public abstract class AbstractNeoServer implements NeoServer
         serverModules.add( module );
     }
 
-    private void startModules( StringLogger logger )
+    private void startModules()
     {
         for ( ServerModule module : serverModules )
         {
-            module.start( logger );
+            module.start();
         }
     }
 
@@ -301,7 +302,7 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
-        log.info( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads );
+        log.log( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -315,7 +316,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( sslEnabled )
         {
-            log.info( "Enabling HTTPS on port :%s", sslPort );
+            log.log( "Enabling HTTPS on port :%s", sslPort );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
     }
@@ -333,7 +334,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 .availableProcessors();
     }
 
-    private void startWebServer( StringLogger logger )
+    private void startWebServer()
     {
         try
         {
@@ -353,11 +354,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 webServer.addExecutionLimitFilter( limit, database.getGraph().getGuard() );
             }
 
-            if ( logger != null )
-            {
-                logger.logMessage( "Server started on: " + baseUri() );
-            }
-            log.info( "Remote interface ready and available at [%s]", baseUri() );
+            log.log( "Remote interface ready and available at [%s]", baseUri() );
         }
         catch ( RuntimeException e )
         {
@@ -434,7 +431,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( !certificatePath.exists() )
         {
-            log.info( "No SSL certificate found, generating a self-signed certificate.." );
+            log.log( "No SSL certificate found, generating a self-signed certificate.." );
             new SslCertificateFactory().createSelfSignedCertificate( certificatePath,
                     privateKeyPath,
                     getWebServerAddress() );
@@ -470,7 +467,7 @@ public abstract class AbstractNeoServer implements NeoServer
             }
         ).run();
 
-        log.info( "Successfully shutdown database." );
+        log.log( "Successfully shutdown database." );
     }
 
     /**
@@ -491,7 +488,7 @@ public abstract class AbstractNeoServer implements NeoServer
                     @Override
                     public void run()
                     {
-                    stopWebServer();
+                        stopWebServer();
                     }
                 },
             new Runnable() {
@@ -502,6 +499,7 @@ public abstract class AbstractNeoServer implements NeoServer
                     }
                 }
         ).run();
+        log.log( "Successfully shutdown Neo4j Server." );
     }
 
     private void stopWebServer()
@@ -591,6 +589,7 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new InputFormatProvider( repository ) );
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
+        singletons.add( new LoggingProvider( logging ) );
         return singletons;
     }
 

@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
  * A read-only version of {@link EmbeddedGraphDatabase}.
  * <p/>
  * Create an instance this way:
- * 
+ *
  * <pre>
  * <code>
  * Map<String, String> config = new HashMap<String, String>();
@@ -67,9 +67,9 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>. If the directory shouldn't exist or isn't a neo4j
      * store an exception will be thrown.
-     * 
+     *
      * This is deprecated. Use {@link GraphDatabaseFactory} instead.
-     * 
+     *
      * @param storeDir the store directory for the Neo4j store files
      */
     @Deprecated
@@ -86,9 +86,9 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>. If the directory shouldn't exist or isn't a neo4j
      * store an exception will be thrown.
-     * 
+     *
      * This is deprecated. Use {@link GraphDatabaseFactory} instead.
-     * 
+     *
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
@@ -96,20 +96,24 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
                                           Map<String, String> params )
     {
-        this( storeDir, params, Service.load( IndexProvider.class ), Iterables.<KernelExtensionFactory<?>,
-                KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+        this( storeDir, params, new DefaultGraphDatabaseDependencies() );
     }
 
-    public EmbeddedReadOnlyGraphDatabase( String storeDir,
-                                          Map<String, String> params, Iterable<IndexProvider> indexProviders,
-                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                          Iterable<CacheProvider> cacheProviders,
-                                          Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    @Deprecated
+    public EmbeddedReadOnlyGraphDatabase( String storeDir, Map<String, String> params,
+            Iterable<IndexProvider> indexProviders,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            Iterable<CacheProvider> cacheProviders,
+            Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, addReadOnly( params ), Iterables.<Class<?>, Class<?>>iterable( (Class<?>)
-                GraphDatabaseSettings.class ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+        this( storeDir, params, new GraphDatabaseDependencies( null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class ),
+                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders ) );
+    }
+
+    public EmbeddedReadOnlyGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    {
+        super( storeDir, addReadOnly( params ), dependencies );
         run();
     }
 
@@ -119,24 +123,28 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
         return params;
     }
 
+    @Override
     public KernelEventHandler registerKernelEventHandler(
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> registerTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public KernelEventHandler unregisterKernelEventHandler(
             KernelEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
             TransactionEventHandler<T> handler )
     {

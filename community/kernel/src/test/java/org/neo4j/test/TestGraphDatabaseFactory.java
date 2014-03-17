@@ -25,6 +25,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * Test factory for graph databases
@@ -36,17 +37,17 @@ public class TestGraphDatabaseFactory
     {
         return newImpermanentDatabaseBuilder().newGraphDatabase();
     }
-    
+
     public GraphDatabaseService newImpermanentDatabase( String storeDir )
     {
         return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }
-    
+
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
     {
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
     }
-    
+
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
     {
         return new TestGraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
@@ -54,25 +55,34 @@ public class TestGraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                return new ImpermanentGraphDatabase( storeDir, config, indexProviders, kernelExtensions,
-                        cacheProviders, txInterceptorProviders )
+                return new ImpermanentGraphDatabase( storeDir, config, databaseDependencies() )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
                     {
                         if ( TestGraphDatabaseFactory.this.fileSystem != null )
+                        {
                             return TestGraphDatabaseFactory.this.fileSystem;
+                        }
                         else
+                        {
                             return super.createFileSystemAbstraction();
+                        }
                     }
                 };
             }
         } );
     }
-    
+
     public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
+        return this;
+    }
+
+    public TestGraphDatabaseFactory setLogging( Logging logging )
+    {
+        this.logging = logging;
         return this;
     }
 }

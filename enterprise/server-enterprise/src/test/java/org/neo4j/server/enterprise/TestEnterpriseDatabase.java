@@ -20,20 +20,22 @@
 package org.neo4j.server.enterprise;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.server.configuration.Configurator;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-
 public class TestEnterpriseDatabase
 {
-
     @Test
     public void shouldStartInSingleModeByDefault() throws Throwable
     {
-        EnterpriseDatabase db = new EnterpriseDatabase( Configurator.EMPTY );
+        EnterpriseDatabase db = new EnterpriseDatabase( Configurator.EMPTY,
+                new SingleLoggingService( StringLogger.DEV_NULL ) );
 
         try
         {

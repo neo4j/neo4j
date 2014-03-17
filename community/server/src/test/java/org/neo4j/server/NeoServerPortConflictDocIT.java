@@ -24,8 +24,9 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.web.Jetty6WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -33,16 +34,17 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
+
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
-
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
         ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty6WebServer.DEFAULT_ADDRESS) );
-        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
-        CommunityNeoServer server = ServerBuilder.server()
+        Logging logging = bufferingLogging();
+        CommunityNeoServer server = ServerBuilder.server( logging )
                 .onPort( contestedPort )
                 .onHost( Jetty6WebServer.DEFAULT_ADDRESS )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
@@ -61,8 +63,8 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
         // Don't include the SEVERE string since it's
         // OS-regional-settings-specific
         assertThat(
-                appender.toString(),
-                containsString( String.format( ": Failed to start Neo Server" ) ) );
+                logging.toString(),
+                containsString( String.format( "Failed to start Neo Server" ) ) );
         socket.close();
         server.stop();
     }

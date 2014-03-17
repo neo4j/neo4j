@@ -26,7 +26,8 @@ import java.util.HashMap;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.server.logging.Logger;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
@@ -38,17 +39,17 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellSession implements ScriptSession
 {
-    public static final Logger log = Logger.getLogger( ShellSession.class );
+    private static volatile ShellServer fallbackServer = null;
 
     private final ShellClient client;
     private final CollectingOutput output;
-
-    private static volatile ShellServer fallbackServer = null;
+    private final StringLogger log;
 
     public ShellSession( GraphDatabaseAPI graph )
     {
         try
         {
+            this.log = graph.getDependencyResolver().resolveDependency( Logging.class ).getMessagesLog( getClass() );
             ShellServerKernelExtension extension = graph.getDependencyResolver().resolveDependency( KernelExtensions
                     .class ).resolveDependency( ShellServerKernelExtension.class );
 
