@@ -99,7 +99,7 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     testQuery(
       title = "Importing large amounts of data",
       text = "Here, if the file contains a significant number of rows (approaching hundreds of thousands or millions), USING PERIODIC COMMIT " +
-        "can be used to instruct Neo4j to perform a commit after a specified number of rows (defaults to 1000 rows)," +
+        "can be used to instruct Neo4j to perform a commit after a specified number of rows (defaults to 1000 rows), " +
         "so as to reduce the memory overhead of the transaction state.",
       queryText = s"USING PERIODIC COMMIT LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation = "",
