@@ -145,7 +145,8 @@ public enum AtomicBroadcastState
                             else
                             {
                                 outgoing.offer( message.copyHeadersTo( internal( ProposerMessage.propose,
-                                        message.getPayload() ), Message.CONVERSATION_ID, InstanceId.INSTANCE ) );
+                                        message.getPayload() ), Message.CONVERSATION_ID, org.neo4j.cluster.protocol
+                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }

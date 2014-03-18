@@ -40,6 +40,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;

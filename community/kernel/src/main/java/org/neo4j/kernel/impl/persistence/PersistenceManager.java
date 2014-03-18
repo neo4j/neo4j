@@ -240,12 +240,12 @@ public class PersistenceManager
     {
         return getResource().forWriting().kernelTransaction();
     }
-    
+
     public void ensureKernelIsEnlisted()
     {
         getResource();
     }
-    
+
     public ResourceHolder getResource()
     {
         TransactionState txState = transactionManager.getTransactionState();
@@ -310,7 +310,7 @@ public class PersistenceManager
                 + "for current thread", se );
         }
     }
-    
+
     private class ResourceCleanupHook implements Synchronization
     {
         private final Transaction tx;
@@ -327,22 +327,31 @@ public class PersistenceManager
         @Override
         public void afterCompletion( int param )
         {
-            releaseConnections( tx );
-            if ( param == Status.STATUS_COMMITTED )
-            {
-                state.commit();
-            }
-            else
-            {
-                state.rollback();
-            }
             try
             {
-                resourceHolder.resource.kernelTransaction().release();
+                releaseConnections( tx );
+                // Release locks held in the old transaction state
+                if ( param == Status.STATUS_COMMITTED )
+                {
+                    state.commit();
+                }
+                else
+                {
+                    state.rollback();
+                }
             }
-            catch ( ReleaseLocksFailedKernelException e )
+            finally
             {
-                msgLog.error( "Error releasing resources for " + tx, e );            }
+                // Release locks held by the kernel API stack
+                try
+                {
+                    resourceHolder.resource.kernelTransaction().release();
+                }
+                catch ( ReleaseLocksFailedKernelException e )
+                {
+                    msgLog.error( "Error releasing resources for " + tx, e );
+                }
+            }
         }
 
         @Override
@@ -373,26 +382,26 @@ public class PersistenceManager
             resource.destroy();
         }
     }
-    
+
     public static class ResourceHolder
     {
         private final Transaction tx;
         private final XaConnection connection;
         private final NeoStoreTransaction resource;
         private boolean enlisted;
-        
+
         ResourceHolder( Transaction tx, XaConnection connection, NeoStoreTransaction resource )
         {
             this.tx = tx;
             this.connection = connection;
             this.resource = resource;
         }
-        
+
         public NeoStoreTransaction forReading()
         {
             return resource;
         }
-        
+
         public NeoStoreTransaction forWriting()
         {
             if ( !enlisted )
@@ -402,7 +411,7 @@ public class PersistenceManager
             }
             return resource;
         }
-        
+
         private void enlist()
         {
             try
@@ -434,7 +443,7 @@ public class PersistenceManager
                 }
             }
         }
-        
+
         void destroy()
         {
             connection.destroy();

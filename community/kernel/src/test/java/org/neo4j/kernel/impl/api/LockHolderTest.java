@@ -24,11 +24,19 @@ import javax.transaction.Transaction;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+
 import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.SchemaLock;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.LockNotFoundException;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class LockHolderTest
@@ -47,7 +55,7 @@ public class LockHolderTest
 
 
         // THEN
-        Mockito.verify( mgr ).getReadLock( Matchers.any( SchemaLock.class ), Matchers.eq( tx ) );
+        Mockito.verify( mgr ).getReadLock( any( SchemaLock.class ), Matchers.eq( tx ) );
     }
 
     @Test
@@ -64,7 +72,7 @@ public class LockHolderTest
 
 
         // THEN
-        Mockito.verify( mgr ).getWriteLock( Matchers.any( SchemaLock.class ), Matchers.eq( tx ) );
+        Mockito.verify( mgr ).getWriteLock( any( SchemaLock.class ), Matchers.eq( tx ) );
     }
 
     @Test
@@ -82,7 +90,7 @@ public class LockHolderTest
 
 
         // THEN
-        Mockito.verify( mgr ).releaseReadLock( Matchers.any( SchemaLock.class ), Matchers.eq( tx ) );
+        Mockito.verify( mgr ).releaseReadLock( any( SchemaLock.class ), Matchers.eq( tx ) );
     }
 
     @Test
@@ -100,6 +108,42 @@ public class LockHolderTest
 
 
         // THEN
-        Mockito.verify( mgr ).releaseWriteLock( Matchers.any( SchemaLock.class ), Matchers.eq( tx ) );
+        Mockito.verify( mgr ).releaseWriteLock( any( SchemaLock.class ), Matchers.eq( tx ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenAttemptingToReleaseUnknownLocks()
+    {
+        // For instance, this can happen if the locks were taken prior to a master-switch,
+        // and then attempted released after the master-switch.
+
+        // GIVEN
+        LockManager mgr = mock( LockManager.class );
+        Transaction tx = mock( Transaction.class );
+        NodeManager nm = mock( NodeManager.class );
+        LockHolder holder = new LockHolderImpl( mgr, tx, nm );
+
+        doThrow( new LockNotFoundException( "Sad face" ) )
+                .when( mgr )
+                .releaseWriteLock( anyObject(), any( Transaction.class ) );
+        doThrow( new LockNotFoundException( "Sad face" ) )
+                .when( mgr )
+                .releaseReadLock( anyObject(), any( Transaction.class ) );
+
+        // WHEN
+        holder.acquireSchemaReadLock();
+        holder.acquireSchemaReadLock();
+        holder.acquireNodeWriteLock( 1337 );
+
+        // THEN
+        try
+        {
+            holder.releaseLocks();
+            fail( "Expected releaseLocks to throw" );
+        }
+        catch ( ReleaseLocksFailedKernelException e )
+        {
+            assertThat( e.getMessage(), containsString( "[READ SchemaLocks: 2, WRITE NodeLocks: 1]" ) );
+        }
     }
 }

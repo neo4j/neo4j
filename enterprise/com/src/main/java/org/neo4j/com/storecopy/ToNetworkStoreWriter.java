@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.com.storecopy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -25,6 +25,8 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+import org.neo4j.com.BlockLogBuffer;
+import org.neo4j.com.Protocol;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 

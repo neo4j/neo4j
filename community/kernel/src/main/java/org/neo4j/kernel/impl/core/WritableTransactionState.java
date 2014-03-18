@@ -418,8 +418,14 @@ public class WritableTransactionState implements TransactionState
     @Override
     public void rollback()
     {
-        applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
-        releaseLocks();
+        try
+        {
+            applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
+        }
+        finally
+        {
+            releaseLocks();
+        }
     }
 
     private void releaseLocks()

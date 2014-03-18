@@ -103,6 +103,7 @@ public class StoreMigrator
             legacyStore.copyLabelTokenNameStore( neoStore );
             legacyStore.copyNodeLabelStore( neoStore );
             legacyStore.copySchemaStore( neoStore );
+            legacyStore.copyLegacyIndexStoreFile( neoStore.getStorageFileName().getParentFile() );
         }
 
         private void migrateNodesAndRelationships() throws IOException

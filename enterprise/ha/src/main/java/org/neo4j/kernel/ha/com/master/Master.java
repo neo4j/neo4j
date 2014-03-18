@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha.com.master;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.StoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.id.IdAllocation;

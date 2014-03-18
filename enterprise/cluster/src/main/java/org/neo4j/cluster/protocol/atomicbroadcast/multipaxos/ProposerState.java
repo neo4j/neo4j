@@ -77,7 +77,7 @@ public enum ProposerState
                         {
                             // Denial of prepare
                             ProposerMessage.RejectPrepare rejectPropose = message.getPayload();
-                            InstanceId instanceId = new InstanceId( message );
+                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
                             context.getLogger( ProposerState.class ).debug( "Propose for instance " + instance
                                     + " rejected from " + message.getHeader( Message.FROM ) + " with ballot "
@@ -99,7 +99,7 @@ public enum ProposerState
                                 {
                                     outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
-                                            InstanceId.INSTANCE ) );
+                                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
                                 
                                 assert instance.value_1 == null : "value_1 should have been null at this point";
@@ -107,14 +107,15 @@ public enum ProposerState
                                 assert payload != null : "Should have a booked instance payload for " + instanceId;
                                 // This will reset the phase1Timeout if existing
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
-                                        ProposerMessage.phase1Timeout, message, payload ), InstanceId.INSTANCE ) );
+                                        ProposerMessage.phase1Timeout, message, payload ), org.neo4j.cluster.protocol
+                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }
 
                         case phase1Timeout:
                         {
-                            InstanceId instanceId = new InstanceId( message );
+                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
                             if ( instance.isState( PaxosInstance.State.p1_pending ) )
                             {
@@ -141,11 +142,11 @@ public enum ProposerState
                                     {
                                         outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                                 acceptor, new AcceptorMessage.PrepareState( ballot ) ),
-                                                InstanceId.INSTANCE ) );
+                                                org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                     }
                                     context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
                                             ProposerMessage.phase1Timeout, message, message.getPayload() ),
-                                            InstanceId.INSTANCE ) );
+                                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
                             }
                             else if ( instance.isState( PaxosInstance.State.closed ) || instance.isState(
@@ -165,7 +166,7 @@ public enum ProposerState
                         {
                             // P
                             ProposerMessage.PromiseState promiseState = message.getPayload();
-                            PaxosInstance instance = context.getPaxosInstance( new InstanceId( message ) );
+                            PaxosInstance instance = context.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message ) );
 
                             if ( instance.isState( PaxosInstance.State.p1_pending ) && instance.ballot ==
                                     promiseState.getBallot() )
@@ -224,12 +225,12 @@ public enum ProposerState
                                         outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.accept,
                                                 acceptor,
                                                 new AcceptorMessage.AcceptState( instance.ballot,
-                                                        instance.value_2 ) ), InstanceId.INSTANCE ) );
+                                                        instance.value_2 ) ), org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                     }
 
                                     context.setTimeout( instance.id,
                                             message.copyHeadersTo( Message.timeout( ProposerMessage.phase2Timeout,
-                                                    message, readyValue ), InstanceId.INSTANCE ) );
+                                                    message, readyValue ), org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
                                 else
                                 {
@@ -243,7 +244,7 @@ public enum ProposerState
 
                         case rejectAccept:
                         {
-                            InstanceId instanceId = new InstanceId( message );
+                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
 
                             if ( instance.isState( PaxosInstance.State.p2_pending ) )
@@ -272,7 +273,7 @@ public enum ProposerState
 
                         case phase2Timeout:
                         {
-                            InstanceId instanceId = new InstanceId( message );
+                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
                             PaxosInstance instance = context.getPaxosInstance( instanceId );
 
                             if ( instance.isState( PaxosInstance.State.p2_pending ) )
@@ -284,12 +285,12 @@ public enum ProposerState
                                 {
                                     outgoing.offer( message.copyHeadersTo( Message.to( AcceptorMessage.prepare,
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
-                                            InstanceId.INSTANCE ) );
+                                            org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
 
                                 context.setTimeout( instanceId, message.copyHeadersTo( Message.timeout(
                                         ProposerMessage.phase1Timeout, message, message.getPayload() ),
-                                        InstanceId.INSTANCE ) );
+                                        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             else if ( instance.isState( PaxosInstance.State.closed )
                                     || instance.isState( PaxosInstance.State.delivered ) )
@@ -302,7 +303,7 @@ public enum ProposerState
 
                         case accepted:
                         {
-                            PaxosInstance instance = context.getPaxosInstance( new InstanceId(
+                            PaxosInstance instance = context.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                     message ) );
 
                             if ( instance.isState( PaxosInstance.State.p2_pending ) )
@@ -335,14 +336,14 @@ public enum ProposerState
                                             {
                                                 outgoing.offer( message.copyHeadersTo( Message.internal( LearnerMessage
                                                         .learn, new LearnerMessage.LearnState( instance.value_2 ) ),
-                                                        InstanceId.INSTANCE ) );
+                                                        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                             }
                                             else
                                             {
                                                 outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                         .learn, learner,
                                                         new LearnerMessage.LearnState( instance.value_2 ) ),
-                                                        InstanceId.INSTANCE ) );
+                                                        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                             }
                                         }
 
@@ -352,7 +353,7 @@ public enum ProposerState
                                             outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, state.getJoinUri(),
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
-                                                    InstanceId.INSTANCE ) );
+                                                    org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                         }
                                     }
                                     else
@@ -363,7 +364,7 @@ public enum ProposerState
                                             outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage
                                                     .learn, learner,
                                                     new LearnerMessage.LearnState( instance.value_2 ) ),
-                                                    InstanceId.INSTANCE ) );
+                                                    org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                         }
                                     }
 
@@ -400,16 +401,16 @@ public enum ProposerState
     private static void propose( ProposerContext context, Message message, MessageHolder outgoing,
                                  List<URI> acceptors )
     {
-        InstanceId instanceId;
-        if ( message.hasHeader( InstanceId.INSTANCE ) )
+        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId;
+        if ( message.hasHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) )
         {
-            instanceId = new InstanceId( message );
+            instanceId = new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( message );
         }
         else
         {
             instanceId = context.newInstanceId();
 
-            message.setHeader( InstanceId.INSTANCE, instanceId.toString() );
+            message.setHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE, instanceId.toString() );
             context.bookInstance( instanceId, message );
         }
 
@@ -433,11 +434,11 @@ public enum ProposerState
             for ( URI acceptor : acceptors )
             {
                 outgoing.offer( Message.to( AcceptorMessage.prepare, acceptor, new AcceptorMessage.PrepareState(
-                        ballot ) ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
+                        ballot ) ).setHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE, instanceId.toString() ) );
             }
 
             context.setTimeout( instanceId, Message.timeout( ProposerMessage.phase1Timeout, message,
-                    message.getPayload() ).setHeader( InstanceId.INSTANCE, instanceId.toString() ) );
+                    message.getPayload() ).setHeader( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE, instanceId.toString() ) );
         }
         else
         {
