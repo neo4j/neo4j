@@ -31,13 +31,10 @@ case class CypherParser() extends Parser
   with Statement
   with Expressions {
 
-  val SingleStatement: Rule1[ast.Statement] = rule {
-    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
-  }
 
   @throws(classOf[SyntaxException])
   def parse(text: String): ast.Statement = {
-    val parsingResult = ReportingParseRunner(SingleStatement).run(text)
+    val parsingResult = ReportingParseRunner(CypherParser.SingleStatement).run(text)
     parsingResult.result match {
       case Some(statement: ast.Statement) => statement
       case _ => {
@@ -65,5 +62,11 @@ case class CypherParser() extends Parser
       throw new SyntaxException(s"${error.msg} (${error.position})", query, error.position.offset)
     }
     ReattachAliasedExpressions(statement.asQuery.setQueryText(query))
+  }
+}
+
+object CypherParser extends Parser with Statement with Expressions {
+  val SingleStatement: Rule1[ast.Statement] = rule {
+    WS ~ Statement ~~ optional(ch(';') ~ WS) ~ EOI.label("end of input")
   }
 }
