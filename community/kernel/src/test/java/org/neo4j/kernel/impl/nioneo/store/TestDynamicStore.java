@@ -19,13 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,6 +33,7 @@ import java.util.logging.Logger;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -47,6 +43,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestDynamicStore
 {
@@ -151,7 +151,7 @@ public class TestDynamicStore
         {
             log.setLevel( Level.OFF );
             createEmptyStore( dynamicStoreFile(), 30 );
-            FileChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
+            StoreChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
             DynamicArrayStore store = newStore();

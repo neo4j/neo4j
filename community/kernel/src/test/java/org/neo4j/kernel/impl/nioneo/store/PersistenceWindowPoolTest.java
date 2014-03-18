@@ -66,8 +66,9 @@ public class PersistenceWindowPoolTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8,
-                file.getChannel(), 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
+                channel, 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
                 BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
 
         PersistenceWindow initialWindow = pool.acquire( 0, OperationType.READ );
@@ -89,8 +90,9 @@ public class PersistenceWindowPoolTest
         String filename = new File( target.graphDbDir( true ), "dirty" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
         final int blockSize = 8;
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
         final PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), blockSize,
-                file.getChannel(), 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
+                channel, 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
                 BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
         
         // The gist:
@@ -154,7 +156,8 @@ public class PersistenceWindowPoolTest
     {
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0,
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, channel, 0,
                 false, false, new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
                 StringLogger.DEV_NULL );
 
@@ -183,7 +186,8 @@ public class PersistenceWindowPoolTest
         // Given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        PersistenceRow window = new PersistenceRow( 0l, 10, file.getChannel() );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        PersistenceRow window = new PersistenceRow( 0l, 10, channel );
 
         ConcurrentMap<Long, PersistenceRow> map = mock(ConcurrentMap.class);
 
@@ -197,7 +201,7 @@ public class PersistenceWindowPoolTest
         // locks it's grabbed as well as any memory it has allocated.
         when( map.putIfAbsent( eq( 0l ), any( PersistenceRow.class ) ) ).thenReturn( window );
 
-        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, file.getChannel(), 0,
+        PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, channel, 0,
                 false, false, map, BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
 
         // When
@@ -218,6 +222,7 @@ public class PersistenceWindowPoolTest
         // -- a store file that has some records in it already
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
         file.setLength( 8*10 );
         // -- a pool with a brick factory that tracks calls to lock/unlock
         final AtomicInteger lockedCount = new AtomicInteger(), unlockedCount = new AtomicInteger();
@@ -247,7 +252,7 @@ public class PersistenceWindowPoolTest
             }
         };
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8,
-                file.getChannel(), 10000, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
+                channel, 10000, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
                 brickFactory, StringLogger.DEV_NULL );
         
         try

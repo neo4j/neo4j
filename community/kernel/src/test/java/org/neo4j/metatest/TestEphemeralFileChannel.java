@@ -19,19 +19,22 @@
  */
 package org.neo4j.metatest;
 
-import static java.nio.ByteBuffer.allocateDirect;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static java.nio.ByteBuffer.allocateDirect;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class TestEphemeralFileChannel
 {
@@ -39,7 +42,7 @@ public class TestEphemeralFileChannel
     public void smoke() throws Exception
     {
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        FileChannel channel = fs.open( new File("yo"), "rw" );
+        StoreChannel channel = fs.open( new File( "yo" ), "rw" );
         
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocateDirect( 23 );
@@ -105,7 +108,7 @@ public class TestEphemeralFileChannel
         // GIVEN
         File file = new File( "myfile" );
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        FileChannel channel = fs.open( file, "rw" );
+        StoreChannel channel = fs.open( file, "rw" );
         byte[] bytes = "test".getBytes();
         channel.write( ByteBuffer.wrap( bytes ) );
         channel.close();

@@ -21,14 +21,15 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 class DirectLogBuffer implements LogBuffer
 {
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final ByteBuffer buffer;
 
-    DirectLogBuffer( FileChannel fileChannel, ByteBuffer buffer )
+    DirectLogBuffer( StoreChannel fileChannel, ByteBuffer buffer )
     {
         if ( fileChannel == null || buffer == null )
         {
@@ -139,7 +140,7 @@ class DirectLogBuffer implements LogBuffer
         return fileChannel.position();
     }
 
-    public FileChannel getFileChannel()
+    public StoreChannel getFileChannel()
     {
         return fileChannel;
     }

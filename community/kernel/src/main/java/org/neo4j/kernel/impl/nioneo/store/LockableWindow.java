@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.transaction.LockException;
  */
 public abstract class LockableWindow implements PersistenceWindow
 {
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
 
     private Thread lockingThread = null;
     private final LinkedList<LockElement> waitingThreadList = 
@@ -42,7 +42,7 @@ public abstract class LockableWindow implements PersistenceWindow
 
     private boolean isDirty = false;
 
-    LockableWindow( FileChannel fileChannel )
+    LockableWindow( StoreChannel fileChannel )
     {
         this.fileChannel = fileChannel;
     }
@@ -52,7 +52,7 @@ public abstract class LockableWindow implements PersistenceWindow
         return position() <= position && position < position() + size();
     }
 
-    FileChannel getFileChannel()
+    StoreChannel getFileChannel()
     {
         return fileChannel;
     }

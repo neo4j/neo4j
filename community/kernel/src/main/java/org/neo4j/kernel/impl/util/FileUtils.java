@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -211,7 +211,7 @@ public class FileUtils
         return renamed;
     }
 
-    public static void truncateFile( FileChannel fileChannel, long position )
+    public static void truncateFile( SeekableByteChannel fileChannel, long position )
             throws IOException
     {
         int count = 0;

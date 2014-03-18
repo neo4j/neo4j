@@ -19,24 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class TestXaLogicalLogFiles {
 
@@ -75,8 +74,8 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(false);
         
-        FileChannel fc = mockedFileChannel(XaLogicalLogTokens.LOG1);
-        when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
+        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG1 );
+        when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn( fc );
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
         
@@ -92,7 +91,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(false);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        FileChannel fc = mockedFileChannel(XaLogicalLogTokens.LOG2);
+        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG2 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -109,7 +108,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(false);
         
-        FileChannel fc = mockedFileChannel(XaLogicalLogTokens.CLEAN);
+        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.CLEAN );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -126,7 +125,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        FileChannel fc = mockedFileChannel(XaLogicalLogTokens.LOG1);
+        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG1 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -143,7 +142,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        FileChannel fc = mockedFileChannel(XaLogicalLogTokens.LOG2);
+        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG2 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -162,7 +161,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        FileChannel fc = mockedFileChannel(';');
+        StoreChannel fc = mockedFileChannel( ';' );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -170,40 +169,24 @@ public class TestXaLogicalLogFiles {
         files.determineState();
     }
     
-    private FileChannel mockedFileChannel(char c) throws IOException
+    private StoreChannel mockedFileChannel(char c) throws IOException
     {
         return new MockedFileChannel(ByteBuffer.allocate(4).putChar(c).array());
     }
     
-    private static class MockedFileChannel extends FileChannel {
-
+    private static class MockedFileChannel extends StoreFileChannel
+    {
         private ByteBuffer bs;
 
         public MockedFileChannel(byte [] bs) {
+            super( (FileChannel) null );
             this.bs = ByteBuffer.wrap(bs);
         }
-        
-        @Override
-        public void force(boolean arg0) throws IOException { }
-
-        @Override
-        public FileLock lock(long arg0, long arg1, boolean arg2)
-                throws IOException { throw new RuntimeException("Not implemented"); }
-
-        @Override
-        public MappedByteBuffer map(MapMode arg0, long arg1, long arg2)
-                throws IOException { throw new RuntimeException("Not implemented"); }
 
         @Override
         public long position() throws IOException
         {
             return bs.position();
-        }
-
-        @Override
-        public FileChannel position(long arg0) throws IOException
-        {
-            throw new RuntimeException("Not implemented");
         }
 
         @Override
@@ -215,74 +198,9 @@ public class TestXaLogicalLogFiles {
         }
 
         @Override
-        public int read(ByteBuffer buffer, long length) throws IOException
+        public void close() throws IOException
         {
-            throw new RuntimeException("Not implemented");
         }
-
-        @Override
-        public long read(ByteBuffer[] arg0, int arg1, int arg2)
-                throws IOException
-        {
-            throw new RuntimeException("Not implemented");
-        }
-
-        @Override
-        public long size() throws IOException
-        {
-            return 0;
-        }
-
-        @Override
-        public long transferFrom(ReadableByteChannel arg0, long arg1, long arg2)
-                throws IOException
-        {
-            return 0;
-        }
-
-        @Override
-        public long transferTo(long arg0, long arg1, WritableByteChannel arg2)
-                throws IOException
-        {
-            return 0;
-        }
-
-        @Override
-        public FileChannel truncate(long arg0) throws IOException
-        {
-            throw new RuntimeException("Not implemented");
-        }
-
-        @Override
-        public FileLock tryLock(long arg0, long arg1, boolean arg2)
-                throws IOException
-        {
-            throw new RuntimeException("Not implemented");
-        }
-
-        @Override
-        public int write(ByteBuffer arg0) throws IOException
-        {
-            throw new RuntimeException("Not implemented");
-        }
-
-        @Override
-        public int write(ByteBuffer arg0, long arg1) throws IOException
-        {
-            throw new RuntimeException("Not implemented");
-        }
-
-        @Override
-        public long write(ByteBuffer[] arg0, int arg1, int arg2)
-                throws IOException
-        {
-            throw new RuntimeException("Not implemented");
-        }
-
-        @Override
-        protected void implCloseChannel() throws IOException
-        { }
-        
     }
     
 }

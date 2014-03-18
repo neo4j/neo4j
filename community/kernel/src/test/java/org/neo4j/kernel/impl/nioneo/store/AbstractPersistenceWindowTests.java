@@ -19,19 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Random;
 import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.fail;
 
 public class AbstractPersistenceWindowTests
 {
@@ -48,7 +47,7 @@ public class AbstractPersistenceWindowTests
         directory.mkdirs();
         String filename = new File( directory, UUID.randomUUID().toString() ).getAbsolutePath();
         RandomAccessFile file = new RandomAccessFile( filename, "rw" );
-        FileChannel channel = file.getChannel();
+        StoreFileChannel channel = new StoreFileChannel( file.getChannel() );
         window = new AbstractPersistenceWindow( 0, RECORD_SIZE, RECORD_SIZE * NUMBER_OF_RECORDS,
                 channel, ByteBuffer.allocate( RECORD_SIZE * NUMBER_OF_RECORDS ) )
         {

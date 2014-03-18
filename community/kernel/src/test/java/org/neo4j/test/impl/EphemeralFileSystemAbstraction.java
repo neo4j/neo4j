@@ -53,11 +53,14 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
@@ -118,10 +121,15 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public synchronized FileChannel open( File fileName, String mode ) throws IOException
+    public synchronized StoreChannel open( File fileName, String mode ) throws IOException
     {
         EphemeralFileData data = files.get( fileName );
-        return data != null ? new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) : create( fileName );
+        if ( data != null )
+        {
+            return new StoreFileChannel( new EphemeralFileChannel(
+                    data, new FileStillOpenException( fileName.getPath() ) ) );
+        }
+        return create( fileName );
     }
 
     @Override
@@ -149,7 +157,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public FileLock tryLock(File fileName, FileChannel channel) throws IOException
+    public FileLock tryLock(File fileName, StoreChannel channel) throws IOException
     {
         final java.nio.channels.FileLock lock = channel.tryLock();
         return new FileLock()
@@ -163,7 +171,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public synchronized FileChannel create( File fileName ) throws IOException
+    public synchronized StoreChannel create( File fileName ) throws IOException
     {
         File parentFile = fileName.getParentFile();
         if ( parentFile != null /*means that this is the 'default location'*/ && !fileExists( parentFile ) )
@@ -174,7 +182,8 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
         EphemeralFileData data = new EphemeralFileData();
         free( files.put( fileName, data ) );
-        return new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) );
+        return new StoreFileChannel(
+                new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
     }
 
     @Override
@@ -445,7 +454,7 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         }
 
         @Override
-        public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException
+        public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
         {
             throw new IOException("Not supported");
         }
@@ -876,8 +885,8 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
     private void copyFile( File from, FileSystemAbstraction fromFs, File to, ByteBuffer buffer ) throws IOException
     {
-        FileChannel source = fromFs.open( from, "r" );
-        FileChannel sink = this.open( to, "rw" );
+        StoreChannel source = fromFs.open( from, "r" );
+        StoreChannel sink = this.open( to, "rw" );
         try
         {
             for ( int available; (available = (int) (source.size() - source.position())) > 0; )

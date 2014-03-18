@@ -28,10 +28,6 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
@@ -39,6 +35,8 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
@@ -55,9 +53,9 @@ public class IdJumpingFileSystemAbstraction extends LifecycleAdapter implements 
     }
     
     @Override
-    public FileChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, String mode ) throws IOException
     {
-        FileChannel channel = actualFileSystem.open( fileName, mode );
+        StoreFileChannel channel = (StoreFileChannel) actualFileSystem.open( fileName, mode );
         if (
                 fileName.getName().equals( "neostore.nodestore.db" ) ||
                 fileName.getName().equals( "neostore.nodestore.db.labels" ) ||
@@ -96,7 +94,7 @@ public class IdJumpingFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public FileChannel create( File fileName ) throws IOException
+    public StoreChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
     }
@@ -144,7 +142,7 @@ public class IdJumpingFileSystemAbstraction extends LifecycleAdapter implements 
     }
 
     @Override
-    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
     {
         return actualFileSystem.tryLock( fileName, channel );
     }
@@ -201,14 +199,13 @@ public class IdJumpingFileSystemAbstraction extends LifecycleAdapter implements 
         throw new IllegalArgumentException( fileName.getPath() );
     }
     
-    public class IdJumpingFileChannel extends FileChannel
+    public class IdJumpingFileChannel extends StoreFileChannel
     {
-        private final FileChannel actual;
         private final int recordSize;
         
-        public IdJumpingFileChannel( FileChannel actual, int recordSize )
+        public IdJumpingFileChannel( StoreFileChannel actual, int recordSize )
         {
-            this.actual = actual;
+            super( actual );
             this.recordSize = recordSize;
         }
         
@@ -272,116 +269,43 @@ public class IdJumpingFileSystemAbstraction extends LifecycleAdapter implements 
             }
             return diff;
         }
-        
-        public long getInternalPosition() throws IOException
-        {
-            return actual.position();
-        }
-        
-        @Override
-        public int read( ByteBuffer dst ) throws IOException
-        {
-            return actual.read( dst );
-        }
-
-        @Override
-        public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
-        {
-            return actual.read( dsts, offset, length );
-        }
-
-        @Override
-        public int write( ByteBuffer src ) throws IOException
-        {
-            return actual.write( src );
-        }
-
-        @Override
-        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-        {
-            return actual.write( srcs, offset, length );
-        }
 
         @Override
         public long position() throws IOException
         {
-            return translateOutgoing( actual.position() );
+            return translateOutgoing( super.position() );
         }
 
         @Override
-        public FileChannel position( long newPosition ) throws IOException
+        public IdJumpingFileChannel position( long newPosition ) throws IOException
         {
-            actual.position( translateIncoming( newPosition ) );
+            super.position( translateIncoming( newPosition ) );
             return this;
         }
 
         @Override
         public long size() throws IOException
         {
-            return translateOutgoing( actual.size() );
+            return translateOutgoing( super.size() );
         }
 
         @Override
-        public FileChannel truncate( long size ) throws IOException
+        public IdJumpingFileChannel truncate( long size ) throws IOException
         {
-            actual.truncate( translateIncoming( size, true ) );
+            super.truncate( translateIncoming( size, true ) );
             return this;
-        }
-
-        @Override
-        public void force( boolean metaData ) throws IOException
-        {
-            actual.force( metaData );
-        }
-
-        @Override
-        public long transferTo( long position, long count, WritableByteChannel target )
-                throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long transferFrom( ReadableByteChannel src, long position, long count )
-                throws IOException
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override
         public int read( ByteBuffer dst, long position ) throws IOException
         {
-            return actual.read( dst, translateIncoming( position ) );
+            return super.read( dst, translateIncoming( position ) );
         }
 
         @Override
         public int write( ByteBuffer src, long position ) throws IOException
         {
-            return actual.write( src, translateIncoming( position ) );
-        }
-
-        @Override
-        public MappedByteBuffer map( MapMode mode, long position, long size ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
-        {
-            return actual.lock( translateIncoming( position ), size, shared );
-        }
-
-        @Override
-        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
-        {
-            return actual.tryLock( translateIncoming( position ), size, shared );
-        }
-
-        @Override
-        protected void implCloseChannel() throws IOException
-        {
-            actual.close();
+            return super.write( src, translateIncoming( position ) );
         }
     }
 

@@ -19,18 +19,12 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static java.io.File.createTempFile;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -38,14 +32,24 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.io.File.createTempFile;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
 
 public class TestIndexCommand
 {
@@ -152,7 +156,7 @@ public class TestIndexCommand
     private Pair<File, List<Long>> writeCommandsToFile( List<XaCommand> commands ) throws IOException
     {
         File file = createTempFile( "index", "command" );
-        FileChannel fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
+        StoreChannel fileChannel = new StoreFileChannel( new RandomAccessFile( file, "rw" ).getChannel() );
         LogBuffer writeBuffer = new DirectMappedLogBuffer( fileChannel, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         List<Long> startPositions = new ArrayList<Long>();
         for ( XaCommand command : commands )

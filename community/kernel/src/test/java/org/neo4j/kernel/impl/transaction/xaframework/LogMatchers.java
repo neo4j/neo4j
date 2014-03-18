@@ -22,17 +22,17 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.internal.matchers.TypeSafeMatcher;
+
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.DumpLogicalLog;
 
 /**
@@ -46,7 +46,7 @@ public class LogMatchers
 {
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, String logPath ) throws IOException
     {
-        FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
+        StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
 
         try

@@ -19,31 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
-import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -53,6 +41,20 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.nio.ByteBuffer.allocate;
+
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.onePhaseCommitEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.startEntry;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestPartialTransactionCopier
 {
@@ -73,7 +75,7 @@ public class TestPartialTransactionCopier
         Integer brokenTxIdentifier = broken.other();
 
         // And I've read the log header on that broken file
-        FileChannel brokenLog = fs.get().open( brokenLogFile, "rw" );
+        StoreChannel brokenLog = fs.get().open( brokenLogFile, "rw" );
         ByteBuffer buffer = allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
         readLogHeader( buffer, brokenLog, true );
 
@@ -119,7 +121,7 @@ public class TestPartialTransactionCopier
 
     private LogBuffer createNewLogWithHeader( File newLogFile ) throws IOException
     {
-        FileChannel newLog = fs.get().open( newLogFile, "rw" );
+        StoreChannel newLog = fs.get().open( newLogFile, "rw" );
         LogBuffer newLogBuffer = new DirectLogBuffer( newLog, allocate(  10000 ) );
 
         ByteBuffer buf = allocate( 100 );

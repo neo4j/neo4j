@@ -25,11 +25,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.channels.FileChannel;
 
 public interface FileSystemAbstraction
 {
-    FileChannel open( File fileName, String mode ) throws IOException;
+    StoreChannel open( File fileName, String mode ) throws IOException;
     
     OutputStream openAsOutputStream( File fileName, boolean append ) throws IOException;
     
@@ -39,9 +38,9 @@ public interface FileSystemAbstraction
     
     Writer openAsWriter( File fileName, String encoding, boolean append ) throws IOException;
     
-    FileLock tryLock( File fileName, FileChannel channel ) throws IOException;
+    FileLock tryLock( File fileName, StoreChannel channel ) throws IOException;
     
-    FileChannel create( File fileName ) throws IOException;
+    StoreChannel create( File fileName ) throws IOException;
     
     boolean fileExists( File fileName );
     

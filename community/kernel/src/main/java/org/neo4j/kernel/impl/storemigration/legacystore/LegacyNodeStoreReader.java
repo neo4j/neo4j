@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
@@ -32,13 +29,16 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
 
 public class LegacyNodeStoreReader
 {
     public static final String FROM_VERSION = "NodeStore v0.9.9";
     public static final int RECORD_LENGTH = 9;
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final long maxId;
 
     public LegacyNodeStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException

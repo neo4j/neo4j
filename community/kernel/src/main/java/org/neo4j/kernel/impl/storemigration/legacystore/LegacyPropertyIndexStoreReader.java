@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class LegacyPropertyIndexStoreReader
 {
@@ -44,7 +44,7 @@ public class LegacyPropertyIndexStoreReader
 
     public Iterable<PropertyIndexRecord> readPropertyIndexStore() throws IOException
     {
-        FileChannel fileChannel = fs.open( fileName, "r" );
+        StoreChannel fileChannel = fs.open( fileName, "r" );
         int recordLength = 9;
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;

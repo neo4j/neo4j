@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 class PlainPersistenceWindow extends AbstractPersistenceWindow
 {
     PlainPersistenceWindow( long position, int recordSize, int totalSize, 
-        FileChannel channel )
+        StoreChannel channel )
     {
         super( position, recordSize, totalSize, channel, 
             ByteBuffer.allocate( totalSize ) );

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
@@ -30,13 +29,14 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class LegacyRelationshipStoreReader
 {
     public static final String FROM_VERSION = "RelationshipStore v0.9.9";
     public static final int RECORD_LENGTH = 33;
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final long maxId;
 
     public LegacyRelationshipStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException

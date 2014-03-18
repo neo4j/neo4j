@@ -25,10 +25,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class CannedFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -49,7 +49,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, String mode ) throws IOException
     {
         if ( cannotOpenLockFile != null )
         {
@@ -84,7 +84,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
     {
         if ( !lockSuccess )
         {
@@ -95,7 +95,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileChannel create( File fileName ) throws IOException
+    public StoreChannel create( File fileName ) throws IOException
     {
         throw new UnsupportedOperationException( "TODO" );
     }
