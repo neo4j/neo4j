@@ -92,7 +92,7 @@ class HeartbeatContextImpl
     @Override
     public boolean alive( final InstanceId node )
     {
-        Set<InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+        Set<InstanceId> serverSuspicions = suspicionsFor( getMyId() );
         boolean suspected = serverSuspicions.remove( node );
 
         if ( !isFailed( node ) && failed.remove( node ) )
@@ -114,7 +114,7 @@ class HeartbeatContextImpl
     @Override
     public void suspect( final InstanceId node )
     {
-        Set<InstanceId> serverSuspicions = getSuspicionsFor( getMyId() );
+        Set<InstanceId> serverSuspicions = suspicionsFor( getMyId() );
 
         if ( !serverSuspicions.contains( node ) )
         {
@@ -141,7 +141,7 @@ class HeartbeatContextImpl
     @Override
     public void suspicions( InstanceId from, Set<InstanceId> suspicions )
     {
-        Set<InstanceId> serverSuspicions = getSuspicionsFor( from );
+        Set<InstanceId> serverSuspicions = suspicionsFor( from );
 
         // Check removals
         Iterator<InstanceId> suspicionsIterator = serverSuspicions.iterator();
@@ -263,6 +263,12 @@ class HeartbeatContextImpl
 
     @Override
     public Set<InstanceId> getSuspicionsFor( InstanceId uri )
+    {
+        Set<org.neo4j.cluster.InstanceId> suspicions = suspicionsFor( uri );
+        return new HashSet<org.neo4j.cluster.InstanceId>( suspicions );
+    }
+
+    private Set<InstanceId> suspicionsFor( InstanceId uri )
     {
         Set<InstanceId> serverSuspicions = nodeSuspicions.get( uri );
         if ( serverSuspicions == null )

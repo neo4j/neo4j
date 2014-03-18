@@ -41,8 +41,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Rule;
-import org.neo4j.cluster.FixedNetworkLatencyStrategy;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.FixedNetworkLatencyStrategy;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;

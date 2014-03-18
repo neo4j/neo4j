@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -44,7 +45,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 /**
  * Migrates a neo4j database from one version to the next. Instantiated with a {@link LegacyStore}
  * representing the old version and a {@link NeoStore} representing the new version.
- * 
+ *
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
  */
@@ -63,7 +64,7 @@ public class StoreMigrator
         new Migration( legacyStore, neoStore ).migrate();
         progressMonitor.finished();
     }
-    
+
     protected class Migration
     {
         private final LegacyStore legacyStore;
@@ -95,16 +96,17 @@ public class StoreMigrator
             legacyStore.copyRelationshipTypeTokenNameStore( neoStore );
             legacyStore.copyDynamicStringPropertyStore( neoStore );
             legacyStore.copyDynamicArrayPropertyStore( neoStore );
+            legacyStore.copyLegacyIndexStoreFile( neoStore.getStorageFileName().getParentFile() );
         }
 
         private void migratePropertyIndexes( PropertyStore propertyStore ) throws IOException
         {
             Token[] tokens = legacyStore.getPropertyIndexReader().readTokens();
-            
+
             // dedup and write new property key token store (incl. names)
             Map<Integer, Integer> propertyKeyTranslation =
                     dedupAndWritePropertyKeyTokenStore( propertyStore, tokens );
-            
+
             // read property store, replace property key ids
             migratePropertyStore( propertyKeyTranslation, propertyStore );
         }
@@ -112,7 +114,7 @@ public class StoreMigrator
         private void migrateNeoStore( NeoStore neoStore ) throws IOException
         {
             legacyStore.copyNeoStore( neoStore );
-            neoStore.setStoreVersion( NeoStore.versionStringToLong( NeoStore.ALL_STORES_VERSION ) );
+            neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         }
 
         private Map<Integer, Integer> dedupAndWritePropertyKeyTokenStore( PropertyStore propertyStore,
@@ -141,7 +143,7 @@ public class StoreMigrator
             }
             return translations;
         }
-        
+
         private void migratePropertyStore( Map<Integer, Integer> propertyKeyTranslation,
                 PropertyStore propertyStore ) throws IOException
         {
@@ -167,7 +169,7 @@ public class StoreMigrator
                 lastInUseId = propertyRecord.getId();
             }
         }
-        
+
         private void migrateNodes( NodeStore nodeStore ) throws IOException
         {
             for ( NodeRecord nodeRecord : loop( legacyStore.getNodeStoreReader().readNodeStore() ) )

@@ -107,9 +107,16 @@ class LearnerContextImpl
     }
 
     @Override
-    public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster )
+    public void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster,
+            org.neo4j.cluster.InstanceId instanceId )
     {
-        commonState.setLastKnownLearnedInstanceInCluster( lastKnownLearnedInstanceInCluster );
+        commonState.setLastKnownLearnedInstanceInCluster( lastKnownLearnedInstanceInCluster, instanceId );
+    }
+
+    @Override
+    public org.neo4j.cluster.InstanceId getLastKnownAliveUpToDateInstance()
+    {
+        return commonState.getLastKnownAliveUpToDateInstance();
     }
 
     @Override
@@ -118,7 +125,7 @@ class LearnerContextImpl
         this.lastLearnedInstanceId = Math.max( lastLearnedInstanceId, instanceId );
         if ( lastLearnedInstanceId > commonState.lastKnownLearnedInstanceInCluster() )
         {
-            commonState.setLastKnownLearnedInstanceInCluster( lastLearnedInstanceId );
+            commonState.setLastKnownLearnedInstanceInCluster( lastLearnedInstanceId, null );
         }
     }
 
@@ -133,7 +140,7 @@ class LearnerContextImpl
     {
         lastDeliveredInstanceId = -1;
         lastLearnedInstanceId = -1;
-        commonState.setLastKnownLearnedInstanceInCluster( -1 );
+        commonState.setLastKnownLearnedInstanceInCluster( -1, null );
     }
 
     @Override

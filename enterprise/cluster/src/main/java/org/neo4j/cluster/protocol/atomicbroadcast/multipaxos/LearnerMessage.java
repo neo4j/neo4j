@@ -90,21 +90,25 @@ public enum LearnerMessage
         }
 
         @Override
-        public String toString()
+        public boolean equals( Object obj )
         {
-            return "Learn request";
+            if(obj == null)
+            {
+                return false;
+            }
+            return getClass() == obj.getClass();
         }
 
         @Override
         public int hashCode()
         {
-            return 0;
+            return 1;
         }
 
         @Override
-        public boolean equals( Object obj )
+        public String toString()
         {
-            return obj instanceof LearnRequestState;
+            return "Learn request";
         }
     }
 
