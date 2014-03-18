@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
@@ -43,11 +44,11 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
 /**
- * Reader for a database in an older store format version. 
- * 
+ * Reader for a database in an older store format version.
+ *
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the reader code is specific for the current upgrade and changes with each store format version.
- * 
+ *
  * {@link #LEGACY_VERSION} marks which version it's able to read.
  */
 public class LegacyStore implements Closeable
@@ -69,16 +70,18 @@ public class LegacyStore implements Closeable
         assertLegacyAndCurrentVersionHaveSameLength( LEGACY_VERSION, CommonAbstractStore.ALL_STORES_VERSION );
         initStorage();
     }
-    
+
     /**
      * Store files that don't need migration are just copied and have their trailing versions replaced
-     * by the current version. For this to work the legacy version and the current version must have the 
+     * by the current version. For this to work the legacy version and the current version must have the
      * same encoded length.
      */
     static void assertLegacyAndCurrentVersionHaveSameLength( String legacyVersion, String currentVersion )
     {
         if ( UTF8.encode( legacyVersion ).length != UTF8.encode( currentVersion ).length )
+        {
             throw new IllegalStateException( "Encoded version string length must remain the same between versions" );
+        }
     }
 
     protected void initStorage() throws IOException
@@ -92,7 +95,7 @@ public class LegacyStore implements Closeable
     {
         return storageFileName;
     }
-    
+
     public static long getUnsignedInt(ByteBuffer buf)
     {
         return buf.getInt()&0xFFFFFFFFL;
@@ -107,7 +110,9 @@ public class LegacyStore implements Closeable
     public void close() throws IOException
     {
         for ( Closeable storeReader : allStoreReaders )
+        {
             storeReader.close();
+        }
     }
 
     private void copyStore( File targetBaseStorageFileName, String storeNamePart, String versionTrailer )
@@ -115,9 +120,9 @@ public class LegacyStore implements Closeable
     {
         File targetStoreFileName = new File( targetBaseStorageFileName.getPath() + storeNamePart );
         fs.copyFile( new File( storageFileName + storeNamePart ), targetStoreFileName );
-        
+
         setStoreVersionTrailer( targetStoreFileName, versionTrailer );
-        
+
         fs.copyFile(
                 new File( storageFileName + storeNamePart + ".id" ),
                 new File( targetBaseStorageFileName + storeNamePart + ".id" ) );
@@ -195,17 +200,17 @@ public class LegacyStore implements Closeable
     {
         return nodeStoreReader;
     }
-    
+
     public LegacyPropertyIndexStoreReader getPropertyIndexReader()
     {
         return propertyIndexReader;
     }
-    
+
     public LegacyPropertyStoreReader getPropertyStoreReader()
     {
         return propertyStoreReader;
     }
-    
+
     static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
     {
         buffer.clear();
@@ -219,5 +224,16 @@ public class LegacyStore implements Closeable
             throw new RuntimeException( e );
         }
         buffer.flip();
+    }
+
+    public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
+    {
+        File legacyDirectory = storageFileName.getParentFile();
+        File fromFile = new File( legacyDirectory, IndexStore.INDEX_DB_FILE_NAME );
+        if ( fromFile.exists() )
+        {
+            File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
+            fs.copyFile( fromFile, toFile );
+        }
     }
 }

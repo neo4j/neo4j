@@ -245,7 +245,7 @@ public class MultiPaxosServer
                 .getStateMachine( ClusterMessage.class )
                 .getContext()).getConfiguration();
 
-        Collection<org.neo4j.cluster.InstanceId> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
+        Collection<InstanceId> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
                 .class ).getContext()).getFailed();
         System.out.println( configuration + " Failed:" + failed );
     }

@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -48,7 +49,8 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.test.TargetDirectory.forTest;
 
 /**

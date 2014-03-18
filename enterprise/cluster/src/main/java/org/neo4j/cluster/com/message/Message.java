@@ -162,6 +162,45 @@ public class Message<MESSAGETYPE extends MessageType>
     }
 
     @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        Message message = (Message) o;
+
+        if ( headers != null ? !headers.equals( message.headers ) : message.headers != null )
+        {
+            return false;
+        }
+        if ( messageType != null ? !messageType.equals( message.messageType ) : message.messageType != null )
+        {
+            return false;
+        }
+        if ( payload != null ? !payload.equals( message.payload ) : message.payload != null )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = messageType != null ? messageType.hashCode() : 0;
+        result = 31 * result + (payload != null ? payload.hashCode() : 0);
+        result = 31 * result + (headers != null ? headers.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString()
     {
         return messageType.name() + headers + (payload != null && payload instanceof String ? ": " + payload : "");
