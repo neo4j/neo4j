@@ -17,6 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId, DummyPosition}
@@ -222,7 +225,9 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
 
   test("index seek when there is an index on the property") {
     when(planContext.indexesGetForLabel(12)).thenReturn(Iterator())
-    when(planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator(new IndexDescriptor(12, 15)))
+    when(planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
+      override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
+    })
 
     // given
     val identifier = Identifier("n")(pos)

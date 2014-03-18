@@ -34,14 +34,11 @@ abstract class IndexLeafPlanner extends LeafPlanner {
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
         labelPredicates.flatMap { predicate =>
           // For some reason, a sugared partial function with a condition (case x if foo) throws a MatchError here. :(
-          predicate.labels.flatMap(_.id).collect ( new PartialFunction[LabelId, PlanTableEntry] {
-            def isDefinedAt(labelId: LabelId) =
-              findIndexesForLabel(labelId.id).exists(_.getPropertyKeyId == propertyKeyId.id)
-            def apply(labelId: LabelId) = {
+          predicate.labels.flatMap(_.id).collect {
+            case labelId if findIndexesForLabel(labelId.id).toSeq.exists(_.getPropertyKeyId == propertyKeyId.id) =>
               val plan = constructPlan(idName, labelId, propertyKeyId, valueExpr)
               PlanTableEntry(plan, Seq(expression, predicate))
-            }
-          } )
+          }
         }
     }.flatten)
 
