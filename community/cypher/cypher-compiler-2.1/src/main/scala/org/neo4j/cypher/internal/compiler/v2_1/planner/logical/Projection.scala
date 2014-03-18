@@ -22,13 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) extends LogicalPlan {
-  def coveredIds: Set[IdName] = left.coveredIds
-
-  def cardinality: Int = left.cardinality
-
-  def cost: Int = ???
-
   def rhs = None
-
   def lhs: Option[LogicalPlan] = Some(left)
 }

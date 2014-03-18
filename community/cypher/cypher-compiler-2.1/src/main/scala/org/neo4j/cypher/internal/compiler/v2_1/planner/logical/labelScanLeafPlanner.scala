@@ -30,8 +30,10 @@ case class labelScanLeafPlanner(qg: QueryGraph, labelPredicateMap: Map[IdName, S
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
         labelPredicates.flatMap(predicate => predicate.labels.map(predicate -> _)).collect {
           case (predicate, labelName) =>
-            val plan = NodeByLabelScan(idName, labelName.toEither(), context.estimator.estimateNodeByLabelScan(labelName.id))
-            PlanTableEntry(plan, Seq(predicate))
+            val cardinality = context.estimator.estimateNodeByLabelScan(labelName.id)
+            val cost = context.costs.calculateNodeByLabelScan(cardinality)
+            val plan = NodeByLabelScan(idName, labelName.toEither())
+            PlanTableEntry(plan, Seq(predicate), cost, Set(idName), cardinality)
         }
     }.flatten)
 }

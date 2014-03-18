@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlan
-
-/* Once we have a physical plan, the OperatorBuilder will turn this plan into runnable code.*/
-trait ExecutionPlanBuilder {
-  def build(plan: LogicalPlan): PipeInfo
+class SimpleCostModel extends CostModel {
+  def calculateExpandRelationship(cardinality: Int): Int = cardinality
+  def calculateNodeIndexScan(cardinality: Int): Int = cardinality * 3
+  def calculateNodeIndexSeek(cardinality: Int): Int = cardinality * 3
+  def calculateAllNodes(cardinality: Int): Int = cardinality
+  def calculateNodeByLabelScan(cardinality: Int): Int = cardinality * 2
+  def calculateRelationshipByIdSeek(cardinality: Int): Int = cardinality
+  def calculateNodeByIdSeek(cardinality: Int): Int = cardinality
 }
