@@ -36,7 +36,7 @@ class RelationshipIterator implements PrimitiveLongIterator
     private final NodeImpl fromNode;
     private final DirectionWrapper direction;
     private final NodeManager nodeManager;
-    
+
     private boolean lastTimeILookedThereWasMoreToLoad;
     private final boolean allTypes;
     private final int[] types;
@@ -98,7 +98,7 @@ class RelationshipIterator implements PrimitiveLongIterator
                 hasNext = true;
                 return;
             }
-            
+
             LoadStatus status;
             while ( !currentTypeIterator.hasNext() )
             {
@@ -132,7 +132,7 @@ class RelationshipIterator implements PrimitiveLongIterator
                         }
                         newRels.put( type, itr );
                     }
-                    
+
                     // If we wanted relationships of any type check if there are
                     // any new relationship types loaded for this node and if so
                     // initiate iterators for them
@@ -154,7 +154,7 @@ class RelationshipIterator implements PrimitiveLongIterator
                             }
                         }
                     }
-                    
+
                     initializeRels( newRels.values().toArray( new RelIdIterator[newRels.size()] ) );
                     currentTypeIterator = rels[currentTypeIndex];
                 }
