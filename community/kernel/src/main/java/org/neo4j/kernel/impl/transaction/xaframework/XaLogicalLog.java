@@ -34,7 +34,9 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
@@ -51,7 +53,6 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
@@ -226,22 +227,8 @@ public class XaLogicalLog implements LogLoader
         else
         {
             logVersion = xaTf.getCurrentVersion();
-            
-            /* This is for compensating for that, during rotation, renaming the active log
-             * file and updating the log version via xaTf isn't atomic. First the file gets
-             * renamed and then the version is updated. If a crash occurs in between those
-             * two we need to detect and repair it the next startup...
-             * and here's the code for doing that. */
-            boolean logVersionChanged = false;
-            while ( fileSystem.fileExists( getFileName( logVersion ) ) )
-            {
-                logVersion++;
-                logVersionChanged = true;
-            }
-            if ( logVersionChanged )
-            {
-                xaTf.setVersion( logVersion );
-            }
+            determineLogVersionFromArchivedFiles();
+
 
             long lastTxId = xaTf.getLastCommittedTx();
             LogIoUtils.writeLogHeader( sharedBuffer, logVersion, lastTxId );
@@ -250,6 +237,16 @@ public class XaLogicalLog implements LogLoader
             fileChannel.write( sharedBuffer );
             scanIsComplete = true;
             msgLog.info( openedLogicalLogMessage( fileToOpen, lastTxId, true ) );
+        }
+    }
+
+    private void determineLogVersionFromArchivedFiles()
+    {
+        long version = logFiles.determineNextLogVersion(/*default=*/logVersion);
+        if(version != logVersion)
+        {
+            logVersion = version;
+            xaTf.setVersion( version );
         }
     }
 
@@ -774,13 +771,19 @@ public class XaLogicalLog implements LogLoader
             fileChannel = fileSystem.open( logFileName, "rw" );
             return;
         }
+        // Even though we use the archived files to tell the next-in-line log version, if there are no files present
+        // we need a fallback. By default, we fall back to logVersion, so just set that and then run the relevant logic.
         logVersion = header[0];
-        
-        /* This is for compensating for that, during rotation, renaming the active log
-         * file and updating the log version via xaTf isn't atomic. First the file gets
-         * renamed and then the version is updated. If a crash occurs in between those
-         * two we need to detect and repair it the next startup */
-        xaTf.setVersion( logVersion );
+        determineLogVersionFromArchivedFiles();
+
+        // If the header contained the wrong version, we need to change it. This can happen during store copy or backup,
+        // because those routines create artificial active files to trigger recovery.
+        if(header[0] != logVersion)
+        {
+            ByteBuffer buff = ByteBuffer.allocate( 64 );
+            LogIoUtils.writeLogHeader( buff, logVersion, header[1] );
+            fileChannel.write( buff, 0 );
+        }
 
         long lastCommittedTx = header[1];
         previousLogLastCommittedTx = lastCommittedTx;
@@ -1110,6 +1113,30 @@ public class XaLogicalLog implements LogLoader
     protected LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel )
     {
         return new LogDeserializer( byteChannel, logDeserializerMonitor );
+    }
+
+    /**
+     * @param logBasePath should be the log file base name, relative to the neo4j store directory.
+     */
+    public LogBufferFactory createLogWriter(final Function<Config, File> logBasePath)
+    {
+        return new LogBufferFactory()
+        {
+            @Override
+            public LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException
+            {
+                File activeLogFile = new XaLogicalLogFiles( logBasePath.apply( config ), fileSystem ).getLog1FileName();
+                FileChannel channel = fileSystem.create( activeLogFile );
+                ByteBuffer scratch = ByteBuffer.allocateDirect( 128 );
+                LogIoUtils.writeLogHeader( scratch, 0, prevCommittedId );
+                while(scratch.hasRemaining())
+                {
+                    channel.write( scratch );
+                }
+                scratch.clear();
+                return new DirectLogBuffer( channel, scratch );
+            }
+        };
     }
 
     protected class LogDeserializer

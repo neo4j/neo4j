@@ -91,9 +91,6 @@ Eclipse Public License, Version 1.0
   Logback Classic Module
   Logback Core Module
 
-GNU General Public License, version 2 or later
-  Mozilla Rhino
-
 GNU General Public License, version 2 with the Classpath Exception
   jersey-core
   jersey-multipart
@@ -146,7 +143,7 @@ MIT License
   Underscore.js
   UUID.js
 
-Mozilla Public License, Version 1.1
+Mozilla Public License, Version 2.0
   Mozilla Rhino
 
 Oracle Binary Code License Agreement for Java SE Platform Products and JavaFX
@@ -186,10 +183,6 @@ Logback Core Module
 MIME streaming extension
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
-
-Mozilla Rhino
-  GNU General Public License, version 2 or later
-  Mozilla Public License, Version 1.1
 
 jersey-core
   Common Development and Distribution License Version 1.1

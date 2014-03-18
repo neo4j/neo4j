@@ -19,9 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
-import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
@@ -29,12 +26,15 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
-import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TargetCaller;
-import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
+import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {

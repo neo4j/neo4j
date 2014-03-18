@@ -93,6 +93,7 @@ public class StoreMigratorIT
         verifier.verifyRelationships();
         verifier.verifyNodeIdsReused();
         verifier.verifyRelationshipIdsReused();
+        verifier.verifyLegacyIndex();
 
         database.shutdown();
 
@@ -308,6 +309,18 @@ public class StoreMigratorIT
             finally
             {
                 transaction.finish();
+            }
+        }
+
+        public void verifyLegacyIndex()
+        {
+            try ( Transaction tx = database.beginTx() )
+            {
+                String[] nodeIndexes = database.index().nodeIndexNames();
+                String[] relationshipIndexes = database.index().relationshipIndexNames();
+                assertArrayEquals( new String[] { "nodekey" }, nodeIndexes );
+                assertArrayEquals( new String[] { "relkey" }, relationshipIndexes );
+                tx.success();
             }
         }
     }

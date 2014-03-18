@@ -38,15 +38,13 @@ public interface LearnerContext
 
     long getLastKnownLearnedInstanceInCluster();
 
-    void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster );
-
     void learnedInstanceId( long instanceId );
 
     boolean hasDeliveredAllKnownInstances();
 
     void leave();
 
-    PaxosInstance getPaxosInstance( InstanceId instanceId );
+    PaxosInstance getPaxosInstance( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId );
 
     AtomicBroadcastSerializer newSerializer();
 
@@ -54,5 +52,9 @@ public interface LearnerContext
 
     void setNextInstanceId( long id );
 
+    void notifyLearnMiss( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId );
 
+    org.neo4j.cluster.InstanceId getLastKnownAliveUpToDateInstance();
+
+    void setLastKnownLearnedInstanceInCluster( long lastKnownLearnedInstanceInCluster, org.neo4j.cluster.InstanceId instanceId );
 }

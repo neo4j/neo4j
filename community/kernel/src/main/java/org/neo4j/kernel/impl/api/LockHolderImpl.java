@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.Direction;
@@ -209,10 +211,48 @@ public class LockHolderImpl implements LockHolder
 
         if ( releaseException != null )
         {
-            throw new ReleaseLocksFailedKernelException( "Unable to release locks: " + releaseFailures + ".",
+
+            throw new ReleaseLocksFailedKernelException(
+                    "Unable to release locks: " + describeLockGroups( releaseFailures ) + ". " +
+                    "Perhaps we have had a master-switch since the transaction was started?",
                     releaseException );
         }
         locks.clear();
+    }
+
+    private static String describeLockGroups( Collection<LockReleaseCallback> locks )
+    {
+        Map<Class<?>, AtomicInteger> readLockCounterMap = new HashMap<>();
+        Map<Class<?>, AtomicInteger> writeLockCounterMap = new HashMap<>();
+        for ( LockReleaseCallback lock : locks )
+        {
+            Map<Class<?>, AtomicInteger> map =
+                    lock.lockType == LockType.READ? readLockCounterMap : writeLockCounterMap;
+            AtomicInteger counter = map.get( lock.lock.getClass() );
+            if ( counter == null )
+            {
+                counter = new AtomicInteger();
+                map.put( lock.lock.getClass(), counter );
+            }
+            counter.incrementAndGet();
+        }
+
+        StringBuilder sb = new StringBuilder( "[" );
+        for ( Map.Entry<Class<?>, AtomicInteger> readEntry : readLockCounterMap.entrySet() )
+        {
+            sb.append( "READ " ).append( readEntry.getKey().getSimpleName() ).append( "s: " );
+            sb.append( readEntry.getValue().get() ).append( ", " );
+        }
+        for ( Map.Entry<Class<?>, AtomicInteger> writeEntry : writeLockCounterMap.entrySet() )
+        {
+            sb.append( "WRITE " ).append( writeEntry.getKey().getSimpleName() ).append( "s: " );
+            sb.append( writeEntry.getValue().get() ).append( ", " );
+        }
+        if ( sb.length() > 1 )
+        {
+            sb.setLength( sb.length() - 2 ); // Cut off the last ", "
+        }
+        return sb.append( ']' ).toString();
     }
 
     private final class LockReleaseCallback
