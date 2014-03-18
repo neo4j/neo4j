@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecution
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
-import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors) extends PipeBuilder {

@@ -39,7 +39,6 @@ import collection.JavaConverters._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.kernel.impl.api.OperationsFacade
-import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 import org.mockito.stubbing.Answer
@@ -185,7 +184,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
-    val monitors = mock[Monitors]
+    val monitors = mock[org.neo4j.kernel.monitoring.Monitors]
 
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
@@ -203,7 +202,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
-    when(dependencies.resolveDependency(classOf[Monitors])).thenReturn(monitors)
+    when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)

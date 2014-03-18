@@ -23,8 +23,7 @@ import org.neo4j.cypher._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, ASTRewriter, SemanticChecker,
-AstRewritingMonitor, SemanticCheckMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, _}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1, LegacyPipeBuilder, LegacyVsNewPipeBuilder, NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder}
@@ -38,7 +37,6 @@ import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanCo
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
 
@@ -108,10 +106,10 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
   }
 
   private def buildCompiler2_1() = {
-    val parser = new CypherParser(monitors.newMonitor(classOf[ParserMonitor], monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor(classOf[SemanticCheckMonitor], monitorTag))
-    val rewriter = new ASTRewriter(monitors.newMonitor(classOf[AstRewritingMonitor], monitorTag))
-    val planBuilderMonitor = monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], monitorTag)
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+    val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(), new Planner(monitors), planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
     new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, planCacheFactory, monitors)

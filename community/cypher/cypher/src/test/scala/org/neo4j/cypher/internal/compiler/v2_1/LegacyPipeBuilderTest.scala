@@ -38,12 +38,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateNode, DeletePropertyAction}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
-import javax.transaction.TransactionManager
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Planner, SemanticTable}
-import org.neo4j.kernel.monitoring.Monitors
 
 class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
   val ast = mock[Statement]

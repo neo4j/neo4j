@@ -29,7 +29,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
-import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+
 
 class SimpleExecutionPlanBuilder(monitors: Monitors) extends ExecutionPlanBuilder {
   def build(plan: LogicalPlan): PipeInfo = {
@@ -39,7 +40,7 @@ class SimpleExecutionPlanBuilder(monitors: Monitors) extends ExecutionPlanBuilde
       val left = plan.lhs.map(buildPipe)
       val right = plan.rhs.map(buildPipe)
 
-      implicit val monitor = monitors.newMonitor(classOf[PipeMonitor])
+      implicit val monitor = monitors.newMonitor[PipeMonitor]()
       plan match {
         case Projection(_, expressions) =>
           ProjectionNewPipe(left.get, toLegacyExpressions(expressions))

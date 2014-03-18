@@ -19,20 +19,19 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{TransactionInfo, ExecutionPlan, CypherCompiler, LRUCache}
+import org.neo4j.cypher.internal._
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.api.Statement
 import scala.collection.JavaConverters._
 import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.CypherCompiler.{CacheValue, CacheKey}
+import org.neo4j.cypher.internal.TransactionInfo
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
@@ -41,7 +40,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   // true means we run inside REST server
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
-  protected val monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[Monitors])
+  protected val monitors = Monitors(
+    graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
+  )
   protected val compiler = createCompiler()
 
   @throws(classOf[SyntaxException])

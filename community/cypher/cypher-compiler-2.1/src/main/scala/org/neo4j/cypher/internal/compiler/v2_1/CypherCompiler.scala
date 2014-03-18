@@ -25,7 +25,6 @@ import spi.PlanContext
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Query, Statement}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
-import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
 
 trait SemanticCheckMonitor {

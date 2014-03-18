@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
+import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, DummyPosition, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
@@ -39,24 +38,22 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
-import org.neo4j.kernel.monitoring.Monitors
 import org.mockito.Mockito
 
 class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
 
   implicit val monitor = NoopPipeMonitor
-  val monitors: Monitors = mock[Monitors]
+  val monitors = mock[Monitors]
   val planner = new SimpleExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)
 
-  Mockito.when(monitors.newMonitor(classOf[PipeMonitor])).thenReturn(NoopPipeMonitor)
+  Mockito.when(monitors.newMonitor[PipeMonitor]()).thenReturn(NoopPipeMonitor)
 
   test("projection only query") {
     val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(pos)))
