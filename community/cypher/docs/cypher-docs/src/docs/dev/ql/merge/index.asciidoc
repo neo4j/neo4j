@@ -4,14 +4,6 @@ Merge
 
 == Introduction ==
 
-.Provisional Feature
-[CAUTION]
-====
-+MERGE+ is a new addition and a provisional feature of Cypher.
-Its scope and syntax are subject to change.
-Therefore, please be aware that you may need to change queries that use +MERGE+ in the future.
-====
-
 +MERGE+ ensures that a pattern exists in the graph.
 Either the pattern already exists, or it needs to be created.
 
@@ -57,6 +49,8 @@ include::merge-with-on-create.asciidoc[]
 include::merge-with-on-match.asciidoc[]
 
 include::merge-with-on-create-and-on-match.asciidoc[]
+
+include::merge-with-on-match-setting-multiple-properties.asciidoc[]
 
 :leveloffset: 2
 

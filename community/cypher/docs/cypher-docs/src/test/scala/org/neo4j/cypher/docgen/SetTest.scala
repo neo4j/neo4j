@@ -98,6 +98,15 @@ This will replace all existing properties on the node with the new set provided 
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
   }
 
+  @Test def set_multiple_properties_in_one_set_clause() {
+    testQuery(
+      title = "Set multiple properties using one SET clause",
+      text = "If you want to set multiple properties in one go, simply separate them with a comma.",
+      queryText = "match (n {name: 'Andres'}) set n.position = 'Developer', n.surname = 'Taylor'",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 2))
+  }
+
   @Test def set_single_label_on_a_node() {
     testQuery(
       title = "Set a label on a node",

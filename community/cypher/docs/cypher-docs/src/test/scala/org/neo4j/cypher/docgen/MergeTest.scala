@@ -123,6 +123,18 @@ return keanu""",
     )
   }
 
+  @Test def merge_and_set_multiple_properties_on_match() {
+    testQuery(
+      title = "Merge with ON MATCH setting multiple properties",
+      text = "If multiple properties should be set, simply separate them with commas.",
+      queryText = """merge (person:Person)
+                    |on match set person.found = true, person.lastAccessed = timestamp()
+                    |return person""".stripMargin,
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, propertiesSet = 10)
+    )
+  }
+
   @Test def merge_node_and_create_with_unique_constraint() {
     testQuery(
       title = "Merge using unique constraints creates a new node if no node is found",
