@@ -165,7 +165,8 @@ public enum HeartbeatState
                                         URI sendTo = context.getUriForId(
                                                 aliveServer );
                                         outgoing.offer( Message.to( HeartbeatMessage.suspicions, sendTo,
-                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor( context.getMyId() ) ) ) );
+                                                new HeartbeatMessage.SuspicionsState( context.getSuspicionsFor(
+                                                        context.getMyId() ) ) ) );
                                     }
                                 }
                             }

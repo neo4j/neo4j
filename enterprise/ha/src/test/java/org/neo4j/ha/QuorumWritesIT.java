@@ -29,8 +29,8 @@ import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;

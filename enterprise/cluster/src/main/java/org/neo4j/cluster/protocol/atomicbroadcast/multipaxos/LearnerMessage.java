@@ -62,6 +62,22 @@ public enum LearnerMessage
         }
 
         @Override
+        public boolean equals( Object obj )
+        {
+            if(obj == null)
+            {
+                return false;
+            }
+            return getClass() == obj.getClass();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 1;
+        }
+
+        @Override
         public String toString()
         {
             return "Learn request";

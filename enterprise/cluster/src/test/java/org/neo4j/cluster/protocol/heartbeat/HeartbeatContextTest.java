@@ -93,7 +93,7 @@ public class HeartbeatContextTest
                         new ElectionRole( "coordinator" ) ), config,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
-                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class ) );
 
 
         toTest = context.getHeartbeatContext();

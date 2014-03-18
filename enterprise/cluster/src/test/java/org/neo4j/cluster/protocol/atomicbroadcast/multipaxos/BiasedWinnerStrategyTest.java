@@ -25,6 +25,7 @@ import java.util.Collections;
 
 import org.junit.Test;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.election.IntegerElectionCredentials;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
@@ -42,7 +43,7 @@ public class BiasedWinnerStrategyTest
     public void shouldLogElectionProcessWhenNodeIsDemoted()
     {
         // given
-        org.neo4j.cluster.InstanceId instanceOne = new org.neo4j.cluster.InstanceId( 1 );
+        InstanceId instanceOne = new InstanceId( 1 );
 
         ClusterContext clusterContext = mock( ClusterContext.class );
 
@@ -64,7 +65,7 @@ public class BiasedWinnerStrategyTest
     public void shouldLogElectionProcessWhenNodeIsPromoted()
     {
         // given
-        org.neo4j.cluster.InstanceId instanceOne = new org.neo4j.cluster.InstanceId( 1 );
+        InstanceId instanceOne = new InstanceId( 1 );
 
         ClusterContext clusterContext = mock( ClusterContext.class );
 
@@ -86,8 +87,8 @@ public class BiasedWinnerStrategyTest
     public void shouldPickTheBiasedInstanceAsTheWinner()
     {
         // given
-        org.neo4j.cluster.InstanceId instanceOne = new org.neo4j.cluster.InstanceId( 1 );
-        org.neo4j.cluster.InstanceId instanceTwo = new org.neo4j.cluster.InstanceId( 2 );
+        InstanceId instanceOne = new InstanceId( 1 );
+        InstanceId instanceTwo = new InstanceId( 2 );
 
         ClusterContext clusterContext = mock( ClusterContext.class );
 
@@ -100,7 +101,7 @@ public class BiasedWinnerStrategyTest
                 new Vote( instanceTwo, new IntegerElectionCredentials( 200 ) ) );
 
         BiasedWinnerStrategy strategy = BiasedWinnerStrategy.promotion( clusterContext, instanceOne );
-        org.neo4j.cluster.InstanceId winner = strategy.pickWinner( votes );
+        InstanceId winner = strategy.pickWinner( votes );
 
         // then
         assertEquals( instanceOne, winner );
@@ -110,7 +111,7 @@ public class BiasedWinnerStrategyTest
     public void shouldNotPickAWinnerIfTheBiasedInstanceHasBeenDemoted()
     {
         // given
-        org.neo4j.cluster.InstanceId instanceOne = new org.neo4j.cluster.InstanceId( 1 );
+        InstanceId instanceOne = new InstanceId( 1 );
 
         ClusterContext clusterContext = mock( ClusterContext.class );
 
@@ -122,7 +123,7 @@ public class BiasedWinnerStrategyTest
                 new Vote( instanceOne, new IntegerElectionCredentials( 100 ) ) );
 
         BiasedWinnerStrategy strategy = BiasedWinnerStrategy.demotion( clusterContext, instanceOne );
-        org.neo4j.cluster.InstanceId winner = strategy.pickWinner( votes );
+        InstanceId winner = strategy.pickWinner( votes );
 
         // then
         assertNull( winner );
@@ -132,8 +133,8 @@ public class BiasedWinnerStrategyTest
     public void shouldNotPickAWinnerIfAllVotesAreForIneligibleCandidates()
     {
         // given
-        org.neo4j.cluster.InstanceId instanceOne = new org.neo4j.cluster.InstanceId( 1 );
-        org.neo4j.cluster.InstanceId instanceTwo = new org.neo4j.cluster.InstanceId( 2 );
+        InstanceId instanceOne = new InstanceId( 1 );
+        InstanceId instanceTwo = new InstanceId( 2 );
 
         ClusterContext clusterContext = mock( ClusterContext.class );
 

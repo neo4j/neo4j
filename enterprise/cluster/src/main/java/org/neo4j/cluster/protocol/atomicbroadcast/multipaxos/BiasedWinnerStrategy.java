@@ -29,7 +29,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 class BiasedWinnerStrategy implements MultiPaxosContext.WinnerStrategy
 {
     private ClusterContext electionContext;
-    private final org.neo4j.cluster.InstanceId biasedNode;
+    private final InstanceId biasedNode;
     private final boolean nodePromoted;
 
     private BiasedWinnerStrategy( ClusterContext electionContext, InstanceId biasedNode, boolean nodePromoted )

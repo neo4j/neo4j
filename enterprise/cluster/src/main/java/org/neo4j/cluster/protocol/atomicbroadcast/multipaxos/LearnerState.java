@@ -217,7 +217,7 @@ public enum LearnerState
                                 outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), org.neo4j.cluster.protocol
-                                        .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
+                                  .atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                             }
                             break;
                         }
@@ -259,22 +259,22 @@ public enum LearnerState
                                     PaxosInstance instance = context.getPaxosInstance( id );
                                     if ( !instance.isState( PaxosInstance.State.closed ) && !instance.isState( PaxosInstance.State.delivered ) )
                                     {
-                                        for ( org.neo4j.cluster.InstanceId node : context.getAlive() )
-                                        {
-                                            URI nodeUri = context.getUriForId( node );
-                                            if ( !node.equals( context.getMyId() ) )
-                                            {
-                                                outgoing.offer( Message.to( LearnerMessage.learnRequest, nodeUri,
-                                                        new LearnerMessage.LearnRequestState() ).setHeader(
-                                                        org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE,
-                                                        id.toString() ) );
-                                                break;
-                                            }
-                                        }
+                                        URI nodeUri = context.getUriForId( context.getLastKnownAliveUpToDateInstance() );
+
+
+                                        outgoing.offer( Message.to( LearnerMessage.learnRequest,
+                                                nodeUri,
+                                                new LearnerMessage.LearnRequestState() ).setHeader(
+                                                org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE,
+                                                id.toString() ) );
+                                        context.setTimeout( "learn",
+                                                Message.timeout( LearnerMessage.learnTimedout, message ) );
+                                        break;
                                     }
                                 }
 
-                                context.setLastKnownLearnedInstanceInCluster( catchUpTo );
+                                context.setLastKnownLearnedInstanceInCluster( catchUpTo,
+                                        context.getIdForUri( new URI(message.getHeader( Message.FROM )) ) );
                             }
                             break;
                         }
