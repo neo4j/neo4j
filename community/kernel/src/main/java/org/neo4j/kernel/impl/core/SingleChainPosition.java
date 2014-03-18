@@ -25,19 +25,19 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 public class SingleChainPosition implements RelationshipLoadingPosition
 {
     private long position;
-    
+
     public SingleChainPosition( long firstPosition )
     {
         this.position = firstPosition;
     }
-    
+
     @Override
     public void updateFirst( long first )
     {
         // TODO assert that it's the first position in the chain
         this.position = first;
     }
-    
+
     @Override
     public long position( DirectionWrapper direction, int[] types )
     {
@@ -50,7 +50,7 @@ public class SingleChainPosition implements RelationshipLoadingPosition
         this.position = nextRel;
         return nextRel;
     }
-    
+
     @Override
     public boolean hasMore( DirectionWrapper direction, int[] types )
     {
@@ -70,5 +70,11 @@ public class SingleChainPosition implements RelationshipLoadingPosition
     public RelationshipLoadingPosition clone()
     {
         return new SingleChainPosition( position );
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + position + "]";
     }
 }

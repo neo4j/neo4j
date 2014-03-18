@@ -29,16 +29,19 @@ import java.util.Queue;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 /**
@@ -53,19 +56,19 @@ public class RelationshipIteratorIssuesTest
         // -- a node manager capable of serving light-weight RelationshipProxy capable of answering getId()
         NodeManager nodeManager = mock( NodeManager.class );
         when( nodeManager.newRelationshipProxyById( anyLong() ) ).thenAnswer( relationshipProxyWithId() );
-        
+
         // -- a node that says it cannot load any more relationships
         NodeImpl node = mock( NodeImpl.class );
         when( node.getMoreRelationships( eq( nodeManager ), any( DirectionWrapper.class ),
                 any( int[].class )) ).thenReturn( LoadStatus.NOTHING );
-        
+
         // -- a type iterator that at this point contains one relationship (0)
         ControlledRelIdIterator typeIterator = new ControlledRelIdIterator( 0L );
         RelationshipIterator iterator = new RelationshipIterator( new RelIdIterator[] { typeIterator },
                 node, OUTGOING, new int[0], nodeManager, false, false );
         // -- go forth one step in the iterator
         iterator.next();
-        
+
         // WHEN
         // -- one relationship has been returned, and we're in the middle of the next call to next()
         //    typeIterator will get one more relationship in it. To mimic this we control the outcome of
@@ -73,15 +76,15 @@ public class RelationshipIteratorIssuesTest
         typeIterator.queueHasNextAnswers( false, false, true );
         long otherRelationship = 1, thirdRelationship = 2;
         typeIterator.add( otherRelationship, thirdRelationship );
-        
+
         // -- go one more step, getting us into the state where the type index in RelationshipIterator
         //    was incremented by mistake. Although this particular call to next() succeeds
         iterator.next();
-        
+
         // -- call next() again, where the first thing happening is to get the RelIdIterator with the
         //    now invalid type index, causing ArrayIndexOutOfBoundsException
         long returnedThirdRelationship = iterator.next();
-        
+
         // THEN
         assertEquals( thirdRelationship, returnedThirdRelationship );
     }
@@ -99,7 +102,7 @@ public class RelationshipIteratorIssuesTest
             }
         };
     }
-    
+
     private static class ControlledRelIdIterator implements RelIdIterator
     {
         private final List<Long> ids;
@@ -110,7 +113,7 @@ public class RelationshipIteratorIssuesTest
         {
             this.ids = new ArrayList<>( Arrays.asList( ids ) );
         }
-        
+
         void add( long... ids )
         {
             for ( long id : ids )
@@ -118,7 +121,7 @@ public class RelationshipIteratorIssuesTest
                 this.ids.add( id );
             }
         }
-        
+
         void queueHasNextAnswers( boolean... answers )
         {
             for ( boolean answer : answers )
@@ -126,7 +129,7 @@ public class RelationshipIteratorIssuesTest
                 controlledHasNextResults.add( answer );
             }
         }
-        
+
         @Override
         public int getType()
         {
@@ -141,7 +144,7 @@ public class RelationshipIteratorIssuesTest
             {
                 return controlledAnswer.booleanValue();
             }
-            
+
             return index < ids.size();
         }
 
@@ -160,7 +163,7 @@ public class RelationshipIteratorIssuesTest
         {
             throw new UnsupportedOperationException();
         }
-        
+
         @Override
         public void doAnotherRound()
         {

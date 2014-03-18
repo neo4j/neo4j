@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
+
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
@@ -263,7 +264,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         ensureRelationshipMapNotNull( nm, DirectionWrapper.BOTH, NO_RELATIONSHIP_TYPES );
     }
-    
+
     private void loadInitialRelationships( NodeManager nodeManager, DirectionWrapper direction,
             int[] types )
     {
@@ -386,7 +387,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return relChainPosition != null && relChainPosition.hasMore( DirectionWrapper.BOTH, NO_RELATIONSHIP_TYPES );
     }
-    
+
     boolean hasMoreRelationshipsToLoad( DirectionWrapper direction, int[] types )
     {
         return relChainPosition != null && relChainPosition.hasMore( direction, types );
@@ -565,7 +566,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return this.relChainPosition;
     }
-    
+
     // Mostly for testing
     void setRelChainPosition( RelationshipLoadingPosition position )
     {
@@ -581,7 +582,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             // Done loading - Shrink arrays
             for ( int i = 0; i < array.length; i++ )
             {
-                array[i] = array[i].shrink();
+                array[i].shrink();
             }
             relChainPosition = RelationshipLoadingPosition.EMPTY;
         }
@@ -640,7 +641,7 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         return Property.noNodeProperty( getId(), key );
     }
-    
+
     private void ensureAllRelationshipsAreLoaded( NodeManager nm )
     {
         ensureRelationshipMapNotNull( nm );
@@ -668,7 +669,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         return getDegreeByDirection( nm, wrap( direction ) );
     }
-    
+
     private int getDegreeByDirection( NodeManager nm, DirectionWrapper direction )
     {
         ensureAllRelationshipsAreLoaded( nm );

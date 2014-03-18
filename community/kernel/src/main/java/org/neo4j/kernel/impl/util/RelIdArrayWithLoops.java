@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.util;
 
 public class RelIdArrayWithLoops extends RelIdArray
 {
-    private IdBlock lastLoopBlock;
+    private IdBlock loopBlock;
 
     public RelIdArrayWithLoops( int type )
     {
@@ -31,31 +31,31 @@ public class RelIdArrayWithLoops extends RelIdArray
     @Override
     public int sizeOfObjectInBytesIncludingOverhead()
     {
-        return super.sizeOfObjectInBytesIncludingOverhead() + sizeOfBlockWithReference( lastLoopBlock );
+        return super.sizeOfObjectInBytesIncludingOverhead() + sizeOfBlockWithReference( loopBlock );
     }
 
     protected RelIdArrayWithLoops( RelIdArray from )
     {
         super( from );
-        lastLoopBlock = from.getLastLoopBlock();
+        loopBlock = from.getLastLoopBlock();
     }
 
     protected RelIdArrayWithLoops( int type, IdBlock out, IdBlock in, IdBlock loop )
     {
         super( type, out, in );
-        this.lastLoopBlock = loop;
+        this.loopBlock = loop;
     }
 
     @Override
     protected IdBlock getLastLoopBlock()
     {
-        return this.lastLoopBlock;
+        return this.loopBlock;
     }
 
     @Override
     protected void setLastLoopBlock( IdBlock block )
     {
-        this.lastLoopBlock = block;
+        this.loopBlock = block;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class RelIdArrayWithLoops extends RelIdArray
     @Override
     public RelIdArray downgradeIfPossible()
     {
-        return lastLoopBlock == null ? new RelIdArray( this ) : this;
+        return loopBlock == null ? new RelIdArray( this ) : this;
     }
 
     @Override
@@ -80,23 +80,5 @@ public class RelIdArrayWithLoops extends RelIdArray
     protected boolean accepts( RelIdArray source )
     {
         return true;
-    }
-
-    @Override
-    public boolean couldBeNeedingUpdate()
-    {
-        return true;
-    }
-
-    @Override
-    public RelIdArray shrink()
-    {
-        IdBlock lastOutBlock = DirectionWrapper.OUTGOING.getBlock( this );
-        IdBlock lastInBlock = DirectionWrapper.INCOMING.getBlock( this );
-        IdBlock shrunkOut = lastOutBlock != null ? lastOutBlock.shrink() : null;
-        IdBlock shrunkIn = lastInBlock != null ? lastInBlock.shrink() : null;
-        IdBlock shrunkLoop = lastLoopBlock != null ? lastLoopBlock.shrink() : null;
-        return shrunkOut == lastOutBlock && shrunkIn == lastInBlock && shrunkLoop == lastLoopBlock ? this :
-                new RelIdArrayWithLoops( getType(), shrunkOut, shrunkIn, shrunkLoop );
     }
 }

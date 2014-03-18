@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveArray;
 
 public class DenseNodeChainPosition implements RelationshipLoadingPosition
@@ -36,7 +38,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
     private final Map<Integer, RelationshipGroupRecord> groups;
     private final int[] types;
     private RelationshipLoadingPosition currentPosition;
-    
+
     public DenseNodeChainPosition( Map<Integer, RelationshipGroupRecord> groups )
     {
         this.types = toPrimitiveArray( groups.keySet() );
@@ -65,7 +67,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
     {
         // TODO here we need relationship groups for any new
     }
-    
+
     @Override
     public long position( DirectionWrapper direction, int[] types )
     {
@@ -107,7 +109,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         }
         return position( direction, types );
     }
-    
+
     @Override
     public boolean hasMore( DirectionWrapper direction, int[] types )
     {
@@ -125,7 +127,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         }
         return false;
     }
-    
+
     @Override
     public void compareAndAdvance( long relIdDeleted, long nextRelId )
     {
@@ -140,13 +142,22 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
     {
         return new DenseNodeChainPosition( this );
     }
-    
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder( getClass().getSimpleName() + ":" );
+        builder.append( format( "%n  groups: %s", groups ) );
+        builder.append( format( "%n  positions: %s", positions ) );
+        return builder.toString();
+    }
+
     private static class TypePosition implements RelationshipLoadingPosition
     {
         private final EnumMap<DirectionWrapper, RelationshipLoadingPosition> directions =
                 new EnumMap<>( DirectionWrapper.class );
         private RelationshipLoadingPosition currentPosition;
-        
+
         TypePosition( RelationshipGroupRecord record )
         {
             for ( DirectionWrapper dir : DirectionWrapper.values() )
@@ -154,7 +165,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
                 directions.put( dir, new SingleChainPosition( dir.getNextRel( record ) ) );
             }
         }
-        
+
         private TypePosition( TypePosition copyFrom )
         {
             for ( Entry<DirectionWrapper,RelationshipLoadingPosition> entry : copyFrom.directions.entrySet() )
@@ -167,13 +178,13 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
                 }
             }
         }
-        
+
         @Override
         public void updateFirst( long first )
         {
             throw new UnsupportedOperationException();
         }
-        
+
         @Override
         public long position( DirectionWrapper direction, int[] types )
         {
@@ -213,7 +224,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
             }
             return position( direction, types );
         }
-        
+
         @Override
         public boolean hasMore( DirectionWrapper direction, int[] types )
         {
@@ -243,6 +254,12 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         public RelationshipLoadingPosition clone()
         {
             return new TypePosition( this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return directions.toString();
         }
     }
 }
