@@ -195,7 +195,9 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
   }
 
   test("index scan when there is an index on the property") {
-    when(planContext.indexesGetForLabel(12)).thenReturn(Iterator(new IndexDescriptor(12, 15)))
+    when(planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
+      override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
+    })
     when(planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     // given
