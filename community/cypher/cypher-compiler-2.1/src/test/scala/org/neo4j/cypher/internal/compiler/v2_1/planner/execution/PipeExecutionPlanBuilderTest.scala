@@ -65,7 +65,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
   }
 
   test("simple pattern query") {
-    val logicalPlan = AllNodesScan(IdName("n"), 1000)
+    val logicalPlan = AllNodesScan(IdName("n"))
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -74,7 +74,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan(IdName("n"), Right(LabelId(12)), 1000)
+    val logicalPlan = NodeByLabelScan(IdName("n"), Right(LabelId(12)))
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -84,7 +84,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
   test("simple node by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral, 1)
+    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -94,7 +94,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
   test("simple relationship by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral, 1)
+    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating

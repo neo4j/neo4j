@@ -20,13 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 case class SingleRow() extends LogicalPlan {
-  def coveredIds: Set[IdName] = Set.empty
-
-  def cardinality: Int = 1
-
-  def cost: Int = ???
-
   def rhs: Option[LogicalPlan] = None
-
   def lhs: Option[LogicalPlan] = None
 }

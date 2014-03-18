@@ -46,17 +46,17 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
         case SingleRow() =>
           NullPipe()
-        case AllNodesScan(IdName(id), _) =>
+        case AllNodesScan(IdName(id)) =>
           AllNodesScanPipe(id)
-        case NodeByLabelScan(IdName(id), label, _) =>
+        case NodeByLabelScan(IdName(id), label) =>
           NodeByLabelScanPipe(id, label)
-        case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
+        case NodeByIdSeek(IdName(id), nodeIdExpr) =>
           NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
-        case RelationshipByIdSeek(IdName(id), relIdExpr, _) =>
+        case RelationshipByIdSeek(IdName(id), relIdExpr) =>
           RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
-        case NodeIndexScan(IdName(id), labelId, propertyKeyId, valueExpr, _) =>
+        case NodeIndexScan(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeIndexScanPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
-        case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr, _) =>
+        case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
       }
     }

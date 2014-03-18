@@ -63,9 +63,7 @@ class PlanTableTest extends CypherFunSuite {
 
   def plan(ids: String*): PlanTableEntry = {
     val plan = mock[LogicalPlan]
-    when(plan.coveredIds).thenReturn(ids.map(IdName.apply).toSet)
     when(plan.toString).thenReturn(ids.mkString)
-    PlanTableEntry(plan, Seq.empty)
+    PlanTableEntry(plan, Seq.empty, 0, ids.map(IdName.apply).toSet, 0)
   }
-
 }

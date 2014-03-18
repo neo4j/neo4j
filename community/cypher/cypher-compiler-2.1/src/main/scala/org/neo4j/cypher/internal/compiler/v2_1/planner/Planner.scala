@@ -21,39 +21,19 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Statement, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PipeBuilder, PipeInfo}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{SimpleCostModel, GuessingEstimator, SimpleLogicalPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors) extends PipeBuilder {
-  val estimator = new CardinalityEstimator {
-
-    def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
-
-    def estimateNodeByIdSeek() = 1
-
-    def estimateRelationshipByIdSeek() = 2
-
-    def estimateNodeByLabelScan(labelId: Option[LabelId]) = labelId match {
-      case Some(id) => 100
-      case None => 0
-    }
-
-    def estimateNodeIndexScan(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
-
-    def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 50
-
-    def estimateAllNodes() = 1000
-  }
-
+  val estimator = new GuessingEstimator
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
-  val logicalPlanner = new SimpleLogicalPlanner(estimator)
+  val costs = new SimpleCostModel
+  val logicalPlanner = new SimpleLogicalPlanner(estimator, costs)
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
 
 
