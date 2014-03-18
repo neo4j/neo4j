@@ -71,7 +71,7 @@ case class Selections(predicates: Seq[(Set[IdName], ast.Expression)] = Seq.empty
   }
 
   def labelPredicates: Map[IdName, Set[ast.HasLabels]] = {
-    predicates.foldLeft(Map.empty[IdName, Set[ast.HasLabels]]) { (m: Map[IdName, Set[ast.HasLabels]], pair: (Set[IdName], ast.Expression)) =>
+    predicates.foldLeft(Map.empty[IdName, Set[ast.HasLabels]]) { case (m, pair) =>
       val (_, expr) = pair
       expr match {
         case hasLabels @ HasLabels(Identifier(name), labels) =>

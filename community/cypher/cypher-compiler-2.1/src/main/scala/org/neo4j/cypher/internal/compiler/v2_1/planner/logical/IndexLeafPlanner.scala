@@ -28,16 +28,15 @@ abstract class IndexLeafPlanner extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): CandidateList =
     CandidateList(predicates.collect {
       // n.prop = value
-      case expression@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
+      case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
         val idName = IdName(name)
         val propertyKeyId = propertyKey.id.get
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
-        labelPredicates.flatMap { predicate =>
-          // For some reason, a sugared partial function with a condition (case x if foo) throws a MatchError here. :(
-          predicate.labels.flatMap(_.id).collect {
+        labelPredicates.flatMap { labelPredicate =>
+          labelPredicate.labels.flatMap(_.id).collect {
             case labelId if findIndexesForLabel(labelId.id).toSeq.exists(_.getPropertyKeyId == propertyKeyId.id) =>
               val entryConstructor = constructPlan(idName, labelId, propertyKeyId, valueExpr)
-              entryConstructor(Seq(expression, predicate))
+              entryConstructor(Seq(propertyPredicate, labelPredicate))
           }
         }
     }.flatten)

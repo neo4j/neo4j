@@ -21,27 +21,25 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.CandidateList
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import scala.annotation.tailrec
 
 object expandAndJoin {
-  def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-    var currentPlans = initialPlanTable
-    var continue = true
+  def converge[A](f: (A) => A)(seed: A): A = {
+    @tailrec
+    def recurse(a: A, b: A): A =
+      if (a == b) a else recurse(b, f(a))
+    recurse(seed, f(seed))
+  }
 
-    while (continue) {
-      val expandCandidates = tryExpand(currentPlans)
-      val joinCandidates = tryJoin(currentPlans)
+  def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
+    converge { planTable: PlanTable =>
+      val expandCandidates = tryExpand(planTable)
+      val joinCandidates = tryJoin(planTable)
       val candidates = expandCandidates ++ joinCandidates
 
       val bestCandidates = candidates.sorted.pruned
-      val newPlans = currentPlans ++ bestCandidates
-
-      if (currentPlans == newPlans)
-        continue = false
-      else
-        currentPlans = newPlans
-    }
-
-    currentPlans
+      planTable ++ bestCandidates
+    }(initialPlanTable)
   }
 
   def tryExpand(planTable: PlanTable): CandidateList = throw new CantHandleQueryException
