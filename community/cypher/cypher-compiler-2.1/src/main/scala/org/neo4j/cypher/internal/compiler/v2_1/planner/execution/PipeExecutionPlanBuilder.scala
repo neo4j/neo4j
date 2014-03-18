@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 
-class SimpleExecutionPlanBuilder(monitors: Monitors) extends ExecutionPlanBuilder {
+class PipeExecutionPlanBuilder(monitors: Monitors) {
   def build(plan: LogicalPlan): PipeInfo = {
     val updating = false
 

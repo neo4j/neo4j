@@ -46,11 +46,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
 import org.mockito.Mockito
 
-class SimpleExecutionPlanBuilderTest extends CypherFunSuite {
+class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
   implicit val monitor = NoopPipeMonitor
   val monitors = mock[Monitors]
-  val planner = new SimpleExecutionPlanBuilder(monitors)
+  val planner = new PipeExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)
 
   Mockito.when(monitors.newMonitor[PipeMonitor]()).thenReturn(NoopPipeMonitor)

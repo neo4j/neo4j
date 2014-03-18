@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Statement, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PipeBuilder, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.SimpleExecutionPlanBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
@@ -54,7 +54,7 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val logicalPlanner = new SimpleLogicalPlanner(estimator)
-  val executionPlanBuilder = new SimpleExecutionPlanBuilder(monitors)
+  val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
 
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
