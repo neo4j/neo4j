@@ -17,20 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 /*
+The cost model calculates the cost for different operations. Costs follow a basic formula - there's a constant cost
+for preparing things before a query can start running, and then there is a cost per row expected to pass through
+an operator.
+
 This module species the arithmetic formulas that are used to estimate the cost of execution plans. For every different
 join method and for every different index type access and in general for every distinct kind of step that can be found
 in an execution plan there is a formula that gives its cost. Given the complexity of many of these steps most of these
 formulas are simple approximations of what the system actually does and are based on certain assumptions regarding
 issues like buffer management, disk-cpu overlap, sequential vs random IO etc.*/
+
 trait CostModel {
-  def costForGettingAllNodes(): Int
-
-  def costForIndexSeek(cardinality: Int): Int
-
-  def costForRelationshipExpansion(cardinality: Int): Int
-
-  def costForSorting(cardinality: Int): Int
+  def calculateNodeByIdSeek(cardinality: Int): Int
+  def calculateRelationshipByIdSeek(cardinality: Int): Int
+  def calculateNodeByLabelScan(cardinality: Int): Int
+  def calculateAllNodes(cardinality: Int): Int
+  def calculateNodeIndexSeek(cardinality: Int): Int
+  def calculateNodeIndexScan(cardinality: Int): Int
+  def calculateExpandRelationship(cardinality: Int): Int
 }

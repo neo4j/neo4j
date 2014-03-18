@@ -28,12 +28,15 @@ case class idSeekLeafPlanner(predicates: Seq[Expression], isRelationship: Identi
       // id(n) = value
       case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(id@Identifier(identName))), ConstantExpression(idExpr)) =>
         val idName = IdName(identName)
-        val plan =
-          if (isRelationship(id))
-            RelationshipByIdSeek(idName, idExpr, context.estimator.estimateRelationshipByIdSeek())
-          else
-            NodeByIdSeek(idName, idExpr, context.estimator.estimateNodeByIdSeek())
 
-        PlanTableEntry(plan, Seq(predicate))
+        if (isRelationship(id)) {
+          val cardinality = context.estimator.estimateRelationshipByIdSeek()
+          val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
+          PlanTableEntry(RelationshipByIdSeek(idName, idExpr), Seq(predicate), cost, Set(idName), cardinality)
+        } else {
+          val cardinality = context.estimator.estimateNodeByIdSeek()
+          val cost = context.costs.calculateNodeByIdSeek(cardinality)
+          PlanTableEntry(NodeByIdSeek(idName, idExpr), Seq(predicate), cost, Set(idName), cardinality)
+        }
     })
 }

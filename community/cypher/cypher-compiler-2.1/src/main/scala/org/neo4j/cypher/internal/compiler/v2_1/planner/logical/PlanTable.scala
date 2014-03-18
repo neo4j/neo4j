@@ -41,12 +41,11 @@ case class PlanTable(m: Map[Set[IdName], PlanTableEntry] = Map.empty) {
   def plans: Seq[PlanTableEntry] = m.values.toSeq
 }
 
-case class PlanTableEntry(plan: LogicalPlan, solvedPredicates: Seq[Expression]) {
-  def coveredIds = plan.coveredIds
-
-  def cardinality = plan.cardinality
-  def cost = plan.cost
-
+case class PlanTableEntry(plan: LogicalPlan,
+                          solvedPredicates: Seq[Expression],
+                          cost: Int,
+                          coveredIds: Set[IdName],
+                          cardinality: Int) {
   def covers(other: PlanTableEntry): Boolean = {
     val set = other.coveredIds -- coveredIds
     set.isEmpty

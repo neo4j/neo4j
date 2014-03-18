@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Identifier}
 
 class ProjectionPlanner {
-  def amendPlan(in: QueryGraph, plan: LogicalPlan): LogicalPlan = {
-    val ids: Map[String, Expression] = plan.coveredIds.map {
+  def amendPlan(in: QueryGraph, planTableEntry: PlanTableEntry): LogicalPlan = {
+    val ids: Map[String, Expression] = planTableEntry.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)
     }.toMap
 
     if (ids != in.projections)
-      Projection(plan, in.projections)
+      Projection(planTableEntry.plan, in.projections)
     else
-      plan
+      planTableEntry.plan
   }
 
 }

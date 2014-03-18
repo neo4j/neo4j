@@ -26,7 +26,9 @@ case class allNodesLeafPlanner(qg: QueryGraph) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): CandidateList =
     CandidateList(qg.identifiers.toSeq.collect {
       case (idName) =>
-        val plan = AllNodesScan(idName, context.estimator.estimateAllNodes())
-        PlanTableEntry(plan, Seq.empty)
+        val cardinality = context.estimator.estimateAllNodes()
+        val cost = context.costs.calculateAllNodes(cardinality)
+        val plan = AllNodesScan(idName)
+        PlanTableEntry(plan, Seq.empty, cost, Set(idName), cardinality)
     })
 }

@@ -55,19 +55,19 @@ object SimpleLogicalPlanner {
 
 }
 
-case class LogicalPlanContext(planContext: PlanContext, estimator: CardinalityEstimator)
+case class LogicalPlanContext(planContext: PlanContext, estimator: CardinalityEstimator, costs: CostModel)
 
-case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends LogicalPlanner {
+case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostModel) extends LogicalPlanner {
 
   val projectionPlanner = new ProjectionPlanner
 
   def plan(qg: QueryGraph, semanticTable: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
-    implicit val context = LogicalPlanContext(planContext, estimator)
+    implicit val context = LogicalPlanContext(planContext, estimator, costs)
 
     val initialPlanTable = initialisePlanTable(qg, semanticTable)
 
-    val bestPlan = if (initialPlanTable.isEmpty)
-      SingleRow()
+    val bestPlanEntry = if (initialPlanTable.isEmpty)
+      PlanTableEntry(SingleRow(), solvedPredicates = Seq.empty, cost = 0, coveredIds = Set.empty, cardinality = 0)
     else {
       val convergedPlans = if (initialPlanTable.size > 1) {
         expandAndJoin(initialPlanTable)
@@ -79,10 +79,10 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator) extends Logical
       if (!qg.selections.coveredBy(bestPlanEntry.solvedPredicates))
         throw new CantHandleQueryException
 
-      bestPlanEntry.plan
+      bestPlanEntry
     }
 
-    projectionPlanner.amendPlan(qg, bestPlan)
+    projectionPlanner.amendPlan(qg, bestPlanEntry)
   }
 
   private def initialisePlanTable(qg: QueryGraph, semanticTable: SemanticTable)(implicit context: LogicalPlanContext): PlanTable = {
