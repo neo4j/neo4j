@@ -32,7 +32,7 @@ import org.neo4j.index.impl.lucene.LuceneUtil;
  * This class has the extra query configuration to use
  * with {@link Index#query(Object)} and {@link Index#query(String, Object)}.
  * It allows a query to have sorting, default operators, and allows the engine
- * to turn of searching of modifications made inside a transaction,
+ * to turn off searching of modifications made inside a transaction,
  * to gain performance.
  */
 public class QueryContext
