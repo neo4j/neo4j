@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import scala.annotation.tailrec
 
 object SimpleLogicalPlanner {
@@ -52,15 +50,8 @@ object SimpleLogicalPlanner {
 
     def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
   }
-}
 
-case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostModel) extends LogicalPlanner {
-
-  val projectionPlanner = new ProjectionPlanner
-
-  def plan(qg: QueryGraph, semanticTable: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
-    implicit val context = LogicalPlanContext(planContext, estimator, costs, semanticTable)
-
+  def plan(qg: QueryGraph)(implicit context: LogicalPlanContext): LogicalPlan = {
     val initialPlanTable = initialisePlanTable(qg)
 
     val bestPlanEntry = if (initialPlanTable.isEmpty)
@@ -79,7 +70,7 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostMode
       bestPlanEntry
     }
 
-    projectionPlanner.amendPlan(qg, bestPlanEntry)
+    ProjectionPlanner.amendPlan(qg, bestPlanEntry)
   }
 
   private def initialisePlanTable(qg: QueryGraph)(implicit context: LogicalPlanContext): PlanTable = {

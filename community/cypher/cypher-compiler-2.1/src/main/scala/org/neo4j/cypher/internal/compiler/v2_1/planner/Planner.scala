@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Statement, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PipeBuilder, PipeInfo}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{SimpleCostModel, GuessingEstimator, SimpleLogicalPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, SimpleCostModel, GuessingEstimator, SimpleLogicalPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
@@ -33,18 +33,17 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val costs = new SimpleCostModel
-  val logicalPlanner = new SimpleLogicalPlanner(estimator, costs)
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
 
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable)(planContext)
 
-  def producePlan(statement: Statement, semanticQuery: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
+  def producePlan(statement: Statement, semanticTable: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
-      val logicalPlan = logicalPlanner.plan(queryGraph, semanticQuery)(planContext)
+      val logicalPlan = SimpleLogicalPlanner.plan(queryGraph)(LogicalPlanContext(planContext, estimator, costs, semanticTable))
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>

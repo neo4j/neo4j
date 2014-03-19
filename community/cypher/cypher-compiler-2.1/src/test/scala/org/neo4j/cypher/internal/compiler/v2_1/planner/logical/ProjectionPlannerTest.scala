@@ -28,24 +28,28 @@ class ProjectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   implicit val context = newMockedLogicalPlanContext
 
   test("should add projection for expressions not already covered") {
+    // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
-    val planner = new ProjectionPlanner
 
-    val result = planner.amendPlan(qg, input)
+    // when
+    val result = ProjectionPlanner.amendPlan(qg, input)
 
+    // then
     result should equal(Projection(input, projections))
   }
 
   test("does not add projection when not needed") {
+    // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
-    val planner = new ProjectionPlanner
 
-    val result = planner.amendPlan(qg, input)
+    // when
+    val result = ProjectionPlanner.amendPlan(qg, input)
 
+    // then
     result should equal(input)
   }
 }

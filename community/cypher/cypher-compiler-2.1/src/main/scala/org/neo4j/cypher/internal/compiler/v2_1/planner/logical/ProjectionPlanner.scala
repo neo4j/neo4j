@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Identifier}
 
-class ProjectionPlanner {
+object ProjectionPlanner {
   def amendPlan(in: QueryGraph, plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val ids: Map[String, Expression] = plan.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)

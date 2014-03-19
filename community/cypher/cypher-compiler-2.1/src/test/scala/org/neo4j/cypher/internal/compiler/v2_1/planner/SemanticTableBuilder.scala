@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.{IdentityMap, ExpressionTypeInfo}
 
-object SemanticQueryBuilder {
-  def apply() = new SemanticQueryBuilder
+object SemanticTableBuilder {
+  def apply() = new SemanticTableBuilder
 }
 
-class SemanticQueryBuilder {
+class SemanticTableBuilder {
   val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
 
-  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticQueryBuilder = {
+  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticTableBuilder = {
     typeBuilder += typing
     this
   }
