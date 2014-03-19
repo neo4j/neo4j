@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Identifier}
 
-object projectionPlanner extends Transformer1[LogicalPlan] {
+object projectionPlanner extends ProjectionApplicator {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val ids: Map[String, Expression] = plan.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)

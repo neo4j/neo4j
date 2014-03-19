@@ -19,15 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-class SimpleCostModel extends CostModel {
-  def calculateExpandRelationship(cardinality: Int) = cardinality
-  def calculateNodeIndexSeek(cardinality: Int) = cardinality * 3
-  def calculateNodeUniqueIndexSeek(cardinality: Int) = cardinality * 3
-  def calculateAllNodesScan(cardinality: Int) = cardinality
-  def calculateNodeByLabelScan(cardinality: Int) = cardinality * 2
-  def calculateRelationshipByIdSeek(cardinality: Int) = cardinality
-  def calculateNodeByIdSeek(cardinality: Int) = cardinality
-  def calculateProjectionCosts(cardinality: Int, numExpressions: Int) = (cardinality / 100) * numExpressions
-  def calculateSingleRow(cardinality: Int) = cardinality
-  def calculateSelection(cardinality: Int) = (cardinality * .2).toInt
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+
+case class Selection(predicates: Seq[Expression], left: LogicalPlan)
+                    (implicit val context: LogicalPlanContext) extends LogicalPlan {
+  assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
+
+  val lhs = Some(left)
+
+  def rhs = None
+
+  def coveredIds = left.coveredIds
+
+  val cardinality = {
+    val selectivity = predicates.map(context.estimator.estimateSelectivity).reduce(_ * _)
+    (left.cardinality * selectivity).toInt
+  }
+
+  val cost = context.costs.calculateSelection(left.cardinality) + left.cost
+
+  def solvedPredicates: Seq[Expression] = predicates ++ left.solvedPredicates
 }

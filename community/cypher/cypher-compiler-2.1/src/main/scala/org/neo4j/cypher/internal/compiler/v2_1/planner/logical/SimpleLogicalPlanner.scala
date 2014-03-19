@@ -20,19 +20,26 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
 
-trait Transformer1[A] {
-  def apply(plan: A)(implicit context: LogicalPlanContext): A
+trait NodeIdentifierInitialiser {
+  def apply()(implicit context: LogicalPlanContext): PlanTable
 }
 
-trait Transformer2[A, B] {
-  def apply(plan: A)(implicit context: LogicalPlanContext): B
+trait MainLoop {
+  def apply(plan: PlanTable)(implicit context: LogicalPlanContext): PlanTable
 }
 
-class SimpleLogicalPlanner(startPointFinder: Transformer2[Unit, PlanTable] = initialiser,
-                           mainLoop: Transformer1[PlanTable] = expandAndJoin,
-                           projector: Transformer1[LogicalPlan] = projectionPlanner) {
+trait ProjectionApplicator {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan
+}
+
+trait SelectionApplicator {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan
+}
+
+class SimpleLogicalPlanner(startPointFinder: NodeIdentifierInitialiser = new initialiser(applySelections),
+                           mainLoop: MainLoop = new expandAndJoin(applySelections),
+                           projector: ProjectionApplicator = projectionPlanner) {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
     val initialPlanTable = startPointFinder()
 

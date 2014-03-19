@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 /*
 An abstract representation of the query graph being solved at the current step
@@ -60,33 +59,4 @@ object SelectionPredicates {
   }
 }
 
-case class Selections(predicates: Seq[(Set[IdName], ast.Expression)] = Seq.empty) {
-  def apply(availableIds: Set[IdName]): Seq[ast.Expression] =
-    predicates.collect { case (k, v) if k.subsetOf(availableIds) => v }
 
-  def flatPredicates: Seq[ast.Expression] = {
-    val flatPredicatesBuilder = Seq.newBuilder[Expression]
-    predicates.foreach( flatPredicatesBuilder += _._2 )
-    flatPredicatesBuilder.result()
-  }
-
-  def labelPredicates: Map[IdName, Set[ast.HasLabels]] = {
-    predicates.foldLeft(Map.empty[IdName, Set[ast.HasLabels]]) { case (m, pair) =>
-      val (_, expr) = pair
-      expr match {
-        case hasLabels @ HasLabels(Identifier(name), labels) =>
-          // FIXME: remove when we have test for checking that we construct the expected plan
-          if (labels.size > 1) {
-            throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
-          }
-          val idName = IdName(name)
-          m.updated(idName, m.getOrElse(idName, Set.empty) + hasLabels)
-        case _ =>
-          m
-      }
-    }
-  }
-
-  def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
-    flatPredicates.forall( solvedPredicates.contains )
-}

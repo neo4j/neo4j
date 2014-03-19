@@ -34,6 +34,7 @@ class SelectionsTest extends CypherFunSuite {
 
   val aIsPerson = identHasLabel("a", "Person")
   val bIsAnimal = identHasLabel("b", "Animal")
+  val compareTwoNodes: Equals = compareBothSides("a", "b")
 
   test("can flat predicates to a sequence") {
     val selections = Selections(Seq(idNames("a") -> aIsPerson))
@@ -76,8 +77,52 @@ class SelectionsTest extends CypherFunSuite {
     ))
   }
 
+  test("can find predicates given covered ids") {
+    val a = idNames("a")
+    val b = idNames("b")
+
+    val selections = Selections(Seq(
+      a -> aIsPerson,
+      b -> bIsAnimal
+    ))
+
+    selections.predicatesGiven(a) should equal(Seq(aIsPerson))
+  }
+
+  test("returns no predicates if no ids are covered") {
+    val a = idNames("a")
+    val b = idNames("b")
+
+    val selections = Selections(Seq(
+      a -> aIsPerson,
+      b -> bIsAnimal
+    ))
+
+    selections.predicatesGiven(Set.empty) should equal(Seq.empty)
+  }
+
+  test("does not take on a predicate if it is only half covered") {
+    val aAndB = idNames("a", "b")
+    val a = Set(aAndB.head)
+
+    val selections = Selections(Seq(
+      aAndB -> compareTwoNodes
+    ))
+
+    selections.predicatesGiven(a) should equal(Seq.empty)
+  }
+
   private def idNames(names: String*) = names.map(IdName(_)).toSet
 
   private def identHasLabel(name: String, labelName: String) =
     HasLabels(Identifier(name)(pos), Seq(LabelName(labelName)()(pos)))(pos)
+
+  private def compareBothSides(left: String, right: String) = {
+    val l: Identifier = Identifier(left)(pos)
+    val r: Identifier = Identifier(right)(pos)
+    val propName1 = PropertyKeyName("prop1")(None)(pos)
+    val leftProp = Property(l, propName1)(pos)
+    val rightProp = Property(r, propName1)(pos)
+    Equals(leftProp, rightProp)(pos)
+  }
 }

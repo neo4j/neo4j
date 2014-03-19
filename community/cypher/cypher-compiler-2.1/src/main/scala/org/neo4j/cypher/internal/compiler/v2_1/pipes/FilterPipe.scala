@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.Predicate
 import data.SimpleVal
-import symbols._
 
-class FilterPipe(source: Pipe, val predicate: Predicate) extends PipeWithSource(source) {
+case class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =

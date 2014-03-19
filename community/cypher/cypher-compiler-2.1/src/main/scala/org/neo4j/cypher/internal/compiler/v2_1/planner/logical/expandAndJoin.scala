@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import scala.annotation.tailrec
 
-object expandAndJoin extends Transformer1[PlanTable] {
+class expandAndJoin(applySelections: SelectionApplicator) extends MainLoop {
   private def converge[A](f: (A) => A)(seed: A): A = {
     @tailrec
     def recurse(a: A, b: A): A =
@@ -34,12 +34,9 @@ object expandAndJoin extends Transformer1[PlanTable] {
     converge { planTable: PlanTable =>
       val expandCandidates = tryExpand(planTable)
       val joinCandidates = tryJoin(planTable)
-      val candidates = (expandCandidates ++ joinCandidates).map {
-        plan => // For all covered ids, find all applicable predicates that are not already solved
-          plan
-      }
+      val candidates = expandCandidates ++ joinCandidates
 
-      planTable + candidates.topPlan
+      planTable + applySelections(candidates.topPlan)
     }(initialPlanTable)
   }
 
