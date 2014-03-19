@@ -54,16 +54,14 @@ object SimpleLogicalPlanner {
   }
 }
 
-case class LogicalPlanContext(planContext: PlanContext, estimator: CardinalityEstimator, costs: CostModel)
-
 case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostModel) extends LogicalPlanner {
 
   val projectionPlanner = new ProjectionPlanner
 
   def plan(qg: QueryGraph, semanticTable: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
-    implicit val context = LogicalPlanContext(planContext, estimator, costs)
+    implicit val context = LogicalPlanContext(planContext, estimator, costs, semanticTable)
 
-    val initialPlanTable = initialisePlanTable(qg, semanticTable)
+    val initialPlanTable = initialisePlanTable(qg)
 
     val bestPlanEntry = if (initialPlanTable.isEmpty)
       SingleRow()
@@ -84,12 +82,12 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostMode
     projectionPlanner.amendPlan(qg, bestPlanEntry)
   }
 
-  private def initialisePlanTable(qg: QueryGraph, semanticTable: SemanticTable)(implicit context: LogicalPlanContext): PlanTable = {
+  private def initialisePlanTable(qg: QueryGraph)(implicit context: LogicalPlanContext): PlanTable = {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
 
     val leafPlanners = Seq(
-      idSeekLeafPlanner(predicates, semanticTable.isRelationship),
+      idSeekLeafPlanner(predicates),
       uniqueIndexSeekLeafPlanner(predicates, labelPredicateMap),
       indexSeekLeafPlanner(predicates, labelPredicateMap),
       labelScanLeafPlanner(qg, labelPredicateMap),

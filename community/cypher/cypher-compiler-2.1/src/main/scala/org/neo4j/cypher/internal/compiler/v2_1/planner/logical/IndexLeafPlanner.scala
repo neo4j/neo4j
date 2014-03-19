@@ -54,7 +54,8 @@ abstract class IndexLeafPlanner extends LeafPlanner {
 }
 
 case class uniqueIndexSeekLeafPlanner(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) extends IndexLeafPlanner {
-  protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)(implicit context: LogicalPlanContext): (Seq[Expression]) => LogicalPlan =
+  protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+                             (implicit context: LogicalPlanContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) => NodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr)(predicates)
 
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor] =
@@ -62,7 +63,8 @@ case class uniqueIndexSeekLeafPlanner(predicates: Seq[Expression], labelPredicat
 }
 
 case class indexSeekLeafPlanner(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) extends IndexLeafPlanner {
-  protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)(implicit context: LogicalPlanContext): (Seq[Expression]) => LogicalPlan =
+  protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+                             (implicit context: LogicalPlanContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) => NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr)(predicates)
 
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor] =

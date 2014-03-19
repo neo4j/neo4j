@@ -31,7 +31,7 @@ import org.mockito.Mockito._
 class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val context = newMockedLogicalPlanContext
-  val LogicalPlanContext(planContext, estimator, costs) = context
+  val LogicalPlanContext(planContext, estimator, costs, _) = context
   val planner = new SimpleLogicalPlanner(estimator, costs)
   val pos = DummyPosition(0)
 

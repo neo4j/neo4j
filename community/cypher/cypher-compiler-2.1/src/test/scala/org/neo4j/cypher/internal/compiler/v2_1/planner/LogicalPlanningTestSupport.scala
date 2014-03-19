@@ -32,7 +32,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   def newMockedLogicalPlanContext = LogicalPlanContext(
     planContext = self.mock[PlanContext],
     estimator = self.mock[CardinalityEstimator],
-    costs = self.mock[CostModel]
+    costs = self.mock[CostModel],
+    semanticTable = self.mock[SemanticTable]
   )
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {

@@ -22,23 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
-//object RelationshipId {
-//  def unapply(v: Any)(implicit context: LogicalPlanContext): Option[Identifier] = v match {
-//    case expr: Expression if context.
-//  }
-//}
-
-case class idSeekLeafPlanner(predicates: Seq[Expression], isRelationship: Identifier => Boolean) extends LeafPlanner {
+case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): CandidateList =
     CandidateList(predicates.collect {
       // id(n) = value
-      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(id@Identifier(identName))), ConstantExpression(idExpr)) =>
-        val idName = IdName(identName)
-
-        if (isRelationship(id)) {
-          RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
-        } else {
-          NodeByIdSeek(idName, idExpr)(Seq(predicate))
-        }
+      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
+        RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
+      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
+        NodeByIdSeek(idName, idExpr)(Seq(predicate))
     })
 }
