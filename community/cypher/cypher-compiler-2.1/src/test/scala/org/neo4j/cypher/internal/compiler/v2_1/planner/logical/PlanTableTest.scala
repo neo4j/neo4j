@@ -31,21 +31,21 @@ class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("adding a new plan to an empty PlanTable returns a PlanTable with that plan in it") {
     val plans = PlanTable()
-    val newPlans = plans ++ CandidateList(Seq(x))
+    val newPlans = plans + x
 
     newPlans should equal(PlanTable(Map(x.asTableEntry)))
   }
 
   test("adding a new plan that does not cover anything else simply adds the plan") {
     val plans = PlanTable(Map(x.asTableEntry))
-    val newPlans = plans ++ CandidateList(Seq(y))
+    val newPlans = plans + y
 
     newPlans should equal(PlanTable(Map(x.asTableEntry, y.asTableEntry)))
   }
 
   test("adding a plan that covers one other plan will remove that plan") {
     val plans = PlanTable(Map(x.asTableEntry))
-    val newPlans = plans ++ CandidateList(Seq(xAndY))
+    val newPlans = plans + xAndY
 
     newPlans should equal(PlanTable(Map(xAndY.asTableEntry)))
   }

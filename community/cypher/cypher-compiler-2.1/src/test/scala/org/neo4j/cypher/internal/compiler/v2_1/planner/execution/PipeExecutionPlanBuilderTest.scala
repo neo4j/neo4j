@@ -88,7 +88,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astLiteral.asCommandExpression))
   }
 
-  test("simple relationship by id seek query") {
+  // 2014-03-19 - Andres: turn on once we have patterns in the query graph
+  ignore("simple relationship by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
     val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral)(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)

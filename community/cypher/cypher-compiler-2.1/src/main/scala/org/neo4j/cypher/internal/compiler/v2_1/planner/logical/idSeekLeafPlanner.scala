@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): CandidateList =
-    CandidateList(predicates.collect {
-      // id(n) = value
-      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
-        RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+    predicates.collect {
+      // MATCH (a)-[r]->b WHERE id(r) = value
+//      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
+//        RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
       case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
         NodeByIdSeek(idName, idExpr)(Seq(predicate))
-    })
+    }
 }

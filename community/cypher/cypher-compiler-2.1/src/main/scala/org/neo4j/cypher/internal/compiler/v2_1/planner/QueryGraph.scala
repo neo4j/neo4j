@@ -33,7 +33,7 @@ An abstract representation of the query graph being solved at the current step
  */
 case class QueryGraph(projections: Map[String, ast.Expression],
                       selections: Selections,
-                      identifiers: Set[IdName])
+                      nodes: Set[IdName])
 
 object SelectionPredicates {
   def fromWhere(where: Where) = extractPredicates(where.expression)

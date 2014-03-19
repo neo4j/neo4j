@@ -30,5 +30,5 @@ case class RelationshipByIdSeek(idName: IdName, relId: Expression)
   val cardinality = context.estimator.estimateRelationshipByIdSeek()
   val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
 
-  val coveredIds = Set(idName)
+  val coveredIds = ??? // TODO: Need to cover the end nodes
 }

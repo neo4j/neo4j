@@ -115,7 +115,8 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
   }
 
-  test("simple relationship by id seek with a rel id expression") {
+  // 2014-03-19 - Andres: turn on once we have patterns in the query graph
+  ignore("simple relationship by id seek with a rel id expression") {
     // given
     val identifier = Identifier("r")(pos)
     val projections = Map("r" -> identifier)

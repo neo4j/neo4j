@@ -19,22 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.CandidateList
 
 case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
 
-  def ++(candidates: CandidateList): PlanTable = {
-    val newMap = candidates.plans.foldLeft(m) {
-      case (acc, entry) =>
-        val filteredMap = acc.filter {
-          case (_, v) => !entry.covers(v)
-        }
-        filteredMap + (entry.coveredIds -> entry)
+  def +(newPlan: LogicalPlan): PlanTable = {
+    val newMap = m.filter {
+      case (_, existingPlan) => !newPlan.covers(existingPlan)
     }
-    PlanTable(newMap)
+    PlanTable(newMap + (newPlan.coveredIds -> newPlan))
   }
 
   def plans: Seq[LogicalPlan] = m.values.toSeq

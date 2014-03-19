@@ -56,7 +56,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "n" -> Identifier("n")(pos)
     ))
 
-    qg.identifiers should equal(Set(IdName("n")))
+    qg.nodes should equal(Set(IdName("n")))
   }
 
   test("match n where n:Awesome return n") {
@@ -71,7 +71,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Foo")()(pos)))(pos)
     )))
 
-    qg.identifiers should equal(Set(IdName("n")))
+    qg.nodes should equal(Set(IdName("n")))
   }
 
   test("match n where id(n) = 42 return n") {
@@ -88,7 +88,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.identifiers should equal(Set(IdName("n")))
+    qg.nodes should equal(Set(IdName("n")))
   }
 
   test("match n where n:Label and id(n) = 42 return n") {
@@ -105,6 +105,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.identifiers should equal(Set(IdName("n")))
+    qg.nodes should equal(Set(IdName("n")))
   }
 }

@@ -26,7 +26,7 @@ import scala.annotation.tailrec
 object SimpleLogicalPlanner {
 
   trait LeafPlanner {
-    def apply()(implicit context: LogicalPlanContext): CandidateList
+    def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan]
   }
 
   case class CandidateList(plans: Seq[LogicalPlan]) {
@@ -49,6 +49,10 @@ object SimpleLogicalPlanner {
     def sorted = CandidateList(plans.sortBy(_.cardinality))
 
     def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
+
+    def +(plan: LogicalPlan) = copy(plans :+ plan)
+
+    def topPlan = sorted.pruned.plans.head
   }
 
   def plan(qg: QueryGraph)(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -63,11 +67,14 @@ object SimpleLogicalPlanner {
         initialPlanTable
       }
 
-      val bestPlanEntry = convergedPlans.plans.head
-      if (!qg.selections.coveredBy(bestPlanEntry.solvedPredicates))
+      if(convergedPlans.size > 1)
         throw new CantHandleQueryException
 
-      bestPlanEntry
+      val bestPlan: LogicalPlan = convergedPlans.plans.head
+      if (!qg.selections.coveredBy(bestPlan.solvedPredicates))
+        throw new CantHandleQueryException
+
+      bestPlan
     }
 
     ProjectionPlanner.amendPlan(qg, bestPlanEntry)
@@ -84,7 +91,16 @@ object SimpleLogicalPlanner {
       labelScanLeafPlanner(qg, labelPredicateMap),
       allNodesLeafPlanner(qg)
     )
-    val candidateList = leafPlanners.map(_.apply).fold(CandidateList(Seq.empty))(_ ++ _)
-    PlanTable() ++ candidateList.sorted.pruned
+    val plans: Seq[LogicalPlan] = leafPlanners.flatMap(_.apply)
+
+    val candidateLists: Iterable[CandidateList] = plans.foldLeft(Map[Set[IdName], CandidateList]()) {
+      case (acc, plan) =>
+        val candidatesForThisId = acc.getOrElse(plan.coveredIds, CandidateList(Seq.empty)) + plan
+        acc + (plan.coveredIds -> candidatesForThisId)
+    }.values
+
+    candidateLists.foldLeft(PlanTable()) {
+      case (planTable, candidateList) => planTable + candidateList.topPlan
+    }
   }
 }

@@ -37,8 +37,7 @@ object expandAndJoin {
       val joinCandidates = tryJoin(planTable)
       val candidates = expandCandidates ++ joinCandidates
 
-      val bestCandidates = candidates.sorted.pruned
-      planTable ++ bestCandidates
+      planTable + candidates.topPlan
     }(initialPlanTable)
   }
 

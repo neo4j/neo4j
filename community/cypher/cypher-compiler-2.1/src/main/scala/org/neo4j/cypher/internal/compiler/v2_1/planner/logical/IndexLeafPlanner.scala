@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 abstract class IndexLeafPlanner extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): CandidateList =
-    CandidateList(predicates.collect {
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+    predicates.collect {
       // n.prop = value
       case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
         val idName = IdName(name)
@@ -39,7 +39,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
               entryConstructor(Seq(propertyPredicate, labelPredicate))
           }
         }
-    }.flatten)
+    }.flatten
 
   protected def predicates: Seq[Expression]
 

@@ -45,6 +45,8 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     candidates.pruned should equal(CandidateList(Seq()))
   }
+
+  // TODO: Test topPlan
 }
 
 
