@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 class SimpleCostModel extends CostModel {
   def calculateExpandRelationship(cardinality: Int): Int = cardinality
-  def calculateNodeIndexScan(cardinality: Int): Int = cardinality * 3
   def calculateNodeIndexSeek(cardinality: Int): Int = cardinality * 3
-  def calculateAllNodes(cardinality: Int): Int = cardinality
+  def calculateNodeUniqueIndexSeek(cardinality: Int): Int = cardinality * 3
+  def calculateAllNodesScan(cardinality: Int): Int = cardinality
   def calculateNodeByLabelScan(cardinality: Int): Int = cardinality * 2
   def calculateRelationshipByIdSeek(cardinality: Int): Int = cardinality
   def calculateNodeByIdSeek(cardinality: Int): Int = cardinality

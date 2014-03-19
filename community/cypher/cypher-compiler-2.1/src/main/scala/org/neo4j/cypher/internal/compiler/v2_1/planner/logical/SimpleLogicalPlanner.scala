@@ -91,8 +91,8 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostMode
 
     val leafPlanners = Seq(
       idSeekLeafPlanner(predicates, semanticTable.isRelationship),
+      uniqueIndexSeekLeafPlanner(predicates, labelPredicateMap),
       indexSeekLeafPlanner(predicates, labelPredicateMap),
-      indexScanLeafPlanner(predicates, labelPredicateMap),
       labelScanLeafPlanner(qg, labelPredicateMap),
       allNodesLeafPlanner(qg)
     )

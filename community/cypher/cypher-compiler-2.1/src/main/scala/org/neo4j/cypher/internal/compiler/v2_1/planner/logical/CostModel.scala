@@ -34,8 +34,8 @@ trait CostModel {
   def calculateNodeByIdSeek(cardinality: Int): Int
   def calculateRelationshipByIdSeek(cardinality: Int): Int
   def calculateNodeByLabelScan(cardinality: Int): Int
-  def calculateAllNodes(cardinality: Int): Int
+  def calculateAllNodesScan(cardinality: Int): Int
+  def calculateNodeUniqueIndexSeek(cardinality: Int): Int
   def calculateNodeIndexSeek(cardinality: Int): Int
-  def calculateNodeIndexScan(cardinality: Int): Int
   def calculateExpandRelationship(cardinality: Int): Int
 }
