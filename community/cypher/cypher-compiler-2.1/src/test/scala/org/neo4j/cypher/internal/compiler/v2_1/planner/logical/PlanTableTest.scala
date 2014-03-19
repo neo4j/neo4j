@@ -20,50 +20,33 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 
-class PlanTableTest extends CypherFunSuite {
+class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x = plan("x")
-  val xIds = Set(IdName("x"))
-
-  val y = plan("y")
-  val yIds = Set(IdName("y"))
-
-  val xAndY = plan("x", "y")
-  val xAndYIds = Set(IdName("x"), IdName("y"))
+  val x = newMockedLogicalPlan("x")
+  val y = newMockedLogicalPlan("y")
+  val xAndY = newMockedLogicalPlan("x", "y")
 
   test("adding a new plan to an empty PlanTable returns a PlanTable with that plan in it") {
     val plans = PlanTable()
-    val newPlan = plans ++ CandidateList(Seq(x))
+    val newPlans = plans ++ CandidateList(Seq(x))
 
-    val expected = PlanTable(Map(xIds -> x))
-
-    newPlan should equal(expected)
+    newPlans should equal(PlanTable(Map(x.asTableEntry)))
   }
 
   test("adding a new plan that does not cover anything else simply adds the plan") {
-    val plans = PlanTable(Map(xIds -> x))
-    val newPlan = plans ++ CandidateList(Seq(y))
+    val plans = PlanTable(Map(x.asTableEntry))
+    val newPlans = plans ++ CandidateList(Seq(y))
 
-    val expected = PlanTable(Map(xIds -> x, yIds -> y))
-
-    newPlan should equal(expected)
+    newPlans should equal(PlanTable(Map(x.asTableEntry, y.asTableEntry)))
   }
 
   test("adding a plan that covers one other plan will remove that plan") {
-    val plans = PlanTable(Map(xIds -> x))
-    val newPlan = plans ++ CandidateList(Seq(xAndY))
+    val plans = PlanTable(Map(x.asTableEntry))
+    val newPlans = plans ++ CandidateList(Seq(xAndY))
 
-    val expected = PlanTable(Map(xAndYIds -> xAndY))
-
-    newPlan should equal(expected)
-  }
-
-  def plan(ids: String*): PlanTableEntry = {
-    val plan = mock[LogicalPlan]
-    when(plan.toString).thenReturn(ids.mkString)
-    PlanTableEntry(plan, Seq.empty, 0, ids.map(IdName.apply).toSet, 0)
+    newPlans should equal(PlanTable(Map(xAndY.asTableEntry)))
   }
 }

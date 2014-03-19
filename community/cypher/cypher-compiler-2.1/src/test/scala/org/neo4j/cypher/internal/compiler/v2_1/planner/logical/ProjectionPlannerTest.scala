@@ -20,38 +20,32 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
 
-class ProjectionPlannerTest extends CypherFunSuite with MockitoSugar {
+class ProjectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  implicit val context = newMockedLogicalPlanContext
+
   test("should add projection for expressions not already covered") {
-    val input = plan("n")
+    val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
     val planner = new ProjectionPlanner
 
     val result = planner.amendPlan(qg, input)
 
-    result should equal(Projection(input.plan, projections))
+    result should equal(Projection(input, projections))
   }
 
   test("does not add projection when not needed") {
-    val input = plan("n")
+    val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
     val planner = new ProjectionPlanner
 
     val result = planner.amendPlan(qg, input)
 
-    result should equal(input.plan)
-  }
-
-  def plan(ids: String*): PlanTableEntry = {
-    val plan = mock[LogicalPlan]
-    when(plan.toString).thenReturn(ids.mkString)
-    PlanTableEntry(plan, Seq.empty, 0, ids.map(IdName.apply).toSet, 0)
+    result should equal(input)
   }
 }

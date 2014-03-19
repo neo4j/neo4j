@@ -31,12 +31,12 @@ object SimpleLogicalPlanner {
     def apply()(implicit context: LogicalPlanContext): CandidateList
   }
 
-  case class CandidateList(plans: Seq[PlanTableEntry]) {
+  case class CandidateList(plans: Seq[LogicalPlan]) {
     def pruned: CandidateList = {
       def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
 
       @tailrec
-      def recurse(covered: Set[IdName], todo: Seq[PlanTableEntry], result: Seq[PlanTableEntry]): Seq[PlanTableEntry] = todo match {
+      def recurse(covered: Set[IdName], todo: Seq[LogicalPlan], result: Seq[LogicalPlan]): Seq[LogicalPlan] = todo match {
         case entry :: tail if overlap(covered, entry.coveredIds) =>
           recurse(covered, tail, result)
         case entry :: tail =>
@@ -52,7 +52,6 @@ object SimpleLogicalPlanner {
 
     def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
   }
-
 }
 
 case class LogicalPlanContext(planContext: PlanContext, estimator: CardinalityEstimator, costs: CostModel)
@@ -67,7 +66,7 @@ case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostMode
     val initialPlanTable = initialisePlanTable(qg, semanticTable)
 
     val bestPlanEntry = if (initialPlanTable.isEmpty)
-      PlanTableEntry(SingleRow(), solvedPredicates = Seq.empty, cost = 0, coveredIds = Set.empty, cardinality = 0)
+      SingleRow()
     else {
       val convergedPlans = if (initialPlanTable.size > 1) {
         expandAndJoin(initialPlanTable)

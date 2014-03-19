@@ -19,7 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-case class SingleRow() extends LogicalPlan {
-  def rhs: Option[LogicalPlan] = None
-  def lhs: Option[LogicalPlan] = None
+
+case class SingleRow()(implicit val context: LogicalPlanContext) extends LogicalPlan {
+  val lhs = None
+  val rhs = None
+
+  val cardinality = 1
+  val cost = context.costs.calculateSingleRow(cardinality)
+
+  val coveredIds = Set.empty[IdName]
+  val solvedPredicates = Seq.empty
 }

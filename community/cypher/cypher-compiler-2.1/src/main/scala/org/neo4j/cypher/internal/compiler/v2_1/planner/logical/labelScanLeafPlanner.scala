@@ -26,13 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 case class labelScanLeafPlanner(qg: QueryGraph, labelPredicateMap: Map[IdName, Set[HasLabels]]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): CandidateList =
     CandidateList(qg.identifiers.toSeq.flatMap { idName =>
-      val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
-      labelPredicates.flatMap { predicate =>
+      labelPredicateMap.getOrElse(idName, Set.empty).flatMap { predicate =>
         predicate.labels.map { labelName =>
-          val cardinality = context.estimator.estimateNodeByLabelScan(labelName.id)
-          val cost = context.costs.calculateNodeByLabelScan(cardinality)
-          val plan = NodeByLabelScan(idName, labelName.toEither())
-          PlanTableEntry(plan, Seq(predicate), cost, Set(idName), cardinality)
+          NodeByLabelScan(idName, labelName.toEither())(Seq(predicate))
         }
       }
     })

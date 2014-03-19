@@ -22,14 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, DummyPosition, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
@@ -45,10 +38,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
 import org.mockito.Mockito
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 
-class PipeExecutionPlanBuilderTest extends CypherFunSuite {
+class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val monitor = NoopPipeMonitor
+  implicit val context = newMockedLogicalPlanContext
+
   val monitors = mock[Monitors]
   val planner = new PipeExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)
@@ -74,7 +70,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan(IdName("n"), Right(LabelId(12)))
+    val logicalPlan = NodeByLabelScan(IdName("n"), Right(LabelId(12)))(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -84,7 +80,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
   test("simple node by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral)
+    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral)(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -94,7 +90,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
   test("simple relationship by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral)
+    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral)(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating

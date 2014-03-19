@@ -21,7 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) extends LogicalPlan {
-  def rhs = None
-  def lhs: Option[LogicalPlan] = Some(left)
+case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
+                     (implicit val context: LogicalPlanContext) extends LogicalPlan {
+
+  val lhs = Some(left)
+  val rhs = None
+
+
+  val cardinality = left.cardinality
+  val cost = left.cost + context.costs.calculateProjectionCosts(cardinality, expressions.size)
+
+  def coveredIds = expressions.keySet.map(IdName)
+  def solvedPredicates = left.solvedPredicates // TODO: Remove shadowed predicates (?)
 }

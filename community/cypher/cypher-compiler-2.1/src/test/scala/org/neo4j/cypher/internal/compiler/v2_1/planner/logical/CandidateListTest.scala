@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
-import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 
-class CandidateListTest extends CypherFunSuite {
-  val x = plan("x")
-  val y = plan("y")
-  val xAndY = plan("x", "y")
+class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  val x = newMockedLogicalPlan("x")
+  val y = newMockedLogicalPlan("y")
+  val xAndY = newMockedLogicalPlan("x", "y")
 
   test("prune with no overlaps returns the same candidates") {
     val candidates = CandidateList(Seq(x, y))
@@ -44,13 +44,6 @@ class CandidateListTest extends CypherFunSuite {
     val candidates = CandidateList(Seq())
 
     candidates.pruned should equal(CandidateList(Seq()))
-  }
-
-  def plan(ids: String*): PlanTableEntry = {
-    val plan = mock[PlanTableEntry]
-    when(plan.coveredIds).thenReturn(ids.map(IdName.apply).toSet)
-    when(plan.toString).thenReturn(ids.mkString)
-    plan
   }
 }
 

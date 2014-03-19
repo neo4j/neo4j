@@ -19,7 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-case class AllNodesScan(idName: IdName) extends LogicalPlan {
-  def rhs: Option[LogicalPlan] = None
-  def lhs: Option[LogicalPlan] = None
+
+case class AllNodesScan(idName: IdName)(implicit val context:LogicalPlanContext) extends LogicalPlan {
+  def lhs = None
+  def rhs = None
+
+  val cardinality = context.estimator.estimateAllNodesScan()
+  val cost = context.costs.calculateAllNodesScan(cardinality)
+
+  val coveredIds = Set(idName)
+  val solvedPredicates = Seq.empty
 }

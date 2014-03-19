@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.CandidateList
 
-case class PlanTable(m: Map[Set[IdName], PlanTableEntry] = Map.empty) {
+case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
@@ -38,16 +37,5 @@ case class PlanTable(m: Map[Set[IdName], PlanTableEntry] = Map.empty) {
     PlanTable(newMap)
   }
 
-  def plans: Seq[PlanTableEntry] = m.values.toSeq
-}
-
-case class PlanTableEntry(plan: LogicalPlan,
-                          solvedPredicates: Seq[Expression],
-                          cost: Int,
-                          coveredIds: Set[IdName],
-                          cardinality: Int) {
-  def covers(other: PlanTableEntry): Boolean = {
-    val set = other.coveredIds -- coveredIds
-    set.isEmpty
-  }
+  def plans: Seq[LogicalPlan] = m.values.toSeq
 }

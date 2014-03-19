@@ -22,7 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression) extends LogicalPlan {
-  def rhs: Option[LogicalPlan] = None
-  def lhs: Option[LogicalPlan] = None
+case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+                        (val solvedPredicates: Seq[Expression] = Seq.empty)
+                        (implicit val context: LogicalPlanContext) extends LogicalPlan {
+  def lhs = None
+  def rhs = None
+
+  val cardinality = context.estimator.estimateNodeIndexSeek(label, propertyKeyId)
+  val cost = context.costs.calculateNodeIndexSeek(cardinality)
+
+  val coveredIds = Set(idName)
 }

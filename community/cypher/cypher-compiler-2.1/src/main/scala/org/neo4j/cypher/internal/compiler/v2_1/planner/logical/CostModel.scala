@@ -38,4 +38,6 @@ trait CostModel {
   def calculateNodeUniqueIndexSeek(cardinality: Int): Int
   def calculateNodeIndexSeek(cardinality: Int): Int
   def calculateExpandRelationship(cardinality: Int): Int
+  def calculateSingleRow(cardinality: Int): Int
+  def calculateProjectionCosts(cardinality: Int, numExpressions: Int): Int
 }

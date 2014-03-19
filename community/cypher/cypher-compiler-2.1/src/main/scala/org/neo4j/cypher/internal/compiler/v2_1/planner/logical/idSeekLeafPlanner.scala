@@ -22,6 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
+//object RelationshipId {
+//  def unapply(v: Any)(implicit context: LogicalPlanContext): Option[Identifier] = v match {
+//    case expr: Expression if context.
+//  }
+//}
+
 case class idSeekLeafPlanner(predicates: Seq[Expression], isRelationship: Identifier => Boolean) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): CandidateList =
     CandidateList(predicates.collect {
@@ -30,13 +36,9 @@ case class idSeekLeafPlanner(predicates: Seq[Expression], isRelationship: Identi
         val idName = IdName(identName)
 
         if (isRelationship(id)) {
-          val cardinality = context.estimator.estimateRelationshipByIdSeek()
-          val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
-          PlanTableEntry(RelationshipByIdSeek(idName, idExpr), Seq(predicate), cost, Set(idName), cardinality)
+          RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
         } else {
-          val cardinality = context.estimator.estimateNodeByIdSeek()
-          val cost = context.costs.calculateNodeByIdSeek(cardinality)
-          PlanTableEntry(NodeByIdSeek(idName, idExpr), Seq(predicate), cost, Set(idName), cardinality)
+          NodeByIdSeek(idName, idExpr)(Seq(predicate))
         }
     })
 }

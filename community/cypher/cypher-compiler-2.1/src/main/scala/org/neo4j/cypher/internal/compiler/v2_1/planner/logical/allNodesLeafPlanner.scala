@@ -27,7 +27,7 @@ case class allNodesLeafPlanner(qg: QueryGraph) extends LeafPlanner {
     CandidateList(qg.identifiers.toSeq.map { idName =>
       val cardinality = context.estimator.estimateAllNodesScan()
       val cost = context.costs.calculateAllNodesScan(cardinality)
-      val plan = AllNodesScan(idName)
-      PlanTableEntry(plan, Seq.empty, cost, Set(idName), cardinality)
+      AllNodesScan(idName)
+//      PlanTableEntry(plan, Seq.empty, cost, Set(idName), cardinality)
     })
 }

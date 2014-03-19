@@ -27,4 +27,6 @@ class SimpleCostModel extends CostModel {
   def calculateNodeByLabelScan(cardinality: Int): Int = cardinality * 2
   def calculateRelationshipByIdSeek(cardinality: Int): Int = cardinality
   def calculateNodeByIdSeek(cardinality: Int): Int = cardinality
+  def calculateProjectionCosts(cardinality: Int, numExpressions: Int): Int = cardinality/100 * numExpressions
+  def calculateSingleRow(cardinality: Int): Int = cardinality
 }
