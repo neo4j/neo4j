@@ -89,7 +89,7 @@ public class ManagementApiModule implements ServerModule
         }
         catch ( UnknownHostException e )
         {
-            log.warn( e );
+            throw new RuntimeException( e );
         }
     }
 

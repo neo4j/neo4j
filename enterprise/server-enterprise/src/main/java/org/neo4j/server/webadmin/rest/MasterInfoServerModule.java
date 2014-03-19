@@ -67,15 +67,16 @@ public class MasterInfoServerModule implements ServerModule
     @Override
     public void stop()
     {
+        URI baseUri = null;
         try
         {
-            URI baseUri = managementApiUri();
-            server.removeJAXRSClasses( getClassNames(), baseUri.toString() );
+            baseUri = managementApiUri();
         }
         catch ( UnknownHostException e )
         {
-            log.warn( e );
+            throw new RuntimeException( e );
         }
+        server.removeJAXRSClasses( getClassNames(), baseUri.toString() );
     }
 
     private List<String> getClassNames()

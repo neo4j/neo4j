@@ -349,16 +349,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         for ( ServerModule module : serverModules )
         {
-
-            try
-            {
-                module.stop();
-            }
-            catch ( Exception e )
-            {
-                //noinspection deprecation
-                log.error( "Unable to stop module.", e );
-            }
+            module.stop();
         }
     }
 
@@ -565,37 +556,29 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
-        try
-        {
-            stopWebServer();
-            stopModules();
+        stopWebServer();
+        stopModules();
 
-            stopRrdDb();
+        stopRrdDb();
 
-            //noinspection deprecation
-            log.info( "Successfully shutdown Neo4j Server." );
+        //noinspection deprecation
+        log.info( "Successfully shutdown Neo4j Server." );
 
-            stopDatabase();
-            //noinspection deprecation
-            log.info( "Successfully shutdown database." );
-        }
-        catch ( Exception e )
-        {
-            //noinspection deprecation
-            log.warn( "Failed to cleanly shutdown database." );
-        }
+        stopDatabase();
+        //noinspection deprecation
+        log.info( "Successfully shutdown database." );
     }
 
     private void stopRrdDb()
     {
-        try
+        if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
+        if( rrdDbWrapper != null ) try
         {
-            if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
-            if( rrdDbWrapper != null )  rrdDbWrapper.close();
-        } catch(IOException e)
+            rrdDbWrapper.close();
+        }
+        catch ( IOException e )
         {
-            // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
-            log.error( "Unable to cleanly shut down statistics database.", e );
+            throw new RuntimeException( e );
         }
     }
 

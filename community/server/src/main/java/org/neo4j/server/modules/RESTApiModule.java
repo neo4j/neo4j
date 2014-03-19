@@ -99,14 +99,14 @@ public class RESTApiModule implements ServerModule
         try
         {
             webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
-
-            tearDownRequestTimeLimit();
-            unloadPlugins();
         }
         catch ( URISyntaxException e )
         {
-            log.warn( e );
+            throw new RuntimeException( e );
         }
+
+        tearDownRequestTimeLimit();
+        unloadPlugins();
     }
 
     private void tearDownRequestTimeLimit() {
