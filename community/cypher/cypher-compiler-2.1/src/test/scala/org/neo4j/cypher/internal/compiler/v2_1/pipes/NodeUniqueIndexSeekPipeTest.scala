@@ -20,83 +20,101 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.graphdb.Node
 import org.mockito.Mockito
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class NodeIndexScanPipeTest extends CypherFunSuite {
+class NodeUniqueIndexSeekPipeTest extends CypherFunSuite {
 
   implicit val monitor = NoopPipeMonitor
 
-  test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
+  test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
     val node = mock[Node]
     val descriptor = new IndexDescriptor(11, 10)
     val queryState = QueryStateHelper.emptyWith(
-      query = Mockito.when(mock[QueryContext].exactIndexSearch(descriptor,"hello")).thenReturn(Iterator(node)).getMock[QueryContext]
+      query = Mockito.when(mock[QueryContext].exactUniqueIndexSearch(descriptor,"hello")).thenReturn(Some(node)).getMock[QueryContext]
     )
 
     // when
-    val pipe = NodeIndexScanPipe("n", Right(LabelId(11)), Right(PropertyKeyId(10)), Literal("hello"))
+    val pipe = NodeUniqueIndexSeekPipe("n", Right(LabelId(11)), Right(PropertyKeyId(10)), Literal("hello"))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return nodes found by index lookup when labelId is resolved at compile time and property key id is solved at runtime") {
+  test("should return the node found by the unique index lookup when labelId is resolved at compile time and property key id is solved at runtime") {
     // given
     val node = mock[Node]
     val query = mock[QueryContext]
     Mockito.when(query.getOptPropertyKeyId("prop")).thenReturn(Some(10))
     val descriptor = new IndexDescriptor(11, 10)
-    Mockito.when(query.exactIndexSearch(descriptor,"hello")).thenReturn(Iterator(node))
+    Mockito.when(query.exactUniqueIndexSearch(descriptor,"hello")).thenReturn(Some(node))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     // when
-    val pipe = NodeIndexScanPipe("n", Right(LabelId(11)), Left("prop"), Literal("hello"))
+    val pipe = NodeUniqueIndexSeekPipe("n", Right(LabelId(11)), Left("prop"), Literal("hello"))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return nodes found by index lookup when labelId is resolved at runtime and property key id is solved at compile time") {
+  test("should return the node found by the unique index lookup when labelId is resolved at runtime and property key id is solved at compile time") {
     // given
     val node = mock[Node]
     val query = mock[QueryContext]
     Mockito.when(query.getOptLabelId("label")).thenReturn(Some(11))
     val descriptor = new IndexDescriptor(11, 10)
-    Mockito.when(query.exactIndexSearch(descriptor,"hello")).thenReturn(Iterator(node))
+    Mockito.when(query.exactUniqueIndexSearch(descriptor,"hello")).thenReturn(Some(node))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     // when
-    val pipe = NodeIndexScanPipe("n", Left("label"), Right(PropertyKeyId(10)), Literal("hello"))
+    val pipe = NodeUniqueIndexSeekPipe("n", Left("label"), Right(PropertyKeyId(10)), Literal("hello"))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return nodes found by index lookup when both labelId and property key id is solved at runtime") {
+  test("should return the node found by the unique index lookup when both labelId and property key id is solved at runtime") {
     // given
     val node = mock[Node]
     val query = mock[QueryContext]
     Mockito.when(query.getOptLabelId("label")).thenReturn(Some(11))
     Mockito.when(query.getOptPropertyKeyId("prop")).thenReturn(Some(10))
     val descriptor = new IndexDescriptor(11, 10)
-    Mockito.when(query.exactIndexSearch(descriptor, 42)).thenReturn(Iterator(node))
+    Mockito.when(query.exactUniqueIndexSearch(descriptor, 42)).thenReturn(Some(node))
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     // when
-    val pipe = NodeIndexScanPipe("n", Left("label"), Left("prop"), Literal(42))
+    val pipe = NodeUniqueIndexSeekPipe("n", Left("label"), Left("prop"), Literal(42))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
+  }
+
+  test("should return an empty iterator when no nodes are found with the unique index lookup") {
+    // given
+    val node = mock[Node]
+    val query = mock[QueryContext]
+    Mockito.when(query.getOptLabelId("label")).thenReturn(Some(11))
+    Mockito.when(query.getOptPropertyKeyId("prop")).thenReturn(Some(10))
+    val descriptor = new IndexDescriptor(11, 10)
+    Mockito.when(query.exactUniqueIndexSearch(descriptor, 42)).thenReturn(None)
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    // when
+    val pipe = NodeUniqueIndexSeekPipe("n", Left("label"), Left("prop"), Literal(42))
+    val result = pipe.createResults(queryState)
+
+    // then
+    result should be(empty)
   }
 
   test("should return empty iterator when labelId cannot be resolved") {
@@ -106,7 +124,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     // when
-    val pipe = NodeIndexScanPipe("n", Left("label"), Right(PropertyKeyId(10)), Literal("hello"))
+    val pipe = NodeUniqueIndexSeekPipe("n", Left("label"), Right(PropertyKeyId(10)), Literal("hello"))
     val result = pipe.createResults(queryState)
 
     // then
@@ -120,7 +138,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite {
     val queryState = QueryStateHelper.emptyWith(query = query)
 
     // when
-    val pipe = NodeIndexScanPipe("n", Right(LabelId(10)), Left("prop"), Literal("hello"))
+    val pipe = NodeUniqueIndexSeekPipe("n", Right(LabelId(10)), Left("prop"), Literal("hello"))
     val result = pipe.createResults(queryState)
 
     // then

@@ -30,8 +30,8 @@ trait CardinalityEstimator {
   def estimateNodeByIdSeek(): Int
   def estimateRelationshipByIdSeek(): Int
   def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
-  def estimateAllNodes(): Int
+  def estimateAllNodesScan(): Int
+  def estimateNodeUniqueIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
   def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
-  def estimateNodeIndexScan(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
   def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
 }

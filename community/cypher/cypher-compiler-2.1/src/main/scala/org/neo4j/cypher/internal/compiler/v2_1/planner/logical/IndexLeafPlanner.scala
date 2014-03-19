@@ -53,11 +53,11 @@ abstract class IndexLeafPlanner extends LeafPlanner {
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor]
 }
 
-case class indexSeekLeafPlanner(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) extends IndexLeafPlanner {
+case class uniqueIndexSeekLeafPlanner(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)(implicit context: LogicalPlanContext): (Seq[Expression]) => PlanTableEntry = {
-    val cardinality = context.estimator.estimateNodeIndexSeek(labelId, propertyKeyId)
-    val cost = context.costs.calculateNodeIndexSeek(cardinality)
-    val plan = NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr)
+    val cardinality = context.estimator.estimateNodeUniqueIndexSeek(labelId, propertyKeyId)
+    val cost = context.costs.calculateNodeUniqueIndexSeek(cardinality)
+    val plan = NodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr)
     (predicates: Seq[Expression]) => PlanTableEntry(plan, predicates, cost, Set(idName), cardinality)
   }
 
@@ -65,11 +65,11 @@ case class indexSeekLeafPlanner(predicates: Seq[Expression], labelPredicateMap: 
     context.planContext.uniqueIndexesGetForLabel(labelId)
 }
 
-case class indexScanLeafPlanner(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) extends IndexLeafPlanner {
+case class indexSeekLeafPlanner(predicates: Seq[Expression], labelPredicateMap: Map[IdName, Set[HasLabels]]) extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)(implicit context: LogicalPlanContext): (Seq[Expression]) => PlanTableEntry = {
-    val cardinality = context.estimator.estimateNodeIndexScan(labelId, propertyKeyId)
-    val cost = context.costs.calculateNodeIndexScan(cardinality)
-    val plan = NodeIndexScan(idName, labelId, propertyKeyId, valueExpr)
+    val cardinality = context.estimator.estimateNodeIndexSeek(labelId, propertyKeyId)
+    val cost = context.costs.calculateNodeIndexSeek(cardinality)
+    val plan = NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr)
     (predicates: Seq[Expression]) => PlanTableEntry(plan, predicates, cost, Set(idName), cardinality)
   }
 

@@ -26,7 +26,10 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import scala.Some
 
-case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], propertyKey: Either[String, PropertyKeyId], valueExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe {
+case class NodeUniqueIndexSeekPipe(ident: String,
+                                   label: Either[String, LabelId],
+                                   propertyKey: Either[String, PropertyKeyId],
+                                   valueExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val optLabelId = label match {
@@ -43,8 +46,10 @@ case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], prop
       case (Some(labelId), Some(propertyKeyId)) => {
         val descriptor = new IndexDescriptor(labelId.id, propertyKeyId.id)
         val value = valueExpr(ExecutionContext.empty)(state)
-        val iterator = state.query.exactIndexSearch(descriptor, value)
-        iterator.map(node => ExecutionContext.from(ident -> node))
+        state.query.exactUniqueIndexSearch(descriptor, value) match {
+          case Some(node) => Iterator(ExecutionContext.from(ident -> node))
+          case _          => Iterator.empty
+        }
       }
       case _ => Iterator.empty
     }
@@ -52,10 +57,11 @@ case class NodeIndexScanPipe(ident: String, label: Either[String, LabelId], prop
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "NodeIndexSeek", Seq.empty, Seq(
+  def executionPlanDescription = new PlanDescriptionImpl(this, "NodeUniqueIndexSeek", Seq.empty, Seq(
     "ident" -> ident,
     "label" -> label,
     "propertyKey"-> propertyKey))
+
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class NodeIndexScan(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression) extends LogicalPlan {
+case class NodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression) extends LogicalPlan {
   def rhs: Option[LogicalPlan] = None
   def lhs: Option[LogicalPlan] = None
 }

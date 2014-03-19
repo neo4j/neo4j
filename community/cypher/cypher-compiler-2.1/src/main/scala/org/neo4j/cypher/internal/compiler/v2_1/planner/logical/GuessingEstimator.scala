@@ -35,9 +35,9 @@ class GuessingEstimator extends CardinalityEstimator {
     case None => 0
   }
 
-  def estimateNodeIndexScan(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
+  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
 
-  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 50
+  def estimateNodeUniqueIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 50
 
-  def estimateAllNodes() = 1000
+  def estimateAllNodesScan() = 1000
 }
