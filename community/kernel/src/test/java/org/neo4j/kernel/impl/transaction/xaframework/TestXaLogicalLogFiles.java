@@ -74,7 +74,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(false);
         
-        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG1 );
+        StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG1 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn( fc );
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -91,7 +91,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(false);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG2 );
+        StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG2 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -108,7 +108,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(false);
         
-        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.CLEAN );
+        StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.CLEAN );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -125,7 +125,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG1 );
+        StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG1 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -142,7 +142,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        StoreChannel fc = mockedFileChannel( XaLogicalLogTokens.LOG2 );
+        StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG2 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -161,7 +161,7 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(true);
         
-        StoreChannel fc = mockedFileChannel( ';' );
+        StoreChannel fc = mockedStoreChannel( ';' );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
         XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
@@ -169,7 +169,7 @@ public class TestXaLogicalLogFiles {
         files.determineState();
     }
     
-    private StoreChannel mockedFileChannel(char c) throws IOException
+    private StoreChannel mockedStoreChannel( char c ) throws IOException
     {
         return new MockedFileChannel(ByteBuffer.allocate(4).putChar(c).array());
     }

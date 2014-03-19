@@ -634,7 +634,7 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * Returns a <CODE>FileChannel</CODE> to this storage's file. If
+     * Returns a <CODE>StoreChannel</CODE> to this storage's file. If
      * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
      *

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
 import org.neo4j.kernel.impl.transaction.LockException;
@@ -58,7 +57,7 @@ public abstract class LockableWindow implements PersistenceWindow
     }
 
     /**
-     * Writes out any changes to the underlying {@link FileChannel} and is then
+     * Writes out any changes to the underlying {@link StoreChannel} and is then
      * considered unusable.
      */
     protected final void writeOutAndClose()

@@ -28,6 +28,12 @@ import java.nio.channels.FileLock;
 public interface StoreChannel
         extends SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel
 {
+    /**
+     * Attempts to acquire an exclusive lock on this channel's file.
+     * @return A lock object representing the newly-acquired lock, or null if the lock could not be acquired.
+     * @throws IOException If an I/O error occurs.
+     * @throws java.nio.channels.ClosedChannelException if the channel is closed.
+     */
     FileLock tryLock() throws IOException;
 
     int write( ByteBuffer src, long position ) throws IOException;

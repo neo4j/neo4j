@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -29,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
@@ -38,6 +34,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
@@ -72,6 +69,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -126,15 +126,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
         }
 
-        // public void writeToFile( FileChannel fileChannel, ByteBuffer buffer )
-        // throws IOException
         @Override
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
-            // buffer.clear();
             buffer.putInt( type );
-            // buffer.flip();
-            // fileChannel.write( buffer );
         }
     }
 
@@ -170,11 +165,6 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
             commandList.add( command );
         }
-
-//        public XaCommand[] getCommands()
-//        {
-//            return commandList.toArray( new XaCommand[commandList.size()] );
-//        }
 
         @Override
         public void doPrepare()
