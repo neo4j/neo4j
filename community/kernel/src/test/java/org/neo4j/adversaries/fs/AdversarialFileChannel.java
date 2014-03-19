@@ -84,8 +84,22 @@ public class AdversarialFileChannel extends StoreFileChannel
     @Override
     public int read( ByteBuffer dst, long position ) throws IOException
     {
-        adversary.injectFailure( IOException.class );
+        if ( adversary.injectFailureOrMischief( IOException.class ) )
+        {
+            int oldLimit = mischiefLimit( dst );
+            int read = super.read( dst, position );
+            dst.limit( oldLimit );
+            return read;
+        }
         return super.read( dst, position );
+    }
+
+    private int mischiefLimit( ByteBuffer buf )
+    {
+        int oldLimit = buf.limit();
+        int newLimit = oldLimit - Math.max( buf.remaining() / 2, 1 );
+        buf.limit( newLimit );
+        return oldLimit;
     }
 
     @Override
@@ -98,14 +112,27 @@ public class AdversarialFileChannel extends StoreFileChannel
     @Override
     public int read( ByteBuffer dst ) throws IOException
     {
-        adversary.injectFailure( IOException.class );
+        if ( adversary.injectFailureOrMischief( IOException.class ) )
+        {
+            int oldLimit = mischiefLimit( dst );
+            int read = super.read( dst );
+            dst.limit( oldLimit );
+            return read;
+        }
         return super.read( dst );
     }
 
     @Override
     public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
     {
-        adversary.injectFailure( IOException.class );
+        if ( adversary.injectFailureOrMischief( IOException.class ) )
+        {
+            ByteBuffer lastBuf = dsts[dsts.length - 1];
+            int oldLimit = mischiefLimit( lastBuf );
+            long read = super.read( dsts, offset, length );
+            lastBuf.limit( oldLimit );
+            return read;
+        }
         return super.read( dsts, offset, length );
     }
 
@@ -133,7 +160,14 @@ public class AdversarialFileChannel extends StoreFileChannel
     @Override
     public long read( ByteBuffer[] dsts ) throws IOException
     {
-        adversary.injectFailure( IOException.class );
+        if ( adversary.injectFailureOrMischief( IOException.class ) )
+        {
+            ByteBuffer lastBuf = dsts[dsts.length - 1];
+            int oldLimit = mischiefLimit( lastBuf );
+            long read = super.read( dsts );
+            lastBuf.limit( oldLimit );
+            return read;
+        }
         return super.read( dsts );
     }
 

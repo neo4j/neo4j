@@ -65,6 +65,13 @@ public class CountingAdversary extends AbstractAdversary
         }
     }
 
+    @Override
+    public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
+    {
+        injectFailure( failureTypes );
+        return false;
+    }
+
     private void reset()
     {
         // The current count is going to be either zero or negative when we get here.

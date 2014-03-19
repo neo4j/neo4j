@@ -21,5 +21,14 @@ package org.neo4j.adversaries;
 
 public interface Adversary
 {
+    /**
+     * Will randomly choose one of the given failures to throw, or not!
+     */
     void injectFailure( Class<? extends Throwable>... failureTypes );
+
+    /**
+     * Will randomly choose one of the given failures to throw, or return <code>true</code> if
+     * other kinds of mischeif should happen, or <code>false</code> if nothing bad should happen.
+     */
+    boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes );
 }

@@ -49,9 +49,24 @@ public class ClassGuardedAdversary implements Adversary
         }
     }
 
+    @Override
+    public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
+    {
+        if ( enabled && calledFromVictimClass() )
+        {
+            return delegateFailureOrMischiefInjection( failureTypes );
+        }
+        return false;
+    }
+
     protected void delegateFailureInjection( Class<? extends Throwable>[] failureTypes )
     {
         delegate.injectFailure( failureTypes );
+    }
+
+    protected boolean delegateFailureOrMischiefInjection( Class<? extends Throwable>[] failureTypes )
+    {
+        return delegate.injectFailureOrMischief( failureTypes );
     }
 
     private boolean calledFromVictimClass()
