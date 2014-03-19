@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Identifier}
 
-object ProjectionPlanner {
-  def amendPlan(in: QueryGraph, plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+object projectionPlanner extends Transformer1[LogicalPlan] {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val ids: Map[String, Expression] = plan.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)
     }.toMap
 
-    if (ids != in.projections)
-      Projection(plan, in.projections)
+    if (ids != context.queryGraph.projections)
+      Projection(plan, context.queryGraph.projections)
     else
       plan
   }
-
 }

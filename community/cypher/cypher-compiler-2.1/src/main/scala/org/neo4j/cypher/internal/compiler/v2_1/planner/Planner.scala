@@ -34,7 +34,7 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val costs = new SimpleCostModel
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-
+  val logicalPlanner = new SimpleLogicalPlanner()
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable)(planContext)
@@ -43,7 +43,8 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
     case ast: Query =>
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
-      val logicalPlan = SimpleLogicalPlanner.plan(queryGraph)(LogicalPlanContext(planContext, estimator, costs, semanticTable))
+      val context = LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
+      val logicalPlan = logicalPlanner.plan(context)
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>

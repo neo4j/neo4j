@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
-case class allNodesLeafPlanner(qg: QueryGraph) extends LeafPlanner {
+case class allNodesLeafPlanner() extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
-    qg.nodes.toSeq.map {
+    context.queryGraph.nodes.toSeq.map {
       case idName => AllNodesScan(idName)
     }
 }

@@ -33,7 +33,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     planContext = self.mock[PlanContext],
     estimator = self.mock[CardinalityEstimator],
     costs = self.mock[CostModel],
-    semanticTable = self.mock[SemanticTable]
+    semanticTable = self.mock[SemanticTable],
+    queryGraph = self.mock[QueryGraph]
   )
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
@@ -46,6 +47,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val plan = mock[LogicalPlan]
     when(plan.toString).thenReturn(s"MockedLogicalPlan(ids = $ids)")
     when(plan.coveredIds).thenReturn(ids)
+    when(plan.solvedPredicates).thenReturn(Seq.empty)
     plan
   }
 }

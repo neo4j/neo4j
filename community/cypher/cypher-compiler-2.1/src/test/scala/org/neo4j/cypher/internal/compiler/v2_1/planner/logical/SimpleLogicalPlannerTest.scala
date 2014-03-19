@@ -31,8 +31,8 @@ import org.mockito.Mockito._
 class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val context = newMockedLogicalPlanContext
-  val LogicalPlanContext(planContext, estimator, costs, _) = context
-  val planner = SimpleLogicalPlanner
+  val LogicalPlanContext(planContext, estimator, costs, _, _) = context
+  val planner = new SimpleLogicalPlanner()
   val pos = DummyPosition(0)
 
   test("projection only query") {
@@ -41,7 +41,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(projections, Selections(), Set.empty)
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(Projection(SingleRow(), projections))
@@ -52,9 +52,10 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val projections = Map("n" -> Identifier("n")(pos))
     val qg = QueryGraph(projections, Selections(), Set(IdName("n")))
 
-    // when
     when(estimator.estimateAllNodesScan()).thenReturn(1000)
-    val resultPlan = planner.plan(qg)
+
+    // when
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(AllNodesScan(IdName("n")))
@@ -71,7 +72,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(estimator.estimateAllNodesScan()).thenReturn(1000)
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Left("Awesome"))())
@@ -89,7 +90,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId))())
@@ -109,7 +110,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(estimator.estimateNodeByIdSeek()).thenReturn(1)
 
     // when
-    val resultPlan = planner.plan(qg)(context.copy(semanticTable = semanticTable))
+    val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
     resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
@@ -129,7 +130,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(estimator.estimateRelationshipByIdSeek()).thenReturn(1)
 
     // when
-    val resultPlan = planner.plan(qg)(context.copy(semanticTable = semanticTable))
+    val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
     resultPlan should equal(RelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos))())
@@ -151,13 +152,13 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       )(pos)
     )
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(1)
     when(estimator.estimateNodeByIdSeek()).thenReturn(100)
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
     resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId))())
@@ -184,7 +185,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticQuery = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy( queryGraph = qg))
 
     // then
     resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
@@ -212,10 +213,10 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
     when(estimator.estimateNodeIndexSeek(LabelId(12), propertyKeyId)).thenReturn(1)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
     resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))())
@@ -241,12 +242,11 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     )
     when(estimator.estimateAllNodesScan()).thenReturn(1000)
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    val cost = 99
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(qg)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
     resultPlan should equal(NodeIndexUniqueSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))())

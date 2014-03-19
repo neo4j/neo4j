@@ -24,17 +24,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 
-class ProjectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val context = newMockedLogicalPlanContext
+class projectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should add projection for expressions not already covered") {
     // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    implicit val context = createContextWith(qg)
 
     // when
-    val result = ProjectionPlanner.amendPlan(qg, input)
+    val result = projectionPlanner(input)
 
     // then
     result should equal(Projection(input, projections))
@@ -45,11 +45,14 @@ class ProjectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    implicit val context = createContextWith(qg)
 
     // when
-    val result = ProjectionPlanner.amendPlan(qg, input)
+    val result = projectionPlanner(input)
 
     // then
     result should equal(input)
   }
+
+  private def createContextWith(qg:QueryGraph):LogicalPlanContext = newMockedLogicalPlanContext.copy(queryGraph = qg)
 }
