@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
@@ -34,16 +33,17 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 public class RelationshipCreator
 {
     private final RelationshipGroupGetter relGroupGetter;
-    private final NeoStore neoStore;
     private final RelationshipLocker locker;
+    private final int denseNodeThreshold;
 
     private Collection<NodeRecord> upgradedDenseNodes;
 
-    public RelationshipCreator( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter, NeoStore neoStore )
+    public RelationshipCreator( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter,
+            int denseNodeThreshold )
     {
         this.locker = locker;
         this.relGroupGetter = relGroupGetter;
-        this.neoStore = neoStore;
+        this.denseNodeThreshold = denseNodeThreshold;
     }
 
     public Collection<NodeRecord> getUpgradedDenseNodes()
@@ -102,13 +102,17 @@ public class RelationshipCreator
         {
             RecordProxy<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
             RelationshipRecord rel = relChange.forReadingLinkage();
-            if ( RelationshipCounter.relCount( node.getId(), rel ) >= neoStore.getDenseNodeThreshold() )
+            if ( RelationshipCounter.relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
+                locker.getWriteLock( relId );
+                // Re-read the record after we've locked it since another transaction might have
+                // changed in the meantime.
+                relChange = relRecords.getOrLoad( relId, null );
+
                 convertNodeToDenseNode( node, relChange.forChangingLinkage(), relRecords, relGroupRecords );
             }
         }
     }
-
 
     private void connectRelationship( NodeRecord firstNode,
                                       NodeRecord secondNode, RelationshipRecord rel,
@@ -188,21 +192,20 @@ public class RelationshipCreator
                                          RecordAccess<Long, RelationshipRecord, Void> relRecords,
                                          RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
     {
-        firstRel = relRecords.getOrLoad( firstRel.getId(), null ).forChangingLinkage();
         node.setDense( true );
         node.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
         long relId = firstRel.getId();
         RelationshipRecord relRecord = firstRel;
         while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            locker.getWriteLock( relId );
+            // Get the next relationship id before connecting it (where linkage is overwritten)
             relId = relChain( relRecord, node.getId() ).get( relRecord );
             connectRelationshipToDenseNode( node, relRecord, relRecords, relGroupRecords );
-            if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                break;
+            if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {   // Lock and load the next relationship in the chain
+                locker.getWriteLock( relId );
+                relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
             }
-            relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
         }
         if ( upgradedDenseNodes == null )
         {

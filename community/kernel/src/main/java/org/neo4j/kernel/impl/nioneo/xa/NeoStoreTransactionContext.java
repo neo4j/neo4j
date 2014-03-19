@@ -69,7 +69,7 @@ public class NeoStoreTransactionContext
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
-        relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore );
+        relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter);
     }
 

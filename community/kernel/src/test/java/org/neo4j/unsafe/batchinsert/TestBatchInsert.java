@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,8 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
@@ -44,6 +47,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -76,6 +80,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -103,8 +108,26 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
+@RunWith( Parameterized.class )
 public class TestBatchInsert
 {
+    private final int denseNodeThreshold;
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
+    {
+        Collection<Object[]> result = new ArrayList<>();
+        result.add( new Object[] { 3 } );
+        result.add( new Object[] { 20 } );
+        result.add( new Object[] { parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) } );
+        return result;
+    }
+
+    public TestBatchInsert( int denseNodeThreshold )
+    {
+        this.denseNodeThreshold = denseNodeThreshold;
+    }
+
     private static Map<String,Object> properties = new HashMap<>();
 
     private static enum RelTypes implements RelationshipType
@@ -147,28 +170,33 @@ public class TestBatchInsert
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
+    private Map<String, String> configuration()
+    {
+        return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
+    }
+
     private BatchInserter newBatchInserter()
     {
-        return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap() );
+        return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration() );
     }
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
-        return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+        return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration(), extensions );
     }
 
     private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider )
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
-        return BatchInserters.inserter( "neo-batch-db", fs.get(), stringMap(), extensions );
+        return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration(), extensions );
     }
 
     private GraphDatabaseService newBatchGraphDatabase()
     {
-        return BatchInserters.batchDatabase( "neo-batch-db", fs.get() );
+        return BatchInserters.batchDatabase( "neo-batch-db", fs.get(), configuration() );
     }
 
     @Test
@@ -281,7 +309,10 @@ public class TestBatchInsert
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        return factory.newImpermanentDatabase( inserter.getStoreDir() );
+        return factory.newImpermanentDatabaseBuilder( inserter.getStoreDir() )
+                // Shouldn't be necessary to set dense node threshold since it's a stick config
+                .setConfig( configuration() )
+                .newGraphDatabase();
     }
 
     @Test
@@ -1221,6 +1252,39 @@ public class TestBatchInsert
         finally
         {
             db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldGetRelationships() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( null );
+        createRelationships( inserter, node, RelTypes.REL_TYPE1, 3, 2, 1 );
+        createRelationships( inserter, node, RelTypes.REL_TYPE2, 4, 5, 6 );
+
+        // WHEN
+        Set<Long> gottenRelationships = asSet( inserter.getRelationshipIds( node ) );
+
+        // THEN
+        assertEquals( 21, gottenRelationships.size() );
+    }
+
+    private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
+            int out, int in, int loop )
+    {
+        for ( int i = 0; i < out; i++ )
+        {
+            inserter.createRelationship( node, inserter.createNode( null ), relType, null );
+        }
+        for ( int i = 0; i < out; i++ )
+        {
+            inserter.createRelationship( inserter.createNode( null ), node, relType, null );
+        }
+        for ( int i = 0; i < out; i++ )
+        {
+            inserter.createRelationship( node, node, relType, null );
         }
     }
 

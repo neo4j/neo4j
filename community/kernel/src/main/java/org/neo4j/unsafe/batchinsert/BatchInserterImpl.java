@@ -39,6 +39,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -86,7 +87,6 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -139,6 +139,27 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 public class BatchInserterImpl implements BatchInserter
 {
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
+
+    private final Function<RelationshipRecord,Long> REL_RECORD_TO_ID = new Function<RelationshipRecord,Long>()
+    {
+        @Override
+        public Long apply( RelationshipRecord relRecord )
+        {
+            return relRecord.getId();
+        }
+    };
+    private final Function<RelationshipRecord,BatchRelationship> REL_RECORD_TO_BATCH_REL =
+            new Function<RelationshipRecord,BatchRelationship>()
+    {
+        @Override
+        public BatchRelationship apply( RelationshipRecord relRecord )
+        {
+            RelationshipType type = new RelationshipTypeImpl(
+                    relationshipTypeTokens.nameOf( relRecord.getType() ) );
+            return new BatchRelationship( relRecord.getId(),
+                    relRecord.getFirstNode(), relRecord.getSecondNode(), type );
+        }
+    };
 
     private final LifeSupport life;
     private final NeoStore neoStore;
@@ -250,7 +271,7 @@ public class BatchInserterImpl implements BatchInserter
         // Record access
         recordAccess = new DirectRecordAccessSet( neoStore );
         relationshipCreator = new RelationshipCreator( RelationshipLocker.NO_LOCKING,
-                new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() ), neoStore );
+                new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() ), neoStore.getDenseNodeThreshold() );
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( getPropertyStore(), propertyTraverser );
         propertyDeletor = new PropertyDeleter( getPropertyStore(), propertyTraverser );
@@ -728,64 +749,13 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
-        NodeRecord nodeRecord = getNodeRecord( nodeId ).forReadingData();
-        long nextRel = nodeRecord.getNextRel();
-        List<Long> ids = new ArrayList<>();
-        while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord relRecord = getRelationshipRecord( nextRel ).forReadingData();
-            ids.add( relRecord.getId() );
-            long firstNode = relRecord.getFirstNode();
-            long secondNode = relRecord.getSecondNode();
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "Node[" + nodeId +
-                                                  "] not part of firstNode[" + firstNode +
-                                                  "] or secondNode[" + secondNode + "]" );
-            }
-        }
-        return ids;
+        return map( REL_RECORD_TO_ID, new BatchRelationshipIterable( neoStore, nodeId ) );
     }
 
     @Override
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
-        NodeRecord nodeRecord = getNodeRecord( nodeId ).forReadingData();
-        long nextRel = nodeRecord.getNextRel();
-        List<BatchRelationship> rels = new ArrayList<>();
-        while ( nextRel != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipRecord relRecord = getRelationshipRecord( nextRel ).forReadingData();
-            RelationshipType type = new RelationshipTypeImpl(
-                    relationshipTypeTokens.nameOf( relRecord.getType() ) );
-            rels.add( new BatchRelationship( relRecord.getId(),
-                                             relRecord.getFirstNode(), relRecord.getSecondNode(), type ) );
-            long firstNode = relRecord.getFirstNode();
-            long secondNode = relRecord.getSecondNode();
-            if ( firstNode == nodeId )
-            {
-                nextRel = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                nextRel = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "Node[" + nodeId +
-                                                  "] not part of firstNode[" + firstNode +
-                                                  "] or secondNode[" + secondNode + "]" );
-            }
-        }
-        return rels;
+        return map( REL_RECORD_TO_BATCH_REL, new BatchRelationshipIterable( neoStore, nodeId ) );
     }
 
     @Override

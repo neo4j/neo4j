@@ -64,11 +64,13 @@ import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.lang.String.format;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
 public class NodeProxy implements Node
 {
@@ -623,7 +625,12 @@ public class NodeProxy implements Node
         try ( Statement statement = statementContextProvider.instance() )
         {
             ReadOperations ops = statement.readOperations();
-            return ops.nodeGetDegree( nodeId, Direction.BOTH, ops.relationshipTypeGetForName( type.name() ) );
+            int typeId = ops.relationshipTypeGetForName( type.name() );
+            if ( typeId == NO_ID )
+            {   // This type doesn't even exist. Return 0
+                return 0;
+            }
+            return ops.nodeGetDegree( nodeId, Direction.BOTH, typeId );
         }
         catch ( EntityNotFoundException e )
         {
@@ -651,7 +658,12 @@ public class NodeProxy implements Node
         try ( Statement statement = statementContextProvider.instance() )
         {
             ReadOperations ops = statement.readOperations();
-            return ops.nodeGetDegree( nodeId, direction, ops.relationshipTypeGetForName( type.name() ) );
+            int typeId = ops.relationshipTypeGetForName( type.name() );
+            if ( typeId == NO_ID )
+            {   // This type doesn't even exist. Return 0
+                return 0;
+            }
+            return ops.nodeGetDegree( nodeId, direction, typeId );
         }
         catch ( EntityNotFoundException e )
         {
