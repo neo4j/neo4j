@@ -17,11 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.allNodesLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.uniqueIndexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.indexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.idSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanTableGenerator
 
-class initialiser(applySelections: SelectionApplicator) extends NodeIdentifierInitialiser {
+object generateLeafPlans extends PlanTableGenerator {
   def apply()(implicit context: LogicalPlanContext): PlanTable = {
     val predicates: Seq[Expression] = context.queryGraph.selections.flatPredicates
     val labelPredicateMap = context.queryGraph.selections.labelPredicates
@@ -43,7 +54,7 @@ class initialiser(applySelections: SelectionApplicator) extends NodeIdentifierIn
     }.values
 
     candidateLists.foldLeft(PlanTable()) {
-      case (planTable, candidateList) => planTable + applySelections(candidateList.topPlan)
+      case (planTable, candidateList) => candidateList.topPlan.foldLeft(planTable)(_ + applySelections(_))
     }
   }
 }

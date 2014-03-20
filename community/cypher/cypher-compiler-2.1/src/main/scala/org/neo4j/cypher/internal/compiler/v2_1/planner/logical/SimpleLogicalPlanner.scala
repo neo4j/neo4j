@@ -19,63 +19,42 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import scala.annotation.tailrec
-import org.neo4j.cypher.{SyntaxException, CypherExecutionException}
+import org.neo4j.cypher.internal.helpers.{Function1WithImplicit1, Function0WithImplicit1}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.steps._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
-trait NodeIdentifierInitialiser {
-  def apply()(implicit context: LogicalPlanContext): PlanTable
-}
-
-object MainLoop {
-  def converge[A](f: (A) => A)(seed: A): A = {
-    @tailrec
-    def recurse(a: A, b: A): A =
-      if (a == b) a else recurse(b, f(a))
-    recurse(seed, f(seed))
+case class iterateUntilConverged(f: PlanTableTransformer) extends PlanTableTransformer {
+  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
+    val stream = Stream.iterate(planTable)(table => f(table))
+    stream.sliding(2).collectFirst {
+      case pair if pair(0) == pair(1) => pair(0)
+    }.get
   }
 }
 
-trait MainLoop {
-  self =>
-
-  def apply(plan: PlanTable)(implicit context: LogicalPlanContext): PlanTable
-
-  def andThen(other: MainLoop) = new MainLoop {
-    override def apply(plan: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
-      other.apply(self.apply(plan))
-  }
+object SimpleLogicalPlanner {
+  type PlanTableGenerator = Function0WithImplicit1[PlanTable, LogicalPlanContext]
+  type PlanTransformer = Function1WithImplicit1[LogicalPlan, LogicalPlan, LogicalPlanContext]
+  type PlanTableTransformer = Function1WithImplicit1[PlanTable, PlanTable, LogicalPlanContext]
+  type PlanCandidateGenerator = Function1WithImplicit1[PlanTable, CandidateList, LogicalPlanContext]
+  type PlanProducer[A] = Function1WithImplicit1[A, LogicalPlan, LogicalPlanContext]
+  type PlanTableProducer[A] = Function1WithImplicit1[A, PlanTable, LogicalPlanContext]
+  type CandidateListTransformer = Function1WithImplicit1[CandidateList, CandidateList, LogicalPlanContext]
 }
 
-trait ProjectionApplicator {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan
-}
-
-trait SelectionApplicator {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan
-}
-
-class SimpleLogicalPlanner(startPointFinder: NodeIdentifierInitialiser = new initialiser(applySelections),
-                           mainLoop: MainLoop = new expandAndJoinLoop(applySelections)
-                                                andThen new cartesianProductLoop(applySelections),
-                           projector: ProjectionApplicator = projectionPlanner) {
-  def plan(implicit context: LogicalPlanContext): LogicalPlan = {
-    val initialPlanTable = startPointFinder()
-
-    val bestPlan = if (initialPlanTable.isEmpty)
-      SingleRow()
-    else {
-      val planTable = mainLoop(initialPlanTable)
-      if (planTable.size != 1)
-        throw new SyntaxException("Expected the final plan table to have exactly 1 plan")
-
-      val bestPlan = planTable.plans.head
-      if (!context.queryGraph.selections.coveredBy(bestPlan.solvedPredicates))
-        throw new CantHandleQueryException
-
-      bestPlan
-    }
-
-    projector(bestPlan)
-  }
+class SimpleLogicalPlanner {
+  def plan(implicit context: LogicalPlanContext): LogicalPlan = (
+    generateLeafPlans andThen
+    applySelectionsToPlanTable andThen
+    iterateUntilConverged(new PlanTableTransformer {
+      def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
+        (expandAndJoin andThen applySelectionsToCandidateList andThen includeBestPlan(planTable))(planTable)
+    }) andThen
+    iterateUntilConverged(new PlanTableTransformer {
+      def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
+        (cartesianProduct andThen applySelectionsToCandidateList andThen includeBestPlan(planTable))(planTable)
+    }) andThen
+    extractBestPlan andThen
+    project
+  )()
 }

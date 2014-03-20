@@ -39,7 +39,7 @@ case class CandidateList(plans: Seq[LogicalPlan]) {
 
   def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  def topPlan = sorted.pruned.plans.head
+  def topPlan = sorted.pruned.plans.headOption
 
   def map(f: LogicalPlan => LogicalPlan):CandidateList = copy(plans = plans.map(f))
 }
