@@ -23,14 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 
 case class labelScanLeafPlanner(labelPredicateMap: Map[IdName, Set[HasLabels]]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
-    context.queryGraph.nodes.toSeq.flatMap {
-      case idName =>
-        labelPredicateMap.getOrElse(idName, Set.empty).flatMap {
-          predicate =>
-            predicate.labels.map {
-              labelName =>
-                NodeByLabelScan(idName, labelName.toEither())(Seq(predicate))
-            }
-        }
-    }
+    for (idName <- context.queryGraph.nodes.toSeq;
+         labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
+         labelName <- labelPredicate.labels) yield
+      NodeByLabelScan(idName, labelName.toEither())(Seq(labelPredicate))
 }
