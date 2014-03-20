@@ -177,15 +177,25 @@ public class Jetty9WebServer implements WebServer
     @Override
     public void stop()
     {
-        try
+        if ( jetty != null )
         {
-            jetty.stop();
-            jetty.join();
+            try
+            {
+                jetty.stop();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            try
+            {
+                jetty.join();
+            }
+            catch ( InterruptedException e )
+            {
+                log.info( "Interrupted while waiting for Jetty to stop." );
+            }
             jetty = null;
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
         }
     }
 

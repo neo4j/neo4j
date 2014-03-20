@@ -65,7 +65,10 @@ public class SecurityRulesModule implements ServerModule
     @Override
     public void stop()
     {
-        mountedFilter.destroy();
+        if ( mountedFilter != null )
+        {
+            mountedFilter.destroy();
+        }
     }
 
     private Iterable<SecurityRule> getSecurityRules()
