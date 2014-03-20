@@ -19,28 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import scala.annotation.tailrec
 
-class expandAndJoin(applySelections: SelectionApplicator) extends MainLoop {
-  private def converge[A](f: (A) => A)(seed: A): A = {
+case class CandidateList(plans: Seq[LogicalPlan]) {
+  def pruned: CandidateList = {
+    def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
+
     @tailrec
-    def recurse(a: A, b: A): A =
-      if (a == b) a else recurse(b, f(a))
-    recurse(seed, f(seed))
+    def recurse(covered: Set[IdName], todo: Seq[LogicalPlan], result: Seq[LogicalPlan]): Seq[LogicalPlan] = todo match {
+      case entry :: tail if overlap(covered, entry.coveredIds) =>
+        recurse(covered, tail, result)
+      case entry :: tail =>
+        recurse(covered ++ entry.coveredIds, tail, result :+ entry)
+      case _ =>
+        result
+    }
+
+    CandidateList(recurse(Set.empty, plans, Seq.empty))
   }
 
-  def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-    converge { planTable: PlanTable =>
-      val expandCandidates = tryExpand(planTable)
-      val joinCandidates = tryJoin(planTable)
-      val candidates = expandCandidates ++ joinCandidates
+  def sorted = CandidateList(plans.sortBy(_.cardinality))
 
-      planTable + applySelections(candidates.topPlan)
-    }(initialPlanTable)
-  }
+  def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 
-  private def tryExpand(planTable: PlanTable): CandidateList = throw new CantHandleQueryException
+  def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  private def tryJoin(planTable: PlanTable): CandidateList = throw new CantHandleQueryException
+  def topPlan = sorted.pruned.plans.head
+
+  def map(f: LogicalPlan => LogicalPlan):CandidateList = copy(plans = plans.map(f))
 }

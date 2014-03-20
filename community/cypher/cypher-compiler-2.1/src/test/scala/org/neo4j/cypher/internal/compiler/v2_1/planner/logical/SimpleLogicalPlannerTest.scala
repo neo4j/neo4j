@@ -23,19 +23,16 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 
-class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
+class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val estimator = mock[CardinalityEstimator]
-  val costs = mock[CostModel]
-  val planContext = mock[PlanContext]
-  val planner = new SimpleLogicalPlanner(estimator, costs)
+  implicit val context = newMockedLogicalPlanContext
+  val LogicalPlanContext(planContext, estimator, costs, _, _) = context
+  val planner = new SimpleLogicalPlanner()
   val pos = DummyPosition(0)
 
   test("projection only query") {
@@ -44,7 +41,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val qg = QueryGraph(projections, Selections(), Set.empty)
 
     // when
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(Projection(SingleRow(), projections))
@@ -55,9 +52,10 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val projections = Map("n" -> Identifier("n")(pos))
     val qg = QueryGraph(projections, Selections(), Set(IdName("n")))
 
-    // when
     when(estimator.estimateAllNodesScan()).thenReturn(1000)
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+
+    // when
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(AllNodesScan(IdName("n")))
@@ -69,14 +67,15 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val hasLabels = HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> hasLabels)), Set(IdName("n")))
 
-    // when
     when(estimator.estimateNodeByLabelScan(None)).thenReturn(1)
     when(estimator.estimateNodeByIdSeek()).thenReturn(2)
     when(estimator.estimateAllNodesScan()).thenReturn(1000)
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+
+    // when
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
-    resultPlan should equal(NodeByLabelScan(IdName("n"), Left("Awesome")))
+    resultPlan should equal(NodeByLabelScan(IdName("n"), Left("Awesome"))())
   }
 
   test("simple label scan with a compile-time label ID") {
@@ -88,12 +87,13 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     val hasLabels = HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> hasLabels)), Set(IdName("n")))
 
-    // when
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    val resultPlan = planner.plan(qg, SemanticTable())(planContext)
+
+    // when
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
 
     // then
-    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId)))
+    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId))())
   }
 
   test("simple node by id seek with a node id expression") {
@@ -105,17 +105,19 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
       SignedIntegerLiteral("42")(pos)
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")))
-    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+
+    when(estimator.estimateNodeByIdSeek()).thenReturn(1)
 
     // when
-    when(estimator.estimateNodeByIdSeek()).thenReturn(1)
-    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+    val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
-    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos)))
+    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
   }
 
-  test("simple relationship by id seek with a rel id expression") {
+  // 2014-03-19 - Andres: turn on once we have patterns in the query graph
+  ignore("simple relationship by id seek with a rel id expression") {
     // given
     val identifier = Identifier("r")(pos)
     val projections = Map("r" -> identifier)
@@ -124,15 +126,14 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
       SignedIntegerLiteral("42")(pos)
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(IdName("r")))
-    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTRelationship)).result()
-
-    // when
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTRelationship)).result()
     when(estimator.estimateRelationshipByIdSeek()).thenReturn(1)
 
-    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+    // when
+    val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
-    resultPlan should equal(RelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos)))
+    resultPlan should equal(RelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos))())
   }
 
   // 2014-03-12 - Davide: broken test, we should also check that we get a filter on node id...
@@ -151,15 +152,16 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
       )(pos)
     )
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
-    // when
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(1)
     when(estimator.estimateNodeByIdSeek()).thenReturn(100)
-    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+
+    // when
+    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
-    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId)))
+    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId))())
   }
 
   // 2014-03-12 - Davide: broken test, we should also check that we get a filter on node id...
@@ -180,13 +182,13 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
     when(estimator.estimateNodeByIdSeek()).thenReturn(1)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticQuery = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+    val resultPlan = planner.plan(context.copy( queryGraph = qg))
 
     // then
-    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos)))
+    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
   }
 
   test("index scan when there is an index on the property") {
@@ -211,13 +213,13 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
     when(estimator.estimateNodeIndexSeek(LabelId(12), propertyKeyId)).thenReturn(1)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
-    resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos)))
+    resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))())
   }
 
   test("index seek when there is an index on the property") {
@@ -240,15 +242,13 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with MockitoSugar {
     )
     when(estimator.estimateAllNodesScan()).thenReturn(1000)
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
-    val cost = 99
-    when(estimator.estimateNodeUniqueIndexSeek(LabelId(12), propertyKeyId)).thenReturn(cost)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticQueryBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(qg, semanticQuery)(planContext)
+    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
-    resultPlan should equal(NodeIndexUniqueSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos)))
+    resultPlan should equal(NodeIndexUniqueSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))())
   }
 }

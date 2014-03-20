@@ -143,7 +143,7 @@ object PipeLazynessTest extends MockitoSugar {
 
   private def filterPipe = {
     val (iter, src) = emptyFakes
-    val pipe = new FilterPipe(src, True())
+    val pipe = new FilterPipe(src, True())(mock[PipeMonitor])
     Seq(pipe, iter)
   }
 

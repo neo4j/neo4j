@@ -25,14 +25,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherPars
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, TraversalMatchPipe, DistinctPipe}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.ast
+import org.neo4j.cypher.internal.compiler.v2_1.{ParsedQuery, Monitors, ast}
 import ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 
 class LegacyPipeBuilderTest extends MockitoSugar {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser(mock[ParserMonitor])
-  val planBuilder = new LegacyPipeBuilder()
+  val planBuilder = new LegacyPipeBuilder(mock[Monitors])
 
   @Test def should_use_distinct_pipe_for_distinct() {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")
@@ -50,7 +51,8 @@ class LegacyPipeBuilderTest extends MockitoSugar {
   }
 
   private def buildExecutionPipe(q: String): Pipe = {
-    val abstractQuery = parser.parse(q).asQuery
-    planBuilder.buildPipes(planContext, abstractQuery).pipe
+    val statement = parser.parse(q)
+    val parsedQ = ParsedQuery(statement, statement.asQuery, mock[SemanticTable], q)
+    planBuilder.producePlan(parsedQ, planContext).pipe
   }
 }

@@ -22,21 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
-case class idSeekLeafPlanner(predicates: Seq[Expression], isRelationship: Identifier => Boolean) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): CandidateList =
-    CandidateList(predicates.collect {
-      // id(n) = value
-      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(id@Identifier(identName))), ConstantExpression(idExpr)) =>
-        val idName = IdName(identName)
-
-        if (isRelationship(id)) {
-          val cardinality = context.estimator.estimateRelationshipByIdSeek()
-          val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
-          PlanTableEntry(RelationshipByIdSeek(idName, idExpr), Seq(predicate), cost, Set(idName), cardinality)
-        } else {
-          val cardinality = context.estimator.estimateNodeByIdSeek()
-          val cost = context.costs.calculateNodeByIdSeek(cardinality)
-          PlanTableEntry(NodeByIdSeek(idName, idExpr), Seq(predicate), cost, Set(idName), cardinality)
-        }
-    })
+case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+    predicates.collect {
+      // MATCH (a)-[r]->b WHERE id(r) = value
+//      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
+//        RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
+      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
+        NodeByIdSeek(idName, idExpr)(Seq(predicate))
+    }
 }

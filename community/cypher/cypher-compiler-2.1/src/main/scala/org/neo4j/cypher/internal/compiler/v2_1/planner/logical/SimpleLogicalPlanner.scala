@@ -20,83 +20,48 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
-import scala.annotation.tailrec
 
-object SimpleLogicalPlanner {
-
-  trait LeafPlanner {
-    def apply()(implicit context: LogicalPlanContext): CandidateList
-  }
-
-  case class CandidateList(plans: Seq[PlanTableEntry]) {
-    def pruned: CandidateList = {
-      def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
-
-      @tailrec
-      def recurse(covered: Set[IdName], todo: Seq[PlanTableEntry], result: Seq[PlanTableEntry]): Seq[PlanTableEntry] = todo match {
-        case entry :: tail if overlap(covered, entry.coveredIds) =>
-          recurse(covered, tail, result)
-        case entry :: tail =>
-          recurse(covered ++ entry.coveredIds, tail, result :+ entry)
-        case _ =>
-          result
-      }
-
-      CandidateList(recurse(Set.empty, plans, Seq.empty))
-    }
-
-    def sorted = CandidateList(plans.sortBy(_.cardinality))
-
-    def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
-  }
-
+trait NodeIdentifierInitialiser {
+  def apply()(implicit context: LogicalPlanContext): PlanTable
 }
 
-case class LogicalPlanContext(planContext: PlanContext, estimator: CardinalityEstimator, costs: CostModel)
+trait MainLoop {
+  def apply(plan: PlanTable)(implicit context: LogicalPlanContext): PlanTable
+}
 
-case class SimpleLogicalPlanner(estimator: CardinalityEstimator, costs: CostModel) extends LogicalPlanner {
+trait ProjectionApplicator {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan
+}
 
-  val projectionPlanner = new ProjectionPlanner
+trait SelectionApplicator {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan
+}
 
-  def plan(qg: QueryGraph, semanticTable: SemanticTable)(implicit planContext: PlanContext): LogicalPlan = {
-    implicit val context = LogicalPlanContext(planContext, estimator, costs)
+class SimpleLogicalPlanner(startPointFinder: NodeIdentifierInitialiser = new initialiser(applySelections),
+                           mainLoop: MainLoop = new expandAndJoin(applySelections),
+                           projector: ProjectionApplicator = projectionPlanner) {
+  def plan(implicit context: LogicalPlanContext): LogicalPlan = {
+    val initialPlanTable = startPointFinder()
 
-    val initialPlanTable = initialisePlanTable(qg, semanticTable)
-
-    val bestPlanEntry = if (initialPlanTable.isEmpty)
-      PlanTableEntry(SingleRow(), solvedPredicates = Seq.empty, cost = 0, coveredIds = Set.empty, cardinality = 0)
+    val bestPlan = if (initialPlanTable.isEmpty)
+      SingleRow()
     else {
       val convergedPlans = if (initialPlanTable.size > 1) {
-        expandAndJoin(initialPlanTable)
+        mainLoop(initialPlanTable)
       } else {
         initialPlanTable
       }
 
-      val bestPlanEntry = convergedPlans.plans.head
-      if (!qg.selections.coveredBy(bestPlanEntry.solvedPredicates))
+      if(convergedPlans.size > 1)
         throw new CantHandleQueryException
 
-      bestPlanEntry
+      val bestPlan: LogicalPlan = convergedPlans.plans.head
+      if (!context.queryGraph.selections.coveredBy(bestPlan.solvedPredicates))
+        throw new CantHandleQueryException
+
+      bestPlan
     }
 
-    projectionPlanner.amendPlan(qg, bestPlanEntry)
-  }
-
-  private def initialisePlanTable(qg: QueryGraph, semanticTable: SemanticTable)(implicit context: LogicalPlanContext): PlanTable = {
-    val predicates: Seq[Expression] = qg.selections.flatPredicates
-    val labelPredicateMap = qg.selections.labelPredicates
-
-    val leafPlanners = Seq(
-      idSeekLeafPlanner(predicates, semanticTable.isRelationship),
-      uniqueIndexSeekLeafPlanner(predicates, labelPredicateMap),
-      indexSeekLeafPlanner(predicates, labelPredicateMap),
-      labelScanLeafPlanner(qg, labelPredicateMap),
-      allNodesLeafPlanner(qg)
-    )
-    val candidateList = leafPlanners.map(_.apply).fold(CandidateList(Seq.empty))(_ ++ _)
-    PlanTable() ++ candidateList.sorted.pruned
+    projector(bestPlan)
   }
 }

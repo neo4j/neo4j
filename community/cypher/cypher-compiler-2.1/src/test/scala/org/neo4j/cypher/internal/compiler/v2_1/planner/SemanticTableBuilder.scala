@@ -17,19 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.{IdentityMap, ExpressionTypeInfo}
 
-case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                        (val solvedPredicates: Seq[Expression] = Seq.empty)
-                        (implicit val context: LogicalPlanContext) extends LogicalPlan {
-  def lhs = None
-  def rhs = None
-
-  val cardinality = context.estimator.estimateNodeIndexSeek(label, propertyKeyId)
-  val cost = context.costs.calculateNodeIndexSeek(cardinality)
-
-  val coveredIds = Set(idName)
+object SemanticTableBuilder {
+  def apply() = new SemanticTableBuilder
 }
+
+class SemanticTableBuilder {
+  val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
+
+  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticTableBuilder = {
+    typeBuilder += typing
+    this
+  }
+
+  def result() = SemanticTable(types = IdentityMap(typeBuilder.result(): _*))
+}
+
+

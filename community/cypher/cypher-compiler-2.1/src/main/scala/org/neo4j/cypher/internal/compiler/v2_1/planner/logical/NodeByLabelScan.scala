@@ -20,8 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId]) extends LogicalPlan {
-  def rhs: Option[LogicalPlan] = None
-  def lhs: Option[LogicalPlan] = None
+case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
+                          (val solvedPredicates: Seq[Expression] = Seq.empty)
+                          (implicit val context: LogicalPlanContext) extends LogicalPlan {
+
+  def lhs = None
+  def rhs = None
+
+  val cardinality = context.estimator.estimateNodeByLabelScan(label.right.toOption)
+  val cost = context.costs.calculateNodeByLabelScan(cardinality)
+
+  val coveredIds = Set(idName)
 }

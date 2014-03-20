@@ -19,15 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
-
-case class allNodesLeafPlanner(qg: QueryGraph) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): CandidateList =
-    CandidateList(qg.identifiers.toSeq.map { idName =>
-      val cardinality = context.estimator.estimateAllNodesScan()
-      val cost = context.costs.calculateAllNodesScan(cardinality)
-      val plan = AllNodesScan(idName)
-      PlanTableEntry(plan, Seq.empty, cost, Set(idName), cardinality)
-    })
+case class allNodesLeafPlanner() extends LeafPlanner {
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+    context.queryGraph.nodes.toSeq.map {
+      case idName => AllNodesScan(idName)
+    }
 }

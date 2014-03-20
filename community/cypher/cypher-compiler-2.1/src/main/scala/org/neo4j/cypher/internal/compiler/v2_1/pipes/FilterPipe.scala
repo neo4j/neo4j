@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.Predicate
 import data.SimpleVal
-import symbols._
 
-class FilterPipe(source: Pipe, val predicate: Predicate) extends PipeWithSource(source) {
+case class FilterPipe(source: Pipe, predicate: Predicate)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source) {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
     input.filter(ctx => predicate.isTrue(ctx)(state))
 
-  override def executionPlanDescription =
+  def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
+
+  override def monitor: PipeMonitor = pipeMonitor
 }

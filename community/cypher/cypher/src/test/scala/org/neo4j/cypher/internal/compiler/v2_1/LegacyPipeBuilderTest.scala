@@ -50,7 +50,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder))
+      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), monitors)
       val query = ParsedQuery(ast, q, SemanticTable(), "")
       pipeBuilder.producePlan(query, planContext)
     })
@@ -72,13 +72,14 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
         .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val pipeBuilder = new LegacyPipeBuilder
+      val pipeBuilder = new LegacyPipeBuilder(monitors)
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
+      val parsedQ = ParsedQuery(null, q, null, null)
 
       // when
 
-      val commands = pipeBuilder.buildPipes(planContext, q).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+      val commands = pipeBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
       assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
     } finally {
@@ -97,12 +98,13 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
         .where(HasLabel(Identifier("x"), Label("Person")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val execPlanBuilder = new LegacyPipeBuilder
+      val execPlanBuilder = new LegacyPipeBuilder(monitors)
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
+      val parsedQ = ParsedQuery(null, q, null, null)
 
       // when
-      val predicate = execPlanBuilder.buildPipes(planContext, q).pipe.asInstanceOf[FilterPipe].predicate
+      val predicate = execPlanBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[FilterPipe].predicate
 
       assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
     } finally {
@@ -124,9 +126,10 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
           .returns()
         )
         .returns(AllIdentifiers())
+      val parsedQ = ParsedQuery(null, q, null, null)
 
-      val pipeBuilder = new LegacyPipeBuilder
-      val pipe = pipeBuilder.buildPipes(planContext, q).pipe
+      val pipeBuilder = new LegacyPipeBuilder(monitors)
+      val pipe = pipeBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -148,9 +151,11 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
           .returns()
         )
         .returns(AllIdentifiers())
+      val parsedQ = ParsedQuery(null, q, null, null)
 
-      val execPlanBuilder = new LegacyPipeBuilder
-      val pipe = execPlanBuilder.buildPipes(planContext, q).pipe
+
+      val execPlanBuilder = new LegacyPipeBuilder(monitors)
+      val pipe = execPlanBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -171,11 +176,12 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
           returns(),
         None
       )
+      val parsedQ = ParsedQuery(null, q, null, null)
 
-      val pipeBuilder = new LegacyPipeBuilder
+      val pipeBuilder = new LegacyPipeBuilder(monitors)
 
       // when
-      val periodicCommit = pipeBuilder.buildPipes(planContext, q).periodicCommit
+      val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).periodicCommit
 
       assert(periodicCommit === Some(PeriodicCommitInfo(None)))
     } finally {
@@ -184,7 +190,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
   }
 }
 
-class LegacyPipeBuilderWithCustomPlanBuilders(builders: Seq[PlanBuilder]) extends LegacyPipeBuilder {
+class LegacyPipeBuilderWithCustomPlanBuilders(builders: Seq[PlanBuilder], monitors:Monitors) extends LegacyPipeBuilder(monitors) {
   override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = builders }
 }
 

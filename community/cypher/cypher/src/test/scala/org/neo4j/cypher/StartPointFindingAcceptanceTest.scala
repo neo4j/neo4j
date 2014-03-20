@@ -51,20 +51,24 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
   }
 
-  // 2014-03-13 - Davide: this is not done by NodeByIdSeek so it is not support by Ronja, we need Filter Pipe for this
-  ignore("Can use both label scan (left) and node by id (right)") {
+  test("Can use both label scan (left) and node by id (right) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
     executeScalarWithNewPlanner[Node](s"match n where n:Person and ${node.getId} = id(n) return n") should equal(node)
   }
 
-  // 2014-03-13 - Davide: this is not done by NodeByIdSeek so it is not support by Ronja, we need Filter Pipe for this
-  ignore("Can use both label scan (right) and node by id (left)") {
+  test("Can use both label scan (right) and node by id (left) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
     executeScalarWithNewPlanner[Node](s"match n where ${node.getId} = id(n) and n:Person return n") should equal(node)
+  }
+
+  test("Can find nodes by id and apply a predicate on it") {
+    createNode("prop"->1)
+    val n = createNode("prop"->2)
+    executeScalarWithNewPlanner[Node](s"match n where n.prop = 2 return n") should equal(n)
   }
 
   // 2014-03-12 SP: Enable once Ronja accepts relationship patterns

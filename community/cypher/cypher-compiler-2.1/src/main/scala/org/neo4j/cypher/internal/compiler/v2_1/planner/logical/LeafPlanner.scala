@@ -17,24 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.{IdentityMap, ExpressionTypeInfo}
-
-object SemanticQueryBuilder {
-  def apply() = new SemanticQueryBuilder
+trait LeafPlanner {
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan]
 }
-
-class SemanticQueryBuilder {
-  val typeBuilder = Seq.newBuilder[(Expression, ExpressionTypeInfo)]
-
-  def withTyping(typing: (Expression, ExpressionTypeInfo)): SemanticQueryBuilder = {
-    typeBuilder += typing
-    this
-  }
-
-  def result() = SemanticTable(types = IdentityMap(typeBuilder.result(): _*))
-}
-
-

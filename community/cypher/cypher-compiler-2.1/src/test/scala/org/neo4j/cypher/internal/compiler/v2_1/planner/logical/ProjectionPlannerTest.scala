@@ -20,38 +20,39 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
 
-class ProjectionPlannerTest extends CypherFunSuite with MockitoSugar {
+class projectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should add projection for expressions not already covered") {
-    val input = plan("n")
+    // given
+    val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
-    val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
-    val planner = new ProjectionPlanner
+    val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    implicit val context = createContextWith(qg)
 
-    val result = planner.amendPlan(qg, input)
+    // when
+    val result = projectionPlanner(input)
 
-    result should equal(Projection(input.plan, projections))
+    // then
+    result should equal(Projection(input, projections))
   }
 
   test("does not add projection when not needed") {
-    val input = plan("n")
+    // given
+    val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
-    val qg = QueryGraph(projections, Selections(), identifiers = Set.empty)
-    val planner = new ProjectionPlanner
+    val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    implicit val context = createContextWith(qg)
 
-    val result = planner.amendPlan(qg, input)
+    // when
+    val result = projectionPlanner(input)
 
-    result should equal(input.plan)
+    // then
+    result should equal(input)
   }
 
-  def plan(ids: String*): PlanTableEntry = {
-    val plan = mock[LogicalPlan]
-    when(plan.toString).thenReturn(ids.mkString)
-    PlanTableEntry(plan, Seq.empty, 0, ids.map(IdName.apply).toSet, 0)
-  }
+  private def createContextWith(qg:QueryGraph):LogicalPlanContext = newMockedLogicalPlanContext.copy(queryGraph = qg)
 }

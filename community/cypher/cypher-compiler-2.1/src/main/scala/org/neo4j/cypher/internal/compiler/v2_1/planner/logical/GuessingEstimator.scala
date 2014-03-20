@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 class GuessingEstimator extends CardinalityEstimator {
 
@@ -40,4 +41,6 @@ class GuessingEstimator extends CardinalityEstimator {
   def estimateNodeUniqueIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 50
 
   def estimateAllNodesScan() = 1000
+
+  def estimateSelectivity(exp: Expression): Double = .2
 }
