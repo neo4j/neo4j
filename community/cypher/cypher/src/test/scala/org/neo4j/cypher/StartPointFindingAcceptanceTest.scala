@@ -51,6 +51,15 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
   }
 
+  test("Seek node by id with multiple values") {
+    createNode("a")
+    val n1= createNode("b")
+    val n2 = createNode("c")
+
+    val result = executeWithNewPlanner(s"match n where id(n) IN [${n1.getId}, ${n2.getId}] return n")
+    result.columnAs("n").toList should equal(Seq(n1, n2))
+  }
+
   test("Can use both label scan (left) and node by id (right) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
@@ -83,6 +92,16 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val rel = relate(createNode("a"), createNode("b"))
 
     executeScalarWithNewPlanner[Node](s"match ()-[r]->() where id(r) = ${rel.getId} return r") should equal(rel)
+  }
+
+  // 2014-03-12 Davide: Enable once Ronja accepts relationship patterns
+  ignore("Seek relationship by id with multiple values") {
+    relate(createNode("x"), createNode("y"))
+    val rel1 = relate(createNode("a"), createNode("b"))
+    val rel2 = relate(createNode("c"), createNode("d"))
+
+    val result = executeWithNewPlanner(s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
+    result.columnAs("r").toList should equal(Seq(rel1, rel2))
   }
 
   test("Scan index with property given in where") {

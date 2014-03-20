@@ -113,7 +113,31 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
-    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
+    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)())
+  }
+
+  test("simple node by id seek with a collection of node ids") {
+    // given
+    val identifier = Identifier("n")(pos)
+    val projections = Map("n" -> identifier)
+    val expr = In(
+      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+      Collection(
+        Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+      )(pos)
+    )(pos)
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")))
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+
+    when(estimator.estimateNodeByIdSeek()).thenReturn(1)
+
+    // when
+    val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
+
+    // then
+    resultPlan should equal(NodeByIdSeek(IdName("n"),Collection(
+      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    )(pos), 3)())
   }
 
   // 2014-03-19 - Andres: turn on once we have patterns in the query graph
@@ -133,7 +157,32 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
-    resultPlan should equal(RelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos))())
+    resultPlan should equal(RelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1)())
+  }
+
+  // 2014-03-20 - Davide: turn on once we have patterns in the query graph
+  ignore("simple relationship by id seek with a collection of node ids") {
+    // given
+    val identifier = Identifier("n")(pos)
+    val projections = Map("n" -> identifier)
+    val expr = In(
+      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+      Collection(
+        Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+      )(pos)
+    )(pos)
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")))
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+
+    when(estimator.estimateNodeByIdSeek()).thenReturn(1)
+
+    // when
+    val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
+
+    // then
+    resultPlan should equal(NodeByIdSeek(IdName("n"),Collection(
+      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    )(pos), 3)())
   }
 
   // 2014-03-12 - Davide: broken test, we should also check that we get a filter on node id...
@@ -182,13 +231,13 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
     when(estimator.estimateNodeByIdSeek()).thenReturn(1)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")))
-    val semanticQuery = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(context.copy( queryGraph = qg))
+    val resultPlan = planner.plan(context.copy( queryGraph = qg, semanticTable = semanticTable))
 
     // then
-    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos))())
+    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)())
   }
 
   test("index scan when there is an index on the property") {

@@ -128,6 +128,23 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     qg.nodes should equal(Set(IdName("n")))
   }
 
+  test("match n where id(n) IN [42, 43] return n") {
+    val qg = buildQueryGraph("MATCH n WHERE id(n) IN [42, 43] RETURN n")
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(List(
+      Set(IdName("n")) -> In(
+        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        Collection(Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos)))(pos)
+      )(pos)
+    )))
+
+    qg.nodes should equal(Set(IdName("n")))
+  }
+
   test("match n where n:Label and id(n) = 42 return n") {
     val qg = buildQueryGraph("MATCH n WHERE n:Label AND id(n) = 42 RETURN n")
     qg.projections should equal(Map(
