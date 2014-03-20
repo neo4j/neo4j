@@ -26,7 +26,7 @@ import java.nio.channels.*;
 import java.nio.channels.FileLock;
 
 public interface StoreChannel
-        extends SeekableByteChannel, GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel
+        extends GatheringByteChannel, ScatteringByteChannel, InterruptibleChannel // ,SeekableByteChannel <-- Java7
 {
     /**
      * Attempts to acquire an exclusive lock on this channel's file.
@@ -47,4 +47,8 @@ public interface StoreChannel
     StoreChannel position( long newPosition ) throws IOException;
 
     StoreChannel truncate( long size ) throws IOException;
+
+    long position() throws IOException;
+
+    long size() throws IOException;
 }
