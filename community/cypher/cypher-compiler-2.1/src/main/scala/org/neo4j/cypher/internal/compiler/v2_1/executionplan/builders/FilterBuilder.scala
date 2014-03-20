@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{FilterPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, FilterPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
-class FilterBuilder extends PlanBuilder {
+class FilterBuilder(monitors: Monitors) extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
     val q = plan.query
     val p = plan.pipe
@@ -36,7 +37,7 @@ class FilterBuilder extends PlanBuilder {
     val newPipe = if (pred == True()) {
       p
     } else {
-      new FilterPipe(p, pred)
+      new FilterPipe(p, pred)(monitors.newMonitor[PipeMonitor]())
     }
 
     val newQuery = q.where.filterNot(item.contains) ++ item.map(_.solve)

@@ -26,19 +26,26 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
-import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, ParsedQuery}
 
-class LegacyPipeBuilder extends PatternGraphBuilder with PipeBuilder {
+class LegacyPipeBuilder(monitors: Monitors) extends PatternGraphBuilder with PipeBuilder {
 
-  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
-    buildPipes(planContext, inputQuery.abstractQuery)
+  def producePlan(in: ParsedQuery, planContext: PlanContext): PipeInfo = in.abstractQuery match {
+    case q: PeriodicCommitQuery =>
+      producePlan(in.copy(abstractQuery = q.query), planContext).
+      copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
 
-  def buildPipes(planContext: PlanContext, in: AbstractQuery): PipeInfo = in match {
-    case q: PeriodicCommitQuery => buildPipes(planContext, q.query).copy(periodicCommit = Some(PeriodicCommitInfo(q.batchSize)))
-    case q: Query => buildQuery(q, planContext)
-    case q: IndexOperation => buildIndexQuery(q)
-    case q: UniqueConstraintOperation => buildConstraintQuery(q)
-    case q: Union => buildUnionQuery(q, planContext)
+    case q: Query =>
+      buildQuery(q, planContext)
+
+    case q: IndexOperation =>
+      buildIndexQuery(q)
+
+    case q: UniqueConstraintOperation =>
+      buildConstraintQuery(q)
+
+    case q: Union =>
+      buildUnionQuery(q, planContext)
   }
 
   val unionBuilder = new UnionBuilder(this)
@@ -127,7 +134,7 @@ The Neo4j Team""")
   def matching = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new TraversalMatcherBuilder,
-      new FilterBuilder,
+      new FilterBuilder(monitors),
       new NamedPathBuilder,
       new LoadCSVBuilder,
       new StartPointBuilder,

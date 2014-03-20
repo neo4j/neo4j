@@ -49,6 +49,7 @@ class LazyTest extends ExecutionEngineFunSuite {
   var aNode: Node = null
   var bNode: Node = null
   var cNode: Node = null
+  implicit val pipeMonitor = mock[PipeMonitor]
 
   override protected def initTest() {
     super.initTest()
