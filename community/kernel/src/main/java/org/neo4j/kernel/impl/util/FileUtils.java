@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
-import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -35,6 +34,8 @@ import java.util.Stack;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 
 public class FileUtils
 {
@@ -211,9 +212,11 @@ public class FileUtils
         return renamed;
     }
 
-    public static void truncateFile( SeekableByteChannel fileChannel, long position )
+    public static void truncateFile( StoreChannel fileChannel, long position )
             throws IOException
     {
+        // TODO the StoreChannel parameter can be replaced with a SeekableByteChannel on Java7
+        // ... then truncateFile(File,long) no longer needs to wrap it
         int count = 0;
         boolean success = false;
         IOException cause = null;
@@ -243,7 +246,7 @@ public class FileUtils
         RandomAccessFile access = new RandomAccessFile( file, "rw" );
         try
         {
-            truncateFile( access.getChannel(), position );
+            truncateFile( new StoreFileChannel( access.getChannel() ), position );
         }
         finally
         {
