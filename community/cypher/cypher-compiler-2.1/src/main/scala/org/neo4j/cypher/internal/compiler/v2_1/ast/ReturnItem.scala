@@ -38,7 +38,7 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
   def semanticCheck = SemanticCheckResult.success
 
-  def declareIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importSymbols(currentState.symbolTable))
+  def declareIdentifiers(currentState: SemanticState) = s => SemanticCheckResult.success(s.importScope(currentState.scope))
 }
 
 

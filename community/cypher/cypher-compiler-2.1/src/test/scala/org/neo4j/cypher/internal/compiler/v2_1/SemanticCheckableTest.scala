@@ -209,15 +209,15 @@ class SemanticCheckableTest extends Assertions with SemanticChecking {
 
     val error2 = SemanticError("an error", DummyPosition(0))
     val func2: SemanticCheck = s => {
-      assertTrue(s.symbolTable.get("name").isDefined)
-      assertTrue(s.parent.isDefined)
+      assertTrue(s.scope.localSymbol("name").isDefined)
+      assertTrue(s.scope.parent.isDefined)
       SemanticCheckResult.error(s, error2)
     }
 
     val chain: SemanticCheck = withScopedState { func1 then func2 }
     val state = SemanticState.clean
     val result = chain(state)
-    assertEquals(Map(), result.state.symbolTable)
+    assertEquals(Map(), result.state.scope.symbolTable)
     assertEquals(Seq(error2), result.errors)
   }
 }
