@@ -46,16 +46,8 @@ class SimpleLogicalPlanner(startPointFinder: NodeIdentifierInitialiser = new ini
     val bestPlan = if (initialPlanTable.isEmpty)
       SingleRow()
     else {
-      val convergedPlans = if (initialPlanTable.size > 1) {
-        mainLoop(initialPlanTable)
-      } else {
-        initialPlanTable
-      }
-
-      if(convergedPlans.size > 1)
-        throw new CantHandleQueryException
-
-      val bestPlan: LogicalPlan = convergedPlans.plans.head
+      val convergedPlans = mainLoop(initialPlanTable)
+      val bestPlan = convergedPlans.plans.reduce(CartesianProduct(_, _))
       if (!context.queryGraph.selections.coveredBy(bestPlan.solvedPredicates))
         throw new CantHandleQueryException
 

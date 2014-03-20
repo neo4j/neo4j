@@ -68,6 +68,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case Selection(predicates, _) =>
           FilterPipe(left.get, predicates.map(_.asCommandPredicate).reduce(_ ++ _))
+
+        case CartesianProduct(_, _) =>
+          CartesianProductPipe(left.get, right.get)
       }
     }
 

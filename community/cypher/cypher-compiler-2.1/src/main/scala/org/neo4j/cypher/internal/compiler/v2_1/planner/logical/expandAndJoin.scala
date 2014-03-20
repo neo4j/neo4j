@@ -40,7 +40,7 @@ class expandAndJoin(applySelections: SelectionApplicator) extends MainLoop {
     }(initialPlanTable)
   }
 
-  private def tryExpand(planTable: PlanTable): CandidateList = throw new CantHandleQueryException
+  private def tryExpand(planTable: PlanTable): CandidateList = CandidateList(planTable.plans)
 
-  private def tryJoin(planTable: PlanTable): CandidateList = throw new CantHandleQueryException
+  private def tryJoin(planTable: PlanTable): CandidateList = CandidateList(planTable.plans)
 }

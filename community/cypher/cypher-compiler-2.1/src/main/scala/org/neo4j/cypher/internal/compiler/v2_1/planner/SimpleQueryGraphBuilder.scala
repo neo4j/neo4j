@@ -25,10 +25,20 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters.
 
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
+  object NodePatternSeq {
+    def unapply(v: Any): Option[Seq[Identifier]] = v match {
+      case patterns: Seq[_] =>
+        val identifiers = patterns.map {
+          case EveryPath(NodePattern(Some(identifier), Seq(), None, _)) => Some(identifier)
+          case _                                                        => None
+        }
+        if (identifiers.exists(_.isEmpty)) None else Some(identifiers.map(_.get))
+    }
+
+  }
   override def produce(ast: Query): QueryGraph = {
 
     val (projections:  Seq[(String, Expression)], selections, identifiers: Set[IdName]) = ast match {
-
       // return 42
       case Query(None, SingleQuery(Seq(Return(false, ListedReturnItems(expressions), None, None, None)))) =>
         val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
@@ -38,12 +48,12 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
       // match (n ...) return ...
       case Query(None, SingleQuery(Seq(
-        Match(false, Pattern(Seq(EveryPath(NodePattern(Some(Identifier(s)), Seq(), None, _)))), Seq(), optWhere),
+        Match(false, Pattern(NodePatternSeq(nodeIdentifiers: Seq[Identifier])), Seq(), optWhere),
         Return(false, ListedReturnItems(expressions), None, None, None)
       ))) =>
         val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
         val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-        val identifiers = Set(IdName(s))
+        val identifiers = nodeIdentifiers.map(x => IdName(x.name)).toSet
         (projections, selections, identifiers)
 
       case _ =>

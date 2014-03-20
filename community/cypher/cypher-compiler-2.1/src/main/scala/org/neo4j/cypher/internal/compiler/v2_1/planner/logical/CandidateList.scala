@@ -25,17 +25,14 @@ case class CandidateList(plans: Seq[LogicalPlan]) {
   def pruned: CandidateList = {
     def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
 
-    @tailrec
-    def recurse(covered: Set[IdName], todo: Seq[LogicalPlan], result: Seq[LogicalPlan]): Seq[LogicalPlan] = todo match {
-      case entry :: tail if overlap(covered, entry.coveredIds) =>
-        recurse(covered, tail, result)
-      case entry :: tail =>
-        recurse(covered ++ entry.coveredIds, tail, result :+ entry)
-      case _ =>
-        result
+    val (_, result: Seq[LogicalPlan]) = plans.foldLeft(Set.empty[IdName] -> Seq.empty[LogicalPlan]) {
+      case ((covered, partial), plan) =>
+        if (overlap(covered, plan.coveredIds))
+          (covered, partial)
+        else
+          (covered ++ plan.coveredIds, partial :+ plan)
     }
-
-    CandidateList(recurse(Set.empty, plans, Seq.empty))
+    CandidateList(result)
   }
 
   def sorted = CandidateList(plans.sortBy(_.cardinality))

@@ -23,7 +23,18 @@ import org.neo4j.graphdb._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.PathImpl
 
-class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
+class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  test("should be able to use multiple MATCH clauses to do a cartesian product") {
+    createNode("value" -> 1)
+    createNode("value" -> 2)
+    createNode("value" -> 3)
+
+    val result = executeWithNewPlanner("MATCH n, m RETURN n.value AS n, m.value AS m")
+    result.map(row => row("n") -> row("m")).toSet should equal(
+      Set(1 -> 1, 1 -> 2, 1 -> 3, 2 -> 1, 2 -> 2, 2 -> 3, 3 -> 1, 3 -> 2, 3 -> 3)
+    )
+  }
 
   test("should be able to use params in pattern matching predicates") {
     val n1 = createNode()

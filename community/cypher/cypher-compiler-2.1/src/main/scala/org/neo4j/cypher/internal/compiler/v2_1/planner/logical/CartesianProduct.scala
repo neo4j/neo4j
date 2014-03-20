@@ -19,24 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class Selection(predicates: Seq[Expression], left: LogicalPlan)
-                    (implicit val context: LogicalPlanContext) extends LogicalPlan {
-  assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
-
+case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit val context: LogicalPlanContext) extends LogicalPlan {
   val lhs = Some(left)
+  val rhs = Some(right)
 
-  def rhs = None
+  val cardinality = left.cardinality * right.cardinality
+  val cost = context.costs.calculateCartesianProductOverhead(cardinality) + (left.cost * right.cost)
 
-  def coveredIds = left.coveredIds
-
-  val cardinality = {
-    val selectivity = predicates.map(context.estimator.estimateSelectivity).reduce(_ * _)
-    (left.cardinality * selectivity).toInt
-  }
-
-  val cost = context.costs.calculateSelectionOverhead(left.cardinality) + left.cost
-
-  def solvedPredicates: Seq[Expression] = predicates ++ left.solvedPredicates
+  val coveredIds = left.coveredIds ++ right.coveredIds
+  val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
 }
