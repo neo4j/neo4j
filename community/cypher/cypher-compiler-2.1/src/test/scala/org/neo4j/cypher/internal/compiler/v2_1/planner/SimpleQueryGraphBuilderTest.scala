@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException;
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 

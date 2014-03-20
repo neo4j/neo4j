@@ -25,6 +25,8 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
 
   def isEmpty = m.isEmpty
 
+  def -(ids: Set[IdName]) = copy(m = m - ids)
+
   def +(newPlan: LogicalPlan): PlanTable = {
     val newMap = m.filter {
       case (_, existingPlan) => !newPlan.covers(existingPlan)

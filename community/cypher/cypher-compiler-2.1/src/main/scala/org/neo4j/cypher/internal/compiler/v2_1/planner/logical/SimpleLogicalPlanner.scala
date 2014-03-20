@@ -20,13 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import scala.annotation.tailrec
+import org.neo4j.cypher.{SyntaxException, CypherExecutionException}
 
 trait NodeIdentifierInitialiser {
   def apply()(implicit context: LogicalPlanContext): PlanTable
 }
 
+object MainLoop {
+  def converge[A](f: (A) => A)(seed: A): A = {
+    @tailrec
+    def recurse(a: A, b: A): A =
+      if (a == b) a else recurse(b, f(a))
+    recurse(seed, f(seed))
+  }
+}
+
 trait MainLoop {
+  self =>
+
   def apply(plan: PlanTable)(implicit context: LogicalPlanContext): PlanTable
+
+  def andThen(other: MainLoop) = new MainLoop {
+    override def apply(plan: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
+      other.apply(self.apply(plan))
+  }
 }
 
 trait ProjectionApplicator {
@@ -38,7 +56,8 @@ trait SelectionApplicator {
 }
 
 class SimpleLogicalPlanner(startPointFinder: NodeIdentifierInitialiser = new initialiser(applySelections),
-                           mainLoop: MainLoop = new expandAndJoin(applySelections),
+                           mainLoop: MainLoop = new expandAndJoinLoop(applySelections)
+                                                andThen new cartesianProductLoop(applySelections),
                            projector: ProjectionApplicator = projectionPlanner) {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
     val initialPlanTable = startPointFinder()
@@ -46,8 +65,11 @@ class SimpleLogicalPlanner(startPointFinder: NodeIdentifierInitialiser = new ini
     val bestPlan = if (initialPlanTable.isEmpty)
       SingleRow()
     else {
-      val convergedPlans = mainLoop(initialPlanTable)
-      val bestPlan = convergedPlans.plans.reduce(CartesianProduct(_, _))
+      val planTable = mainLoop(initialPlanTable)
+      if (planTable.size != 1)
+        throw new SyntaxException("Expected the final plan table to have exactly 1 plan")
+
+      val bestPlan = planTable.plans.head
       if (!context.queryGraph.selections.coveredBy(bestPlan.solvedPredicates))
         throw new CantHandleQueryException
 

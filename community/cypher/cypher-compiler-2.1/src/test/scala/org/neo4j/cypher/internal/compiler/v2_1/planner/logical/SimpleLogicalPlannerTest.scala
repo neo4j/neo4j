@@ -265,4 +265,18 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     // then
     resultPlan should equal(CartesianProduct(AllNodesScan(IdName("n")), AllNodesScan(IdName("m"))))
   }
+
+  test("simple cartesian product query with a predicate on the elements") {
+    // given
+    val projections = Map("n" -> Identifier("n")(pos), "m" -> Identifier("m")(pos))
+    val qg = QueryGraph(projections, Selections(), Set(IdName("n"), IdName("m")))
+
+    when(estimator.estimateAllNodesScan()).thenReturn(1000)
+
+    // when
+    val resultPlan = planner.plan(context.copy(queryGraph = qg))
+
+    // then
+    resultPlan should equal(CartesianProduct(AllNodesScan(IdName("n")), AllNodesScan(IdName("m"))))
+  }
 }

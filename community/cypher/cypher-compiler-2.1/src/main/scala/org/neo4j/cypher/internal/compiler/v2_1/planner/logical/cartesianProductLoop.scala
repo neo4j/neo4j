@@ -19,28 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import scala.annotation.tailrec
-
-class expandAndJoin(applySelections: SelectionApplicator) extends MainLoop {
-  private def converge[A](f: (A) => A)(seed: A): A = {
-    @tailrec
-    def recurse(a: A, b: A): A =
-      if (a == b) a else recurse(b, f(a))
-    recurse(seed, f(seed))
-  }
+class cartesianProductLoop(applySelections: SelectionApplicator) extends MainLoop {
 
   def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-    converge { planTable: PlanTable =>
-      val expandCandidates = tryExpand(planTable)
-      val joinCandidates = tryJoin(planTable)
-      val candidates = expandCandidates ++ joinCandidates
-
-      planTable + applySelections(candidates.topPlan)
+    MainLoop.converge { planTable: PlanTable =>
+      if (planTable.size > 1) {
+        val plans = planTable.plans
+        val cartesianProducts =
+          for (
+            planA <- plans;
+            planB <- plans if planA != planB
+          ) yield applySelections(CartesianProduct(planA, planB))
+        planTable + CandidateList(cartesianProducts.toList).topPlan
+      } else {
+        planTable
+      }
     }(initialPlanTable)
   }
-
-  private def tryExpand(planTable: PlanTable): CandidateList = CandidateList(planTable.plans)
-
-  private def tryJoin(planTable: PlanTable): CandidateList = CandidateList(planTable.plans)
 }
