@@ -42,7 +42,7 @@ public abstract class AbstractAdversary implements Adversary
         }
         catch ( Exception e )
         {
-            throw new AssertionError( "Failed to instantiate failure", e );
+            throw new AssertionError( new Exception( "Failed to instantiate failure", e ) );
         }
         sneakyThrow( throwable );
     }
