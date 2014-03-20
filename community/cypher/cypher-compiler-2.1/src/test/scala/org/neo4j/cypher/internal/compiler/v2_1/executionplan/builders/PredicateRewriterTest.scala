@@ -30,12 +30,16 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 @RunWith(value = classOf[Parameterized])
 class PredicateRewriterTest(name: String,
                             inputMatchPattern: Pattern,
                             expectedWhere: Seq[Predicate],
                             expectedPattern: Seq[Pattern]) extends BuilderTest {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   def builder: PlanBuilder = new PredicateRewriter(new Namer {
     var count = 0
 

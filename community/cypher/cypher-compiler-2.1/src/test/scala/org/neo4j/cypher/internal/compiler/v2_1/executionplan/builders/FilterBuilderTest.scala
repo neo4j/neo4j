@@ -29,10 +29,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Property
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 class FilterBuilderTest extends BuilderTest with MockitoSugar {
 
-  val builder = new FilterBuilder(mock[Monitors])
+  private implicit val monitor: PipeMonitor = mock[PipeMonitor]
+  val builder = new FilterBuilder
 
   @Test
   def does_not_offer_to_solve_queries_without_start_items() {

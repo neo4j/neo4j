@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, ColumnFilterPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, Pipe, ColumnFilterPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, PartiallySolvedQuery, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, ReturnItem, ReturnColumn}
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
  * queries return clause.
  */
 class ColumnFilterBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -43,7 +43,7 @@ class ColumnFilterBuilder extends PlanBuilder {
     }
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
 
     val preConditionsMet = q.extracted &&
@@ -59,7 +59,8 @@ class ColumnFilterBuilder extends PlanBuilder {
     }
   }
 
-  private def handleReturnClause(q: PartiallySolvedQuery, inPipe: Pipe, plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+  private def handleReturnClause(q: PartiallySolvedQuery, inPipe: Pipe, plan: ExecutionPlanInProgress)
+                                (implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val returnItems: Seq[ReturnItem] = getReturnItems(q.returns, inPipe.symbols)
     val outPipe = new ColumnFilterPipe(inPipe, returnItems)
 

@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.{SingleNode, NamedPath, NodeById, RelatedTo}
 import executionplan.PartiallySolvedQuery
-import pipes.NamedPathPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, NamedPathPipe}
 import org.neo4j.graphdb.Direction
 import org.junit.Test
 
 class NamedPathBuilderTest extends BuilderTest {
+  private implicit val monitor = mock[PipeMonitor]
   val builder = new NamedPathBuilder
 
   @Test

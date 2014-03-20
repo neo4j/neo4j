@@ -22,13 +22,19 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.Query
 import executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
-import pipes.{MutableMaps, Pipe, NullPipe, FakePipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import spi.PlanContext
 import symbols._
 import org.scalatest.Assertions
 import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
+import org.scalatest.mock.MockitoSugar
 
-trait BuilderTest extends Assertions {
+trait BuilderTest extends Assertions with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   def createPipe(nodes: Seq[String] = Seq(), relationships: Seq[String] = Seq()): FakePipe = {
     val nodeIdentifiers = nodes.map(x => x -> CTNode)
     val relIdentifiers = relationships.map(x => x -> CTRelationship)

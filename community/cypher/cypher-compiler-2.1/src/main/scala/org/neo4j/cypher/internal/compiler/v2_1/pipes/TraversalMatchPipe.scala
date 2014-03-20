@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import data.SimpleVal
 import collection.JavaConverters._
 
-class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail) extends PipeWithSource(source) {
+class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
+                        (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap {

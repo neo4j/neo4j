@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import collection.JavaConverters._
 
-case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern]) extends PipeWithSource(source) {
+case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern])
+                        (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.map {
       ctx => ctx += (pathName -> getPath(ctx))

@@ -25,7 +25,7 @@ import data.SimpleVal
 import symbols._
 
 object ExtractPipe {
-  def apply(source: Pipe, expressions: Map[String, Expression]): ExtractPipe = source match {
+  def apply(source: Pipe, expressions: Map[String, Expression])(implicit pipeMonitor: PipeMonitor): ExtractPipe = source match {
       // If we can merge the two pipes together, do it
     case p: ExtractPipe if expressions.values.forall(_.symbolDependenciesMet(p.source.symbols)) =>
       new ExtractPipe(p.source, p.expressions ++ expressions, true)
@@ -35,7 +35,8 @@ object ExtractPipe {
   }
 }
 
-case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean) extends PipeWithSource(source) {
+case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean)
+                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)

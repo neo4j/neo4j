@@ -24,8 +24,11 @@ import commands.expressions.{Literal, Multiply, Expression, Identifier}
 import symbols._
 import org.junit.Test
 import org.scalatest.Assertions
+import org.scalatest.mock.MockitoSugar
 
-class DistinctPipeTest extends Assertions {
+class DistinctPipeTest extends Assertions with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
 
   @Test def distinct_input_passes_through() {
     //GIVEN

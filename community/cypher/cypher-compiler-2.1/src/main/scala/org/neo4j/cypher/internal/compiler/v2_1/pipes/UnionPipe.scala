@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-case class UnionPipe(in: Seq[Pipe], columns:List[String]) extends Pipe {
+case class UnionPipe(in: Seq[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)
 
   def executionPlanDescription: PlanDescription = PlanDescription(this, "Union").

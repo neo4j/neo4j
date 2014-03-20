@@ -31,8 +31,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import collection.mutable.{Map => MutableMap}
 import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.scalatest.mock.MockitoSugar
 
-class EagerAggregationPipeTest extends JUnitSuite {
+class EagerAggregationPipeTest extends JUnitSuite with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test def shouldReturnColumnsFromReturnItems() {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 

@@ -26,7 +26,8 @@ import commands._
 case class MatchPipe(source: Pipe,
                      predicates: Seq[Predicate],
                      patternGraph: PatternGraph,
-                     identifiersInClause: Set[String]) extends PipeWithSource(source) {
+                     identifiersInClause: Set[String])
+                    (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val matchingContext = new MatchingContext(source.symbols, predicates, patternGraph, identifiersInClause)
   val symbols = matchingContext.symbols
   val identifiersBoundInSource = identifiersInClause intersect source.symbols.keys.toSet

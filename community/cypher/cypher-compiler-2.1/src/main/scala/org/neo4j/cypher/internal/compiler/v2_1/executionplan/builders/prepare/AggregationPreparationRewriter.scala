@@ -26,6 +26,7 @@ import commands.ReturnItem
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{RandomNamer, PartiallySolvedQuery, ExecutionPlanInProgress, PlanBuilder}
 import executionplan.builders.{Unsolved, QueryToken}
 import spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -48,13 +49,13 @@ import spi.PlanContext
 case class AggregationPreparationRewriter(cacheNamer: Option[Expression => String] = None) extends PlanBuilder {
   val namer: Expression => String = cacheNamer.getOrElse(new RandomNamer)
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val query: PartiallySolvedQuery = plan.query
 
     plan.copy(query = query.rewriteFromTheTail(rewrite))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     plan.query.returns.exists(rc => returnColumnToRewrite(rc.token))
 
   private def returnColumnToRewrite: ReturnColumn => Boolean = {

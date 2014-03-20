@@ -186,7 +186,7 @@ object PlanDescription {
   def apply(pipe: Pipe, name: String, args: (String, SimpleVal)*) = new PlanDescriptionImpl(pipe, name, Seq.empty, args)
 }
 
-object NullPlanDescription extends PlanDescription {
+class NullPlanDescription(val pipe:Pipe) extends PlanDescription {
   def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*) = PlanDescription(pipe, name, args: _*)
 
   def args = ???
@@ -200,8 +200,6 @@ object NullPlanDescription extends PlanDescription {
   def mapArgs(f: (PlanDescription) => Seq[(String, SimpleVal)]) = ???
 
   def name = ???
-
-  def pipe = NullPipe()
 
   def render(builder: StringBuilder) {}
 

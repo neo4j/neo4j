@@ -22,8 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.scalatest.Assertions
 import org.junit.Test
+import org.scalatest.mock.MockitoSugar
 
-class EagerPipeTest extends Assertions {
+class EagerPipeTest extends Assertions with MockitoSugar {
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test
   def shouldMakeLazyEager() {
     // Given a lazy iterator that is not empty

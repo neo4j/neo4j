@@ -27,7 +27,7 @@ import org.mockito.Mockito
 
 class NodeByLabelScanPipeTest extends CypherFunSuite {
 
-  implicit val monitor = NoopPipeMonitor
+  implicit val monitor = mock[PipeMonitor]
   import Mockito.when
 
   test("should scan labeled nodes") {

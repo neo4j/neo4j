@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{Namer, RandomNamer
 import spi.PlanContext
 import collection.Map
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
     findNodeWithLabels(plan.query.patterns).nonEmpty ||
       findPatternWithProperties(plan.query.patterns).nonEmpty ||
       findVarlengthPatternWithProperties(plan.query.patterns).nonEmpty
@@ -97,7 +98,7 @@ class PredicateRewriter(namer: Namer = new RandomNamer) extends PlanBuilder {
     }
   }
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val maybeLabel = findNodeWithLabels(plan.query.patterns)
     val maybeProp = findPatternWithProperties(plan.query.patterns)
     val maybeVarlengthProp: Option[(VarLengthRelatedTo, VarLengthRelatedTo, Predicate)] = findVarlengthPatternWithProperties(plan.query.patterns)

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 /*
 PlanBuilders are basically partial functions that can execute for some input, and can answer if an
@@ -35,9 +36,9 @@ It's important that PlanBuilders never return the input unchanged.
 */
 
 trait PlanBuilder {
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress
 
   def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = Seq()
 

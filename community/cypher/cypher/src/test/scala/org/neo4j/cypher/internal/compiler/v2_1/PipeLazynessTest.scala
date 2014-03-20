@@ -45,6 +45,8 @@ in fact are lazy. Every Pipe should be represented here
 
 @RunWith(value = classOf[Parameterized])
 class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseJUnitSuite {
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test def test() {
     iter.db = Some(graph)
     val resultIterator = pipe.createResults(queryState)
@@ -71,6 +73,7 @@ class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseJ
 }
 
 object PipeLazynessTest extends MockitoSugar {
+  private implicit val monitor = mock[PipeMonitor]
 
   @Parameters(name = "{0}")
   def parameters: java.util.Collection[Array[AnyRef]] = {

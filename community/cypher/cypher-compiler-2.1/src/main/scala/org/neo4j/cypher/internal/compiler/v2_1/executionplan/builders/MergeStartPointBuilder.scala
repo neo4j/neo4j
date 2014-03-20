@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.mutation.PlainMergeNodeProducer
 import org.neo4j.cypher.internal.compiler.v2_1.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 /*
 This builder is concerned with finding queries that use MERGE, and finds a way to try to find matching nodes
@@ -41,7 +42,7 @@ This builder is concerned with finding queries that use MERGE, and finds a way t
 class MergeStartPointBuilder extends PlanBuilder {
   val entityProducerFactory = new EntityProducerFactory
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
 
     val q: PartiallySolvedQuery = plan.query
 
@@ -113,6 +114,6 @@ class MergeStartPointBuilder extends PlanBuilder {
     newMergeNodeAction
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
 }

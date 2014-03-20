@@ -26,11 +26,12 @@ import org.neo4j.cypher.{ExecutionEngineJUnitSuite, CypherTypeException}
 import org.neo4j.graphdb.{Node, NotFoundException}
 import org.junit.{After, Test}
 import collection.mutable.{Map => MutableMap}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{QueryState, ExecuteUpdateCommandsPipe, NullPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, QueryState, ExecuteUpdateCommandsPipe, NullPipe}
 
 class MutationTest extends ExecutionEngineJUnitSuite {
 
   var tx : org.neo4j.graphdb.Transaction = null
+  private implicit val monitor = mock[PipeMonitor]
 
   def createQueryState = {
     if(tx == null) tx = graph.beginTx()

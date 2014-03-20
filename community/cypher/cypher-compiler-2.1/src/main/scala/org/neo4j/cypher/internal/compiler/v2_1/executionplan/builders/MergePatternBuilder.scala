@@ -38,10 +38,10 @@ By doing it this way, we rely on already existing code to both match and create 
 This class prepares MergePatternAction objects to be run by creating the match pipe
 */
 case class MergePatternBuilder(matching: Phase) extends PlanBuilder with CollectionSupport {
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean =
     apply(plan, ctx) != apply(plan, ctx)
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     def prepareMergeAction(symbols: SymbolTable, originalMerge: MergePatternAction): (SymbolTable, MergePatternAction) = {
       val (newSymbols,updateActions) = MergePatternBuilder.createActions(symbols, originalMerge.actions)
       val matchPipe = solveMatchQuery(symbols, originalMerge).pipe
@@ -49,8 +49,10 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
       (newSymbols, preparedMerge)
     }
 
-    def solveMatchQuery(symbols: SymbolTable, patternAction: MergePatternAction): ExecutionPlanInProgress = {
-      val pipe = NullPipe(symbols, plan.pipe.executionPlanDescription)
+    def solveMatchQuery(symbols: SymbolTable, patternAction: MergePatternAction)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
+      val pipe = new NullPipe(symbols) {
+        override def executionPlanDescription: PlanDescription = plan.pipe.executionPlanDescription
+      }
       val matchQuery = createMatchQueryFor(patternAction.patterns)
       var planInProgress = plan.copy(query = matchQuery, pipe = pipe)
 

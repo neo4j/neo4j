@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, Execu
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
-class FilterBuilder(monitors: Monitors) extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+class FilterBuilder extends PlanBuilder {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -37,7 +37,7 @@ class FilterBuilder(monitors: Monitors) extends PlanBuilder {
     val newPipe = if (pred == True()) {
       p
     } else {
-      new FilterPipe(p, pred)(monitors.newMonitor[PipeMonitor]())
+      new FilterPipe(p, pred)
     }
 
     val newQuery = q.where.filterNot(item.contains) ++ item.map(_.solve)
@@ -65,6 +65,6 @@ class FilterBuilder(monitors: Monitors) extends PlanBuilder {
     case _                         => false
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
 }

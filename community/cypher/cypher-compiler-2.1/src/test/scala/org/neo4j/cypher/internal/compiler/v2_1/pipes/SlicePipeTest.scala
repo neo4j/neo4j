@@ -23,8 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Literal
 import org.junit.Test
 import org.scalatest.Assertions
+import org.scalatest.mock.MockitoSugar
 
-class SlicePipeTest extends Assertions {
+class SlicePipeTest extends Assertions with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test
   def should_handle_longs() {
     //given

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.DistinctPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, DistinctPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 
 class DistinctBuilder extends PlanBuilder {
-  def apply(p: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(p: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val plan = ExtractBuilder.extractIfNecessary(p, getExpressions(p))
 
     val expressions = getExpressions(plan)
@@ -46,8 +46,7 @@ class DistinctBuilder extends PlanBuilder {
   private def getExpressions(plan:ExecutionPlanInProgress): Map[String, Expression] =
     plan.query.returns.flatMap(_.token.expressions(plan.pipe.symbols)).toMap
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
-
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
       plan.query.aggregateToDo &&                  //The parser marks DISTINCT queries as aggregates. Revisit?
       plan.query.aggregation.isEmpty &&            //It's an aggregate query without aggregate expressions
       plan.query.readyToAggregate &&

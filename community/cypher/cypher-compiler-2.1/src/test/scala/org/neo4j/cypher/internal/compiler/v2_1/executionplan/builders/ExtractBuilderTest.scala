@@ -24,12 +24,13 @@ import commands.ReturnItem
 import commands.expressions._
 import executionplan._
 import symbols._
-import pipes.ExtractPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ExtractPipe}
 import org.junit.Test
 import org.junit.Assert._
 
 class ExtractBuilderTest extends BuilderTest {
 
+  private implicit val monitor = mock[PipeMonitor]
   val builder = new ExtractBuilder
 
   @Test

@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class StartPipePlanDescriptionTest extends MockitoSugar {
 
+  private implicit val monitor = mock[PipeMonitor]
   var planContext: PlanContext = null
   var factory: EntityProducerFactory = null
   val label: String = "label"

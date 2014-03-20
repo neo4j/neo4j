@@ -27,8 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyTo
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
 import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, ParsedQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.QueryBuilder
 
-class LegacyPipeBuilder(monitors: Monitors) extends PatternGraphBuilder with PipeBuilder {
+class LegacyPipeBuilder(monitors: Monitors) extends PatternGraphBuilder with PipeBuilder with QueryBuilder {
+
+  private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   def producePlan(in: ParsedQuery, planContext: PlanContext): PipeInfo = in.abstractQuery match {
     case q: PeriodicCommitQuery =>
@@ -48,21 +51,21 @@ class LegacyPipeBuilder(monitors: Monitors) extends PatternGraphBuilder with Pip
       buildUnionQuery(q, planContext)
   }
 
-  val unionBuilder = new UnionBuilder(this)
+  private val unionBuilder = new UnionBuilder(this)
 
-  def buildUnionQuery(union: Union, context: PlanContext): PipeInfo =
+  private def buildUnionQuery(union: Union, context: PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo =
     unionBuilder.buildUnionQuery(union, context)
 
-  def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true)
+  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true)
 
-  def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
+  private def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
 
     PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true)
   }
 
-  def buildQuery(inputQuery: Query, context: PlanContext): PipeInfo = {
+  def buildQuery(inputQuery: Query, context: PlanContext)(implicit pipeMonitor:PipeMonitor): PipeInfo = {
     val initialPSQ = PartiallySolvedQuery(inputQuery)
 
     var continue = true
@@ -119,7 +122,7 @@ The Neo4j Team""")
   /*
   The order of the plan builders here is important. It decides which PlanBuilder gets to go first.
    */
-  def prepare = new Phase {
+  private def prepare = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new PredicateRewriter,
       new KeyTokenResolver,
@@ -131,10 +134,10 @@ The Neo4j Team""")
     )
   }
 
-  def matching = new Phase {
+  private def matching = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new TraversalMatcherBuilder,
-      new FilterBuilder(monitors),
+      new FilterBuilder,
       new NamedPathBuilder,
       new LoadCSVBuilder,
       new StartPointBuilder,
@@ -143,7 +146,7 @@ The Neo4j Team""")
     )
   }
 
-  def updates = new Phase {
+  private def updates = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new NamedPathBuilder,
       new MergePatternBuilder(prepare andThen matching),
@@ -151,7 +154,7 @@ The Neo4j Team""")
     )
   }
 
-  def extract = new Phase {
+  private def extract = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new TopPipeBuilder,
       new ExtractBuilder,
@@ -162,7 +165,7 @@ The Neo4j Team""")
     )
   }
 
-  def finish = new Phase {
+  private def finish = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
       new ColumnFilterBuilder,
       new EmptyResultBuilder

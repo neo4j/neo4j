@@ -27,7 +27,7 @@ import data.SimpleVal
 import symbols._
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
-  extends PipeWithSource(source) {
+                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val returnItemNames: Seq[String] = returnItems.map(_.name)
   val symbols = SymbolTable(identifiers2.toMap)
 

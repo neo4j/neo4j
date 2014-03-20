@@ -42,14 +42,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val monitor = NoopPipeMonitor
+  implicit val monitor = mock[PipeMonitor]
   implicit val context = newMockedLogicalPlanContext
 
   val monitors = mock[Monitors]
   val planner = new PipeExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)
 
-  Mockito.when(monitors.newMonitor[PipeMonitor]()).thenReturn(NoopPipeMonitor)
+  Mockito.when(monitors.newMonitor[PipeMonitor]()).thenReturn(monitor)
 
   test("projection only query") {
     val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(pos)))
