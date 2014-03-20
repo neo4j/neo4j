@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.TopPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, TopPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Add
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Slice
@@ -27,7 +27,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class TopPipeBuilder extends PlanBuilder with SortingPreparations {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val newPlan = extractBeforeSort(plan)
 
     val q = newPlan.query
@@ -55,7 +55,7 @@ class TopPipeBuilder extends PlanBuilder with SortingPreparations {
     plan.copy(pipe = resultPipe, query = resultQ)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val extracted = q.extracted
     val unsolvedOrdering = plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1._
 import executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import commands._
-import pipes.{EntityProducer, NullPipe, TraversalMatchPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, EntityProducer, NullPipe, TraversalMatchPipe}
 import pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import spi.PlanContext
 import symbols._
@@ -30,7 +30,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Node
 
 class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress =
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress =
     extractExpanderStepsFromQuery(plan) match {
       case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
       case Some(longestPath) =>
@@ -123,7 +123,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   private def mapNodeStartCreator(): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
     entityFactory.nodeStartItems
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
       plan.pipe.isInstanceOf[NullPipe] &&
       !plan.query.optional &&
       extractExpanderStepsFromQuery(plan).nonEmpty

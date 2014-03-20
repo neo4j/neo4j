@@ -30,7 +30,12 @@ sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
 case object NoHeaders extends CSVFormat
 
-class LoadCSVPipe(source: Pipe, format: CSVFormat, urlExpression: Expression, identifier: String, fieldTerminator: Option[String]) extends PipeWithSource(source) {
+class LoadCSVPipe(source: Pipe,
+                  format: CSVFormat,
+                  urlExpression: Expression,
+                  identifier: String,
+                  fieldTerminator: Option[String])(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) {
   private val protocolWhiteList: Seq[String] = Seq("file", "http", "https", "ftp")
 
   protected def checkURL(urlString: String, context: QueryContext): URL = {

@@ -26,6 +26,7 @@ import org.neo4j.graphdb._
 import org.junit.{Before, Test}
 
 class NamedPathPipeTest extends GraphDatabaseJUnitSuite {
+  private implicit val monitor = mock[PipeMonitor]
   var a: Node = null
   var b: Node = null
   var c: Node = null

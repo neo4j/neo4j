@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-case class EagerPipe(src: Pipe) extends PipeWithSource(src) {
+case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
   def symbols: SymbolTable = src.symbols
 
   def executionPlanDescription: PlanDescription = src.executionPlanDescription.andThen(this, "Eager")

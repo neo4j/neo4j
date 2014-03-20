@@ -27,14 +27,16 @@ import org.junit.Assert
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import collection.mutable.Map
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class ColumnFilterPipeTest extends JUnitSuite {
-  @Test def shouldReturnColumnsFromReturnItems() {
+class ColumnFilterPipeTest extends CypherFunSuite {
+
+  test("should return columns from return items") {
     val col = "extractReturnItems"
     val returnItems = List(ReturnItem(Identifier(col), col))
     val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), col -> CTNode)
 
-    val columnPipe = new ColumnFilterPipe(source, returnItems)
+    val columnPipe = new ColumnFilterPipe(source, returnItems)(mock[PipeMonitor])
 
     Assert.assertEquals(Map(col -> CTNode), columnPipe.symbols.identifiers)
     Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(QueryStateHelper.empty).toList)

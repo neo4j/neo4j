@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.{RelationshipById, StartItem}
 import executionplan._
-import pipes.{EntityProducer, QueryState, RelationshipStartPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, EntityProducer, QueryState, RelationshipStartPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.graphdb.Relationship
 import collection.Seq
 import GetGraphElements.getElements
 
 class RelationshipByIdBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
     val startItemToken = interestingStartItems(q).head
@@ -45,7 +45,8 @@ class RelationshipByIdBuilder extends PlanBuilder {
     plan.copy(pipe = pipe, query = q.copy(start = remainingQ))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = interestingStartItems(plan.query).nonEmpty
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
+    interestingStartItems(plan.query).nonEmpty
 
   private def interestingStartItems(q: PartiallySolvedQuery): Seq[QueryToken[StartItem]] = q.start.filter({
     case Unsolved(RelationshipById(_, expression)) => true

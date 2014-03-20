@@ -24,7 +24,10 @@ import data.SimpleVal._
 import symbols._
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 
-abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, createSource: EntityProducer[T]) extends PipeWithSource(source) {
+abstract class StartPipe[T <: PropertyContainer](source: Pipe,
+                                                 name: String,
+                                                 createSource: EntityProducer[T],
+                                                 pipeMonitor:PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def identifierType: CypherType
 
   val symbols = source.symbols.add(name, identifierType)
@@ -45,12 +48,12 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, cre
   }
 }
 
-class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])
-  extends StartPipe[Node](source, name, createSource) {
+class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(implicit pipeMonitor: PipeMonitor)
+  extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
 }
 
-class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
-  extends StartPipe[Relationship](source, name, createSource) {
+class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(implicit pipeMonitor: PipeMonitor)
+  extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
 }

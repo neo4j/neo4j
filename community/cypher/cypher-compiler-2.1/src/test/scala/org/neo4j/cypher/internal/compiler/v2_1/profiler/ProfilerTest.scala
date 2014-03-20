@@ -28,6 +28,9 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.Assertions
 
 class ProfilerTest extends Assertions with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test
   def should_report_simplest_case() {
     //GIVEN
@@ -93,7 +96,8 @@ class ProfilerTest extends Assertions with MockitoSugar {
   }
 }
 
-class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int) extends PipeWithSource(source) {
+class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)
+                  (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def executionPlanDescription: PlanDescription = source.executionPlanDescription.andThen(this, name)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

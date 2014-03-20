@@ -26,8 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.mutation.DeleteEntityAction
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 class DeleteAndPropertySetBuilderTest extends BuilderTest {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   val builder = new UpdateActionBuilder
   val planContext = Mockito.mock(classOf[PlanContext])
 

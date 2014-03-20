@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
-  implicit val monitor = NoopPipeMonitor
+  implicit val monitor = mock[PipeMonitor]
   import Mockito.when
 
   test("should seek node by id") {

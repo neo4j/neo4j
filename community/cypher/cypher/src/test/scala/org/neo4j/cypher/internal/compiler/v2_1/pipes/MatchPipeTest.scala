@@ -1,11 +1,3 @@
-package org.neo4j.cypher.internal.compiler.v2_1.pipes
-
-import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.matching.PatternGraph
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -25,9 +17,19 @@ import org.scalatest.Assertions
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-class MatchPipeTest extends Assertions {
+package org.neo4j.cypher.internal.compiler.v2_1.pipes
+
+import org.neo4j.cypher.internal.compiler.v2_1._
+import pipes.matching.PatternGraph
+import symbols._
+import org.junit.Test
+import org.scalatest.Assertions
+import org.scalatest.mock.MockitoSugar
+
+class MatchPipeTest extends Assertions with MockitoSugar {
   @Test
   def should_yield_nothing_if_it_gets_an_incoming_null() {
+    implicit val monitor = mock[PipeMonitor]
     val source = new FakePipe(Iterator(Map("x"->null)), "x"->CTNode)
     val patternGraph = new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
     val identifiersInClause = Set("x", "r", "z")

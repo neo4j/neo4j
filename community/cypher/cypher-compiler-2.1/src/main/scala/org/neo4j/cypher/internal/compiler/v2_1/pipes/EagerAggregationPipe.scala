@@ -30,7 +30,7 @@ import collection.mutable.{Map => MutableMap}
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
-  extends PipeWithSource(source) {
+                          (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def oldKeyExpressions: Seq[Expression] = keyExpressions.values.toSeq
 
   val symbols: SymbolTable = createSymbols()

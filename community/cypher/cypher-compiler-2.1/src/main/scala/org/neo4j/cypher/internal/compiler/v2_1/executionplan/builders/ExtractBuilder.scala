@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.ExtractPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ExtractPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, CachedExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AllIdentifiers
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
  * This builder will materialize expression results down to the result map, so they can be seen by the user
  */
 class ExtractBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
 
     // This is just a query part switch. No need to extract anything
@@ -44,7 +44,7 @@ class ExtractBuilder extends PlanBuilder {
     }
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val unsolvedReturnItems = q.returns.filter(_.unsolved)
 
@@ -82,8 +82,8 @@ object ExtractBuilder {
    * @param materializeAll materialise results even for non-deterministic calls
    * @return
    */
-  def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression], materializeAll:Boolean = false):
-  ExecutionPlanInProgress = {
+  def extractIfNecessary(plan: ExecutionPlanInProgress, expressionsToExtract: Map[String, Expression], materializeAll:Boolean = false)
+                        (implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
 
     val expressions = expressionsToExtract.filter {
       case (k, CachedExpression(_, _))      => false

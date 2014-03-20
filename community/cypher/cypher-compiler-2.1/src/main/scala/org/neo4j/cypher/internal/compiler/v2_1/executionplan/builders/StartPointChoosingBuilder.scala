@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
 import org.neo4j.cypher.internal.compiler.v2_1.commands.ShortestPath
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 /*
 This builder is concerned with finding queries without start items and without index hints, and
@@ -45,7 +46,7 @@ class StartPointChoosingBuilder extends PlanBuilder {
   val entityProducerFactory = new EntityProducerFactory
 
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
 
     val q: PartiallySolvedQuery = plan.query
 
@@ -111,6 +112,6 @@ class StartPointChoosingBuilder extends PlanBuilder {
     )
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     !plan.query.extracted && plan != apply(plan, ctx) // TODO: This can be optimized
 }

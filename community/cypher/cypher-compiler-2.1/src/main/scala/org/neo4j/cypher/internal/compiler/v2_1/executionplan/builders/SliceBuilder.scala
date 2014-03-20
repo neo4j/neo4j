@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.SlicePipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, SlicePipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class SliceBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val slice = plan.query.slice.map(_.token).head
     val pipe = new SlicePipe(plan.pipe, slice.from, slice.limit)
 
     plan.copy(pipe = pipe, query = plan.query.copy(slice = plan.query.slice.map(_.solve)))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     q.extracted && !q.sort.exists(_.unsolved) && q.slice.exists(_.unsolved)
   }

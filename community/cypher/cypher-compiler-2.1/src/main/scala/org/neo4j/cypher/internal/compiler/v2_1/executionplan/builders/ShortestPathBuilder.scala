@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1.commands.ShortestPath
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import collection.Seq
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{ShortestPathPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ShortestPathPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class ShortestPathBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -38,7 +38,8 @@ class ShortestPathBuilder extends PlanBuilder {
     plan.copy(pipe = pipe, query = q.copy(patterns = q.patterns.filterNot(_ == item) :+ item.solve))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan.query.patterns.exists(yesOrNo(plan.pipe, _))
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
+    plan.query.patterns.exists(yesOrNo(plan.pipe, _))
 
   private def yesOrNo(p: Pipe, token: QueryToken[_]): Boolean = token match {
     case Unsolved(sp: ShortestPath) => sp.symbolDependenciesMet(p.symbols)

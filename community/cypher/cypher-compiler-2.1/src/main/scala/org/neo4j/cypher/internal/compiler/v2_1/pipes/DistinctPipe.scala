@@ -25,7 +25,8 @@ import symbols._
 import collection.mutable
 import org.neo4j.cypher.internal.helpers._
 
-class DistinctPipe(source: Pipe, expressions: Map[String, Expression]) extends PipeWithSource(source) {
+class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
+                  (implicit pipeMonitor: PipeMonitor)extends PipeWithSource(source, pipeMonitor) {
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 

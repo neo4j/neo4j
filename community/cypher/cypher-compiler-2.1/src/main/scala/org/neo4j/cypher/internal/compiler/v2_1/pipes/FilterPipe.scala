@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.Predicate
 import data.SimpleVal
 
-case class FilterPipe(source: Pipe, predicate: Predicate)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source) {
+case class FilterPipe(source: Pipe, predicate: Predicate)
+                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
@@ -31,6 +32,4 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(implicit pipeMonitor: 
 
   def executionPlanDescription =
     source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
-
-  override def monitor: PipeMonitor = pipeMonitor
 }

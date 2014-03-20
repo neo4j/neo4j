@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{HasHeaders, NoHeaders, LoadCSVPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, HasHeaders, NoHeaders, LoadCSVPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.LoadCSV
 import org.neo4j.cypher.LoadExternalResourceException
 
 class LoadCSVBuilder extends PlanBuilder {
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
     findLoadCSVItem(plan).isDefined
   }
 
@@ -36,7 +36,7 @@ class LoadCSVBuilder extends PlanBuilder {
     }
   }
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val item: LoadCSV = findLoadCSVItem(plan).get
     plan.copy(
       query = plan.query.copy(start = plan.query.start.replace(Unsolved(item), Solved(item))),

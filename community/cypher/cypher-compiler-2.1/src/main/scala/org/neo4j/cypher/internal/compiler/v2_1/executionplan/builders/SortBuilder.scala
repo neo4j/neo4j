@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, SortPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, CachedExpression, Expression}
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class SortBuilder extends PlanBuilder with SortingPreparations {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val newPlan = extractBeforeSort(plan)
 
     val q = newPlan.query
@@ -38,7 +38,7 @@ class SortBuilder extends PlanBuilder with SortingPreparations {
     plan.copy(pipe = resultPipe, query = resultQ)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     plan.query.extracted &&
     plan.query.sort.filter(x => x.unsolved && !x.token.expression.containsAggregate).nonEmpty
 
@@ -58,7 +58,7 @@ class SortBuilder extends PlanBuilder with SortingPreparations {
 }
 
 trait SortingPreparations {
-  def extractBeforeSort(plan: ExecutionPlanInProgress): ExecutionPlanInProgress = {
+  def extractBeforeSort(plan: ExecutionPlanInProgress)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val sortExpressionsToExtract: Seq[(String, Expression)] = plan.query.sort.flatMap(x => x.token.expression match {
       case _: CachedExpression => None
       case _: Identifier       => None

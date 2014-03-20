@@ -24,7 +24,7 @@ import commands._
 import commands.values.KeyToken
 import symbols._
 
-class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken) extends Pipe {
+class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, propertyKey: KeyToken)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val labelId = label.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)

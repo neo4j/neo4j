@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class NodeUniqueIndexSeekPipeTest extends CypherFunSuite {
 
-  implicit val monitor = NoopPipeMonitor
+  implicit val monitor = mock[PipeMonitor]
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given

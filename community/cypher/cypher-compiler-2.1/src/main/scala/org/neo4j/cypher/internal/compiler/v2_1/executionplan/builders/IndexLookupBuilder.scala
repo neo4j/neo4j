@@ -24,12 +24,13 @@ import commands._
 import commands.expressions.{Expression, Identifier, Property}
 import executionplan._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 class IndexLookupBuilder extends PlanBuilder {
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     plan.query.start.exists(interestingFilter)
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext): ExecutionPlanInProgress = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val querylessHint = extractInterestingStartItem(plan)
     val hint = querylessHint.token
     val propertyPredicates = findPropertyPredicates(plan, hint)

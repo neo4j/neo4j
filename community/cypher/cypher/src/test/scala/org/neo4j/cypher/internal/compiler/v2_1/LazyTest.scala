@@ -49,7 +49,8 @@ class LazyTest extends ExecutionEngineFunSuite {
   var aNode: Node = null
   var bNode: Node = null
   var cNode: Node = null
-  implicit val pipeMonitor = mock[PipeMonitor]
+
+  private implicit val pipeMonitor = mock[PipeMonitor]
 
   override protected def initTest() {
     super.initTest()
@@ -193,8 +194,9 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
     when(monitors.newMonitor(classOf[SemanticCheckMonitor], "compiler2.1")).thenReturn(mock[SemanticCheckMonitor])
-    when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
     when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
+    when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
+    when(monitors.newMonitor(classOf[PipeMonitor])).thenReturn(mock[PipeMonitor])
 
     when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.instance()).thenReturn(fakeStatement)

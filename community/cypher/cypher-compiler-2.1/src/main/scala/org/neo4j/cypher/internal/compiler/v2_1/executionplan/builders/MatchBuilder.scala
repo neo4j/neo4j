@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{MatchPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, MatchPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.ShortestPath
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -50,7 +50,7 @@ class MatchBuilder extends PlanBuilder with PatternGraphBuilder {
     )
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     q.patterns.exists(yesOrNo(_, plan.pipe, q.start))
   }

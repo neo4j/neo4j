@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import commands._
 import commands.expressions._
-import pipes.NullPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, NullPipe}
 import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
@@ -37,6 +37,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
   var builder: TraversalMatcherBuilder = null
   var ctx: PlanContext = null
   var tx: Transaction = null
+  private implicit val monitor = mock[PipeMonitor]
 
   @Before def init() {
     builder = new TraversalMatcherBuilder

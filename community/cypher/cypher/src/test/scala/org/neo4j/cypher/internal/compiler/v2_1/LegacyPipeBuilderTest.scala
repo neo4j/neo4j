@@ -197,16 +197,16 @@ class LegacyPipeBuilderWithCustomPlanBuilders(builders: Seq[PlanBuilder], monito
 // This is a builder that accepts everything, but changes nothing
 // It's a never ending loop waiting to happen
 class BadBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = plan
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = plan
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = true
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = true
 }
 
 class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext): Boolean =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     !plan.pipe.isInstanceOf[ExplodingPipe]
 
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
       val psq = mock[PartiallySolvedQuery]
       when(psq.isSolved).thenReturn(true)
       when(psq.tail).thenReturn(None)
@@ -222,6 +222,8 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
     def executionPlanDescription: PlanDescription = null
 
     def exists(pred: Pipe => Boolean) = ???
+
+    val monitor = mock[PipeMonitor]
   }
 }
 

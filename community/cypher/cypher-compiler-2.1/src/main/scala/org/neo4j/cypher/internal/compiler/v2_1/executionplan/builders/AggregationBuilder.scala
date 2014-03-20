@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.EagerAggregationPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, EagerAggregationPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CachedExpression, AggregationExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
@@ -49,7 +49,7 @@ value.
  */
 
 class AggregationBuilder extends PlanBuilder  {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     // First, calculate the key expressions and save them down to the map
     val keyExpressionsToExtract: ExtractedExpressions = getExpressions(plan)
     val planToAggregate = ExtractBuilder.extractIfNecessary(plan, keyExpressionsToExtract.keys)
@@ -102,7 +102,7 @@ class AggregationBuilder extends PlanBuilder  {
     ExtractedExpressions(keys.toMap, plan.query.aggregation.map(_.token))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
 
     q.aggregateToDo && q.readyToAggregate
