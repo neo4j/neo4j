@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.logging;
 
+import java.text.MessageFormat;
 import java.util.logging.Level;
 
 public class Logger
@@ -61,6 +62,11 @@ public class Logger
         }
     }
 
+    private void log( Level priority, Throwable e, String message, Object[] parameters )
+    {
+        logger.log( priority, MessageFormat.format( message, parameters ), e );
+    }
+
     public void fatal( String message, Object... parameters )
     {
         log( Level.SEVERE, message, parameters );
@@ -74,6 +80,11 @@ public class Logger
     public void error( Throwable e )
     {
         log( Level.SEVERE, "", e );
+    }
+
+    public void error( Throwable e, String message, Object... parameters)
+    {
+        log( Level.SEVERE, e, message, parameters );
     }
 
     public void warn( Throwable e )
