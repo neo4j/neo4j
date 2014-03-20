@@ -143,7 +143,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n4 = createNode(Map("x" -> 50d))
     val n5 = createNode(Map("x" -> 50.toByte))
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"match n where n.x < 100 return n"
     )
 
@@ -156,7 +156,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode(Map("x" -> "Zzing"))
     createNode(Map("x" -> 'Ä'))
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"match n where n.x < 'Z' AND n.x < 'z' return n"
     )
 
@@ -662,7 +662,7 @@ RETURN x0.name""")
     val a = createNode()
     val b = createNode()
 
-    val result = execute("match n return n")
+    val result = executeWithNewPlanner("match n return n")
     result.columnAs[Node]("n").toList should equal (List(a, b))
   }
 
@@ -670,7 +670,7 @@ RETURN x0.name""")
     val a = createNode()
     val b = createNode()
 
-    val result = execute("MATCH a, b where a <> b return a,b")
+    val result = executeWithNewPlanner("MATCH a, b where a <> b return a,b")
     result.toSet should equal (Set(Map("a" -> b, "b" -> a), Map("b" -> b, "a" -> a)))
   }
 

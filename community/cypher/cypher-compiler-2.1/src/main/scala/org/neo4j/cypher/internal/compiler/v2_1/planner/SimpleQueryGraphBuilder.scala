@@ -38,13 +38,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
   }
   override def produce(ast: Query): QueryGraph = {
 
-    val (projections:  Seq[(String, Expression)], selections, identifiers: Set[IdName]) = ast match {
+    val (projections:  Seq[(String, Expression)], selections, nodes: Set[IdName]) = ast match {
       // return 42
       case Query(None, SingleQuery(Seq(Return(false, ListedReturnItems(expressions), None, None, None)))) =>
         val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
         val selections = Selections()
-        val identifiers = Set.empty
-        (projections, selections, identifiers)
+        val nodes = Set.empty
+        (projections, selections, nodes)
 
       // match (n ...) return ...
       case Query(None, SingleQuery(Seq(
@@ -52,9 +52,9 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         Return(false, ListedReturnItems(expressions), None, None, None)
       ))) =>
         val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-        val identifiers = nodeIdentifiers.map(x => IdName(x.name)).toSet
-        (projections, selections, identifiers)
+        val nodes = nodeIdentifiers.map(x => IdName(x.name)).toSet
+        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere(_, nodes)).getOrElse(Seq.empty))
+        (projections, selections, nodes)
 
       case _ =>
         throw new CantHandleQueryException
@@ -64,6 +64,6 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       case (_,e) => e.asCommandExpression.containsAggregate
     }) throw new CantHandleQueryException
 
-    QueryGraph(projections.toMap, selections, identifiers)
+    QueryGraph(projections.toMap, selections, nodes)
   }
 }
