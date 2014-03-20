@@ -19,22 +19,34 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
@@ -42,22 +54,36 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
-public class TestRelationshipCount extends AbstractNeo4jTestCase
+@RunWith( Parameterized.class )
+public class TestRelationshipCount
 {
-    private static enum RelType implements RelationshipType
+    @Parameterized.Parameters
+    public static Collection<Object[]> data()
     {
-        INITIAL( false ),
-        TYPE1( true ),
-        TYPE2( true );
-        
-        boolean measure;
-        
-        private RelType( boolean measure )
+        Collection<Object[]> data = new ArrayList<>();
+        int max = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+        for ( int i = 1; i < max; i++ )
         {
-            this.measure = measure;
+            data.add( new Object[] { Integer.valueOf( i ) } );
         }
+        return data;
     }
-    
+
+    public final @Rule DatabaseRule dbRule;
+    private Transaction tx;
+
+    public TestRelationshipCount( final int denseNodeThreshold )
+    {
+        this.dbRule = new ImpermanentDatabaseRule()
+        {
+            @Override
+            protected void configure( GraphDatabaseBuilder builder )
+            {
+                builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) );
+            }
+        };
+    }
+
     @Test
     public void convertNodeToDense() throws Exception
     {
@@ -79,7 +105,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         {
             node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
         }
-        
+
         clearCache();
         assertEquals( expectedRelCount, node.getDegree() );
         assertEquals( expectedRelCount, node.getDegree( Direction.BOTH ) );
@@ -90,7 +116,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         assertEquals( join( rels.get( MyRelTypes.TEST_TRAVERSAL ), rels.get( MyRelTypes.TEST2 ) ),
                 asSet( node.getRelationships( MyRelTypes.TEST_TRAVERSAL, MyRelTypes.TEST2 ) ) );
     }
-    
+
     private <T> Set<T> join( Set<T> set, Set<T> set2 )
     {
         Set<T> result = new HashSet<>();
@@ -104,7 +130,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
     {
         testGetRelationshipTypes( getGraphDb().createNode(), new HashSet<String>() );
     }
-    
+
     @Test
     public void testGetRelationshipTypesOnDenseNode() throws Exception
     {
@@ -116,7 +142,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         }
         testGetRelationshipTypes( node, new HashSet<>( asList( RelType.INITIAL.name() ) ) );
     }
-    
+
     private void testGetRelationshipTypes( Node node, Set<String> expectedTypes ) throws Exception
     {
         assertExpectedRelationshipTypes( expectedTypes, node, false );
@@ -125,21 +151,21 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         assertExpectedRelationshipTypes( expectedTypes, node, false );
         node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE1 );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
-        
+
         Relationship rel = node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE2 );
         expectedTypes.add( RelType.TYPE2.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, false );
         rel.delete();
         expectedTypes.remove( RelType.TYPE2.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
-        
+
         node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE2 );
         node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE2 );
         expectedTypes.add( RelType.TYPE2.name() );
         node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
         expectedTypes.add( MyRelTypes.TEST.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
-        
+
         for ( Relationship r : node.getRelationships( RelType.TYPE1 ) )
         {
             assertExpectedRelationshipTypes( expectedTypes, node, false );
@@ -189,7 +215,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         assertEquals( 2, node1.getDegree() );
         assertEquals( 1, node2.getDegree() );
 
-        for ( int i = 0; i < 1000; i++ ) 
+        for ( int i = 0; i < 1000; i++ )
         {
             if ( i%2 == 0 )
             {
@@ -207,7 +233,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                 clearCache();
             }
         }
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertEquals( 1002, node1.getDegree() );
@@ -224,7 +250,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
             assertEquals( 0, node1.getDegree( MyRelTypes.TEST2, Direction.INCOMING ) );
             newTransaction();
         }
-        
+
         for ( Relationship rel : node1.getRelationships() )
         {
             rel.delete();
@@ -237,7 +263,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         node2.delete();
         newTransaction();
     }
-    
+
     @Test
     public void withLoops() throws Exception
     {
@@ -246,7 +272,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         {
             getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
         }
-        
+
         Node node = getGraphDb().createNode();
         assertEquals( 0, node.getDegree() );
         node.createRelationshipTo( node, MyRelTypes.TEST );
@@ -266,7 +292,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         rel3.delete();
         assertEquals( 1, node.getDegree() );
     }
-    
+
     @Test
     public void ensureRightDegree() throws Exception
     {
@@ -279,14 +305,14 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                     create( RelType.TYPE2, Direction.OUTGOING, 6 ),
                     create( RelType.TYPE2, Direction.INCOMING, 7 ),
                     create( RelType.TYPE2, Direction.BOTH, 3 ) ),
-                    
+
                     asList(
                     delete( RelType.TYPE1, Direction.OUTGOING, 0 ),
                     delete( RelType.TYPE1, Direction.INCOMING, 1 ),
                     delete( RelType.TYPE2, Direction.OUTGOING, Integer.MAX_VALUE ),
                     delete( RelType.TYPE2, Direction.INCOMING, 1 ),
                     delete( RelType.TYPE2, Direction.BOTH, Integer.MAX_VALUE ) )/*null*/ );
-    
+
             ensureRightDegree( initialSize,
                     asList(
                     create( RelType.TYPE1, Direction.BOTH, 1 ),
@@ -308,7 +334,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                     create( RelType.TYPE2, Direction.INCOMING, 7 ) ), null );
         }
     }
-    
+
     private void ensureRightDegree( int initialSize, Collection<RelationshipCreationSpec> cspecs,
             Collection<RelationshipDeletionSpec> dspecs )
     {
@@ -324,7 +350,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         }
         newTransaction();
         expectedCounts.get( RelType.INITIAL )[0] = initialSize;
-        
+
         assertCounts( me, expectedCounts );
         int counter = 0;
         for ( RelationshipCreationSpec spec : cspecs )
@@ -345,7 +371,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                     me.createRelationshipTo( me, spec.type );
                 }
                 expectedCounts.get( spec.type )[spec.dir.ordinal()]++;
-                
+
                 if ( otherNode != null )
                 {
                     assertEquals( 1, otherNode.getDegree() );
@@ -358,11 +384,11 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                 }
             }
         }
-        
+
         assertCounts( me, expectedCounts );
         newTransaction();
         assertCounts( me, expectedCounts );
-        
+
         // Delete one of each type/direction combination
         counter = 0;
         if ( dspecs == null )
@@ -404,11 +430,11 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                 }
             }
         }
-        
+
         assertCounts( me, expectedCounts );
         newTransaction();
         assertCounts( me, expectedCounts );
-        
+
         // Clean up
         for ( Relationship rel : me.getRelationships() )
         {
@@ -447,7 +473,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
         }
         return result;
     }
-    
+
     private int totalCount( int[] expectedCounts, Direction direction )
     {
         int result = 0;
@@ -479,13 +505,13 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
                 }
             }
         }
-        
+
         if ( which == Integer.MAX_VALUE && last != null )
         {
             last.delete();
             return;
         }
-        
+
         fail( "Couldn't find " + (direction == Direction.BOTH ? "loop" : "non-loop") + " relationship " +
                 type.name() + " " + direction + " to delete" );
     }
@@ -494,7 +520,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
     {
         return r.getStartNode().equals( r.getEndNode() );
     }
-    
+
     private static class RelationshipCreationSpec
     {
         private final RelType type;
@@ -508,7 +534,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
             this.count = count;
         }
     }
-    
+
     private static class RelationshipDeletionSpec
     {
         private final RelType type;
@@ -522,7 +548,7 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
             this.which = which;
         }
     }
-    
+
     static RelationshipCreationSpec create( RelType type, Direction dir, int count )
     {
         return new RelationshipCreationSpec( type, dir, count );
@@ -531,5 +557,47 @@ public class TestRelationshipCount extends AbstractNeo4jTestCase
     static RelationshipDeletionSpec delete( RelType type, Direction dir, int which )
     {
         return new RelationshipDeletionSpec( type, dir, which );
+    }
+
+    private static enum RelType implements RelationshipType
+    {
+        INITIAL( false ),
+        TYPE1( true ),
+        TYPE2( true );
+
+        boolean measure;
+
+        private RelType( boolean measure )
+        {
+            this.measure = measure;
+        }
+    }
+
+    @Before
+    public void newTransaction()
+    {
+        if ( tx != null )
+        {
+            closeTransaction();
+        }
+        tx = getGraphDb().beginTx();
+    }
+
+    @After
+    public void closeTransaction()
+    {
+        assert tx != null;
+        tx.success();
+        tx.close();
+    }
+
+    private GraphDatabaseService getGraphDb()
+    {
+        return dbRule.getGraphDatabaseService();
+    }
+
+    private void clearCache()
+    {
+        dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
     }
 }
