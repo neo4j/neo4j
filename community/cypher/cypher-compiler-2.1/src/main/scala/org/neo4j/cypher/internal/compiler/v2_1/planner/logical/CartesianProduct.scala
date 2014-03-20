@@ -19,27 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-case class CandidateList(plans: Seq[LogicalPlan]) {
-  def pruned: CandidateList = {
-    def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
 
-    val (_, result: Seq[LogicalPlan]) = plans.foldLeft(Set.empty[IdName] -> Seq.empty[LogicalPlan]) {
-      case ((covered, partial), plan) =>
-        if (overlap(covered, plan.coveredIds))
-          (covered, partial)
-        else
-          (covered ++ plan.coveredIds, partial :+ plan)
-    }
-    CandidateList(result)
-  }
+case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit val context: LogicalPlanContext) extends LogicalPlan {
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-  def sorted = CandidateList(plans.sortBy(_.cardinality))
+  val cardinality = left.cardinality * right.cardinality
+  val cost = context.costs.calculateCartesianProductOverhead(cardinality) + (left.cost * right.cost)
 
-  def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
-
-  def +(plan: LogicalPlan) = copy(plans :+ plan)
-
-  def topPlan = sorted.pruned.plans.head
-
-  def map(f: LogicalPlan => LogicalPlan):CandidateList = copy(plans = plans.map(f))
+  val coveredIds = left.coveredIds ++ right.coveredIds
+  val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
 }

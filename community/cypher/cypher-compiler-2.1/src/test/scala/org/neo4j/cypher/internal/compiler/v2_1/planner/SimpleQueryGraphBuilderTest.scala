@@ -74,6 +74,43 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     qg.nodes should equal(Set(IdName("n")))
   }
 
+  test("match n where n:X OR n:Y return n") {
+    val qg = buildQueryGraph("MATCH n WHERE n:X OR n:Y RETURN n")
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(Seq(
+      Set(IdName("n")) -> Or(
+        HasLabels(Identifier("n")(pos), Seq(LabelName("X")()(pos)))(pos),
+        HasLabels(Identifier("n")(pos), Seq(LabelName("Y")()(pos)))(pos)
+      )(pos)
+    )))
+
+    qg.nodes should equal(Set(IdName("n")))
+  }
+
+  test("match n where n:X OR (n:A AND n:B) return n") {
+    val qg = buildQueryGraph("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n")
+
+    qg.projections should equal(Map(
+      "n" -> Identifier("n")(pos)
+    ))
+
+    qg.selections should equal(Selections(Seq(
+      Set(IdName("n")) -> Or(
+        HasLabels(Identifier("n")(pos), Seq(LabelName("X")()(pos)))(pos),
+        And(
+          HasLabels(Identifier("n")(pos), Seq(LabelName("A")()(pos)))(pos),
+          HasLabels(Identifier("n")(pos), Seq(LabelName("B")()(pos)))(pos)
+        )(pos)
+      )(pos)
+    )))
+
+    qg.nodes should equal(Set(IdName("n")))
+  }
+
   test("match n where id(n) = 42 return n") {
     val qg = buildQueryGraph("MATCH n WHERE id(n) = 42 RETURN n")
 

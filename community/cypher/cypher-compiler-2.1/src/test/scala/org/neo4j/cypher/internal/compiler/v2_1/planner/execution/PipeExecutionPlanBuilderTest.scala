@@ -25,20 +25,30 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.mockito.Mockito
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.RelationshipByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
-import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -97,5 +107,16 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
     pipeInfo.pipe should equal(RelationshipByIdSeekPipe("r", astLiteral.asCommandExpression))
+  }
+
+  test("simple cartesian product") {
+    val lhs = AllNodesScan(IdName("n"))
+    val rhs = AllNodesScan(IdName("m"))
+    val logicalPlan = CartesianProduct(lhs, rhs)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n"), AllNodesScanPipe("m")))
   }
 }

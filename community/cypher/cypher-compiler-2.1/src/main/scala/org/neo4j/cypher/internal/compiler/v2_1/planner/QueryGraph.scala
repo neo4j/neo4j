@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, ast}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
 import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
@@ -35,27 +35,28 @@ case class QueryGraph(projections: Map[String, ast.Expression],
                       nodes: Set[IdName])
 
 object SelectionPredicates {
-  def fromWhere(where: Where) = extractPredicates(where.expression)
+  def fromWhere(where: Where, knownIdentifiers: Set[IdName]) = extractPredicates(where.expression, knownIdentifiers)
 
-  private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], ast.Expression)] = predicate match {
-    // n:Label
-    case HasLabels(identifier@Identifier(name), labels) =>
-      labels.map( (label: LabelName) => Set(IdName(name)) -> HasLabels(identifier, Seq(label))(predicate.position) )
+  private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
+    case id: Identifier =>
+      (acc: Set[IdName], _) => acc + IdName(id.name)
+  }
 
-    // id(n) = value
-    case Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
-      Seq(Set(IdName(ident)) -> predicate)
+  private def extractPredicates(predicate: ast.Expression, knownIdentifiers: Set[IdName]): Seq[(Set[IdName], ast.Expression)] = {
 
-    // n.prop = value
-    case Equals(Property(Identifier(name), PropertyKeyName(_)), ConstantExpression(_)) =>
-      Seq(Set(IdName(name)) -> predicate)
+    predicate.treeFold(Seq.empty[(Set[IdName], ast.Expression)]) {
+      // n:Label
+      case predicate@HasLabels(identifier@Identifier(name), labels) =>
+        (acc, _) => acc ++ labels.map { label: LabelName =>
+          Set(IdName(name)) -> predicate.copy(labels = Seq(label))(predicate.position)
+        }
+      // and
+      case _: And =>
+        (acc, children) => children(acc)
+      case predicate: Expression =>
+        (acc, _) => acc :+ ((idNames(predicate) & knownIdentifiers) -> predicate)
+    }
 
-    // and
-    case And(predicateLhs, predicateRhs) =>
-      extractPredicates(predicateLhs) ++ extractPredicates(predicateRhs)
-
-    case _ =>
-      throw new CantHandleQueryException
   }
 }
 

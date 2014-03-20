@@ -19,27 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-case class CandidateList(plans: Seq[LogicalPlan]) {
-  def pruned: CandidateList = {
-    def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
+class expandAndJoinLoop(applySelections: SelectionApplicator) extends MainLoop {
+  def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
+    MainLoop.converge {
+      planTable: PlanTable =>
+      val expandCandidates = tryExpand(planTable)
+      val joinCandidates = tryJoin(planTable)
+      val candidates = expandCandidates ++ joinCandidates
 
-    val (_, result: Seq[LogicalPlan]) = plans.foldLeft(Set.empty[IdName] -> Seq.empty[LogicalPlan]) {
-      case ((covered, partial), plan) =>
-        if (overlap(covered, plan.coveredIds))
-          (covered, partial)
-        else
-          (covered ++ plan.coveredIds, partial :+ plan)
-    }
-    CandidateList(result)
+      planTable + applySelections(candidates.topPlan)
+    }(initialPlanTable)
   }
 
-  def sorted = CandidateList(plans.sortBy(_.cardinality))
+  private def tryExpand(planTable: PlanTable): CandidateList = CandidateList(planTable.plans)
 
-  def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
-
-  def +(plan: LogicalPlan) = copy(plans :+ plan)
-
-  def topPlan = sorted.pruned.plans.head
-
-  def map(f: LogicalPlan => LogicalPlan):CandidateList = copy(plans = plans.map(f))
+  private def tryJoin(planTable: PlanTable): CandidateList = CandidateList(planTable.plans)
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -28,17 +27,16 @@ abstract class IndexLeafPlanner extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
     predicates.collect {
       // n.prop = value
-      case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) if propertyKey.id.isDefined =>
+      case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) =>
         val idName = IdName(name)
-        val propertyKeyId = propertyKey.id.get
-        val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
-        labelPredicates.flatMap { labelPredicate =>
-          labelPredicate.labels.flatMap(_.id).collect {
-            case labelId if findIndexesForLabel(labelId.id).toSeq.exists(_.getPropertyKeyId == propertyKeyId.id) =>
-              val entryConstructor = constructPlan(idName, labelId, propertyKeyId, valueExpr)
-              entryConstructor(Seq(propertyPredicate, labelPredicate))
+        for (propertyKeyId <- propertyKey.id.toSeq;
+             labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
+             label <- labelPredicate.labels;
+             labelId <- label.id if findIndexesForLabel(labelId.id).toSeq.exists(_.getPropertyKeyId == propertyKeyId.id))
+          yield {
+            val entryConstructor = constructPlan(idName, labelId, propertyKeyId, valueExpr)
+            entryConstructor(Seq(propertyPredicate, labelPredicate))
           }
-        }
     }.flatten
 
   protected def predicates: Seq[Expression]

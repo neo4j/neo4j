@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import symbols._
 import scala.collection.immutable.HashMap
 
-case class Symbol(locations: Seq[ast.Identifier], types: TypeSpec) {
-  def positions = locations.map(_.position)
-}
+case class Symbol(name: String, positions: Seq[InputPosition], types: TypeSpec)
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
   lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
@@ -35,29 +33,44 @@ case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = 
 }
 
 object SemanticState {
-  val clean = SemanticState(HashMap.empty, IdentityMap.empty, None)
+  val clean = SemanticState(Scope.empty, IdentityMap.empty)
 }
 
-case class SemanticState private (
-    symbolTable: Map[String, Symbol],
-    typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo],
-    parent: Option[SemanticState]) {
+case class Scope(symbolTable: Map[String, Symbol], parent: Option[Scope]) {
+  def pushScope = copy(symbolTable = HashMap.empty, parent = Some(this))
+  def popScope = parent.get
 
-  def newScope = copy(symbolTable = HashMap.empty, parent = Some(this))
-  def popScope = copy(symbolTable = parent.get.symbolTable, parent = parent.get.parent)
+  def importScope(scope: Scope) =
+    copy(symbolTable = symbolTable ++ scope.symbolTable)
 
-  def clearSymbols = copy(symbolTable = HashMap.empty, parent = None)
+  def localSymbol(name: String): Option[Symbol] = symbolTable.get(name)
 
-  def symbol(name: String): Option[Symbol] = symbolTable.get(name) orElse parent.flatMap(_.symbol(name))
-  def symbolTypes(name: String) = this.symbol(name).map(_.types).getOrElse(TypeSpec.all)
+  def symbol(name: String): Option[Symbol] = localSymbol(name) orElse parent.flatMap(_.symbol(name))
 
-  def importSymbols(symbols: Map[String, Symbol]) =
-    copy(symbolTable = symbolTable ++ symbols)
+  def updateIdentifier(identifier: String, types: TypeSpec, positions: Seq[InputPosition]) =
+    copy(symbolTable = symbolTable.updated(identifier, Symbol(identifier, positions, types)))
+}
+
+object Scope {
+  val empty = Scope(symbolTable = HashMap.empty, parent = None)
+}
+
+case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]
+) {
+  def newScope = copy(scope = scope.pushScope)
+  def popScope = copy(scope = scope.popScope)
+
+  def clearSymbols = copy(scope = Scope.empty)
+
+  def symbol(name: String): Option[Symbol] = scope.symbol(name)
+  def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
+
+  def importScope(importedScope: Scope) = copy(scope = scope.importScope(importedScope))
 
   def declareIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
-    symbolTable.get(identifier.name) match {
+    scope.localSymbol(identifier.name) match {
       case None         =>
-        Right(updateIdentifier(identifier, possibleTypes, Seq(identifier)))
+        Right(updateIdentifier(identifier, possibleTypes, Seq(identifier.position)))
       case Some(symbol) =>
         Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions:_*))
     }
@@ -65,11 +78,11 @@ case class SemanticState private (
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {
       case None         =>
-        Right(updateIdentifier(identifier, possibleTypes, Seq(identifier)))
+        Right(updateIdentifier(identifier, possibleTypes, Seq(identifier.position)))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
-          Right(updateIdentifier(identifier, inferredTypes, symbol.locations :+ identifier))
+          Right(updateIdentifier(identifier, inferredTypes, symbol.positions :+ identifier.position))
         } else {
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
@@ -84,7 +97,7 @@ case class SemanticState private (
       case None         =>
         Left(SemanticError(s"${identifier.name} not defined", identifier.position))
       case Some(symbol) =>
-        Right(updateIdentifier(identifier, symbol.types, symbol.locations :+ identifier))
+        Right(updateIdentifier(identifier, symbol.types, symbol.positions :+ identifier.position))
     }
 
   def specifyType(expression: ast.Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
@@ -103,6 +116,9 @@ case class SemanticState private (
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
-  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[ast.Identifier]) =
-    copy(symbolTable = symbolTable.updated(identifier.name, Symbol(locations, types)), typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types)))
+  private def updateIdentifier(identifier: ast.Identifier, types: TypeSpec, locations: Seq[InputPosition]) =
+    copy(
+      scope = scope.updateIdentifier(identifier.name, types, locations),
+      typeTable = typeTable.updated(identifier, ExpressionTypeInfo(types))
+    )
 }

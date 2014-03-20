@@ -36,7 +36,7 @@ case class Selection(predicates: Seq[Expression], left: LogicalPlan)
     (left.cardinality * selectivity).toInt
   }
 
-  val cost = context.costs.calculateSelection(left.cardinality) + left.cost
+  val cost = context.costs.calculateSelectionOverhead(left.cardinality) + left.cost
 
   def solvedPredicates: Seq[Expression] = predicates ++ left.solvedPredicates
 }
