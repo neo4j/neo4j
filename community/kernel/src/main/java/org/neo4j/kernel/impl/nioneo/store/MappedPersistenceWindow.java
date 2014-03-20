@@ -35,7 +35,7 @@ class MappedPersistenceWindow extends LockableWindow
     private int totalSize = -1;
 
     MappedPersistenceWindow( long position, int recordSize, int totalSize,
-        FileChannel channel, FileChannel.MapMode mapMode )
+        StoreChannel channel, FileChannel.MapMode mapMode )
     {
         super( channel );
         assert recordSize > 0 : "Record size[" + recordSize

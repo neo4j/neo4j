@@ -19,37 +19,37 @@
  */
 package org.neo4j.test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.writeLogEntry;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -237,9 +237,9 @@ public class LogTestUtils
             LogHook<Pair<Byte, List<byte[]>>> filter, long startPosition ) throws IOException
     {
         File tempFile = new File( file.getPath() + ".tmp" );
-        FileChannel in = fileSystem.open( file, "r" );
+        StoreChannel in = fileSystem.open( file, "r" );
         in.position( startPosition );
-        FileChannel out = fileSystem.open( tempFile, "rw" );
+        StoreChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         boolean changed = false;
@@ -284,7 +284,7 @@ public class LogTestUtils
     public static void assertLogContains( FileSystemAbstraction fileSystem, String logPath,
             LogEntry ... expectedEntries ) throws IOException
     {
-        FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
+        StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
 
@@ -347,8 +347,8 @@ public class LogTestUtils
     {
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
-        FileChannel in = fileSystem.open( file, "r" );;
-        FileChannel out = fileSystem.open( tempFile, "rw" );
+        StoreChannel in = fileSystem.open( file, "r" );
+        StoreChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
@@ -378,7 +378,7 @@ public class LogTestUtils
         return tempFile;
     }
 
-    private static void transferLogicalLogHeader( FileChannel in, LogBuffer outBuffer,
+    private static void transferLogicalLogHeader( StoreChannel in, LogBuffer outBuffer,
             ByteBuffer buffer ) throws IOException
     {
         long[] header = LogIoUtils.readLogHeader( buffer, in, true );
@@ -388,7 +388,7 @@ public class LogTestUtils
         outBuffer.put( headerBytes );
     }
 
-    private static void safeClose( FileChannel channel )
+    private static void safeClose( StoreChannel channel )
     {
         try
         {
@@ -438,12 +438,12 @@ public class LogTestUtils
     {
         char active = '1';
         File activeLog = new File( logBaseFileName.getPath() + ".active" );
-        FileChannel af = fileSystem.open( activeLog, "r" );
+        StoreChannel af = fileSystem.open( activeLog, "r" );
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         buffer.flip();
         File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
-        FileChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
+        StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
         activeCopy.write( buffer );
         activeCopy.close();
         af.close();
@@ -451,9 +451,9 @@ public class LogTestUtils
         active = buffer.asCharBuffer().get();
         buffer.clear();
         File currentLog = new File( logBaseFileName.getPath() + "." + active );
-        FileChannel source = fileSystem.open( currentLog, "r" );
+        StoreChannel source = fileSystem.open( currentLog, "r" );
         File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
-        FileChannel dest = fileSystem.open( currentLogBackup, "rw" );
+        StoreChannel dest = fileSystem.open( currentLogBackup, "rw" );
         int read = -1;
         do
         {

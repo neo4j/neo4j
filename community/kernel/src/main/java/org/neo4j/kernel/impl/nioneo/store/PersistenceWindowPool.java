@@ -51,7 +51,7 @@ public class PersistenceWindowPool implements WindowPool
     private final File storeName;
     // == recordSize
     private final int blockSize;
-    private FileChannel fileChannel;
+    private StoreChannel fileChannel;
     private final ConcurrentMap<Long,PersistenceRow> activeRowWindows;
     private long availableMem = 0;
     private long memUsed = 0;
@@ -96,7 +96,7 @@ public class PersistenceWindowPool implements WindowPool
      *             If unable to create pool
      */
     public PersistenceWindowPool( File storeName, int blockSize,
-                                  FileChannel fileChannel, long mappedMem,
+                                  StoreChannel fileChannel, long mappedMem,
                                   boolean useMemoryMappedBuffers, boolean readOnly,
                                   ConcurrentMap<Long, PersistenceRow> activeRowWindows,
                                   BrickElementFactory brickFactory,

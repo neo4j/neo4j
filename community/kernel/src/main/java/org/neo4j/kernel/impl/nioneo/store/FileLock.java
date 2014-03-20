@@ -30,7 +30,7 @@ import org.neo4j.kernel.StoreLocker;
 
 public abstract class FileLock
 {
-    private static FileLock wrapFileChannelLock( FileChannel channel ) throws IOException
+    private static FileLock wrapFileChannelLock( StoreChannel channel ) throws IOException
     {
         final java.nio.channels.FileLock lock = channel.tryLock();
         if ( lock == null )
@@ -48,7 +48,7 @@ public abstract class FileLock
         };
     }
 
-    public static FileLock getOsSpecificFileLock( File fileName, FileChannel channel )
+    public static FileLock getOsSpecificFileLock( File fileName, StoreChannel channel )
             throws IOException
     {
         if ( GraphDatabaseSetting.osIsWindows() )

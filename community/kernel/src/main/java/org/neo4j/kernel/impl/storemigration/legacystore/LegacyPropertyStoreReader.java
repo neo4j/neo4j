@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.text.MessageFormat;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,6 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.PersistenceRow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyPropertyStoreReader
@@ -40,7 +40,7 @@ public class LegacyPropertyStoreReader
     public static final String FROM_VERSION = "PropertyStore v0.9.9";
     public static final int RECORD_LENGTH = 25;
     private final PersistenceWindowPool windowPool;
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
 
     public LegacyPropertyStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {

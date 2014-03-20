@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -125,7 +124,7 @@ public abstract class AbstractStore extends CommonAbstractStore
     private long findHighIdBackwards() throws IOException
     {
         // Duplicated method
-        FileChannel fileChannel = getFileChannel();
+        StoreChannel fileChannel = getFileChannel();
         int recordSize = getRecordSize();
         long fileSize = fileChannel.size();
         long highId = fileSize / recordSize;
@@ -178,7 +177,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
         openIdGenerator( false );
-        FileChannel fileChannel = getFileChannel();
+        StoreChannel fileChannel = getFileChannel();
         long highId = 1;
         long defraggedCount = 0;
         try

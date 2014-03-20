@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -94,7 +93,7 @@ public class PersistenceRowAndWindowDirtyWriteIT
          * The rest is details explained inline.
          */
         File dataFile = TargetDirectory.forTest( getClass() ).file( "dataFile" );
-        FileChannel dataFileChannel = new RandomAccessFile( dataFile, "rw" ).getChannel();
+        StoreChannel dataFileChannel = new StoreFileChannel( new RandomAccessFile( dataFile, "rw" ).getChannel() );
         final PersistenceWindowPool pool =
                 new PersistenceWindowPool( dataFile, 4, // record size
                         dataFileChannel,

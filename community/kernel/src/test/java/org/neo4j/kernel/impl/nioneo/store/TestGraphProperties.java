@@ -19,20 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.concurrent.Future;
 
@@ -40,6 +29,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -57,6 +47,18 @@ import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestGraphProperties
 {
@@ -282,7 +284,7 @@ public class TestGraphProperties
     {
         // Remove the last record, next startup will look like as if we're upgrading an old store
         File neoStoreFile = new File( storeDir, NeoStore.DEFAULT_NAME );
-        FileChannel channel = fileSystem.open( neoStoreFile, "rw" );
+        StoreChannel channel = fileSystem.open( neoStoreFile, "rw" );
         channel.position( NeoStore.RECORD_SIZE * 6/*position of "next prop"*/ );
         int trail = (int) (channel.size() - channel.position());
         ByteBuffer trailBuffer = null;

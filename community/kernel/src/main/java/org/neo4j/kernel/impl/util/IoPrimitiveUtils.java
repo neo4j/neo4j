@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.util;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 public abstract class IoPrimitiveUtils
@@ -202,7 +202,7 @@ public abstract class IoPrimitiveUtils
         return map;
     }
     
-    public static void writeLengthAndString( FileChannel channel, ByteBuffer buffer, String value )
+    public static void writeLengthAndString( StoreChannel channel, ByteBuffer buffer, String value )
             throws IOException
     {
         char[] chars = value.toCharArray();
@@ -211,7 +211,7 @@ public abstract class IoPrimitiveUtils
         writeChars( channel, buffer, chars );
     }
     
-    private static void writeChars( FileChannel channel, ByteBuffer buffer, char[] chars )
+    private static void writeChars( StoreChannel channel, ByteBuffer buffer, char[] chars )
             throws IOException
     {
         int position = 0;
@@ -237,7 +237,7 @@ public abstract class IoPrimitiveUtils
         } while ( position < chars.length );
     }
     
-    public static void writeInt( FileChannel channel, ByteBuffer buffer, int value )
+    public static void writeInt( StoreChannel channel, ByteBuffer buffer, int value )
             throws IOException
     {
         buffer.clear();
@@ -246,7 +246,7 @@ public abstract class IoPrimitiveUtils
         channel.write( buffer );
     }
     
-    public static void writeMap( FileChannel channel, ByteBuffer buffer, Map<String, String> map )
+    public static void writeMap( StoreChannel channel, ByteBuffer buffer, Map<String, String> map )
             throws IOException
     {
         writeInt( channel, buffer, map.size() );

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 abstract class AbstractPersistenceWindow extends LockableWindow
 {
@@ -31,7 +30,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     private final int windowSize;
 
     AbstractPersistenceWindow( long position, int recordSize, int totalSize, 
-        FileChannel channel, ByteBuffer byteBuffer )
+        StoreChannel channel, ByteBuffer byteBuffer )
     {
         super( channel );
         assert position >= 0 : "Illegal position[" + position + "]";

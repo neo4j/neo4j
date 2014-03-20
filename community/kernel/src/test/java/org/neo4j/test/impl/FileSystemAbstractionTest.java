@@ -19,28 +19,30 @@
  */
 package org.neo4j.test.impl;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.channels.FileChannel;
 import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.TargetDirectory;
+
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class FileSystemAbstractionTest
@@ -70,7 +72,7 @@ public class FileSystemAbstractionTest
         File fileToCreate = new File( testDirectory.directory(), "created" );
 
         // when
-        FileChannel channel = fileSystem.create( fileToCreate );
+        StoreChannel channel = fileSystem.create( fileToCreate );
 
         // then
         assertTrue( fileSystem.fileExists( fileToCreate ) );

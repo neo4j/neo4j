@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
 {
@@ -137,7 +138,7 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
         return this.readIndex;
     }
 
-    public FileChannel getFileChannel()
+    public StoreChannel getFileChannel()
     {
         throw new UnsupportedOperationException();
     }

@@ -19,16 +19,17 @@
  */
 package org.neo4j.consistency.store.windowpool;
 
-import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 public class FileMapper
 {
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
 
-    public FileMapper( FileChannel fileChannel )
+    public FileMapper( StoreChannel fileChannel )
     {
         this.fileChannel = fileChannel;
     }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.nioneo.store.BrickElementFactory;
@@ -31,13 +30,14 @@ import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceRow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyNeoStoreReader
 {
     private static final int RECORD_LENGTH = 9;
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final PersistenceWindowPool windowPool;
 
     public LegacyNeoStoreReader( FileSystemAbstraction fs, File fileName, StringLogger log ) throws IOException

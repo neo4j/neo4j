@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.graphdb.config.Setting;
@@ -39,6 +36,8 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -68,7 +67,7 @@ public abstract class CommonAbstractStore
     protected final IdType idType;
     protected StringLogger stringLogger;
     private IdGenerator idGenerator = null;
-    private FileChannel fileChannel = null;
+    private StoreChannel fileChannel = null;
     private WindowPool windowPool;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
@@ -635,13 +634,13 @@ public abstract class CommonAbstractStore
     }
 
     /**
-     * Returns a <CODE>FileChannel</CODE> to this storage's file. If
+     * Returns a <CODE>StoreChannel</CODE> to this storage's file. If
      * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
      *
      * @return A file channel to this storage
      */
-    protected final FileChannel getFileChannel()
+    protected final StoreChannel getFileChannel()
     {
         return fileChannel;
     }

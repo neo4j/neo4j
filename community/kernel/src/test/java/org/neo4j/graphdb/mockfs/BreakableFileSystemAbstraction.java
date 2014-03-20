@@ -27,10 +27,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
@@ -57,7 +57,7 @@ public class BreakableFileSystemAbstraction implements FileSystemAbstraction, Fi
     }
 
     @Override
-    public FileChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, String mode ) throws IOException
     {
         return new BreakableFileChannel( inner.open( fileName, mode ), fileName, this );
     }
@@ -87,13 +87,13 @@ public class BreakableFileSystemAbstraction implements FileSystemAbstraction, Fi
     }
 
     @Override
-    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
     {
         return inner.tryLock( fileName, channel );
     }
 
     @Override
-    public FileChannel create( File fileName ) throws IOException
+    public StoreChannel create( File fileName ) throws IOException
     {
         return new BreakableFileChannel( inner.create( fileName ), fileName, this );
     }

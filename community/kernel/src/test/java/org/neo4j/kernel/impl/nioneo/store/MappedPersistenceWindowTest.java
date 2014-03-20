@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.RandomAccessFile;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;
 import org.neo4j.test.TargetDirectory;
+
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class MappedPersistenceWindowTest
 {
@@ -47,7 +49,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
@@ -63,7 +66,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         window.markAsInUse();
 
@@ -81,7 +85,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        final MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        final MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         window.markAsInUse();
         OtherThreadExecutor<Void> executor = new OtherThreadExecutor<Void>( "other thread", null );
@@ -111,7 +116,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         window.markAsInUse();
         window.lock( OperationType.WRITE );

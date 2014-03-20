@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.PersistenceRow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class LegacyDynamicStoreReader
@@ -49,7 +49,7 @@ public class LegacyDynamicStoreReader
 
     // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
     protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
 
     public LegacyDynamicStoreReader( FileSystemAbstraction fs, File fileName, String fromVersionArray,
             StringLogger log ) throws IOException

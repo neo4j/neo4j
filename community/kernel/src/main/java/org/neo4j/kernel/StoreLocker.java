@@ -21,11 +21,11 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class StoreLocker
 {
@@ -34,7 +34,7 @@ public class StoreLocker
     private final FileSystemAbstraction fileSystemAbstraction;
 
     private FileLock storeLockFileLock;
-    private FileChannel storeLockFileChannel;
+    private StoreChannel storeLockFileChannel;
 
     public StoreLocker( FileSystemAbstraction fileSystemAbstraction )
     {
