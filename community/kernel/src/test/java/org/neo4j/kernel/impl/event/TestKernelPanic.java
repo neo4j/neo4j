@@ -19,20 +19,46 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.util.concurrent.Callable;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.BufferingLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -46,8 +72,7 @@ public class TestKernelPanic
         BufferingLogger logger = new BufferingLogger();
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().setLogging(
                 new SingleLoggingService( logger ) ).newImpermanentDatabase();
-        XaDataSourceManager xaDs =
-            ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
+        XaDataSourceManager xaDs = ((GraphDatabaseAPI)graphDb).getXaDataSourceManager();
 
         IllBehavingXaDataSource noob = new IllBehavingXaDataSource(UTF8.encode( "554342" ), "noob");
         xaDs.registerDataSource( noob );
@@ -83,6 +108,195 @@ public class TestKernelPanic
         assertTrue( "Log didn't contain expected string",
                 logger.toString().contains( "at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest" ) );
         graphDb.shutdown();
+    }
+
+    @Test
+    public void shouldPanicOnApplyTransactionFailure() throws Exception
+    {
+        // GIVEN
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        factory.setTransactionInterceptorProviders( asList( interceptorProviderThatBreaksStuff() ) );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.intercept_deserialized_transactions.name(), TRUE.toString() )
+                .setConfig( TransactionInterceptorProvider.class.getSimpleName() + ".breaker", TRUE.toString() )
+                .newGraphDatabase();
+        XaDataSourceManager dsManager = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+        XaDataSource ds = dsManager.getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+
+        // WHEN
+        try
+        {
+            ds.applyCommittedTransaction( 2, simpleTransaction() );
+            fail( "Should have failed" );
+        }
+        catch ( BreakageException e )
+        {   // Good
+        }
+
+        // THEN
+        assertNotOk( beginTransaction( db ) );
+        assertNotOk( applyTransaction( ds ) );
+    }
+
+    private void assertNotOk( Callable<Void> callable )
+    {
+        try
+        {
+            callable.call();
+            fail( "Should have failed saying that tm not OK");
+        }
+        catch ( Exception e )
+        {   // Good
+            assertTrue( someExceptionContainsMessage( e, "Kernel has encountered some problem" ) );
+        }
+    }
+
+    private boolean someExceptionContainsMessage( Throwable e, String string )
+    {
+        while ( e != null )
+        {
+            if ( e.getMessage().contains( string ) )
+            {
+                return true;
+            }
+            e = e.getCause();
+        }
+        return false;
+    }
+
+    private Callable<Void> applyTransaction( final XaDataSource ds )
+    {
+        return new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                ds.applyCommittedTransaction( 2, simpleTransaction() );
+                return null;
+            }
+        };
+    }
+
+    private Callable<Void> beginTransaction( final GraphDatabaseService db )
+    {
+        return new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                db.beginTx();
+                return null;
+            }
+        };
+    }
+
+    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
+
+    private ReadableByteChannel simpleTransaction() throws IOException
+    {
+        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+        TransactionWriter writer = new TransactionWriter( buffer, 1, -1 );
+
+        writer.start( -1, -1 );
+        writer.add( new NodeRecord( 0, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() ) );
+        writer.commit( false, 2 );
+        writer.done();
+
+        return buffer;
+    }
+
+    private TransactionInterceptorProvider interceptorProviderThatBreaksStuff()
+    {
+        return new TransactionInterceptorProvider( "breaker" )
+        {
+            @Override
+            public TransactionInterceptor create( TransactionInterceptor next, XaDataSource ds, String options,
+                    DependencyResolver dependencyResolver )
+            {
+                throw new AssertionError( "I don't think this is needed" );
+            }
+
+            @Override
+            public TransactionInterceptor create( XaDataSource ds, String options, DependencyResolver dependencyResolver )
+            {
+                return interceptorThatBreaksStuff();
+            }
+        };
+    }
+
+
+    private TransactionInterceptor interceptorThatBreaksStuff()
+    {
+        return new TransactionInterceptor()
+        {
+            @Override
+            public void visitRelationshipType( RelationshipTypeRecord record )
+            {
+                breakStuff();
+            }
+
+            private void breakStuff()
+            {
+                throw new BreakageException();
+            }
+
+            @Override
+            public void visitRelationship( RelationshipRecord record )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void visitPropertyIndex( PropertyIndexRecord record )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void visitProperty( PropertyRecord record )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void visitNode( NodeRecord record )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void visitNeoStore( NeoStoreRecord record )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void setStartEntry( Start entry )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void setCommitEntry( Commit entry )
+            {
+                breakStuff();
+            }
+
+            @Override
+            public void complete()
+            {
+                breakStuff();
+            }
+        };
+    }
+
+    private static class BreakageException extends RuntimeException
+    {
+        public BreakageException()
+        {
+            super( "Breaking" );
+        }
     }
 
     private static class Panic implements KernelEventHandler

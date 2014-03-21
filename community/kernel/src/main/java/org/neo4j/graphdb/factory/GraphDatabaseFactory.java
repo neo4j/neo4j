@@ -136,10 +136,20 @@ public class GraphDatabaseFactory
     public void setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         kernelExtensions.clear();
+        addKernelExtensions( newKernelExtensions );
+    }
+
+    public void addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
         for ( KernelExtensionFactory<?> newKernelExtension : newKernelExtensions )
         {
-            kernelExtensions.add( newKernelExtension );
+            addKernelExtension( newKernelExtension );
         }
+    }
+
+    public void addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
+    {
+        kernelExtensions.add( newKernelExtension );
     }
 
     public void setCacheProviders( Iterable<CacheProvider> newCacheProviders )
