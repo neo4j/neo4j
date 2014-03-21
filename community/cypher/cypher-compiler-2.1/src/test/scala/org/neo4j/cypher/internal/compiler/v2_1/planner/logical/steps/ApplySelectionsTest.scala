@@ -36,12 +36,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, LogicalPlanningTestSupport}
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{IdName, Selection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.steps.applySelections
 
 class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate that isn't already solved is solvable it should be applied") {

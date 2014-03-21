@@ -36,10 +36,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.steps
 
-object applySelections extends SelectionApplicator {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext) = {
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.{PlanTableTransformer, PlanTransformer, CandidateListTransformer}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Selection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+
+object applySelections extends PlanTransformer {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val predicates = context.queryGraph.selections.predicatesGiven(plan.coveredIds).filter {
       case predicate => !plan.solvedPredicates.contains(predicate)
     }
@@ -48,5 +54,17 @@ object applySelections extends SelectionApplicator {
       plan
     else
       Selection(predicates, plan)
+  }
+}
+
+object applySelectionsToCandidateList extends CandidateListTransformer {
+  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): CandidateList = {
+    CandidateList(candidateList.plans.map(applySelections(_)))
+  }
+}
+
+object applySelectionsToPlanTable extends PlanTableTransformer {
+  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
+    PlanTable(planTable.m.mapValues(applySelections(_)))
   }
 }

@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
+import org.neo4j.cypher.internal.compiler.v2_1.planner.steps.project
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, Projection}
 
-class projectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should add projection for expressions not already covered") {
     // given
@@ -34,7 +36,7 @@ class projectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     implicit val context = createContextWith(qg)
 
     // when
-    val result = projectionPlanner(input)
+    val result = project(input)
 
     // then
     result should equal(Projection(input, projections))
@@ -48,7 +50,7 @@ class projectionPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     implicit val context = createContextWith(qg)
 
     // when
-    val result = projectionPlanner(input)
+    val result = project(input)
 
     // then
     result should equal(input)

@@ -17,23 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.steps
 
-class cartesianProductLoop(applySelections: SelectionApplicator) extends MainLoop {
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
 
-  def apply(initialPlanTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-    MainLoop.converge { planTable: PlanTable =>
-      if (planTable.size > 1) {
-        val plans = planTable.plans
-        val cartesianProducts =
-          for (
-            planA <- plans;
-            planB <- plans if planA != planB
-          ) yield applySelections(CartesianProduct(planA, planB))
-        planTable + CandidateList(cartesianProducts.toList).topPlan
-      } else {
-        planTable
-      }
-    }(initialPlanTable)
+object expandAndJoin extends PlanCandidateGenerator {
+  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+    val expandCandidates = tryExpand(planTable)
+    val joinCandidates = tryJoin(planTable)
+    expandCandidates ++ joinCandidates
   }
+
+  private def tryExpand(planTable: PlanTable): CandidateList =
+    CandidateList(planTable.plans)
+
+  private def tryJoin(planTable: PlanTable): CandidateList =
+    CandidateList(planTable.plans)
 }
