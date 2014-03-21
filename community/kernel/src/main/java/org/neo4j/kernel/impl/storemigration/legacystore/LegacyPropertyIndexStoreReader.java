@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -32,6 +31,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.KEYS_PART;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
@@ -40,7 +40,7 @@ public class LegacyPropertyIndexStoreReader implements Closeable
 {
     public static final String FROM_VERSION = "PropertyIndexStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_SIZE = 9;
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final LegacyDynamicStringStoreReader nameStoreReader;
     private final long maxId;
     

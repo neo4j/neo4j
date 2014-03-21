@@ -74,7 +74,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
         }
         createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
         openIdGenerator();
-        FileChannel fileChannel = getFileChannel();
+        StoreChannel fileChannel = getFileChannel();
         long highId = -1;
         int recordSize = getRecordSize();
         try

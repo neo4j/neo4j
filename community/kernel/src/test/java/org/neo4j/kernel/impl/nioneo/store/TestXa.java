@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
@@ -222,15 +220,14 @@ public class TestXa
 
     private void truncateLogicalLog( int size ) throws IOException
     {
-        FileChannel af = fileSystem.open( new File( logBaseFileName.getPath() + ".active" ), "r" );
+        StoreChannel af = fileSystem.open( new File( logBaseFileName.getPath() + ".active" ), "r" );
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         af.close();
         buffer.flip();
         char active = buffer.asCharBuffer().get();
         buffer.clear();
-        FileChannel fileChannel = fileSystem.open( new File( logBaseFileName.getPath() + "." + active ), "rw" );
-//        System.out.println( fileChannel.size() );
+        StoreChannel fileChannel = fileSystem.open( new File( logBaseFileName.getPath() + "." + active ), "rw" );
         if ( fileChannel.size() > size )
         {
             fileChannel.truncate( size );
@@ -250,12 +247,12 @@ public class TestXa
             File logBaseFileName ) throws IOException
     {
         File activeLog = new File( logBaseFileName.getPath() + ".active" );
-        FileChannel af = fileSystem.open( activeLog, "r" );
+        StoreChannel af = fileSystem.open( activeLog, "r" );
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         buffer.flip();
         File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
-        FileChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
+        StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
         activeCopy.write( buffer );
         activeCopy.close();
         af.close();
@@ -263,9 +260,9 @@ public class TestXa
         char active = buffer.asCharBuffer().get();
         buffer.clear();
         File currentLog = new File( logBaseFileName.getPath() + "." + active );
-        FileChannel source = fileSystem.open( currentLog, "r" );
+        StoreChannel source = fileSystem.open( currentLog, "r" );
         File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
-        FileChannel dest = fileSystem.open( currentLogBackup, "rw" );
+        StoreChannel dest = fileSystem.open( currentLogBackup, "rw" );
         int read;
         do
         {

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -482,7 +481,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     private long findHighIdBackwards() throws IOException
     {
-        FileChannel fileChannel = getFileChannel();
+        StoreChannel fileChannel = getFileChannel();
         int recordSize = getBlockSize();
         long fileSize = fileChannel.size();
         long highId = fileSize / recordSize;
@@ -526,7 +525,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         createIdGenerator( new File( getStorageFileName().getPath() + ".id" ));
         openIdGenerator();
         setHighId( 1 ); // reserved first block containing blockSize
-        FileChannel fileChannel = getFileChannel();
+        StoreChannel fileChannel = getFileChannel();
         long highId = 0;
         long defraggedCount = 0;
         try

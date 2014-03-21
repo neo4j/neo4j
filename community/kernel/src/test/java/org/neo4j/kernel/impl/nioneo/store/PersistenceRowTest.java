@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+import java.util.Random;
+import java.util.UUID;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -28,24 +38,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.io.File;
-import java.io.RandomAccessFile;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Random;
-import java.util.UUID;
-
-import org.junit.Before;
-import org.junit.Test;
-
 public class PersistenceRowTest
 {
     private static final Random RANDOM = new Random();
     private static final int RECORD_SIZE = 7;
 
     private PersistenceRow window;
-    private FileChannel realChannel;
+    private StoreFileChannel realChannel;
 
     @Before
     public void before() throws Exception
@@ -54,7 +53,7 @@ public class PersistenceRowTest
         directory.mkdirs();
         String filename = new File( directory, UUID.randomUUID().toString() ).getAbsolutePath();
         RandomAccessFile file = new RandomAccessFile( filename, "rw" );
-        realChannel = file.getChannel();
+        realChannel = new StoreFileChannel( file.getChannel() );
         window = new PersistenceRow( 0, RECORD_SIZE, realChannel );
         window.lock( OperationType.WRITE );
     }
@@ -110,7 +109,7 @@ public class PersistenceRowTest
     public void grabbingWriteLockShouldMarkRowAsDirty() throws Exception
     {
         // GIVEN a channel and a row over it
-        FileChannel channel = spy( realChannel );
+        StoreFileChannel channel = spy( realChannel );
         PersistenceRow row = new PersistenceRow( 0, 1, channel );
 
         // WHEN you grab a write lock
@@ -124,7 +123,7 @@ public class PersistenceRowTest
     public void forcingARowShouldMarkItAsClean() throws Exception
     {
         // GIVEN a channel and a row over it
-        FileChannel channel = spy( realChannel );
+        StoreFileChannel channel = spy( realChannel );
         PersistenceRow row = new PersistenceRow( 0, 1, channel );
 
         // WHEN you grab a write lock and force
@@ -147,7 +146,7 @@ public class PersistenceRowTest
     public void explicitlyMarkingAsCleanShouldDoSo() throws Exception
     {
         // GIVEN a channel and a row over it
-        FileChannel channel = spy( realChannel );
+        StoreFileChannel channel = spy( realChannel );
         PersistenceRow row = new PersistenceRow( 0, 1, channel );
 
         // WHEN you grab a write lock, marking as dirty

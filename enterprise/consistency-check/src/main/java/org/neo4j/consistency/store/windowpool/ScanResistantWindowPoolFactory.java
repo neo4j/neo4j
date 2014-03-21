@@ -19,20 +19,20 @@
  */
 package org.neo4j.consistency.store.windowpool;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.consistency.store.paging.Cart;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.lang.String.format;
 
 public class ScanResistantWindowPoolFactory implements WindowPoolFactory
 {
@@ -96,7 +96,7 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
     }
 
     @Override
-    public WindowPool create( File storageFileName, int recordSize, FileChannel fileChannel,
+    public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel,
                               Config configuration, StringLogger log )
     {
         try

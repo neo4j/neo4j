@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,6 +45,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -195,7 +195,7 @@ public class ServerUtil
             ByteBuffer temporaryBuffer, File storeFile, BackupMonitor backupMonitor ) throws IOException
     {
         backupMonitor.streamingFile( storeFile );
-        try ( FileChannel fileChannel = fs.open( storeFile, "r" ) )
+        try ( StoreChannel fileChannel = fs.open( storeFile, "r" ) )
         {
             writer.write( relativePath( baseDir, storeFile ), fileChannel, temporaryBuffer,
                     storeFile.length() > 0 );

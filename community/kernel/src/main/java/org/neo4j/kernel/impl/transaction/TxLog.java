@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +38,7 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -107,10 +107,7 @@ public class TxLog
      *            Filename of file to use
      * @param fileSystem
      *            The concrete FileSystemAbstraction to use.
-<<<<<<< HEAD
      * @param monitors {@link Monitors}.
-=======
->>>>>>> Replaces full backup and HA copy store with a common implementation.
      * @throws IOException
      *             If unable to open file
      */
@@ -122,7 +119,7 @@ public class TxLog
             throw new IllegalArgumentException( "Null filename" );
         }
         this.fileSystem = fileSystem;
-        FileChannel fileChannel = fileSystem.open( fileName, "rw" );
+        StoreChannel fileChannel = fileSystem.open( fileName, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel, bufferMonitor );
         this.name = fileName;
@@ -183,7 +180,7 @@ public class TxLog
      */
     public synchronized void truncate() throws IOException
     {
-        FileChannel fileChannel = logBuffer.getFileChannel();
+        StoreChannel fileChannel = logBuffer.getFileChannel();
         fileChannel.position( 0 );
         fileChannel.truncate( 0 );
         recordCount = 0;
@@ -404,7 +401,7 @@ public class TxLog
     public synchronized Iterable<List<Record>> getDanglingRecords()
         throws IOException
     {
-        FileChannel fileChannel = logBuffer.getFileChannel();
+        StoreChannel fileChannel = logBuffer.getFileChannel();
         ByteBuffer buffer = ByteBuffer.allocateDirect(SCAN_WINDOW_SIZE);
         readFileIntoBuffer( fileChannel, buffer, 0 );
 
@@ -461,7 +458,7 @@ public class TxLog
         return recordMap.values();
     }
 
-    private void readFileIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, long nextPosition ) throws IOException
+    private void readFileIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, long nextPosition ) throws IOException
     {
         buffer.clear();
         fileChannel.position( nextPosition );
@@ -615,7 +612,7 @@ public class TxLog
             }
         } );
         Iterator<Record> recordItr = records.iterator();
-        FileChannel fileChannel = fileSystem.open( newFile, "rw" );
+        StoreChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel, bufferMonitor  );
         name = newFile;

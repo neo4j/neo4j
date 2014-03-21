@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -204,7 +203,7 @@ public class NeoStore extends AbstractStore
     {
         try
         {
-            FileChannel channel = getFileChannel();
+            StoreChannel channel = getFileChannel();
             long previousPosition = channel.position();
             channel.position( RECORD_SIZE*recordPosition );
             int trail = (int) (channel.size()-channel.position());
@@ -313,7 +312,7 @@ public class NeoStore extends AbstractStore
      */
     public static long setVersion( FileSystemAbstraction fileSystem, File storeDir, long version )
     {
-        FileChannel channel = null;
+        StoreChannel channel = null;
         try
         {
             channel = fileSystem.open( new File( storeDir, NeoStore.DEFAULT_NAME ), "rw" );
@@ -357,7 +356,7 @@ public class NeoStore extends AbstractStore
 
     private static long getRecord( FileSystemAbstraction fs, File neoStore, long recordPosition )
     {
-        FileChannel channel = null;
+        StoreChannel channel = null;
         try
         {
             channel = fs.open( neoStore, "r" );

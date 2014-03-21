@@ -22,14 +22,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -38,6 +36,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
+
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
@@ -79,7 +79,7 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.L
  */
 public class XaLogicalLog implements LogLoader
 {
-    private FileChannel fileChannel = null;
+    private StoreChannel fileChannel = null;
     private final ByteBuffer sharedBuffer;
     private LogBuffer writeBuffer = null;
     private long previousLogLastCommittedTx = -1;
@@ -203,7 +203,7 @@ public class XaLogicalLog implements LogLoader
         writeBuffer = instantiateCorrectWriteBuffer( fileChannel );
     }
 
-    private LogBuffer instantiateCorrectWriteBuffer( FileChannel channel ) throws IOException
+    private LogBuffer instantiateCorrectWriteBuffer( StoreChannel channel ) throws IOException
     {
         return new DirectMappedLogBuffer( channel, bufferMonitor );
     }
@@ -620,11 +620,11 @@ public class XaLogicalLog implements LogLoader
 
     private void fixDualLogFiles( File activeLog, File oldLog ) throws IOException
     {
-        FileChannel activeLogChannel = fileSystem.open( activeLog, "r" );
+        StoreChannel activeLogChannel = fileSystem.open( activeLog, "r" );
         long[] activeLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), activeLogChannel, false );
         activeLogChannel.close();
 
-        FileChannel oldLogChannel = fileSystem.open( oldLog, "r" );
+        StoreChannel oldLogChannel = fileSystem.open( oldLog, "r" );
         long[] oldLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), oldLogChannel, false );
         oldLogChannel.close();
 
@@ -663,7 +663,7 @@ public class XaLogicalLog implements LogLoader
             throw new IOException( "Logical log[" + logFileName + "] not found" );
         }
 
-        FileChannel channel = fileSystem.open( logFileName, "rw" );
+        StoreChannel channel = fileSystem.open( logFileName, "rw" );
         long[] header = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), channel, false );
         try
         {
@@ -908,13 +908,14 @@ public class XaLogicalLog implements LogLoader
         {
             throw new NoSuchLogVersionException( version );
         }
-        FileChannel channel = fileSystem.open( name, "r" );
+        StoreChannel channel = fileSystem.open( name, "r" );
         channel.position( position );
         return new BufferedFileChannel( channel );
     }
 
     private void extractPreparedTransactionFromLog( int identifier,
-                                                    FileChannel logChannel, LogBuffer targetBuffer ) throws IOException
+                                                    StoreChannel logChannel,
+                                                    LogBuffer targetBuffer ) throws IOException
     {
         LogEntry.Start startEntry = xidIdentMap.get( identifier );
         logChannel.position( startEntry.getStartPosition() );
@@ -956,7 +957,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized ReadableByteChannel getPreparedTransaction( int identifier )
             throws IOException
     {
-        FileChannel logChannel = (FileChannel) getLogicalLogOrMyselfPrepared( logVersion, 0 );
+        StoreChannel logChannel = (StoreChannel) getLogicalLogOrMyselfPrepared( logVersion, 0 );
         InMemoryLogBuffer localBuffer = new InMemoryLogBuffer();
         extractPreparedTransactionFromLog( identifier, logChannel, localBuffer );
         logChannel.close();
@@ -966,7 +967,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void getPreparedTransaction( int identifier, LogBuffer targetBuffer )
             throws IOException
     {
-        FileChannel logChannel = (FileChannel) getLogicalLogOrMyselfPrepared( logVersion, 0 );
+        StoreChannel logChannel = (StoreChannel) getLogicalLogOrMyselfPrepared( logVersion, 0 );
         extractPreparedTransactionFromLog( identifier, logChannel, targetBuffer );
         logChannel.close();
     }
@@ -1026,7 +1027,7 @@ public class XaLogicalLog implements LogLoader
             if ( version == logVersion )
             {
                 File currentLogName = getCurrentLogFileName();
-                FileChannel channel = fileSystem.open( currentLogName, "r" );
+                StoreChannel channel = fileSystem.open( currentLogName, "r" );
                 channel.position( position );
                 return new BufferedFileChannel( channel );
             }
@@ -1066,7 +1067,7 @@ public class XaLogicalLog implements LogLoader
         else if ( version == logVersion )
         {
             File currentLogName = getCurrentLogFileName();
-            FileChannel channel = fileSystem.open( currentLogName, "r" );
+            StoreChannel channel = fileSystem.open( currentLogName, "r" );
             channel = new BufferedFileChannel( channel );
             /*
              * this method is called **during** commit{One,Two}Phase - i.e. before the log buffer
@@ -1126,7 +1127,7 @@ public class XaLogicalLog implements LogLoader
             public LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException
             {
                 File activeLogFile = new XaLogicalLogFiles( logBasePath.apply( config ), fileSystem ).getLog1FileName();
-                FileChannel channel = fileSystem.create( activeLogFile );
+                StoreChannel channel = fileSystem.create( activeLogFile );
                 ByteBuffer scratch = ByteBuffer.allocateDirect( 128 );
                 LogIoUtils.writeLogHeader( scratch, 0, prevCommittedId );
                 while(scratch.hasRemaining())
@@ -1431,7 +1432,7 @@ public class XaLogicalLog implements LogLoader
                 currentVersion + " to " + newLogFile + " from position " +
                 endPosition, true );
         writeBuffer.force();
-        FileChannel newLog = fileSystem.open( newLogFile, "rw" );
+        StoreChannel newLog = fileSystem.open( newLogFile, "rw" );
         long lastTx = xaTf.getLastCommittedTx();
         LogIoUtils.writeLogHeader( sharedBuffer, currentVersion+1, lastTx );
         previousLogLastCommittedTx = lastTx;
@@ -1524,7 +1525,7 @@ public class XaLogicalLog implements LogLoader
         }
         ByteBuffer bb = ByteBuffer.wrap( new byte[4] );
         bb.asCharBuffer().put( c ).flip();
-        FileChannel fc = fileSystem.open( new File( fileName.getPath() + ".active"), "rw" );
+        StoreChannel fc = fileSystem.open( new File( fileName.getPath() + ".active"), "rw" );
         int wrote = fc.write( bb );
         if ( wrote != 4 )
         {

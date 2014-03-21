@@ -37,6 +37,8 @@ import java.util.Map;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 import static java.lang.String.format;
@@ -53,10 +55,11 @@ public class DefaultFileSystemAbstraction
     static final String UNABLE_TO_CREATE_DIRECTORY_FORMAT = "Unable to create directory path [%s] for Neo4j store.";
 
     @Override
-    public FileChannel open( File fileName, String mode ) throws IOException
+    public StoreFileChannel open( File fileName, String mode ) throws IOException
     {
         // Returning only the channel is ok, because the channel, when close()d will close its parent File.
-        return new RandomAccessFile( fileName, mode ).getChannel();
+        FileChannel channel = new RandomAccessFile( fileName, mode ).getChannel();
+        return new StoreFileChannel( channel );
     }
     
     @Override
@@ -84,13 +87,13 @@ public class DefaultFileSystemAbstraction
     }
 
     @Override
-    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
     {
         return FileLock.getOsSpecificFileLock( fileName, channel );
     }
 
     @Override
-    public FileChannel create( File fileName ) throws IOException
+    public StoreFileChannel create( File fileName ) throws IOException
     {
         return open( fileName, "rw" );
     }

@@ -19,20 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestStoreAccess
 {
@@ -68,7 +69,7 @@ public class TestStoreAccess
 
     private char activeLog( FileSystemAbstraction fileSystem, File directory ) throws IOException
     {
-        FileChannel file = fileSystem.open( new File( directory, "nioneo_logical.log.active" ), "r" );
+        StoreChannel file = fileSystem.open( new File( directory, "nioneo_logical.log.active" ), "r" );
         try
         {
             ByteBuffer buffer = ByteBuffer.wrap( new byte[2] );

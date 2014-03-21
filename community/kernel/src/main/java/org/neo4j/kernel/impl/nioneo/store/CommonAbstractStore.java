@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.graphdb.config.Setting;
@@ -67,7 +66,7 @@ public abstract class CommonAbstractStore implements IdSequence
     protected final IdType idType;
     protected StringLogger stringLogger;
     private IdGenerator idGenerator = null;
-    private FileChannel fileChannel = null;
+    private StoreChannel fileChannel = null;
     private WindowPool windowPool;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
@@ -620,13 +619,13 @@ public abstract class CommonAbstractStore implements IdSequence
     }
 
     /**
-     * Returns a <CODE>FileChannel</CODE> to this storage's file. If
+     * Returns a <CODE>StoreChannel</CODE> to this storage's file. If
      * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
      *
      * @return A file channel to this storage
      */
-    protected final FileChannel getFileChannel()
+    protected final StoreChannel getFileChannel()
     {
         return fileChannel;
     }

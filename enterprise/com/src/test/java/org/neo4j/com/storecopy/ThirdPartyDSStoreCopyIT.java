@@ -41,6 +41,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.*;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
@@ -219,8 +220,8 @@ public class ThirdPartyDSStoreCopyIT
                 @Override
                 public LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException
                 {
-                    return new DirectLogBuffer( FileChannel.open( logWriterTarget.toPath(), CREATE, READ, WRITE ),
-                            ByteBuffer.allocate(512) );
+                    FileChannel channel = FileChannel.open( logWriterTarget.toPath(), CREATE, READ, WRITE );
+                    return new DirectLogBuffer( new StoreFileChannel( channel ), ByteBuffer.allocate(512) );
                 }
             };
         }

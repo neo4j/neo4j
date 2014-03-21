@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -48,6 +46,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
@@ -292,7 +291,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private void changeActiveLog( String newFileName ) throws IOException
     {
         // change active log
-        FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
+        StoreChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
         ByteBuffer buf = ByteBuffer.wrap( UTF8.encode( newFileName ) );
         fc.truncate( 0 );
         fc.write( buf );
@@ -780,7 +779,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             if ( fileSystem.fileExists( logSwitcherFileName ) )
             {
-                FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
+                StoreChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 byte fileName[] = new byte[256];
                 ByteBuffer buf = ByteBuffer.wrap( fileName );
                 fc.read( buf );
@@ -811,7 +810,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 }
                 ByteBuffer buf = ByteBuffer.wrap( txLog1FileName
                         .getBytes( "UTF-8" ) );
-                FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
+                StoreChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
                 txLog = new TxLog( new File( txLogDir, txLog1FileName), fileSystem, monitors );
                 log.info( "TM new log: " + txLog1FileName );
