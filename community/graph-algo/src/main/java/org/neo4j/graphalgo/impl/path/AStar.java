@@ -200,7 +200,8 @@ public class AStar implements PathFinder<WeightedPath>
         @SuppressWarnings( "unchecked" )
         private void expand()
         {
-            for ( Relationship rel : expander.expand( this, BranchState.NO_STATE ) )
+            Iterable<Relationship> relationships = expander.expand( this, BranchState.NO_STATE );
+            for ( Relationship rel : relationships )
             {
                 lastMetadata.rels++;
                 Node node = rel.getOtherNode( lastNode );
