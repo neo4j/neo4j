@@ -19,7 +19,7 @@
  */
 package org.neo4j.management.impl;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.management.NotCompliantMBeanException;
@@ -64,8 +64,16 @@ public final class LockManagerBean extends ManagementBeanProvider
 
         private Locks lockManager( ManagementData management )
         {
-            return management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( Locks.class );
+            try
+            {
+                return management.getKernelData().graphDatabase().getDependencyResolver()
+                        .resolveDependency( Locks.class );
+            }
+            catch(Throwable e)
+            {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         LockManagerImpl( ManagementData management, boolean mxBean )
@@ -73,8 +81,6 @@ public final class LockManagerBean extends ManagementBeanProvider
             super( management, mxBean );
             this.lockManager = lockManager( management );
         }
-
-        // TODO: Fix after M02
 
         @Override
         public long getNumberOfAvertedDeadlocks()
@@ -85,13 +91,23 @@ public final class LockManagerBean extends ManagementBeanProvider
         @Override
         public List<LockInfo> getLocks()
         {
-            return Collections.emptyList();
+            final List<LockInfo> locks = new ArrayList<>();
+            lockManager.accept( new Locks.Visitor()
+            {
+                @Override
+                public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime )
+                {
+                    locks.add( new LockInfo( resourceType.toString(), String.valueOf( resourceId ), description ) );
+                }
+            });
+            return locks;
         }
 
         @Override
-        public List<LockInfo> getContendedLocks( long minWaitTime )
+        public List<LockInfo> getContendedLocks( final long minWaitTime )
         {
-            return Collections.emptyList();
+            // Contended locks can no longer be found by the new lock manager, since that knowledge is not centralized.
+            return getLocks();
         }
     }
 }

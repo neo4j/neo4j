@@ -45,7 +45,7 @@ class SharedLock implements ForsetiLockManager.Lock
      *
      * An array of arrays containing references to clients holding this lock. Each client can only show up once.
      * When the lock is created only the first reference array is created (so the last three slots in the outer array
-     * are empty). The outer array is populated when the reference arrays are filled up, with expoentially larger
+     * are empty). The outer array is populated when the reference arrays are filled up, with exponentially larger
      * reference arrays:
      *
      * clientsHoldingThisLock[0] = 8 slots
@@ -60,7 +60,7 @@ class SharedLock implements ForsetiLockManager.Lock
      * to resize (since the threads writing to the array are on one of the hottest code paths in the database).
      *
      * This data structure is, however, not optimal, since it requires O(n) at worst to search for a slot and to remove
-     * a client from the array. This should be revisisted in the future.
+     * a client from the array. This should be revisited in the future.
      */
     private AtomicReferenceArray<ForsetiClient>[] clientsHoldingThisLock = new AtomicReferenceArray[4];
 

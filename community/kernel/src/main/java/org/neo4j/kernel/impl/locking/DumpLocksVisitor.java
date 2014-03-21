@@ -17,34 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.info;
+package org.neo4j.kernel.impl.locking;
 
-public enum ResourceType
+import org.neo4j.kernel.impl.util.StringLogger;
+
+public class DumpLocksVisitor implements Locks.Visitor
 {
-    NODE
-    {
-        @Override
-        public String toString( String resourceId )
-        {
-            return "Node[" + resourceId + "]";
-        }
-    },
-    RELATIONSHIP
-    {
-        @Override
-        public String toString( String resourceId )
-        {
-            return "Relationship[" + resourceId + "]";
-        }
-    },
-    OTHER
-    {
-        @Override
-        public String toString( String resourceId )
-        {
-            return resourceId;
-        }
-    };
+    private final StringLogger logger;
 
-    public abstract String toString( String resourceId );
+    public DumpLocksVisitor( StringLogger logger )
+    {
+        this.logger = logger;
+    }
+
+    @Override
+    public void visit( Locks.ResourceType resourceType, long resourceId, String description, long estimatedWaitTime )
+    {
+        logger.info( String.format( "%s{id=%d, waitTime=%d, description=%s}", resourceType, resourceId,
+                estimatedWaitTime, description ) );
+    }
 }

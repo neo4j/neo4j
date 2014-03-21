@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking.community;
 
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class CommunityLockManger extends LifecycleAdapter implements Locks
@@ -34,13 +33,22 @@ public class CommunityLockManger extends LifecycleAdapter implements Locks
     }
 
     @Override
-    public void dumpLocks( StringLogger out )
+    public void accept( final Visitor visitor )
     {
-    }
-
-    @Override
-    public String implementationId()
-    {
-        return "community";
+        manager.accept( new org.neo4j.helpers.collection.Visitor<RWLock, RuntimeException>()
+        {
+            @Override
+            public boolean visit( RWLock element ) throws RuntimeException
+            {
+                Object resource = element.resource();
+                if(resource instanceof LockResource)
+                {
+                    LockResource lockResource = (LockResource)resource;
+                    visitor.visit( lockResource.type(), lockResource.resourceId(),
+                            element.describe(), element.maxWaitTime() );
+                }
+                return false;
+            }
+        } );
     }
 }

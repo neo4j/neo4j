@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.lock;
 import java.util.Arrays;
 
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
@@ -54,7 +55,7 @@ public class LocalDeadlockDetectedException extends DeadlockDetectedException
         StringBuilder builder = new StringBuilder( format(
                 "%s tried to apply local %s lock on %s(%s) after acquired on master. Currently these locks exist:%n",
                 client, type, resourceType, Arrays.toString(resourceIds) ) );
-        lockManager.dumpLocks( new StringBuilderStringLogger(builder) );
+        lockManager.accept( new DumpLocksVisitor(new StringBuilderStringLogger(builder)) );
         return builder.toString();
     }
 }

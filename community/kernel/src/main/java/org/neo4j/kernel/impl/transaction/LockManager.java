@@ -127,25 +127,4 @@ public interface LockManager
      */
     void dumpLocksOnResource( Object resource, Logging logging );
 
-    /**
-     * @return a {@link List} of all locks currently active.
-     */
-    List<LockInfo> getAllLocks();
-
-    /**
-     * Returns info about locks that have been awaited for {@code minWaitTime} milliseconds.
-     * @param minWaitTime the threshold time in milliseconds for inclusion in the resulting {@link List}.
-     * @return locks that have been awaited for at least {@code minWaitTime} milliseconds.
-     */
-    List<LockInfo> getAwaitedLocks( long minWaitTime );
-
-    /**
-     * Utility method for debugging. Dumps the resource allocation graph to {@code logging}.
-     */
-    void dumpRagStack( Logging logging );
-
-    /**
-     * Utility method for debugging. Dumps info about each lock to {@code logging}.
-     */
-    void dumpAllLocks( Logging logging );
 }

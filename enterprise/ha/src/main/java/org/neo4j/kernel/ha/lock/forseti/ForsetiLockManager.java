@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.FlyweightPool;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -55,7 +54,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
         int holderWaitListSize();
         boolean anyHolderIsWaitingFor( int client );
 
-        /** For debugging */
+        /** For introspection and error messages */
         String describeWaitList();
     }
 
@@ -64,6 +63,9 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
 
     /** Wait strategies per resource type */
     private final WaitStrategy[] waitStrategies;
+
+    /** Reverse lookup resource types by id, used for introspection */
+    private final ResourceType[] resourceTypes;
 
     /** Pool forseti clients. */
     private final FlyweightPool<ForsetiClient> clientPool = new FlyweightPool<ForsetiClient>( 128 )
@@ -99,13 +101,15 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
 
     public ForsetiLockManager( ResourceType... resourceTypes )
     {
-        lockMaps = new ConcurrentMap[findMaxResourceId( resourceTypes )];
-        waitStrategies = new WaitStrategy[findMaxResourceId( resourceTypes )];
+        this.lockMaps = new ConcurrentMap[findMaxResourceId( resourceTypes )];
+        this.waitStrategies = new WaitStrategy[findMaxResourceId( resourceTypes )];
+        this.resourceTypes = new ResourceType[findMaxResourceId( resourceTypes )];
 
-        for ( ResourceType resourceDefinition : resourceTypes )
+        for ( ResourceType type : resourceTypes )
         {
-            lockMaps[resourceDefinition.typeId()] = new ConcurrentHashMap(16, 0.6f, 512);
-            waitStrategies[resourceDefinition.typeId()] = resourceDefinition.waitStrategy();
+            this.lockMaps[type.typeId()] = new ConcurrentHashMap(16, 0.6f, 512);
+            this.waitStrategies[type.typeId()] = type.waitStrategy();
+            this.resourceTypes[type.typeId()] = type;
         }
     }
 
@@ -116,27 +120,21 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     }
 
     @Override
-    public void dumpLocks( StringLogger out )
+    public void accept( Visitor out )
     {
         for ( int i = 0; i < lockMaps.length; i++ )
         {
             if(lockMaps[i] != null)
             {
-                out.info( "ResouceType[" + i + "]" );
-                out.info( "==============" );
+                ResourceType type = resourceTypes[i];
                 for ( Object raw : lockMaps[i].entrySet() )
                 {
                     Map.Entry<Long, Lock> entry = (Map.Entry<Long, Lock>)raw;
-                    out.info( "Resource["+entry.getKey()+"]: " + entry.getValue().describeWaitList() );
+                    Lock lock = entry.getValue();
+                    out.visit( type, entry.getKey(), lock.describeWaitList(), 0 );
                 }
             }
         }
-    }
-
-    @Override
-    public String implementationId()
-    {
-        return "forseti";
     }
 
     private int findMaxResourceId( ResourceType[] resourceTypes )

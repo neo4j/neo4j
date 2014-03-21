@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -53,6 +52,13 @@ public interface Locks extends Lifecycle
         }
 
         public abstract Locks newInstance( ResourceType[] resourceTypes );
+    }
+
+    /** For introspection and debugging. */
+    public interface Visitor
+    {
+        /** Visit the description of a lock held by at least one client. */
+        void visit( ResourceType resourceType, long resourceId, String description, long estimatedWaitTime );
     }
 
     /** Locks are split by resource types. It is up to the implementation to define the contract for these. */
@@ -112,13 +118,6 @@ public interface Locks extends Lifecycle
      */
     Client newClient();
 
-    /**
-     * Dump debug output for the current state of all locks.
-     */
-    void dumpLocks(StringLogger out);
-
-    /**
-     * Unique identifier for this implementation, used to, via configuration, pick which implementation to use.
-     */
-    String implementationId();
+    /** Visit all held locks. */
+    void accept(Visitor visitor);
 }

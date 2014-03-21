@@ -84,4 +84,14 @@ public class LockResource
     {
         return --refCount;
     }
+
+    public long resourceId()
+    {
+        return resourceId;
+    }
+
+    public Locks.ResourceType type()
+    {
+        return resourceType;
+    }
 }

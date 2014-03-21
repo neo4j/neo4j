@@ -47,7 +47,7 @@ public class LockWorkFailureDump
         try
         {
             //  * locks held by the lock manager
-            lm.dumpLocks( logging.getMessagesLog( LockWorkFailureDump.class ) );
+            lm.accept( new DumpLocksVisitor( logging.getMessagesLog( LockWorkFailureDump.class ) ) );
             //  * rag manager state;
             //  * workers state
             for ( LockWorker worker : workers )

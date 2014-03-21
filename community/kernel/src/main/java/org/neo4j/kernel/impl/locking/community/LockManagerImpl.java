@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.transaction.Transaction;
@@ -31,9 +29,6 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.LockInfo;
-import org.neo4j.kernel.info.LockingTransaction;
-import org.neo4j.kernel.info.WaitingThread;
 import org.neo4j.kernel.logging.Logging;
 
 public class LockManagerImpl implements LockManager
@@ -111,18 +106,6 @@ public class LockManagerImpl implements LockManager
         logger.logLongMessage( "Dump locks on resource " + resource, lock );
     }
 
-    @Override
-    public List<LockInfo> getAllLocks()
-    {
-        return eachLock( new ListAppendingVisitor() ).result;
-    }
-
-    @Override
-    public List<LockInfo> getAwaitedLocks( long minWaitTime )
-    {
-        return eachAwaitedLock( new ListAppendingVisitor(), minWaitTime ).result;
-    }
-
     /**
      * Visit all locks.
      * 
@@ -130,62 +113,20 @@ public class LockManagerImpl implements LockManager
      * 
      * @param visitor visitor for visiting each lock.
      */
-    private <V extends Visitor<LockInfo, RuntimeException>> V eachLock( V visitor )
+    public void accept( Visitor<RWLock, RuntimeException> visitor )
     {
         synchronized ( resourceLockMap )
         {
             for ( RWLock lock : resourceLockMap.values() )
             {
-                if ( visitor.visit( lock.info() ) )
+                if ( visitor.visit( lock ) )
                 {
                     break;
                 }
             }
         }
-        return visitor;
-    }
-    
-    /**
-     * Visit all locks that some thread has been waiting for at least the
-     * supplied number of milliseconds.
-     * 
-     * The supplied visitor may not block.
-     * 
-     * @param visitor visitor for visiting each lock that has had a thread
-     *            waiting at least the specified time.
-     * @param minWaitTime the number of milliseconds a thread should have waited
-     *            on a lock for it to be visited.
-     */
-    private <V extends Visitor<LockInfo, RuntimeException>> V eachAwaitedLock( V visitor, long minWaitTime )
-    {
-        long waitStart = System.currentTimeMillis() - minWaitTime;
-        synchronized ( resourceLockMap )
-        {
-            for ( RWLock lock : resourceLockMap.values() )
-            {
-                if ( lock.acceptVisitorIfWaitedSinceBefore( visitor, waitStart ) )
-                {
-                    break;
-                }
-            }
-        }
-        return visitor;
     }
 
-    @Override
-    public void dumpRagStack( Logging logging )
-    {
-        logging.getMessagesLog( getClass() ).logLongMessage( "RAG stack", ragManager );
-    }
-
-    @Override
-    public void dumpAllLocks( Logging logging )
-    {
-        DumpVisitor dump = new DumpVisitor( logging );
-        eachLock( dump );
-        dump.done();
-    }
-    
     private void assertValidArguments( Object resource, Transaction tx )
     {
         if ( resource == null || tx == null )
@@ -229,83 +170,6 @@ public class LockManagerImpl implements LockManager
                 resourceLockMap.remove( resource );
             }
             return lock;
-        }
-    }
-
-    private static class ListAppendingVisitor implements Visitor<LockInfo, RuntimeException>
-    {
-        private final List<LockInfo> result = new ArrayList<>();
-
-        @Override
-        public boolean visit( LockInfo element )
-        {
-            result.add( element );
-            return false;
-        }
-    }
-    
-    private static class DumpVisitor implements Visitor<LockInfo, RuntimeException>
-    {
-        private final StringLogger logger;
-        
-        DumpVisitor( Logging logging )
-        {
-            logger = logging.getMessagesLog( LockManager.class );
-        }
-        
-        int emptyLockCount = 0;
-
-        @Override
-        public boolean visit( LockInfo lock )
-        {
-            if ( lock.getWriteCount() > 0 || lock.getReadCount() > 0 )
-            {
-                dumpStack( lock );
-            }
-            else
-            {
-                if ( lock.getWaitingThreadsCount() > 0 )
-                {
-                    dumpStack( lock );
-                }
-                emptyLockCount++;
-            }
-            return false;
-        }
-
-        private void dumpStack( LockInfo lock )
-        {
-            logger.info( "Total lock count: readCount=" + lock.getReadCount() + " writeCount="
-                                + lock.getWriteCount() + " for "
-                                + lock.getResourceType().toString( lock.getResourceId() ) );
-            logger.info( "Waiting list:" );
-            StringBuilder waitlist = new StringBuilder();
-            String sep = "";
-            for ( WaitingThread we : lock.getWaitingThreads() )
-            {
-                waitlist.append( sep ).append( "[tid=" ).append( we.getThreadId() ).append( "(" ).append(
-                        we.getReadCount() ).append( "r," ).append( we.getWriteCount() ).append( "w )," ).append(
-                        we.isWaitingOnWriteLock() ? "Write" : "Read" ).append( "Lock]" );
-                sep = ", ";
-            }
-            logger.info( waitlist.toString() );
-            for ( LockingTransaction tle : lock.getLockingTransactions() )
-            {
-                logger.info( "" + tle.getTransaction() + "(" + tle.getReadCount() + "r," + tle.getWriteCount()
-                                    + "w)" );
-            }
-        }
-
-        void done()
-        {
-            if ( emptyLockCount > 0 )
-            {
-                logger.info( "There are " + emptyLockCount + " empty locks" );
-            }
-            else
-            {
-                logger.info( "There are no empty locks" );
-            }
         }
     }
 }

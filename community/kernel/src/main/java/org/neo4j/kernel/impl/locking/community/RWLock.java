@@ -19,30 +19,20 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import java.util.Set;
 
 import javax.transaction.Transaction;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
-import org.neo4j.kernel.info.LockInfo;
-import org.neo4j.kernel.info.LockingTransaction;
-import org.neo4j.kernel.info.ResourceType;
-import org.neo4j.kernel.info.WaitingThread;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
-
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
 import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
@@ -125,6 +115,11 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
             this.lockType = lockType;
             this.waitingThread = thread;
         }
+    }
+
+    public Object resource()
+    {
+        return resource;
     }
 
     synchronized void mark()
@@ -464,57 +459,53 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         return true;
     }
 
-    synchronized LockInfo info()
+    public synchronized String describe()
     {
-        Set<LockingTransaction> lockingTxs = new HashSet<>();
-        Set<WaitingThread> waitingTxs = new HashSet<>();
-        for ( TxLockElement tle : txLockElementMap.values() )
+        StringBuilder sb = new StringBuilder( this.toString() );
+        sb.append( " Total lock count: readCount=" + totalReadCount
+                + " writeCount=" + totalWriteCount + " for " + resource + "\n" )
+          .append( "Waiting list:" + "\n" );
+        Iterator<WaitElement> wElements = waitingThreadList.iterator();
+        while ( wElements.hasNext() )
         {
-            lockingTxs.add( new LockingTransaction( tle.tx.toString(), tle.readCount, tle.writeCount ) );
-        }
-        for ( WaitElement thread : waitingThreadList )
-        {
-            waitingTxs.add( WaitingThread.create( thread.element.tx.toString(),
-                    thread.element.readCount, thread.element.writeCount, thread.waitingThread, thread.since,
-                    thread.lockType == LockType.WRITE ) );
-        }
-        ResourceType type;
-        String id;
-        if ( resource instanceof Node )
-        {
-            type = ResourceType.NODE;
-            id = Long.toString( ( (Node) resource ).getId() );
-        }
-        else if ( resource instanceof Relationship )
-        {
-            type = ResourceType.NODE;
-            id = Long.toString( ( (Relationship) resource ).getId() );
-        }
-        else
-        {
-            type = ResourceType.OTHER;
-            id = resource.toString();
-        }
-        return new LockInfo( type, id, totalReadCount, totalWriteCount,
-                new ArrayList<>( lockingTxs ), new ArrayList<>( waitingTxs ) );
-    }
-
-    synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo, RuntimeException> visitor, long waitStart )
-    {
-        for ( WaitElement thread : waitingThreadList )
-        {
-            if ( thread.since < waitStart )
+            WaitElement we = wElements.next();
+            sb.append( "[" + we.waitingThread + "("
+                    + we.element.readCount + "r," + we.element.writeCount + "w),"
+                    + we.lockType + "]\n" );
+            if ( wElements.hasNext() )
             {
-                return visitor.visit( info() );
+                sb.append( "," );
             }
         }
-        return false;
+
+        sb.append( "Locking transactions:\n" );
+        Iterator<TxLockElement> lElements = txLockElementMap.values().iterator();
+        while ( lElements.hasNext() )
+        {
+            TxLockElement tle = lElements.next();
+            sb.append( "" + tle.tx + "(" + tle.readCount + "r,"
+                    + tle.writeCount + "w)\n" );
+        }
+        return sb.toString();
+    }
+
+    public synchronized long maxWaitTime()
+    {
+        long max = 0l;
+        for ( WaitElement thread : waitingThreadList )
+        {
+            if ( thread.since < max )
+            {
+                max = thread.since;
+            }
+        }
+        return System.currentTimeMillis() - max;
     }
 
     @Override
     public String toString()
     {
-        return "RWLock[" + resource + ", hash="+resource.hashCode()+"]";
+        return "RWLock[" + resource + ", hash="+hashCode()+"]";
     }
 
     private void registerReadLockAcquired( Transaction tx, TxLockElement tle )

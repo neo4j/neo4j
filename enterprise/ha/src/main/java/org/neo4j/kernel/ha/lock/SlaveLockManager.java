@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
@@ -75,15 +74,9 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     }
 
     @Override
-    public void dumpLocks( StringLogger out )
+    public void accept( Visitor visitor )
     {
-        local.dumpLocks( out );
-    }
-
-    @Override
-    public String implementationId()
-    {
-        return "slave-locks";
+        local.accept( visitor );
     }
 
     private static class SlaveLocksClient implements Client
