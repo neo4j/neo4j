@@ -120,7 +120,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
     qg.selections should equal(Selections(List(
       Set(IdName("n")) -> Equals(
-        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        FunctionInvocation(FunctionName("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
         SignedIntegerLiteral("42")(pos)
       )(pos)
     )))
@@ -137,7 +137,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
     qg.selections should equal(Selections(List(
       Set(IdName("n")) -> In(
-        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        FunctionInvocation(FunctionName("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
         Collection(Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos)))(pos)
       )(pos)
     )))
@@ -154,7 +154,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     qg.selections should equal(Selections(List(
       Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Label")()(pos)))(pos),
       Set(IdName("n")) -> Equals(
-        FunctionInvocation(Identifier("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
+        FunctionInvocation(FunctionName("id")(pos), distinct = false, Vector(Identifier("n")(pos)))(pos),
         SignedIntegerLiteral("42")(pos)
       )(pos)
     )))

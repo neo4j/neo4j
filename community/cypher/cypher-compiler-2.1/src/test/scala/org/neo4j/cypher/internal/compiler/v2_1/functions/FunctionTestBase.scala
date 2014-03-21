@@ -44,7 +44,7 @@ abstract class FunctionTestBase(funcName: String) extends Assertions {
     val arguments = argumentTypes.map(DummyExpression(_))
 
     val invocation = ast.FunctionInvocation(
-      ast.Identifier(funcName)(DummyPosition(6)),
+      ast.FunctionName(funcName)(DummyPosition(6)),
       distinct = false,
       arguments
     )(DummyPosition(5))
