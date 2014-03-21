@@ -33,14 +33,14 @@ An abstract representation of the query graph being solved at the current step
 case class QueryGraph(projections: Map[String, ast.Expression], selections: Selections, nodes: Set[IdName])
 
 object SelectionPredicates {
-  def fromWhere(where: Where, knownIdentifiers: Set[IdName]) = extractPredicates(where.expression, knownIdentifiers)
+  def fromWhere(where: Where) = extractPredicates(where.expression)
 
   private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
     case id: Identifier =>
       (acc: Set[IdName], _) => acc + IdName(id.name)
   }
 
-  private def extractPredicates(predicate: ast.Expression, knownIdentifiers: Set[IdName]) = {
+  private def extractPredicates(predicate: ast.Expression) = {
     predicate.treeFold(Seq.empty[(Set[IdName], ast.Expression)]) {
       // n:Label
       case predicate@HasLabels(identifier@Identifier(name), labels) =>
@@ -51,7 +51,7 @@ object SelectionPredicates {
       case _: And =>
         (acc, children) => children(acc)
       case predicate: Expression =>
-        (acc, _) => acc :+ ((idNames(predicate) & knownIdentifiers) -> predicate)
+        (acc, _) => acc :+ (idNames(predicate) -> predicate)
     }
   }
 }

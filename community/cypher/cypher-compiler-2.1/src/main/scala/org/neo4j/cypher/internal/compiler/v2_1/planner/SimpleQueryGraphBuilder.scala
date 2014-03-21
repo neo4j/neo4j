@@ -53,7 +53,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       ))) =>
         val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
         val nodes = nodeIdentifiers.map(x => IdName(x.name)).toSet
-        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere(_, nodes)).getOrElse(Seq.empty))
+        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
         (projections, selections, nodes)
 
       case _ =>

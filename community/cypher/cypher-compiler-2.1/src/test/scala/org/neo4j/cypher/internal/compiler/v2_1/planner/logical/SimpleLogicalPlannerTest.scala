@@ -101,7 +101,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val identifier = Identifier("n")(pos)
     val projections = Map("n" -> identifier)
     val expr = Equals(
-      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
       SignedIntegerLiteral("42")(pos)
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")))
@@ -121,7 +121,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val identifier = Identifier("n")(pos)
     val projections = Map("n" -> identifier)
     val expr = In(
-      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
       Collection(
         Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
       )(pos)
@@ -146,7 +146,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val identifier = Identifier("r")(pos)
     val projections = Map("r" -> identifier)
     val expr = Equals(
-      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
       SignedIntegerLiteral("42")(pos)
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(IdName("r")))
@@ -166,7 +166,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val identifier = Identifier("n")(pos)
     val projections = Map("n" -> identifier)
     val expr = In(
-      FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
       Collection(
         Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
       )(pos)
@@ -196,7 +196,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val predicates = Seq(
       Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos),
       Set(IdName("n")) ->  Equals(
-        FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+        FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
         SignedIntegerLiteral("42")(pos)
       )(pos)
     )
@@ -223,7 +223,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val labelId = LabelId(12)
     val predicates = Seq(
       Set(IdName("n")) ->  Equals(
-        FunctionInvocation(Identifier("id")(pos), distinct = false, Array(identifier))(pos),
+        FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
         SignedIntegerLiteral("42")(pos)
       )(pos),
       Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)

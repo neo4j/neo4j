@@ -31,6 +31,9 @@ trait Literals extends Parser
   def Identifier: Rule1[ast.Identifier] =
     rule("an identifier") { SymbolicNameString ~~>> (ast.Identifier(_) ) }.memoMismatches
 
+  def FunctionName: Rule1[ast.FunctionName] =
+    rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_) ) }.memoMismatches
+
   def EscapedIdentifier: Rule1[ast.Identifier] =
     rule("an identifier") { EscapedSymbolicNameString ~~>> (ast.Identifier(_)) }
 
