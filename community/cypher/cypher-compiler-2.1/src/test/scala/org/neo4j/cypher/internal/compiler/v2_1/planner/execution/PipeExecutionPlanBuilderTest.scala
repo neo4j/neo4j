@@ -20,17 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, DummyPosition, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
@@ -46,7 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Collection, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
 
@@ -90,7 +84,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   test("simple node by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral)(Seq.empty)
+    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral, 1)(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -98,15 +92,40 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astLiteral.asCommandExpression))
   }
 
+  test("simple node by id seek query with multiple values") {
+    val astCollection = Collection(
+      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    )(pos)
+    val logicalPlan = NodeByIdSeek(IdName("n"), astCollection, 3)(Seq.empty)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astCollection.asCommandExpression))
+  }
+
   // 2014-03-19 - Andres: turn on once we have patterns in the query graph
   ignore("simple relationship by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral)(Seq.empty)
+    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral, 1)(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
     pipeInfo.pipe should equal(RelationshipByIdSeekPipe("r", astLiteral.asCommandExpression))
+  }
+
+  // 2014-03-20 - Davide: turn on once we have patterns in the query graph
+  ignore("simple relationship by id seek query with multiple values") {
+    val astCollection = Collection(
+      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    )(pos)
+    val logicalPlan = RelationshipByIdSeek(IdName("r"), astCollection, 3)(Seq.empty)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(RelationshipByIdSeekPipe("r", astCollection.asCommandExpression))
   }
 
   test("simple cartesian product") {
@@ -115,8 +134,6 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val logicalPlan = CartesianProduct(lhs, rhs)
     val pipeInfo = planner.build(logicalPlan)
 
-    pipeInfo should not be 'updating
-    pipeInfo.periodicCommit should equal(None)
     pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n"), AllNodesScanPipe("m")))
   }
 }

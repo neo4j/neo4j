@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
 import org.neo4j.graphdb.Relationship
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal}
 
 class RelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -31,7 +31,7 @@ class RelationshipByIdSeekPipeTest extends CypherFunSuite {
 
   import Mockito.when
 
-  test("should seek node by id") {
+  test("should seek relationship by id") {
     // given
     val rel = mock[Relationship]
     val relOps = when(mock[Operations[Relationship]].getById(17)).thenReturn(rel).getMock[Operations[Relationship]]
@@ -44,5 +44,24 @@ class RelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // then
     result.map(_("a")).toList should equal(List(rel))
+  }
+
+  test("should seek relationships by multiple ids") {
+    // given
+    val rel1 = mock[Relationship]
+    val rel2 = mock[Relationship]
+    val relationshipOps = mock[Operations[Relationship]]
+
+    when(relationshipOps.getById(42)).thenReturn(rel1)
+    when(relationshipOps.getById(21)).thenReturn(rel2)
+    val queryState = QueryStateHelper.emptyWith(
+      query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
+    )
+
+    // whens
+    val result = RelationshipByIdSeekPipe("a", Collection(Literal(42), Literal(21))).createResults(queryState)
+
+    // then
+    result.map(_("a")).toList should equal(List(rel1, rel2))
   }
 }

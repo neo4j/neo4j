@@ -21,21 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols.{SymbolTable, CTRelationship}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
-import org.neo4j.cypher.EntityNotFoundException
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.graphdb.Relationship
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe with NumericHelper {
+case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val nodeId = asLongEntityId(relIdExpr(ExecutionContext.empty)(state))
-
-    try {
-      val node = state.query.relationshipOps.getById(nodeId)
-      Iterator(ExecutionContext.from(ident -> node))
-    } catch {
-      case _: EntityNotFoundException =>
-        Iterator.empty
-    }
+    val nodeIds = makeTraversable(relIdExpr(ExecutionContext.empty)(state)).iterator
+    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, nodeIds)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)

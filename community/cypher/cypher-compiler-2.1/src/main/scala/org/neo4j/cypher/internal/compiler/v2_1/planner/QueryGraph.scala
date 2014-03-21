@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, ast}
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
 import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
@@ -30,9 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 /*
 An abstract representation of the query graph being solved at the current step
  */
-case class QueryGraph(projections: Map[String, ast.Expression],
-                      selections: Selections,
-                      nodes: Set[IdName])
+case class QueryGraph(projections: Map[String, ast.Expression], selections: Selections, nodes: Set[IdName])
 
 object SelectionPredicates {
   def fromWhere(where: Where, knownIdentifiers: Set[IdName]) = extractPredicates(where.expression, knownIdentifiers)
@@ -42,8 +40,7 @@ object SelectionPredicates {
       (acc: Set[IdName], _) => acc + IdName(id.name)
   }
 
-  private def extractPredicates(predicate: ast.Expression, knownIdentifiers: Set[IdName]): Seq[(Set[IdName], ast.Expression)] = {
-
+  private def extractPredicates(predicate: ast.Expression, knownIdentifiers: Set[IdName]) = {
     predicate.treeFold(Seq.empty[(Set[IdName], ast.Expression)]) {
       // n:Label
       case predicate@HasLabels(identifier@Identifier(name), labels) =>
@@ -56,7 +53,6 @@ object SelectionPredicates {
       case predicate: Expression =>
         (acc, _) => acc :+ ((idNames(predicate) & knownIdentifiers) -> predicate)
     }
-
   }
 }
 

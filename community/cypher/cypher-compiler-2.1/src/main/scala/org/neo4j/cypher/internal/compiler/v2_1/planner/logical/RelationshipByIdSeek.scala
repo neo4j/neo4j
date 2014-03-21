@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class RelationshipByIdSeek(idName: IdName, relId: Expression)
+case class RelationshipByIdSeek(idName: IdName, relId: Expression, cardinality: Int)
                                (val solvedPredicates: Seq[Expression] = Seq.empty)
                                (implicit val context: LogicalPlanContext) extends LogicalPlan {
   def lhs = None
   def rhs = None
 
-  val cardinality = context.estimator.estimateRelationshipByIdSeek()
   val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
 
   val coveredIds = ??? // TODO: Need to cover the end nodes

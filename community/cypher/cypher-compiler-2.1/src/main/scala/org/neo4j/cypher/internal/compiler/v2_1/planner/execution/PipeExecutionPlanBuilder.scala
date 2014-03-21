@@ -54,10 +54,10 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeByLabelScan(IdName(id), label) =>
           NodeByLabelScanPipe(id, label)
 
-        case NodeByIdSeek(IdName(id), nodeIdExpr) =>
+        case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
           NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
 
-        case RelationshipByIdSeek(IdName(id), relIdExpr) =>
+        case RelationshipByIdSeek(IdName(id), relIdExpr, _) =>
           RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
 
         case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>

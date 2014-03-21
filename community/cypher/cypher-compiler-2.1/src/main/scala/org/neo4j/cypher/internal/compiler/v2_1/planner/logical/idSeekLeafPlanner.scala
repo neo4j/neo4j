@@ -20,15 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
     predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
 //      case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
-//        RelationshipByIdSeek(idName, idExpr)(Seq(predicate))
+//        val cardinality = context.estimator.estimateRelationshipByIdSeek()
+//        RelationshipByIdSeek(idName, idExpr, cardinality)(Seq(predicate))
+//      case predicate@In(FunctionInvocation(Identifier("id"), _, IndexedSeq(RelationshipIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
+//        val cardinality = expressions.size * context.estimator.estimateRelationshipByIdSeek()
+//        RelationshipByIdSeek(idName, idsExpr, cardinality)(Seq(predicate))
       case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
-        NodeByIdSeek(idName, idExpr)(Seq(predicate))
+        val cardinality = context.estimator.estimateNodeByIdSeek()
+        NodeByIdSeek(idName, idExpr, cardinality)(Seq(predicate))
+      case predicate@In(FunctionInvocation(Identifier("id"), _, IndexedSeq(NodeIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
+        val cardinality = expressions.size * context.estimator.estimateNodeByIdSeek()
+        NodeByIdSeek(idName, idsExpr, cardinality)(Seq(predicate))
     }
 }
