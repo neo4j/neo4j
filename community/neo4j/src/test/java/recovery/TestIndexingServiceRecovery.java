@@ -183,7 +183,8 @@ public class TestIndexingServiceRecovery
                                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                                persistenceManager, lockManager, this, transactionEventHandlers, recoveryMonitor );
+                                persistenceManager, lockManager, this, transactionEventHandlers, recoveryMonitor,
+                                new DefaultFileSystemAbstraction() );
                         xaDataSourceManager.registerDataSource( neoDataSource );
                     }
                 };

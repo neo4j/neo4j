@@ -608,7 +608,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     resolver.resolveDependency( Locks.class ),
                     (SchemaWriteGuard)graphDb,
                     resolver.resolveDependency( TransactionEventHandlers.class ),
-                    monitors.newMonitor( IndexingService.Monitor.class ));
+                    monitors.newMonitor( IndexingService.Monitor.class ),
+                    resolver.resolveDependency( FileSystemAbstraction.class ));
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

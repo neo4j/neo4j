@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.DaemonThreadFactory;
@@ -35,7 +37,8 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     private final String id;
 
     private ExecutorService executor;
-    private Timer timer; // Note, we may want a pool of these in the future, to minimize contention.
+    private ScheduledThreadPoolExecutor scheduledExecutor;
+    private final ConcurrentMap<Runnable, ScheduledFuture<?>> recurringJobs = new ConcurrentHashMap<>();
 
     public Neo4jJobScheduler( StringLogger log )
     {
@@ -53,7 +56,10 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     public void start()
     {
         this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + id));
-        this.timer = new Timer( "Neo4j Recurring Job Runner", /* daemon= */true );
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2 );
+
+        //scheduledExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy( false );
+        //scheduledExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy( false );
     }
 
     @Override
@@ -65,20 +71,23 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public void scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
     {
-        timer.schedule( new TimerTask()
+        ScheduledFuture<?> scheduled = scheduledExecutor.scheduleAtFixedRate( runnable, 0, period, timeUnit );
+        if(recurringJobs.putIfAbsent( runnable, scheduled ) != null)
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    runnable.run();
-                } catch(RuntimeException e)
-                {
-                    log.error( "Failed running recurring job.", e );
-                }
-            }
-        }, 0, timeUnit.toMillis( period ) );
+            scheduled.cancel( true );
+            throw new IllegalArgumentException( runnable + " is already scheduled. Please implement a unique " +
+                    ".equals() method for each runnable you would like to execute." );
+        }
+    }
+
+    @Override
+    public void cancelRecurring( Group group, Runnable runnable )
+    {
+        ScheduledFuture<?> toCancel = recurringJobs.remove( runnable );
+        if(toCancel != null)
+        {
+            toCancel.cancel( false );
+        }
     }
 
     @Override
@@ -89,23 +98,34 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         {
             if(executor != null)
             {
-                executor.shutdown();
+                executor.shutdownNow();
+                executor.awaitTermination( 5, TimeUnit.SECONDS );
                 executor = null;
             }
         } catch(RuntimeException e)
         {
             exception = e;
         }
+        catch ( InterruptedException e )
+        {
+            exception = new RuntimeException(e);
+        }
+
         try
         {
-            if(timer != null)
+            if(scheduledExecutor != null)
             {
-                timer.cancel();
-                timer = null;
+                scheduledExecutor.shutdown();
+                scheduledExecutor.awaitTermination( 5, TimeUnit.SECONDS );
+                scheduledExecutor = null;
             }
         } catch(RuntimeException e)
         {
             exception = e;
+        }
+        catch ( InterruptedException e )
+        {
+            exception = new RuntimeException(e);
         }
 
         if(exception != null)

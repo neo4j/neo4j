@@ -220,7 +220,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_adding_new_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( state, 1337, 12 ) ).thenReturn( false );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( false );
 
         // WHEN and THEN
         assertTrue( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
@@ -230,7 +230,7 @@ public class LabelTransactionStateTest
     public void should_return_false_when_adding_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( state, 1337, 12 ) ).thenReturn( true );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
         assertFalse( "Label should have been added", txContext.nodeAddLabel( state, 1337, 12 ) );
@@ -240,7 +240,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_existing_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( state, 1337, 12 ) ).thenReturn( true );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( true );
 
         // WHEN and THEN
         assertTrue( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
@@ -250,7 +250,7 @@ public class LabelTransactionStateTest
     public void should_return_true_when_removing_non_existant_label() throws Exception
     {
         // GIVEN
-        when( store.nodeHasLabel( state, 1337, 12 ) ).thenReturn( false );
+        when( store.nodeHasLabel( 1337, 12 ) ).thenReturn( false );
 
         // WHEN and THEN
         assertFalse( "Label should have been removed", txContext.nodeRemoveLabel( state, 1337, 12 ) );
@@ -313,7 +313,7 @@ public class LabelTransactionStateTest
                     .then( answerAsPrimitiveIntIteratorFrom( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
             for ( int label : nodeLabels.labelIds )
             {
-                when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
+                when( store.nodeHasLabel( nodeLabels.nodeId, label ) ).thenReturn( true );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )
