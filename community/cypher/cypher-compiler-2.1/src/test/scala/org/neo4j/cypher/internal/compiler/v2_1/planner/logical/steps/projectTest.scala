@@ -32,7 +32,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
-    val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    val qg = QueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty)
     implicit val context = createContextWith(qg)
 
     // when
@@ -46,7 +46,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
-    val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    val qg = QueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty)
     implicit val context = createContextWith(qg)
 
     // when

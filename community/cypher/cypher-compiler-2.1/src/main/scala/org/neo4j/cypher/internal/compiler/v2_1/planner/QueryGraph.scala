@@ -23,24 +23,27 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
 import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PatternRelationship, IdName}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 
 /*
 An abstract representation of the query graph being solved at the current step
  */
-case class QueryGraph(projections: Map[String, ast.Expression], selections: Selections, nodes: Set[IdName])
+case class QueryGraph(projections: Map[String, ast.Expression],
+                      selections: Selections,
+                      patternNodes: Set[IdName],
+                      patternRelationships: Set[PatternRelationship])
 
 object SelectionPredicates {
-  def fromWhere(where: Where) = extractPredicates(where.expression)
+  def fromWhere(where: Where): Seq[(Set[IdName], Expression)] = extractPredicates(where.expression)
 
   private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
     case id: Identifier =>
       (acc: Set[IdName], _) => acc + IdName(id.name)
   }
 
-  private def extractPredicates(predicate: ast.Expression) = {
+  private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], Expression)] = {
     predicate.treeFold(Seq.empty[(Set[IdName], ast.Expression)]) {
       // n:Label
       case predicate@HasLabels(identifier@Identifier(name), labels) =>

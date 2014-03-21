@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PatternRelationship, IdName}
+import org.neo4j.graphdb.Direction
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
@@ -32,17 +33,18 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   val pos = DummyPosition(0)
 
   val builder = new SimpleQueryGraphBuilder
+
   def buildQueryGraph(query: String): QueryGraph = {
     val ast = parser.parse(query).asInstanceOf[Query]
     builder.produce(ast)
   }
 
-  test("projection only query") {
+  test("RETURN 42") {
     val qg = buildQueryGraph("RETURN 42")
     qg.projections should equal(Map("42" -> SignedIntegerLiteral("42")(pos)))
   }
 
-  test("multiple projection query") {
+  test("RETURN 42, 'foo'") {
     val qg = buildQueryGraph("RETURN 42, 'foo'")
     qg.projections should equal(Map(
       "42" -> SignedIntegerLiteral("42")(pos),
@@ -51,17 +53,16 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   }
 
   test("match n return n") {
-    val qg = buildQueryGraph("MATCH n RETURN n")
+    val qg = buildQueryGraph("match n return n")
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
     ))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
 
-  test("match n where n:Awesome return n") {
+  test("MATCH n WHERE n:Awesome:Foo RETURN n") {
     val qg = buildQueryGraph("MATCH n WHERE n:Awesome:Foo RETURN n")
-
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
     ))
@@ -71,12 +72,11 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       Set(IdName("n")) -> HasLabels(Identifier("n")(pos), Seq(LabelName("Foo")()(pos)))(pos)
     )))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
 
   test("match n where n:X OR n:Y return n") {
-    val qg = buildQueryGraph("MATCH n WHERE n:X OR n:Y RETURN n")
-
+    val qg = buildQueryGraph("match n where n:X OR n:Y return n")
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
     ))
@@ -88,12 +88,11 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
 
-  test("match n where n:X OR (n:A AND n:B) return n") {
+  test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
     val qg = buildQueryGraph("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n")
-
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
     ))
@@ -108,12 +107,11 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
 
-  test("match n where id(n) = 42 return n") {
+  test("MATCH n WHERE id(n) = 42 RETURN n") {
     val qg = buildQueryGraph("MATCH n WHERE id(n) = 42 RETURN n")
-
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
     ))
@@ -125,12 +123,11 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
 
-  test("match n where id(n) IN [42, 43] return n") {
+  test("MATCH n WHERE id(n) IN [42, 43] RETURN n") {
     val qg = buildQueryGraph("MATCH n WHERE id(n) IN [42, 43] RETURN n")
-
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
     ))
@@ -142,10 +139,10 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
 
-  test("match n where n:Label and id(n) = 42 return n") {
+  test("MATCH n WHERE n:Label AND id(n) = 42 RETURN n") {
     val qg = buildQueryGraph("MATCH n WHERE n:Label AND id(n) = 42 RETURN n")
     qg.projections should equal(Map(
       "n" -> Identifier("n")(pos)
@@ -159,6 +156,99 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       )(pos)
     )))
 
-    qg.nodes should equal(Set(IdName("n")))
+    qg.patternNodes should equal(Set(IdName("n")))
   }
+
+  test("match (a)-[r]->(b) return a,r") {
+    val qg = buildQueryGraph("match (a)-[r]->(b) return a,r")
+    qg.patternRelationships should equal(
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty)))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
+  test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {
+    val qg = buildQueryGraph("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty)))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos),
+      "b" -> Identifier("b")(pos)
+    ))
+  }
+
+  test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
+    val qg = buildQueryGraph("match (a)-[r]->(b)-[r2]->(a) return a,r")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty)))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
+  test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
+    val qg = buildQueryGraph("match (a)<-[r]-(b)-[r2]-(c) return a,r")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty)))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
+  test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
+    val qg = buildQueryGraph("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty)))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
+  test("match (a), (b)-[r:Type]-(c) where b:Label return a,r") {
+    val qg = buildQueryGraph("match (a), (b)-[r:Type]-(c) where b:Label return a,r")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("b"), IdName("c")), Direction.BOTH, Seq(relType("Type")))))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    qg.selections should equal(Selections(List(
+      Set(IdName("b")) -> HasLabels(Identifier("b")(pos), Seq(LabelName("Label")()(pos)))(pos)
+    )))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
+  test("match (a)-[r:Type|Foo]-(b) return a,r") {
+    val qg = buildQueryGraph("match (a)-[r:Type|Foo]-(b) return a,r")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")))))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    qg.selections should equal(Selections())
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
+  def relType(name: String): RelTypeName = RelTypeName(name)(None)(pos)
 }

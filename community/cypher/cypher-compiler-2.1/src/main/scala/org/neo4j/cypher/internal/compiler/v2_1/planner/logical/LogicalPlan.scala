@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Expression}
+import org.neo4j.graphdb.Direction
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -42,3 +43,5 @@ abstract class LogicalPlan {
 }
 
 final case class IdName(name: String) extends AnyVal
+
+final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName])
