@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit val context: LogicalPlanContext) extends LogicalPlan {
-  val lhs = Some(left)
-  val rhs = Some(right)
+case class AllNodesScan(idName: IdName)(implicit val context:LogicalPlanContext) extends LogicalPlan {
+  def lhs = None
+  def rhs = None
 
-  val cardinality = left.cardinality * right.cardinality
-  val cost = context.costs.calculateCartesianProductOverhead(cardinality) + (left.cost * right.cost)
+  val cardinality = context.estimator.estimateAllNodesScan()
+  val cost = context.costs.calculateAllNodesScan(cardinality)
 
-  val coveredIds = left.coveredIds ++ right.coveredIds
-  val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
+  val coveredIds = Set(idName)
+  val solvedPredicates = Seq.empty
 }

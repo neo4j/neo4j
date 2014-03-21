@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanTableProducer
 
-case class Selection(predicates: Seq[Expression], left: LogicalPlan)
-                    (implicit val context: LogicalPlanContext) extends LogicalPlan {
-  assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
-
-  val lhs = Some(left)
-
-  def rhs = None
-
-  def coveredIds = left.coveredIds
-
-  val cardinality = {
-    val selectivity = predicates.map(context.estimator.estimateSelectivity).reduce(_ * _)
-    (left.cardinality * selectivity).toInt
+case class includeBestPlan(planTable: PlanTable) extends PlanTableProducer[CandidateList] {
+  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): PlanTable = {
+    candidateList.topPlan.foldLeft(planTable)(_ + _)
   }
-
-  val cost = context.costs.calculateSelectionOverhead(left.cardinality) + left.cost
-
-  def solvedPredicates: Seq[Expression] = predicates ++ left.solvedPredicates
 }

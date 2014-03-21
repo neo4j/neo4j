@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+
 
 case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   def size = m.size

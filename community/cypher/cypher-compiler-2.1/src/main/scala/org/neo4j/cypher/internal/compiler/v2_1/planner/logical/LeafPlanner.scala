@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+
 trait LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan]
 }

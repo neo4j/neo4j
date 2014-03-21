@@ -19,30 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.mockito.Mockito
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.RelationshipByIdSeekPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Collection, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.RelationshipByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

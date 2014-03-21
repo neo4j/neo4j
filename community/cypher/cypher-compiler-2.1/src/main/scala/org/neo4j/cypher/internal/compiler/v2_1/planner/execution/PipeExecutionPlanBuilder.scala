@@ -19,17 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {

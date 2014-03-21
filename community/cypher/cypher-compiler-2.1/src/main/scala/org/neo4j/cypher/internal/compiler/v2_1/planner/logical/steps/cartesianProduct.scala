@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanTransformer
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 
-object project extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val ids: Map[String, Expression] = plan.coveredIds.map {
-      case IdName(id) => id -> Identifier(id)(null)
-    }.toMap
-
-    if (ids != context.queryGraph.projections)
-      Projection(plan, context.queryGraph.projections)
-    else
-      plan
+object cartesianProduct extends PlanCandidateGenerator {
+  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+    if (planTable.size > 1) {
+      val plans = planTable.plans
+      val cartesianProducts =
+        for (
+          planA <- plans;
+          planB <- plans if planA != planB
+        ) yield applySelections(CartesianProduct(planA, planB))
+      CandidateList(cartesianProducts.toList)
+    } else {
+      CandidateList(Seq.empty)
+    }
   }
 }
