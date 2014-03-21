@@ -29,6 +29,8 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.RunCarefully;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -75,6 +77,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
@@ -347,19 +350,22 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void stopModules()
     {
-        for ( ServerModule module : serverModules )
+        new RunCarefully( map( new Function<ServerModule, Runnable>()
         {
-
-            try
+            @Override
+            public Runnable apply( final ServerModule module )
             {
-                module.stop();
+                return new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        module.stop();
+                    }
+                };
             }
-            catch ( Exception e )
-            {
-                //noinspection deprecation
-                log.error( "Unable to stop module.", e );
-            }
-        }
+        }, serverModules ) )
+                .run();
     }
 
     private void runPreflightTasks()
@@ -565,37 +571,54 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
-        try
-        {
-            stopWebServer();
-            stopModules();
+        new RunCarefully(
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopWebServer();
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopModules();
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopRrdDb();
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopDatabase();
+                }
+            }
+        ).run();
 
-            stopRrdDb();
-
-            //noinspection deprecation
-            log.info( "Successfully shutdown Neo4j Server." );
-
-            stopDatabase();
-            //noinspection deprecation
-            log.info( "Successfully shutdown database." );
-        }
-        catch ( Exception e )
-        {
-            //noinspection deprecation
-            log.warn( "Failed to cleanly shutdown database." );
-        }
+        //noinspection deprecation
+        log.info( "Successfully shutdown database." );
     }
 
     private void stopRrdDb()
     {
-        try
+        if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
+        if( rrdDbWrapper != null )
         {
-            if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
-            if( rrdDbWrapper != null )  rrdDbWrapper.close();
-        } catch(IOException e)
-        {
-            // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
-            log.error( "Unable to cleanly shut down statistics database.", e );
+            try
+            {
+                rrdDbWrapper.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -615,9 +638,9 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 database.stop();
             }
-            catch ( Throwable e )
+            catch ( Throwable throwable )
             {
-                throw new RuntimeException( e );
+                throw new RuntimeException( throwable );
             }
         }
     }
