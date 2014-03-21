@@ -25,6 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
  * Puts a buffer in front of a {@link ReadableByteChannel} so that even small reads,
@@ -33,13 +34,15 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 public class BufferedFileChannel extends AbstractStoreChannel
 {
     private final StoreChannel source;
+    private final ByteCounterMonitor monitor;
     private final byte[] intermediaryBuffer = new byte[1024*8];
     private int intermediaryBufferSize;
     private int intermediaryBufferPosition;
 
-    public BufferedFileChannel( StoreChannel source ) throws IOException
+    public BufferedFileChannel( StoreChannel source, ByteCounterMonitor monitor ) throws IOException
     {
         this.source = source;
+        this.monitor = monitor;
         fillUpIntermediaryBuffer();
     }
 
@@ -74,6 +77,7 @@ public class BufferedFileChannel extends AbstractStoreChannel
     private int fillUpIntermediaryBuffer() throws IOException
     {
         int result = source.read( ByteBuffer.wrap( intermediaryBuffer ) );
+        monitor.bytesRead( result );
         intermediaryBufferPosition = 0;
         intermediaryBufferSize = result == -1 ? 0 : result;
         return result;
