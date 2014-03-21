@@ -22,7 +22,6 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,6 +34,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
@@ -287,9 +287,9 @@ public class LogTestUtils
     {
         File tempFile = new File( file.getPath() + ".tmp" );
         fileSystem.deleteFile( tempFile );
-        FileChannel in = fileSystem.open( file, "r" );
+        StoreChannel in = fileSystem.open( file, "r" );
         in.position( startPosition );
-        FileChannel out = fileSystem.open( tempFile, "rw" );
+        StoreChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         boolean changed = false;
@@ -357,7 +357,7 @@ public class LogTestUtils
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
-        try ( FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" ) )
+        try ( StoreChannel fileChannel = fileSystem.open( new File( logPath ), "r" ) )
         {
             // Always a header
             LogIoUtils.readLogHeader( buffer, fileChannel, true );
@@ -432,8 +432,8 @@ public class LogTestUtils
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
         fileSystem.deleteFile( tempFile );
-        FileChannel in = fileSystem.open( file, "r" );
-        FileChannel out = fileSystem.open( tempFile, "rw" );
+        StoreChannel in = fileSystem.open( file, "r" );
+        StoreChannel out = fileSystem.open( tempFile, "rw" );
         LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
@@ -461,7 +461,7 @@ public class LogTestUtils
         return tempFile;
     }
 
-    private static void transferLogicalLogHeader( FileChannel in, LogBuffer outBuffer,
+    private static void transferLogicalLogHeader( StoreChannel in, LogBuffer outBuffer,
             ByteBuffer buffer ) throws IOException
     {
         long[] header = LogIoUtils.readLogHeader( buffer, in, true );
@@ -471,7 +471,7 @@ public class LogTestUtils
         outBuffer.put( headerBytes );
     }
 
-    private static void safeClose( FileChannel channel )
+    private static void safeClose( StoreChannel channel )
     {
         try
         {
@@ -542,12 +542,12 @@ public class LogTestUtils
         File activeLog = new File( logBaseFileName.getPath() + ".active" );
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         File activeLogBackup;
-        try ( FileChannel af = fileSystem.open( activeLog, "r" ) )
+        try ( StoreChannel af = fileSystem.open( activeLog, "r" ) )
         {
             af.read( buffer );
             buffer.flip();
             activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
-            try ( FileChannel activeCopy = fileSystem.open( activeLogBackup, "rw" ) )
+            try ( StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" ) )
             {
                 activeCopy.write( buffer );
             }
@@ -557,8 +557,8 @@ public class LogTestUtils
         buffer.clear();
         File currentLog = new File( logBaseFileName.getPath() + "." + active );
         File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
-        try ( FileChannel source = fileSystem.open( currentLog, "r" );
-              FileChannel dest = fileSystem.open( currentLogBackup, "rw" ) )
+        try ( StoreChannel source = fileSystem.open( currentLog, "r" );
+              StoreChannel dest = fileSystem.open( currentLogBackup, "rw" ) )
         {
             int read = -1;
             do

@@ -21,27 +21,25 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
  * Puts a buffer in front of a {@link ReadableByteChannel} so that even small reads,
  * byte/int/long will be fast.
  */
-public class BufferedFileChannel extends FileChannel
+public class BufferedFileChannel extends AbstractStoreChannel
 {
-    private final FileChannel source;
+    private final StoreChannel source;
     private final ByteCounterMonitor monitor;
     private final byte[] intermediaryBuffer = new byte[1024*8];
     private int intermediaryBufferSize;
     private int intermediaryBufferPosition;
 
-    public BufferedFileChannel( FileChannel source, ByteCounterMonitor monitor ) throws IOException
+    public BufferedFileChannel( StoreChannel source, ByteCounterMonitor monitor ) throws IOException
     {
         this.source = source;
         this.monitor = monitor;
@@ -86,31 +84,13 @@ public class BufferedFileChannel extends FileChannel
     }
 
     @Override
-    public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int write( ByteBuffer src ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public long position() throws IOException
     {
         return source.position() - intermediaryBufferSize + intermediaryBufferPosition;
     }
 
     @Override
-    public FileChannel position( long newPosition ) throws IOException
+    public BufferedFileChannel position( long newPosition ) throws IOException
     {
         long bufferEndPosition = source.position();
         long bufferStartPosition = bufferEndPosition - intermediaryBufferSize;
@@ -135,7 +115,7 @@ public class BufferedFileChannel extends FileChannel
     }
 
     @Override
-    public FileChannel truncate( long size ) throws IOException
+    public BufferedFileChannel truncate( long size ) throws IOException
     {
         source.truncate( size );
         return this;
@@ -146,59 +126,15 @@ public class BufferedFileChannel extends FileChannel
     {
         source.force( metaData );
     }
-
-    @Override
-    public long transferTo( long position, long count, WritableByteChannel target )
-            throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long transferFrom( ReadableByteChannel src, long position, long count )
-            throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int read( ByteBuffer dst, long position ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int write( ByteBuffer src, long position ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public MappedByteBuffer map( MapMode mode, long position, long size ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public FileLock lock( long position, long size, boolean shared ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public FileLock tryLock( long position, long size, boolean shared ) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void implCloseChannel() throws IOException
-    {
-        source.close();
-    }
     
-    public FileChannel getSource()
+    public StoreChannel getSource()
     {
         return source;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        source.close();
     }
 }

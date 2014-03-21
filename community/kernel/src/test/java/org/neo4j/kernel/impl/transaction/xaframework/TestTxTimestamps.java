@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import org.junit.After;
@@ -34,6 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -81,7 +81,8 @@ public class TestTxTimestamps
                 .getNeoStoreDataSource().rotateLogicalLog();
         
         ByteBuffer buffer = ByteBuffer.allocate( 1024*500 );
-        FileChannel channel = fileSystem.open( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
+        StoreChannel channel = fileSystem.open( new File( db.getStoreDir(),
+                NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
         try
         {
             XaCommandFactory commandFactory = new CommandFactory();
@@ -112,7 +113,7 @@ public class TestTxTimestamps
         }
     }
 
-    private void skipFirstTransaction( ByteBuffer buffer, FileChannel channel, XaCommandFactory commandFactory ) throws IOException
+    private void skipFirstTransaction( ByteBuffer buffer, StoreChannel channel, XaCommandFactory commandFactory ) throws IOException
     {
         for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
             if ( entry instanceof Commit )

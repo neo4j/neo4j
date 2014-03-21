@@ -25,19 +25,18 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
@@ -64,7 +63,7 @@ public class DumpLogicalLog
         {
             logsFound++;
             out.println( "=== " + fileName + " ===" );
-            FileChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
+            StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
             ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                     + Xid.MAXBQUALSIZE * 10 );
             long logVersion, prevLastCommittedTx;
@@ -100,7 +99,7 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf,
+    protected boolean readAndPrintEntry( StoreChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf,
             PrintStream out, TimeZone timeZone ) throws IOException
     {
         LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, cf );

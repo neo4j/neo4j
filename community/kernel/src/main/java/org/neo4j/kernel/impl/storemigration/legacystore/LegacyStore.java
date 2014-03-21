@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -39,6 +38,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
@@ -130,16 +130,11 @@ public class LegacyStore implements Closeable
 
     private void setStoreVersionTrailer( File targetStoreFileName, String versionTrailer ) throws IOException
     {
-        FileChannel fileChannel = fs.open( targetStoreFileName, "rw" );
-        try
+        try ( StoreChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
         {
             byte[] trailer = UTF8.encode( versionTrailer );
-            fileChannel.position( fileChannel.size()-trailer.length );
+            fileChannel.position( fileChannel.size() - trailer.length );
             fileChannel.write( ByteBuffer.wrap( trailer ) );
-        }
-        finally
-        {
-            fileChannel.close();
         }
     }
 
@@ -211,7 +206,7 @@ public class LegacyStore implements Closeable
         return propertyStoreReader;
     }
 
-    static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
+    static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
     {
         buffer.clear();
         buffer.limit( nrOfBytes );

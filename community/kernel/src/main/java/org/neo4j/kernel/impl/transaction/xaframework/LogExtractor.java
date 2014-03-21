@@ -27,7 +27,6 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAnd
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,6 +38,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
@@ -557,7 +557,7 @@ public class LogExtractor
                     name = activeLogFiles.get( version );
                     if ( name == null ) throw new NoSuchLogVersionException( version );
                 }
-                FileChannel channel = fileSystem.open( name, "r" );
+                StoreChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
                 return new BufferedFileChannel( channel, monitor );
             }

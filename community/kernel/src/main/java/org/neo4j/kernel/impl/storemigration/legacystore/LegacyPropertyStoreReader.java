@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -44,7 +44,7 @@ public class LegacyPropertyStoreReader implements Closeable
     public static final String FROM_VERSION = "PropertyStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_SIZE =
             1/*next and prev high bits*/ + 4/*next*/ + 4/*prev*/ + 32 /*property blocks*/; // = 41
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final long maxId;
 
     public LegacyPropertyStoreReader( FileSystemAbstraction fs, File file ) throws IOException

@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Random;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NotCurrentStoreVersionException;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
 
 public class IndexProviderStore
 {
@@ -42,7 +42,7 @@ public class IndexProviderStore
     private long version;
     private final long indexVersion;
     
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE*RECORD_COUNT );
     private long lastCommittedTx;
     private final File file;
@@ -52,7 +52,7 @@ public class IndexProviderStore
     {
         this.file = file;
         this.random = new Random( System.currentTimeMillis() );
-        FileChannel channel = null;
+        StoreChannel channel = null;
         boolean success = false;
         try
         {
@@ -124,7 +124,7 @@ public class IndexProviderStore
         return versionDiffers;
     }
     
-    private Long[] readRecordsWithNullDefaults( FileChannel fileChannel, int count, boolean allowUpgrade ) throws IOException
+    private Long[] readRecordsWithNullDefaults( StoreChannel fileChannel, int count, boolean allowUpgrade ) throws IOException
     {
         buf.clear();
         int bytesRead = fileChannel.read( buf );
@@ -146,7 +146,7 @@ public class IndexProviderStore
         if ( fileSystem.fileExists( file ) )
             throw new IllegalArgumentException( file + " already exist" );
         
-        FileChannel fileChannel = null;
+        StoreChannel fileChannel = null;
         try
         {
             fileChannel = fileSystem.open( file, "rw" );
@@ -160,7 +160,7 @@ public class IndexProviderStore
         }
     }
 
-    private void write( FileChannel channel, long time, long identifier, long version, long lastCommittedTxId,
+    private void write( StoreChannel channel, long time, long identifier, long version, long lastCommittedTxId,
             long indexVersion ) throws IOException
     {
         buf.clear();

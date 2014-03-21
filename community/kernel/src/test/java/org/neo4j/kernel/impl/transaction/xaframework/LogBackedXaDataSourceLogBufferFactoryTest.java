@@ -21,19 +21,21 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -83,7 +85,7 @@ public class LogBackedXaDataSourceLogBufferFactoryTest
             logFile.force();
 
             // Then the header should be correct
-            FileChannel channel = logFile.getFileChannel();
+            StoreChannel channel = logFile.getFileChannel();
             channel.position( 0 );
             long[] headerLongs = LogIoUtils.readLogHeader( scratch, channel, true );
             assertThat(headerLongs[0], equalTo(0l));

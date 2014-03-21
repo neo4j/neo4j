@@ -21,13 +21,13 @@ package org.neo4j.com;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
  * Implementation of a LogBuffer over a ChannelBuffer. Maintains a byte buffer
@@ -167,7 +167,7 @@ public class BlockLogBuffer implements LogBuffer
         throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
     }
 
-    public FileChannel getFileChannel()
+    public StoreChannel getFileChannel()
     {
         throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
     }

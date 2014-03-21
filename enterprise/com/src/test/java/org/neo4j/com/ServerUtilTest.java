@@ -27,10 +27,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,8 +41,10 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -308,117 +307,16 @@ public class ServerUtilTest
         private final List<File> files = new ArrayList<>();
 
         @Override
-        public FileChannel open( File fileName, String mode ) throws IOException
+        public StoreChannel open( File fileName, String mode ) throws IOException
         {
             if ( files.contains( fileName ) )
             {
-                FileChannel fileChannel = new FileChannel()
-                {
+                return new AbstractStoreChannel() {
                     @Override
-                    public int read( ByteBuffer dst ) throws IOException
+                    public void close() throws IOException
                     {
-                        return 0;
-                    }
-
-                    @Override
-                    public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public int write( ByteBuffer src ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public long position() throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public FileChannel position( long newPosition ) throws IOException
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public long size() throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public FileChannel truncate( long size ) throws IOException
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public void force( boolean metaData ) throws IOException
-                    {
-
-                    }
-
-                    @Override
-                    public long transferTo( long position, long count, WritableByteChannel target ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public int read( ByteBuffer dst, long position ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public int write( ByteBuffer src, long position ) throws IOException
-                    {
-                        return 0;
-                    }
-
-                    @Override
-                    public MappedByteBuffer map( MapMode mode, long position, long size ) throws IOException
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public java.nio.channels.FileLock lock( long position, long size,
-                                                            boolean shared ) throws IOException
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public java.nio.channels.FileLock tryLock( long position, long size,
-                                                               boolean shared ) throws IOException
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    protected void implCloseChannel() throws IOException
-                    {
-
                     }
                 };
-                return fileChannel;
             }
             throw new FileNotFoundException( fileName.getPath() );
         }
@@ -448,13 +346,13 @@ public class ServerUtilTest
         }
 
         @Override
-        public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
+        public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
         {
             return null;
         }
 
         @Override
-        public FileChannel create( File fileName ) throws IOException
+        public StoreChannel create( File fileName ) throws IOException
         {
             files.add( fileName );
             return null;

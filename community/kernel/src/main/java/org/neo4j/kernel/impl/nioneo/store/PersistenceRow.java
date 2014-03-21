@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 /**
  * PersistenRow only encapsulates one record in a store. It is used as a light-
@@ -36,7 +35,7 @@ public class PersistenceRow extends LockableWindow
     private final long position;
     private final Buffer buffer;
 
-    PersistenceRow( long position, int recordSize, FileChannel channel )
+    PersistenceRow( long position, int recordSize, StoreChannel channel )
     {
         super( channel );
         assert position >= 0 : "Illegal position[" + position + "]";

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,6 +31,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -79,7 +79,7 @@ public class MigrationTestUtils
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
-        FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
+        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
         fileChannel.position( fileSystem.getFileSize( storeFile ) - versionBytes.length );
         fileChannel.write( ByteBuffer.wrap( versionBytes ) );
         fileChannel.close();
@@ -89,7 +89,7 @@ public class MigrationTestUtils
             String suffixToDetermineTruncationLength ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
-        FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
+        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
         fileChannel.truncate( fileSystem.getFileSize( storeFile ) - versionBytes.length );
         fileChannel.close();
     }
@@ -97,7 +97,7 @@ public class MigrationTestUtils
     static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
             throws IOException
     {
-        FileChannel fileChannel = fileSystem.open( storeFile, "rw" );
+        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
         fileChannel.truncate( newLength );
         fileChannel.close();
     }
@@ -150,7 +150,7 @@ public class MigrationTestUtils
     {
         for ( StoreFile storeFile : StoreFile.legacyStoreFiles() )
         {
-            FileChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
+            StoreChannel channel = fileSystem.open( new File( workingDirectory, storeFile.storeFileName() ), "r" );
             int length = UTF8.encode( version ).length;
             byte[] bytes = new byte[length];
             ByteBuffer buffer = ByteBuffer.wrap( bytes );
@@ -200,8 +200,8 @@ public class MigrationTestUtils
             File otherFile = new File( other, originalFile.getName() );
             if ( !fileSystem.isDirectory( originalFile ) )
             {
-                FileChannel originalChannel = fileSystem.open( originalFile, "r" );
-                FileChannel otherChannel = fileSystem.open( otherFile, "r" );
+                StoreChannel originalChannel = fileSystem.open( originalFile, "r" );
+                StoreChannel otherChannel = fileSystem.open( otherFile, "r" );
                 try
                 {
                     ByteBuffer buffer = ByteBuffer.allocate( 1 );

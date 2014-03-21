@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
 
 /**
  * During log rotation, any unfinished transactions in the current log need to be copied over to the
@@ -58,7 +58,7 @@ class PartialTransactionCopier
         this.monitor = monitor;
     }
 
-    public void copy( FileChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
+    public void copy( StoreChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
     {
         boolean foundFirstActiveTx = false;
         Map<Integer,LogEntry.Start> startEntriesEncountered = new HashMap<Integer,LogEntry.Start>();
