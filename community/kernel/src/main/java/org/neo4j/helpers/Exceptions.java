@@ -219,11 +219,18 @@ public class Exceptions
         {
             return second;
         }
-        if (second == null )
+        if ( second == null )
         {
             return first;
         }
-        first.addSuppressed( second );
+
+        Throwable current = first;
+        while ( current.getCause() != null )
+        {
+            current = current.getCause();
+        }
+
+        current.initCause( second );
         return first;
     }
 }
