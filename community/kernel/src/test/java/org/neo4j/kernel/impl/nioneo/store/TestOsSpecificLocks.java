@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -62,7 +61,7 @@ public class TestOsSpecificLocks
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         // Must grab locks only on store_lock file
         File fileName = new File( path, StoreLocker.STORE_LOCK_FILENAME );
-        FileChannel channel = fs.open( fileName, "rw" );
+        StoreChannel channel = fs.open( fileName, "rw" );
         // Lock this sucker!
         FileLock lock = fs.tryLock( fileName, channel );
         assertTrue( new File( path, "lock" ).exists() );
@@ -78,7 +77,7 @@ public class TestOsSpecificLocks
 
         // But the rest of the files should return non null (placebos,
         // actually)
-        FileChannel tempChannel = fs.open( new File( fileName.getPath() + "1"), "rw" );
+        StoreChannel tempChannel = fs.open( new File( fileName.getPath() + "1" ), "rw" );
         FileLock tempLock = fs.tryLock( new File( fileName.getPath() + "1"), tempChannel );
         assertNotNull( tempLock );
         tempLock.release();

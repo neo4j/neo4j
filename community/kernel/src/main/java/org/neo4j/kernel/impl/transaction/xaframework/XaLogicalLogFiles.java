@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
@@ -110,7 +110,7 @@ public class XaLogicalLogFiles {
         }
         else
         {
-            FileChannel fc = null;
+            StoreChannel fc = null;
             byte bytes[] = new byte[256];
             ByteBuffer buf = ByteBuffer.wrap( bytes );
             int read = 0;

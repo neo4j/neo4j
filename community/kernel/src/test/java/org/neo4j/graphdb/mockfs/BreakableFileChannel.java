@@ -25,17 +25,17 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
-public class BreakableFileChannel extends FileChannel
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+
+public class BreakableFileChannel implements StoreChannel
 {
-    private final FileChannel inner;
+    private final StoreChannel inner;
     private final File theFile;
     private FileSystemGuard fs;
     private int bytesWritten = 0;
 
-    public BreakableFileChannel( FileChannel open, File theFile, FileSystemGuard guard )
+    public BreakableFileChannel( StoreChannel open, File theFile, FileSystemGuard guard )
     {
         this.inner = open;
         this.theFile = theFile;
@@ -55,6 +55,12 @@ public class BreakableFileChannel extends FileChannel
     }
 
     @Override
+    public long read( ByteBuffer[] dsts ) throws IOException
+    {
+        return inner.read( dsts );
+    }
+
+    @Override
     public int write( ByteBuffer byteBuffer ) throws IOException
     {
         return inner.write( byteBuffer );
@@ -67,15 +73,22 @@ public class BreakableFileChannel extends FileChannel
     }
 
     @Override
+    public long write( ByteBuffer[] srcs ) throws IOException
+    {
+        return inner.write( srcs );
+    }
+
+    @Override
     public long position() throws IOException
     {
         return inner.position();
     }
 
     @Override
-    public FileChannel position( long l ) throws IOException
+    public BreakableFileChannel position( long l ) throws IOException
     {
-        return inner.position( l );
+        inner.position( l );
+        return this;
     }
 
     @Override
@@ -85,9 +98,10 @@ public class BreakableFileChannel extends FileChannel
     }
 
     @Override
-    public FileChannel truncate( long l ) throws IOException
+    public BreakableFileChannel truncate( long l ) throws IOException
     {
-        return inner.truncate( l );
+        inner.truncate( l );
+        return this;
     }
 
     @Override
@@ -97,21 +111,15 @@ public class BreakableFileChannel extends FileChannel
     }
 
     @Override
-    public long transferTo( long l, long l1, WritableByteChannel writableByteChannel ) throws IOException
-    {
-        return inner.transferTo( l, l1, writableByteChannel );
-    }
-
-    @Override
-    public long transferFrom( ReadableByteChannel readableByteChannel, long l, long l1 ) throws IOException
-    {
-        return inner.transferFrom( readableByteChannel, l, l1 );
-    }
-
-    @Override
     public int read( ByteBuffer byteBuffer, long l ) throws IOException
     {
         return inner.read( byteBuffer, l );
+    }
+
+    @Override
+    public FileLock tryLock() throws IOException
+    {
+        return inner.tryLock();
     }
 
     @Override
@@ -133,25 +141,20 @@ public class BreakableFileChannel extends FileChannel
     }
 
     @Override
-    public MappedByteBuffer map( MapMode mapMode, long l, long l1 ) throws IOException
+    public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
     {
-        return inner.map( mapMode, l, l1 );
+        return inner.map( mode, position, size );
     }
 
     @Override
-    public FileLock lock( long l, long l1, boolean b ) throws IOException
+    public boolean isOpen()
     {
-        return inner.lock( l, l1, b );
+        return inner.isOpen();
     }
 
     @Override
-    public FileLock tryLock( long l, long l1, boolean b ) throws IOException
+    public void close() throws IOException
     {
-        return inner.tryLock( l, l1, b );
-    }
-
-    @Override
-    protected void implCloseChannel() throws IOException
-    {
+        inner.close();
     }
 }

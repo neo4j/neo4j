@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.config.Setting;
@@ -35,7 +34,7 @@ import static org.neo4j.helpers.Settings.setting;
 public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
     @Override
-    public WindowPool create( File storageFileName, int recordSize, FileChannel fileChannel, Config configuration,
+    public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
                               StringLogger log )
     {
 

@@ -19,20 +19,21 @@
  */
 package org.neo4j.test.impl;
 
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class ChannelInputStream extends InputStream
 {
-    private final FileChannel channel;
+    private final StoreChannel channel;
     private final ByteBuffer buffer = ByteBuffer.allocateDirect( 8096 );
     private int position;
 
-    public ChannelInputStream( FileChannel channel )
+    public ChannelInputStream( StoreChannel channel )
     {
         this.channel = channel;
     }

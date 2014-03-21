@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public interface LogBuffer
 {
@@ -60,5 +61,5 @@ public interface LogBuffer
 
     long getFileChannelPosition() throws IOException;
 
-    FileChannel getFileChannel();
+    StoreChannel getFileChannel();
 }

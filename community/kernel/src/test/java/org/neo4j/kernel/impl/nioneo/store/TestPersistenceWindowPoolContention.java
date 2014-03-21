@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,7 @@ public class TestPersistenceWindowPoolContention
     private static final long mappingSize = giga( 1 );
     
     private long fileSize = mega( 800 );
-    private FileChannel channel;
+    private StoreChannel channel;
     private PersistenceWindowPool pool;
     private final Map<Long, Long> values = new ConcurrentHashMap<Long, Long>();
     
@@ -68,14 +67,14 @@ public class TestPersistenceWindowPoolContention
     {
         File file = new File( "target/bigfile" );
         assertTrue( "delete " + file, file.delete() );
-        channel = new RandomAccessFile( file, "rw" ).getChannel();
+        channel = new StoreFileChannel( new RandomAccessFile( file, "rw" ).getChannel() );
         write( channel, fileSize );
         pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize,
                 true, false, new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
                 StringLogger.DEV_NULL );
     }
 
-    private void write( FileChannel channel, long bytes ) throws IOException
+    private void write( StoreChannel channel, long bytes ) throws IOException
     {
         channel.position( bytes );
         channel.write( ByteBuffer.wrap( new byte[1] ) );

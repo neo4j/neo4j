@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -84,7 +83,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     private final File fileName;
     private final FileSystemAbstraction fs;
-    private FileChannel fileChannel = null;
+    private StoreChannel fileChannel = null;
     // defragged ids read from file (freed in a previous session).
     private final LinkedList<Long> idsReadFromFile = new LinkedList<>();
     // ids freed in this session that havn't been flushed to disk yet
@@ -430,7 +429,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         try
         {
-            FileChannel channel = fs.create( fileName );
+            StoreChannel channel = fs.create( fileName );
             // write the header
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             buffer.put( CLEAN_GENERATOR ).putLong( highId ).flip();
