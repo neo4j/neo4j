@@ -107,5 +107,10 @@ public class TestJetty6WebServer {
         assertThat( appender.toString(), containsString( "Remote interface ready and available at" ) );
         testBootstrapper.stop();
     }
-	
+
+    @Test
+    public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
+    {
+        new Jetty6WebServer().stop();
+    }
 }

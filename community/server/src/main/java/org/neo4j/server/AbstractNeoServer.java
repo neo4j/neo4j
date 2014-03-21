@@ -28,6 +28,8 @@ import java.util.List;
 import org.apache.commons.configuration.Configuration;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.RunCarefully;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -62,6 +64,7 @@ import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
 import org.neo4j.tooling.Clock;
 
+import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.option;
 
 public abstract class AbstractNeoServer implements NeoServer
@@ -112,8 +115,6 @@ public abstract class AbstractNeoServer implements NeoServer
             return selector.select( type, option( resolveKnownSingleDependency( type ) ) );
         }
     };
-    private static final boolean SUCCESS = true;
-    private static final boolean FAILURE = !SUCCESS;
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -239,8 +240,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
     /**
      * Use this method to register server modules from subclasses
-     *
-     * @param module
      */
     protected final void registerModule( ServerModule module )
     {
@@ -257,18 +256,22 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void stopModules()
     {
-        for ( ServerModule module : serverModules )
+        new RunCarefully( map( new Function<ServerModule, Runnable>()
         {
-
-            try
+            @Override
+            public Runnable apply( final ServerModule module )
             {
-                module.stop();
+                return new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        module.stop();
+                    }
+                };
             }
-            catch ( Exception e )
-            {
-                log.error( e );
-            }
-        }
+        }, serverModules ) )
+                .run();
     }
 
     private void runPreflightTasks()
@@ -443,16 +446,31 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public void stop()
     {
-        try
-        {
-            stopServerOnly();
-            stopDatabase();
-            log.info( "Successfully shutdown database." );
-        }
-        catch ( Exception e )
-        {
-            log.warn( "Failed to cleanly shutdown database." );
-        }
+        new RunCarefully(
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopWebServer();
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopModules();
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run()
+                {
+                    stopDatabase();
+                }
+            }
+        ).run();
+
+        log.info( "Successfully shutdown database." );
     }
 
     /**
@@ -468,16 +486,22 @@ public abstract class AbstractNeoServer implements NeoServer
     @Deprecated
     public void stopServerOnly()
     {
-        try
-        {
-            stopWebServer();
-            stopModules();
-            log.info( "Successfully shutdown Neo4j Server." );
-        }
-        catch ( Exception e )
-        {
-            log.warn( "Failed to cleanly shutdown Neo4j Server." );
-        }
+        new RunCarefully(
+            new Runnable() {
+                    @Override
+                    public void run()
+                    {
+                    stopWebServer();
+                    }
+                },
+            new Runnable() {
+                    @Override
+                    public void run()
+                    {
+                        stopModules();
+                    }
+                }
+        ).run();
     }
 
     private void stopWebServer()
