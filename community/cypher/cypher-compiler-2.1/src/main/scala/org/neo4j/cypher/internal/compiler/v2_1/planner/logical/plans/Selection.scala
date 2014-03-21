@@ -17,17 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class NodeByIdSeek(idName: IdName, nodeId: Expression, cardinality: Int)
-                       (val solvedPredicates: Seq[Expression] = Seq.empty)
-                       (implicit val context: LogicalPlanContext) extends LogicalPlan {
-  def lhs = None
+case class Selection(predicates: Seq[Expression], left: LogicalPlan)
+                    (implicit val context: LogicalPlanContext) extends LogicalPlan {
+  assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
+
+  val lhs = Some(left)
+
   def rhs = None
 
-  val cost = context.costs.calculateNodeByIdSeek(cardinality)
+  def coveredIds = left.coveredIds
 
-  val coveredIds = Set(idName)
+  val cardinality = {
+    val selectivity = predicates.map(context.estimator.estimateSelectivity).reduce(_ * _)
+    (left.cardinality * selectivity).toInt
+  }
+
+  val cost = context.costs.calculateSelectionOverhead(left.cardinality) + left.cost
+
+  def solvedPredicates: Seq[Expression] = predicates ++ left.solvedPredicates
 }

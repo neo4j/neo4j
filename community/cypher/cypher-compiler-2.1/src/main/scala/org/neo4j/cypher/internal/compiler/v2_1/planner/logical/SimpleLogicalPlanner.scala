@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.helpers.{Function1WithImplicit1, Function0WithImplicit1}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.steps._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 case class iterateUntilConverged(f: PlanTableTransformer) extends PlanTableTransformer {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {

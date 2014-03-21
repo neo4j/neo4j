@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, NodeByIdSeek}
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =

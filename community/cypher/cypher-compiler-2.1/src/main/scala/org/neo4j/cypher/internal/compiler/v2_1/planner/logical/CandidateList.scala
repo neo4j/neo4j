@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+
 case class CandidateList(plans: Seq[LogicalPlan]) {
   def pruned: CandidateList = {
     def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
