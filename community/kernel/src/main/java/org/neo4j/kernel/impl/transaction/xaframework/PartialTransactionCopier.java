@@ -109,7 +109,7 @@ class PartialTransactionCopier
 
     private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId, LogBuffer target ) throws IOException
     {
-        LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandFactory, txId, txId );
+        LogExtractor extractor = new LogExtractor( positionCache, logLoader, commandFactory, txId, txId );
         InMemoryLogBuffer tempBuffer = new InMemoryLogBuffer();
         extractor.extractNext( tempBuffer );
         ByteBuffer localBuffer = newLogReaderBuffer();

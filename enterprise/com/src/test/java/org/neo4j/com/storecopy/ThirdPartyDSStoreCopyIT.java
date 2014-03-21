@@ -19,6 +19,16 @@
  */
 package org.neo4j.com.storecopy;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -42,8 +52,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.DirectLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ResourceIterators;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -51,15 +65,6 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.*;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 
 /**
  * This is a somewhat tricky test, and one I am not super proud of, because it involves mocking some hairy parts of
@@ -180,7 +185,7 @@ public class ThirdPartyDSStoreCopyIT
             when(logPositionCache.positionOf( 1338l )).thenReturn( new LogExtractor.TxPosition( 1, -1, 1, 0, 0 ) );
             when(logPositionCache.positionOf( 1339l )).thenReturn( new LogExtractor.TxPosition( 1, -1, 1, 10, 0 ) );
 
-            return new LogExtractor( logPositionCache, logLoader, null, null, startTxId, endTxIdHint ){
+            return new LogExtractor( logPositionCache, logLoader, null, startTxId, endTxIdHint ){
 
                 long txCounter = 1338l;
 

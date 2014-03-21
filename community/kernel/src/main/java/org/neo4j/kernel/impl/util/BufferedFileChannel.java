@@ -27,6 +27,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+
 /**
  * Puts a buffer in front of a {@link ReadableByteChannel} so that even small reads,
  * byte/int/long will be fast.
@@ -34,13 +36,15 @@ import java.nio.channels.WritableByteChannel;
 public class BufferedFileChannel extends FileChannel
 {
     private final FileChannel source;
+    private final ByteCounterMonitor monitor;
     private final byte[] intermediaryBuffer = new byte[1024*8];
     private int intermediaryBufferSize;
     private int intermediaryBufferPosition;
 
-    public BufferedFileChannel( FileChannel source ) throws IOException
+    public BufferedFileChannel( FileChannel source, ByteCounterMonitor monitor ) throws IOException
     {
         this.source = source;
+        this.monitor = monitor;
         fillUpIntermediaryBuffer();
     }
 
@@ -75,6 +79,7 @@ public class BufferedFileChannel extends FileChannel
     private int fillUpIntermediaryBuffer() throws IOException
     {
         int result = source.read( ByteBuffer.wrap( intermediaryBuffer ) );
+        monitor.bytesRead( result );
         intermediaryBufferPosition = 0;
         intermediaryBufferSize = result == -1 ? 0 : result;
         return result;

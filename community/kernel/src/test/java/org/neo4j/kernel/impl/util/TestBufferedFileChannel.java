@@ -28,6 +28,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.junit.Test;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestBufferedFileChannel
 {
@@ -35,7 +37,8 @@ public class TestBufferedFileChannel
     public void testCorrectness() throws Exception
     {
         File file = createBigTempFile( 1 );
-        FileChannel channel = new BufferedFileChannel( new RandomAccessFile( file, "r" ).getChannel() );
+        FileChannel channel = new BufferedFileChannel( new RandomAccessFile( file, "r" ).getChannel(),
+                new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 15 );
         int counter = 0;
         int loopCounter = 0;
@@ -61,7 +64,8 @@ public class TestBufferedFileChannel
     public void testPositioning() throws Exception
     {
         File file = createBigTempFile( 1 );
-        FileChannel channel = new BufferedFileChannel( new RandomAccessFile( file, "r" ).getChannel() );
+        FileChannel channel = new BufferedFileChannel( new RandomAccessFile( file, "r" ).getChannel(),
+                new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocateDirect( 15 );
         
         channel.read( buffer );

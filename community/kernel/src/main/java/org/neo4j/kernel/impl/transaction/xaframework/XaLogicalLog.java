@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,12 +55,8 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.MonitoredReadableByteChannel;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -92,7 +93,7 @@ public class XaLogicalLog implements LogLoader
     private boolean scanIsComplete = false;
     private boolean nonCleanShutdown = false;
 
-    private File fileName = null;
+    private final File fileName;
     private final XaResourceManager xaRm;
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
@@ -792,7 +793,7 @@ public class XaLogicalLog implements LogLoader
                 " with committed tx=" + lastCommittedTx, true );
         long logEntriesFound = 0;
         long lastEntryPos = fileChannel.position();
-        fileChannel = new BufferedFileChannel( fileChannel );
+        fileChannel = new BufferedFileChannel( fileChannel, bufferMonitor );
         LogEntry entry;
         while ( (entry = readEntry()) != null )
         {
@@ -910,7 +911,7 @@ public class XaLogicalLog implements LogLoader
         }
         FileChannel channel = fileSystem.open( name, "r" );
         channel.position( position );
-        return new BufferedFileChannel( channel );
+        return new BufferedFileChannel( channel, bufferMonitor );
     }
 
     private void extractPreparedTransactionFromLog( int identifier,
@@ -973,7 +974,7 @@ public class XaLogicalLog implements LogLoader
 
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
-        return new LogExtractor( positionCache, this, bufferMonitor, cf, startTxId, endTxIdHint );
+        return new LogExtractor( positionCache, this, cf, startTxId, endTxIdHint );
     }
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -1028,7 +1029,7 @@ public class XaLogicalLog implements LogLoader
                 File currentLogName = getCurrentLogFileName();
                 FileChannel channel = fileSystem.open( currentLogName, "r" );
                 channel.position( position );
-                return new BufferedFileChannel( channel );
+                return new BufferedFileChannel( channel, bufferMonitor );
             }
         }
         if ( version < logVersion )
@@ -1067,7 +1068,7 @@ public class XaLogicalLog implements LogLoader
         {
             File currentLogName = getCurrentLogFileName();
             FileChannel channel = fileSystem.open( currentLogName, "r" );
-            channel = new BufferedFileChannel( channel );
+            channel = new BufferedFileChannel( channel, bufferMonitor );
             /*
              * this method is called **during** commit{One,Two}Phase - i.e. before the log buffer
              * is forced and in the case of 1PC without the writeOut() done in prepare (as in 2PC).
@@ -1142,7 +1143,6 @@ public class XaLogicalLog implements LogLoader
     protected class LogDeserializer
     {
         private final ReadableByteChannel byteChannel;
-        private final ByteCounterMonitor monitor;
         LogEntry.Start startEntry;
         LogEntry.Commit commitEntry;
 
@@ -1150,18 +1150,15 @@ public class XaLogicalLog implements LogLoader
 
         protected LogDeserializer( ReadableByteChannel byteChannel, ByteCounterMonitor monitor )
         {
-            this.byteChannel = byteChannel;
-            this.monitor = monitor;
+            this.byteChannel = new MonitoredReadableByteChannel( byteChannel, monitor );
             this.logEntries = new LinkedList<LogEntry>();
         }
 
         public boolean readAndWriteAndApplyEntry( int newXidIdentifier )
                 throws IOException
         {
-            long startedAtPosition = sharedBuffer.position();
             LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel,
                     cf );
-            monitor.bytesRead( sharedBuffer.position() - startedAtPosition );
             if ( entry == null )
             {
                 try

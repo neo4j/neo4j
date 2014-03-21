@@ -19,6 +19,9 @@
  */
 package org.neo4j.com.storecopy;
 
+import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -49,9 +52,6 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 
-import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-
 public class RemoteStoreCopier
 {
     public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
@@ -80,6 +80,7 @@ public class RemoteStoreCopier
 
     public void copyStore( StoreCopyRequester requester ) throws IOException
     {
+        System.out.println("Preparing to copy the store");
         // Clear up the current temp directory if there
         File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
         File tempStore = new File( storeDir, COPY_FROM_MASTER_TEMP );
@@ -91,8 +92,10 @@ public class RemoteStoreCopier
             tempStore.mkdir();
         }
 
+        System.out.println("Starting to copy the store");
         // Request store files and transactions that will need recovery
         Response response = requester.copyStore( decorateWithProgressIndicator(new ToFileStoreWriter( tempStore )));
+        System.out.println("Done copying store, moving on to apply received transactions");
 
         // Update highest archived log id
         long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fs, tempStore, LOGICAL_LOG_DEFAULT_NAME );
@@ -101,9 +104,11 @@ public class RemoteStoreCopier
             NeoStore.setVersion( fs, tempStore, highestLogVersion + 1 );
         }
 
+        System.out.println("Copied store and updated transaction information, moving to apply transactions");
         // Write pending transactions down to the currently active logical log
         writeTransactionsToActiveLogFile( tempConfig, response.transactions() );
         response.close();
+        System.out.println("Wrote transactions out, proceeding to apply them");
 
         // Run recovery
         GraphDatabaseAPI copiedDb = newTempDatabase( tempStore );
@@ -142,8 +147,10 @@ public class RemoteStoreCopier
             while(transactions.hasNext())
             {
                 Triplet<String,Long,TxExtractor> next = transactions.next();
+                System.out.println("Applying transactions for datasource " + next.first() +"@" + next.second() );
                 LogBuffer log = getOrCreateLogBuffer( logFiles, logWriters, /*dsName*/next.first(), /*txId*/next.second(), tempConfig );
                 next.third().extract( log );
+                System.out.println("Applying transactions for datasource " + next.first() + " done." );
             }
         }
         finally
