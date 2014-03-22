@@ -44,4 +44,8 @@ abstract class LogicalPlan {
 
 final case class IdName(name: String) extends AnyVal
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName])
+final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName]) {
+  def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
+
+  def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
+}

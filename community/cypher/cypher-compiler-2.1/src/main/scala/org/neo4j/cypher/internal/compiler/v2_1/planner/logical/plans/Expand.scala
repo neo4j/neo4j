@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContex
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 
-case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName)
+case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName)
                  (implicit val context: LogicalPlanContext) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
@@ -40,7 +40,7 @@ case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[Re
 
   val cost = left.cost + context.costs.calculateExpandRelationship(cardinality)
 
-  val coveredIds = left.coveredIds + to
+  val coveredIds = left.coveredIds + to + relName
 
   def solvedPredicates = left.solvedPredicates
 }

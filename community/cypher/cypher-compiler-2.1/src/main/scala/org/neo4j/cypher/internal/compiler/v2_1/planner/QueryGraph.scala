@@ -19,18 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
 
 /*
 An abstract representation of the query graph being solved at the current step
  */
-case class QueryGraph(projections: Map[String, ast.Expression],
+case class QueryGraph(projections: Map[String, Expression],
                       selections: Selections,
                       patternNodes: Set[IdName],
                       patternRelationships: Set[PatternRelationship]) {
@@ -38,6 +33,10 @@ case class QueryGraph(projections: Map[String, ast.Expression],
     selections
       .labelPredicates.getOrElse(node, Seq.empty)
       .flatMap(_.labels).toSeq
+
+  def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] = patternRelationships.filter {
+    r => r.nodes._1 == id || r.nodes._2 == id
+  }
 }
 
 object SelectionPredicates {
@@ -48,8 +47,8 @@ object SelectionPredicates {
       (acc: Set[IdName], _) => acc + IdName(id.name)
   }
 
-  private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], Expression)] = {
-    predicate.treeFold(Seq.empty[(Set[IdName], ast.Expression)]) {
+  private def extractPredicates(predicate: Expression): Seq[(Set[IdName], Expression)] = {
+    predicate.treeFold(Seq.empty[(Set[IdName], Expression)]) {
       // n:Label
       case predicate@HasLabels(identifier@Identifier(name), labels) =>
         (acc, _) => acc ++ labels.map { label: LabelName =>

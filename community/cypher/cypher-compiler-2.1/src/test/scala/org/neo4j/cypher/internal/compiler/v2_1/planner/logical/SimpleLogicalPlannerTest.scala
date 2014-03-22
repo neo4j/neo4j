@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 
 class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val context = newMockedLogicalPlanContext
+  implicit val context = newMockedLogicalPlanContext()
   val LogicalPlanContext(planContext, estimator, costs, _, _) = context
   val planner = new SimpleLogicalPlanner()
   val pos = DummyPosition(0)

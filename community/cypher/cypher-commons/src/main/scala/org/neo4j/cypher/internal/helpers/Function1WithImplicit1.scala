@@ -20,30 +20,29 @@
 package org.neo4j.cypher.internal.helpers
 
 trait Function0WithImplicit1[R, I1] {
+  self =>
   def apply()(implicit i1: I1): R
 
   def andThen[A](g: Function1WithImplicit1[R, A, I1]): Function0WithImplicit1[A, I1] = {
-    val that = this
     new Function0WithImplicit1[A, I1] {
-      def apply()(implicit i1: I1): A = g(that.apply())
+      def apply()(implicit i1: I1): A = g(self.apply())
     }
   }
 }
 
 trait Function1WithImplicit1[T1, R, I1] {
+  self =>
   def apply(v1: T1)(implicit i1: I1): R
 
   def andThen[A](g: Function1WithImplicit1[R, A, I1]): Function1WithImplicit1[T1, A, I1] = {
-    val that = this
     new Function1WithImplicit1[T1, A, I1] {
-      def apply(x: T1)(implicit i1: I1): A = g(that.apply(x))
+      def apply(x: T1)(implicit i1: I1): A = g(self.apply(x))
     }
   }
 
   def compose[A](g: Function1WithImplicit1[A, T1, I1]): Function1WithImplicit1[A, R, I1] = {
-    val that = this
     new Function1WithImplicit1[A, R, I1] {
-      def apply(x: A)(implicit i1: I1): R = that.apply(g(x))
+      def apply(x: A)(implicit i1: I1): R = self.apply(g(x))
     }
   }
 }
