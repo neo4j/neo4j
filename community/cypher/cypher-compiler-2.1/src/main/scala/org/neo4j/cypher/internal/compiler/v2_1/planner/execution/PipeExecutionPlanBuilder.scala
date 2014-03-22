@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
@@ -66,6 +67,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case CartesianProduct(_, _) =>
           CartesianProductPipe(left.get, right.get)
+
+        case _ =>
+          throw new CantHandleQueryException
       }
     }
 

@@ -23,22 +23,28 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccess
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, NewPlannerMonitorCall}
+import java.io.{PrintWriter, StringWriter}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 object NewPlannerMonitor {
 
   sealed trait NewPlannerMonitorCall {
-    def queryText: String
+    def stackTrace: String
   }
 
-  final case class UnableToHandleQuery(queryText: String) extends NewPlannerMonitorCall
-  final case class NewQuerySeen(queryText: String) extends NewPlannerMonitorCall
+  final case class UnableToHandleQuery(stackTrace: String) extends NewPlannerMonitorCall
+  final case class NewQuerySeen(stackTrace: String) extends NewPlannerMonitorCall
 }
 
 class NewPlannerMonitor extends NewQueryPlanSuccessRateMonitor {
   private var traceBuilder = List.newBuilder[NewPlannerMonitorCall]
 
-  override def unableToHandleQuery(queryText: String, ast: Statement) {
-    traceBuilder += UnableToHandleQuery(queryText)
+  override def unableToHandleQuery(queryText: String, ast: Statement, e: CantHandleQueryException) {
+    val sw = new StringWriter()
+    val pw = new PrintWriter(sw)
+    e.printStackTrace(pw)
+
+    traceBuilder += UnableToHandleQuery(sw.toString)
   }
 
   override def newQuerySeen(queryText: String, ast: Statement) {
@@ -64,14 +70,16 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def executeScalarWithNewPlanner[T](queryText: String, params: (String, Any)*): T =
     monitoringNewPlanner(self.executeScalar[T](queryText, params: _*)) { trace =>
-      trace should contain(NewQuerySeen(queryText))
-      trace should not contain(UnableToHandleQuery(queryText))
+      trace.collect {
+        case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $queryText\n$stackTrace")
+      }
     }
 
   def executeWithNewPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
     monitoringNewPlanner(self.execute(queryText, params: _*)) { trace =>
-      trace should contain(NewQuerySeen(queryText))
-      trace should not contain(UnableToHandleQuery(queryText))
+      trace.collect {
+        case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $queryText\n$stackTrace")
+      }
     }
 
   def monitoringNewPlanner[T](action: => T)(test: List[NewPlannerMonitorCall] => Unit): T = {
