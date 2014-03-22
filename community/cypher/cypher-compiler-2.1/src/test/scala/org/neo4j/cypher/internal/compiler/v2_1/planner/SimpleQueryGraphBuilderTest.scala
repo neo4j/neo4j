@@ -250,5 +250,17 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     ))
   }
 
+  test("match (a)-[r:Type|Foo]-(b) return a,r") {
+    val qg = buildQueryGraph("match (a)-[r:Type|Foo]-(b) return a,r")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")))))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    qg.selections should equal(Selections())
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)(None)(pos)
 }

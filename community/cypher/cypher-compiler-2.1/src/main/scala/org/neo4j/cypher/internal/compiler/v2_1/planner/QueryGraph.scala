@@ -33,7 +33,12 @@ An abstract representation of the query graph being solved at the current step
 case class QueryGraph(projections: Map[String, ast.Expression],
                       selections: Selections,
                       patternNodes: Set[IdName],
-                      patternRelationships: Set[PatternRelationship])
+                      patternRelationships: Set[PatternRelationship]) {
+  def knownLabelsOnNode(node: IdName): Seq[LabelName] =
+    selections
+      .labelPredicates.getOrElse(node, Seq.empty)
+      .flatMap(_.labels).toSeq
+}
 
 object SelectionPredicates {
   def fromWhere(where: Where): Seq[(Set[IdName], Expression)] = extractPredicates(where.expression)
