@@ -32,8 +32,8 @@ class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
       monitor.newQuerySeen(queryText, inputQuery.statement)
       newBuilder.producePlan(inputQuery, planContext)
     } catch {
-      case _: CantHandleQueryException =>
-        monitor.unableToHandleQuery(queryText, inputQuery.statement)
+      case e: CantHandleQueryException =>
+        monitor.unableToHandleQuery(queryText, inputQuery.statement, e)
         oldBuilder.producePlan(inputQuery, planContext)
     }
   }
