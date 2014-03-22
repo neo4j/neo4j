@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb._
-import org.junit.Assert._
 import org.neo4j.cypher.internal.PathImpl
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
@@ -41,7 +40,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n2 = createNode()
     relate(n1, n2, "A", Map("foo" -> "bar"))
 
-    val result = execute("match a-[r]->b where r.foo =~ {param} return b", "param" -> "bar")
+    val result = executeWithNewPlanner("match a-[r]->b where r.foo =~ {param} return b", "param" -> "bar")
 
     result.columnAs("b").toList should equal (List(n2))
   }
@@ -54,7 +53,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(start, a1, "x")
     relate(start, a2, "x")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"MATCH (start)-[rel:x]-(a) WHERE a.name = '$name' return a"
     )
     result.columnAs[Node]("a").toList should equal (List(a2))
@@ -67,7 +66,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(start, a, "KNOWS", Map("name" -> "monkey"))
     relate(start, b, "KNOWS", Map("name" -> "woot"))
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"match (node)-[r:KNOWS]->(a) WHERE r.name = 'monkey' RETURN a"
     )
     result.columnAs[Node]("a").toList should equal(List(a))
@@ -78,7 +77,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n2: Node = createNode()
     relate(n1, n2, "KNOWS")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"match (n1)-[rel:KNOWS]->(n2) RETURN n1, n2"
     )
 
@@ -92,7 +91,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n1, n2, "KNOWS")
     relate(n1, n3, "KNOWS")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"match (start)-[rel:KNOWS]->(x) return x"
     )
 
@@ -123,7 +122,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n4, n2, "A")
     relate(n4, n3, "A")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       """match (n)-[rel]->(x)
         where n.animal = x.animal
         return n, x"""
@@ -202,7 +201,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r2 = relate("A" -> "HATES" -> "C")
     relate("A" -> "WONDERS" -> "C")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "match (n)-[r]->(x) where type(r) = 'KNOWS' OR type(r) = 'HATES' return r"
     )
 
@@ -629,7 +628,7 @@ return p, leaf""")
     val c = createNode("B")
     relate(a, b)
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'A'}), (other {name:'B'})
 WHERE NOT a-->other
 RETURN other""")
@@ -706,7 +705,7 @@ RETURN x0.name""")
     relate(a, x, "A")
     relate(b, x, "B")
 
-    val result = execute("match a where a-[:A|:B]->() return a").toList
+    val result = executeWithNewPlanner("match a where a-[:A|:B]->() return a").toList
 
     result should equal (List(Map("a" -> a), Map("a" -> b)))
   }
@@ -725,7 +724,7 @@ RETURN x0.name""")
     val b = createNode()
     relate(a, b, "REL")
 
-    val result = execute("match (a)-[:REL|:REL]->(b) return b").toList
+    val result = executeWithNewPlanner("match (a)-[:REL|:REL]->(b) return b").toList
 
     result should equal (List(Map("b" -> b)))
   }
@@ -753,7 +752,7 @@ RETURN x0.name""")
     val n = createNode("foo" -> "bar")
 
     //WHEN
-    val result = execute("match n where n.foo = 'bar' return n")
+    val result = executeWithNewPlanner("match n where n.foo = 'bar' return n")
 
     //THEN
     result.toList should equal (List(Map("n" -> n)))
@@ -850,7 +849,7 @@ RETURN x0.name""")
     relate(a, b2)
 
     // WHEN
-    val result = execute(s"MATCH a-->(b:foo) RETURN b")
+    val result = executeWithNewPlanner(s"MATCH a-->(b:foo) RETURN b")
 
     // THEN
     result.toList should equal (List(Map("b" -> b1)))
@@ -926,7 +925,7 @@ RETURN x0.name""")
     relate(jake, createNode())
 
     //WHEN
-    val result = execute("MATCH (n:Person)-->() WHERE n.name = 'Jacob' RETURN n")
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() WHERE n.name = 'Jacob' RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -941,7 +940,7 @@ RETURN x0.name""")
 
   test("id in where leads to empty result") {
     //WHEN
-    val result = execute("MATCH n WHERE id(n)=1337 RETURN n")
+    val result = executeWithNewPlanner("MATCH n WHERE id(n)=1337 RETURN n")
 
     //THEN DOESN'T THROW EXCEPTION
     result shouldBe 'isEmpty
@@ -983,7 +982,7 @@ RETURN x0.name""")
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    execute("match (n) where id(n) in [0,1] return n").toList
+    executeWithNewPlanner("match (n) where id(n) in [0,1] return n").toList
     // should not throw an exception
   }
 
@@ -1020,7 +1019,7 @@ RETURN x0.name""")
     graph.createIndex("Label", "property")
 
     // when
-    val result = execute("match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+    val result = executeWithNewPlanner("match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
     result.toList should equal (List(Map("a" -> a, "b" -> b)))

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Expression}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -48,4 +49,10 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
   def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
 
   def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
+
+  if (isSelfReferencing)
+    throw new CantHandleQueryException
+
+  def isSelfReferencing = nodes._1 == nodes._2
+
 }

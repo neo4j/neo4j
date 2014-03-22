@@ -44,7 +44,7 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
       val resolvedAst = tokenResolver.resolve(ast)(planContext)
       val queryGraph = queryGraphBuilder.produce(resolvedAst)
 
-      if(queryGraph.patternRelationships.nonEmpty)
+      if(queryGraph.patternRelationships.size > 1) // Relationship uniqueness still not guaranteed
         throw new CantHandleQueryException
 
       val context = LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)

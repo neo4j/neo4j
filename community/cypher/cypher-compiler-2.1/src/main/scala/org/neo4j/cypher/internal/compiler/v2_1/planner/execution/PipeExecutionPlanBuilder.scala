@@ -68,6 +68,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case CartesianProduct(_, _) =>
           CartesianProductPipe(left.get, right.get)
 
+        case Expand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName)) =>
+          ExpandPipe(left.get, fromName, relName, toName, dir, types.map(_.name))
+
         case _ =>
           throw new CantHandleQueryException
       }
