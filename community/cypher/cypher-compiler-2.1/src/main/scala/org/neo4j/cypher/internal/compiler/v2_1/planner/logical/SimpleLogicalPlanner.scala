@@ -49,7 +49,7 @@ class SimpleLogicalPlanner {
     applySelectionsToPlanTable andThen
     iterateUntilConverged(new PlanTableTransformer {
       def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
-        (expandAndJoin andThen applySelectionsToCandidateList andThen includeBestPlan(planTable))(planTable)
+        (expand andThen applySelectionsToCandidateList andThen includeBestPlan(planTable))(planTable)
     }) andThen
     iterateUntilConverged(new PlanTableTransformer {
       def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =

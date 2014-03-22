@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val monitor = mock[PipeMonitor]
-  implicit val context = newMockedLogicalPlanContext
+  implicit val context = newMockedLogicalPlanContext()
 
   val monitors = mock[Monitors]
   val planner = new PipeExecutionPlanBuilder(monitors)

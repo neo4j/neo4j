@@ -56,5 +56,5 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(input)
   }
 
-  private def createContextWith(qg:QueryGraph):LogicalPlanContext = newMockedLogicalPlanContext.copy(queryGraph = qg)
+  private def createContextWith(qg:QueryGraph):LogicalPlanContext = newMockedLogicalPlanContext(queryGraph = qg)
 }

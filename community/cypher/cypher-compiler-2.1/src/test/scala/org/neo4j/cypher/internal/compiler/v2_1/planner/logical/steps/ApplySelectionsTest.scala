@@ -50,7 +50,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
-    implicit val context = newMockedLogicalPlanContext.copy()
+    implicit val context = newMockedLogicalPlanContext()
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
@@ -65,7 +65,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
-    implicit val context = newMockedLogicalPlanContext.copy()
+    implicit val context = newMockedLogicalPlanContext()
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
@@ -81,7 +81,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val predicate1 = mock[Expression]
     val predicate2 = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate1, plan.coveredIds -> predicate2))
-    implicit val context = newMockedLogicalPlanContext.copy()
+    implicit val context = newMockedLogicalPlanContext()
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
@@ -96,7 +96,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
-    implicit val context = newMockedLogicalPlanContext.copy()
+    implicit val context = newMockedLogicalPlanContext()
     when(context.queryGraph.selections).thenReturn(selections)
     when(plan.solvedPredicates).thenReturn(Seq(predicate))
 
@@ -112,7 +112,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(Set(IdName("x"), IdName("y")) -> predicate))
-    implicit val context = newMockedLogicalPlanContext.copy()
+    implicit val context = newMockedLogicalPlanContext()
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
