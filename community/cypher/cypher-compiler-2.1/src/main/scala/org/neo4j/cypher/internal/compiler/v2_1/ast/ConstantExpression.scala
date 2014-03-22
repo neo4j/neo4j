@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 object ConstantExpression {
   def unapply(v: AnyRef): Option[Expression] = v match {
-    case expr: Literal => Some(expr)
+    case expr: Literal   => Some(expr)
     case expr: Parameter => Some(expr)
+    case _               => None
   }
 }

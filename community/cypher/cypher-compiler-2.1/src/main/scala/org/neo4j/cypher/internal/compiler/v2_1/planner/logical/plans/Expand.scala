@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelName, RelTypeName}
 
 case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName)
                  (implicit val context: LogicalPlanContext) extends LogicalPlan {
@@ -29,7 +29,8 @@ case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[Re
   def rhs = None
 
   val cardinality = {
-    val knownLabelsOnNode = context.queryGraph.knownLabelsOnNode(from).map(_.id.get)
+    val node: Seq[LabelName] = context.queryGraph.knownLabelsOnNode(from)
+    val knownLabelsOnNode = node.flatMap(_.id)
     val relTypeIds = types.map(_.id.get)
 
     val estimatedNoOfRelationshipsPerNode =
