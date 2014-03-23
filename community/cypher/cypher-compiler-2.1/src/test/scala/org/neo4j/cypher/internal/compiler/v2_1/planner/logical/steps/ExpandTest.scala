@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Equals}
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
 class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -32,6 +34,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val bNode = IdName("b")
   val rName = IdName("r")
   val rRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty)
+  val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty)
 
   test("do not expand when no pattern relationships exist in querygraph") {
     implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph())
@@ -68,4 +71,31 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     expand(plan) should equal(CandidateList())
   }
+
+  test("self referencing pattern is handled correctly") {
+    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rSelfRel))
+    val planA = newMockedLogicalPlan("a")
+    val plan = PlanTable(Map(Set(aNode) -> planA))
+
+    expand(plan) should equal(CandidateList(Seq(
+      Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
+        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)
+      ))))
+  }
+
+  test("looping pattern is handled as it should") {
+    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    val aAndB = newMockedLogicalPlan("a", "b")
+    val plan = PlanTable(Map(Set(aNode) -> aAndB))
+
+    expand(plan) should equal(CandidateList(Seq(
+      Selection(Seq(Equals(Identifier(bNode.name)(pos), Identifier(bNode.name + "$$$")(pos))(pos)),
+        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(bNode.name + "$$$"), relName = rName)
+      ),
+      Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
+        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)
+      ))))
+  }
+
+  def pos: InputPosition = null
 }
