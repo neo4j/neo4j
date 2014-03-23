@@ -1044,4 +1044,40 @@ RETURN x0.name""")
       Map("a" -> e, "b" -> e)
     ))
   }
+
+  test("should handle cyclic patterns") {
+    // Given
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    relate(a, b, "A")
+    relate(b, a, "B")
+    relate(b, c, "B")
+
+    // when
+    val result = executeWithNewPlanner("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
+
+    // then does not throw exceptions
+    assert(result.toList === List(
+      Map("a.name" -> "a")
+    ))
+  }
+
+  test("should handle cyclic patterns (broken up into two paths)") {
+    // Given
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    relate(a, b, "A")
+    relate(b, a, "B")
+    relate(b, c, "B")
+
+    // when
+    val result = executeWithNewPlanner("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
+
+    // then does not throw exceptions
+    assert(result.toList === List(
+      Map("a.name" -> "a")
+    ))
+  }
 }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Expression}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -43,7 +42,7 @@ abstract class LogicalPlan extends Product {
   final def covers(other: LogicalPlan): Boolean = (other.coveredIds -- coveredIds).isEmpty
 
   def toTreeString: String =
-    productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + "->" +
+    productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + s"($cost/$cardinality)->" +
     productIterator.filterNot(_.isInstanceOf[LogicalPlan]).mkString("(", ", ", ")") +
     lhs.map { plan => "\nleft - " + plan.toTreeString }.map { indent }.getOrElse("") +
     rhs.map { plan => "\nright- " + plan.toTreeString }.map { indent }.getOrElse("")
@@ -51,6 +50,8 @@ abstract class LogicalPlan extends Product {
   private def indent(s: String): String = s.lines.map {
     case t => "       " + t
   }.mkString("\n")
+
+  override def toString = "\n" + toTreeString
 }
 
 final case class IdName(name: String) extends AnyVal
@@ -59,10 +60,4 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
   def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
 
   def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
-
-  if (isSelfReferencing)
-    throw new CantHandleQueryException
-
-  def isSelfReferencing = nodes._1 == nodes._2
-
 }
