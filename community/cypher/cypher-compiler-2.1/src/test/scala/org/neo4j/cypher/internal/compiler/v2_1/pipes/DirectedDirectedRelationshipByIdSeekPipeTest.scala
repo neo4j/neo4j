@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
-import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{Node, Direction, Relationship}
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 
-class RelationshipByIdSeekPipeTest extends CypherFunSuite {
+class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
   implicit val monitor = mock[PipeMonitor]
 
@@ -33,35 +34,68 @@ class RelationshipByIdSeekPipeTest extends CypherFunSuite {
 
   test("should seek relationship by id") {
     // given
-    val rel = mock[Relationship]
+    val (startNode, rel, endNode) = getRelWithNodes
     val relOps = when(mock[Operations[Relationship]].getById(17)).thenReturn(rel).getMock[Operations[Relationship]]
+    val to = "to"
+    val from = "from"
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relOps).getMock[QueryContext]
     )
 
     // when
-    val result = RelationshipByIdSeekPipe("a", Literal(17)).createResults(queryState)
+    val result: Iterator[ExecutionContext] = DirectedRelationshipByIdSeekPipe("a", Literal(17), to, from).createResults(queryState)
 
     // then
-    result.map(_("a")).toList should equal(List(rel))
+    result.toList should equal(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
   }
 
   test("should seek relationships by multiple ids") {
     // given
-    val rel1 = mock[Relationship]
-    val rel2 = mock[Relationship]
+    val (s1, r1, e1) = getRelWithNodes
+    val (s2, r2, e2) = getRelWithNodes
     val relationshipOps = mock[Operations[Relationship]]
+    val to = "to"
+    val from = "from"
 
-    when(relationshipOps.getById(42)).thenReturn(rel1)
-    when(relationshipOps.getById(21)).thenReturn(rel2)
+    when(relationshipOps.getById(42)).thenReturn(r1)
+    when(relationshipOps.getById(21)).thenReturn(r2)
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )
 
+    val relName = "a"
     // whens
-    val result = RelationshipByIdSeekPipe("a", Collection(Literal(42), Literal(21))).createResults(queryState)
+    val result = DirectedRelationshipByIdSeekPipe(relName, Collection(Literal(42), Literal(21)), to, from).createResults(queryState)
 
     // then
-    result.map(_("a")).toList should equal(List(rel1, rel2))
+    result.toList should equal(List(
+      Map(relName -> r1, to -> e1, from -> s1),
+      Map(relName -> r2, to -> e2, from -> s2)
+    ))
   }
+
+  test("handle null") {
+    // given
+    val to = "to"
+    val from = "from"
+    val queryState = QueryStateHelper.empty
+    // when
+    val result: Iterator[ExecutionContext] = DirectedRelationshipByIdSeekPipe("a", Literal(null), to, from).createResults(queryState)
+
+    // then
+    result.toList should equal(List(
+      Map("a" -> null, "to" -> null, "from" -> null)
+    ))
+  }
+
+
+  private def getRelWithNodes:(Node,Relationship,Node) = {
+    val rel = mock[Relationship]
+    val startNode = mock[Node]
+    val endNode = mock[Node]
+    when(rel.getStartNode).thenReturn(startNode)
+    when(rel.getEndNode).thenReturn(endNode)
+    (startNode, rel, endNode)
+  }
+
 }

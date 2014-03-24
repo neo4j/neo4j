@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -141,28 +142,31 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     )(pos), 3)())
   }
 
-  // 2014-03-19 - Andres: turn on once we have patterns in the query graph
-  ignore("simple relationship by id seek with a rel id expression") {
+  test("simple relationship by id seek with a rel id expression") {
     // given
-    val identifier = Identifier("r")(pos)
-    val projections = Map("r" -> identifier)
+    val rIdent = Identifier("r")(pos)
+    val fromIdent = Identifier("from")(pos)
+    val toIdent = Identifier("to")(pos)
+    val projections = Map("r" -> rIdent, "from" -> fromIdent, "to" -> toIdent)
     val expr = Equals(
-      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(identifier))(pos),
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(rIdent))(pos),
       SignedIntegerLiteral("42")(pos)
     )(pos)
-    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(IdName("r")), Set.empty)
-    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTRelationship)).result()
+    val from = IdName("from")
+    val end = IdName("to")
+    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
+    val semanticTable = SemanticTableBuilder().withTyping(rIdent -> ExpressionTypeInfo(symbols.CTRelationship)).result()
     when(estimator.estimateRelationshipByIdSeek()).thenReturn(1)
 
     // when
     val resultPlan = planner.plan(context.copy(semanticTable = semanticTable, queryGraph = qg))
 
     // then
-    resultPlan should equal(RelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1)())
+    resultPlan should equal(DirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1, from, end)())
   }
 
-  // 2014-03-20 - Davide: turn on once we have patterns in the query graph
-  ignore("simple relationship by id seek with a collection of node ids") {
+  test("simple relationship by id seek with a collection of node ids") {
     // given
     val identifier = Identifier("n")(pos)
     val projections = Map("n" -> identifier)

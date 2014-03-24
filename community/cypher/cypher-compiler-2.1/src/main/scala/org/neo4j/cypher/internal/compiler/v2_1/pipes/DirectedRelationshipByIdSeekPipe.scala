@@ -20,23 +20,36 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
-import symbols.{SymbolTable, CTRelationship}
+import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.graphdb.Relationship
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-case class RelationshipByIdSeekPipe(ident: String, relIdExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
+case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Expression, toNode: String, fromNode: String)
+                                           (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val nodeIds = makeTraversable(relIdExpr(ExecutionContext.empty)(state)).iterator
-    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, nodeIds)
+    val relIds = relIdExpr(ExecutionContext.empty)(state)
+
+    if (relIds == null) {
+      Iterator(ExecutionContext.from(ident -> null, toNode -> null, fromNode -> null))
+    } else {
+      val relationshipIds = makeTraversable(relIds).iterator
+      new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relationshipIds).map {
+        ctx =>
+          val r = ctx(ident)
+          r match {
+            case r: Relationship => ctx += (fromNode -> r.getStartNode) += (toNode -> r.getEndNode)
+          }
+      }
+    }
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "RelationshipByIdSeek", Seq.empty, Seq("ident" -> ident))
+  def executionPlanDescription = new PlanDescriptionImpl(this, "DirectedRelationshipByIdSeekPipe", Seq.empty, Seq("ident" -> ident))
 
-  def symbols: SymbolTable = new SymbolTable(Map(ident -> CTRelationship))
+  def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 
-  override def monitor = pipeMonitor
+  def monitor = pipeMonitor
 }

@@ -20,18 +20,44 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, NodeByIdSeek}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.InternalException
+import org.neo4j.graphdb.Direction
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
     predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
-//      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
-//        val cardinality = context.estimator.estimateRelationshipByIdSeek()
-//        RelationshipByIdSeek(idName, idExpr, cardinality)(Seq(predicate))
-//      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
-//        val cardinality = expressions.size * context.estimator.estimateRelationshipByIdSeek()
-//        RelationshipByIdSeek(idName, idsExpr, cardinality)(Seq(predicate))
+      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
+        val cardinality = context.estimator.estimateRelationshipByIdSeek()
+        context.queryGraph.patternRelationships.collectFirst {
+
+          case PatternRelationship(relName, (l, r), dir, types) if relName == idName && dir != Direction.BOTH =>
+            val (from, to) = if (dir == Direction.OUTGOING) (l, r) else (r, l)
+            val relById = DirectedRelationshipByIdSeek(idName, idExpr, cardinality, from, to)(Seq(predicate))
+            filterIfNeeded(relById, relName.name, types)
+
+          case PatternRelationship(relName, (l, r), _, types) if relName == idName =>
+            val relById = UndirectedRelationshipByIdSeek(idName, idExpr, cardinality, l, r)(Seq(predicate))
+            filterIfNeeded(relById, relName.name, types)
+        }.getOrElse(throw new InternalException(s"Identifier ${idName} typed as a relationship, but no relationship found by that name in the query graph "))
+
+      // MATCH (a)-[r]->b WHERE id(r) IN value
+      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
+        val cardinality = expressions.size * context.estimator.estimateRelationshipByIdSeek()
+        context.queryGraph.patternRelationships.collectFirst {
+
+          case PatternRelationship(relName, (l, r), dir, types) if relName == idName && dir != Direction.BOTH =>
+            val (from, to) = if (dir == Direction.OUTGOING) (l, r) else (r, l)
+            val relById = DirectedRelationshipByIdSeek(idName, idsExpr, cardinality, from, to)(Seq(predicate))
+            filterIfNeeded(relById, relName.name, types)
+
+          case PatternRelationship(relName, (l, r), _, types) if relName == idName =>
+            val relById = UndirectedRelationshipByIdSeek(idName, idsExpr, cardinality, l, r)(Seq(predicate))
+            filterIfNeeded(relById, relName.name, types)
+        }.getOrElse(throw new InternalException(s"Identifier ${idName} typed as a relationship, but no relationship found by that name in the query graph "))
+
+
       case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
         val cardinality = context.estimator.estimateNodeByIdSeek()
         NodeByIdSeek(idName, idExpr, cardinality)(Seq(predicate))
@@ -39,4 +65,19 @@ case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
         val cardinality = expressions.size * context.estimator.estimateNodeByIdSeek()
         NodeByIdSeek(idName, idsExpr, cardinality)(Seq(predicate))
     }
+
+  private def filterIfNeeded(plan: LogicalPlan, relName: String, types: Seq[RelTypeName])
+                            (implicit context: LogicalPlanContext): LogicalPlan = if (types.isEmpty) plan
+  else {
+    val id = Identifier(relName)(null)
+    val name = FunctionName("type")(null)
+    val invocation = FunctionInvocation(name, id)(null)
+
+    val predicates: Seq[Expression] = types.map {
+      t => Equals(invocation, StringLiteral(relName)(null))(null)
+    }
+
+    val predicate = predicates.reduce(And(_, _)(null))
+    Selection(Seq(predicate), plan)
+  }
 }
