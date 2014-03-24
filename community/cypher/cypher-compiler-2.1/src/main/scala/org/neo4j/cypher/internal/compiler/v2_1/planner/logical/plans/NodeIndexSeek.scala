@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class NodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                              (val solvedPredicates: Seq[Expression] = Seq.empty)
-                              (implicit val context: LogicalPlanContext) extends LogicalPlan {
-  def rhs = None
+case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+                        (val solvedPredicates: Seq[Expression] = Seq.empty)
+                        (implicit val context: LogicalPlanContext) extends LogicalPlan {
   def lhs = None
+  def rhs = None
 
-  val cardinality = 1
-  val cost = context.costs.calculateNodeUniqueIndexSeek(cardinality)
+  val cardinality = context.estimator.estimateNodeIndexSeek(label, propertyKeyId)
+  val cost = context.costs.calculateNodeIndexSeek(cardinality)
 
   val coveredIds = Set(idName)
 }

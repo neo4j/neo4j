@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class AllNodesScan(idName: IdName)(implicit val context:LogicalPlanContext) extends LogicalPlan {
-  def lhs = None
-  def rhs = None
+case class SingleRow()(implicit val context: LogicalPlanContext) extends LogicalPlan {
+  val lhs = None
+  val rhs = None
 
-  val cardinality = context.estimator.estimateAllNodesScan()
-  val cost = context.costs.calculateAllNodesScan(cardinality)
+  val cardinality = 1
+  val cost = context.costs.calculateSingleRow(cardinality)
 
-  val coveredIds = Set(idName)
+  val coveredIds = Set.empty[IdName]
   val solvedPredicates = Seq.empty
 }

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.{EagerMappingBuilder, MappingBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -45,7 +46,7 @@ case class PeriodicCommitInfo(size: Option[Long]) {
 
 trait NewQueryPlanSuccessRateMonitor {
   def newQuerySeen(queryText: String, ast:Statement)
-  def unableToHandleQuery(queryText: String, ast:Statement)
+  def unableToHandleQuery(queryText: String, ast:Statement, origin: CantHandleQueryException)
 }
 
 trait PipeBuilder {

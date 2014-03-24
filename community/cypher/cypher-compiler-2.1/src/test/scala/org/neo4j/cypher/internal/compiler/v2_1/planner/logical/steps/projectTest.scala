@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.steps.project
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, Projection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
 class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -32,7 +32,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
-    val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    val qg = QueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty)
     implicit val context = createContextWith(qg)
 
     // when
@@ -46,7 +46,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // given
     val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
-    val qg = QueryGraph(projections, Selections(), nodes = Set.empty)
+    val qg = QueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty)
     implicit val context = createContextWith(qg)
 
     // when
@@ -56,5 +56,5 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(input)
   }
 
-  private def createContextWith(qg:QueryGraph):LogicalPlanContext = newMockedLogicalPlanContext.copy(queryGraph = qg)
+  private def createContextWith(qg:QueryGraph):LogicalPlanContext = newMockedLogicalPlanContext(queryGraph = qg)
 }

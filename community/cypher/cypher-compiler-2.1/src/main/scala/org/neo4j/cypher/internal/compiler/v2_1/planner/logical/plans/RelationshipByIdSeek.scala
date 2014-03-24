@@ -17,20 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
-                          (val solvedPredicates: Seq[Expression] = Seq.empty)
-                          (implicit val context: LogicalPlanContext) extends LogicalPlan {
-
+case class RelationshipByIdSeek(idName: IdName, relId: Expression, cardinality: Int)
+                               (val solvedPredicates: Seq[Expression] = Seq.empty)
+                               (implicit val context: LogicalPlanContext) extends LogicalPlan {
   def lhs = None
   def rhs = None
 
-  val cardinality = context.estimator.estimateNodeByLabelScan(label.right.toOption)
-  val cost = context.costs.calculateNodeByLabelScan(cardinality)
+  val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
 
-  val coveredIds = Set(idName)
+  val coveredIds = ??? // TODO: Need to cover the end nodes
 }

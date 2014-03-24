@@ -25,17 +25,17 @@ import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
 
-  def newMockedLogicalPlanContext = LogicalPlanContext(
-    planContext = self.mock[PlanContext],
-    estimator = self.mock[CardinalityEstimator],
-    costs = self.mock[CostModel],
-    semanticTable = self.mock[SemanticTable],
-    queryGraph = self.mock[QueryGraph]
-  )
+  def newMockedLogicalPlanContext(planContext: PlanContext = self.mock[PlanContext],
+                                  estimator: CardinalityEstimator = self.mock[CardinalityEstimator],
+                                  costs: CostModel = self.mock[CostModel],
+                                  semanticTable: SemanticTable = self.mock[SemanticTable],
+                                  queryGraph: QueryGraph = self.mock[QueryGraph]) =
+    LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan

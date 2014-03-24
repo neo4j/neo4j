@@ -161,7 +161,7 @@ trait Expressions extends Parser
     Identifier ~~ keyword("IN") ~~ Expression
 
   private def FunctionInvocation: Rule1[ast.FunctionInvocation] = rule("a function") {
-    ((group(Identifier ~~ "(" ~~
+    ((group(FunctionName ~~ "(" ~~
       (keyword("DISTINCT") ~ push(true) | EMPTY ~ push(false)) ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq)) memoMismatches) ~~>> (ast.FunctionInvocation(_, _, _))

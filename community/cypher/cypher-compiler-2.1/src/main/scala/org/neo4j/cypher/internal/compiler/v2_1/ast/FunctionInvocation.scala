@@ -21,18 +21,21 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.SemanticError
+import scala.Some
 
 object FunctionInvocation {
-  def apply(identifier: Identifier, argument: Expression)(position: InputPosition): FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(argument))(position)
-  def apply(left: Expression, identifier: Identifier, right: Expression): FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(left, right))(identifier.position)
-  def apply(expression: Expression, identifier: Identifier): FunctionInvocation =
-    FunctionInvocation(identifier, distinct = false, IndexedSeq(expression))(identifier.position)
+  def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
+    FunctionInvocation(name, distinct = false, IndexedSeq(argument))(position)
+  def apply(left: Expression, name: FunctionName, right: Expression): FunctionInvocation =
+    FunctionInvocation(name, distinct = false, IndexedSeq(left, right))(name.position)
+  def apply(expression: Expression, name: FunctionName): FunctionInvocation =
+    FunctionInvocation(name, distinct = false, IndexedSeq(expression))(name.position)
 }
 
-case class FunctionInvocation(identifier: Identifier, distinct: Boolean, arguments: IndexedSeq[Expression])(val position: InputPosition) extends Expression {
-  val name = identifier.name
+case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arguments: IndexedSeq[Expression])
+                             (val position: InputPosition) extends Expression {
+  val name = functionName.name
   val function = Function.lookup.get(name.toLowerCase)
 
   def semanticCheck(ctx: SemanticContext) = function match {
@@ -40,3 +43,5 @@ case class FunctionInvocation(identifier: Identifier, distinct: Boolean, argumen
     case Some(f) => f.semanticCheckHook(ctx, this)
   }
 }
+
+case class FunctionName(name: String)(val position: InputPosition) extends ASTNode

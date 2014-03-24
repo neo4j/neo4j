@@ -17,15 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanTableProducer
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
 
-case class includeBestPlan(planTable: PlanTable) extends PlanTableProducer[CandidateList] {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): PlanTable = {
-    candidateList.topPlan.foldLeft(planTable)(_ + _)
+object expandAndJoin extends PlanCandidateGenerator {
+  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+    val expandCandidates = tryExpand(planTable)
+    val joinCandidates = tryJoin(planTable)
+    expandCandidates ++ joinCandidates
   }
+
+  private def tryExpand(planTable: PlanTable): CandidateList =
+    CandidateList(planTable.plans)
+
+  private def tryJoin(planTable: PlanTable): CandidateList =
+    CandidateList(planTable.plans)
 }

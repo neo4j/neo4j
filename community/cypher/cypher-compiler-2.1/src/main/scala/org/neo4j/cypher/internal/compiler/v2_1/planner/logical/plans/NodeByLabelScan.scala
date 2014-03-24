@@ -17,22 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-object expandAndJoin extends PlanCandidateGenerator {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val expandCandidates = tryExpand(planTable)
-    val joinCandidates = tryJoin(planTable)
-    expandCandidates ++ joinCandidates
-  }
+case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
+                          (val solvedPredicates: Seq[Expression] = Seq.empty)
+                          (implicit val context: LogicalPlanContext) extends LogicalPlan {
 
-  private def tryExpand(planTable: PlanTable): CandidateList =
-    CandidateList(planTable.plans)
+  def lhs = None
+  def rhs = None
 
-  private def tryJoin(planTable: PlanTable): CandidateList =
-    CandidateList(planTable.plans)
+  val cardinality = context.estimator.estimateNodeByLabelScan(label.right.toOption)
+  val cost = context.costs.calculateNodeByLabelScan(cardinality)
+
+  val coveredIds = Set(idName)
 }

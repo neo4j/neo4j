@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 case class Selections(predicates: Seq[(Set[IdName], Expression)] = Seq.empty) {
   def apply(availableIds: Set[IdName]): Seq[Expression] =

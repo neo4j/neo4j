@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
-                     (implicit val context: LogicalPlanContext) extends LogicalPlan {
+case class NodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+                              (val solvedPredicates: Seq[Expression] = Seq.empty)
+                              (implicit val context: LogicalPlanContext) extends LogicalPlan {
+  def rhs = None
+  def lhs = None
 
-  val lhs = Some(left)
-  val rhs = None
+  val cardinality = 1
+  val cost = context.costs.calculateNodeUniqueIndexSeek(cardinality)
 
-
-  val cardinality = left.cardinality
-  val cost = left.cost + context.costs.calculateProjectionOverhead(cardinality, expressions.size)
-
-  def coveredIds = expressions.keySet.map(IdName)
-  def solvedPredicates = left.solvedPredicates // TODO: Remove shadowed predicates (?)
+  val coveredIds = Set(idName)
 }
