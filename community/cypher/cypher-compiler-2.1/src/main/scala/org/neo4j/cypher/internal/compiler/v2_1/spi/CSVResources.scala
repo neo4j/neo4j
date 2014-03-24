@@ -34,7 +34,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]] = {
     val inputStream = openStream(url)
-    val reader = new BufferedReader(new InputStreamReader(inputStream))
+    val reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))
     val csvReader = new CSVReader(reader, fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR))
 
     cleaner.addTask(_ => {

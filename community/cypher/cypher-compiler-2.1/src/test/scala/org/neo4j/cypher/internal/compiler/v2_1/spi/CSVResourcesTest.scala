@@ -36,7 +36,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     resources = new CSVResources(cleaner)
   }
 
-  test("should_handle_strings") {
+  test("should handle strings") {
     // given
     val url = createCSVTempFileURL {
       writer =>
@@ -150,6 +150,26 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
       Array[String]("23", "bar"),
       Array[String]("3455", "baz"),
       Array[String]("4", "x")
+    )).foreach {
+      case (r, expected) =>
+        r should equal(expected)
+    }
+  }
+
+  test("should treat the file as UTF-8 encoded") {
+    // given
+    val url = createCSVTempFileURL {
+      writer =>
+        writer.println("Malm\u0246")
+        writer.println("K\u0248benhavn")
+    }
+
+    //when
+    val result: List[Array[String]] = resources.getCsvIterator(new URL(url)).toList
+
+    (result zip List(
+      Array[String]("Malm\u0246"),
+      Array[String]("K\u0248benhavn")
     )).foreach {
       case (r, expected) =>
         r should equal(expected)
