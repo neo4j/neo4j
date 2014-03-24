@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
+import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -114,7 +115,7 @@ public abstract class Command extends XaCommand
         this.keyHash = (int) (( key >>> 32 ) ^ key );
         this.key = key;
     }
-    
+
     public abstract void accept( CommandRecordVisitor visitor );
 
     @Override
@@ -175,7 +176,7 @@ public abstract class Command extends XaCommand
             writeDynamicRecords( buffer, block.getValueRecords() );
         }
     }
-    
+
     static void writeDynamicRecords( LogBuffer buffer, Collection<DynamicRecord> records ) throws IOException
     {
         buffer.putInt( records.size() ); // 4
@@ -184,7 +185,7 @@ public abstract class Command extends XaCommand
             writeDynamicRecord( buffer, record );
         }
     }
-    
+
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {
@@ -253,7 +254,7 @@ public abstract class Command extends XaCommand
 
         return toReturn;
     }
-    
+
     private static final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyBlock>()
     {
@@ -264,7 +265,7 @@ public abstract class Command extends XaCommand
             target.addValueRecord( record );
         }
     };
-    
+
     static <T> boolean readDynamicRecords( ReadableByteChannel byteChannel, ByteBuffer buffer,
             T target, DynamicRecordAdder<T> adder ) throws IOException
     {
@@ -372,7 +373,7 @@ public abstract class Command extends XaCommand
             this.before = before;
             this.after = after;
         }
-        
+
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -382,7 +383,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return after.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -425,11 +426,11 @@ public abstract class Command extends XaCommand
         {
             buffer.put( NODE_COMMAND );
             buffer.putLong( after.getId() );
-            
+
             writeNodeRecord( buffer, before );
             writeNodeRecord( buffer, after );
         }
-        
+
         private void writeNodeRecord( LogBuffer buffer, NodeRecord record ) throws IOException
         {
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
@@ -438,7 +439,7 @@ public abstract class Command extends XaCommand
             if ( record.inUse() )
             {
                 buffer.putLong( record.getNextRel() ).putLong( record.getNextProp() );
-                
+
                 // labels
                 buffer.putLong( record.getLabelField() );
                 writeDynamicRecords( buffer, record.getDynamicLabelRecords() );
@@ -465,12 +466,12 @@ public abstract class Command extends XaCommand
             {
                 return null;
             }
-            
+
             if ( !before.inUse() && after.inUse() )
             {
                 after.setCreated();
             }
-            
+
             return new NodeCommand( neoStore == null ? null : neoStore.getNodeStore(), before, after );
         }
 
@@ -499,7 +500,7 @@ public abstract class Command extends XaCommand
                     return null;
                 }
                 record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
-                
+
                 // labels
                 long labelField = buffer.getLong();
                 Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
@@ -520,7 +521,7 @@ public abstract class Command extends XaCommand
         {
             return before;
         }
-        
+
         public NodeRecord getAfter()
         {
             return after;
@@ -542,7 +543,7 @@ public abstract class Command extends XaCommand
             this.beforeUpdate = record;
             this.store = store;
         }
-        
+
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -664,7 +665,7 @@ public abstract class Command extends XaCommand
                 record );
         }
     }
-    
+
     static class NeoStoreCommand extends Command
     {
         private final NeoStoreRecord record;
@@ -682,7 +683,7 @@ public abstract class Command extends XaCommand
         {
             neoStore.setGraphNextProp( record.getNextProp() );
         }
-        
+
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -734,7 +735,7 @@ public abstract class Command extends XaCommand
             this.record = record;
             this.store = store;
         }
-        
+
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -811,7 +812,7 @@ public abstract class Command extends XaCommand
                 .getPropertyKeyTokenStore(), record );
         }
     }
-    
+
     private static final DynamicRecordAdder<PropertyKeyTokenRecord> PROPERTY_INDEX_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyKeyTokenRecord>()
     {
@@ -837,7 +838,7 @@ public abstract class Command extends XaCommand
             this.before = before;
             this.after = after;
         }
-        
+
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -847,7 +848,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return after.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -864,12 +865,12 @@ public abstract class Command extends XaCommand
                 cacheAccess.removeRelationshipFromCache( relId );
             }
         }
-        
+
         public PropertyRecord getBefore()
         {
             return before;
         }
-        
+
         public PropertyRecord getAfter()
         {
             return after;
@@ -897,10 +898,10 @@ public abstract class Command extends XaCommand
             // COMMAND + ID
             buffer.put( PROP_COMMAND );
             buffer.putLong( getKey() ); // 8
-            
+
             // BEFORE
             writeToFile( buffer, before );
-            
+
             // AFTER
             writeToFile( buffer, after );
         }
@@ -953,21 +954,21 @@ public abstract class Command extends XaCommand
                 return null;
             }
             long id = buffer.getLong(); // 8
-            
+
             // BEFORE
             PropertyRecord before = readPropertyRecord( id, byteChannel, buffer );
             if ( before == null )
             {
                 return null;
             }
-            
+
             // AFTER
             PropertyRecord after = readPropertyRecord( id, byteChannel, buffer );
             if ( after == null )
             {
                 return null;
             }
-            
+
             return new PropertyCommand( neoStore == null ? null
                     : neoStore.getPropertyStore(), before, after );
         }
@@ -1026,7 +1027,7 @@ public abstract class Command extends XaCommand
                 }
                 record.addPropertyBlock( block );
             }
-            
+
             if ( !readDynamicRecords( byteChannel, buffer, record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) )
             {
                 return null;
@@ -1055,7 +1056,7 @@ public abstract class Command extends XaCommand
             return record;
         }
     }
-    
+
     private static final DynamicRecordAdder<PropertyRecord> PROPERTY_DELETED_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<PropertyRecord>()
     {
@@ -1079,7 +1080,7 @@ public abstract class Command extends XaCommand
             this.record = record;
             this.store = store;
         }
-        
+
         @Override
         public void accept( CommandRecordVisitor visitor )
         {
@@ -1287,7 +1288,7 @@ public abstract class Command extends XaCommand
         {
             cacheAccess.removeSchemaRuleFromCache( getKey() );
         }
-        
+
         Collection<DynamicRecord> getRecordsAfter()
         {
             return unmodifiableCollection( recordsAfter );
@@ -1357,7 +1358,7 @@ public abstract class Command extends XaCommand
             buffer.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0);
             buffer.putLong( txId );
         }
-        
+
         public SchemaRule getSchemaRule()
         {
             return schemaRule;
@@ -1429,7 +1430,7 @@ public abstract class Command extends XaCommand
             return rule;
         }
     }
-    
+
     private static final DynamicRecordAdder<Collection<DynamicRecord>> COLLECTION_DYNAMIC_RECORD_ADDER =
             new DynamicRecordAdder<Collection<DynamicRecord>>()
     {
@@ -1470,5 +1471,10 @@ public abstract class Command extends XaCommand
             default:
                 throw new IOException( "Unknown command type[" + commandType + "]" );
         }
+    }
+
+    static String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
+    {
+        return format( "%n  -%s%n  +%s", before, after );
     }
 }
