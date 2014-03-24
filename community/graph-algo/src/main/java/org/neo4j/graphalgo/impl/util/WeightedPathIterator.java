@@ -26,19 +26,21 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Path;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-public class StopAfterWeightIterator extends PrefetchingIterator<WeightedPath>
+public class WeightedPathIterator extends PrefetchingIterator<WeightedPath>
 {
     private final Iterator<Path> paths;
     private final CostEvaluator<Double> costEvaluator;
     private Double foundWeight;
-    
-    public StopAfterWeightIterator( Iterator<Path> paths,
-            CostEvaluator<Double> costEvaluator )
+    private final boolean stopAfterLowestWeight;
+
+    public WeightedPathIterator( Iterator<Path> paths, CostEvaluator<Double> costEvaluator,
+            boolean stopAfterLowestWeight )
     {
         this.paths = paths;
         this.costEvaluator = costEvaluator;
+        this.stopAfterLowestWeight = stopAfterLowestWeight;
     }
-    
+
     @Override
     protected WeightedPath fetchNextOrNull()
     {
@@ -47,7 +49,7 @@ public class StopAfterWeightIterator extends PrefetchingIterator<WeightedPath>
             return null;
         }
         WeightedPath path = new WeightedPathImpl( costEvaluator, paths.next() );
-        if ( foundWeight != null && path.weight() > foundWeight )
+        if ( stopAfterLowestWeight && foundWeight != null && path.weight() > foundWeight )
         {
             return null;
         }

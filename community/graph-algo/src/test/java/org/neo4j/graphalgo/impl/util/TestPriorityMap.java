@@ -87,8 +87,27 @@ public class TestPriorityMap
         assertEquals( 1.5d, top.getPriority().doubleValue(), 0d );
     }
 
-    private void assertEntry( Entry<Integer, Double> entry, Integer entity,
-            Double priority )
+    @Test
+    public void shouldKeepAllPrioritiesIfToldTo() throws Exception
+    {
+        // GIVEN
+        int entity = 5;
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false );
+        assertTrue( map.put( entity, 3d ) );
+        assertTrue( map.put( entity, 2d ) );
+
+        // WHEN
+        assertTrue( map.put( entity, 5d ) );
+        assertTrue( map.put( entity, 4d ) );
+
+        // THEN
+        assertEntry( map.pop(), entity, 2d );
+        assertEntry( map.pop(), entity, 3d );
+        assertEntry( map.pop(), entity, 4d );
+        assertEntry( map.pop(), entity, 5d );
+    }
+
+    private void assertEntry( Entry<Integer, Double> entry, Integer entity, Double priority )
     {
         assertNotNull( entry );
         assertEquals( entity, entry.getEntity() );
