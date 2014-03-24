@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.getUnsignedInt;
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readI
 public class LegacyDynamicStringStoreReader
 {
     private final int blockSize;
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final ByteBuffer blockBuffer;
     private ByteBuffer chainBuffer;
 

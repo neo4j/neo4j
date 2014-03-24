@@ -22,14 +22,15 @@ package org.neo4j.test.impl;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class ChannelOutputStream extends OutputStream
 {
-    private final FileChannel channel;
+    private final StoreChannel channel;
     private final ByteBuffer buffer = ByteBuffer.allocateDirect( 8096 );
 
-    public ChannelOutputStream( FileChannel channel, boolean append ) throws IOException
+    public ChannelOutputStream( StoreChannel channel, boolean append ) throws IOException
     {
         this.channel = channel;
         if ( append )

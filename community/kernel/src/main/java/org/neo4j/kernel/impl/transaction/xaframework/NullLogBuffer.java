@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class NullLogBuffer implements LogBuffer
 {
@@ -46,7 +47,7 @@ public class NullLogBuffer implements LogBuffer
     }
 
     @Override
-    public FileChannel getFileChannel()
+    public StoreChannel getFileChannel()
     {
         throw new UnsupportedOperationException();
     }

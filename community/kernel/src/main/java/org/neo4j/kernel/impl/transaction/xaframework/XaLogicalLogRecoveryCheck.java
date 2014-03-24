@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class XaLogicalLogRecoveryCheck {
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     
-    public XaLogicalLogRecoveryCheck(FileChannel fileChannel)
+    public XaLogicalLogRecoveryCheck( StoreChannel fileChannel )
     {
         this.fileChannel = fileChannel;
     }
@@ -35,5 +36,4 @@ public class XaLogicalLogRecoveryCheck {
     {
         return fileChannel.size() != 0;
     }
-
 }

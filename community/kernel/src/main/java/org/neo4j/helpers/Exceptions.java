@@ -248,4 +248,18 @@ public class Exceptions
             }
         };
     }
+
+    public static <E extends Throwable> E combine( E first, E second )
+    {
+        if ( first == null )
+        {
+            return second;
+        }
+        if (second == null )
+        {
+            return first;
+        }
+        first.addSuppressed( second );
+        return first;
+    }
 }

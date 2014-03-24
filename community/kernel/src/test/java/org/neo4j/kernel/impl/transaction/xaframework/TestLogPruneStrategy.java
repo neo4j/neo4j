@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +32,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -399,7 +399,7 @@ public class TestLogPruneStrategy
 
         private void writeBufferToFile( ByteBuffer buffer, File fileName ) throws IOException
         {
-            FileChannel channel = null;
+            StoreChannel channel = null;
             try
             {
                 buffer.flip();

@@ -40,6 +40,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -128,15 +129,10 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         {
         }
 
-        // public void writeToFile( FileChannel fileChannel, ByteBuffer buffer )
-        // throws IOException
         @Override
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
-            // buffer.clear();
             buffer.putInt( type );
-            // buffer.flip();
-            // fileChannel.write( buffer );
         }
     }
 

@@ -22,21 +22,23 @@ package org.neo4j.kernel.impl.transaction;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class TestTxLog
 {
@@ -269,7 +271,7 @@ public class TestTxLog
 
     private void zeroPad( File logFile, DefaultFileSystemAbstraction fileSystem, int numberOfNulls ) throws IOException
     {
-        FileChannel ch = fileSystem.open(logFile, "rw");
+        StoreChannel ch = fileSystem.open(logFile, "rw");
         ch.position( ch.size() );
         ch.write( ByteBuffer.allocate( numberOfNulls ));
         ch.force(false);

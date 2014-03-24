@@ -23,12 +23,12 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class LegacyRelationshipStoreReader implements Closeable
 {
@@ -40,7 +40,7 @@ public class LegacyRelationshipStoreReader implements Closeable
     public static final String FROM_VERSION = "RelationshipStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_SIZE = 33;
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final long maxId;
 
     public LegacyRelationshipStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException

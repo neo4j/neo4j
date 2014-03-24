@@ -152,7 +152,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
         {
             if ( delegate == null )
             {
-                throw new IllegalStateException( "Cement hasn't hardened yet" );
+                throw new IllegalStateException( "Transaction state is not valid. Perhaps a state change of the database has happened while this transaction was running?" );
             }
             
             return proxyInvoke( delegate, method, args );

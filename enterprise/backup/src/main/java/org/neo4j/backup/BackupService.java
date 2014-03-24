@@ -124,6 +124,7 @@ class BackupService
                 {
                     BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
                             new Monitors(), null );
+                    System.out.println("Backup client starting up");
                     client.start();
                     try
                     {
@@ -133,7 +134,6 @@ class BackupService
                     {
                         client.stop();
                     }
-
                 }
             });
 

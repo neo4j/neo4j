@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -403,7 +402,7 @@ public class StoreFactory
         // write the header
         try
         {
-            FileChannel channel = fileSystemAbstraction.create(fileName);
+            StoreChannel channel = fileSystemAbstraction.create(fileName);
             int endHeaderSize = blockSize
                     + UTF8.encode( typeAndVersionDescriptor ).length;
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
@@ -458,7 +457,7 @@ public class StoreFactory
         // write the header
         try
         {
-            FileChannel channel = fileSystemAbstraction.create(fileName);
+            StoreChannel channel = fileSystemAbstraction.create(fileName);
             int endHeaderSize = UTF8.encode(typeAndVersionDescriptor).length;
             if ( firstRecordData != null )
             {

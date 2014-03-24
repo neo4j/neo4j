@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
@@ -37,14 +37,14 @@ public class DirectMappedLogBuffer implements LogBuffer
     // 500k
     static final int BUFFER_SIZE = 1024 * 512;
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
 
     private final ByteBuffer byteBuffer;
     private long bufferStartPosition;
 
     private final ByteCounterMonitor monitor;
 
-    public DirectMappedLogBuffer( FileChannel fileChannel, ByteCounterMonitor monitor ) throws IOException
+    public DirectMappedLogBuffer( StoreChannel fileChannel, ByteCounterMonitor monitor ) throws IOException
     {
         this.fileChannel = fileChannel;
         this.monitor = monitor;
@@ -188,7 +188,7 @@ public class DirectMappedLogBuffer implements LogBuffer
         return bufferStartPosition;
     }
 
-    public FileChannel getFileChannel()
+    public StoreChannel getFileChannel()
     {
         return fileChannel;
     }

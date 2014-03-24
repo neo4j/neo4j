@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +32,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -47,7 +47,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
@@ -136,7 +140,7 @@ public class TestIdGenerator
             } // good
             closeIdGenerator( idGenerator );
             // verify that id generator is ok
-            FileChannel fileChannel = fs.open( idGeneratorFile(), "rw" ); // new FileInputStream( idGeneratorFile() ).getChannel();
+            StoreChannel fileChannel = fs.open( idGeneratorFile(), "rw" );
             ByteBuffer buffer = ByteBuffer.allocate( 9 );
             assertEquals( 9, fileChannel.read( buffer ) );
             buffer.flip();

@@ -19,30 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAndAssertLogHeader;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-
-import static java.lang.Math.max;
-
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAndAssertLogHeader;
 
 public class LogExtractor
 {
@@ -67,7 +67,6 @@ public class LogExtractor
     private final LogPositionCache cache;
     private final LogLoader logLoader;
     private final XaCommandFactory commandFactory;
-    private final ByteCounterMonitor monitor;
 
     public static class LogPositionCache
     {
@@ -155,12 +154,11 @@ public class LogExtractor
         return ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
     }
 
-    public LogExtractor( LogPositionCache cache, LogLoader logLoader, ByteCounterMonitor monitor,
+    public LogExtractor( LogPositionCache cache, LogLoader logLoader,
             XaCommandFactory commandFactory, long startTxId, long endTxIdHint ) throws IOException
     {
         this.cache = cache;
         this.logLoader = logLoader;
-        this.monitor = monitor;
         this.commandFactory = commandFactory;
         this.startTxId = startTxId;
         this.nextExpectedTxId = startTxId;
@@ -260,14 +258,9 @@ public class LogExtractor
     private long collectNextFromCurrentSource( LogBuffer target ) throws IOException
     {
         LogEntry entry = null;
-        long startingPosition = localBuffer.position();
         while ( collector.hasInFutureQueue() || // if something in queue then don't read next entry
                 (entry = LogIoUtils.readEntry( localBuffer, source, commandFactory )) != null )
         {
-            long readUpTo = localBuffer.position();
-            long bytesRead = readUpTo - startingPosition;
-            startingPosition = readUpTo;
-            monitor.bytesRead( bytesRead );
             LogEntry foundEntry = collector.collect( entry, target );
             if ( foundEntry != null )
             {   // It just wrote the transaction, w/o the done record though. Add it
@@ -546,7 +539,7 @@ public class LogExtractor
     }
     
     public static LogExtractor from( final FileSystemAbstraction fileSystem, final File storeDir,
-            XaCommandFactory commandFactory, ByteCounterMonitor monitor, long startTxId ) throws IOException
+            XaCommandFactory commandFactory, final ByteCounterMonitor monitor, long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
         {
@@ -564,9 +557,9 @@ public class LogExtractor
                     name = activeLogFiles.get( version );
                     if ( name == null ) throw new NoSuchLogVersionException( version );
                 }
-                FileChannel channel = fileSystem.open( name, "r" );
+                StoreChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
-                return new BufferedFileChannel( channel );
+                return new BufferedFileChannel( channel, monitor );
             }
             
             private long maxKey( Map<Long, File> activeLogFiles )
@@ -627,7 +620,7 @@ public class LogExtractor
             }
         };
         
-        return new LogExtractor( new LogPositionCache(), loader, monitor, commandFactory, startTxId, Long.MAX_VALUE );
+        return new LogExtractor( new LogPositionCache(), loader, commandFactory, startTxId, Long.MAX_VALUE );
     }
     
     public static final XaCommandFactory NIONEO_COMMAND_FACTORY = new XaCommandFactory()

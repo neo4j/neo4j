@@ -22,21 +22,23 @@ package org.neo4j.kernel.impl.core;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.nioneo.store.TestXa.copyLogicalLog;
 import static org.neo4j.kernel.impl.nioneo.store.TestXa.renameCopiedLogicalLog;
 
@@ -72,7 +74,7 @@ public class TestChangingOfLogFormat
     private void decrementLogFormat( File file ) throws IOException
     {
         // Gotten from LogIoUtils class
-        FileChannel channel = fs.get().open( file, "rw" );
+        StoreChannel channel = fs.get().open( file, "rw" );
         ByteBuffer buffer = ByteBuffer.wrap( new byte[8] );
         channel.read( buffer );
         buffer.flip();

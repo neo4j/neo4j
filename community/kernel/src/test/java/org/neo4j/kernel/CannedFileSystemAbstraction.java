@@ -26,15 +26,13 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class CannedFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -78,7 +76,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileChannel open( File fileName, String mode ) throws IOException
+    public StoreChannel open( File fileName, String mode ) throws IOException
     {
         if ( cannotOpenLockFile != null )
         {
@@ -88,7 +86,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         return emptyFileChannel;
     }
     
-    private final FileChannel emptyFileChannel = new FileChannel()
+    private final StoreChannel emptyFileChannel = new AbstractStoreChannel()
     {
         @Override
         public int read( ByteBuffer dst ) throws IOException
@@ -103,25 +101,13 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public int write( ByteBuffer src ) throws IOException
-        {
-            throw unsupported();
-        }
-
-        @Override
-        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
-        {
-            throw unsupported();
-        }
-
-        @Override
         public long position() throws IOException
         {
             return 0;
         }
 
         @Override
-        public FileChannel position( long newPosition ) throws IOException
+        public StoreChannel position( long newPosition ) throws IOException
         {
             if ( newPosition != 0 )
                 throw unsupported();
@@ -135,7 +121,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public FileChannel truncate( long size ) throws IOException
+        public StoreChannel truncate( long size ) throws IOException
         {
             if ( size != 0 )
                 throw unsupported();
@@ -145,18 +131,6 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         @Override
         public void force( boolean metaData ) throws IOException
         {
-        }
-
-        @Override
-        public long transferTo( long position, long count, WritableByteChannel target ) throws IOException
-        {
-            throw unsupported();
-        }
-
-        @Override
-        public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
-        {
-            throw unsupported();
         }
 
         @Override
@@ -174,25 +148,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public MappedByteBuffer map( MapMode mode, long position, long size ) throws IOException
-        {
-            throw unsupported();
-        }
-
-        @Override
-        public java.nio.channels.FileLock lock( long position, long size, boolean shared ) throws IOException
-        {
-            throw unsupported();
-        }
-
-        @Override
-        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
-        {
-            throw unsupported();
-        }
-
-        @Override
-        protected void implCloseChannel() throws IOException
+        public void close() throws IOException
         {
             onClose.run();
         }
@@ -228,7 +184,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileLock tryLock( File fileName, FileChannel channel ) throws IOException
+    public FileLock tryLock( File fileName, StoreChannel channel ) throws IOException
     {
         if ( !lockSuccess )
         {
@@ -239,7 +195,7 @@ public class CannedFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileChannel create( File fileName ) throws IOException
+    public StoreChannel create( File fileName ) throws IOException
     {
         throw new UnsupportedOperationException( "TODO" );
     }
