@@ -24,7 +24,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 
 public class TestLockManagerBean
@@ -73,36 +71,6 @@ public class TestLockManagerBean
             assertNotNull( "null lock", lock );
 
         }
-        List<LockInfo> locks = lockManager.getLocks();
-        assertEquals( "unexpected lock count", 0, locks.size() );
-    }
-
-    @Test
-    public void explicitLocksAffectTheLockCount()
-    {
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            Node root = graphDb.createNode();
-            Lock first = tx.acquireReadLock( root );
-
-            LockInfo lock;
-
-            tx.acquireReadLock( root );
-            lock = getSingleLock();
-            assertThat(lock.getDescription(), containsString( "Total lock count: readCount=1 " +
-                    "writeCount=1 for NODE(0)\nWaiting list:\nLocking transactions:\nLockClient[1](1r,1w)\n" ));
-
-            tx.acquireWriteLock( root );
-            lock = getSingleLock();
-            assertThat(lock.getDescription(), containsString( "Total lock count: readCount=1 " +
-                    "writeCount=1 for NODE(0)\nWaiting list:\nLocking transactions:\nLockClient[1](1r,1w)\n" ));
-
-            first.release();
-            lock = getSingleLock();
-            assertThat(lock.getDescription(), containsString( "Total lock count: readCount=1 " +
-                    "writeCount=1 for NODE(0)\nWaiting list:\nLocking transactions:\nLockClient[1](1r,1w)\n" ));
-        }
-
         List<LockInfo> locks = lockManager.getLocks();
         assertEquals( "unexpected lock count", 0, locks.size() );
     }

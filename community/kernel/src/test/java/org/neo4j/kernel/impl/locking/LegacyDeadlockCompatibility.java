@@ -29,10 +29,6 @@ import javax.transaction.Transaction;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
-import org.neo4j.kernel.impl.locking.community.RagManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.PlaceboTm;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.*;
@@ -154,13 +150,13 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
         private final int numberOfIterations;
         private final int depthCount;
         private final float readWriteRatio;
-        private final LockManager lm;
+        private final Locks.Client lm;
         private volatile Exception error;
         private final Transaction tx = mock( Transaction.class );
         public volatile Long startedWaiting = null;
 
         StressThread( String name, int numberOfIterations, int depthCount,
-            float readWriteRatio, LockManager lm, CountDownLatch startSignal )
+            float readWriteRatio, Locks.Client lm, CountDownLatch startSignal )
         {
             super();
             this.name = name;
@@ -191,14 +187,14 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
                             if ( f < readWriteRatio )
                             {
                                 startedWaiting = currentTimeMillis();
-                                lm.getReadLock( resources[n], tx );
+                                lm.acquireShared( ResourceTypes.NODE, resources[n] );
                                 startedWaiting = null;
                                 lockStack.push( READ );
                             }
                             else
                             {
                                 startedWaiting = currentTimeMillis();
-                                lm.getWriteLock( resources[n], tx );
+                                lm.acquireExclusive( ResourceTypes.NODE, resources[n] );
                                 startedWaiting = null;
                                 lockStack.push( WRITE );
                             }
@@ -229,11 +225,11 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
             {
                 if ( lockStack.pop() == READ )
                 {
-                    lm.releaseReadLock( resourceStack.pop(), tx );
+                    lm.releaseShared( ResourceTypes.NODE, resourceStack.pop() );
                 }
                 else
                 {
-                    lm.releaseWriteLock( resourceStack.pop(), tx );
+                    lm.releaseExclusive( ResourceTypes.NODE, resourceStack.pop() );
                 }
             }
         }
@@ -259,16 +255,14 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
             StressThread.resources[i] = i;
         }
         StressThread stressThreads[] = new StressThread[50];
-        PlaceboTm tm = new PlaceboTm( null, null );
-        LockManager lm = new LockManagerImpl( new RagManager() );
-        tm.setLockManager( lm );
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < stressThreads.length; i++ )
         {
             int numberOfIterations = 100;
             int depthCount = 10;
             float readWriteRatio = 0.80f;
-            stressThreads[i] = new StressThread( "T" + i, numberOfIterations, depthCount, readWriteRatio, lm,
+            stressThreads[i] = new StressThread( "T" + i, numberOfIterations, depthCount, readWriteRatio,
+                    locks.newClient(),
                     startSignal );
         }
         for ( Thread thread : stressThreads )
