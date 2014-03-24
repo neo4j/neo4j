@@ -39,6 +39,7 @@ import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +51,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
 import static org.neo4j.test.AssertEventually.Condition;
 import static org.neo4j.test.AssertEventually.assertEventually;
 
-public class HTTPLoggingDocIT
+public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
     @Test
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
