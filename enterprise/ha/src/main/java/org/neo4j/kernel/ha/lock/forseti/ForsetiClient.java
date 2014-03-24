@@ -102,13 +102,18 @@ public class ForsetiClient implements Locks.Client
             }
 
             int tries = 0;
+            SharedLock mySharedLock = null;
             while(true)
             {
                 ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
                 if(existingLock == null)
                 {
                     // Try to create a new shared lock
-                    if(lockMap.putIfAbsent( resourceId, new SharedLock(this) ) == null)
+                    if(mySharedLock == null)
+                    {
+                        mySharedLock = new SharedLock( this );
+                    }
+                    if(lockMap.putIfAbsent( resourceId, mySharedLock ) == null)
                     {
                         // Success!
                         break;

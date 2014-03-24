@@ -37,6 +37,12 @@ class SharedLock implements ForsetiLockManager.Lock
      */
     private static final int UPDATE_LOCK_FLAG = 1<<31;
 
+    /**
+     * No more holders than this allowed, don't change this without changing the sizing of
+     * {@link #clientsHoldingThisLock}.
+     */
+    private static final int MAX_HOLDERS = 120;
+
     private final AtomicInteger refCount = new AtomicInteger(1);
 
     /**
@@ -267,11 +273,15 @@ class SharedLock implements ForsetiLockManager.Lock
 
                 for ( int j = 0; j < holders.length(); j++ )
                 {
-                    // XXX: This means we do CAS on each entry, very likely hitting a lot of failures until we
-                    // find a slot. We should look into better strategies here.
-                    if( holders.compareAndSet( j, null, client ) )
+                    ForsetiClient c = holders.get( j );
+                    if(c == null)
                     {
-                        return true;
+                        // XXX: This means we do CAS on each entry, very likely hitting a lot of failures until we
+                        // find a slot. We should look into better strategies here.
+                        if( holders.compareAndSet( j, null, client ) )
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -283,7 +293,8 @@ class SharedLock implements ForsetiLockManager.Lock
         while(true)
         {
             int refs = refCount.get();
-            if(refs > 0 /* UPDATE_LOCK flips the sign bit, so refs will be < 0 if it is an update lock. */)
+            // UPDATE_LOCK flips the sign bit, so refs will be < 0 if it is an update lock.
+            if(refs > 0 && refs < MAX_HOLDERS)
             {
                 if(refCount.compareAndSet( refs, refs+1 ))
                 {
@@ -314,7 +325,7 @@ class SharedLock implements ForsetiLockManager.Lock
     {
         if( clientsHoldingThisLock[slot] == null )
         {
-            clientsHoldingThisLock[slot] = new AtomicReferenceArray<>( 2 ^ (3+slot) );
+            clientsHoldingThisLock[slot] = new AtomicReferenceArray<>( (int) Math.pow(2, (3+slot)) );
         }
         return clientsHoldingThisLock[slot];
     }
