@@ -154,33 +154,6 @@
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
       </excludes>
     </dependencySet>
-    <!-- java api docs -->
-    <dependencySet>
-      <outputDirectory>doc/java/api</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j:neo4j-enterprise:*:javadoc</include>
-      </includes>
-    </dependencySet>
-    <!-- der manual -->
-    <dependencySet>
-      <outputDirectory>doc/manual/</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.doc:neo4j-manual</include>
-      </includes>
-      <excludes>
-        <exclude>org.neo4j.doc:neo4j-manual:*:manpages</exclude>
-        <exclude>org.neo4j.doc:neo4j-manual:*:manpagesenterprise</exclude>
-      </excludes>
-    </dependencySet>
-
  </dependencySets>
 
 </assembly>

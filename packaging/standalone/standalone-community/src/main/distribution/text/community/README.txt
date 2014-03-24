@@ -16,7 +16,7 @@ Here in the installation directory, you'll find:
 * bin - scripts and other executables
 * conf - server configuration
 * data - database, log, and other variable files
-* doc - more light reading
+* doc - command line reference
 * lib - core libraries
 * plugins - user extensions
 * system - super-secret server stuff
@@ -41,11 +41,6 @@ look at the web interface ...
 
 Learn more
 ----------
-
-There is a manual available in the `doc` directory, which includes tutorials
-and reference material.
-
-Out on the internets, you'll find:
 
 * ${neo4j-home.url.title}: ${neo4j-home.url}
 * ${getting-started.url.title}: ${getting-started.url}
