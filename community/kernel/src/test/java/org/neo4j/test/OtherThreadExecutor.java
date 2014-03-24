@@ -299,7 +299,12 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         {
             commandExecutor.awaitTermination( 10, TimeUnit.SECONDS );
         }
-        catch ( Exception e )
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            // shutdownNow() will interrupt running tasks if necessary
+        }
+        if ( ! commandExecutor.isTerminated() )
         {
             commandExecutor.shutdownNow();
         }
