@@ -31,5 +31,5 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
   val cost = left.cost + context.costs.calculateProjectionOverhead(cardinality, expressions.size)
 
   def coveredIds = expressions.keySet.map(IdName)
-  def solvedPredicates = left.solvedPredicates // TODO: Remove shadowed predicates (?)
+  def solvedPredicates = left.solvedPredicates
 }
