@@ -131,7 +131,7 @@ public class TestRecovery
                 System.getProperty( "java.class.path" ),
                 AddRelToIndex.class.getName(), getDbPath().getPath()
         } );
-        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
+        assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
@@ -162,7 +162,7 @@ public class TestRecovery
                 "java", "-cp", System.getProperty( "java.class.path" ),
                 AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath().getPath()
         } );
-        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
+        assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
         assertFalse( db.index().existsForNodes( "index" ) );
