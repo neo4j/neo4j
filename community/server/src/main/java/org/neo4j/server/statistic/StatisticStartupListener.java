@@ -24,7 +24,9 @@ import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
-import org.neo4j.server.logging.Logger;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * @author tbaum
@@ -32,15 +34,15 @@ import org.neo4j.server.logging.Logger;
  */
 public class StatisticStartupListener implements LifeCycle.Listener
 {
-    private static final Logger LOG = new Logger( StatisticStartupListener.class );
-
     private final Server jetty;
-    private FilterHolder holder;
+    private final FilterHolder holder;
+    private final ConsoleLogger log;
 
-    public StatisticStartupListener( Server jetty, StatisticFilter statisticFilter )
+    public StatisticStartupListener( Server jetty, StatisticFilter statisticFilter, Logging logging )
     {
         this.jetty = jetty;
         holder = new FilterHolder( statisticFilter );
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -58,7 +60,7 @@ public class StatisticStartupListener implements LifeCycle.Listener
                 final Context context = (Context) handler;
                 final String path = context.getContextPath();
 
-                LOG.info( "adding statistic-filter to " + path );
+                log.log( "adding statistic-filter to " + path );
                 context.addFilter( holder, "/*", Handler.ALL );
             }
         }
@@ -72,7 +74,7 @@ public class StatisticStartupListener implements LifeCycle.Listener
     @Override
     public void lifeCycleStopping( final LifeCycle event )
     {
-        LOG.info( "stopping filter" );
+        log.log( "stopping filter" );
         holder.doStop();
     }
 
@@ -83,7 +85,7 @@ public class StatisticStartupListener implements LifeCycle.Listener
 
     public void stop()
     {
-        LOG.info( "stopping listeneer" );
+        log.log( "stopping listeneer" );
         jetty.removeLifeCycleListener( this );
     }
 }

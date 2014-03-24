@@ -300,6 +300,12 @@ public abstract class StringLogger
         logMessage( msg, cause, false );
     }
 
+    public void logMessage( String msg, Throwable cause, boolean flush, LogMarker marker )
+    {
+        // LogMarker is used by subclasses
+        logMessage( msg, cause, flush );
+    }
+
     public void debug( String msg )
     {
         if ( isDebugEnabled() )
@@ -521,6 +527,7 @@ public abstract class StringLogger
         @Override
         public void logMessage( String msg, LogMarker marker )
         {
+            // LogMarker is used by subclasses
             logMessage( msg );
         }
 

@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,22 +27,31 @@ import java.util.ArrayList;
 import javax.ws.rs.core.Response;
 
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.webadmin.rest.console.ConsoleService;
-import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ConsoleServiceDocTest
 {
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
-    
+
     @Test
     public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
-        ConsoleService consoleService = new ConsoleService( new ShellOnlyConsoleSessionFactory(), null, new OutputFormat( new JsonFormat(), uri, null ) );
-        
+        ConsoleService consoleService = new ConsoleService( new ShellOnlyConsoleSessionFactory(), databaseMock(),
+                new OutputFormat( new JsonFormat(), uri, null ) );
+
         Response consoleResponse = consoleService.getServiceDefinition();
 
         assertEquals( 200, consoleResponse.getStatus() );
@@ -54,18 +59,26 @@ public class ConsoleServiceDocTest
         assertThat( response, containsString( "resources" ) );
         assertThat( response, containsString( uri.toString() ) );
     }
-    
+
     @Test
     public void advertisesAvailableConsoleEngines() throws URISyntaxException, UnsupportedEncodingException
     {
-        ConsoleService consoleServiceWithJustShellEngine = new ConsoleService( new ShellOnlyConsoleSessionFactory(), null, new OutputFormat( new JsonFormat(), uri, null ) );
-        
+        ConsoleService consoleServiceWithJustShellEngine = new ConsoleService( new ShellOnlyConsoleSessionFactory(),
+                databaseMock(), new OutputFormat( new JsonFormat(), uri, null ) );
+
         String response = decode( consoleServiceWithJustShellEngine.getServiceDefinition());
 
         assertThat( response, containsString( "\"engines\" : [ \"shell\" ]" ) );
-        
+
     }
-    
+
+    private Database databaseMock()
+    {
+        Database db = mock( Database.class );
+        when( db.getLogging() ).thenReturn( DevNullLoggingService.DEV_NULL );
+        return db;
+    }
+
     private String decode( final Response response ) throws UnsupportedEncodingException
     {
         return new String( (byte[]) response.getEntity(), "UTF-8" );
@@ -78,7 +91,7 @@ public class ConsoleServiceDocTest
         {
             return null;
         }
-    
+
         @Override
         public Iterable<String> supportedEngines()
         {

@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvi
  * in an application. You typically instantiate it by using
  * {@link GraphDatabaseFactory} like so:
  * <p/>
- * 
+ *
  * <pre>
  * <code>
  * GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( &quot;var/graphdb&quot; );
@@ -52,9 +52,9 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
-     * 
+     *
      * This is deprecated. Use {@link GraphDatabaseFactory} instead.
-     * 
+     *
      * @param storeDir the store directory for the Neo4j store files
      */
     @Deprecated
@@ -69,20 +69,16 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * <p/>
      * Creates an embedded {@link GraphDatabaseService} with a store located in
      * <code>storeDir</code>, which will be created if it doesn't already exist.
-     * 
+     *
      * This is deprecated. Use {@link GraphDatabaseFactory} instead.
-     * 
+     *
      * @param storeDir the store directory for the db files
      * @param params configuration parameters
      */
     @Deprecated
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params )
     {
-        this( storeDir, params,
-                Service.load( IndexProvider.class ),
-                Iterables.<KernelExtensionFactory<?>,KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ) );
+        this( storeDir, params, new DefaultGraphDatabaseDependencies() );
     }
 
     /**
@@ -95,13 +91,27 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      * @param cacheProviders
      * @param txInterceptorProviders
      */
+    @Deprecated
     public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Iterable<IndexProvider> indexProviders,
-                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                  Iterable<CacheProvider> cacheProviders,
-                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+            Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            Iterable<CacheProvider> cacheProviders,
+            Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class ),
-                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders );
+        this( storeDir, params, new GraphDatabaseDependencies( null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class ),
+                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders ) );
+    }
+
+    /**
+     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
+     *
+     * @param storeDir
+     * @param params
+     * @param dependencies
+     */
+    public EmbeddedGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    {
+        super( storeDir, params, dependencies );
 
         run();
     }

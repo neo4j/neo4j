@@ -19,39 +19,39 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.web.WebServer;
 
+import static org.neo4j.server.JAXRSHelper.listFrom;
+
 public class ThirdPartyJAXRSModule implements ServerModule
 {
-    private final Logger log = Logger.getLogger( ThirdPartyJAXRSModule.class );
-
 	private final Configurator configurator;
 	private final WebServer webServer;
 
-    private ExtensionInitializer extensionInitializer;
+    private final ExtensionInitializer extensionInitializer;
 	private List<ThirdPartyJaxRsPackage> packages;
+    private final ConsoleLogger log;
 
-
-    public ThirdPartyJAXRSModule( WebServer webServer, Configurator configurator, NeoServer neoServer )
+    public ThirdPartyJAXRSModule( WebServer webServer, Configurator configurator, Logging logging,
+            NeoServer neoServer )
     {
     	this.webServer = webServer;
     	this.configurator = configurator;
+    	this.log = logging.getConsoleLog( getClass() );
         extensionInitializer = new ExtensionInitializer( neoServer );
     }
 
     @Override
-	public void start(StringLogger logger)
+	public void start()
     {
         this.packages = configurator.getThirdpartyJaxRsPackages();
         for ( ThirdPartyJaxRsPackage tpp : packages )
@@ -59,10 +59,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
             List<String> packageNames = packagesFor( tpp );
             Collection<Injectable<?>> injectables = extensionInitializer.initializePackages( packageNames );
             webServer.addJAXRSPackages( packageNames, tpp.getMountPoint(), injectables );
-            log.info( "Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
-            if ( logger != null )
-                logger.logMessage( String.format( "Mounted third-party JAX-RS package [%s] at [%s]",
-                        tpp.getPackageName(), tpp.getMountPoint() ) );
+            log.log( "Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
         }
     }
 
@@ -74,7 +71,10 @@ public class ThirdPartyJAXRSModule implements ServerModule
     @Override
 	public void stop()
     {
-        if ( packages == null )  return;
+        if ( packages == null )
+        {
+            return;
+        }
 
         for ( ThirdPartyJaxRsPackage tpp : packages )
         {

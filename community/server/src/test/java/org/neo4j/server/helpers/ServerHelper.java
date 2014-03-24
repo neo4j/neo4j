@@ -26,9 +26,11 @@ import java.net.ServerSocket;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -135,19 +137,32 @@ public class ServerHelper
 
     public static NeoServer createNonPersistentServer() throws IOException
     {
-        return createServer( false, null );
+        return createServer( ServerBuilder.server(), false, null );
+    }
+
+    public static NeoServer createNonPersistentServer( Logging logging ) throws IOException
+    {
+        return createServer( ServerBuilder.server( logging ), false, null );
     }
 
     public static NeoServer createPersistentServer(File path) throws IOException
     {
-        return createServer( true, path );
+        return createServer( ServerBuilder.server(), true, path );
     }
 
-    private static NeoServer createServer( boolean persistent, File path ) throws IOException
+    public static NeoServer createPersistentServer(File path, Logging logging) throws IOException
     {
-        ServerBuilder builder = ServerBuilder.server();
+        return createServer( ServerBuilder.server( logging ), true, path );
+    }
+
+    private static NeoServer createServer( ServerBuilder builder, boolean persistent, File path )
+            throws IOException
+    {
         configureHostname( builder );
-        if ( persistent ) builder = builder.persistent();
+        if ( persistent )
+        {
+            builder = builder.persistent();
+        }
         NeoServer server = builder
                 .usingDatabaseDir( path != null ? path.getAbsolutePath() : null)
                 .build();

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -120,11 +114,17 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
+import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.String.format;
+
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -133,6 +133,25 @@ import org.neo4j.tooling.GlobalGraphOperations;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI
 {
+    public interface Dependencies
+    {
+        /**
+         * Allowed to be null. Null means that no external {@link Logging} was created, let the
+         * database create its own logging.
+         * @return
+         */
+        Logging logging();
+
+        Iterable<Class<?>> settingsClasses();
+
+        Iterable<IndexProvider> indexProviders();
+
+        Iterable<KernelExtensionFactory<?>> kernelExtensions();
+
+        Iterable<CacheProvider> cacheProviders();
+
+        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders();
+    }
 
     public static class Configuration
     {
@@ -204,12 +223,7 @@ public abstract class InternalAbstractGraphDatabase
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
 
-    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
-                                             Iterable<Class<?>> settingsClasses,
-                                             Iterable<IndexProvider> indexProviders,
-                                             Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                             Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
         this.params = params;
 
@@ -219,26 +233,29 @@ public abstract class InternalAbstractGraphDatabase
         params.put( Configuration.store_dir.name(), storeDir );
 
         // SPI - provided services
-        this.cacheProviders = mapCacheProviders( cacheProviders );
-        config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
+        this.cacheProviders = mapCacheProviders( dependencies.cacheProviders() );
+        config = new Config( params, getSettingsClasses( dependencies.settingsClasses(),
+                dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
+        this.logging = dependencies.logging();
 
         // Convert IndexProviders into KernelExtensionFactories
         // Remove this when the deprecated IndexProvider is removed
         Iterable<KernelExtensionFactory<?>> indexProviderKernelExtensions = Iterables.map( new
-                                                                                                   Function<IndexProvider, KernelExtensionFactory<?>>()
+                Function<IndexProvider, KernelExtensionFactory<?>>()
         {
             @Override
             public KernelExtensionFactory<?> apply( IndexProvider from )
             {
                 return new IndexProviderKernelExtensionFactory( from );
             }
-        }, indexProviders );
+        }, dependencies.indexProviders() );
 
-        kernelExtensions = Iterables.concat( kernelExtensions, indexProviderKernelExtensions );
+        Iterable<KernelExtensionFactory<?>> kernelExtensions = Iterables.concat( dependencies.kernelExtensions(),
+                indexProviderKernelExtensions );
 
         this.kernelExtensions = new KernelExtensions( kernelExtensions, config, getDependencyResolver() );
-        this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
-                dependencyResolver );
+        this.transactionInterceptorProviders = new TransactionInterceptorProviders(
+                dependencies.transactionInterceptorProviders(), dependencyResolver );
 
         this.storeDir = config.get( Configuration.store_dir );
         accessTimeout = 1 * 1000; // TODO make configurable
@@ -341,9 +358,13 @@ public abstract class InternalAbstractGraphDatabase
 
         fileSystem = createFileSystemAbstraction();
 
-        // Create logger
-        this.logging = createLogging();
-        
+        // If no logging was passed in from the outside then create logging and register
+        // with this life
+        if ( this.logging == null )
+        {
+            this.logging = createLogging();
+        }
+
         // Component monitoring
         this.monitors = new Monitors();
 
@@ -408,7 +429,7 @@ public abstract class InternalAbstractGraphDatabase
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 
         stateFactory = createTransactionStateFactory();
-        
+
         Factory<byte[]> xidGlobalIdFactory = createXidGlobalIdFactory();
 
         if ( readOnly )
@@ -833,7 +854,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC ) );
+        return life.add( DefaultLogging.createDefaultLogging( config ) );
     }
 
     protected void createNeoDataSource()

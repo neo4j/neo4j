@@ -26,21 +26,23 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
-import org.rrd4j.ConsolFun;
-import org.rrd4j.core.DsDef;
-import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.RrdDef;
-import org.rrd4j.core.RrdToolkit;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
+
+import org.rrd4j.ConsolFun;
+import org.rrd4j.core.DsDef;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.RrdDef;
+import org.rrd4j.core.RrdToolkit;
 
 import static java.lang.Double.NaN;
 import static java.util.Arrays.asList;
@@ -49,11 +51,11 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
+
 import static org.rrd4j.ConsolFun.AVERAGE;
 import static org.rrd4j.ConsolFun.MAX;
 import static org.rrd4j.ConsolFun.MIN;
-
-import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
 
 public class RrdFactory
 {
@@ -61,12 +63,12 @@ public class RrdFactory
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
 
     private final Configuration config;
-    private static final Logger LOG = Logger.getLogger( RrdFactory.class );
+    private final ConsoleLogger log;
 
-    public RrdFactory( Configuration config )
+    public RrdFactory( Configuration config, Logging logging )
     {
-
         this.config = config;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
@@ -174,11 +176,11 @@ public class RrdFactory
             } catch ( IOException e )
             {
                 // RRD file may have become corrupt
-                LOG.error( "Unable to open rrd store, attempting to recreate it", e );
+                log.error( "Unable to open rrd store, attempting to recreate it", e );
                 return recreateArchive( rrdFile, sampleables );
             } catch (IllegalArgumentException e) {
                 // RRD file may have become corrupt
-                LOG.error( "Unable to open rrd store, attempting to recreate it", e );
+                log.error( "Unable to open rrd store, attempting to recreate it", e );
                 return recreateArchive( rrdFile, sampleables );
             }
         } else
@@ -191,24 +193,26 @@ public class RrdFactory
                 return new RrdDb( rrdDef );
             } catch ( IOException e )
             {
-                LOG.error( "Unable to create new rrd store", e );
+                log.error( "Unable to create new rrd store", e );
                 throw new RuntimeException( e );
             }
         }
     }
 
     private boolean validateStepSize( File rrdFile ) throws IOException
-    {   
-        RrdDb r = null; 
+    {
+        RrdDb r = null;
         try
         {
             r = new RrdDb( rrdFile.getAbsolutePath(), true );
             return ( r.getRrdDef().getStep() == STEP_SIZE );
         }
         finally
-        {   
+        {
             if(r != null)
+            {
                 r.close();
+            }
         }
     }
 
@@ -219,7 +223,7 @@ public class RrdFactory
 
         if ( rrdFile.renameTo( file ) )
         {
-            LOG.error( "current RRDB is invalid, renamed it to %s", file.getAbsolutePath() );
+            log.error( "current RRDB is invalid, renamed it to %s", file.getAbsolutePath() );
             return createRrdb( rrdFile.getAbsolutePath(), sampleables );
         }
 
@@ -242,11 +246,11 @@ public class RrdFactory
         return missing.toArray( new Sampleable[missing.size()] );
     }
 
-    private static void updateDataSources( String rrdPath, Sampleable[] sampleables ) throws IOException
+    private void updateDataSources( String rrdPath, Sampleable[] sampleables ) throws IOException
     {
         for ( Sampleable sampleable : sampleables )
         {
-            LOG.warn( "Updating RRDB structure, adding: " + sampleable.getName() );
+            log.warn( "Updating RRDB structure, adding: " + sampleable.getName() );
             RrdToolkit.addDatasource( rrdPath, createDsDef( sampleable ), true );
         }
     }

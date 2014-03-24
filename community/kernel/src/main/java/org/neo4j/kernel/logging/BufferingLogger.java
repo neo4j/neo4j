@@ -30,14 +30,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
 /**
  * Buffers all messages sent to it, and is able to replay those messages into
  * another StringLogger.
- * 
+ *
  * This can be used to start up services that need logging when they start, but
  * where, for one reason or another, we have not yet set up proper logging in
  * the application lifecycle.
- * 
+ *
  * This will replay messages in the order they are recieved, *however*, it will
  * not preserve the time stamps of the original messages.
- * 
+ *
  * You should not use this for logging messages where the time stamps are
  * important.
  */
@@ -45,16 +45,16 @@ public class BufferingLogger extends StringLogger
 {
     private static class LogMessage
     {
+        private final String message;
+        private final Throwable throwable;
+        private final boolean flush;
+
         public LogMessage( String message, Throwable throwable, boolean flush )
         {
             this.message = message;
             this.throwable = throwable;
             this.flush = flush;
         }
-
-        public String message;
-        public Throwable throwable;
-        public boolean flush;
     }
 
     private List<LogMessage> buffer = new ArrayList<LogMessage>();
@@ -129,9 +129,13 @@ public class BufferingLogger extends StringLogger
         for ( LogMessage message : oldBuffer )
         {
             if ( message.throwable != null )
+            {
                 other.logMessage( message.message, message.throwable, message.flush );
+            }
             else
+            {
                 other.logMessage( message.message, message.flush );
+            }
         }
     }
 
@@ -144,7 +148,9 @@ public class BufferingLogger extends StringLogger
         {
             sb.println( message.message );
             if ( message.throwable != null )
+            {
                 message.throwable.printStackTrace( sb );
+            }
         }
         return stringWriter.toString();
     }

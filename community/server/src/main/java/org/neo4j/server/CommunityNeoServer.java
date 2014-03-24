@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.Database;
@@ -47,12 +48,14 @@ import org.neo4j.server.webadmin.rest.console.ConsoleService;
 
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public CommunityNeoServer()
+    public CommunityNeoServer( Logging logging )
     {
+        super( logging );
     }
 
-    public CommunityNeoServer( Configurator configurator )
+    public CommunityNeoServer( Configurator configurator, Logging logging )
     {
+        super( logging );
         this.configurator = configurator;
         init();
     }
@@ -60,46 +63,46 @@ public class CommunityNeoServer extends AbstractNeoServer
 	@Override
 	protected PreFlightTasks createPreflightTasks()
     {
-		return new PreFlightTasks(
+		return new PreFlightTasks( logging,
 				// TODO: Move the config check into bootstrapper
 				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
 				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out),
-				new PerformRecoveryIfNecessary(getConfiguration(), 
-						configurator.getDatabaseTuningProperties(), System.out));
+				new PerformUpgradeIfNecessary(getConfiguration(),
+						configurator.getDatabaseTuningProperties(), System.out, logging),
+				new PerformRecoveryIfNecessary(getConfiguration(),
+						configurator.getDatabaseTuningProperties(), System.out, logging));
 	}
 
 	@Override
-	protected Iterable<ServerModule> createServerModules() 
+	protected Iterable<ServerModule> createServerModules()
 	{
-        return Arrays.asList( 
-        		new DiscoveryModule(webServer), 
-        		new RESTApiModule(webServer, database, configurator.configuration()), 
-        		new ManagementApiModule(webServer, configurator.configuration()),
-                new ThirdPartyJAXRSModule(webServer, configurator, this),
-                new WebAdminModule(webServer, configurator.configuration(), database), 
+        return Arrays.asList(
+        		new DiscoveryModule(webServer, logging),
+        		new RESTApiModule(webServer, database, configurator.configuration(), logging),
+        		new ManagementApiModule(webServer, configurator.configuration(), logging),
+                new ThirdPartyJAXRSModule(webServer, configurator, logging, this),
+                new WebAdminModule(webServer, configurator.configuration(), logging, database),
                 new StatisticModule(webServer, statisticsCollector, configurator.configuration()),
-                new SecurityRulesModule(webServer, configurator.configuration()));
+                new SecurityRulesModule(webServer, configurator.configuration(), logging));
 	}
 
 	@Override
 	protected Database createDatabase()
     {
-        return new CommunityDatabase( configurator );
+        return new CommunityDatabase( configurator, logging );
 	}
 
 	@Override
 	protected WebServer createWebServer()
     {
-		return new Jetty6WebServer();
+		return new Jetty6WebServer( logging );
 	}
 
     @Override
     public Iterable<AdvertisableService> getServices()
     {
         List<AdvertisableService> toReturn = new ArrayList<AdvertisableService>( 3 );
-        toReturn.add( new ConsoleService( null, null, null ) );
+        toReturn.add( new ConsoleService( null, new Database( logging ), null ) );
         toReturn.add( new JmxService( null, null ) );
         toReturn.add( new MonitorService( null, null ) );
 

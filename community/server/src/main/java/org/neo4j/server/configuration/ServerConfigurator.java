@@ -28,6 +28,8 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 /**
  * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum amount
  * of required configuration on to the neo4j server.
@@ -50,8 +52,8 @@ import org.neo4j.server.WrappingNeoServerBootstrapper;
 public class ServerConfigurator extends Configurator.Adapter
 {
 
-    private MapBasedConfiguration config = new MapBasedConfiguration();
-    private List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
+    private final MapBasedConfiguration config = new MapBasedConfiguration();
+    private final List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
 
     public ServerConfigurator( GraphDatabaseAPI db )
     {
@@ -67,7 +69,7 @@ public class ServerConfigurator extends Configurator.Adapter
     @Override
     public Map<String, String> getDatabaseTuningProperties()
     {
-        return null;
+        return stringMap();
     }
 
     @Override

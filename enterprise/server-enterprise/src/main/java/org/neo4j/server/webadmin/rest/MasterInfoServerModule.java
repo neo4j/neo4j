@@ -20,13 +20,13 @@
 package org.neo4j.server.webadmin.rest;
 
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.impl.util.StringLogger;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.web.WebServer;
 
@@ -34,56 +34,39 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class MasterInfoServerModule implements ServerModule
 {
-    private static final Logger log = Logger.getLogger( MasterInfoServerModule.class );
     private final WebServer server;
     private final Configuration config;
+    private final ConsoleLogger log;
 
-    public MasterInfoServerModule( WebServer server, Configuration config )
+    public MasterInfoServerModule( WebServer server, Configuration config, Logging logging )
     {
         this.server = server;
         this.config = config;
+        this.log = logging.getConsoleLog( getClass() );
     }
-    
+
     @Override
-    public void start( StringLogger logger )
+    public void start()
     {
-        try
-        {
-            URI baseUri = managementApiUri();
-            server.addJAXRSClasses( getClassNames(), baseUri.toString(), null );
-            
-            log.info( "Mounted REST API at: " + baseUri.toString() );
-            if ( logger != null )
-            {
-                logger.logMessage( "Mounted REST API at: " + baseUri.toString() );
-            }
-        }
-        catch ( UnknownHostException e )
-        {
-            log.warn( e );
-        }
+        URI baseUri = managementApiUri();
+        server.addJAXRSClasses( getClassNames(), baseUri.toString(), null );
+
+        log.log( "Mounted REST API at: " + baseUri.toString() );
     }
 
     @Override
     public void stop()
     {
-        try
-        {
-            URI baseUri = managementApiUri();
-            server.removeJAXRSClasses( getClassNames(), baseUri.toString() );
-        }
-        catch ( UnknownHostException e )
-        {
-            log.warn( e );
-        }
+        URI baseUri = managementApiUri();
+        server.removeJAXRSClasses( getClassNames(), baseUri.toString() );
     }
-    
+
     private List<String> getClassNames()
     {
         return listFrom( MasterInfoService.class.getName() );
     }
-    
-    private URI managementApiUri( ) throws UnknownHostException
+
+    private URI managementApiUri()
     {
         return URI.create( config.getString( Configurator.MANAGEMENT_PATH_PROPERTY_KEY,
                 Configurator.DEFAULT_MANAGEMENT_API_PATH ) );

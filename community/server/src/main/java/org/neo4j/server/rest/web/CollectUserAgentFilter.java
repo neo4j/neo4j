@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.rest.web;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-import org.neo4j.server.logging.Logger;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.sun.jersey.spi.container.ContainerRequest;
+import com.sun.jersey.spi.container.ContainerRequestFilter;
 
 /**
  * This filter collects the User-Agent of the request and stores it in a Set for UDC to report
@@ -33,8 +32,6 @@ import java.util.Set;
  */
 public class CollectUserAgentFilter implements ContainerRequestFilter
 {
-
-    private static final Logger log = Logger.getLogger( CollectUserAgentFilter.class );
     private static final String USER_AGENT = "User-Agent";
     private final static Set<String> userAgents = new HashSet<String>();
     static final int SAMPLE_FREQ = 100;
@@ -43,18 +40,24 @@ public class CollectUserAgentFilter implements ContainerRequestFilter
 
     @Override
     public ContainerRequest filter(ContainerRequest request) {
-        if (counter++ < SAMPLE_FREQ) return request;
+        if (counter++ < SAMPLE_FREQ)
+        {
+            return request;
+        }
         counter = 0;
         try {
             List<String> headers = request.getRequestHeader(USER_AGENT);
             if (headers!=null) {
                 for (String header : headers) {
-                    if (header==null) continue;
+                    if (header==null)
+                    {
+                        continue;
+                    }
                     userAgents.add(header.replaceAll(" .*",""));
                 }
             }
         } catch(Exception e) {
-            log.debug( "Error retrieving User-Agent from " + request.getPath(),e );
+            // We're fine with that
         }
         return request;
     }
@@ -65,5 +68,4 @@ public class CollectUserAgentFilter implements ContainerRequestFilter
     public static void reset() {
         userAgents.clear();
     }
-
 }

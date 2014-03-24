@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.util.Arrays;
 import java.util.Map;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 
 /**
@@ -30,23 +33,29 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 public class HighlyAvailableGraphDatabaseFactory
     extends GraphDatabaseFactory
 {
-    public GraphDatabaseService newHighlyAvailableDatabase(String path)
+    public HighlyAvailableGraphDatabaseFactory()
+    {
+        super();
+        settingsClasses = Arrays.<Class<?>>asList(
+                GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class );
+    }
+
+    public GraphDatabaseService newHighlyAvailableDatabase( String path )
     {
         return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
     }
 
-    public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder(final String path)
+    public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder( final String path )
     {
         return new GraphDatabaseBuilder(new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            public GraphDatabaseService newDatabase(Map<String, String> config)
+            public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );
 
-                return new HighlyAvailableGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
-                        txInterceptorProviders );
+                return new HighlyAvailableGraphDatabase( path, config, databaseDependencies() );
             }
-        });
+        } );
     }
 }

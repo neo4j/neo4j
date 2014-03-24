@@ -23,26 +23,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellSettings;
 
 import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCATION_PROPERTY_KEY;
 
-public class CommunityDatabase extends/* implements */ Database
+public class CommunityDatabase extends Database
 {
     protected final Configurator configurator;
     protected final Configuration serverConfiguration;
+    protected final ConsoleLogger log;
 
     @SuppressWarnings("deprecation")
-    public CommunityDatabase( Configurator configurator )
+    public CommunityDatabase( Configurator configurator, Logging logging )
     {
+        super( logging );
         this.configurator = configurator;
         this.serverConfiguration = configurator.configuration();
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -56,7 +62,7 @@ public class CommunityDatabase extends/* implements */ Database
                             DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) )
                     .setConfig( getDbTuningPropertiesWithServerDefaults() )
                     .newGraphDatabase();
-            log.info( "Successfully started database" );
+            log.log( "Successfully started database" );
         }
         catch ( Exception e )
         {
@@ -75,7 +81,7 @@ public class CommunityDatabase extends/* implements */ Database
             {
                 this.graph.shutdown();
                 this.graph = null;
-                log.info( "Successfully stopped database" );
+                log.log( "Successfully stopped database" );
             }
         }
         catch ( Exception e )
@@ -110,5 +116,4 @@ public class CommunityDatabase extends/* implements */ Database
             databaseProperties.put( configKey, configValue );
         }
     }
-
 }

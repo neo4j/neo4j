@@ -29,10 +29,11 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSetting;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
@@ -41,23 +42,27 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
 
 public class TestCommunityDatabase
 {
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
+    private Logging logging;
 
     @Before
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
+        logging = bufferingLogging();
         theDatabase = new CommunityDatabase( configuratorWithServerProperties( stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ), logging );
     }
-    
+
     private static Configurator configuratorWithServerProperties( final Map<String, String> serverProperties )
     {
         return new Configurator.Adapter()
@@ -94,22 +99,18 @@ public class TestCommunityDatabase
     @Test
     public void shouldLogOnSuccessfulStartup() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( Database.log );
-
         theDatabase.start();
 
-        assertThat( appender.toString(), containsString( "Successfully started database" ) );
+        assertThat( logging.toString(), containsString( "Successfully started database" ) );
     }
 
     @Test
     public void shouldShutdownCleanly() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( Database.log );
-
         theDatabase.start();
         theDatabase.stop();
 
-        assertThat( appender.toString(), containsString( "Successfully stopped database" ) );
+        assertThat( logging.toString(), containsString( "Successfully stopped database" ) );
     }
 
     @Test
@@ -117,9 +118,9 @@ public class TestCommunityDatabase
     {
         deletionFailureOk = true;
         theDatabase.start();
-        
+
         CommunityDatabase db = new CommunityDatabase( configuratorWithServerProperties( stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ), logging );
 
         try
         {
@@ -145,7 +146,7 @@ public class TestCommunityDatabase
     {
         final int customPort = findFreeShellPortToUse( 8881 );
         final File tempDir = createTempDir();
-        
+
         Database otherDb = new CommunityDatabase( new Configurator.Adapter()
         {
             @Override
@@ -154,7 +155,7 @@ public class TestCommunityDatabase
                 return new MapConfiguration( stringMap(
                         Configurator.DATABASE_LOCATION_PROPERTY_KEY, tempDir.getAbsolutePath() ) );
             }
-            
+
             @Override
             public Map<String, String> getDatabaseTuningProperties()
             {
@@ -162,7 +163,7 @@ public class TestCommunityDatabase
                       ShellSettings.remote_shell_enabled.name(), GraphDatabaseSetting.TRUE,
                       ShellSettings.remote_shell_port.name(), "" + customPort );
             }
-        } );
+        }, logging );
         otherDb.start();
 
         // Try to connect with a shell client to that custom port.

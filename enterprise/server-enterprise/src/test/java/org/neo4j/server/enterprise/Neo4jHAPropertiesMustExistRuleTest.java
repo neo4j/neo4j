@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -28,9 +26,15 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.logging.ConsoleLogger.DEV_NULL;
+import static org.neo4j.server.configuration.validation.Validator.NO_VALIDATION;
 
 public class Neo4jHAPropertiesMustExistRuleTest
 {
@@ -158,7 +162,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
 
     private Configuration propertiesWithConfigFileLocation( File propertyFile )
     {
-        PropertyFileConfigurator config = new PropertyFileConfigurator( propertyFile );
+        PropertyFileConfigurator config = new PropertyFileConfigurator( NO_VALIDATION, propertyFile, DEV_NULL );
         config.configuration().setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, propertyFile.getAbsolutePath() );
         return config.configuration();
     }

@@ -22,30 +22,31 @@ package org.neo4j.server.modules;
 import java.util.ArrayList;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.impl.util.StringLogger;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.web.WebServer;
 
 public class SecurityRulesModule implements ServerModule
 {
-    private final Logger log = Logger.getLogger( SecurityRulesModule.class );
-
     private final WebServer webServer;
     private final Configuration config;
+    private final ConsoleLogger log;
 
     private SecurityFilter mountedFilter;
 
-    public SecurityRulesModule( WebServer webServer, Configuration config )
+    public SecurityRulesModule( WebServer webServer, Configuration config, Logging logging )
     {
         this.webServer = webServer;
         this.config = config;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
-    public void start( StringLogger logger )
+    public void start()
     {
         Iterable<SecurityRule> securityRules = getSecurityRules();
         mountedFilter = new SecurityFilter( securityRules );
@@ -54,11 +55,8 @@ public class SecurityRulesModule implements ServerModule
 
         for ( SecurityRule rule : securityRules )
         {
-            log.info( "Security rule [%s] installed on server",
+            log.log( "Security rule [%s] installed on server",
                     rule.getClass().getCanonicalName() );
-            System.out.println(
-                    String.format( "Security rule [%s] installed on server", rule.getClass().getCanonicalName() ) );
-
         }
     }
 

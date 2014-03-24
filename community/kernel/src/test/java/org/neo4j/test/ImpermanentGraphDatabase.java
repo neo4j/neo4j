@@ -19,12 +19,8 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
-
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,8 +30,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -45,6 +43,11 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.FALSE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.use_memory_mapped_buffers;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -57,8 +60,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<File, Exception>();
-    
-    static final String PATH = "target/test-data/impermanent-db";
+
+    protected static final String PATH = "target/test-data/impermanent-db";
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
@@ -100,7 +103,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         super( storeDir, withForcedInMemoryConfiguration( params ) );
     }
-    
+
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
@@ -110,9 +113,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
-        trackUnclosedUse( PATH );
+        this( PATH, params, indexProviders, kernelExtensions, cacheProviders, transactionInterceptorProviders );
     }
 
     /**
@@ -124,11 +125,17 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                         Iterable<CacheProvider> cacheProviders,
                                         Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ), indexProviders, kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+        this( storeDir, withForcedInMemoryConfiguration( params ), new GraphDatabaseDependencies( null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class ), indexProviders, kernelExtensions,
+                cacheProviders, transactionInterceptorProviders ) );
+    }
+
+    protected ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    {
+        super( storeDir, withForcedInMemoryConfiguration( params ), dependencies );
         trackUnclosedUse( storeDir );
     }
-    
+
     private void trackUnclosedUse( String path )
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
@@ -136,19 +143,23 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             Exception testThatDidntCloseDb = startedButNotYetClosed.put( new File( path ),
                     new Exception( "Unclosed database instance" ) );
             if ( testThatDidntCloseDb != null )
+            {
                 testThatDidntCloseDb.printStackTrace();
+            }
         }
     }
-    
+
     @Override
     public void shutdown()
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
+        {
             startedButNotYetClosed.remove( new File( getStoreDir() ) );
+        }
 
         super.shutdown();
     }
-    
+
     @Override
     protected FileSystemAbstraction createFileSystemAbstraction()
     {

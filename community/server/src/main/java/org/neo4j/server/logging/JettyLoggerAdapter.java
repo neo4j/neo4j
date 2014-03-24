@@ -23,23 +23,34 @@ import java.util.IllegalFormatException;
 
 import org.mortbay.log.Logger;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
+
 /**
  * Simple wrapper over the neo4j native logger class for getting jetty to use
  * our logging framework. See <a
  * href="http://docs.codehaus.org/display/JETTY/Debugging">the Jetty Debug
  * page</a> for more info.
- * 
+ *
  * @author Chris Gioran
- * 
  */
-
 public class JettyLoggerAdapter implements Logger
 {
-    private org.neo4j.server.logging.Logger delegate;
+    private final Logging logging;
+    private final StringLogger logger;
 
-    public JettyLoggerAdapter()
+    public JettyLoggerAdapter( Logging logging )
     {
-        delegate = org.neo4j.server.logging.Logger.getLogger( "SYSTEM" );
+        this.logging = logging;
+        this.logger = StringLogger.SYSTEM;
+    }
+
+    private JettyLoggerAdapter( Logging logging, StringLogger logger )
+    {
+        this.logging = logging;
+        this.logger = logger;
     }
 
     @Override
@@ -47,11 +58,11 @@ public class JettyLoggerAdapter implements Logger
     {
         try
         {
-            delegate.debug( wrapNull( arg0 ), arg1 );
+            logger.debug( wrapNull( arg0 ), arg1 );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.debug( safeFormat( arg0, arg1 ) );
+            logger.debug( safeFormat( arg0, arg1 ) );
         }
     }
 
@@ -60,20 +71,28 @@ public class JettyLoggerAdapter implements Logger
     {
         try
         {
-            delegate.debug( wrapNull( arg0 ), arg1, arg2 );
+            logger.debug( format( wrapNull( arg0 ), arg1, arg2 ) );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.debug( safeFormat( arg0, arg1, arg2 ) );
+            logger.debug( safeFormat( arg0, arg1, arg2 ) );
         }
     }
 
     @Override
     public Logger getLogger( String arg0 )
     {
-        JettyLoggerAdapter newInstance = new JettyLoggerAdapter();
-        newInstance.delegate = org.neo4j.server.logging.Logger.getLogger( arg0 );
-        return newInstance;
+        Class<?> cls = null;
+        try
+        {
+            cls = Class.forName( arg0 );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            cls = JettyLoggerAdapter.class;
+        }
+
+        return new JettyLoggerAdapter( logging, logging.getMessagesLog( cls ) );
     }
 
     @Override
@@ -81,11 +100,11 @@ public class JettyLoggerAdapter implements Logger
     {
         try
         {
-            delegate.info( wrapNull( arg0 ), arg1, arg2 );
+            logger.info( format( wrapNull( arg0 ), arg1, arg2 ) );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.info( safeFormat( arg0, arg1, arg2 ) );
+            logger.info( safeFormat( arg0, arg1, arg2 ) );
         }
 
     }
@@ -105,7 +124,7 @@ public class JettyLoggerAdapter implements Logger
     public void warn( String arg0, Throwable arg1 )
     {
         // no need to catch IllegalFormatException as the delegate will use an empty message
-        delegate.warn( wrapNull( arg1 ) );
+        logger.warn( wrapNull( arg1 ) );
     }
 
     @Override
@@ -113,11 +132,11 @@ public class JettyLoggerAdapter implements Logger
     {
         try
         {
-            delegate.warn( wrapNull( arg0 ), arg1, arg2 );
+            logger.warn( format( wrapNull( arg0 ), arg1, arg2 ) );
         }
         catch ( IllegalFormatException e )
         {
-            delegate.warn( safeFormat( arg0, arg1, arg2 ) );
+            logger.warn( safeFormat( arg0, arg1, arg2 ) );
         }
     }
 

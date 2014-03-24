@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.configuration;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -31,7 +26,14 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.neo4j.server.logging.InMemoryAppender;
+
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.server.configuration.validation.Validator;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class PropertyFileConfiguratorTest
 {
@@ -90,11 +92,11 @@ public class PropertyFileConfiguratorTest
                 .inDirectory( emptyPropertyFile.getParentFile() )
                 .build();
 
-        InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
-        new PropertyFileConfigurator( emptyPropertyFile );
+        BufferingConsoleLogger logger = new BufferingConsoleLogger();
+        new PropertyFileConfigurator( Validator.NO_VALIDATION, emptyPropertyFile, logger );
 
-        assertThat( appender.toString(), containsString( String.format(
-                "INFO: No database tuning file explicitly set, defaulting to [%s]",
+        assertThat( logger.toString(), containsString( String.format(
+                "No database tuning file explicitly set, defaulting to [%s]",
                 tuningPropertiesFile.getAbsolutePath() ) ) );
     }
 

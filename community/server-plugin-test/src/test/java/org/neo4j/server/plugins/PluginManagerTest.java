@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +27,16 @@ import javax.ws.rs.core.MediaType;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class PluginManagerTest
 {
@@ -45,14 +47,17 @@ public class PluginManagerTest
     public static void loadExtensionManager() throws Exception
     {
         graphDb = new ImpermanentGraphDatabase();
-        manager = new PluginManager( null, null );
+        manager = new PluginManager( null, DevNullLoggingService.DEV_NULL );
     }
 
     @AfterClass
     public static void destroyExtensionManager()
     {
         manager = null;
-        if ( graphDb != null ) graphDb.shutdown();
+        if ( graphDb != null )
+        {
+            graphDb.shutdown();
+        }
         graphDb = null;
     }
 

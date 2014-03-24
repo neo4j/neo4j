@@ -19,26 +19,31 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
 
 public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
 {
+    private Logging logging;
     private NeoServer server;
 
     @Before
     public void setupServer() throws IOException
     {
-        server = ServerHelper.createPersistentServer(folder.getRoot());
+        logging = bufferingLogging();
+        server = ServerHelper.createPersistentServer(folder.getRoot(), logging);
         ServerHelper.cleanTheDatabase( server );
     }
 
@@ -54,8 +59,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldLogShutdown() throws Exception
     {
-        InMemoryAppender appender = new InMemoryAppender( CommunityNeoServer.log );
         server.stop();
-        assertThat( appender.toString(), containsString( "INFO: Successfully shutdown database." ) );
+        assertThat( logging.toString(), containsString( "Successfully shutdown database." ) );
     }
 }

@@ -32,7 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.modules.ServerModule;
@@ -98,7 +98,7 @@ public class StartupTimeoutDocIT
 	public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
 	{
 		Configurator configurator = buildProperties().withStartupTimeout( 100 ).atPort( 7480 ).build();
-        server = new CommunityNeoServer( configurator )
+        server = new CommunityNeoServer( configurator, DevNullLoggingService.DEV_NULL )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -139,7 +139,7 @@ public class StartupTimeoutDocIT
     private CommunityNeoServer createSlowServer( Configurator configurator, final boolean preventMovingFurtherThanStartingModules )
     {
         final AtomicReference<Runnable> timerStartSignal = new AtomicReference<Runnable>();
-        CommunityNeoServer server = new CommunityNeoServer( configurator )
+        CommunityNeoServer server = new CommunityNeoServer( configurator, DevNullLoggingService.DEV_NULL )
         {
             @Override
             protected InterruptThreadTimer createInterruptStartupTimer()
@@ -204,7 +204,7 @@ public class StartupTimeoutDocIT
                 ServerModule slowModule = new ServerModule()
                 {
                     @Override
-                    public void start( StringLogger logger )
+                    public void start()
                     {
                         timerStartSignal.get().run();
                         try

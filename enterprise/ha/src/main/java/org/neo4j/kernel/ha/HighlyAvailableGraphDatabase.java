@@ -19,23 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import javax.transaction.Transaction;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.InstanceId;
@@ -59,9 +52,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
@@ -110,6 +103,15 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
 
+import ch.qos.logback.classic.LoggerContext;
+
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
+
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private RequestContextFactory requestContextFactory;
@@ -152,16 +154,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
-                                         Iterable<IndexProvider> indexProviders,
-                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                         Iterable<CacheProvider> cacheProviders,
-                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+            Iterable<IndexProvider> indexProviders,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            Iterable<CacheProvider> cacheProviders,
+            Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params,
-                Iterables.<Class<?>, Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,
-                        ClusterSettings.class ),
-                indexProviders, kernelExtensions,
-                cacheProviders, txInterceptorProviders );
+        this( storeDir, params, new GraphDatabaseDependencies( null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
+                indexProviders, kernelExtensions, cacheProviders, txInterceptorProviders ) );
+    }
+
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    {
+        super( storeDir, params, dependencies );
         run();
     }
 
@@ -477,7 +482,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         clusterMemberAvailability, memberStateMachine, this,
                         (HaIdGeneratorFactory) idGeneratorFactory, config,
                         logging, requestContextFactory );
-        
+
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
          * 1) if in compatibility mode, it must be added in all 3 - to start on start and restart on switchover
@@ -542,7 +547,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
                         lastUpdateTime ) );
     }
-    
+
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {

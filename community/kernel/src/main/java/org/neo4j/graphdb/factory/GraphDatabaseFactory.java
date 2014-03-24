@@ -19,9 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,39 +26,51 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.IndexIterable;
 import org.neo4j.graphdb.index.IndexProvider;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
- * 
+ *
  * Use {@link #newEmbeddedDatabase(String)} or
  * {@link #newEmbeddedDatabaseBuilder(String)} to create a database instance.
  */
 public class GraphDatabaseFactory
 {
+    protected FileSystemAbstraction fileSystem;
+    protected Logging logging;
+    protected Iterable<Class<?>> settingsClasses;
     protected List<IndexProvider> indexProviders;
     protected List<KernelExtensionFactory<?>> kernelExtensions;
     protected List<CacheProvider> cacheProviders;
     protected List<TransactionInterceptorProvider> txInterceptorProviders;
-    protected FileSystemAbstraction fileSystem;
 
     public GraphDatabaseFactory()
     {
-        indexProviders = Iterables.toList( Service.load( IndexProvider.class ) );
+        Dependencies defaultDependencies = new DefaultGraphDatabaseDependencies();
+
+        logging = defaultDependencies.logging(); // probably null == not provided externally
+        settingsClasses = defaultDependencies.settingsClasses();
+        indexProviders = Iterables.toList( defaultDependencies.indexProviders() );
         kernelExtensions = new ArrayList<KernelExtensionFactory<?>>();
-        for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
+        for ( KernelExtensionFactory factory : defaultDependencies.kernelExtensions() )
         {
             kernelExtensions.add( factory );
         }
-        cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
-        txInterceptorProviders = Iterables.toList( Service.load( TransactionInterceptorProvider.class ) );
+        cacheProviders = Iterables.toList( defaultDependencies.cacheProviders() );
+        txInterceptorProviders = Iterables.toList( defaultDependencies.transactionInterceptorProviders() );
     }
 
     public GraphDatabaseService newEmbeddedDatabase( String path )
@@ -77,19 +86,24 @@ public class GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );
-
+                Dependencies dependencies = databaseDependencies();
                 if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
                 {
-                    return new EmbeddedReadOnlyGraphDatabase( path, config, indexProviders, kernelExtensions,
-                            cacheProviders, txInterceptorProviders );
+                    return new EmbeddedReadOnlyGraphDatabase( path, config, dependencies );
                 }
                 else
                 {
-                    return new EmbeddedGraphDatabase( path, config, indexProviders, kernelExtensions, cacheProviders,
-                            txInterceptorProviders );
+                    return new EmbeddedGraphDatabase( path, config, dependencies );
                 }
             }
         } );
+    }
+
+    protected GraphDatabaseDependencies databaseDependencies()
+    {
+        return new GraphDatabaseDependencies(
+                logging, settingsClasses, indexProviders, kernelExtensions, cacheProviders,
+                txInterceptorProviders );
     }
 
     public Iterable<IndexProvider> getIndexProviders()

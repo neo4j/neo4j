@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
 import java.util.Arrays;
 
 import javax.ws.rs.GET;
@@ -31,16 +27,27 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.AbstractNeoServer;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
-import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @Path("/")
 public class TestJetty6WebServer {
@@ -51,50 +58,71 @@ public class TestJetty6WebServer {
 		return Response.status( Status.NO_CONTENT )
                 .build();
 	}
-	
+
 	@Test
 	public void shouldBeAbleToRestart() throws Throwable
 	{
 		// TODO: This is needed because WebServer has a cyclic
 		// dependency to NeoServer, which should be removed.
-		// Once that is done, we should instantiate WebServer 
+		// Once that is done, we should instantiate WebServer
 		// here directly.
         AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
+        when( db.getDependencyResolver() ).thenReturn( noLoggingDependencyResolver() );
 		WrappingNeoServer neoServer = new WrappingNeoServer(db);
 		WebServer server = neoServer.getWebServer();
-		
-		try 
+
+		try
 		{
 			server.setAddress("127.0.0.1");
 			server.setPort(7878);
-			
+
 			server.addJAXRSPackages(Arrays.asList(new String[]{"org.neo4j.server.web"}), "/", null );
-			
+
 			server.start();
 			server.stop();
 			server.start();
-		} finally 
+		}
+		finally
 		{
-			try 
+			try
 			{
 				server.stop();
-			} catch(Throwable t)
-			{	
-				
+			}
+            catch ( Throwable t )
+			{
+
 			}
 		}
-		
 	}
+
+    private DependencyResolver noLoggingDependencyResolver()
+    {
+        return new DependencyResolver.Adapter()
+        {
+            @Override
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
+                    throws IllegalArgumentException
+            {
+                if ( Logging.class.isAssignableFrom( type ) )
+                {
+                    return (T) DevNullLoggingService.DEV_NULL;
+                }
+                return null;
+            }
+        };
+    }
 
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender(AbstractNeoServer.log);
+        Logging logging = ServerBuilder.bufferingLogging();
         final Guard dummyGuard = new Guard(StringLogger.SYSTEM);
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase()
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
+                new DefaultGraphDatabaseDependencies( logging ) )
         {
             @Override
-            public Guard getGuard() {
+            public Guard getGuard()
+            {
                 return dummyGuard;
             }
         };
@@ -104,13 +132,13 @@ public class TestJetty6WebServer {
         config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, 1000 );
         WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
         testBootstrapper.start();
-        assertThat( appender.toString(), containsString( "Remote interface ready and available at" ) );
+        assertThat( logging.toString(), containsString( "Remote interface ready and available at" ) );
         testBootstrapper.stop();
     }
 
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new Jetty6WebServer().stop();
+        new Jetty6WebServer( DevNullLoggingService.DEV_NULL ).stop();
     }
 }
