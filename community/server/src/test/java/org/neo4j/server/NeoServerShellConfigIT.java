@@ -31,10 +31,11 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class NeoServerShellConfigIT
+public class NeoServerShellConfigIT extends ExclusiveServerTestBase
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
