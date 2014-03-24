@@ -127,7 +127,7 @@ public class TestRecovery
         File path = getDbPath();
         Neo4jTestCase.deleteFileOrDirectory( path );
         Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-cp",
+                "java", "-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005", "-Djava.awt.headless=true", "-cp",
                 System.getProperty( "java.class.path" ),
                 AddRelToIndex.class.getName(), getDbPath().getPath()
         } );
@@ -159,7 +159,7 @@ public class TestRecovery
         db.shutdown();
 
         Process process = Runtime.getRuntime().exec( new String[]{
-                "java", "-cp", System.getProperty( "java.class.path" ),
+                "java", "-Djava.awt.headless=true", "-cp", System.getProperty( "java.class.path" ),
                 AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath().getPath()
         } );
         assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
