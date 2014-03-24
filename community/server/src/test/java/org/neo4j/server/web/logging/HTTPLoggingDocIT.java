@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.web.logging;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.matchers.JUnitMatchers.containsString;
-import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
@@ -35,6 +27,7 @@ import java.util.UUID;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
@@ -46,6 +39,16 @@ import org.neo4j.server.preflight.HTTPLoggingPreparednessRuleTest;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSetting.osIsWindows;
+import static org.neo4j.test.AssertEventually.Condition;
+import static org.neo4j.test.AssertEventually.assertEventually;
 
 public class HTTPLoggingDocIT
 {
@@ -93,7 +96,7 @@ public class HTTPLoggingDocIT
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
-        File logDirectory = TargetDirectory.forTest( this.getClass() ).directory(
+        final File logDirectory = TargetDirectory.forTest( this.getClass() ).directory(
                 "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir", true );
         FileUtils.forceMkdir( logDirectory );
         final File confDir = TargetDirectory.forTest( this.getClass() ).directory(
@@ -103,7 +106,7 @@ public class HTTPLoggingDocIT
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
             HTTPLoggingPreparednessRuleTest.createLogbackConfigXml( logDirectory ), confDir );
 
-        String query = "?explicitlyEnabled=" + UUID.randomUUID().toString();
+        final String query = "?explicitlyEnabled=" + UUID.randomUUID().toString();
 
         NeoServer server = ServerBuilder.server().withDefaultDatabaseTuning()
             .withProperty( Configurator.HTTP_LOGGING, "true" )
@@ -123,13 +126,13 @@ public class HTTPLoggingDocIT
             response.close();
 
             // then
-            final File outputLog = new File( logDirectory, "http.log" );
-            assertTrue( occursIn( query, outputLog ) );
-
-        }
-        catch (Throwable t)
-        {
-            t.printStackTrace();
+            assertEventually( "request appears in log", 5, new Condition()
+            {
+                public boolean evaluate()
+                {
+                    return occursIn( query, new File( logDirectory, "http.log" ) );
+                }
+            } );
         }
         finally
         {
@@ -197,25 +200,36 @@ public class HTTPLoggingDocIT
         return file;
     }
 
-    private boolean occursIn( String lookFor, File file ) throws FileNotFoundException
+    private boolean occursIn( String lookFor, File file )
     {
         if ( !file.exists() )
         {
             return false;
         }
 
-        boolean result = false;
-        Scanner scanner = new Scanner( file );
-        while ( scanner.hasNext() )
+        Scanner scanner = null;
+        try
         {
-            if ( scanner.next().contains( lookFor ) )
+            scanner = new Scanner( file );
+            while ( scanner.hasNext() )
             {
-                result = true;
+                if ( scanner.next().contains( lookFor ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        catch ( FileNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            if ( scanner != null )
+            {
+                scanner.close();
             }
         }
-
-        scanner.close();
-
-        return result;
     }
 }
