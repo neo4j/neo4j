@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Expression}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -34,8 +35,9 @@ abstract class LogicalPlan extends Product {
 
   def solvedPredicates: Seq[Expression]
 
+  def context: LogicalPlanContext
   def cost: Int
-  def cardinality: Int
+  final lazy val cardinality = context.estimator.estimate(this)
 
   def coveredIds: Set[IdName]
 

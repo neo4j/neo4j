@@ -21,24 +21,19 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 /*
 This class is responsible for answering questions about cardinality. It does this by asking the database when this
 information is available, or guessing when that's not possible.
  */
 trait CardinalityEstimator {
-  // Start points
-  def estimateNodeByIdSeek(): Int
-  def estimateRelationshipByIdSeek(): Int
-  def estimateNodeByLabelScan(labelId: Option[LabelId]): Int
-  def estimateAllNodesScan(): Int
-  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId): Int
+  def estimate(plan: LogicalPlan): Int
+}
 
-  // Everything else
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction): Int
-  def estimateNodeJoin(node: IdName, lhs: LogicalPlan, rhs: LogicalPlan): Int
 
-  def estimateSelectivity(exp: Expression): Double
+object CardinalityEstimator {
+  def lift(f: PartialFunction[LogicalPlan, Int]) = new CardinalityEstimator {
+    def estimate(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
+  }
 }

@@ -27,13 +27,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContex
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
 class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
   test("should add projection for expressions not already covered") {
     // given
-    val input = newMockedLogicalPlan("n")
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty)
     implicit val context = createContextWith(qg)
+    val input = newMockedLogicalPlan("n")
 
     // when
     val result = project(input)
@@ -44,10 +43,10 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does not add projection when not needed") {
     // given
-    val input = newMockedLogicalPlan("n")
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
     val qg = QueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty)
     implicit val context = createContextWith(qg)
+    val input = newMockedLogicalPlan("n")
 
     // when
     val result = project(input)

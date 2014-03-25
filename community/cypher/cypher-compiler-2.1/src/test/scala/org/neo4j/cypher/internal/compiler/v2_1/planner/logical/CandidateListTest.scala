@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  implicit val context = newMockedLogicalPlanContext()
   val x = newMockedLogicalPlan("x")
   val y = newMockedLogicalPlan("y")
   val xAndY = newMockedLogicalPlan("x", "y")

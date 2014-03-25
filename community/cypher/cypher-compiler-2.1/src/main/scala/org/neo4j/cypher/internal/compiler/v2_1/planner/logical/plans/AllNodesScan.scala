@@ -25,7 +25,6 @@ case class AllNodesScan(idName: IdName)(implicit val context:LogicalPlanContext)
   def lhs = None
   def rhs = None
 
-  val cardinality = context.estimator.estimateAllNodesScan()
   val cost = context.costs.calculateAllNodesScan(cardinality)
 
   val coveredIds = Set(idName)

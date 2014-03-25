@@ -41,8 +41,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateNodeByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: NodeByIdSeek => 1
+      }
+    )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
     // when
@@ -64,8 +68,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )(pos)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateNodeByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: NodeByIdSeek => 1
+      }
+    )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
     // when
@@ -92,8 +100,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: DirectedRelationshipByIdSeek => 1
+      }
+    )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -118,8 +130,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: UndirectedRelationshipByIdSeek => 2
+      }
+    )
+
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -146,8 +163,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: DirectedRelationshipByIdSeek => 1
+      }
+    )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -175,8 +196,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: UndirectedRelationshipByIdSeek => 2
+      }
+    )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -205,8 +230,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: UndirectedRelationshipByIdSeek => 2
+      }
+    )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -242,8 +271,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
-    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      estimator = CardinalityEstimator.lift {
+        case _: UndirectedRelationshipByIdSeek => 2
+      }
+    )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     implicit def withPos[T](expr: InputPosition => T): T = expr(pos)

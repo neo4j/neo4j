@@ -32,11 +32,6 @@ case class Selection(predicates: Seq[Expression], left: LogicalPlan)
 
   def coveredIds = left.coveredIds
 
-  val cardinality = {
-    val selectivity = predicates.map(context.estimator.estimateSelectivity).reduce(_ * _)
-    (left.cardinality * selectivity).toInt
-  }
-
   val cost = context.costs.calculateSelectionOverhead(left.cardinality) + left.cost
 
   def solvedPredicates = predicates ++ left.solvedPredicates

@@ -19,48 +19,67 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 
 class GuessingEstimator extends CardinalityEstimator {
   private val ALL_NODES_SCAN_CARDINALITY: Int = 1000
-  private val LABEL_NOT_FOUND_CARDINALITY: Int = 0
-  private val ID_SEEK_CARDINALITY: Int = 1
-
+  private val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
   private val LABEL_SELECTIVITY: Double = 0.1
   private val PREDICATE_SELECTIVITY: Double = 0.2
   private val INDEX_SEEK_SELECTIVITY: Double = 0.08
   private val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
   private val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
 
-  def estimateNodeByIdSeek() = ID_SEEK_CARDINALITY
+  def estimate(plan: LogicalPlan): Int = plan match {
+    case AllNodesScan(_) =>
+      ALL_NODES_SCAN_CARDINALITY
 
-  def estimateRelationshipByIdSeek() = ID_SEEK_CARDINALITY
+    case NodeByLabelScan(_, Left(_)) =>
+      (ALL_NODES_SCAN_CARDINALITY * LABEL_NOT_FOUND_SELECTIVITY).toInt
 
-  def estimateNodeByLabelScan(labelId: Option[LabelId]) = labelId match {
-    case Some(_) => (ALL_NODES_SCAN_CARDINALITY * LABEL_SELECTIVITY).toInt
-    case None => LABEL_NOT_FOUND_CARDINALITY
+    case NodeByLabelScan(_, Right(_)) =>
+      (ALL_NODES_SCAN_CARDINALITY * LABEL_SELECTIVITY).toInt
+
+    case NodeByIdSeek(_, _, numberOfNodeIdsEstimate) =>
+      numberOfNodeIdsEstimate
+
+    case NodeIndexSeek(_, _, _, _) =>
+      (ALL_NODES_SCAN_CARDINALITY * INDEX_SEEK_SELECTIVITY).toInt
+
+    case NodeIndexUniqueSeek(_, _, _, _) =>
+      (ALL_NODES_SCAN_CARDINALITY * UNIQUE_INDEX_SEEK_SELECTIVITY).toInt
+
+    case NodeHashJoin(_, left, right) =>
+      (estimate(left) + estimate(right)) / 2
+
+    case Expand(left, _, _, _, _, _) =>
+      (estimate(left) * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
+
+    case Selection(predicates, left) =>
+      (estimate(left) * predicates.map(predicateSelectivity).foldLeft(1.0)(_ * _)).toInt
+
+    case CartesianProduct(left, right) =>
+      estimate(left) * estimate(right)
+
+    case DirectedRelationshipByIdSeek(_, _, numberOfRelIdsEstimate, _, _) =>
+      numberOfRelIdsEstimate
+
+    case UndirectedRelationshipByIdSeek(_, _, numberOfRelIdsEstimate, _, _) =>
+      numberOfRelIdsEstimate * 2
+
+    case Projection(left, _) =>
+      estimate(left)
+
+    case SingleRow() =>
+      1
   }
 
-  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) =
-    (ALL_NODES_SCAN_CARDINALITY * INDEX_SEEK_SELECTIVITY).toInt
-
-  def estimateNodeUniqueIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) =
-    (ALL_NODES_SCAN_CARDINALITY * UNIQUE_INDEX_SEEK_SELECTIVITY).toInt
-
-  def estimateAllNodesScan() = ALL_NODES_SCAN_CARDINALITY
-
-  def estimateSelectivity(exp: Expression): Double = exp match {
-    case _: HasLabels => LABEL_SELECTIVITY
+  private def predicateSelectivity(predicate: Expression): Double = predicate match {
+    case HasLabels(_, Seq(label)) => if (label.id.isDefined) LABEL_SELECTIVITY else LABEL_NOT_FOUND_SELECTIVITY
     case _ => PREDICATE_SELECTIVITY
   }
-
-  def estimateNodeJoin(node: IdName, lhs: LogicalPlan, rhs: LogicalPlan) =
-    (lhs.cardinality + rhs.cardinality) / 2
-
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) =
-    (ALL_NODES_SCAN_CARDINALITY * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
 }
