@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val x = newMockedLogicalPlan("x")
@@ -46,7 +47,31 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     candidates.pruned should equal(CandidateList(Seq()))
   }
 
-  // TODO: Test topPlan
+  test("picks the right plan by cost, no matter the cardinality") {
+    val a = newMockedLogicalPlan("a", cost = 100, cardinality = 10)
+    val b = newMockedLogicalPlan("b", cost = 50, cardinality = 100)
+
+    assertTopPlan(winner = b, a, b)
+  }
+
+  test("picks the right plan by cost, no matter the size of the covered ids") {
+    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), cost = 100, cardinality = 10)
+    val b = newMockedLogicalPlan("b", cost = 50, cardinality = 100)
+
+    assertTopPlan(winner = b, ab, b)
+  }
+
+  test("picks the right plan by cost and secondly by the covered ids") {
+    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), cost = 50, cardinality = 10)
+    val c = newMockedLogicalPlan("c", cost = 50, cardinality = 100)
+
+    assertTopPlan(winner = ab, ab, c)
+  }
+
+  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*) {
+    CandidateList(candidates).topPlan should equal(Some(winner))
+    CandidateList(candidates.reverse).topPlan should equal(Some(winner))
+  }
 }
 
 

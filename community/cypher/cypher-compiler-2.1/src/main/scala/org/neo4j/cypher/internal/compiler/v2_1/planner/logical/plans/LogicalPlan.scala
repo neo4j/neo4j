@@ -43,7 +43,7 @@ abstract class LogicalPlan extends Product {
   final def covers(other: LogicalPlan): Boolean = other.isCoveredBy(coveredIds)
 
   def toTreeString: String =
-    productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + s"($cost/$cardinality)->" +
+    productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + s"(cost $cost/cardinality $cardinality)->" +
     productIterator.filterNot(_.isInstanceOf[LogicalPlan]).mkString("(", ", ", ")") +
     lhs.map { plan => "\nleft - " + plan.toTreeString }.map { indent }.getOrElse("") +
     rhs.map { plan => "\nright- " + plan.toTreeString }.map { indent }.getOrElse("")

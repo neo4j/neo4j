@@ -43,11 +43,16 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
 
   def newMockedLogicalPlan(ids: String*): LogicalPlan = newMockedLogicalPlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan(ids: Set[IdName]): LogicalPlan = {
+  def newMockedLogicalPlan(id: String, cost: Int, cardinality: Int): LogicalPlan =
+    newMockedLogicalPlan(Set(IdName(id)), cost, cardinality)
+
+  def newMockedLogicalPlan(ids: Set[IdName], cost: Int = 0, cardinality: Int = 0): LogicalPlan = {
     val plan = mock[LogicalPlan]
-    when(plan.toString).thenReturn(s"MockedLogicalPlan(ids = $ids)")
+    when(plan.toString).thenReturn(s"MockedLogicalPlan(ids = ${ids}, cost = ${cost}, cardinality = ${cardinality}})")
     when(plan.coveredIds).thenReturn(ids)
     when(plan.solvedPredicates).thenReturn(Seq.empty)
+    when(plan.cost).thenReturn(cost)
+    when(plan.cardinality).thenReturn(cardinality)
     plan
   }
 }
