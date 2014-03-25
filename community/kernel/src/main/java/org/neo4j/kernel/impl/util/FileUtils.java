@@ -33,12 +33,10 @@ import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.nio.file.Files;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
-import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.NotFoundException;
 
@@ -113,30 +111,6 @@ public class FileUtils
         return deleted;
     }
 
-    public static File[] deleteFiles( File directory, String regexPattern )
-            throws IOException
-    {
-        Pattern pattern = Pattern.compile( regexPattern );
-        Collection<File> deletedFiles = new ArrayList<>();
-        File[] files = directory.listFiles();
-        if ( files == null )
-        {
-            throw new IllegalArgumentException( directory + " is not a directory" );
-        }
-        for ( File file : files )
-        {
-            if ( pattern.matcher( file.getName() ).find() )
-            {
-                if ( !file.delete() )
-                {
-                    throw new IOException( "Couldn't delete file '" + file.getAbsolutePath() + "'" );
-                }
-                deletedFiles.add( file );
-            }
-        }
-        return deletedFiles.toArray( new File[deletedFiles.size()] );
-    }
-
     /**
      * Utility method that moves a file from its current location to the
      * new target location. If rename fails (for example if the target is
@@ -167,7 +141,7 @@ public class FileUtils
 
         if ( toMove.isDirectory() )
         {
-            target.mkdirs();
+            Files.createDirectories( target.toPath() );
             copyRecursively( toMove, target );
             deleteRecursively( toMove );
         }
@@ -341,7 +315,7 @@ public class FileUtils
             File toFile = new File( toDirectory, fromFile.getName() );
             if ( fromFile.isDirectory() )
             {
-                toFile.mkdir();
+                Files.createDirectories( toFile.toPath() );
                 copyRecursively( fromFile, toFile, filter );
             }
             else
@@ -355,7 +329,8 @@ public class FileUtils
     {
         if ( !target.exists() )
         {
-            target.getParentFile().mkdirs();
+            Files.createDirectories( target.getParentFile().toPath() );
+            //noinspection ResultOfMethodCallIgnored
             target.createNewFile();
         }
 
