@@ -21,26 +21,41 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, Expression}
 
 class GuessingEstimator extends CardinalityEstimator {
+  private val ALL_NODES_SCAN_CARDINALITY: Int = 1000
+  private val LABEL_NOT_FOUND_CARDINALITY: Int = 0
+  private val ID_SEEK_CARDINALITY: Int = 1
 
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) = 20
+  private val LABEL_SELECTIVITY: Double = 0.1
+  private val PREDICATE_SELECTIVITY: Double = 0.2
+  private val INDEX_SEEK_SELECTIVITY: Double = 0.08
+  private val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
+  private val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
 
-  def estimateNodeByIdSeek() = 1
+  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) =
+    (ALL_NODES_SCAN_CARDINALITY * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
 
-  def estimateRelationshipByIdSeek() = 2
+  def estimateNodeByIdSeek() = ID_SEEK_CARDINALITY
+
+  def estimateRelationshipByIdSeek() = ID_SEEK_CARDINALITY
 
   def estimateNodeByLabelScan(labelId: Option[LabelId]) = labelId match {
-    case Some(id) => 100
-    case None => 0
+    case Some(_) => (ALL_NODES_SCAN_CARDINALITY * LABEL_SELECTIVITY).toInt
+    case None => LABEL_NOT_FOUND_CARDINALITY
   }
 
-  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 80
+  def estimateNodeIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) =
+    (ALL_NODES_SCAN_CARDINALITY * INDEX_SEEK_SELECTIVITY).toInt
 
-  def estimateNodeUniqueIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) = 50
+  def estimateNodeUniqueIndexSeek(labelId: LabelId, propertyKeyId: PropertyKeyId) =
+    (ALL_NODES_SCAN_CARDINALITY * UNIQUE_INDEX_SEEK_SELECTIVITY).toInt
 
-  def estimateAllNodesScan() = 1000
+  def estimateAllNodesScan() = ALL_NODES_SCAN_CARDINALITY
 
-  def estimateSelectivity(exp: Expression): Double = .2
+  def estimateSelectivity(exp: Expression): Double = exp match {
+    case _:HasLabels => LABEL_SELECTIVITY
+    case _           => PREDICATE_SELECTIVITY
+  }
 }
