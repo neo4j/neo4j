@@ -55,7 +55,7 @@ class GuessingEstimator extends CardinalityEstimator {
   def estimateAllNodesScan() = ALL_NODES_SCAN_CARDINALITY
 
   def estimateSelectivity(exp: Expression): Double = exp match {
-    case _:HasLabels => LABEL_SELECTIVITY
-    case _           => PREDICATE_SELECTIVITY
+    case _: HasLabels => LABEL_SELECTIVITY
+    case _ => PREDICATE_SELECTIVITY
   }
 }

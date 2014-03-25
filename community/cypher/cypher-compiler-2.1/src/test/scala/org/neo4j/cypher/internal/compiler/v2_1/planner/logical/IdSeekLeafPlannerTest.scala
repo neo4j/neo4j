@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, RelTypeId, DummyPosition}
 import org.mockito.Mockito._
 import org.neo4j.graphdb.Direction
 
@@ -185,5 +185,83 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Collection(
       Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos)))(pos), 3, from, end)()))
+  }
+
+  test("simple undirected typed relationship by id seek with a rel id expression") {
+    // given
+    val rIdent = Identifier("r")(pos)
+    val fromIdent = Identifier("from")(pos)
+    val toIdent = Identifier("to")(pos)
+    val projections = Map("r" -> rIdent, "from" -> fromIdent, "to" -> toIdent)
+    val expr = Equals(
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(rIdent))(pos),
+      SignedIntegerLiteral("42")(pos)
+    )(pos)
+    val from = IdName("from")
+    val end = IdName("to")
+    val patternRel = PatternRelationship(
+      IdName("r"), (from, end), Direction.BOTH,
+      Seq(RelTypeName("X")(Some(RelTypeId(1)))(pos))
+    )
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
+
+    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
+    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(Seq(expr))()
+
+    // then
+    resultPlans should equal(Seq(
+      Selection(
+        Seq(Equals(FunctionInvocation(FunctionName("type")(pos), rIdent)(pos), StringLiteral("X")(pos))(pos)),
+        UndirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1, from, end)()
+      )
+    ))
+  }
+
+  test("simple undirected multi-typed relationship by id seek with a rel id expression") {
+    // given
+    val rIdent = Identifier("r")(pos)
+    val fromIdent = Identifier("from")(pos)
+    val toIdent = Identifier("to")(pos)
+    val projections = Map("r" -> rIdent, "from" -> fromIdent, "to" -> toIdent)
+    val expr = Equals(
+      FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(rIdent))(pos),
+      SignedIntegerLiteral("42")(pos)
+    )(pos)
+    val from = IdName("from")
+    val end = IdName("to")
+    val patternRel = PatternRelationship(
+      IdName("r"), (from, end), Direction.BOTH,
+      Seq(
+        RelTypeName("X")(Some(RelTypeId(1)))(pos),
+        RelTypeName("Y")(Some(RelTypeId(2)))(pos)
+      )
+    )
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
+
+    implicit val context = newMockedLogicalPlanContext(queryGraph = qg)
+    when(context.estimator.estimateRelationshipByIdSeek()).thenReturn(1)
+    when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
+
+    implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(Seq(expr))()
+
+    // then
+    resultPlans should equal(Seq(
+      Selection(
+        Seq[Or](
+          Or(
+            Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_,
+            Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)_
+          )_
+        ),
+        UndirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")_, 1, from, end)()
+      )
+    ))
   }
 }

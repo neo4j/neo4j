@@ -87,10 +87,10 @@ case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
       val invocation = FunctionInvocation(name, id)(null)
 
       val predicates: Seq[Expression] = types.map {
-        t => Equals(invocation, StringLiteral(relName)(null))(null)
+        relType => Equals(invocation, StringLiteral(relType.name)(null))(null)
       }
 
-      val predicate = predicates.reduce(And(_, _)(null))
+      val predicate = predicates.reduce(Or(_, _)(null))
       Selection(Seq(predicate), plan)
     }
 }
