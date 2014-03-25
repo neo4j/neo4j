@@ -190,8 +190,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     )(pos), 3)())
   }
 
-  // 2014-03-12 - Davide: broken test, we should also check that we get a filter on node id...
-  ignore("simple label scan with a compile-time label ID and node ID predicate when label scan is cheaper") {
+  test("simple label scan with a compile-time label ID and node ID predicate when label scan is cheaper") {
     when(planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // given
@@ -208,6 +207,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")), Set.empty)
     val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
+    when(estimator.estimateAllNodesScan()).thenReturn(1000)
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(1)
     when(estimator.estimateNodeByIdSeek()).thenReturn(100)
 
@@ -215,11 +215,16 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
-    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId))())
+    resultPlan should equal(Selection(
+      List(Equals(
+        FunctionInvocation(FunctionName("id")(pos), Identifier("n")(pos))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos)),
+      NodeByLabelScan(IdName("n"), Right(labelId))()
+    ))
   }
 
-  // 2014-03-12 - Davide: broken test, we should also check that we get a filter on node id...
-  ignore("simple label scan with a compile-time label ID and node ID predicate when node by ID is cheaper") {
+  test("simple label scan with a compile-time label ID and node ID predicate when node by ID is cheaper") {
     when(planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // given
@@ -233,6 +238,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       )(pos),
       Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
     )
+    when(estimator.estimateAllNodesScan()).thenReturn(1000)
     when(estimator.estimateNodeByLabelScan(Some(labelId))).thenReturn(100)
     when(estimator.estimateNodeByIdSeek()).thenReturn(1)
     val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")), Set.empty)
@@ -242,7 +248,10 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlan = planner.plan(context.copy( queryGraph = qg, semanticTable = semanticTable))
 
     // then
-    resultPlan should equal(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)())
+    resultPlan should equal(Selection(
+      List(HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(None)(pos)))(pos)),
+      NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)()
+    ))
   }
 
   test("index scan when there is an index on the property") {
