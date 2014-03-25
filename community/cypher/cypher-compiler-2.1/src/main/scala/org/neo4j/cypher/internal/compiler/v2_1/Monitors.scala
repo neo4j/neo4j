@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import scala.reflect.ClassTag
 
 case class Monitors(monitors: org.neo4j.kernel.monitoring.Monitors) {
-  def addMonitorListener[T](monitor: T) {
-    monitors.addMonitorListener(monitor)
+  def addMonitorListener[T](monitor: T, tags: String*) {
+    monitors.addMonitorListener(monitor, tags: _*)
   }
 
   def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {

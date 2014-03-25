@@ -26,7 +26,7 @@ import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, _}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1, LegacyPipeBuilder, LegacyVsNewPipeBuilder, NewQueryPlanSuccessRateMonitor, ExecutionPlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1, _}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
@@ -38,10 +38,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryCon
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 import org.neo4j.kernel.api.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
+
   private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 }
 
@@ -110,7 +113,9 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
-    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), new Planner(monitors), planBuilderMonitor)
+    val planningMonitor = monitors.newMonitor[PlanningMonitor]()
+    val planner = new Planner(monitors, planningMonitor)
+    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
     new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, planCacheFactory, monitors)
   }
