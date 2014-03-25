@@ -102,6 +102,8 @@
             <configuration>
               <executable>ssh</executable>
               <arguments>
+                <argument>-i</argument>
+                <argument>${env.HOME}/.ssh/neo_at_docs_neo4j_org</argument>
                 <argument>${docs.server}</argument>
                 <argument>mkdir</argument>
                 <argument>-p</argument>
@@ -116,6 +118,8 @@
             <configuration>
               <executable>rsync</executable>
               <arguments>
+                <argument>-e</argument>
+                <argument>ssh -i ${env.HOME}/.ssh/neo_at_docs_neo4j_org</argument>
                 <argument>-r</argument>
                 <argument>--delete</argument>
                 <argument>${project.build.directory}/html5/</argument>
