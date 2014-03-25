@@ -455,6 +455,8 @@ public class XaResourceManager
                         long txId = txIdGenerator.generate( dataSource,
                                 xaTransaction.getIdentifier() );
                         xaTransaction.setCommitTxId( txId );
+                        // The call to getForceMode() is critical for correctness.
+                        // See TxManager.getTransaction() for details.
                         log.commitOnePhase( xaTransaction.getIdentifier(),
                                 xaTransaction.getCommitTxId(), getForceMode() );
                     }
@@ -474,6 +476,8 @@ public class XaResourceManager
                         long txId = txIdGenerator.generate( dataSource,
                                 xaTransaction.getIdentifier() );
                         xaTransaction.setCommitTxId( txId );
+                        // The call to getForceMode() is critical for correctness.
+                        // See TxManager.getTransaction() for details.
                         log.commitTwoPhase( xaTransaction.getIdentifier(),
                                 xaTransaction.getCommitTxId(), getForceMode() );
                     }
