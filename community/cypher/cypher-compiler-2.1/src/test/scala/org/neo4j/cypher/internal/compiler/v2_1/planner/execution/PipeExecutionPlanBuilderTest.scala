@@ -29,6 +29,26 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.CartesianProductPipe
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -90,28 +110,44 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astCollection.asCommandExpression))
   }
 
-  // 2014-03-19 - Andres: turn on once we have patterns in the query graph
-  ignore("simple relationship by id seek query") {
+  test("simple relationship by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = RelationshipByIdSeek(IdName("r"), astLiteral, 1)(Seq.empty)
+    val fromNode = "from"
+    val toNode = "to"
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), astLiteral, 1, IdName(fromNode), IdName(toNode))(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(RelationshipByIdSeekPipe("r", astLiteral.asCommandExpression))
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", astLiteral.asCommandExpression, toNode, fromNode))
   }
 
-  // 2014-03-20 - Davide: turn on once we have patterns in the query graph
-  ignore("simple relationship by id seek query with multiple values") {
+  test("simple relationship by id seek query with multiple values") {
     val astCollection = Collection(
       Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
     )(pos)
-    val logicalPlan = RelationshipByIdSeek(IdName("r"), astCollection, 3)(Seq.empty)
+    val fromNode = "from"
+    val toNode = "to"
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), astCollection, 3, IdName(fromNode), IdName(toNode))(Seq.empty)
     val pipeInfo = planner.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(RelationshipByIdSeekPipe("r", astCollection.asCommandExpression))
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", astCollection.asCommandExpression, toNode, fromNode))
+  }
+
+  test("simple undirected relationship by id seek query with multiple values") {
+    val astCollection = Collection(
+      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    )(pos)
+    val fromNode = "from"
+    val toNode = "to"
+    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), astCollection, 3, IdName(fromNode), IdName(toNode))(Seq.empty)
+    val pipeInfo = planner.build(logicalPlan)
+
+    pipeInfo should not be 'updating
+    pipeInfo.periodicCommit should equal(None)
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", astCollection.asCommandExpression, toNode, fromNode))
   }
 
   test("simple cartesian product") {

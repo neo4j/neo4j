@@ -39,7 +39,8 @@ abstract class LogicalPlan extends Product {
 
   def coveredIds: Set[IdName]
 
-  final def covers(other: LogicalPlan): Boolean = (other.coveredIds -- coveredIds).isEmpty
+  final def isCoveredBy(otherIds: Set[IdName]) = (coveredIds -- otherIds).isEmpty
+  final def covers(other: LogicalPlan): Boolean = other.isCoveredBy(coveredIds)
 
   def toTreeString: String =
     productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + s"($cost/$cardinality)->" +

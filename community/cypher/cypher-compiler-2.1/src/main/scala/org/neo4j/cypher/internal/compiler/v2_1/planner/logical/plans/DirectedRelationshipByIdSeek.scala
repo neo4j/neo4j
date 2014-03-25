@@ -19,15 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.graphdb.Direction
 
-case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit val context: LogicalPlanContext) extends LogicalPlan {
-  val lhs = Some(left)
-  val rhs = Some(right)
+case class DirectedRelationshipByIdSeek(idName: IdName,
+                                relId: Expression,
+                                cardinality: Int,
+                                startNode: IdName,
+                                endNode: IdName)(val solvedPredicates: Seq[Expression] = Seq.empty)
+                               (implicit val context: LogicalPlanContext) extends LogicalPlan {
+  def lhs = None
+  def rhs = None
 
-  val cardinality = left.cardinality * right.cardinality
-  val cost = context.costs.calculateCartesianProductOverhead(cardinality) + (left.cardinality * right.cost) + left.cost
+  val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
 
-  val coveredIds = left.coveredIds ++ right.coveredIds
-  val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
+  val coveredIds = Set(idName, startNode, endNode)
 }

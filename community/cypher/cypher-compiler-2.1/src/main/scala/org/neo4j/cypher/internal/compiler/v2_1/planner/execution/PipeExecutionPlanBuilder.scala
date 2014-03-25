@@ -53,8 +53,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
           NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
 
-        case RelationshipByIdSeek(IdName(id), relIdExpr, _) =>
-          RelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression)
+        case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, _, IdName(fromNode), IdName(toNode)) =>
+          DirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression, toNode, fromNode)
+
+        case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, _, IdName(fromNode), IdName(toNode)) =>
+          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression, toNode, fromNode)
 
         case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)

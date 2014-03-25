@@ -80,28 +80,43 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where n.prop = 2 return n") should equal(n)
   }
 
-  // 2014-03-12 SP: Enable once Ronja accepts relationship patterns
-  ignore("Seek relationship by id given on the left") {
+  test("Seek relationship by id given on the left") {
     val rel = relate(createNode("a"), createNode("b"))
 
     executeScalarWithNewPlanner[Node](s"match ()-[r]->() where ${rel.getId} = id(r) return r") should equal(rel)
   }
 
-  // 2014-03-12 SP: Enable once Ronja accepts relationship patterns
-  ignore("Seek relationship by id given on the right") {
+  test("Seek relationship by id given on the right") {
     val rel = relate(createNode("a"), createNode("b"))
 
     executeScalarWithNewPlanner[Node](s"match ()-[r]->() where id(r) = ${rel.getId} return r") should equal(rel)
   }
 
-  // 2014-03-12 Davide: Enable once Ronja accepts relationship patterns
-  ignore("Seek relationship by id with multiple values") {
+  test("Seek relationship by id with multiple values") {
     relate(createNode("x"), createNode("y"))
     val rel1 = relate(createNode("a"), createNode("b"))
     val rel2 = relate(createNode("c"), createNode("d"))
 
     val result = executeWithNewPlanner(s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
     result.columnAs("r").toList should equal(Seq(rel1, rel2))
+  }
+
+  test("Seek relationship by id with no direction") {
+    val a = createNode("x")
+    val b = createNode("x")
+    val r = relate(a, b)
+
+    val result = executeWithNewPlanner(s"match (a)-[r]-(b) where id(r) = ${r.getId} return a,r,b")
+    result.toList should equal(List(
+      Map("r" -> r, "a" -> a, "b" -> b),
+      Map("r" -> r, "a" -> b, "b" -> a)))
+  }
+
+  test("Seek relationship by id with type that is not matching") {
+    val r = relate(createNode("x"), createNode("y"), "FOO")
+
+    val result = executeWithNewPlanner(s"match ()-[r:BAR]-() where id(r) = ${r.getId} return r")
+    result.toList shouldBe empty
   }
 
   test("Scan index with property given in where") {

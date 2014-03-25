@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val x = newMockedLogicalPlan("x")
+  val x2 = newMockedLogicalPlan("x")
   val y = newMockedLogicalPlan("y")
   val xAndY = newMockedLogicalPlan("x", "y")
 
@@ -48,5 +49,19 @@ class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val newPlans = plans + xAndY
 
     newPlans should equal(PlanTable(Map(xAndY.asTableEntry)))
+  }
+
+  test("adding a plan that is already covered by an existing plan results in no change") {
+    val originalPlans = PlanTable(Map(xAndY.asTableEntry))
+    val newPlans = originalPlans + x
+
+    newPlans should equal(originalPlans)
+  }
+
+  test("adding a plan with the same ids covered does not replace it") {
+    val originalPlans = PlanTable(Map(x.asTableEntry))
+    val newPlans = originalPlans + x2
+
+    newPlans should equal(originalPlans)
   }
 }
