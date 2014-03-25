@@ -33,10 +33,11 @@ import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.graphdb.NotFoundException;
 
@@ -46,48 +47,30 @@ public class FileUtils
 
     public static void deleteRecursively( File directory ) throws IOException
     {
-        Stack<File> stack = new Stack<>();
-        List<File> temp = new LinkedList<>();
-        stack.push( directory.getAbsoluteFile() );
-        while ( !stack.isEmpty() )
+        if ( ! directory.exists() )
         {
-            File top = stack.pop();
-            File[] files = top.listFiles();
-            if ( files != null )
-            {
-                for ( File child : files )
-                {
-                    if ( child.isFile() )
-                    {
-                        if ( !deleteFile( child ) )
-                        {
-                            throw new IOException( "Failed to delete " + child.getCanonicalPath() );
-                        }
-                    }
-                    else
-                    {
-                        temp.add( child );
-                    }
-                }
-            }
-            files = top.listFiles();
-            if ( files == null || files.length == 0 )
-            {
-                if ( !deleteFile( top ) )
-                {
-                    throw new IOException( "Failed to delete " + top.getCanonicalPath() );
-                }
-            }
-            else
-            {
-                stack.push( top );
-                for ( File f : temp )
-                {
-                    stack.push( f );
-                }
-            }
-            temp.clear();
+            return;
         }
+        Files.walkFileTree( directory.toPath(), new SimpleFileVisitor<Path>()
+        {
+            @Override
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+            {
+                Files.delete( file );
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
+            {
+                if ( e != null )
+                {
+                    throw e;
+                }
+                Files.delete( dir );
+                return FileVisitResult.CONTINUE;
+            }
+        } );
     }
 
     public static boolean deleteFile( File file )
