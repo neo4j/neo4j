@@ -30,10 +30,10 @@ object cartesianProduct extends PlanCandidateGenerator {
     if (planTable.size > 1) {
       val plans = planTable.plans
       val cartesianProducts =
-        for (
-          planA <- plans;
+        for {
+          planA <- plans
           planB <- plans if planA != planB
-        ) yield applySelections(CartesianProduct(planA, planB))
+        } yield applySelections(CartesianProduct(planA, planB))
       CandidateList(cartesianProducts.toList)
     } else {
       CandidateList(Seq.empty)

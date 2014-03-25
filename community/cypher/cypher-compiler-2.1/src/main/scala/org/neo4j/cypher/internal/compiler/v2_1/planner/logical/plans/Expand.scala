@@ -28,17 +28,6 @@ case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[Re
   val lhs = Some(left)
   def rhs = None
 
-  /*val cardinality = {
-    val node: Seq[LabelName] = context.queryGraph.knownLabelsOnNode(from)
-    val knownLabelsOnNode = node.flatMap(_.id)
-    val relTypeIds = types.map(_.id.get)
-
-    val estimatedNoOfRelationshipsPerNode =
-      context.estimator.estimateExpandRelationship(knownLabelsOnNode, relTypeIds, dir)
-
-    left.cardinality * estimatedNoOfRelationshipsPerNode
-  }*/
-
   val cost = left.cost + context.costs.calculateExpandRelationship(cardinality)
 
   val coveredIds = left.coveredIds + to + relName
