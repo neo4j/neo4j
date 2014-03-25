@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
 
 class GuessingEstimator extends CardinalityEstimator {
   private val ALL_NODES_SCAN_CARDINALITY: Int = 1000
@@ -33,9 +35,6 @@ class GuessingEstimator extends CardinalityEstimator {
   private val INDEX_SEEK_SELECTIVITY: Double = 0.08
   private val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
   private val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
-
-  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) =
-    (ALL_NODES_SCAN_CARDINALITY * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
 
   def estimateNodeByIdSeek() = ID_SEEK_CARDINALITY
 
@@ -58,4 +57,10 @@ class GuessingEstimator extends CardinalityEstimator {
     case _: HasLabels => LABEL_SELECTIVITY
     case _ => PREDICATE_SELECTIVITY
   }
+
+  def estimateNodeJoin(node: IdName, lhs: LogicalPlan, rhs: LogicalPlan) =
+    (lhs.cardinality + rhs.cardinality) / 2
+
+  def estimateExpandRelationship(labelIds: Seq[LabelId], relationshipType: Seq[RelTypeId], dir: Direction) =
+    (ALL_NODES_SCAN_CARDINALITY * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
 }

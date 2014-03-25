@@ -31,4 +31,5 @@ class SimpleCostModel extends CostModel {
   def calculateSingleRow(cardinality: Int) = cardinality
   def calculateSelectionOverhead(cardinality: Int) = (cardinality * .2).toInt
   def calculateCartesianProductOverhead(cardinality: Int) = 0
+  def calculateNodeHashJoin(cardinality: Int) = cardinality * 2
 }

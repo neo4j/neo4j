@@ -22,17 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.InternalException
 
-object expandAndJoin extends PlanCandidateGenerator {
+object join extends PlanCandidateGenerator {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val expandCandidates = tryExpand(planTable)
-    val joinCandidates = tryJoin(planTable)
-    expandCandidates ++ joinCandidates
+    val joinPlans: Seq[NodeHashJoin] = (for {
+      planA <- planTable.plans
+      planB <- planTable.plans if planA != planB
+    } yield {
+      (planA.coveredIds & planB.coveredIds).toList match {
+        case id :: Nil => Some(NodeHashJoin(id, planA, planB))
+        case Nil => None
+        case _ => throw new InternalException("Found more than one overlapping ID when planning hash joins")
+      }
+    }).flatten
+    CandidateList(joinPlans)
   }
-
-  private def tryExpand(planTable: PlanTable): CandidateList =
-    CandidateList(planTable.plans)
-
-  private def tryJoin(planTable: PlanTable): CandidateList =
-    CandidateList(planTable.plans)
 }
