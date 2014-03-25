@@ -45,6 +45,9 @@ public class ForsetiClient implements Locks.Client
     /** Handle to return client to pool when closed. */
     private final FlyweightPool<ForsetiClient> clientPool;
 
+    // TODO We should really look into some kind of primitive maps here.
+    // TODO As a stop-gap, we could start out by using AtomicInteger values, and thereby remove a lot
+    // TODO of object creation due to the boxing of the integers.
     /** resourceType -> Map( resourceId -> num locks ) */
     private final Map<Long, Integer>[] sharedLockCounts;
 
@@ -237,6 +240,17 @@ public class ForsetiClient implements Locks.Client
         return true;
     }
 
+    // TODO These kinds of variadic APIs look generally problematic to me.
+    // TODO Say we're trying to grab the locks on [1, 2, 3]. Getting the lock on 1
+    // TODO succeeds, but getting the lock on 2 fails. Then we return 'false', leave
+    // TODO the lock on 1 held, and never try to grab the lock on 3.
+    // TODO That sounds like a mess to me. Basically, if you try to grab more than
+    // TODO one lock at a time, and methods like this one returns 'false', then you
+    // TODO have no idea what locks you did or did not get.
+    // TODO I think the API with batched lock-grabbing should be dropped completely.
+    // TODO Especially considering the implementation of Forseti, or the general
+    // TODO concept of lock managers as a whole, I don't think batched lock-grabbing
+    // TODO will ever give any noticable performance benefit anyway.
     @Override
     public boolean trySharedLock( Locks.ResourceType resourceType, long... resourceIds )
     {
@@ -272,10 +286,6 @@ public class ForsetiClient implements Locks.Client
                     {
                         // Success!
                         break;
-                    }
-                    else
-                    {
-                        continue;
                     }
                 }
                 else if(existingLock instanceof SharedLock)
@@ -393,20 +403,23 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void releaseAll()
     {
-        for( Map<Long,Integer>[] lockCounts : new Map[][]{exclusiveLockCounts, sharedLockCounts} )
+        releaseAll( exclusiveLockCounts );
+        releaseAll( sharedLockCounts );
+    }
+
+    private void releaseAll( Map<Long, Integer>[] lockCounts )
+    {
+        for ( int i = 0; i < lockCounts.length; i++ )
         {
-            for ( int i = 0; i < lockCounts.length; i++ )
+            Map<Long, Integer> localLocks = lockCounts[i];
+            if(localLocks != null)
             {
-                Map<Long, Integer> localLocks = lockCounts[i];
-                if(localLocks != null)
+                ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[i];
+                for ( Long resourceId : localLocks.keySet() )
                 {
-                    ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[i];
-                    for ( Long resourceId : localLocks.keySet() )
-                    {
-                        releaseGlobalLock( lockMap, resourceId );
-                    }
-                    localLocks.clear();
+                    releaseGlobalLock( lockMap, resourceId );
                 }
+                localLocks.clear();
             }
         }
     }
@@ -426,10 +439,13 @@ public class ForsetiClient implements Locks.Client
     public void copyWaitListTo( SimpleBitSet other )
     {
         other.put( waitList );
+        // TODO It might make sense to somehow put a StoreLoad barrier here,
+        // TODO to expidite the observation of the updated waitList in other clients.
     }
 
     public boolean isWaitingFor( int clientId )
     {
+        // TODO Similarly to the above, make reading the waitList a volatile load.
         return clientId != myId && waitList.contains( clientId );
     }
 
@@ -447,12 +463,8 @@ public class ForsetiClient implements Locks.Client
 
         ForsetiClient that = (ForsetiClient) o;
 
-        if ( myId != that.myId )
-        {
-            return false;
-        }
+        return myId == that.myId;
 
-        return true;
     }
 
     @Override
@@ -471,20 +483,14 @@ public class ForsetiClient implements Locks.Client
     private void releaseGlobalLock( ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap, long resourceId )
     {
         ForsetiLockManager.Lock lock = lockMap.get( resourceId );
-        if(lock instanceof ExclusiveLock )
+        if( lock instanceof ExclusiveLock )
         {
             lockMap.remove( resourceId );
         }
-        else if(lock instanceof SharedLock )
+        else if( lock instanceof SharedLock && ((SharedLock)lock).release(this) )
         {
-            if(((SharedLock)lock).release(this))
-            {
-                // We were the last to hold this lock, it is now dead and we should remove it.
-                lockMap.remove( resourceId );
-            }
-            else
-            {
-            }
+            // We were the last to hold this lock, it is now dead and we should remove it.
+            lockMap.remove( resourceId );
         }
     }
 
@@ -545,8 +551,12 @@ public class ForsetiClient implements Locks.Client
     }
 
     /** Attempt to upgrade a share lock that we hold to an exclusive lock. */
-    private boolean tryUpgradeToExclusiveWithShareLockHeld( Locks.ResourceType resourceType, ConcurrentMap<Long, ForsetiLockManager.Lock
-            > lockMap, long resourceId, SharedLock sharedLock, int tries ) throws AcquireLockTimeoutException
+    private boolean tryUpgradeToExclusiveWithShareLockHeld(
+            Locks.ResourceType resourceType,
+            ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap,
+            long resourceId,
+            SharedLock sharedLock,
+            int tries ) throws AcquireLockTimeoutException
     {
         if( sharedLock.tryAcquireUpdateLock(this) )
         {
@@ -560,6 +570,9 @@ public class ForsetiClient implements Locks.Client
                 }
 
                 // No more people other than us holding this lock. Swap it to exclusive
+                // TODO Wait, why do we need to do this? An update lock with zero shared holders is an
+                // TODO exclusive lock, no? Why is it not enough to just atomically raise the update bit,
+                // TODO and then wait for all the shared holders to relinquish their grasp?
                 lockMap.put( resourceId, myExclusiveLock );
                 return true;
 

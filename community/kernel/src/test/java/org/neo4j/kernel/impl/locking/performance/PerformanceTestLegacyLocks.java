@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.util.FastRandom;
  * Performance numbers show total number of locks per second, the number of locks listed in the stats denote how many
  * locks are taken per "transaction".
  */
+// TODO We should move our benchmarks, like this one, to a dedicated repository or maven module.
 public class PerformanceTestLegacyLocks
 {
     // Contention: 8 random locks
@@ -166,7 +167,7 @@ public class PerformanceTestLegacyLocks
         @Override
         public void setRollbackOnly() throws IllegalStateException, SystemException
         {
+        }
     }
-}
 
 }

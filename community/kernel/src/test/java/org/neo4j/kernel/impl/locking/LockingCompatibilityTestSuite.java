@@ -43,7 +43,7 @@ import static org.neo4j.test.OtherThreadRule.isWaiting;
 @Suite.SuiteClasses({
         AcquireAndReleaseLocksCompatibility.class,
         DeadlockCompatibility.class,
-        LockStackingCompatibility.class,
+        LockReentrancyCompatibility.class,
         RWLockCompatibility.class
 })
 public abstract class LockingCompatibilityTestSuite
