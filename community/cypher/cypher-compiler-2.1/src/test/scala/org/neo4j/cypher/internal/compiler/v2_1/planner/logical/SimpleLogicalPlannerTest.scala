@@ -19,7 +19,6 @@
  */
 
 import org.mockito.Mockito._
-import org.mockito.Matchers._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
@@ -28,11 +27,87 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.kernel.api.index.IndexDescriptor
 
 class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val planner = new SimpleLogicalPlanner()
+  val logicalPlanner = new SimpleLogicalPlanner()
   val pos = DummyPosition(0)
+
+  test("projection only query") {
+    // given
+    implicit val context = newMockedLogicalPlanContext()
+
+    val projections = Map("42" -> SignedIntegerLiteral("42")(pos))
+    val qg = QueryGraph(projections, Selections(), Set.empty, Set.empty)
+
+    // when
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg))
+
+    // then
+    resultPlan should equal(Projection(SingleRow(), projections))
+  }
+
+  test("simple pattern query") {
+    // given
+    implicit val context = newMockedLogicalPlanContext(
+      estimator = CardinalityEstimator.lift {
+        case _: AllNodesScan => 1000
+      }
+    )
+
+    val projections = Map("n" -> Identifier("n")(pos))
+    val qg = QueryGraph(projections, Selections(), Set(IdName("n")), Set.empty)
+
+    // when
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg))
+
+    // then
+    resultPlan should equal(AllNodesScan(IdName("n")))
+  }
+
+  test("simple label scan without compile-time label id") {
+    // given
+    implicit val context = newMockedLogicalPlanContext(
+      estimator = CardinalityEstimator.lift {
+        case _: AllNodesScan => 1000
+        case _: NodeByIdSeek => 2
+        case _: NodeByLabelScan => 1
+      }
+    )
+
+    val projections = Map("n" -> Identifier("n")(pos))
+    val hasLabels = HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos)
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> hasLabels)), Set(IdName("n")), Set.empty)
+
+    // when
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg))
+
+    // then
+    resultPlan should equal(NodeByLabelScan(IdName("n"), Left("Awesome"))())
+  }
+
+  test("simple label scan with a compile-time label ID") {
+    // given
+    implicit val context = newMockedLogicalPlanContext(
+      estimator = CardinalityEstimator.lift {
+        case _: NodeByLabelScan => 100
+      }
+    )
+
+    when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
+
+    val projections = Map("n" -> Identifier("n")(pos))
+    val labelId = LabelId(12)
+    val hasLabels = HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> hasLabels)), Set(IdName("n")), Set.empty)
+
+    // when
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg))
+
+    // then
+    resultPlan should equal(NodeByLabelScan(IdName("n"), Right(labelId))())
+  }
 
   // 2014-03-25 Davide: temporary disable test which is broken
   ignore("simple label scan with a compile-time label ID and node ID predicate when label scan is cheaper") {
@@ -61,7 +136,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
 
     // then
     resultPlan should equal(Selection(
@@ -100,13 +175,86 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
 
     // when
-    val resultPlan = planner.plan(context.copy( queryGraph = qg, semanticTable = semanticTable))
+    val resultPlan = logicalPlanner.plan(context.copy( queryGraph = qg, semanticTable = semanticTable))
 
     // then
     resultPlan should equal(Selection(
       List(HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(None)(pos)))(pos)),
       NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)()
     ))
+  }
+
+  test("index scan when there is an index on the property") {
+    // given
+    implicit val context = newMockedLogicalPlanContext(
+      estimator = CardinalityEstimator.lift {
+        case _: AllNodesScan => 1000
+        case _: NodeIndexSeek => 1
+        case _: NodeByLabelScan => 100
+      }
+    )
+
+    when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
+      override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
+    })
+    when(context.planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
+
+    val identifier = Identifier("n")(pos)
+    val projections = Map("n" -> identifier)
+    val labelId = LabelId(12)
+    val propertyKeyId = PropertyKeyId(15)
+    val predicates = Seq(
+      Set(IdName("n")) ->  Equals(
+        Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))(pos))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos),
+      Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    )
+
+    val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")), Set.empty)
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+
+    // when
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
+
+    // then
+    resultPlan should equal(NodeIndexSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))())
+  }
+
+  test("index seek when there is an index on the property") {
+    // given
+    implicit val context = newMockedLogicalPlanContext(
+      estimator = CardinalityEstimator.lift {
+        case _: AllNodesScan => 1000
+        case _: NodeByLabelScan => 100
+      }
+    )
+
+    when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
+    when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
+      override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
+    })
+
+    val identifier = Identifier("n")(pos)
+    val projections = Map("n" -> identifier)
+    val labelId = LabelId(12)
+    val propertyKeyId = PropertyKeyId(15)
+    val predicates = Seq(
+      Set(IdName("n")) ->  Equals(
+        Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))(pos))(pos),
+        SignedIntegerLiteral("42")(pos)
+      )(pos),
+      Set(IdName("n")) -> HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    )
+
+    val qg = QueryGraph(projections, Selections(predicates), Set(IdName("n")), Set.empty)
+    val semanticTable = SemanticTableBuilder().withTyping(identifier -> ExpressionTypeInfo(symbols.CTNode)).result()
+
+    // when
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg, semanticTable = semanticTable))
+
+    // then
+    resultPlan should equal(NodeIndexUniqueSeek(IdName("n"), labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))())
   }
 
   test("simple cartesian product query") {
@@ -121,7 +269,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(projections, Selections(), Set(IdName("n"), IdName("m")), Set.empty)
 
     // when
-    val resultPlan = planner.plan(context.copy(queryGraph = qg))
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(CartesianProduct(AllNodesScan(IdName("n")), AllNodesScan(IdName("m"))))
@@ -139,7 +287,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(projections, Selections(), Set(IdName("n"), IdName("m")), Set.empty)
 
     // when
-    val resultPlan = planner.plan(context.copy(queryGraph = qg))
+    val resultPlan = logicalPlanner.plan(context.copy(queryGraph = qg))
 
     // then
     resultPlan should equal(CartesianProduct(AllNodesScan(IdName("n")), AllNodesScan(IdName("m"))))

@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
-                     (implicit val context: LogicalPlanContext) extends LogicalPlan {
+case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
-  val cost = left.cost + context.costs.calculateProjectionOverhead(cardinality, expressions.size)
+  def numExpressions = expressions.size
 
   def coveredIds = expressions.keySet.map(IdName)
   def solvedPredicates = left.solvedPredicates

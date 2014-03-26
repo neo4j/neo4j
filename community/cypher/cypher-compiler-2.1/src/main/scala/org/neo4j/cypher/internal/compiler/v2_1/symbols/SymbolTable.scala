@@ -37,15 +37,8 @@ case class SymbolTable(identifiers: Map[String, CypherType] = Map.empty) {
   }
 
   def add(value: Map[String, CypherType]): SymbolTable = {
-    checkNoOverlapsExist(value)
-
-    SymbolTable(identifiers ++ value)
-  }
-
-
-  private def checkNoOverlapsExist(value: Map[String, CypherType]) {
-    value.foreach {
-      case (id, t) => add(id, t)
+    value.foldLeft(this) {
+      (a: SymbolTable, b: (String, CypherType)) => a.add(b._1, b._2)
     }
   }
 

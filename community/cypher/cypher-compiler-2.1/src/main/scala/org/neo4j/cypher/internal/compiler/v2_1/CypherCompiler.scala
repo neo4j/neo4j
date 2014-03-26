@@ -52,17 +52,19 @@ case class CypherCompiler(parser: CypherParser,
                           monitors: Monitors) {
 
   def prepare(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
+    val (parsedQuery, extractedParams) = prepareParsedQuery(queryText, context)
+    val cache = context.getOrCreateFromSchemaState(this, cacheFactory())
+    val plan = cache(parsedQuery.statement, executionPlanBuilder.build(context, parsedQuery))
+    (plan, extractedParams)
+  }
+
+  private def prepareParsedQuery(queryText: String, context: PlanContext): (ParsedQuery, Map[String, Any]) = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
     val table = semanticChecker.check(queryText, parsedStatement)
     val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
-    val parsedQuery = ParsedQuery(rewrittenStatement, query, table, queryText)
-
-    val cache = context.getOrCreateFromSchemaState(this, cacheFactory())
-
-    val plan = cache(rewrittenStatement, executionPlanBuilder.build(context, parsedQuery))
-    (plan, extractedParams)
+    (ParsedQuery(rewrittenStatement, query, table, queryText), extractedParams)
   }
 
   @throws(classOf[SyntaxException])

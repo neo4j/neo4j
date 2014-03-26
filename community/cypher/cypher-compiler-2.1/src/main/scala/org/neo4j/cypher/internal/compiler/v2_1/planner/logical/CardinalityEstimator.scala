@@ -25,13 +25,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 This class is responsible for answering questions about cardinality. It does this by asking the database when this
 information is available, or guessing when that's not possible.
  */
-trait CardinalityEstimator {
-  def estimate(plan: LogicalPlan): Int
+trait CardinalityEstimator extends PlanMetric {
+  final def cardinality(plan: LogicalPlan): Int = apply(plan)
 }
 
+class CachingCardinalityEstimator(metric: CardinalityEstimator) extends CachingPlanMetric[CardinalityEstimator](metric) with CardinalityEstimator
 
 object CardinalityEstimator {
   def lift(f: PartialFunction[LogicalPlan, Int]) = new CardinalityEstimator {
-    def estimate(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
+    def apply(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
   }
 }

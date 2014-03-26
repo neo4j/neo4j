@@ -22,25 +22,28 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 
-class ASTRewriter(rewritingMonitor: AstRewritingMonitor) {
+class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
 
   def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
     val (extractParameters: Rewriter, extractedParameters: Map[String, Any]) = literalReplacement(statement)
 
-    val rewriter: Rewriter = bottomUp(inSequence(
-      foldConstants,
-      extractParameters,
-      nameMatchPatternElements,
-      normalizeMatchPredicates,
-      normalizeEqualsArgumentOrder,
-      reattachAliasedExpressions,
-      addUniquenessPredicates
-    ))
+    val rewriters = Seq.newBuilder[Rewriter]
+    rewriters += foldConstants
 
+    if (shouldExtractParameters)
+      rewriters += extractParameters
+
+    rewriters += nameMatchPatternElements
+    rewriters += normalizeMatchPredicates
+    rewriters += normalizeEqualsArgumentOrder
+    rewriters += reattachAliasedExpressions
+    rewriters += addUniquenessPredicates
+
+    val rewriter = bottomUp(inSequence(rewriters.result(): _*))
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
-    (rewrittenStatement, extractedParameters)
+    (rewrittenStatement, if (shouldExtractParameters) extractedParameters else Map.empty)
   }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+
 /*
 The cost model calculates the cost for different operations. Costs follow a basic formula - there's a constant cost
 for preparing things before a query can start running, and then there is a cost per row expected to pass through
@@ -30,17 +32,14 @@ in an execution plan there is a formula that gives its cost. Given the complexit
 formulas are simple approximations of what the system actually does and are based on certain assumptions regarding
 issues like buffer management, disk-cpu overlap, sequential vs random IO etc.*/
 
-trait CostModel {
-  def calculateNodeByIdSeek(cardinality: Int): Int
-  def calculateRelationshipByIdSeek(cardinality: Int): Int
-  def calculateNodeByLabelScan(cardinality: Int): Int
-  def calculateAllNodesScan(cardinality: Int): Int
-  def calculateNodeUniqueIndexSeek(cardinality: Int): Int
-  def calculateNodeIndexSeek(cardinality: Int): Int
-  def calculateExpandRelationship(cardinality: Int): Int
-  def calculateSingleRow(cardinality: Int): Int
-  def calculateProjectionOverhead(cardinality: Int, numExpressions: Int): Int
-  def calculateSelectionOverhead(cardinality: Int): Int
-  def calculateCartesianProductOverhead(cardinality: Int): Int
-  def calculateNodeHashJoin(cardinality: Int): Int
+trait CostModel extends PlanMetric {
+  final def cost(plan: LogicalPlan): Int = apply(plan)
+}
+
+class CachingCostModel(metric: CostModel) extends CachingPlanMetric[CostModel](metric) with CostModel
+
+object CostModel {
+  def lift(f: PartialFunction[LogicalPlan, Int]): CostModel = new CostModel {
+    def apply(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
+  }
 }
