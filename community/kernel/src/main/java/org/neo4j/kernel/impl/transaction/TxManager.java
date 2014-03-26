@@ -640,6 +640,13 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
 	public Transaction getTransaction() throws SystemException
     {
+        // It's pretty important that we check the tmOk state here. This method is called from getForceMode
+        // which in turn is called from XaResourceManager.commit(Xid, boolean) and so on all the way up to
+        // TxManager.commit(Thread, TransactionImpl), wherein the monitor lock on TxManager is held!
+        // It's very important that we check the tmOk state, during commit, while holding the lock on the
+        // TxManager, as we could otherwise get into a situation where a transaction crashes the database
+        // during commit, while another makes it past the check and then procedes to rotate the log, making
+        // the crashed transaction unrecoverable.
         assertTmOk( "get transaction" );
         return txThreadMap.get();
     }
@@ -886,6 +893,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     {
         try
         {
+            // The call to getTransaction() is important. See the comment in getTransaction().
             return ((TransactionImpl)getTransaction()).getForceMode();
         }
         catch ( SystemException e )
