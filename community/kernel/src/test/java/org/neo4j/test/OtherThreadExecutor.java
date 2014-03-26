@@ -218,7 +218,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
 
     public WaitDetails waitUntilWaiting() throws TimeoutException
     {
-        return waitUntilThreadState( Thread.State.WAITING );
+        return waitUntilThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
     }
 
     public WaitDetails waitUntilBlocked() throws TimeoutException
@@ -338,6 +338,14 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             }
         }
         return true;
+    }
+
+    public void interrupt()
+    {
+        if(thread != null)
+        {
+            thread.interrupt();
+        }
     }
 
     void printStackTrace( PrintStream out )

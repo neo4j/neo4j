@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -39,9 +37,7 @@ public class StatementOperationParts
     private final SchemaReadOperations schemaReadOperations;
     private final SchemaWriteOperations schemaWriteOperations;
     private final SchemaStateOperations schemaStateOperations;
-    
-    @SuppressWarnings( "rawtypes" )
-    private Map<Class,Object> additionalParts;
+    private final LockOperations lockingStatementOperations;
 
     public StatementOperationParts(
             KeyReadOperations keyReadOperations,
@@ -50,7 +46,8 @@ public class StatementOperationParts
             EntityWriteOperations entityWriteOperations,
             SchemaReadOperations schemaReadOperations,
             SchemaWriteOperations schemaWriteOperations,
-            SchemaStateOperations schemaStateOperations )
+            SchemaStateOperations schemaStateOperations,
+            LockOperations lockingStatementOperations )
     {
         this.keyReadOperations = keyReadOperations;
         this.keyWriteOperations = keyWriteOperations;
@@ -59,27 +56,7 @@ public class StatementOperationParts
         this.schemaReadOperations = schemaReadOperations;
         this.schemaWriteOperations = schemaWriteOperations;
         this.schemaStateOperations = schemaStateOperations;
-    }
-    
-    public <T> StatementOperationParts additionalPart( Class<T> cls, T value )
-    {
-        if ( additionalParts == null )
-        {
-            additionalParts = new HashMap<>();
-        }
-        additionalParts.put( cls, value );
-        return this;
-    }
-    
-    @SuppressWarnings( "unchecked" )
-    public <T> T resolve( Class<T> cls )
-    {
-        T part = additionalParts != null ? (T) additionalParts.get( cls ) : null;
-        if ( part == null )
-        {
-            throw new IllegalArgumentException( "No part " + cls.getName() );
-        }
-        return part;
+        this.lockingStatementOperations = lockingStatementOperations;
     }
 
     public KeyReadOperations keyReadOperations()
@@ -117,6 +94,11 @@ public class StatementOperationParts
         return checkNotNull( schemaStateOperations, SchemaStateOperations.class );
     }
 
+    public LockOperations locking()
+    {
+        return checkNotNull( lockingStatementOperations, LockOperations.class );
+    }
+
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     public StatementOperationParts override(
             KeyReadOperations keyReadOperations,
@@ -126,28 +108,17 @@ public class StatementOperationParts
             SchemaReadOperations schemaReadOperations,
             SchemaWriteOperations schemaWriteOperations,
             SchemaStateOperations schemaStateOperations,
-            Object... alternatingAdditionalClassAndObject )
+            LockOperations lockingStatementOperations )
     {
-        StatementOperationParts parts = new StatementOperationParts(
-                eitherOr( keyReadOperations, this.keyReadOperations, KeyReadOperations.class ),
-                eitherOr( keyWriteOperations, this.keyWriteOperations, KeyWriteOperations.class ),
-                eitherOr( entityReadOperations, this.entityReadOperations, EntityReadOperations.class ),
-                eitherOr( entityWriteOperations, this.entityWriteOperations, EntityWriteOperations.class ),
-                eitherOr( schemaReadOperations, this.schemaReadOperations, SchemaReadOperations.class ),
-                eitherOr( schemaWriteOperations, this.schemaWriteOperations, SchemaWriteOperations.class ),
-                eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ));
-
-        if ( additionalParts != null )
-        {
-            parts.additionalParts = new HashMap<>( additionalParts );
-        }
-        for ( int i = 0; i < alternatingAdditionalClassAndObject.length; i++ )
-        {
-            parts.additionalPart( (Class) alternatingAdditionalClassAndObject[i++],
-                    alternatingAdditionalClassAndObject[i] );
-        }
-
-        return parts;
+        return new StatementOperationParts(
+            eitherOr( keyReadOperations, this.keyReadOperations, KeyReadOperations.class ),
+            eitherOr( keyWriteOperations, this.keyWriteOperations, KeyWriteOperations.class ),
+            eitherOr( entityReadOperations, this.entityReadOperations, EntityReadOperations.class ),
+            eitherOr( entityWriteOperations, this.entityWriteOperations, EntityWriteOperations.class ),
+            eitherOr( schemaReadOperations, this.schemaReadOperations, SchemaReadOperations.class ),
+            eitherOr( schemaWriteOperations, this.schemaWriteOperations, SchemaWriteOperations.class ),
+            eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ),
+            eitherOr( lockingStatementOperations, this.lockingStatementOperations, LockOperations.class ));
     }
     
     private <T> T checkNotNull( T object, Class<T> cls )

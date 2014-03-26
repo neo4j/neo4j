@@ -19,6 +19,7 @@
  */
 package org.neo4j.management.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.management.NotCompliantMBeanException;
@@ -27,6 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.management.LockManager;
 
@@ -52,7 +54,7 @@ public final class LockManagerBean extends ManagementBeanProvider
 
     private static class LockManagerImpl extends Neo4jMBean implements LockManager
     {
-        private final org.neo4j.kernel.impl.transaction.LockManager lockManager;
+        private final Locks lockManager;
 
         LockManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
@@ -60,10 +62,18 @@ public final class LockManagerBean extends ManagementBeanProvider
             this.lockManager = lockManager( management );
         }
 
-        private org.neo4j.kernel.impl.transaction.LockManager lockManager( ManagementData management )
+        private Locks lockManager( ManagementData management )
         {
-            return management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( org.neo4j.kernel.impl.transaction.LockManager.class );
+            try
+            {
+                return management.getKernelData().graphDatabase().getDependencyResolver()
+                        .resolveDependency( Locks.class );
+            }
+            catch(Throwable e)
+            {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         LockManagerImpl( ManagementData management, boolean mxBean )
@@ -75,19 +85,29 @@ public final class LockManagerBean extends ManagementBeanProvider
         @Override
         public long getNumberOfAvertedDeadlocks()
         {
-            return lockManager.getDetectedDeadlockCount();
+            return -1l;
         }
 
         @Override
         public List<LockInfo> getLocks()
         {
-            return lockManager.getAllLocks();
+            final List<LockInfo> locks = new ArrayList<>();
+            lockManager.accept( new Locks.Visitor()
+            {
+                @Override
+                public void visit( Locks.ResourceType resourceType, long resourceId, String description, long waitTime )
+                {
+                    locks.add( new LockInfo( resourceType.toString(), String.valueOf( resourceId ), description ) );
+                }
+            });
+            return locks;
         }
 
         @Override
-        public List<LockInfo> getContendedLocks( long minWaitTime )
+        public List<LockInfo> getContendedLocks( final long minWaitTime )
         {
-            return lockManager.getAwaitedLocks( minWaitTime );
+            // Contended locks can no longer be found by the new lock manager, since that knowledge is not centralized.
+            return getLocks();
         }
     }
 }

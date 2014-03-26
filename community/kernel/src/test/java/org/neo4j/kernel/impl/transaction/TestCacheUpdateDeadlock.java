@@ -38,6 +38,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.CleanupRule;
@@ -268,7 +269,7 @@ public class TestCacheUpdateDeadlock
             if ( latch != null )
             {
                 return new DeadlockProneTransactionState(
-                        lockManager, nodeManager, logging, tx, txHook, txIdGenerator, latch );
+                        locks.newClient(), nodeManager, logging, tx, txHook, txIdGenerator, latch );
             }
             return super.create( tx );
         }
@@ -278,10 +279,10 @@ public class TestCacheUpdateDeadlock
     {
         private final DoubleLatch latch;
 
-        public DeadlockProneTransactionState( LockManager lockManager, NodeManager nodeManager,
+        public DeadlockProneTransactionState( Locks.Client lockManager, NodeManager nodeManager,
                 Logging logging, javax.transaction.Transaction tx, RemoteTxHook txHook, TxIdGenerator txIdGenerator, DoubleLatch latch )
         {
-            super( lockManager, nodeManager, logging, tx, txHook, txIdGenerator );
+            super( lockManager, nodeManager, txHook, txIdGenerator );
             this.latch = latch;
         }
 

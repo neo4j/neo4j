@@ -26,6 +26,8 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
+import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -36,18 +38,6 @@ import static java.util.Collections.emptySet;
 
 public class NoTransactionState implements TransactionState
 {
-    @Override
-    public LockElement acquireWriteLock( Object resource )
-    {
-        throw new NotInTransactionException();
-    }
-
-    @Override
-    public LockElement acquireReadLock( Object resource )
-    {
-        throw new NotInTransactionException();
-    }
-
     @Override
     public ArrayMap<Integer, SetAndDirectionCounter> getCowRelationshipRemoveMap( NodeImpl node )
     {
@@ -80,6 +70,7 @@ public class NoTransactionState implements TransactionState
     @Override
     public void commit()
     {
+
     }
 
     @Override
@@ -144,6 +135,16 @@ public class NoTransactionState implements TransactionState
     public TransactionData getTransactionData()
     {
         throw new NotInTransactionException();
+    }
+
+    @Override
+    public Locks.Client locks()
+    {
+        // NoTransactionState is only used by ReadOnlyDatabase, meaning this is safe. It is
+        // shaky though, since this assumption may be violated in the future. As such, it should
+        // be removed as soon as the last remaining things grabbing locks in NodeManager goes away,
+        // then the Kernel can create the new lock client.
+        return new NoOpClient();
     }
 
     @Override

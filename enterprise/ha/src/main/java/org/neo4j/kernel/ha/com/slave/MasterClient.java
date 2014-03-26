@@ -64,20 +64,6 @@ public interface MasterClient extends Master
 
     public Response<Void> initializeTx( RequestContext context );
 
-    public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes );
-
-    public Response<LockResult> acquireRelationshipWriteLock( RequestContext context, long... relationships );
-
-    public Response<LockResult> acquireRelationshipReadLock( RequestContext context, long... relationships );
-
-    public Response<LockResult> acquireGraphWriteLock( RequestContext context );
-
-    public Response<LockResult> acquireGraphReadLock( RequestContext context );
-
-    public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key );
-
-    public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
-
     public Response<Long> commitSingleResourceTransaction( RequestContext context, final String resource,
             final TxExtractor txGetter );
 

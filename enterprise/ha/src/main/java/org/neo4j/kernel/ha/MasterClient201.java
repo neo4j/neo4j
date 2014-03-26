@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.IOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -41,7 +36,6 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
@@ -49,12 +43,18 @@ import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -83,15 +83,6 @@ public class MasterClient201 extends Client<Master> implements MasterClient
                 readTimeoutSeconds, maxConcurrentChannels, chunkSize );
         this.lockReadTimeout = lockReadTimeout;
         this.monitor = monitors.newMonitor( ByteCounterMonitor.class, getClass() );
-    }
-
-    public MasterClient201( URI masterUri, Logging logging, Monitors monitors, StoreId storeId, Config config )
-    {
-        this( masterUri.getHost(), masterUri.getPort(), logging, monitors, storeId,
-                config.get( HaSettings.read_timeout ),
-                config.get( HaSettings.lock_read_timeout ),
-                config.get( HaSettings.max_concurrent_channels_per_slave ),
-                config.get( HaSettings.com_chunk_size ).intValue() );
     }
 
     @Override
@@ -206,84 +197,65 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
+    public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType resourceType, long...
+            resourceIds )
     {
-        return sendRequest( HaRequestType201.ACQUIRE_NODE_WRITE_LOCK, context,
-                new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
+        if ( resourceType == ResourceTypes.NODE )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_NODE_WRITE_LOCK, context,
+                    new AcquireLockSerializer( resourceIds ), LOCK_RESULT_DESERIALIZER );
+        }
+        else if ( resourceType == ResourceTypes.RELATIONSHIP )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
+                    new AcquireLockSerializer( resourceIds ), LOCK_RESULT_DESERIALIZER );
+        }
+        else if ( resourceType == ResourceTypes.GRAPH_PROPS )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_GRAPH_WRITE_LOCK, context, EMPTY_SERIALIZER,
+                    LOCK_RESULT_DESERIALIZER );
+        }
+        else if( resourceType == ResourceTypes.SCHEMA )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_SCHEMA_WRITE_LOCK, context, EMPTY_SERIALIZER,
+                    LOCK_RESULT_DESERIALIZER );
+        }
+        else
+        {
+            throw new IllegalArgumentException
+                    ("Don't know how to take lock on resource: '" + resourceType + "'.");
+        }
     }
 
     @Override
-    public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
+    public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType resourceType, long...
+            resourceIds )
     {
-        return sendRequest( HaRequestType201.ACQUIRE_NODE_READ_LOCK, context,
-                new AcquireLockSerializer( nodes ), LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
-                                                              long... relationships )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_RELATIONSHIP_WRITE_LOCK, context,
-                new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
-                                                             long... relationships )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
-                new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireGraphWriteLock( RequestContext context )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_GRAPH_WRITE_LOCK, context,
-                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireGraphReadLock( RequestContext context )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_GRAPH_READ_LOCK, context,
-                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_INDEX_READ_LOCK, context,
-                new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_INDEX_WRITE_LOCK, context,
-                new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireSchemaReadLock( RequestContext context )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_SCHEMA_READ_LOCK, context,
-                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireSchemaWriteLock( RequestContext context )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_SCHEMA_WRITE_LOCK, context,
-                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
-    }
-
-    @Override
-    public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
-                                                            String propertyValue )
-    {
-        return sendRequest( HaRequestType201.ACQUIRE_INDEX_ENTRY_WRITE_LOCK, context,
-                            new AcquireIndexEntryLockSerializer( labelId, propertyKeyId, propertyValue ),
-                            LOCK_RESULT_DESERIALIZER );
+        if ( resourceType == ResourceTypes.NODE )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_NODE_READ_LOCK, context,
+                    new AcquireLockSerializer( resourceIds ), LOCK_RESULT_DESERIALIZER );
+        }
+        else if ( resourceType == ResourceTypes.RELATIONSHIP )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_RELATIONSHIP_READ_LOCK, context,
+                    new AcquireLockSerializer( resourceIds ), LOCK_RESULT_DESERIALIZER );
+        }
+        else if ( resourceType == ResourceTypes.GRAPH_PROPS )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_GRAPH_READ_LOCK, context, EMPTY_SERIALIZER,
+                    LOCK_RESULT_DESERIALIZER );
+        }
+        else if( resourceType == ResourceTypes.SCHEMA )
+        {
+            return sendRequest( HaRequestType201.ACQUIRE_SCHEMA_READ_LOCK, context, EMPTY_SERIALIZER,
+                    LOCK_RESULT_DESERIALIZER );
+        }
+        else
+        {
+            throw new IllegalArgumentException
+                    ("Don't know how to take lock on resource: '" + resourceType + "'.");
+        }
     }
 
     @Override
@@ -460,47 +432,6 @@ public class MasterClient201 extends Client<Master> implements MasterClient
             {
                 buffer.writeLong( entity );
             }
-        }
-    }
-
-    protected static class AcquireIndexLockSerializer implements Serializer
-    {
-        private final String index;
-        private final String key;
-
-        AcquireIndexLockSerializer( String index, String key )
-        {
-            this.index = index;
-            this.key = key;
-        }
-
-        @Override
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-            writeString( buffer, index );
-            writeString( buffer, key );
-        }
-    }
-
-    protected static class AcquireIndexEntryLockSerializer implements Serializer
-    {
-        private final long labelId;
-        private final long propertyKeyId;
-        private final String value;
-
-        AcquireIndexEntryLockSerializer( long labelId, long propertyKeyId, String value )
-        {
-            this.labelId = labelId;
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-        }
-
-        @Override
-        public void write( ChannelBuffer buffer ) throws IOException
-        {
-            buffer.writeLong( labelId );
-            buffer.writeLong( propertyKeyId );
-            writeString( buffer, value );
         }
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -31,17 +30,12 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.info.LockInfo;
-import org.neo4j.kernel.info.ResourceType;
-import org.neo4j.kernel.info.WaitingThread;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.test.DoubleLatch;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
 {
@@ -129,7 +123,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         final DoubleLatch latch = new DoubleLatch();
 
         DependencyResolver resolver = db.getDependencyResolver();
-        LockManager manager = resolver.resolveDependency( LockManager.class );
+        Locks manager = resolver.resolveDependency( Locks.class );
 
         final IndexDescriptor index = createUniquenessConstraint();
         final String value = "value";
@@ -172,23 +166,11 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
         spinUntilBlocking:
         for (; ; )
         {
-            for ( LockInfo info : manager.getAllLocks() )
+            if(thread2.getState() == Thread.State.TIMED_WAITING || thread2.getState() == Thread.State.WAITING)
             {
-                for ( WaitingThread waiter : info.getWaitingThreads() )
-                {
-                    if ( waiter.getThreadId() == thread2.getId() )
-                    {
-                        assertThat( info.getReadCount(), equalTo( 0 ) );
-                        assertThat( info.getWriteCount(), equalTo( 1 ) );
-                        assertThat( info.getResourceType(), equalTo( ResourceType.OTHER ) );
-                        assertThat( info.getResourceId(),
-                                equalTo( "IndexEntryLock{labelId=0, propertyKeyId=0, propertyValue=value}" ) );
-                        break spinUntilBlocking;
-                    }
-                    Thread.yield();
-                }
+                break;
             }
-
+            Thread.yield();
         }
 
         commit();

@@ -94,6 +94,11 @@ public class OtherThreadRule<STATE> implements TestRule
         };
     }
 
+    public void interrupt()
+    {
+        executor.interrupt();
+    }
+
     @Override
     public String toString()
     {

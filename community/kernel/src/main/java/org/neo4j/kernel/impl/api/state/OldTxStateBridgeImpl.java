@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.DiffSets;
 
@@ -110,14 +111,13 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     {
         NodeImpl startNode = nodeManager.getNodeForProxy( startNodeId );
         return nodeManager.createRelationship( nodeManager.newNodeProxyById( startNodeId ), startNode,
-                nodeManager.newNodeProxyById( endNodeId ), relationshipTypeId )
-                .getId();
+                nodeManager.newNodeProxyById( endNodeId ), relationshipTypeId );
     }
 
     @Override
-    public long nodeCreate()
+    public long nodeCreate() throws AcquireLockTimeoutException
     {
-        return nodeManager.createNode().getId();
+        return nodeManager.createNode();
     }
 
     @Override

@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,7 +41,7 @@ public class OldTxStateBridgeImplTest
         int propertyKey = 2;
         int value = 1337;
 
-        WritableTransactionState state = new WritableTransactionState( null, null, new DevNullLoggingService(), null,
+        WritableTransactionState state = new WritableTransactionState( null, null,
                 null, null );
         OldTxStateBridge bridge = new OldTxStateBridgeImpl( null, state );
 
@@ -67,7 +66,7 @@ public class OldTxStateBridgeImplTest
         int propertyKey = 2;
         int value = 1337;
 
-        WritableTransactionState state = new WritableTransactionState( null, null, new DevNullLoggingService(), null,
+        WritableTransactionState state = new WritableTransactionState( null, null,
                 null, null );
         OldTxStateBridge bridge = new OldTxStateBridgeImpl( null, state );
 
@@ -92,7 +91,7 @@ public class OldTxStateBridgeImplTest
         int propertyKey = 2;
         int value = 1337;
 
-        WritableTransactionState state = new WritableTransactionState( null, null, new DevNullLoggingService(), null,
+        WritableTransactionState state = new WritableTransactionState( null, null,
                 null, null );
         OldTxStateBridge bridge = new OldTxStateBridgeImpl( null, state );
 

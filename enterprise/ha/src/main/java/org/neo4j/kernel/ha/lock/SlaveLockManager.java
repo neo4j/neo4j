@@ -19,38 +19,27 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import java.util.List;
-
-import javax.transaction.Transaction;
-
 import org.neo4j.com.Response;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.IndexLock;
-import org.neo4j.kernel.impl.locking.IndexEntryLock;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockManagerImpl;
-import org.neo4j.kernel.impl.transaction.LockNotFoundException;
-import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.info.LockInfo;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
 import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
-public class SlaveLockManager implements LockManager
+public class SlaveLockManager extends LifecycleAdapter implements Locks
 {
     private final RequestContextFactory requestContextFactory;
-    private final LockManagerImpl local;
+    private final Locks local;
     private final Master master;
     private final HaXaDataSourceManager xaDsm;
     private final AbstractTransactionManager txManager;
@@ -63,7 +52,7 @@ public class SlaveLockManager implements LockManager
         long getAvailabilityTimeout();
     }
 
-    public SlaveLockManager( RagManager ragManager, RequestContextFactory requestContextFactory, Master master,
+    public SlaveLockManager( Locks localLocks, RequestContextFactory requestContextFactory, Master master,
             HaXaDataSourceManager xaDsm, AbstractTransactionManager txManager, RemoteTxHook txHook,
             AvailabilityGuard availabilityGuard, Configuration config )
     {
@@ -73,208 +62,183 @@ public class SlaveLockManager implements LockManager
         this.txHook = txHook;
         this.availabilityGuard = availabilityGuard;
         this.config = config;
-        this.local = new LockManagerImpl( ragManager );
+        this.local = localLocks;
         this.master = master;
     }
 
     @Override
-    public long getDetectedDeadlockCount()
+    public Client newClient()
     {
-        return local.getDetectedDeadlockCount();
+        return new SlaveLocksClient(master, local.newClient(), local, requestContextFactory, xaDsm, txManager, txHook,
+                availabilityGuard, config );
     }
 
     @Override
-    public void getReadLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
+    public void accept( Visitor visitor )
     {
-        if ( getReadLockOnMaster( resource ) )
-        {
-            if ( !local.tryReadLock( resource, tx ) )
-            {
-                throw new LocalDeadlockDetectedException( local, tx, resource, READ );
-            }
-        }
+        local.accept( visitor );
     }
 
-    private boolean getReadLockOnMaster( Object resource )
+    private static class SlaveLocksClient implements Client
     {
-        Response<LockResult> response;
-        if ( resource instanceof Node )
+        private final Master master;
+        private final Client client;
+        private final Locks localLockManager;
+        private final RequestContextFactory requestContextFactory;
+        private final HaXaDataSourceManager xaDsm;
+        private final AbstractTransactionManager txManager;
+        private final RemoteTxHook txHook;
+        private final AvailabilityGuard availabilityGuard;
+        private final Configuration config;
+
+        public SlaveLocksClient( Master master, Client local, Locks localLockManager, RequestContextFactory requestContextFactory,
+                                 HaXaDataSourceManager xaDsm, AbstractTransactionManager txManager, RemoteTxHook txHook,
+                                 AvailabilityGuard availabilityGuard, Configuration config )
+        {
+            this.master = master;
+            this.client = local;
+            this.localLockManager = localLockManager;
+            this.requestContextFactory = requestContextFactory;
+            this.xaDsm = xaDsm;
+            this.txManager = txManager;
+            this.txHook = txHook;
+            this.availabilityGuard = availabilityGuard;
+            this.config = config;
+        }
+
+        @Override
+        public void acquireShared( ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+        {
+            if ( getReadLockOnMaster( resourceType, resourceIds ) )
+            {
+                if ( !client.trySharedLock( resourceType, resourceIds ) )
+                {
+                    throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceIds, READ );
+                }
+            }
+        }
+
+        @Override
+        public void acquireExclusive( ResourceType resourceType, long... resourceIds ) throws
+                AcquireLockTimeoutException
+        {
+            if ( acquireExclusiveOnMaster( resourceType, resourceIds ) )
+            {
+                if ( !client.tryExclusiveLock( resourceType, resourceIds ) )
+                {
+                    throw new LocalDeadlockDetectedException( client, localLockManager, resourceType, resourceIds, WRITE );
+                }
+            }
+        }
+
+        @Override
+        public boolean tryExclusiveLock( ResourceType resourceType, long... resourceIds )
+        {
+            throw newUnsupportedDirectTryLockUsageException();
+        }
+
+        @Override
+        public boolean trySharedLock( ResourceType resourceType, long... resourceIds )
+        {
+            throw newUnsupportedDirectTryLockUsageException();
+        }
+
+        @Override
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
+        {
+            client.releaseShared( resourceType, resourceIds );
+        }
+
+        @Override
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
+        {
+            client.releaseExclusive( resourceType, resourceIds );
+        }
+
+        @Override
+        public void releaseAllShared()
+        {
+            client.releaseAllShared();
+        }
+
+        @Override
+        public void releaseAllExclusive()
+        {
+            client.releaseAllExclusive();
+        }
+
+        @Override
+        public void releaseAll()
+        {
+            client.releaseAll();
+        }
+
+        @Override
+        public void close()
+        {
+            client.close();
+        }
+
+        private boolean getReadLockOnMaster( ResourceType resourceType, long ... resourceId )
+        {
+            if ( resourceType == ResourceTypes.NODE
+                || resourceType == ResourceTypes.RELATIONSHIP
+                || resourceType == ResourceTypes.GRAPH_PROPS
+                || resourceType == ResourceTypes.LEGACY_INDEX )
+            {
+                makeSureTxHasBeenInitialized();
+                return receiveLockResponse(
+                    master.acquireSharedLock( requestContextFactory.newRequestContext(), resourceType, resourceId ));
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        private boolean acquireExclusiveOnMaster( ResourceType resourceType, long ... resourceId )
         {
             makeSureTxHasBeenInitialized();
-            response = master.acquireNodeReadLock( requestContextFactory.newRequestContext(),
-                    ((Node) resource).getId() );
+            return receiveLockResponse(
+                    master.acquireExclusiveLock( requestContextFactory.newRequestContext(), resourceType, resourceId ));
         }
-        else if ( resource instanceof Relationship )
+
+        private boolean receiveLockResponse( Response<LockResult> response )
         {
-            makeSureTxHasBeenInitialized();
-            response = master.acquireRelationshipReadLock( requestContextFactory.newRequestContext(),
-                    ((Relationship) resource).getId() );
-        }
-        else if ( resource instanceof GraphProperties )
-        {
-            makeSureTxHasBeenInitialized();
-            response = master.acquireGraphReadLock( requestContextFactory.newRequestContext() );
-        }
-        else if ( resource instanceof IndexLock )
-        {
-            makeSureTxHasBeenInitialized();
-            IndexLock indexLock = (IndexLock) resource;
-            response = master.acquireIndexReadLock( requestContextFactory.newRequestContext(), indexLock.getIndex(),
-                    indexLock.getKey() );
-        }
-        else
-        {
+            LockResult result = xaDsm.applyTransactions( response );
+            switch ( result.getStatus() )
+            {
+                case DEAD_LOCKED:
+                    throw new DeadlockDetectedException( result.getDeadlockMessage() );
+                case NOT_LOCKED:
+                    throw new UnsupportedOperationException();
+                case OK_LOCKED:
+                    break;
+                default:
+                    throw new UnsupportedOperationException( result.toString() );
+            }
+
             return true;
         }
-        return receiveLockResponse( response );
-    }
 
-    private boolean receiveLockResponse( Response<LockResult> response )
-    {
-        LockResult result = xaDsm.applyTransactions( response );
-        switch ( result.getStatus() )
+
+        private void makeSureTxHasBeenInitialized()
         {
-            case DEAD_LOCKED:
-                throw new DeadlockDetectedException( result.getDeadlockMessage() );
-            case NOT_LOCKED:
-                throw new UnsupportedOperationException();
-            case OK_LOCKED:
-                break;
-            default:
-                throw new UnsupportedOperationException( result.toString() );
-        }
-
-        return true;
-    }
-
-    @Override
-    public void getWriteLock( Object resource, Transaction tx ) throws DeadlockDetectedException, IllegalResourceException
-    {
-        if ( getWriteLockOnMaster( resource ) )
-        {
-            if ( !local.tryWriteLock( resource, tx ) )
+            if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
             {
-                throw new LocalDeadlockDetectedException( local, tx, resource, WRITE );
+                // TODO Specific exception instead?
+                throw new RuntimeException( "Timed out waiting for database to allow operations to proceed. "
+                        + availabilityGuard.describeWhoIsBlocking() );
             }
+
+            txHook.remotelyInitializeTransaction( txManager.getEventIdentifier(), txManager.getTransactionState() );
         }
-    }
-    
-    @Override
-    public boolean tryReadLock( Object resource, Transaction tx ) throws LockNotFoundException,
-            IllegalResourceException
-    {
-        throw newUnsupportedDirectTryLockUsageException();
-    }
 
-    @Override
-    public boolean tryWriteLock( Object resource, Transaction tx ) throws LockNotFoundException,
-            IllegalResourceException
-    {
-        throw newUnsupportedDirectTryLockUsageException();
-    }
-
-    private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()
-    {
-        return new UnsupportedOperationException( "At the time of adding \"try lock\" semantics there was no usage of " +
-                getClass().getSimpleName() + " calling it directly. It was designed to be called on a local " +
-                LockManager.class.getSimpleName() + " delegated to from within the waiting version" );
-    }
-    
-    private boolean getWriteLockOnMaster( Object resource )
-    {
-        Response<LockResult> response;
-        if ( resource instanceof Node )
+        private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()
         {
-            makeSureTxHasBeenInitialized();
-            response = master.acquireNodeWriteLock( requestContextFactory.newRequestContext(),
-                                                    ((Node) resource).getId() );
+            return new UnsupportedOperationException( "At the time of adding \"try lock\" semantics there was no usage of " +
+                    getClass().getSimpleName() + " calling it directly. It was designed to be called on a local " +
+                    LockManager.class.getSimpleName() + " delegated to from within the waiting version" );
         }
-        else if ( resource instanceof Relationship )
-        {
-            makeSureTxHasBeenInitialized();
-            response = master.acquireRelationshipWriteLock( requestContextFactory.newRequestContext(),
-                    ((Relationship) resource).getId() );
-        }
-        else if ( resource instanceof GraphProperties )
-        {
-            makeSureTxHasBeenInitialized();
-            response = master.acquireGraphWriteLock( requestContextFactory.newRequestContext() );
-        }
-        else if ( resource instanceof IndexEntryLock )
-        {
-            makeSureTxHasBeenInitialized();
-            IndexEntryLock lock = (IndexEntryLock) resource;
-            response = master.acquireIndexEntryWriteLock( requestContextFactory.newRequestContext(),
-                                                          lock.labelId(), lock.propertyKeyId(), lock.propertyValue() );
-        }
-        else if ( resource instanceof IndexLock )
-        {
-            makeSureTxHasBeenInitialized();
-            IndexLock indexLock = (IndexLock) resource;
-            response = master.acquireIndexWriteLock( requestContextFactory.newRequestContext(), indexLock.getIndex(),
-                    indexLock.getKey() );
-        }
-        else
-        {
-            throw new IllegalArgumentException("Don't know how to take lock on resource: '" + resource + "'.");
-        }
-
-        return receiveLockResponse( response );
-    }
-
-    @Override
-    public void releaseReadLock( Object resource, Transaction tx ) throws LockNotFoundException,
-            IllegalResourceException
-    {
-        local.releaseReadLock( resource, tx );
-    }
-
-    @Override
-    public void releaseWriteLock( Object resource, Transaction tx ) throws LockNotFoundException,
-            IllegalResourceException
-    {
-        local.releaseWriteLock( resource, tx );
-    }
-
-    @Override
-    public void dumpLocksOnResource( Object resource, Logging logging )
-    {
-        local.dumpLocksOnResource( resource, logging );
-    }
-
-    @Override
-    public List<LockInfo> getAllLocks()
-    {
-        return local.getAllLocks();
-    }
-
-    @Override
-    public List<LockInfo> getAwaitedLocks( long minWaitTime )
-    {
-        return local.getAwaitedLocks( minWaitTime );
-    }
-
-    @Override
-    public void dumpRagStack( Logging logging )
-    {
-        local.dumpRagStack( logging );
-    }
-
-    @Override
-    public void dumpAllLocks( Logging logging )
-    {
-        local.dumpAllLocks( logging );
-    }
-
-    private void makeSureTxHasBeenInitialized()
-    {
-        if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
-        {
-            // TODO Specific exception instead?
-            throw new RuntimeException( "Timed out waiting for database to allow operations to proceed. "
-                    + availabilityGuard.describeWhoIsBlocking() );
-        }
-
-        txHook.remotelyInitializeTransaction( txManager.getEventIdentifier(), txManager.getTransactionState() );
     }
 }

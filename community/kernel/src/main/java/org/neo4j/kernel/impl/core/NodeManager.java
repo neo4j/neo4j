@@ -42,10 +42,13 @@ import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -65,6 +68,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.cast;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 
 public class NodeManager implements Lifecycle, EntityFactory
 {
@@ -203,13 +207,12 @@ public class NodeManager implements Lifecycle, EntityFactory
         relCache.clear();
     }
 
-    public Node createNode()
+    public long createNode() throws AcquireLockTimeoutException
     {
         long id = idGenerator.nextId( Node.class );
         NodeImpl node = new NodeImpl( id, true );
-        NodeProxy proxy = new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider );
         TransactionState transactionState = getTransactionState();
-        transactionState.acquireWriteLock( proxy );
+        transactionState.locks().acquireExclusive( ResourceTypes.NODE, id );
         boolean success = false;
         try
         {
@@ -217,7 +220,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             transactionState.createNode( id );
             nodeCache.put( node );
             success = true;
-            return proxy;
+            return id;
         }
         finally
         {
@@ -234,7 +237,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         return new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider );
     }
 
-    public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
+    public long createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
                                             long relationshipTypeId )
     {
         if ( startNode == null || endNode == null || relationshipTypeId > Integer.MAX_VALUE )
@@ -255,9 +258,8 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
         long id = idGenerator.nextId( Relationship.class );
         RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, typeId, true );
-        RelationshipProxy proxy = new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
         TransactionState tx = getTransactionState();
-        tx.acquireWriteLock( proxy );
+        tx.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, id );
         boolean success = false;
         try
         {
@@ -273,7 +275,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             }
             relCache.put( rel );
             success = true;
-            return proxy;
+            return id;
         }
         finally
         {
@@ -635,22 +637,25 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
 
         // Grab lock
-        IndexLock lock = new IndexLock( index.getName(), key );
-        TransactionState state = getTransactionState();
-        LockElement writeLock = state.acquireWriteLock( lock );
-
-        // Check again -- now holding the lock
-        existing = index.get( key, value ).getSingle();
-        if ( existing != null )
+        try(Statement statement = statementCtxProvider.instance())
         {
-            // Someone else created this entry, release the lock as we won't be needing it
-            writeLock.release();
-            return existing;
-        }
+            statement.readOperations().acquireExclusive(
+                    ResourceTypes.LEGACY_INDEX, legacyIndexResourceId( index.getName(), key ) );
 
-        // Add
-        index.add( entity, key, value );
-        return null;
+            // Check again -- now holding the lock
+            existing = index.get( key, value ).getSingle();
+            if ( existing != null )
+            {
+                // Someone else created this entry, release the lock as we won't be needing it
+                statement.readOperations().releaseExclusive(
+                        ResourceTypes.LEGACY_INDEX, legacyIndexResourceId( index.getName(), key ) );
+                return existing;
+            }
+
+            // Add
+            index.add( entity, key, value );
+            return null;
+        }
     }
 
     public long getHighestPossibleIdInUse( Class<?> clazz )
@@ -716,15 +721,15 @@ public class NodeManager implements Lifecycle, EntityFactory
             startNode = getLightNode( startNodeId );
             if ( startNode != null )
             {
-                tx.acquireWriteLock( newNodeProxyById( startNodeId ) );
+                tx.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
             }
             long endNodeId = rel.getEndNodeId();
             endNode = getLightNode( endNodeId );
             if ( endNode != null )
             {
-                tx.acquireWriteLock( newNodeProxyById( endNodeId ) );
+                tx.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
             }
-            tx.acquireWriteLock( newRelationshipProxyById( rel.getId() ) );
+            tx.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, rel.getId() );
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 

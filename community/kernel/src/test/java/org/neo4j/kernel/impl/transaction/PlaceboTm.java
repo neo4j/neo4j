@@ -30,12 +30,12 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
-import org.neo4j.kernel.impl.core.LockElement;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.mockito.Mockito.mock;
 
 public class PlaceboTm extends AbstractTransactionManager
 {
@@ -145,39 +145,15 @@ public class PlaceboTm extends AbstractTransactionManager
         return new NoTransactionState()
         {
             @Override
-            public LockElement acquireReadLock( Object resource )
-            {
-                try
-                {
-                    Transaction tx = getTransaction();
-                    lockManager.getReadLock( resource, tx );
-                    return new LockElement( resource, tx, LockType.READ, lockManager );
-                }
-                catch ( Exception e )
-                {
-                    throw launderedException( e );
-                }
-            }
-            
-            @Override
-            public LockElement acquireWriteLock( Object resource )
-            {
-                try
-                {
-                    Transaction tx = getTransaction();
-                    lockManager.getWriteLock( resource, tx );
-                    return new LockElement( resource, tx, LockType.WRITE, lockManager );
-                }
-                catch ( SystemException e )
-                {
-                    throw launderedException( e );
-                }
-            }
-            
-            @Override
             public TxIdGenerator getTxIdGenerator()
             {
                 return txIdGenerator;
+            }
+
+            @Override
+            public Locks.Client locks()
+            {
+                return mock(Locks.Client.class);
             }
         };
     }

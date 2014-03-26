@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.util.concurrent.ExecutionException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -31,8 +32,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestManualAcquireLock extends AbstractNeo4jTestCase
 {
@@ -70,7 +70,15 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         }
         nodeLock.release();
         worker.setProperty( node, key, "yo" );
-        worker.finishTx();
+
+        try
+        {
+            worker.finishTx();
+        }
+        catch(ExecutionException e)
+        {
+            // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
+        }
     }
     
     @Test
@@ -111,11 +119,20 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         }
         catch ( Exception e )
         {
+            e.printStackTrace();
         }
         commit();
         tx.success();
         tx.finish();
-        worker.finishTx();
+
+        try
+        {
+            worker.finishTx();
+        }
+        catch(ExecutionException e)
+        {
+            // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
+        }
     }
     
     private class State

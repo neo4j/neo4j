@@ -66,12 +66,12 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -386,7 +386,7 @@ public class TestXa
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider( nodeManager ), txManager,
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
-                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(LockManager.class),
+                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(Locks.class),
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR );
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();

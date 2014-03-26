@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 public class KernelStatement implements TxState.Holder, Statement
 {
     private final KernelTransactionImplementation transaction;
-    protected final LockHolder lockHolder;
+    protected final Locks.Client locks;
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
@@ -50,11 +51,11 @@ public class KernelStatement implements TxState.Holder, Statement
 
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
                             LabelScanStore labelScanStore,
-                            TxState.Holder txStateHolder, LockHolder lockHolder, StatementOperationParts operations,
+                            TxState.Holder txStateHolder, Locks.Client locks, StatementOperationParts operations,
                             NeoStoreTransaction neoStoreTransaction )
     {
         this.transaction = transaction;
-        this.lockHolder = lockHolder;
+        this.locks = locks;
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
@@ -132,9 +133,9 @@ public class KernelStatement implements TxState.Holder, Statement
         }
     }
 
-    public LockHolder locks()
+    public Locks.Client locks()
     {
-        return lockHolder;
+        return locks;
     }
 
     public IndexReader getIndexReader( long indexId ) throws IndexNotFoundKernelException

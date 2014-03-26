@@ -26,6 +26,7 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 /**
@@ -47,18 +48,6 @@ public interface Master
      */
     Response<Void> initializeTx( RequestContext context );
 
-    Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes );
-
-    Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes );
-
-    Response<LockResult> acquireGraphWriteLock( RequestContext context );
-
-    Response<LockResult> acquireGraphReadLock( RequestContext context );
-
-    Response<LockResult> acquireRelationshipWriteLock( RequestContext context, long... relationships );
-
-    Response<LockResult> acquireRelationshipReadLock( RequestContext context, long... relationships );
-
     Response<Long> commitSingleResourceTransaction( RequestContext context,
                                                     String resource, TxExtractor txGetter );
 
@@ -72,11 +61,6 @@ public interface Master
      * @return the master id for a given txId, also a checksum for that tx.
      */
     Response<HandshakeResult> handshake( long txId, StoreId myStoreId );
-
-    Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
-
-    Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key );
-
     Response<Void> pushTransaction( RequestContext context, String resourceName, long tx );
 
     Response<Void> pullUpdates( RequestContext context );
@@ -86,10 +70,6 @@ public interface Master
     Response<Void> copyTransactions( RequestContext context, String dsName,
                                      long startTxId, long endTxId );
 
-    Response<LockResult> acquireSchemaReadLock( RequestContext context );
-
-    Response<LockResult> acquireSchemaWriteLock( RequestContext context );
-
-    Response<LockResult> acquireIndexEntryWriteLock( RequestContext context,
-                                                     long labelId, long propertyKeyId, String propertyValue );
+    Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
+    Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long... resourceIds );
 }
