@@ -40,6 +40,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     rewriters += normalizeEqualsArgumentOrder
     rewriters += reattachAliasedExpressions
     rewriters += addUniquenessPredicates
+    rewriters += expandStar
 
     val rewriter = bottomUp(inSequence(rewriters.result(): _*))
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
