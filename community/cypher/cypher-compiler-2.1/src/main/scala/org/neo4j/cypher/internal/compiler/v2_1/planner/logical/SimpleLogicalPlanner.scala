@@ -48,8 +48,12 @@ class SimpleLogicalPlanner {
     generateLeafPlans andThen
     applySelectionsToPlanTable andThen
     iterateUntilConverged(new PlanTableTransformer {
-      def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
-        (expand andThen applySelectionsToCandidateList andThen includeBestPlan(planTable))(planTable)
+      def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
+        val expanded = expand(planTable)
+        val joined = join(planTable)
+        val allCandidates = expanded ++ joined
+        (applySelectionsToCandidateList andThen includeBestPlan(planTable))(allCandidates)
+      }
     }) andThen
     iterateUntilConverged(new PlanTableTransformer {
       def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =

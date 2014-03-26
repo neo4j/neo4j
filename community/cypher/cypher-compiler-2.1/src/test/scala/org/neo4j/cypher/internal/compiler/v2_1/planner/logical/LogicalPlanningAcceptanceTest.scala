@@ -21,9 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.graphdb.Direction
 
 class LogicalPlanningAcceptanceTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -32,9 +35,29 @@ class LogicalPlanningAcceptanceTest extends CypherFunSuite with LogicalPlanningT
       case _ => 100
     })
 
-    produceLogicalPlan("return 42") should equal(
+    produceLogicalPlan("RETURN 42") should equal(
       Projection(
         SingleRow(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
+      )
+    )
+  }
+
+  test("should build plans containing joins") {
+    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+      case _: AllNodesScan                    => 200
+      case Expand(_, IdName("b"), _, _, _, _) => 10000
+      case _: Expand                          => 10
+      case _: NodeHashJoin                    => 20
+    })
+
+    produceLogicalPlan("MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b") should equal(
+      Projection(
+        NodeHashJoin(
+          "b",
+          Expand( AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1" ),
+          Expand( AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2" )
+        ),
+        expressions = Map("b" -> Identifier("b")_)
       )
     )
   }
