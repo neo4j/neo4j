@@ -119,21 +119,20 @@ class BackupService
                     new ConsoleLogger( StringLogger.SYSTEM ), new DefaultFileSystemAbstraction() );
             storeCopier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
             {
+                private BackupClient client;
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
-                    BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
+                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
                             new Monitors(), null );
-                    System.out.println("Backup client starting up");
                     client.start();
-                    try
-                    {
-                        return client.fullBackup( writer );
-                    }
-                    finally
-                    {
-                        client.stop();
-                    }
+                    return client.fullBackup( writer );
+                }
+
+                @Override
+                public void done()
+                {
+                    client.stop();
                 }
             });
 
