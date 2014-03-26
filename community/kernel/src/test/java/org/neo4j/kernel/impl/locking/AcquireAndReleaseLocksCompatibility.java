@@ -30,7 +30,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 /**
  * Tests simple acquiring and releasing of single locks.
- * For testing "stacking" locks on the same client, see {@link LockStackingCompatibility}. */
+ * For testing "stacking" locks on the same client, see {@link LockReentrancyCompatibility}. */
 @Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
 public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {

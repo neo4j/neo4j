@@ -23,6 +23,7 @@ import java.security.SecureRandom;
 
 import static java.lang.Math.abs;
 
+// TODO This is only used in "tests" so it should be moved to the test source tree.
 public class FastRandom
 {
     private long currentSeed;

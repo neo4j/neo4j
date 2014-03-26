@@ -27,9 +27,9 @@ import org.junit.Test;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 @Ignore("Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite.")
-public class LockStackingCompatibility extends LockingCompatibilityTestSuite.Compatibility
+public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
-    public LockStackingCompatibility( LockingCompatibilityTestSuite suite )
+    public LockReentrancyCompatibility( LockingCompatibilityTestSuite suite )
     {
         super( suite );
     }
@@ -129,7 +129,7 @@ public class LockStackingCompatibility extends LockingCompatibilityTestSuite.Com
     }
 
     @Test
-    public void exclusiveLocksShouldStack() throws Exception
+    public void exclusiveLocksShouldBeReentrantAndBlockOtherExclusiveLocks() throws Exception
     {
         // When
         clientA.acquireExclusive( NODE, 1l );
@@ -142,6 +142,31 @@ public class LockStackingCompatibility extends LockingCompatibilityTestSuite.Com
         // And when
         clientA.releaseExclusive( NODE, 1l );
         clientA.releaseExclusive( NODE, 1l );
+
+        // Then other thread should still wait
+        assertWaiting( clientB, clientBLock );
+
+        // But when
+        clientA.releaseExclusive( NODE, 1l );
+
+        // Then
+        assertNotWaiting( clientB, clientBLock );
+    }
+
+    @Test
+    public void exclusiveLocksShouldBeReentrantAndBlockOtherSharedLocks() throws Exception
+    {
+        // When
+        clientA.acquireExclusive( NODE, 1l );
+        clientA.acquireShared( NODE, 1l );
+        clientA.tryExclusiveLock( NODE, 1l );
+
+        // Then exclusive locks should wait
+        Future<Object> clientBLock = acquireShared( clientB, NODE, 1l ).callAndAssertWaiting();
+
+        // And when
+        clientA.releaseExclusive( NODE, 1l );
+        clientA.releaseShared( NODE, 1l );
 
         // Then other thread should still wait
         assertWaiting( clientB, clientBLock );

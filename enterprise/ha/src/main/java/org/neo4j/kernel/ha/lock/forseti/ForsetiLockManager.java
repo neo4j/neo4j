@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha.lock.forseti;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,36 +68,7 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
     private final ResourceType[] resourceTypes;
 
     /** Pool forseti clients. */
-    private final FlyweightPool<ForsetiClient> clientPool = new FlyweightPool<ForsetiClient>( 128 )
-    {
-        /** Client id counter **/
-        private final AtomicInteger clientIds = new AtomicInteger( 0 );
-
-        /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
-        private final Queue<Integer> unusedIds = new ConcurrentLinkedDeque<>();
-
-        @Override
-        protected ForsetiClient create()
-        {
-            Integer id = unusedIds.poll();
-            if(id == null)
-            {
-                id = clientIds.getAndIncrement();
-            }
-            return new ForsetiClient(id, lockMaps, waitStrategies, clientPool);
-        }
-
-        @Override
-        protected void dispose( ForsetiClient resource )
-        {
-            super.dispose( resource );
-            if(resource.id() < 1024)
-            {
-                // Re-use all ids < 1024
-                unusedIds.offer( resource.id() );
-            }
-        }
-    };
+    private final FlyweightPool<ForsetiClient> clientPool;
 
     public ForsetiLockManager( ResourceType... resourceTypes )
     {
@@ -111,6 +82,12 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             this.waitStrategies[type.typeId()] = type.waitStrategy();
             this.resourceTypes[type.typeId()] = type;
         }
+        // TODO Using a FlyweightPool here might still be more than what we actually need.
+        // TODO We should investigate if a simple concurrent stack (aka. free-list) would
+        // TODO be good enough. In fact, we could add the required fields for such a stack
+        // TODO to the ForsetiClient objects themselves, making the stack garbage-free in
+        // TODO the (presumably) common case of client re-use.
+        clientPool = new ForsetiClientFlyweightPool( lockMaps, waitStrategies );
     }
 
     @Override
@@ -145,5 +122,46 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             max = Math.max( resourceType.typeId(), max );
         }
         return max + 1;
+    }
+
+    private static class ForsetiClientFlyweightPool extends FlyweightPool<ForsetiClient>
+    {
+        /** Client id counter **/
+        private final AtomicInteger clientIds = new AtomicInteger( 0 );
+
+        /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
+        // TODO we could use a synchronised SimpleBitSet instead, since we know that we only care about reusing a very limited set of integers.
+        private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
+        private final ConcurrentMap[] lockMaps;
+        private final WaitStrategy[] waitStrategies;
+
+        public ForsetiClientFlyweightPool( ConcurrentMap[] lockMaps, WaitStrategy[] waitStrategies )
+        {
+            super( 128 );
+            this.lockMaps = lockMaps;
+            this.waitStrategies = waitStrategies;
+        }
+
+        @Override
+        protected ForsetiClient create()
+        {
+            Integer id = unusedIds.poll();
+            if(id == null)
+            {
+                id = clientIds.getAndIncrement();
+            }
+            return new ForsetiClient(id, lockMaps, waitStrategies, this );
+        }
+
+        @Override
+        protected void dispose( ForsetiClient resource )
+        {
+            super.dispose( resource );
+            if(resource.id() < 1024)
+            {
+                // Re-use all ids < 1024
+                unusedIds.offer( resource.id() );
+            }
+        }
     }
 }

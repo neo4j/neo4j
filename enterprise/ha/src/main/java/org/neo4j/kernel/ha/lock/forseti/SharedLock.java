@@ -41,8 +41,13 @@ class SharedLock implements ForsetiLockManager.Lock
      * No more holders than this allowed, don't change this without changing the sizing of
      * {@link #clientsHoldingThisLock}.
      */
+    // TODO This is going to be a problem for the schema-read-lock,
+    // TODO as soon as we get more than 120 concurrent transactions!
     private static final int MAX_HOLDERS = 120;
 
+    // TODO Investigate inlining and padding the refCount.
+    // TODO My gut feeling tells me there's a high chance of false-sharing
+    // TODO on these unpadded AtomicIntegers.
     private final AtomicInteger refCount = new AtomicInteger(1);
 
     /**
@@ -215,6 +220,7 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public String toString()
     {
+        // TODO we should only read out the refCount once, and build a deterministic string based on that
         if(isUpdateLock())
         {
             return "UpdateLock{" +
@@ -276,8 +282,10 @@ class SharedLock implements ForsetiLockManager.Lock
                     ForsetiClient c = holders.get( j );
                     if(c == null)
                     {
-                        // XXX: This means we do CAS on each entry, very likely hitting a lot of failures until we
-                        // find a slot. We should look into better strategies here.
+                        // TODO This means we do CAS on each entry, very likely hitting a lot of failures until we
+                        // TODO find a slot. We should look into better strategies here.
+                        // TODO One such strategy could be binary searching for a free slot, and then linear scan
+                        // TODO after that if the CAS fails on the slot we found with binary search.
                         if( holders.compareAndSet( j, null, client ) )
                         {
                             return true;

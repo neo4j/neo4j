@@ -28,6 +28,12 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
         @Override
         public void apply( long iteration ) throws AcquireLockTimeoutException
         {
+            // TODO We can experiment with introducing branch mispredictions here, to create
+            // TODO bubbles in the pipeline that'll allow hyper-threaded threads on the
+            // TODO same core to make progress. We can do that by generating a random number,
+            // TODO e.g. with XorShift, and based on that, randomly branch to do a volatile
+            // TODO write to one of two fields. The volatile fields would be there to give
+            // TODO side-effect to the operation, preventing dead-code elimination.
         }
     },
     YIELD
@@ -48,6 +54,7 @@ public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutExcepti
         {
             if(iteration < spinIterations)
             {
+                SPIN.apply( iteration );
                 return;
             }
 
