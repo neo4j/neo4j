@@ -27,8 +27,6 @@ case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan)(imp
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val cost = context.costs.calculateNodeHashJoin(cardinality)
-
   val coveredIds = left.coveredIds ++ right.coveredIds
   val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
 }

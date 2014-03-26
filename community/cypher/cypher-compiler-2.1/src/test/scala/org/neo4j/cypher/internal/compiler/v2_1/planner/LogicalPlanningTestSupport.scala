@@ -26,7 +26,6 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
 import org.neo4j.cypher.internal.compiler.v2_1.{DummyPosition, InputPosition, Monitors}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
@@ -50,15 +49,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
     newMockedLogicalPlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan(id: String, cost: Int, cardinality: Int)(implicit context: LogicalPlanContext): LogicalPlan =
-    newMockedLogicalPlan(Set(IdName(id)), cost, cardinality)
-
-  def newMockedLogicalPlan(ids: Set[IdName], cost: Int = 0, cardinality: Int = 0)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def newMockedLogicalPlan(ids: Set[IdName])(implicit context: LogicalPlanContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
-    when(plan.toString).thenReturn(s"MockedLogicalPlan(ids = ${ids}, cost = ${cost}, cardinality = ${cardinality}})")
+    when(plan.toString).thenReturn(s"MockedLogicalPlan(ids = ${ids}})")
     when(plan.coveredIds).thenReturn(ids)
     when(plan.solvedPredicates).thenReturn(Seq.empty)
-    when(plan.cost).thenReturn(cost)
     when(plan.context).thenReturn(context)
     plan
   }

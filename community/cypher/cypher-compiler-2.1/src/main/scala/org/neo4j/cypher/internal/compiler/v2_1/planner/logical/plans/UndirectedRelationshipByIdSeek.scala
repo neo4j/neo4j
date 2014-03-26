@@ -31,6 +31,5 @@ case class UndirectedRelationshipByIdSeek(idName: IdName,
   def lhs = None
   def rhs = None
 
-  val cost = context.costs.calculateRelationshipByIdSeek(cardinality) * 2
   val coveredIds = Set(idName, leftNode, rightNode)
 }

@@ -36,7 +36,8 @@ abstract class LogicalPlan extends Product {
   def solvedPredicates: Seq[Expression]
 
   def context: LogicalPlanContext
-  def cost: Int
+
+  final lazy val cost = context.costs.calculate(this)
   final lazy val cardinality = context.estimator.estimate(this)
 
   def coveredIds: Set[IdName]

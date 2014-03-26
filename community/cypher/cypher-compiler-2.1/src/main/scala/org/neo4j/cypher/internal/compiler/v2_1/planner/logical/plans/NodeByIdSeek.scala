@@ -28,7 +28,5 @@ case class NodeByIdSeek(idName: IdName, nodeIds: Expression, numberOfNodeIdsEsti
   def lhs = None
   def rhs = None
 
-  val cost = context.costs.calculateNodeByIdSeek(cardinality)
-
   val coveredIds = Set(idName)
 }

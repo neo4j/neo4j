@@ -26,6 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlan
 
 case class includeBestPlan(planTable: PlanTable) extends PlanTableProducer[CandidateList] {
   def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): PlanTable = {
-    candidateList.topPlan.foldLeft(planTable)(_ + _)
+    candidateList.topPlan(context.costs).foldLeft(planTable)(_ + _)
   }
 }

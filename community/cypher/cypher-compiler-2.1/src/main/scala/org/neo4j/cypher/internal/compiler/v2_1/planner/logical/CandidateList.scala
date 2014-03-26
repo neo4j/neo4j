@@ -35,13 +35,13 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
     CandidateList(result)
   }
 
-  def sorted = CandidateList(plans.sortBy(c => (c.cost, -c.coveredIds.size)))
+  private def sorted(costs: CostModel) = CandidateList(plans.sortBy(c => (costs.calculate(c), -c.coveredIds.size)))
 
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 
   def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  def topPlan = sorted.pruned.plans.headOption
+  def topPlan(costs: CostModel) = sorted(costs).pruned.plans.headOption
 
   def map(f: LogicalPlan => LogicalPlan):CandidateList = copy(plans = plans.map(f))
 }

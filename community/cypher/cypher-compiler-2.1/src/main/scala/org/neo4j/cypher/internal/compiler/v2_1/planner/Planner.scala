@@ -36,7 +36,7 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   val estimator = new GuessingEstimator
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
-  val costs = new SimpleCostModel
+  val costs = new SimpleCostModel(estimator)
 
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
   val logicalPlanner = new SimpleLogicalPlanner()

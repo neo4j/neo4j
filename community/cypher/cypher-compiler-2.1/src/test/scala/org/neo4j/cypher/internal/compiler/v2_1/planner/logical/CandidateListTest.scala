@@ -21,7 +21,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
 
@@ -49,29 +48,38 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("picks the right plan by cost, no matter the cardinality") {
-    val a = newMockedLogicalPlan("a", cost = 100, cardinality = 10)
-    val b = newMockedLogicalPlan("b", cost = 50, cardinality = 100)
+    val a = newMockedLogicalPlan("a")
+    val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, a, b)
+    assertTopPlan(winner = b, a, b)(CostModel.lift {
+      case `a` => 100
+      case `b` => 50
+    })
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), cost = 100, cardinality = 10)
-    val b = newMockedLogicalPlan("b", cost = 50, cardinality = 100)
+    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
+    val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, ab, b)
+    assertTopPlan(winner = b, ab, b)(CostModel.lift {
+      case `ab` => 100
+      case `b` => 50
+    })
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
-    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")), cost = 50, cardinality = 10)
-    val c = newMockedLogicalPlan("c", cost = 50, cardinality = 100)
+    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
+    val c = newMockedLogicalPlan("c")
 
-    assertTopPlan(winner = ab, ab, c)
+    assertTopPlan(winner = ab, ab, c)(CostModel.lift {
+      case `ab` => 50
+      case `c` => 50
+    })
   }
 
-  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*) {
-    CandidateList(candidates).topPlan should equal(Some(winner))
-    CandidateList(candidates.reverse).topPlan should equal(Some(winner))
+  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(costs: CostModel) {
+    CandidateList(candidates).topPlan(costs) should equal(Some(winner))
+    CandidateList(candidates.reverse).topPlan(costs) should equal(Some(winner))
   }
 }
 

@@ -29,7 +29,5 @@ case class NodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: Pr
   def rhs = None
   def lhs = None
 
-  val cost = context.costs.calculateNodeUniqueIndexSeek(cardinality)
-
   val coveredIds = Set(idName)
 }

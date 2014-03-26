@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.graphdb.Direction
 
 case class DirectedRelationshipByIdSeek(idName: IdName,
                                 relId: Expression,
@@ -31,8 +30,6 @@ case class DirectedRelationshipByIdSeek(idName: IdName,
                                (implicit val context: LogicalPlanContext) extends LogicalPlan {
   def lhs = None
   def rhs = None
-
-  val cost = context.costs.calculateRelationshipByIdSeek(cardinality)
 
   val coveredIds = Set(idName, startNode, endNode)
 }

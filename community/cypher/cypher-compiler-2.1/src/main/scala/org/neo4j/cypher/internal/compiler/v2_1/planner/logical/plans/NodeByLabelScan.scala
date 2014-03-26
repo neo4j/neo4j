@@ -30,7 +30,5 @@ case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
   def lhs = None
   def rhs = None
 
-  val cost = context.costs.calculateNodeByLabelScan(cardinality)
-
   val coveredIds = Set(idName)
 }

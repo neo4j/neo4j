@@ -19,17 +19,54 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-class SimpleCostModel extends CostModel {
-  def calculateExpandRelationship(cardinality: Int) = cardinality
-  def calculateNodeIndexSeek(cardinality: Int) = cardinality * 3
-  def calculateNodeUniqueIndexSeek(cardinality: Int) = cardinality * 3
-  def calculateAllNodesScan(cardinality: Int) = cardinality
-  def calculateNodeByLabelScan(cardinality: Int) = cardinality * 2
-  def calculateRelationshipByIdSeek(cardinality: Int) = cardinality
-  def calculateNodeByIdSeek(cardinality: Int) = cardinality
-  def calculateProjectionOverhead(cardinality: Int, numExpressions: Int) = (cardinality / 100) * numExpressions
-  def calculateSingleRow(cardinality: Int) = cardinality
-  def calculateSelectionOverhead(cardinality: Int) = (cardinality * .2).toInt
-  def calculateCartesianProductOverhead(cardinality: Int) = 0
-  def calculateNodeHashJoin(cardinality: Int) = cardinality * 2
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+
+class SimpleCostModel(cardinalityEstimator: CardinalityEstimator) extends CostModel {
+
+  override def calculate(plan: LogicalPlan): Int = plan match {
+    case _: SingleRow =>
+      cardinality(plan)
+
+    case _: AllNodesScan =>
+      cardinality(plan)
+
+    case _: NodeIndexSeek =>
+      cardinality(plan) * 3
+
+    case _: NodeIndexUniqueSeek =>
+      cardinality(plan) * 3
+
+    case _: NodeByLabelScan =>
+      cardinality(plan) * 2
+
+    case _: NodeByIdSeek =>
+      cardinality(plan)
+
+    case _: DirectedRelationshipByIdSeek =>
+      cardinality(plan)
+
+    case _: UndirectedRelationshipByIdSeek =>
+      cardinality(plan)
+
+    case projection: Projection =>
+      cost(projection.left) + (cardinality(projection.left) * 0.01 * projection.numExpressions).toInt
+
+    case selection: Selection =>
+      cost(selection.left) + (cardinality(selection.left) * .2 * selection.numPredicates).toInt
+
+    case cartesian: CartesianProduct =>
+      cardinality(cartesian.left) * cost(cartesian.right) + cost(cartesian.left)
+
+    case expand: Expand =>
+      cost(expand.left) + cardinality(expand)
+
+    case _: NodeHashJoin =>
+      cardinality(plan) * 2
+  }
+
+  private def cost(plan: LogicalPlan) = calculate(plan)
+  private def cardinality(plan: LogicalPlan) = cardinalityEstimator.estimate(plan)
 }

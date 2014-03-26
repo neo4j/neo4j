@@ -53,7 +53,7 @@ object generateLeafPlans extends PlanTableGenerator {
     }.values
 
     candidateLists.foldLeft(PlanTable()) {
-      case (planTable, candidateList) => candidateList.topPlan.foldLeft(planTable)(_ + applySelections(_))
+      case (planTable, candidateList) => candidateList.topPlan(context.costs).foldLeft(planTable)(_ + applySelections(_))
     }
   }
 }

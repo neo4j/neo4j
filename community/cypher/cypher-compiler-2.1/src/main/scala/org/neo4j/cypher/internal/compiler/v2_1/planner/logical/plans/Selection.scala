@@ -30,9 +30,9 @@ case class Selection(predicates: Seq[Expression], left: LogicalPlan)
 
   def rhs = None
 
-  def coveredIds = left.coveredIds
+  def numPredicates = predicates.size
 
-  val cost = context.costs.calculateSelectionOverhead(left.cardinality) + left.cost
+  def coveredIds = left.coveredIds
 
   def solvedPredicates = predicates ++ left.solvedPredicates
 }
