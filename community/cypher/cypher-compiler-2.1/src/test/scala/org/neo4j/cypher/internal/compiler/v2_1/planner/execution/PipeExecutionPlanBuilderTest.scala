@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Collection, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
@@ -41,9 +41,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.CartesianProductPipe
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
+import org.neo4j.graphdb.Direction
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -149,5 +149,28 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n"), AllNodesScanPipe("m")))
+  }
+
+  test("simple expand") {
+    val logicalPlan = Expand( AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1" )
+    val pipeInfo = planBuilder.build(logicalPlan)
+
+    pipeInfo.pipe should equal(ExpandPipe( AllNodesScanPipe("a"), "a", "r1", "b", Direction.INCOMING, Seq() ))
+  }
+
+  test("simple hash join") {
+    val logicalPlan =
+      NodeHashJoin(
+        "b",
+        Expand( AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1" ),
+        Expand( AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2" )
+      )
+    val pipeInfo = planBuilder.build(logicalPlan)
+
+    pipeInfo.pipe should equal(NodeHashJoinPipe(
+      "b",
+      ExpandPipe( AllNodesScanPipe("a"), "a", "r1", "b", Direction.INCOMING, Seq() ),
+      ExpandPipe( AllNodesScanPipe("c"), "c", "r2", "b", Direction.INCOMING, Seq() )
+    ))
   }
 }

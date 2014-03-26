@@ -74,6 +74,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Expand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName)) =>
           ExpandPipe(left.get, fromName, relName, toName, dir, types.map(_.name))
 
+        case NodeHashJoin(node, left, right) =>
+          NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))
+
         case _ =>
           throw new CantHandleQueryException
       }
