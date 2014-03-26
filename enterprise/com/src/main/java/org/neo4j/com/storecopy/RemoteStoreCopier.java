@@ -94,19 +94,22 @@ public class RemoteStoreCopier
         }
 
         // Request store files and transactions that will need recovery
-        Response response = requester.copyStore( decorateWithProgressIndicator(new ToFileStoreWriter( tempStore )));
-
-        // Update highest archived log id
-        long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fs, tempStore, LOGICAL_LOG_DEFAULT_NAME );
-        if ( highestLogVersion > -1 )
+        try ( Response response = requester.copyStore( decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) ) ) )
         {
-            NeoStore.setVersion( fs, tempStore, highestLogVersion + 1 );
-        }
+            // Update highest archived log id
+            long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fs, tempStore, LOGICAL_LOG_DEFAULT_NAME );
+            if ( highestLogVersion > -1 )
+            {
+                NeoStore.setVersion( fs, tempStore, highestLogVersion + 1 );
+            }
 
-        // Write pending transactions down to the currently active logical log
-        writeTransactionsToActiveLogFile( tempConfig, response.transactions() );
-        response.close();
-        requester.done();
+            // Write pending transactions down to the currently active logical log
+            writeTransactionsToActiveLogFile( tempConfig, response.transactions() );
+        }
+        finally
+        {
+            requester.done();
+        }
 
         // Run recovery
         GraphDatabaseAPI copiedDb = newTempDatabase( tempStore );
