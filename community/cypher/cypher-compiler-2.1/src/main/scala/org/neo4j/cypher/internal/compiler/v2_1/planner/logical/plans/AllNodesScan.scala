@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class AllNodesScan(idName: IdName)(implicit val context:LogicalPlanContext) extends LogicalPlan {
+case class AllNodesScan(idName: IdName) extends LogicalPlan {
   def lhs = None
   def rhs = None
 

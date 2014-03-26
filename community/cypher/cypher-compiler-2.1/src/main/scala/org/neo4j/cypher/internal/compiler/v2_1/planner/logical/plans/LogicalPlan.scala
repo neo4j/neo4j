@@ -35,21 +35,24 @@ abstract class LogicalPlan extends Product {
 
   def solvedPredicates: Seq[Expression]
 
-  def context: LogicalPlanContext
-
-  final lazy val cost = context.costs.calculate(this)
-  final lazy val cardinality = context.estimator.estimate(this)
-
   def coveredIds: Set[IdName]
 
   final def isCoveredBy(otherIds: Set[IdName]) = (coveredIds -- otherIds).isEmpty
   final def covers(other: LogicalPlan): Boolean = other.isCoveredBy(coveredIds)
 
-  def toTreeString: String =
-    productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + s"(cost $cost/cardinality $cardinality)->" +
+  def toTreeString = toVerboseTreeString(None)
+
+  def toVerboseTreeString(optContext: Option[LogicalPlanContext]): String = {
+    val metrics = optContext match {
+      case Some(context) => s"(cost ${context.costs.calculate(this)}/cardinality ${context.estimator.estimate(this)})"
+      case None => ""
+    }
+
+    productPrefix + coveredIds.map(_.name).mkString("[", ",", "]") + s"$metrics->" +
     productIterator.filterNot(_.isInstanceOf[LogicalPlan]).mkString("(", ", ", ")") +
-    lhs.map { plan => "\nleft - " + plan.toTreeString }.map { indent }.getOrElse("") +
-    rhs.map { plan => "\nright- " + plan.toTreeString }.map { indent }.getOrElse("")
+    lhs.map { plan => "\nleft - " + plan.toTreeString }.map(indent).getOrElse("") +
+    rhs.map { plan => "\nright- " + plan.toTreeString }.map(indent).getOrElse("")
+  }
 
   private def indent(s: String): String = s.lines.map {
     case t => "       " + t

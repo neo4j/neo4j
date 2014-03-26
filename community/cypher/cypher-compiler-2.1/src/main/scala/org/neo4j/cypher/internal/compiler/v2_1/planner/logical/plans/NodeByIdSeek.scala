@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
 case class NodeByIdSeek(idName: IdName, nodeIds: Expression, numberOfNodeIdsEstimate: Int)
-                       (val solvedPredicates: Seq[Expression] = Seq.empty)
-                       (implicit val context: LogicalPlanContext) extends LogicalPlan {
+                       (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalPlan {
   def lhs = None
   def rhs = None
 

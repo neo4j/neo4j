@@ -13,15 +13,13 @@ class LogicalPlanningAcceptanceTest extends CypherFunSuite with LogicalPlanningT
   val planner = new Planner(monitors)
 
   test("should build plans containing single row") {
-    val plan = produceLogicalPlan("return 42") {
+    produceLogicalPlan("return 42") {
       case _ => 100
-    }
-    implicit val context = plan.context
-
-    plan should equal(
+    } should equal(
       Projection(
         SingleRow(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
-      ))
+      )
+    )
   }
 
   def produceLogicalPlan(queryText: String)(estimator: PartialFunction[LogicalPlan, Int], planContext: PlanContext = newMockedPlanContext) =

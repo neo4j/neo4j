@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit val context: LogicalPlanContext) extends LogicalPlan {
+case class CartesianProduct(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

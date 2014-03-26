@@ -21,11 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
 case class NodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                              (val solvedPredicates: Seq[Expression] = Seq.empty)
-                              (implicit val context: LogicalPlanContext) extends LogicalPlan {
+                              (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalPlan {
   def rhs = None
   def lhs = None
 
