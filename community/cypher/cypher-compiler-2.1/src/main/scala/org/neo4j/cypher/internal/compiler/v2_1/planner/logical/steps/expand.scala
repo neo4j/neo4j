@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Identifier, Equ
 import org.neo4j.graphdb.Direction
 
 object expand extends PlanCandidateGenerator {
-  def apply(inputPlan: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val expandPlans = for {
-      plan <- inputPlan.plans
+      plan <- planTable.plans
       nodeId <- plan.coveredIds
       patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
       if !plan.coveredIds(patternRel.name)

@@ -25,7 +25,6 @@ case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit val 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val cardinality = left.cardinality * right.cardinality
   val cost = context.costs.calculateCartesianProductOverhead(cardinality) + (left.cardinality * right.cost) + left.cost
 
   val coveredIds = left.coveredIds ++ right.coveredIds

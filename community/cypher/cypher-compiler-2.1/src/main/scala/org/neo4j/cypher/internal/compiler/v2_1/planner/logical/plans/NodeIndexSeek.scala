@@ -29,7 +29,6 @@ case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: Property
   def lhs = None
   def rhs = None
 
-  val cardinality = context.estimator.estimateNodeIndexSeek(label, propertyKeyId)
   val cost = context.costs.calculateNodeIndexSeek(cardinality)
 
   val coveredIds = Set(idName)

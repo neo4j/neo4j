@@ -23,15 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
-                                          relId: Expression,
-                                          inputCardinality: Int,
+                                          relIds: Expression,
+                                          numberOfRelIdsEstimate: Int,
                                           leftNode: IdName,
                                           rightNode: IdName)(val solvedPredicates: Seq[Expression] = Seq.empty)
                                          (implicit val context: LogicalPlanContext) extends LogicalPlan {
   def lhs = None
   def rhs = None
 
-  val cardinality = inputCardinality * 2
   val cost = context.costs.calculateRelationshipByIdSeek(cardinality) * 2
   val coveredIds = Set(idName, leftNode, rightNode)
 }

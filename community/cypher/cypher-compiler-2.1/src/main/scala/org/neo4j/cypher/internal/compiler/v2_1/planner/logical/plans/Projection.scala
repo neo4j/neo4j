@@ -27,7 +27,6 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
   val lhs = Some(left)
   val rhs = None
 
-  val cardinality = left.cardinality
   val cost = left.cost + context.costs.calculateProjectionOverhead(cardinality, expressions.size)
 
   def coveredIds = expressions.keySet.map(IdName)

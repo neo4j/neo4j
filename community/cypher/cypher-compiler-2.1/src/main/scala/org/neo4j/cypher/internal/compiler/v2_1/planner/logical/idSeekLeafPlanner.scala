@@ -29,33 +29,34 @@ case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
     predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
       case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
-        val cardinality = context.estimator.estimateRelationshipByIdSeek()
+        val numberOfRelIdsEstimate = 1
         context.queryGraph.patternRelationships.filter(_.name == idName).collectFirst {
           case PatternRelationship(relName, (l, r), Direction.BOTH, types) =>
-            createUndirectedRelationshipByIdSeek(relName, l, r, types, cardinality, idExpr, predicate)
+            createUndirectedRelationshipByIdSeek(relName, l, r, types, numberOfRelIdsEstimate, idExpr, predicate)
 
           case PatternRelationship(relName, (l, r), dir, types)  =>
-            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, cardinality, idExpr, predicate)
+            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, numberOfRelIdsEstimate, idExpr, predicate)
         }.getOrElse(failIfNotFound(idName.name))
 
       // MATCH (a)-[r]->b WHERE id(r) IN value
       case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
-        val cardinality = expressions.size * context.estimator.estimateRelationshipByIdSeek()
+        val numberOfRelIdsEstimate = expressions.size
         context.queryGraph.patternRelationships.filter(_.name == idName).collectFirst {
           case PatternRelationship(relName, (l, r), Direction.BOTH, types) =>
-            createUndirectedRelationshipByIdSeek(relName, l, r, types, cardinality, idsExpr, predicate)
+            createUndirectedRelationshipByIdSeek(relName, l, r, types, numberOfRelIdsEstimate, idsExpr, predicate)
 
           case PatternRelationship(relName, (l, r), dir, types) =>
-            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, cardinality, idsExpr, predicate)
+            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, numberOfRelIdsEstimate, idsExpr, predicate)
 
         }.getOrElse(failIfNotFound(idName.name))
 
 
       case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
-        val cardinality = context.estimator.estimateNodeByIdSeek()
-        NodeByIdSeek(idName, idExpr, cardinality)(Seq(predicate))
+        val numberOfNodeIdsEstimate = 1
+        NodeByIdSeek(idName, idExpr, numberOfNodeIdsEstimate)(Seq(predicate))
+
       case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(NodeIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
-        val cardinality = expressions.size * context.estimator.estimateNodeByIdSeek()
+        val cardinality = expressions.size
         NodeByIdSeek(idName, idsExpr, cardinality)(Seq(predicate))
     }
 

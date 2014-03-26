@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Direction
 
 case class DirectedRelationshipByIdSeek(idName: IdName,
                                 relId: Expression,
-                                cardinality: Int,
+                                numberOfIdsEstimate: Int,
                                 startNode: IdName,
                                 endNode: IdName)(val solvedPredicates: Seq[Expression] = Seq.empty)
                                (implicit val context: LogicalPlanContext) extends LogicalPlan {

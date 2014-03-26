@@ -25,7 +25,6 @@ case class SingleRow()(implicit val context: LogicalPlanContext) extends Logical
   val lhs = None
   val rhs = None
 
-  val cardinality = 1
   val cost = context.costs.calculateSingleRow(cardinality)
 
   val coveredIds = Set.empty[IdName]

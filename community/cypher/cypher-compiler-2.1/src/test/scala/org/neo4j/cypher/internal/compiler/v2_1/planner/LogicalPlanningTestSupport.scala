@@ -31,7 +31,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
 
   def newMockedLogicalPlanContext(planContext: PlanContext = self.mock[PlanContext],
-                                  estimator: CardinalityEstimator = self.mock[CardinalityEstimator],
+                                  estimator: CardinalityEstimator = CardinalityEstimator.lift(PartialFunction.empty),
                                   costs: CostModel = self.mock[CostModel],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph]) =
@@ -41,18 +41,19 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     def asTableEntry = plan.coveredIds -> plan
   }
 
-  def newMockedLogicalPlan(ids: String*): LogicalPlan = newMockedLogicalPlan(ids.map(IdName).toSet)
+  def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
+    newMockedLogicalPlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan(id: String, cost: Int, cardinality: Int): LogicalPlan =
+  def newMockedLogicalPlan(id: String, cost: Int, cardinality: Int)(implicit context: LogicalPlanContext): LogicalPlan =
     newMockedLogicalPlan(Set(IdName(id)), cost, cardinality)
 
-  def newMockedLogicalPlan(ids: Set[IdName], cost: Int = 0, cardinality: Int = 0): LogicalPlan = {
+  def newMockedLogicalPlan(ids: Set[IdName], cost: Int = 0, cardinality: Int = 0)(implicit context: LogicalPlanContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
     when(plan.toString).thenReturn(s"MockedLogicalPlan(ids = ${ids}, cost = ${cost}, cardinality = ${cardinality}})")
     when(plan.coveredIds).thenReturn(ids)
     when(plan.solvedPredicates).thenReturn(Seq.empty)
     when(plan.cost).thenReturn(cost)
-    when(plan.cardinality).thenReturn(cardinality)
+    when(plan.context).thenReturn(context)
     plan
   }
 }

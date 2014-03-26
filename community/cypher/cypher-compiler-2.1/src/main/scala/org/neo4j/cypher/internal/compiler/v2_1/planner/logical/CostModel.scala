@@ -42,4 +42,5 @@ trait CostModel {
   def calculateProjectionOverhead(cardinality: Int, numExpressions: Int): Int
   def calculateSelectionOverhead(cardinality: Int): Int
   def calculateCartesianProductOverhead(cardinality: Int): Int
+  def calculateNodeHashJoin(cardinality: Int): Int
 }

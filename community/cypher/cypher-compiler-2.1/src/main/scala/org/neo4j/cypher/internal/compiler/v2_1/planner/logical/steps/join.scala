@@ -20,23 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.InternalException
 
-object cartesianProduct extends PlanCandidateGenerator {
+object join extends PlanCandidateGenerator {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    if (planTable.size > 1) {
-      val plans = planTable.plans
-      val cartesianProducts =
-        for {
-          planA <- plans
-          planB <- plans if planA != planB
-        } yield applySelections(CartesianProduct(planA, planB))
-      CandidateList(cartesianProducts.toList)
-    } else {
-      CandidateList(Seq.empty)
-    }
+    val joinPlans: Seq[NodeHashJoin] = (for {
+      planA <- planTable.plans
+      planB <- planTable.plans if planA != planB
+    } yield {
+      (planA.coveredIds & planB.coveredIds).toList match {
+        case id :: Nil => Some(NodeHashJoin(id, planA, planB))
+        case Nil => None
+        case _ => throw new InternalException("Found more than one overlapping ID when planning hash joins")
+      }
+    }).flatten
+    CandidateList(joinPlans)
   }
 }

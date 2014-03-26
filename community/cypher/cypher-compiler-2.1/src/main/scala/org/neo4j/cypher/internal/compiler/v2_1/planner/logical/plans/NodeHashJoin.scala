@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanCandidateGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-object expandAndJoin extends PlanCandidateGenerator {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val expandCandidates = tryExpand(planTable)
-    val joinCandidates = tryJoin(planTable)
-    expandCandidates ++ joinCandidates
-  }
+case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan)(implicit val context:LogicalPlanContext)
+  extends LogicalPlan {
 
-  private def tryExpand(planTable: PlanTable): CandidateList =
-    CandidateList(planTable.plans)
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-  private def tryJoin(planTable: PlanTable): CandidateList =
-    CandidateList(planTable.plans)
+  val cost = context.costs.calculateNodeHashJoin(cardinality)
+
+  val coveredIds = left.coveredIds ++ right.coveredIds
+  val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
 }
