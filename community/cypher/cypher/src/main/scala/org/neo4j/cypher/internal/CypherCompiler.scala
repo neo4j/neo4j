@@ -113,7 +113,7 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
-    val planningMonitor = monitors.newMonitor[PlanningMonitor]()
+    val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val planner = new Planner(monitors, planningMonitor)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
