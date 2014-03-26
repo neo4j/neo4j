@@ -33,10 +33,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors) extends PipeBuilder {
-  val estimator = new GuessingEstimator
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
-  val costs = new SimpleCostModel(estimator)
+
+  val cardinalityEstimatorFactory: () => CardinalityEstimator = () => new GuessingEstimator
+  val costModelFactory: (CardinalityEstimator) => CostModel = (estimator: CardinalityEstimator) => new SimpleCostModel(estimator)
 
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
   val logicalPlanner = new SimpleLogicalPlanner()
@@ -46,17 +47,19 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
 
   def producePlan(statement: Statement, semanticTable: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
-      val logicalPlan = produceLogicalPlan(ast, semanticTable, estimator)(planContext)
+      val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable, estimator: CardinalityEstimator)(planContext: PlanContext): LogicalPlan = {
+  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
+    val cardinality = new CachingCardinalityEstimator(cardinalityEstimatorFactory())
+    val costs = new CachingCostModel(costModelFactory(cardinality))
     val resolvedAst = tokenResolver.resolve(ast)(planContext)
     val queryGraph = queryGraphBuilder.produce(resolvedAst)
-    val context = LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
+    val context = LogicalPlanContext(planContext, cardinality, costs, semanticTable, queryGraph)
     logicalPlanner.plan(context)
   }
 }

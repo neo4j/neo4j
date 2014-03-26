@@ -32,12 +32,14 @@ in an execution plan there is a formula that gives its cost. Given the complexit
 formulas are simple approximations of what the system actually does and are based on certain assumptions regarding
 issues like buffer management, disk-cpu overlap, sequential vs random IO etc.*/
 
-trait CostModel {
-  def calculate(plan: LogicalPlan): Int
+trait CostModel extends PlanMetric {
+  final def cost(plan: LogicalPlan): Int = apply(plan)
 }
+
+class CachingCostModel(metric: CostModel) extends CachingPlanMetric[CostModel](metric) with CostModel
 
 object CostModel {
   def lift(f: PartialFunction[LogicalPlan, Int]): CostModel = new CostModel {
-    def calculate(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
+    def apply(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
   }
 }

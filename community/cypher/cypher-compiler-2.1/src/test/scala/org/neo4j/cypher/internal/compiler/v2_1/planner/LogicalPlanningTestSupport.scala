@@ -24,14 +24,23 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.{DummyPosition, InputPosition, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
 
-  val monitors = mock[Monitors]
+  val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
+  val monitors = new Monitors(kernelMonitors)
+  val monitorTag = "compiler2.1"
+  val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+  val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+  val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
 
   def newMockedLogicalPlanContext(planContext: PlanContext = self.newMockedPlanContext,
                                   estimator: CardinalityEstimator = CardinalityEstimator.lift(PartialFunction.empty),
@@ -55,6 +64,24 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     when(plan.coveredIds).thenReturn(ids)
     when(plan.solvedPredicates).thenReturn(Seq.empty)
     plan
+  }
+
+  def newStubbedPlanner(cardinality: CardinalityEstimator): Planner =
+    new Planner(monitors) {
+      override val cardinalityEstimatorFactory = () => cardinality
+    }
+
+  def produceLogicalPlan(queryText: String, planContext: PlanContext = newMockedPlanContext)(implicit planner: Planner) = {
+    val parsedStatement = parser.parse(queryText)
+    semanticChecker.check(queryText, parsedStatement)
+    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
+    val semanticTable = semanticChecker.check(queryText, parsedStatement)
+    parsedStatement match {
+      case ast: Query =>
+        planner.produceLogicalPlan(ast, semanticTable)(planContext)
+      case _ =>
+        throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
+    }
   }
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(DummyPosition(0))

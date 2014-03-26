@@ -34,7 +34,7 @@ class GuessingEstimator extends CardinalityEstimator {
   private val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
   private val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
 
-  def estimate(plan: LogicalPlan): Int = plan match {
+  def apply(plan: LogicalPlan): Int = plan match {
     case AllNodesScan(_) =>
       ALL_NODES_SCAN_CARDINALITY
 
@@ -54,16 +54,16 @@ class GuessingEstimator extends CardinalityEstimator {
       (ALL_NODES_SCAN_CARDINALITY * UNIQUE_INDEX_SEEK_SELECTIVITY).toInt
 
     case NodeHashJoin(_, left, right) =>
-      (estimate(left) + estimate(right)) / 2
+      (cardinality(left) + cardinality(right)) / 2
 
     case Expand(left, _, _, _, _, _) =>
-      (estimate(left) * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
+      (cardinality(left) * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
 
     case Selection(predicates, left) =>
-      (estimate(left) * predicates.map(predicateSelectivity).foldLeft(1.0)(_ * _)).toInt
+      (cardinality(left) * predicates.map(predicateSelectivity).foldLeft(1.0)(_ * _)).toInt
 
     case CartesianProduct(left, right) =>
-      estimate(left) * estimate(right)
+      cardinality(left) * cardinality(right)
 
     case DirectedRelationshipByIdSeek(_, _, numberOfRelIdsEstimate, _, _) =>
       numberOfRelIdsEstimate
@@ -72,7 +72,7 @@ class GuessingEstimator extends CardinalityEstimator {
       numberOfRelIdsEstimate * 2
 
     case Projection(left, _) =>
-      estimate(left)
+      cardinality(left)
 
     case SingleRow() =>
       1

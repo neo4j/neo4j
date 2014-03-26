@@ -44,7 +44,7 @@ abstract class LogicalPlan extends Product {
 
   def toVerboseTreeString(optContext: Option[LogicalPlanContext]): String = {
     val metrics = optContext match {
-      case Some(context) => s"(cost ${context.costs.calculate(this)}/cardinality ${context.estimator.estimate(this)})"
+      case Some(context) => s"(cost ${context.cost(this)}/cardinality ${context.cardinality(this)})"
       case None => ""
     }
 

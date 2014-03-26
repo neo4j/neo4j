@@ -20,19 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import scala.collection.mutable
 
-/*
-This class is responsible for answering questions about cardinality. It does this by asking the database when this
-information is available, or guessing when that's not possible.
- */
-trait CardinalityEstimator extends PlanMetric {
-  final def cardinality(plan: LogicalPlan): Int = apply(plan)
-}
+trait PlanMetric extends (LogicalPlan => Int)
 
-class CachingCardinalityEstimator(metric: CardinalityEstimator) extends CachingPlanMetric[CardinalityEstimator](metric) with CardinalityEstimator
+class CachingPlanMetric[T <: PlanMetric](metric: T) extends PlanMetric {
+  private val cache = new mutable.WeakHashMap[LogicalPlan, Int]
 
-object CardinalityEstimator {
-  def lift(f: PartialFunction[LogicalPlan, Int]) = new CardinalityEstimator {
-    def apply(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
-  }
+  def apply(plan: LogicalPlan): Int = cache.getOrElseUpdate(plan, metric(plan))
 }

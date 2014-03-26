@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
-import org.mockito.Mockito
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
@@ -48,13 +47,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianPr
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val pipeMonitor = mock[PipeMonitor]
+  implicit val pipeMonitor = monitors.newMonitor[PipeMonitor]()
   implicit val context = newMockedLogicalPlanContext()
 
   val planBuilder = new PipeExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)
-
-  Mockito.when(monitors.newMonitor[PipeMonitor]()).thenReturn(pipeMonitor)
 
   test("projection only query") {
     val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(pos)))
