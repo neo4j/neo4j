@@ -26,11 +26,15 @@ import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.{DummyPosition, InputPosition, Monitors}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
 
-  def newMockedLogicalPlanContext(planContext: PlanContext = self.mock[PlanContext],
+  val monitors = mock[Monitors]
+
+  def newMockedLogicalPlanContext(planContext: PlanContext = self.newMockedPlanContext,
                                   estimator: CardinalityEstimator = CardinalityEstimator.lift(PartialFunction.empty),
                                   costs: CostModel = self.mock[CostModel],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
@@ -40,6 +44,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan
   }
+
+  def newMockedPlanContext = mock[PlanContext]
 
   def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
     newMockedLogicalPlan(ids.map(IdName).toSet)
@@ -56,4 +62,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     when(plan.context).thenReturn(context)
     plan
   }
+
+  implicit def withPos[T](expr: InputPosition => T): T = expr(DummyPosition(0))
 }

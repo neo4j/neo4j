@@ -19,13 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Statement, Query}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PipeBuilder, PipeInfo}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, SimpleCostModel, GuessingEstimator, SimpleLogicalPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors) extends PipeBuilder {
@@ -33,6 +37,7 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val costs = new SimpleCostModel
+
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
   val logicalPlanner = new SimpleLogicalPlanner()
 
@@ -41,14 +46,18 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
 
   def producePlan(statement: Statement, semanticTable: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
-      val resolvedAst = tokenResolver.resolve(ast)(planContext)
-      val queryGraph = queryGraphBuilder.produce(resolvedAst)
-
-      val context = LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
-      val logicalPlan = logicalPlanner.plan(context)
+      val logicalPlan = produceLogicalPlan(ast, semanticTable, estimator)(planContext)
       executionPlanBuilder.build(logicalPlan)
 
     case _ =>
       throw new CantHandleQueryException
   }
+
+  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable, estimator: CardinalityEstimator)(planContext: PlanContext): LogicalPlan = {
+    val resolvedAst = tokenResolver.resolve(ast)(planContext)
+    val queryGraph = queryGraphBuilder.produce(resolvedAst)
+    val context = LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
+    logicalPlanner.plan(context)
+  }
 }
+
