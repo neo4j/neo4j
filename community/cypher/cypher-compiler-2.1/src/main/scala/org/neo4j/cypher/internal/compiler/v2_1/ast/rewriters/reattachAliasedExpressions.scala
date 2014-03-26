@@ -27,25 +27,32 @@ object reattachAliasedExpressions extends Rewriter {
   override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
+
     case r @ Return(_, ListedReturnItems(items: Seq[ReturnItem]), orderBy, _, _) =>
-      r.copy(orderBy = orderBy.map { (orderBy: OrderBy) =>
-        orderBy.copy(sortItems = orderBy.sortItems.map { (sortItem: SortItem) =>
-          val returnItem = items.find(_.alias match {
-            case Some(identifier) => (identifier == sortItem.expression)
-            case None => false
-          })
-          returnItem match {
-            case None => sortItem
-            case Some(returnItem) => {
-              sortItem match {
-                case item: AscSortItem =>
-                  item.copy(expression = returnItem.expression)(item.position)
-                case item: DescSortItem =>
-                  item.copy(expression = returnItem.expression)(item.position)
-              }
+      r.copy(orderBy = orderBy.map(reattachOrderByExpressions(items)))(r.position)
+
+    case r @ With(_, ListedReturnItems(items: Seq[ReturnItem]), orderBy, _, _, _) =>
+      r.copy(orderBy = orderBy.map(reattachOrderByExpressions(items)))(r.position)
+  }
+
+  private def reattachOrderByExpressions(items: Seq[ReturnItem])(orderBy: OrderBy): OrderBy = {
+    orderBy.copy(sortItems = orderBy.sortItems.map {
+      (sortItem: SortItem) =>
+        val returnItem = items.find(_.alias match {
+          case Some(identifier) => identifier == sortItem.expression
+          case None => false
+        })
+        returnItem match {
+          case None => sortItem
+          case Some(returnItem) => {
+            sortItem match {
+              case item: AscSortItem =>
+                item.copy(expression = returnItem.expression)(item.position)
+              case item: DescSortItem =>
+                item.copy(expression = returnItem.expression)(item.position)
             }
           }
-        })(orderBy.position)
-      })(r.position)
+        }
+    })(orderBy.position)
   }
 }

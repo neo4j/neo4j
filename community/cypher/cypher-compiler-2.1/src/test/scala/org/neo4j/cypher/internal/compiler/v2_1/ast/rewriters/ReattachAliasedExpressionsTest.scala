@@ -51,4 +51,27 @@ class ReattachAliasedExpressionsTest extends CypherFunSuite {
     assert(result === expected)
   }
 
+  test("MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *") {
+    val original = parser.parse("MATCH a WITH a.x AS newAlias ORDER BY newAlias RETURN *")
+    val expected = parser.parse("MATCH a WITH a.x AS newAlias ORDER BY a.x RETURN *")
+
+    val result = original.rewrite(bottomUp(reattachAliasedExpressions))
+    assert(result === expected)
+  }
+
+  test("MATCH a WITH count(*) AS foo ORDER BY foo RETURN *") {
+    val original = parser.parse("MATCH a WITH count(*) AS foo ORDER BY foo RETURN *")
+    val expected = parser.parse("MATCH a WITH count(*) AS foo ORDER BY count(*) RETURN *")
+
+    val result = original.rewrite(bottomUp(reattachAliasedExpressions))
+    assert(result === expected)
+  }
+
+  test("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *") {
+    val original = parser.parse("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *")
+    val expected = parser.parse("MATCH x WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *")
+
+    val result = original.rewrite(bottomUp(reattachAliasedExpressions))
+    assert(result === expected)
+  }
 }
