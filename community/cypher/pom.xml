@@ -19,7 +19,7 @@
 
   <properties>
     <bundle.namespace>org.neo4j.cypher</bundle.namespace>
-    <scala.version>2.10.3</scala.version>
+    <scala.version>2.10.4</scala.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     <short-name>community-cypher-build</short-name>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
