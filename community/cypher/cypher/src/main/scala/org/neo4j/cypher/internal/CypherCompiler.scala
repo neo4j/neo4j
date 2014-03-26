@@ -23,10 +23,10 @@ import org.neo4j.cypher._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
-import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompiler => CypherCompiler2_1, _}
+import org.neo4j.cypher.internal.compiler.v2_1.{CypherCompilerFactory => CypherCompilerFactory2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.{CypherCompiler => CypherCompiler2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1, _}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlan => ExecutionPlan_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.{ExecutionPlan => ExecutionPlan_v2_0}
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundQueryContext => QueryContext_v2_1}
@@ -37,10 +37,7 @@ import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanCo
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
 import org.neo4j.kernel.api.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.kernel.monitoring.{Monitors=>KernelMonitors}
 
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -48,18 +45,16 @@ object CypherCompiler {
   private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 }
 
-class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
+class CypherCompiler(graph: GraphDatabaseService, kernelMonitors: KernelMonitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
 
-  val monitorTag = "compiler2.1"
-  val size: Int = getQueryCacheSize
+  private val queryCacheSize: Int = getQueryCacheSize
 
-  private val planCacheFactory = () => new LRUCache[CypherCompiler2_1.CacheKey, CypherCompiler2_1.CacheValue](size)
-  private val queryCache2_0 = new LRUCache[String, Object](size)
-  private val queryCache1_9 = new LRUCache[String, Object](size)
+  private val queryCache2_0 = new LRUCache[String, Object](queryCacheSize)
+  private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
 
-  private val compiler2_1 = buildCompiler2_1()
-  private val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
-  private val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
+  val compiler2_1 = CypherCompilerFactory2_1.newInstance(graph, queryCacheSize, kernelMonitors)
+  val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
+  val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
   @throws(classOf[SyntaxException])
   def prepare(query: String, context: GraphDatabaseService, statement: Statement): (ExecutionPlan, Map[String, Any]) = {
@@ -106,18 +101,6 @@ class CypherCompiler(graph: GraphDatabaseService, monitors: Monitors, defaultVer
 
   private def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
     case (db: T) => db
-  }
-
-  private def buildCompiler2_1() = {
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-    val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
-    val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
-    val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
-    val planner = new Planner(monitors, planningMonitor)
-    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
-    new CypherCompiler2_1(parser, checker, execPlanBuilder, rewriter, planCacheFactory, monitors)
   }
 }
 

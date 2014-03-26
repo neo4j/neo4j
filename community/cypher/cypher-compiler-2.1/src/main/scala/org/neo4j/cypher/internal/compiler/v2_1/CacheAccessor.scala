@@ -19,16 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import scala.reflect.ClassTag
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+object CacheAccessor {
+  type PlanCache[K, T] = (K, => T) => T
+}
 
-case class Monitors(kernelMonitors: KernelMonitors) {
-  def addMonitorListener[T](monitor: T, tags: String*) {
-    kernelMonitors.addMonitorListener(monitor, tags: _*)
-  }
+trait CacheAccessor[K, T] {
+  def getOrElseUpdate(cache: CacheAccessor.PlanCache[K, T])(key: K, f: => T): T
+}
 
-  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    kernelMonitors.newMonitor(clazz, tags: _*)
+class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
+
+  def getOrElseUpdate(cache: CacheAccessor.PlanCache[K, T])(key: K, f: => T): T = {
+    var updated = false
+    val value = cache(key, {
+      updated = true
+      f
+    })
+
+    if (updated)
+      monitor.cacheMiss(key)
+    else
+      monitor.cacheHit(key)
+
+    value
   }
 }

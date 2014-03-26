@@ -19,13 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanBuilder, ExecutionPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
-import spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan._
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Query, Statement}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.AbstractQuery
+import org.neo4j.cypher.internal.LRUCache
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 trait SemanticCheckMonitor {
   def startSemanticCheck(query: String)
@@ -38,23 +44,55 @@ trait AstRewritingMonitor {
   def finishRewriting(queryText: String, statement: Statement)
 }
 
-object CypherCompiler {
-  type CacheKey = Statement
-  type CacheValue = ExecutionPlan
-  type PlanCache = (Statement, => CacheValue) => CacheValue
+trait CypherCacheFlushingMonitor[T] {
+  def cacheFlushDetected(justBeforeKey: T)
+}
+
+trait CypherCacheHitMonitor[T] {
+  def cacheHit(key: T)
+  def cacheMiss(key: T)
+}
+
+trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
+
+trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statement, ExecutionPlan]]
+
+object CypherCompilerFactory {
+  val monitorTag = "cypher2.1"
+
+  def newInstance(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
+      val monitors = new Monitors(kernelMonitors)
+      val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+      val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+      val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
+      val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
+      val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
+      val planner = new Planner(monitors, planningMonitor)
+      val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
+      val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+      val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)
+      val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+      val cache = new MonitoringCacheAccessor[ast.Statement, ExecutionPlan](cacheMonitor)
+
+      new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+  }
 }
 
 case class CypherCompiler(parser: CypherParser,
                           semanticChecker: SemanticChecker,
                           executionPlanBuilder: ExecutionPlanBuilder,
                           astRewriter: ASTRewriter,
-                          cacheFactory: () => CypherCompiler.PlanCache,
+                          cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
+                          planCacheFactory: () => LRUCache[ast.Statement, ExecutionPlan],
+                          cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[ast.Statement, ExecutionPlan]],
                           monitors: Monitors) {
 
   def prepare(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
     val (parsedQuery, extractedParams) = prepareParsedQuery(queryText, context)
-    val cache = context.getOrCreateFromSchemaState(this, cacheFactory())
-    val plan = cache(parsedQuery.statement, executionPlanBuilder.build(context, parsedQuery))
+    val cache = provideCache(cacheAccessor, cacheMonitor, context)
+    val plan = cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
+      executionPlanBuilder.build(context, parsedQuery)
+    })
     (plan, extractedParams)
   }
 
@@ -66,6 +104,14 @@ case class CypherCompiler(parser: CypherParser,
     val query: AbstractQuery = rewrittenStatement.asQuery.setQueryText(queryText)
     (ParsedQuery(rewrittenStatement, query, table, queryText), extractedParams)
   }
+
+  private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
+                           monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
+                           context: PlanContext) =
+    context.getOrCreateFromSchemaState(cacheAccessor, {
+      monitor.cacheFlushDetected(cacheAccessor)
+      planCacheFactory()
+    })
 
   @throws(classOf[SyntaxException])
   def isPeriodicCommit(queryText: String) = parser.parse(queryText) match {

@@ -50,7 +50,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), monitors)
+      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), Monitors(kernelMonitors))
       val query = ParsedQuery(ast, q, SemanticTable(), "")
       pipeBuilder.producePlan(query, planContext)
     })
@@ -72,7 +72,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
         .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val pipeBuilder = new LegacyPipeBuilder(monitors)
+      val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = ParsedQuery(null, q, null, null)
@@ -98,7 +98,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
         .where(HasLabel(Identifier("x"), Label("Person")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val execPlanBuilder = new LegacyPipeBuilder(monitors)
+      val execPlanBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = ParsedQuery(null, q, null, null)
@@ -128,7 +128,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
         .returns(AllIdentifiers())
       val parsedQ = ParsedQuery(null, q, null, null)
 
-      val pipeBuilder = new LegacyPipeBuilder(monitors)
+      val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val pipe = pipeBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -154,7 +154,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
       val parsedQ = ParsedQuery(null, q, null, null)
 
 
-      val execPlanBuilder = new LegacyPipeBuilder(monitors)
+      val execPlanBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
       val pipe = execPlanBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -178,7 +178,7 @@ class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport
       )
       val parsedQ = ParsedQuery(null, q, null, null)
 
-      val pipeBuilder = new LegacyPipeBuilder(monitors)
+      val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
 
       // when
       val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).periodicCommit
