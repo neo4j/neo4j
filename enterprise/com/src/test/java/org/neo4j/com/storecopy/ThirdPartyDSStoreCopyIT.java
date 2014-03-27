@@ -120,6 +120,12 @@ public class ThirdPartyDSStoreCopyIT
                     original.shutdown();
                 }
             }
+
+            @Override
+            public void done()
+            {
+
+            }
         });
 
         // Then the resulting file should contain the data we expect.

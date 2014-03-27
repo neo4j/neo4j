@@ -19,14 +19,15 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
-
 import static org.neo4j.helpers.Settings.BOOLEAN;
+import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.helpers.Settings.setting;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
+import org.neo4j.helpers.HostnamePort;
 
 /**
  * Settings for online backup
