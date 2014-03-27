@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{NotEquals, Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
@@ -52,10 +52,12 @@ class LogicalPlanningAcceptanceTest extends CypherFunSuite with LogicalPlanningT
 
     produceLogicalPlan("MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b") should equal(
       Projection(
-        NodeHashJoin(
-          "b",
-          Expand( AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1" ),
-          Expand( AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2" )
+        Selection(
+          Seq(NotEquals(Identifier("r1")_,Identifier("r2")_)_),
+          NodeHashJoin("b",
+            Expand( AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1" ),
+            Expand( AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2" )
+          )
         ),
         expressions = Map("b" -> Identifier("b")_)
       )

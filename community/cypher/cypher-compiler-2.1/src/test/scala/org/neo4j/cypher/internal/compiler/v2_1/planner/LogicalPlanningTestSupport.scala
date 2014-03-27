@@ -74,10 +74,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   def produceLogicalPlan(queryText: String, planContext: PlanContext = newMockedPlanContext)(implicit planner: Planner) = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
-    val (rewrittenStatement, extractedParams) = astRewriter.rewrite(queryText, parsedStatement)
-    val semanticTable = semanticChecker.check(queryText, parsedStatement)
-    parsedStatement match {
+    val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
+    rewrittenStatement match {
       case ast: Query =>
+        val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
         planner.produceLogicalPlan(ast, semanticTable)(planContext)
       case _ =>
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
