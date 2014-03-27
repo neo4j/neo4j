@@ -180,7 +180,7 @@ class SimpleLogicalPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     // then
     resultPlan should equal(Selection(
       List(HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(None)(pos)))(pos)),
-      NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)()
+      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("42")(pos)))()
     ))
   }
 

@@ -82,64 +82,64 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   test("simple node by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
-    val logicalPlan = NodeByIdSeek(IdName("n"), astLiteral, 1)(Seq.empty)
+    val logicalPlan = NodeByIdSeek(IdName("n"), Seq(astLiteral))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astLiteral.asCommandExpression))
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", Seq(astLiteral.asCommandExpression)))
   }
 
   test("simple node by id seek query with multiple values") {
     val astCollection = Collection(
       Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
     )(pos)
-    val logicalPlan = NodeByIdSeek(IdName("n"), astCollection, 3)(Seq.empty)
+    val logicalPlan = NodeByIdSeek(IdName("n"), Seq(astCollection))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", astCollection.asCommandExpression))
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", Seq(astCollection.asCommandExpression)))
   }
 
   test("simple relationship by id seek query") {
     val astLiteral = SignedIntegerLiteral("42")(pos)
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), astLiteral, 1, IdName(fromNode), IdName(toNode))(Seq.empty)
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), Seq(astLiteral), IdName(fromNode), IdName(toNode))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", astLiteral.asCommandExpression, toNode, fromNode))
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", Seq(astLiteral.asCommandExpression), toNode, fromNode))
   }
 
   test("simple relationship by id seek query with multiple values") {
-    val astCollection = Collection(
+    val astCollection =
       Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
-    )(pos)
+
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), astCollection, 3, IdName(fromNode), IdName(toNode))(Seq.empty)
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), astCollection, IdName(fromNode), IdName(toNode))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", astCollection.asCommandExpression, toNode, fromNode))
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", astCollection.map(_.asCommandExpression), toNode, fromNode))
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
-    val astCollection = Collection(
+    val astCollection =
       Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
-    )(pos)
+
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), astCollection, 3, IdName(fromNode), IdName(toNode))(Seq.empty)
+    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), astCollection, IdName(fromNode), IdName(toNode))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", astCollection.asCommandExpression, toNode, fromNode))
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", astCollection.map(_.asCommandExpression), toNode, fromNode))
   }
 
   test("simple cartesian product") {

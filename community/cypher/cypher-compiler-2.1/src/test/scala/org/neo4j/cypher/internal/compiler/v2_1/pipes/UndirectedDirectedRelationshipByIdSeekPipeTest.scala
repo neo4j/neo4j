@@ -43,7 +43,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result: Iterator[ExecutionContext] = UndirectedRelationshipByIdSeekPipe("a", Literal(17), to, from).createResults(queryState)
+    val result: Iterator[ExecutionContext] = UndirectedRelationshipByIdSeekPipe("a", Seq(Literal(17)), to, from).createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -67,7 +67,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     val relName = "a"
     // whens
-    val result = UndirectedRelationshipByIdSeekPipe(relName, Collection(Literal(42), Literal(21)), to, from).createResults(queryState)
+    val result = UndirectedRelationshipByIdSeekPipe(relName, Seq(Literal(42), Literal(21)), to, from).createResults(queryState)
 
     // then
     result.toSet should equal(Set(
@@ -82,14 +82,16 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val to = "to"
     val from = "from"
-    val queryState = QueryStateHelper.empty
+    val relationshipOps = mock[Operations[Relationship]]
+    val queryState = QueryStateHelper.emptyWith(
+      query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
+    )
+
     // when
-    val result: Iterator[ExecutionContext] = UndirectedRelationshipByIdSeekPipe("a", Literal(null), to, from).createResults(queryState)
+    val result: Iterator[ExecutionContext] = UndirectedRelationshipByIdSeekPipe("a", Seq(Literal(null)), to, from).createResults(queryState)
 
     // then
-    result.toList should equal(List(
-      Map("a" -> null, "to" -> null, "from" -> null)
-      ))
+    result.toList should be(empty)
   }
 
   private def getRelWithNodes:(Node,Relationship,Node) = {

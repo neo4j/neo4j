@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Seq[Expression])(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val nodeIds = makeTraversable(nodeIdsExpr(ExecutionContext.empty)(state)).iterator
-    new IdSeekIterator[Node](ident, state.query.nodeOps, nodeIds)
+    val nodeIds = nodeIdsExpr.map(_.apply(ExecutionContext.empty)(state))
+    new IdSeekIterator[Node](ident, state.query.nodeOps, nodeIds.iterator)
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
