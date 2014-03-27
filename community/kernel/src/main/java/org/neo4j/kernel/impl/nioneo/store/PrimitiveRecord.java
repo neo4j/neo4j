@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 public abstract class PrimitiveRecord extends Abstract64BitRecord
 {
     private long nextProp;
-    private long committedNextProp;
 
     public PrimitiveRecord()
     {
@@ -32,7 +31,6 @@ public abstract class PrimitiveRecord extends Abstract64BitRecord
     {
         super( id );
         this.nextProp = nextProp;
-        this.committedNextProp = this.nextProp = nextProp;
     }
 
     public long getNextProp()
@@ -43,11 +41,6 @@ public abstract class PrimitiveRecord extends Abstract64BitRecord
     public void setNextProp( long nextProp )
     {
         this.nextProp = nextProp;
-    }
-
-    public long getCommittedNextProp()
-    {
-        return isCreated() ? Record.NO_NEXT_PROPERTY.intValue() : committedNextProp;
     }
 
     public abstract void setIdTo( PropertyRecord property );

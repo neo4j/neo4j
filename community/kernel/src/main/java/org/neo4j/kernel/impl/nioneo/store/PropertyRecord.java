@@ -62,7 +62,7 @@ public class PropertyRecord extends Abstract64BitRecord
         nodeIdSet = false;
         entityId = relId;
     }
-    
+
     public boolean isNodeSet()
     {
         return Boolean.TRUE.equals( nodeIdSet );
@@ -72,7 +72,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         return Boolean.FALSE.equals( nodeIdSet );
     }
-    
+
     public long getNodeId()
     {
         if ( isNodeSet() )
@@ -191,7 +191,7 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "]" );
         return buf.toString();
     }
-    
+
     public void setChanged( PrimitiveRecord primitive )
     {
         primitive.setIdTo( this );

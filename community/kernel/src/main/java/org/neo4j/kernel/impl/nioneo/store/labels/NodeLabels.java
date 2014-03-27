@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store.labels;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 
 public interface NodeLabels
@@ -30,9 +31,9 @@ public interface NodeLabels
 
     long[] getIfLoaded();
 
-    Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore );
+    Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator );
 
-    Collection<DynamicRecord> add( long labelId, NodeStore nodeStore );
+    Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator );
 
     Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore );
 

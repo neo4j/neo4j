@@ -113,7 +113,6 @@ import org.neo4j.kernel.impl.nioneo.xa.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyCreator;
-import org.neo4j.kernel.impl.nioneo.xa.PropertyCreator.PropertyKeyAndValue;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyDeleter;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyTraverser;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
@@ -584,21 +583,19 @@ public class BatchInserterImpl implements BatchInserter
         return nodeId;
     }
 
-    private Iterator<PropertyKeyAndValue> propertiesIterator( Map<String, Object> properties )
+    private Iterator<PropertyBlock> propertiesIterator( Map<String, Object> properties )
     {
         if ( properties == null || properties.isEmpty() )
         {
             return IteratorUtil.emptyIterator();
         }
-        return new IteratorWrapper<PropertyKeyAndValue, Map.Entry<String,Object>>( properties.entrySet().iterator() )
+        return new IteratorWrapper<PropertyBlock, Map.Entry<String,Object>>( properties.entrySet().iterator() )
         {
-            private final PropertyKeyAndValue singleInstance = new PropertyKeyAndValue();
-
             @Override
-            protected PropertyKeyAndValue underlyingObjectToObject( Entry<String, Object> property )
+            protected PropertyBlock underlyingObjectToObject( Entry<String, Object> property )
             {
-                singleInstance.set( getOrCreatePropertyKeyId( property.getKey() ), property.getValue() );
-                return singleInstance;
+                return propertyCreator.encodePropertyValue(
+                        getOrCreatePropertyKeyId( property.getKey() ), property.getValue() );
             }
         };
     }
@@ -606,7 +603,8 @@ public class BatchInserterImpl implements BatchInserter
     private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
-        getNodeStore().updateDynamicLabelRecords( nodeLabels.put( getOrCreateLabelIds( labels ), getNodeStore() ) );
+        getNodeStore().updateDynamicLabelRecords( nodeLabels.put( getOrCreateLabelIds( labels ), getNodeStore(),
+                getNodeStore().getDynamicLabelStore() ) );
         labelsTouched = true;
     }
 
@@ -919,7 +917,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private PropertyKeyTokenStore getPropertyKeyTokenStore()
     {
-        return getPropertyStore().getPropertyKeyTokenStore();
+        return neoStore.getPropertyKeyTokenStore();
     }
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()

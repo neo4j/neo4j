@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.storemigration.monitoring;
 public interface MigrationProgressMonitor
 {
     void started();
+    /**
+     * @param percent 0..100
+     */
     void percentComplete(int percent);
     void finished();
 }

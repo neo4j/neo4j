@@ -32,13 +32,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import static org.neo4j.kernel.impl.nioneo.store.NeoStoreMocking.mockNeoStore;
+
 public class NeoStoreTransactionContextTest
 {
     @Test
     public void shouldClearRecordSetsOnClose() throws Exception
     {
         // GIVEN
-        NeoStore mockStore = mock( NeoStore.class );
+        NeoStore mockStore = mockNeoStore();
         NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockStore );
 
         NeoStoreTransactionContext toClose = new NeoStoreTransactionContext(
@@ -59,7 +61,7 @@ public class NeoStoreTransactionContextTest
     public void shouldClearBindingsOnClose() throws Exception
     {
         // GIVEN
-        NeoStore mockStore = mock( NeoStore.class );
+        NeoStore mockStore = mockNeoStore();
         NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockStore );
 
         NeoStoreTransactionContext toClose = new NeoStoreTransactionContext(
@@ -77,7 +79,7 @@ public class NeoStoreTransactionContextTest
     public void shouldCallReleaseOnClose() throws Exception
     {
         // GIVEN
-        NeoStore mockStore = mock( NeoStore.class );
+        NeoStore mockStore = mockNeoStore();
         NeoStoreTransactionContextSupplier supplier = spy( new NeoStoreTransactionContextSupplier( mockStore ) );
 
         NeoStoreTransactionContext toClose = new NeoStoreTransactionContext(

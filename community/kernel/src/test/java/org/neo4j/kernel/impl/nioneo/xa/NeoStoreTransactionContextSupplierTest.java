@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
-import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStoreMocking.mockNeoStore;
 
 public class NeoStoreTransactionContextSupplierTest
 {
@@ -32,7 +31,7 @@ public class NeoStoreTransactionContextSupplierTest
     public void shouldReturnTheSameWhenOnlyOneExists() throws Exception
     {
         // GIVEN
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mock( NeoStore.class ) );
+        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockNeoStore() );
 
         // WHEN
         NeoStoreTransactionContext retrieved = supplier.acquire();
@@ -46,7 +45,7 @@ public class NeoStoreTransactionContextSupplierTest
     public void shouldCreateNewInstanceWhenNeeded() throws Exception
     {
         // GIVEN
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mock( NeoStore.class ) );
+        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockNeoStore() );
 
         // WHEN
         NeoStoreTransactionContext firstRetrieved = supplier.acquire();
@@ -61,7 +60,7 @@ public class NeoStoreTransactionContextSupplierTest
     {
 
         // GIVEN
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mock( NeoStore.class ) );
+        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockNeoStore() );
 
         NeoStoreTransactionContext firstRetrieved = supplier.acquire();
         NeoStoreTransactionContext secondRetrieved = supplier.acquire();

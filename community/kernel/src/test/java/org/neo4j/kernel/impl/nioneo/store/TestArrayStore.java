@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -105,7 +107,8 @@ public class TestArrayStore
     public void stringArrayGetsStoredAsUtf8() throws Exception
     {
         String[] array = new String[] { "first", "second" };
-        Collection<DynamicRecord> records = arrayStore.allocateRecords( array );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        arrayStore.allocateRecords( records, array, IteratorUtil.<DynamicRecord>emptyIterator() );
         Pair<byte[], byte[]> loaded = loadArray( records );
         assertStringHeader( loaded.first(), array.length );
         ByteBuffer buffer = ByteBuffer.wrap( loaded.other() );
@@ -147,7 +150,8 @@ public class TestArrayStore
 
     private Collection<DynamicRecord> storeArray( Object array )
     {
-        Collection<DynamicRecord> records = arrayStore.allocateRecords( array );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        arrayStore.allocateRecords( records, array, IteratorUtil.<DynamicRecord>emptyIterator() );
         for ( DynamicRecord record : records )
         {
             arrayStore.updateRecord( record );

@@ -27,15 +27,19 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 public interface CacheAccessBackDoor
 {
     void removeNodeFromCache( long nodeId );
-    
+
     void removeRelationshipFromCache( long id );
 
     void removeRelationshipTypeFromCache( int id );
 
+    void removePropertyKeyFromCache( int id );
+
+    void removeLabelFromCache( int id );
+
     void removeGraphPropertiesFromCache();
-    
+
     void addSchemaRule( SchemaRule schemaRule );
-    
+
     void removeSchemaRuleFromCache( long id );
 
     void addRelationshipTypeToken( Token type );

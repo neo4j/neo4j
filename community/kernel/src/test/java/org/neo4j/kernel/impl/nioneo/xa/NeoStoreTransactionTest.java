@@ -91,7 +91,13 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 import static java.lang.Integer.parseInt;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -600,7 +606,7 @@ public class NeoStoreTransactionTest
         assertEquals( "PropertyStore", 2, neoStore.getPropertyStore().getHighId() );
         assertEquals( "PropertyStore DynamicStringStore", 2, neoStore.getPropertyStore().getStringStore().getHighId() );
         assertEquals( "PropertyStore DynamicArrayStore", 2, neoStore.getPropertyStore().getArrayStore().getHighId() );
-        assertEquals( "PropertyIndexStore", propertyKeyId+1, neoStore.getPropertyStore().getPropertyKeyTokenStore().getHighId() );
+        assertEquals( "PropertyIndexStore", propertyKeyId+1, neoStore.getPropertyKeyTokenStore().getHighId() );
         assertEquals( "PropertyKeyToken NameStore", 2, neoStore.getPropertyStore().getPropertyKeyTokenStore().getNameStore().getHighId() );
         assertEquals( "SchemaStore", ruleId+1, neoStore.getSchemaStore().getHighId() );
     }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -28,6 +26,8 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Provides instances of batch inserters.
@@ -42,7 +42,7 @@ public final class BatchInserters
 {
     /**
      * Get a {@link BatchInserter} given a store directory.
-     * 
+     *
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
      */
@@ -53,7 +53,7 @@ public final class BatchInserters
 
     /**
      * Get a {@link BatchInserter} given a store directory.
-     * 
+     *
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
@@ -65,7 +65,7 @@ public final class BatchInserters
 
     /**
      * Get a {@link BatchInserter} given a store directory.
-     * 
+     *
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
      */
@@ -76,7 +76,7 @@ public final class BatchInserters
 
     /**
      * Get a {@link BatchInserter} given a store directory.
-     * 
+     *
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
@@ -87,17 +87,17 @@ public final class BatchInserters
     {
         return inserter( storeDir, fileSystem, config, (Iterable) Service.load( KernelExtensionFactory.class ) );
     }
-    
+
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
             Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
     }
-    
+
     /**
      * Get a {@link GraphDatabaseService} that does not support deletions and
      * transactions.
-     * 
+     *
      * @param storeDir the store directory
      * @return a {@link GraphDatabaseService} that does not support deletions
      *         and transactions
@@ -110,7 +110,7 @@ public final class BatchInserters
     /**
      * Get a {@link GraphDatabaseService} that does not support deletions and
      * transactions.
-     * 
+     *
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a {@link GraphDatabaseService} that does not support deletions
@@ -125,7 +125,7 @@ public final class BatchInserters
     /**
      * Get a {@link GraphDatabaseService} that does not support deletions and
      * transactions.
-     * 
+     *
      * @param storeDir the store directory
      * @return a {@link GraphDatabaseService} that does not support deletions
      *         and transactions
@@ -138,7 +138,7 @@ public final class BatchInserters
     /**
      * Get a {@link GraphDatabaseService} that does not support deletions and
      * transactions.
-     * 
+     *
      * @param storeDir the store directory
      * @param config configuration settings to use
      * @return a {@link GraphDatabaseService} that does not support deletions
