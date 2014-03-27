@@ -258,6 +258,11 @@ public class SubGraphExporter
         return "[" + result + "]";
     }
 
+    private String escapeString( String value )
+    {
+        return "\"" + value.replaceAll( "\\\\", "\\\\\\\\" ).replaceAll( "\"", "\\\\\"" ) + "\"";
+    }
+
     private String toString( Object value )
     {
         if ( value == null )
@@ -266,7 +271,7 @@ public class SubGraphExporter
         }
         if ( value instanceof String )
         {
-            return "\"" + ((String) value).replaceAll( "\"", "\\\\\"" ) + "\"";
+            return escapeString( (String) value );
         }
         if ( value instanceof Float || value instanceof Double )
         {
