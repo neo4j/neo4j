@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -817,7 +818,7 @@ public class NeoStoreTransaction extends XaTransaction
             {
                 indexes.updateIndexes( new LazyIndexUpdates(
                         getNodeStore(), getPropertyStore(),
-                        new ArrayList<>( propCommands ), new HashMap<>( nodeCommands ) ) );
+                        groupedNodePropertyCommands( propCommands ), new HashMap<>( nodeCommands ) ) );
             }
 
             // schema rules. Execute these after generating the property updates so. If executed
@@ -868,6 +869,29 @@ public class NeoStoreTransaction extends XaTransaction
         {
             // clear() will be called in commitChangesToCache outside of the XaResourceManager monitor
         }
+    }
+
+    private Collection<List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
+    {
+        // A bit too expensive data structure, but don't know off the top of my head how to make it better.
+        Map<Long, List<PropertyCommand>> groups = new HashMap<>();
+        for ( PropertyCommand command : propCommands )
+        {
+            PropertyRecord record = command.getAfter();
+            if ( !record.isNodeSet() )
+            {
+                continue;
+            }
+
+            long nodeId = command.getAfter().getNodeId();
+            List<PropertyCommand> group = groups.get( nodeId );
+            if ( group == null )
+            {
+                groups.put( nodeId, group = new ArrayList<>() );
+            }
+            group.add( command );
+        }
+        return groups.values();
     }
 
     public void commitChangesToCache()

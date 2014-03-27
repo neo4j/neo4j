@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 
 public class PropertyPhysicalToLogicalConverter
 {
@@ -40,21 +40,22 @@ public class PropertyPhysicalToLogicalConverter
         this.propertyStore = propertyStore;
     }
 
-    public Iterable<NodePropertyUpdate> apply(
-            PropertyRecord before, long[] labelsBefore,
-            PropertyRecord after, long[] labelsAfter )
+    /**
+     * Converts physical changes to PropertyRecords for a node into logical updates
+     *
+     * @param before the state of affected property records for a particular node in a transaction before the changes.
+     * @param labelsBefore labels that node had before the change.
+     * @param after the state of affected property records for a particular node in a transaction after the changes.
+     * @param labelsAfter labels that node has after the change.
+     * @return logical updates of the physical property record changes.
+     */
+    public void apply( Collection<NodePropertyUpdate> target, Iterable<PropertyRecordChange> changes,
+            long[] labelsBefore, long[] labelsAfter )
     {
-        assert before.getNodeId() == after.getNodeId() :
-            "Node ids differ between before(" + before.getNodeId() + ") and after(" + after.getNodeId() + ")";
-        long nodeId = before.getNodeId();
-        Map<Integer, PropertyBlock> beforeMap = mapBlocks( before );
-        Map<Integer, PropertyBlock> afterMap = mapBlocks( after );
+        Map<Integer, PropertyBlock> beforeMap = new HashMap<>(), afterMap = new HashMap<>();
+        long nodeId = mapBlocks( changes, beforeMap, afterMap );
 
-        @SuppressWarnings( "unchecked" )
-        Set<Integer> allKeys = union( beforeMap.keySet(), afterMap.keySet() );
-
-        Collection<NodePropertyUpdate> result = new ArrayList<>();
-        for ( int key : allKeys )
+        for ( int key : union( beforeMap.keySet(), afterMap.keySet() ) )
         {
             PropertyBlock beforeBlock = beforeMap.get( key );
             PropertyBlock afterBlock = afterMap.get( key );
@@ -89,30 +90,44 @@ public class PropertyPhysicalToLogicalConverter
 
             if ( update != null)
             {
-                result.add( update );
+                target.add( update );
             }
         }
-        return result;
     }
 
-    private <T> Set<T> union( Set<T>... sets )
+    private <T> Set<T> union( Set<T> first, Set<T> other )
     {
-        Set<T> union = new HashSet<>();
-        for ( Set<T> set : sets )
-        {
-            union.addAll( set );
-        }
+        Set<T> union = new HashSet<>( first );
+        union.addAll( other );
         return union;
     }
 
-    private Map<Integer, PropertyBlock> mapBlocks( PropertyRecord before )
+    private long mapBlocks( Iterable<PropertyRecordChange> changes,
+            Map<Integer,PropertyBlock> beforeMap, Map<Integer,PropertyBlock> afterMap )
     {
-        HashMap<Integer, PropertyBlock> map = new HashMap<>();
-        for ( PropertyBlock block : before.getPropertyBlocks() )
+        long nodeId = -1;
+        for ( PropertyRecordChange change : changes )
         {
-            map.put( block.getKeyIndexId(), block );
+            nodeId = equalCheck( change.getBefore().getNodeId(), nodeId );
+            nodeId = equalCheck( change.getAfter().getNodeId(), nodeId );
+            mapBlocks( change.getBefore(), beforeMap );
+            mapBlocks( change.getAfter(), afterMap );
         }
-        return map;
+        return nodeId;
+    }
+
+    private long equalCheck( long nodeId, long expectedNodeId )
+    {
+        assert expectedNodeId == -1 || nodeId == expectedNodeId : "Node id differs expected " + expectedNodeId + ", but was " + nodeId;
+        return nodeId;
+    }
+
+    private void mapBlocks( PropertyRecord record, Map<Integer, PropertyBlock> blocks )
+    {
+        for ( PropertyBlock block : record.getPropertyBlocks() )
+        {
+            blocks.put( block.getKeyIndexId(), block );
+        }
     }
 
     private Object valueOf( PropertyBlock block )
