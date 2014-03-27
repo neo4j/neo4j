@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
+import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -385,7 +386,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return after.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -502,6 +503,7 @@ public abstract class Command extends XaCommand
                 {
                     return null;
                 }
+
                 boolean dense = buffer.get() == 1;
                 record = new NodeRecord( id, dense, buffer.getLong(), buffer.getLong() );
 
@@ -943,7 +945,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return after.toString();
+            return beforeAndAfterToString( before, after );
         }
 
         @Override
@@ -1568,5 +1570,10 @@ public abstract class Command extends XaCommand
             default:
                 throw new IOException( "Unknown command type[" + commandType + "]" );
         }
+    }
+
+    static String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
+    {
+        return format( "%n  -%s%n  +%s", before, after );
     }
 }
