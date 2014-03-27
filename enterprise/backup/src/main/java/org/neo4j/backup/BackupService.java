@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -28,7 +26,15 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
@@ -57,10 +63,13 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.util.Collections.emptyMap;
 
 class BackupService
 {
@@ -264,7 +273,7 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                       boolean verification )
+                                       boolean verification ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -299,7 +308,70 @@ class BackupService
         return outcome;
     }
 
+    BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
+                                                       boolean verification, Config config )
+    {
+        if(!directoryContainsDb( targetDirectory ))
+        {
+            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config );
+        }
+
+        try
+        {
+            return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification );
+        }
+        catch(IncrementalBackupNotPossibleException e)
+        {
+            try
+            {
+                // Our existing backup is out of date. Archive the old backup for safekeeping and do full backup.
+                File targetDirFile = new File( targetDirectory );
+                File oldBackupFile = new File( targetDirectory, "backup.old" );
+
+                prepareForFullBackup( targetDirFile, oldBackupFile );
+
+                BackupOutcome outcome = doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
+                                                      verification, config );
+
+                return outcome;
+            }
+            catch ( IOException fullBackupFailure )
+            {
+                throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
+                        "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
+            }
+        }
+    }
+
+    private void prepareForFullBackup( File targetDirFile, File oldBackupFile ) throws IOException
+    {
+        if(oldBackupFile.exists())
+        {
+            FileUtils.deleteRecursively( oldBackupFile );
+        }
+
+        if( targetDirFile.getUsableSpace() < FileUtils.directorySize( targetDirFile ) )
+        {
+            throw new RuntimeException( "Failed to run incremental backup because the existing backup is too " +
+                    "old. Fell back to full backup, but there is not enough disk space available. " +
+                    "You can mitigate this by removing the existing backup in '" +
+                    targetDirFile.getAbsolutePath() + "' and running the backup again." );
+        }
+
+        FileUtils.moveDirectoryContents( targetDirFile, oldBackupFile );
+    }
+
+    private void replaceOldBackupWithNew( File oldBackup, File newBackup ) throws IOException
+    {
+        if(oldBackup.exists())
+        {
+            FileUtils.deleteRecursively( oldBackup );
+        }
+        FileUtils.moveFile( newBackup, oldBackup );
+    }
+
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb )
+            throws IncrementalBackupNotPossibleException
     {
         return incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, slaveContextOf( targetDb ) );
     }
@@ -397,7 +469,7 @@ class BackupService
      * @return A backup context, ready to perform
      */
     private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-                                                  RequestContext context )
+                                                  RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
                 targetDb.getDependencyResolver().resolveDependency( Logging.class ),
@@ -413,6 +485,21 @@ class BackupService
                     new ProgressTxHandler() );
             trimLogicalLogCount( targetDb );
             consistent = true;
+        }
+        catch(RuntimeException e)
+        {
+            if(e.getCause() instanceof NoSuchLogVersionException)
+            {
+                throw new IncrementalBackupNotPossibleException("It's been too long since this backup was last updated, and it has " +
+                        "fallen too far behind the database transaction stream for incremental backup to be possible. " +
+                        "You need to perform a full backup at this point. You can modify this time interval by setting " +
+                        "the '" + GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a " +
+                        "higher value.", e);
+            }
+            else
+            {
+                throw e;
+            }
         }
         finally
         {

@@ -362,6 +362,42 @@ public class FileUtils
         }
     }
 
+    /**
+     * Move the contents of one directory into another directory. Allows moving the contents of a directory into a
+     * sub-directory of itself.
+     */
+    public static void moveDirectoryContents( File baseDir, File targetDir ) throws IOException
+    {
+        if(!baseDir.isDirectory())
+        {
+            throw new IllegalArgumentException( baseDir.getAbsolutePath() + " must be a directory." );
+        }
+
+        if(!targetDir.exists())
+        {
+            targetDir.mkdirs();
+        }
+
+        for ( File file : baseDir.listFiles() )
+        {
+            if(!file.equals( targetDir ))
+            {
+                moveFileToDirectory( file, targetDir );
+            }
+        }
+    }
+
+    /** Gives the recursive size of all files in a directory. */
+    public static long directorySize( File directory )
+    {
+        long length = 0;
+        for (File file : directory.listFiles())
+        {
+            length += file.isFile() ? file.length() : directorySize( file );
+        }
+        return length;
+    }
+
     public interface LineListener
     {
         void line( String line );

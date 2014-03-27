@@ -121,7 +121,7 @@ public class Database implements Lifecycle
         }
 
         putIfAbsent( databaseProperties, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
-        putIfAbsent( databaseProperties, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        putIfAbsent( databaseProperties, GraphDatabaseSettings.keep_logical_logs.name(), "7 days" );
 
         try
         {
