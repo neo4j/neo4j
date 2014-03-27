@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -278,7 +277,7 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        config.registerSettingsClasses( getSettingsClasses( kernelExtensions, cacheProviders ));
+        config.registerSettingsClasses( getSettingsClasses( kernelExtensions, cacheProviders ) );
 
         this.config = config;
         this.loggingProvider = loggingProvider;

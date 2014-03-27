@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccess
 import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
 
 class LazyTest extends ExecutionEngineFunSuite {
 
@@ -197,6 +198,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
     when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
     when(monitors.newMonitor(classOf[PipeMonitor])).thenReturn(mock[PipeMonitor])
+    when(monitors.newMonitor(classOf[PlanningMonitor])).thenReturn(mock[PlanningMonitor])
 
     when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.instance()).thenReturn(fakeStatement)

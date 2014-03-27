@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlanningMonitor, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{NotEquals, Identifier, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
@@ -30,10 +30,12 @@ import org.neo4j.graphdb.Direction
 
 class LogicalPlanningAcceptanceTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  private val monitor = mock[PlanningMonitor]
+
   test("should build plans containing single row") {
     implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
       case _ => 100
-    })
+    }, monitor)
 
     produceLogicalPlan("RETURN 42") should equal(
       Projection(
@@ -48,7 +50,7 @@ class LogicalPlanningAcceptanceTest extends CypherFunSuite with LogicalPlanningT
       case Expand(_, IdName("b"), _, _, _, _) => 10000
       case _: Expand                          => 10
       case _: NodeHashJoin                    => 20
-    })
+    }, monitor)
 
     produceLogicalPlan("MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b") should equal(
       Projection(

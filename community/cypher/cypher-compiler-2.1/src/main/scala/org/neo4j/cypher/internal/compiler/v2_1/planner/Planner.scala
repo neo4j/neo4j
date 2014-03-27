@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner(monitors: Monitors) extends PipeBuilder {
+case class Planner(monitors: Monitors, monitor: PlanningMonitor) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
 
@@ -43,12 +43,17 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   val logicalPlanner = new SimpleLogicalPlanner()
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
-    producePlan(inputQuery.statement, inputQuery.semanticTable)(planContext)
+    producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
 
-  def producePlan(statement: Statement, semanticTable: SemanticTable)(planContext: PlanContext): PipeInfo = statement match {
+
+  private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = statement match {
     case ast: Query =>
+      monitor.startedPlanning(query)
       val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)
-      executionPlanBuilder.build(logicalPlan)
+      monitor.foundPlan(query, logicalPlan)
+      val result = executionPlanBuilder.build(logicalPlan)
+      monitor.successfulPlanning(query, result)
+      result
 
     case _ =>
       throw new CantHandleQueryException
@@ -64,3 +69,8 @@ case class Planner(monitors: Monitors) extends PipeBuilder {
   }
 }
 
+trait PlanningMonitor {
+  def startedPlanning(q: String)
+  def foundPlan(q: String, p: LogicalPlan)
+  def successfulPlanning(q: String, p: PipeInfo)
+}

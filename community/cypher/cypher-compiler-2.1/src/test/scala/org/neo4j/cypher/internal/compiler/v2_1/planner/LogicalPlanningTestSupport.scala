@@ -66,8 +66,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     plan
   }
 
-  def newStubbedPlanner(cardinality: CardinalityEstimator): Planner =
-    new Planner(monitors) {
+  def newStubbedPlanner(cardinality: CardinalityEstimator, monitor: PlanningMonitor): Planner =
+    new Planner(monitors, monitor) {
       override val cardinalityEstimatorFactory = () => cardinality
     }
 

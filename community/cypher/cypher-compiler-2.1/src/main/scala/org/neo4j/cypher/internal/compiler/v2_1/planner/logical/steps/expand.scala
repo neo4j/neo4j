@@ -41,7 +41,6 @@ object expand extends PlanCandidateGenerator {
       else
         Expand(plan, nodeId, dir, patternRel.types, otherSide, patternRel.name)
     }
-
     CandidateList(expandPlans)
   }
 

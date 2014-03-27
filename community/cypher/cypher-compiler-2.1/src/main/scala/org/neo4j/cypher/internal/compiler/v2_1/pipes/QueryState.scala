@@ -33,7 +33,7 @@ case class QueryState(db: GraphDatabaseService,
                       decorator: PipeDecorator,
                       timeReader: TimeReader = new TimeReader,
                       var initialContext: Option[ExecutionContext] = None,
-                      val queryId: AnyRef = UUID.randomUUID().toString) {
+                      queryId: AnyRef = UUID.randomUUID().toString) {
   def readTimeStamp(): Long = timeReader.getTime
 
   def graphDatabaseAPI: GraphDatabaseAPI = db match {
