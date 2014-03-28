@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{SimpleMetricsFactory, CachedMetricsFactory}
 
 trait SemanticCheckMonitor {
   def startSemanticCheck(query: String)
@@ -67,7 +68,8 @@ object CypherCompilerFactory {
       val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
       val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
       val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
-      val planner = new Planner(monitors, planningMonitor)
+      val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
+      val planner = new Planner(monitors, metricsFactory, planningMonitor)
       val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
       val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
       val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)

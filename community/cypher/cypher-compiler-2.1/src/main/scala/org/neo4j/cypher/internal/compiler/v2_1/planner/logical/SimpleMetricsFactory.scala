@@ -19,24 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{selectivityEstimator, cardinalityEstimator, costModel}
 
-class SingleRowPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
+object SimpleMetricsFactory extends MetricsFactory {
+  def newCostModel(cardinality: cardinalityEstimator): costModel =
+    new SimpleCostModel(cardinality)
 
-  test("should build plans containing single row") {
-    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
-      case _ => 100
-    })
+  def newCardinalityEstimator(selectivity: selectivityEstimator): cardinalityEstimator =
+    new GuessingCardinalityEstimator(selectivity)
 
-    produceLogicalPlan("RETURN 42") should equal(
-      Projection(
-        SingleRow(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
-      )
-    )
-  }
-
+  def newSelectivityEstimator: selectivityEstimator =
+    new GuessingSelectivityEstimator
 }

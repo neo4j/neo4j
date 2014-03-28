@@ -19,24 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.CachedFunction
+import Metrics._
 
-class SingleRowPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
+case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
+  def newSelectivityEstimator =
+    CachedFunction.byIdentity(metricsFactory.newSelectivityEstimator)
 
-  test("should build plans containing single row") {
-    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
-      case _ => 100
-    })
+  def newCardinalityEstimator(selectivity: selectivityEstimator) =
+    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(selectivity))
 
-    produceLogicalPlan("RETURN 42") should equal(
-      Projection(
-        SingleRow(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
-      )
-    )
-  }
-
+  def newCostModel(cardinality: cardinalityEstimator) =
+    CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
 }

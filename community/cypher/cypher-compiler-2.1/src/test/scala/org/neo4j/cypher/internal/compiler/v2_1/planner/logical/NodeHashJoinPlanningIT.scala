@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, NotEquals}
 class NodeHashJoinPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans containing joins") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan                    => 200
       case Expand(_, IdName("b"), _, _, _, _) => 10000
       case _: Expand                          => 10

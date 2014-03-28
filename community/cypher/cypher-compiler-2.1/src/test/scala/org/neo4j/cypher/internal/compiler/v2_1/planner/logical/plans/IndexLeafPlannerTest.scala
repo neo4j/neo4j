@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.indexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.uniqueIndexSeekLeafPlanner
 
@@ -49,11 +48,12 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val expressions: Seq[Expression] = Seq(equals, hasLabels)
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = Metrics.newCardinalityEstimator {
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      metrics = newMetricsFactory.withCardinalityEstimator {
         case _: AllNodesScan => 1000
         case _: NodeByLabelScan => 100
-      })
+      }.newMetrics)
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
     when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
       override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
@@ -83,10 +83,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = Metrics.newCardinalityEstimator {
-        case _: AllNodesScan => 1000
+      metrics = newMetricsFactory.withCardinalityEstimator {
+        case _: AllNodesScan    => 1000
         case _: NodeByLabelScan => 100
-      })
+      }.newMetrics)
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {

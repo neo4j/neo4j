@@ -33,7 +33,7 @@ import org.mockito.Mockito._
 class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("should build plans for simple cartesian product") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan => 1000
     })
 
@@ -43,7 +43,7 @@ class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("should build plans for simple cartesian product with a predicate on the elements") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan => 1000
     })
 
@@ -66,7 +66,7 @@ class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTest
     val labelIdB = Right(LabelId(10))
     val labelIdC = Right(LabelId(20))
 
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan                             => 1000
       case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
     })

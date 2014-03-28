@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{costModel, cardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -41,12 +42,13 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
 
+  def newMetricsFactory = OverridableMetricsFactory(SimpleMetricsFactory)
+
   def newMockedLogicalPlanContext(planContext: PlanContext = self.newMockedPlanContext,
-                                  estimator: cardinalityEstimator = PartialFunction.empty,
-                                  costs: costModel = self.mock[costModel],
+                                  metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph]) =
-    LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan
@@ -65,10 +67,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     plan
   }
 
-  def newStubbedPlanner(cardinality: cardinalityEstimator): Planner =
-    new Planner(monitors, monitors.newMonitor[PlanningMonitor]()) {
-      override val cardinalityEstimatorFactory = () => cardinality
-    }
+  def newPlanner(metricsFactory: MetricsFactory): Planner =
+    new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
 
   def produceLogicalPlan(queryText: String)
                         (implicit planner: Planner, planContext: PlanContext = newMockedPlanContext) = {

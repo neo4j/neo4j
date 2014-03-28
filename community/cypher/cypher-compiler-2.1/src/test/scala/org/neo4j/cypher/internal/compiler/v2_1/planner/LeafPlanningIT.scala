@@ -28,12 +28,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics
 
 class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans for all nodes scans") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan => 1
       case _               => 100
     })
@@ -44,7 +43,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for label scans without compile-time label id") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 2
       case _: NodeByLabelScan => 1
@@ -59,7 +58,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for label scans with compile-time label id") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 2
       case _: NodeByLabelScan => 1
@@ -74,7 +73,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for index scan when there is an index on the property") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan         => 1000
       case _: NodeIndexSeek        => 1
       case _: NodeIndexUniqueSeek  => 2
@@ -95,7 +94,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for index seek when there is an index on the property") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan         => 1000
       case _: NodeIndexSeek        => 2
       case _: NodeIndexUniqueSeek  => 1
@@ -116,7 +115,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for node by ID mixed with label scan when node by ID is cheaper") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 1
       case _: NodeByLabelScan => 100
@@ -134,7 +133,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for node by ID mixed with label scan when label scan is cheaper") {
-    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 10
       case _: NodeByLabelScan => 1

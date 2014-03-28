@@ -25,10 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 case class LogicalPlanContext(planContext: PlanContext,
-                              cardinality: Metrics.cardinalityEstimator,
-                              cost: Metrics.costModel,
+                              metrics: Metrics,
                               semanticTable: SemanticTable,
-                              queryGraph: QueryGraph)
+                              queryGraph: QueryGraph) {
+
+  def cost = metrics.cost
+  def cardinality = metrics.cardinality
+}
 
 object NodeIdName {
   def unapply(v: Any)(implicit context: LogicalPlanContext): Option[IdName] = v match {

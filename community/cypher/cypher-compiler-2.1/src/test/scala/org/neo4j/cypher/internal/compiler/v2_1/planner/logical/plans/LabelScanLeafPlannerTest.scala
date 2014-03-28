@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Identifier, HasLabels}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, labelScanLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlanner
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -35,10 +35,11 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")()_))_
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = Metrics.newCardinalityEstimator {
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      metrics = newMetricsFactory.withCardinalityEstimator {
         case _: NodeByLabelScan => 1
-      })
+      }.newMetrics)
 
     // when
     val resultPlans = labelScanLeafPlanner(Map(idName -> Set(hasLabels)))()
@@ -55,10 +56,12 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")(Some(labelId))_))_
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = Metrics.newCardinalityEstimator {
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      metrics = newMetricsFactory.withCardinalityEstimator {
         case _: NodeByLabelScan => 100
-      })
+      }.newMetrics
+    )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // when

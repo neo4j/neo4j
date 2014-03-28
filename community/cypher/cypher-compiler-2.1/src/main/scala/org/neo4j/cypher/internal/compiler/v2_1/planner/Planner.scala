@@ -30,17 +30,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContex
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.CachedFunction
-import Metrics._
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner(monitors: Monitors, monitor: PlanningMonitor) extends PipeBuilder {
+case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
-
-  val cardinalityEstimatorFactory: () => cardinalityEstimator = () => new GuessingCardinalityEstimator(new GuessingSelectivityEstimator)
-  val costModelFactory: (cardinalityEstimator => costModel) = new SimpleCostModel(_)
-
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
   val logicalPlanner = new SimpleLogicalPlanner()
 
@@ -62,11 +56,10 @@ case class Planner(monitors: Monitors, monitor: PlanningMonitor) extends PipeBui
   }
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
-    val cardinality = CachedFunction.byIdentity(cardinalityEstimatorFactory())
-    val costs = CachedFunction.byIdentity(costModelFactory(cardinality))
     val resolvedAst = tokenResolver.resolve(ast)(planContext)
     val queryGraph = queryGraphBuilder.produce(resolvedAst)
-    val context = LogicalPlanContext(planContext, cardinality, costs, semanticTable, queryGraph)
+    val metrics = metricsFactory.newMetrics
+    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
     logicalPlanner.plan(context)
   }
 }
