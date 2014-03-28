@@ -41,27 +41,3 @@ class FoldConstantsTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH n RETURN 12 * (n.prop * 5) AS r", "MATCH n RETURN n.prop * 60 AS r")
   }
 }
-
-trait RewriteTest {
-  self: CypherFunSuite =>
-
-  import parser.ParserFixture._
-
-  val rewriterUnderTest: Rewriter
-  val semantickChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-
-  protected def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parser.parse(originalQuery)
-    val expected = parser.parse(expectedQuery)
-    semantickChecker.check(originalQuery, original)
-
-    val result = original.rewrite(bottomUp(rewriterUnderTest))
-    result should equal (expected)
-  }
-
-  protected def assertIsNotRewritten(query: String) {
-    val original = parser.parse(query)
-    val result = original.rewrite(bottomUp(rewriterUnderTest))
-    result should equal (original)
-  }
-}

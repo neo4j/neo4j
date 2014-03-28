@@ -53,6 +53,11 @@ object Foldable {
 
     def treeFold[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
       treeFoldAcc(mutable.ArrayStack(that), init, f)
+
+    def exists(f: PartialFunction[Any, Boolean]) = this.fold(false) {
+      case o if f.isDefinedAt(o) && f(o) => acc => true
+      case _ => acc => acc
+    }
   }
 
   @tailrec

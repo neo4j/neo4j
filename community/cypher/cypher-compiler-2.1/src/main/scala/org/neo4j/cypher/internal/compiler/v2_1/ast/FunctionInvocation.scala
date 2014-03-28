@@ -33,7 +33,7 @@ object FunctionInvocation {
     FunctionInvocation(name, distinct = false, IndexedSeq(expression))(name.position)
 }
 
-case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arguments: IndexedSeq[Expression])
+case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
                              (val position: InputPosition) extends Expression {
   val name = functionName.name
   val function = Function.lookup.get(name.toLowerCase)

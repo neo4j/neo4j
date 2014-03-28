@@ -22,18 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-object ASTNodeTest {
-  trait Exp extends ASTNode
-  case class Val(int: Int) extends Exp {
-    val position = DummyPosition(0)
-  }
-  case class Add(lhs: Exp, rhs: Exp) extends Exp {
-    val position = DummyPosition(0)
-  }
-}
-
 class ASTNodeTest extends CypherFunSuite {
-  import ASTNodeTest._
+
+  trait Exp extends ASTNode {
+    val position = DummyPosition(0)
+  }
+
+  case class Val(int: Int) extends Exp
+  case class Add(lhs: Exp, rhs: Exp) extends Exp
 
   test("rewrite should match and replace expressions") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
@@ -60,7 +56,7 @@ class ASTNodeTest extends CypherFunSuite {
   }
 
   test("rewrite should duplicate ASTNode carrying InputPosition") {
-    case class AddWithPos(lhs: Exp, rhs: Exp)(val position: InputPosition) extends Exp
+    case class AddWithPos(lhs: Exp, rhs: Exp)(override val position: InputPosition) extends Exp
 
     val ast = Add(Val(1), AddWithPos(Val(2), Val(3))(DummyPosition(0)))
 

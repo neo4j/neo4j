@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.{AggregationPreparationRewriter, KeyTokenResolver}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_1.{Monitors, ParsedQuery}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.QueryBuilder
 
@@ -126,7 +126,6 @@ The Neo4j Team""")
     def myBuilders: Seq[PlanBuilder] = Seq(
       new PredicateRewriter,
       new KeyTokenResolver,
-      new AggregationPreparationRewriter(),
       new IndexLookupBuilder,
       new StartPointChoosingBuilder,
       new MergeStartPointBuilder,
