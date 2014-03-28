@@ -17,21 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.leaves
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{AllNodesScan, IdName}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, allNodesLeafPlanner}
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  private val pos = DummyPosition(0)
 
   test("simple all nodes scan") {
     // given
-    val qg = QueryGraph(Map("n" -> Identifier("n")(pos)), Selections(), Set(IdName("n")), Set.empty)
+    val qg = QueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
       estimator = Metrics.newCardinalityEstimator {

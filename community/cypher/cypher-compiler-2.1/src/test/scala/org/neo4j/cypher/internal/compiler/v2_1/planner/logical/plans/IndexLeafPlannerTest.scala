@@ -17,51 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.leaves
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.mockito.Mockito._
 import org.mockito.stubbing.Answer
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.indexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.uniqueIndexSeekLeafPlanner
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val pos = DummyPosition(0)
-
   test("index scan when there is an index on the property") {
     // given
-    val identifier = Identifier("n")(pos)
-    val projections = Map("n" -> identifier)
+    val identifier = Identifier("n")_
+    val projections: Map[String, Expression]  = Map("n" -> identifier)
     val labelId = LabelId(12)
     val propertyKeyId = PropertyKeyId(15)
     val idName = IdName("n")
-    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))_))_
     val equals = Equals(
-      Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))(pos))(pos),
-      SignedIntegerLiteral("42")(pos)
-    )(pos)
-    val expressions = Seq(equals, hasLabels)
+      Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))_)_,
+      SignedIntegerLiteral("42")_
+    )_
+    val expressions: Seq[Expression] = Seq(equals, hasLabels)
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
@@ -79,22 +64,22 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = indexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
 
     // then
-    resultPlans should equal(Seq(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))()))
+    resultPlans should equal(Seq(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
   }
 
   test("index seek when there is an index on the property") {
     // given
-    val identifier = Identifier("n")(pos)
-    val projections = Map("n" -> identifier)
+    val identifier = Identifier("n")_
+    val projections: Map[String, Expression] = Map("n" -> identifier)
     val labelId = LabelId(12)
     val propertyKeyId = PropertyKeyId(15)
     val idName = IdName("n")
-    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")(Some(labelId))_))_
     val equals = Equals(
-      Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))(pos))(pos),
-      SignedIntegerLiteral("42")(pos)
-    )(pos)
-    val expressions = Seq(equals, hasLabels)
+      Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))_)_,
+      SignedIntegerLiteral("42")_
+    )_
+    val expressions: Seq[Expression] = Seq(equals, hasLabels)
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
@@ -112,6 +97,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = uniqueIndexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
 
     // then
-    resultPlans should equal(Seq(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")(pos))()))
+    resultPlans should equal(Seq(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
   }
 }
