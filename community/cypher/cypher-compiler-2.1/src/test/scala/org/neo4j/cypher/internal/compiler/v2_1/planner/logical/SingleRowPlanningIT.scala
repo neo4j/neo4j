@@ -20,29 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{AllNodesScan, IdName}
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
-class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  private val pos = DummyPosition(0)
+class SingleRowPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  test("simple all nodes scan") {
-    // given
-    val qg = QueryGraph(Map("n" -> Identifier("n")(pos)), Selections(), Set(IdName("n")), Set.empty)
+  test("should build plans containing single row") {
+    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+      case _ => 100
+    })
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
-        case _: AllNodesScan => 1
-      }
+    produceLogicalPlan("RETURN 42") should equal(
+      Projection(
+        SingleRow(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
+      )
     )
-
-    // when
-    val resultPlans = allNodesLeafPlanner()()
-
-    // then
-    resultPlans should equal(Seq(AllNodesScan(IdName("n"))))
   }
+
 }

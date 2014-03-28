@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
 class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should add projection for expressions not already covered") {
     // given
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
