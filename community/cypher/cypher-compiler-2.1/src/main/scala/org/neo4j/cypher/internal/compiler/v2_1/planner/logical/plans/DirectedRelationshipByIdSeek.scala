@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 case class DirectedRelationshipByIdSeek(idName: IdName,
-                                relId: Expression,
-                                numberOfIdsEstimate: Int,
+                                relId: Seq[Expression],
                                 startNode: IdName,
                                 endNode: IdName)(val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalPlan {
   def lhs = None

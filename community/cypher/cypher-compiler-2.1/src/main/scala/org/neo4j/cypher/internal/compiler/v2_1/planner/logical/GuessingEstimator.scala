@@ -44,8 +44,8 @@ class GuessingEstimator extends CardinalityEstimator {
     case NodeByLabelScan(_, Right(_)) =>
       (ALL_NODES_SCAN_CARDINALITY * LABEL_SELECTIVITY).toInt
 
-    case NodeByIdSeek(_, _, numberOfNodeIdsEstimate) =>
-      numberOfNodeIdsEstimate
+    case NodeByIdSeek(_, nodeIds) =>
+      nodeIds.size
 
     case NodeIndexSeek(_, _, _, _) =>
       (ALL_NODES_SCAN_CARDINALITY * INDEX_SEEK_SELECTIVITY).toInt
@@ -65,11 +65,11 @@ class GuessingEstimator extends CardinalityEstimator {
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
 
-    case DirectedRelationshipByIdSeek(_, _, numberOfRelIdsEstimate, _, _) =>
-      numberOfRelIdsEstimate
+    case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
+      relIds.size
 
-    case UndirectedRelationshipByIdSeek(_, _, numberOfRelIdsEstimate, _, _) =>
-      numberOfRelIdsEstimate * 2
+    case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
+      relIds.size * 2
 
     case Projection(left, _) =>
       cardinality(left)

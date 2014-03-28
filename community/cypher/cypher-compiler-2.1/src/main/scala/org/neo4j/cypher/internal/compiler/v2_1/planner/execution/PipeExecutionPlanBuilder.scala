@@ -50,14 +50,14 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeByLabelScan(IdName(id), label) =>
           NodeByLabelScanPipe(id, label)
 
-        case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
-          NodeByIdSeekPipe(id, nodeIdExpr.asCommandExpression)
+        case NodeByIdSeek(IdName(id), nodeIdExpr) =>
+          NodeByIdSeekPipe(id, nodeIdExpr.map(_.asCommandExpression))
 
-        case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, _, IdName(fromNode), IdName(toNode)) =>
-          DirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression, toNode, fromNode)
+        case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode)) =>
+          DirectedRelationshipByIdSeekPipe(id, relIdExpr.map(_.asCommandExpression), toNode, fromNode)
 
-        case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, _, IdName(fromNode), IdName(toNode)) =>
-          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandExpression, toNode, fromNode)
+        case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode)) =>
+          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.map(_.asCommandExpression), toNode, fromNode)
 
         case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)

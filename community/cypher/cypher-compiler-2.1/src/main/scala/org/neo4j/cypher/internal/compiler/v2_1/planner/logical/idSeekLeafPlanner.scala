@@ -25,55 +25,45 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.graphdb.Direction
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] = {
     predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
-      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), ConstantExpression(idExpr)) =>
-        val numberOfRelIdsEstimate = 1
-        context.queryGraph.patternRelationships.filter(_.name == idName).collectFirst {
-          case PatternRelationship(relName, (l, r), Direction.BOTH, types) =>
-            createUndirectedRelationshipByIdSeek(relName, l, r, types, numberOfRelIdsEstimate, idExpr, predicate)
-
-          case PatternRelationship(relName, (l, r), dir, types)  =>
-            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, numberOfRelIdsEstimate, idExpr, predicate)
-        }.getOrElse(failIfNotFound(idName.name))
+      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
+        (predicate, idExpr, Seq(idValueExpr))
 
       // MATCH (a)-[r]->b WHERE id(r) IN value
-      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(RelationshipIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
-        val numberOfRelIdsEstimate = expressions.size
+      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
+        if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
+        (predicate, idExpr, idValueExprs)
+    }.collect {
+      case (predicate, RelationshipIdName(idName), idValues) =>
         context.queryGraph.patternRelationships.filter(_.name == idName).collectFirst {
           case PatternRelationship(relName, (l, r), Direction.BOTH, types) =>
-            createUndirectedRelationshipByIdSeek(relName, l, r, types, numberOfRelIdsEstimate, idsExpr, predicate)
+            createUndirectedRelationshipByIdSeek(relName, l, r, types, idValues, predicate)
 
-          case PatternRelationship(relName, (l, r), dir, types) =>
-            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, numberOfRelIdsEstimate, idsExpr, predicate)
-
+          case PatternRelationship(relName, (l, r), dir, types)  =>
+            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, idValues, predicate)
         }.getOrElse(failIfNotFound(idName.name))
 
-
-      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(NodeIdName(idName))), ConstantExpression(idExpr)) =>
-        val numberOfNodeIdsEstimate = 1
-        NodeByIdSeek(idName, idExpr, numberOfNodeIdsEstimate)(Seq(predicate))
-
-      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(NodeIdName(idName))), idsExpr@Collection(expressions)) if !expressions.exists(x => ConstantExpression.unapply(x).isEmpty) =>
-        val cardinality = expressions.size
-        NodeByIdSeek(idName, idsExpr, cardinality)(Seq(predicate))
+      case (predicate, NodeIdName(idName), idValues) =>
+        NodeByIdSeek(idName, idValues)(Seq(predicate))
     }
+  }
 
   private def failIfNotFound(idName: String): Nothing = {
     throw new InternalException(s"Identifier ${idName} typed as a relationship, but no relationship found by that name in the query graph ")
   }
 
-  private def createDirectedRelationshipByIdSeek(relName: IdName, l: IdName, r: IdName, dir: Direction, types: Seq[RelTypeName], cardinality: Int, idExpr: Expression, predicate: Expression)
+  private def createDirectedRelationshipByIdSeek(relName: IdName, l: IdName, r: IdName, dir: Direction, types: Seq[RelTypeName], idExpr: Seq[Expression], predicate: Expression)
                                                 (implicit context: LogicalPlanContext) = {
     val (from, to) = if (dir == Direction.OUTGOING) (l, r) else (r, l)
-    val relById = DirectedRelationshipByIdSeek(relName, idExpr, cardinality, from, to)(Seq(predicate))
+    val relById = DirectedRelationshipByIdSeek(relName, idExpr, from, to)(Seq(predicate))
     filterIfNeeded(relById, relName.name, types)
   }
 
-  private def createUndirectedRelationshipByIdSeek(relName: IdName, l: IdName, r: IdName, types: Seq[RelTypeName], cardinality: Int, idExpr: Expression, predicate: Expression)
+  private def createUndirectedRelationshipByIdSeek(relName: IdName, l: IdName, r: IdName, types: Seq[RelTypeName], idExpr: Seq[Expression], predicate: Expression)
                                                   (implicit context: LogicalPlanContext) = {
-    val relById = UndirectedRelationshipByIdSeek(relName, idExpr, cardinality, l, r)(Seq(predicate))
+    val relById = UndirectedRelationshipByIdSeek(relName, idExpr, l, r)(Seq(predicate))
     filterIfNeeded(relById, relName.name, types)
 
   }

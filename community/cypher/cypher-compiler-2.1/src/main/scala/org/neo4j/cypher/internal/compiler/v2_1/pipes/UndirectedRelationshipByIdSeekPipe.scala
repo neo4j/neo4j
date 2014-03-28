@@ -26,31 +26,25 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.InternalException
 
-case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Expression, toNode: String, fromNode: String)
+case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expression], toNode: String, fromNode: String)
                                              (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val relIds = relIdExpr(ExecutionContext.empty)(state)
+    val relIds = relIdExpr.flatMap(expr => Option(expr.apply(ExecutionContext.empty)(state)))
+    new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relIds.iterator).flatMap {
+      ctx =>
+        val r = ctx(ident) match {
+          case r: Relationship => r
+          case x => throw new InternalException(s"Expected a relationship, got ${x}")
+        }
 
-    if (relIds == null) {
-      Iterator(ExecutionContext.from(ident -> null, toNode -> null, fromNode -> null))
-    } else {
-      val relationshipIds = makeTraversable(relIds).iterator
-      new IdSeekIterator[Relationship](ident, state.query.relationshipOps, relationshipIds).flatMap {
-        ctx =>
-          val r = ctx(ident) match {
-            case r: Relationship => r
-            case x => throw new InternalException(s"Expected a relationship, got ${x}")
-          }
+        val s = r.getStartNode
+        val e = r.getEndNode
 
-          val s = r.getStartNode
-          val e = r.getEndNode
-
-          Seq(
-            ctx.newWith(Seq(ident -> r, toNode -> e, fromNode -> s)),
-            ctx.newWith(Seq(ident -> r, toNode -> s, fromNode -> e))
-          )
-      }
+        Seq(
+          ctx.newWith(Seq(ident -> r, toNode -> e, fromNode -> s)),
+          ctx.newWith(Seq(ident -> r, toNode -> s, fromNode -> e))
+        )
     }
   }
 

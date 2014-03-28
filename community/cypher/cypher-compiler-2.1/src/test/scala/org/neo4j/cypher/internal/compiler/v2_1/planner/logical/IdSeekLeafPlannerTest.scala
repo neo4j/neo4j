@@ -53,7 +53,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(Seq(expr))()
 
     // then
-    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), SignedIntegerLiteral("42")(pos), 1)()))
+    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("42")(pos)))()))
   }
 
   test("simple node by id seek with a collection of node ids") {
@@ -80,9 +80,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(Seq(expr))()
 
     // then
-    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Collection(
-      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
-    )(pos), 3)()))
+    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Seq(
+      SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos)
+    ))()))
   }
 
   test("simple directed relationship by id seek with a rel id expression") {
@@ -112,7 +112,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(Seq(expr))()
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1, from, end)()))
+    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")(pos)), from, end)()))
   }
 
   test("simple undirected relationship by id seek with a rel id expression") {
@@ -143,7 +143,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(Seq(expr))()
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1, from, end)()))
+    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")(pos)), from, end)()))
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
@@ -175,8 +175,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(Seq(expr))()
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Collection(
-      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos)))(pos), 3, from, end)()))
+    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(
+      SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos)
+    ), from, end)()))
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
@@ -208,8 +209,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(Seq(expr))()
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Collection(
-      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos)))(pos), 3, from, end)()))
+    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(
+      SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos)
+    ), from, end)()))
   }
 
   test("simple undirected typed relationship by id seek with a rel id expression") {
@@ -245,7 +247,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(Seq(
       Selection(
         Seq(Equals(FunctionInvocation(FunctionName("type")(pos), rIdent)(pos), StringLiteral("X")(pos))(pos)),
-        UndirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")(pos), 1, from, end)()
+        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")(pos)), from, end)()
       )
     ))
   }
@@ -293,7 +295,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)_
           )_
         ),
-        UndirectedRelationshipByIdSeek(IdName("r"), SignedIntegerLiteral("42")_, 1, from, end)()
+        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)()
       )
     ))
   }
