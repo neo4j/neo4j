@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 import collection.Map
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.kernel.{monitoring, GraphDatabaseAPI}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.kernel.api.DataWriteOperations
@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.CypherCompiler
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherTestSuite  =>
@@ -213,9 +213,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
 
-  def monitors = Monitors(graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors]))
+  def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 
   def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+
+  def newCurrentCompiler = new CypherCompiler(graph, kernelMonitors)
 }
 
 trait Snitch extends GraphDatabaseAPI {

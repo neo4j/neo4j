@@ -65,7 +65,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   override protected def initTest() {
     super.initTest()
-    self.monitors.addMonitorListener(newPlannerMonitor)
+    self.kernelMonitors.addMonitorListener(newPlannerMonitor)
   }
 
   def executeScalarWithNewPlanner[T](queryText: String, params: (String, Any)*): T =

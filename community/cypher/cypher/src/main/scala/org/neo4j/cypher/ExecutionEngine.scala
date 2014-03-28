@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal._
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.kernel.api
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.util.StringLogger
@@ -29,9 +30,11 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.api.Statement
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.CypherCompiler
 import org.neo4j.cypher.internal.TransactionInfo
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+
+trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
 class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
 
@@ -40,10 +43,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   // true means we run inside REST server
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
-  protected val monitors = Monitors(
-    graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
-  )
+  protected val kernelMonitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   protected val compiler = createCompiler()
+
+  private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
+  private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExecutionResult = profile(query, Map[String, Any]())
@@ -81,12 +85,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       val statement = txBridge.instance()
       val (plan, extractedParameters) = try {
         // fetch plan cache
-        val planCache = getOrCreateFromSchemaState(statement, {
+        val cache = getOrCreateFromSchemaState(statement, {
+          cacheMonitor.cacheFlushDetected(statement)
           new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
-
-        // get plan or build it
-        planCache.getOrElseUpdate(query, {
+        cacheAccessor.getOrElseUpdate(cache)(query, {
           touched = true
           compiler.prepare(query, graph, statement)
         })
@@ -121,7 +124,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     .getDependencyResolver
     .resolveDependency(classOf[ThreadToStatementContextBridge])
 
-  private def getOrCreateFromSchemaState[V](statement: Statement, creator: => V) = {
+  private def getOrCreateFromSchemaState[V](statement: api.Statement, creator: => V) = {
     val javaCreator = new org.neo4j.helpers.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }
@@ -134,7 +137,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     val version = optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
     )
-    new CypherCompiler(graph, monitors, CypherVersion(version))
+    new CypherCompiler(graph, kernelMonitors, CypherVersion(version))
   }
 
   private def getPlanCacheSize: Int =

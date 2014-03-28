@@ -39,11 +39,8 @@ import collection.JavaConverters._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.kernel.impl.api.OperationsFacade
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccessRateMonitor
-import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlanningMonitor
 
 class LazyTest extends ExecutionEngineFunSuite {
 
@@ -187,18 +184,11 @@ class LazyTest extends ExecutionEngineFunSuite {
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
-    val monitors = mock[org.neo4j.kernel.monitoring.Monitors]
+    val monitors = new org.neo4j.kernel.monitoring.Monitors()
 
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
     val fakeStatement = mock[Statement]
-
-    when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
-    when(monitors.newMonitor(classOf[SemanticCheckMonitor], "compiler2.1")).thenReturn(mock[SemanticCheckMonitor])
-    when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
-    when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
-    when(monitors.newMonitor(classOf[PipeMonitor])).thenReturn(mock[PipeMonitor])
-    when(monitors.newMonitor(classOf[PlanningMonitor])).thenReturn(mock[PlanningMonitor])
 
     when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.instance()).thenReturn(fakeStatement)
