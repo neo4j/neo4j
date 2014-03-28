@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{AllNodesScan, IdName}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{allNodesLeafPlanner, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, allNodesLeafPlanner}
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val pos = DummyPosition(0)
@@ -34,7 +34,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val qg = QueryGraph(Map("n" -> Identifier("n")(pos)), Selections(), Set(IdName("n")), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: AllNodesScan => 1
       }
     )

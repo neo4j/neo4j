@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.costModel
 
 case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
   def pruned: CandidateList = {
@@ -35,13 +36,13 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
     CandidateList(result)
   }
 
-  private def sorted(cost: CostModel) = CandidateList(plans.sortBy(c => (cost(c), -c.coveredIds.size)))
+  private def sorted(cost: costModel) = CandidateList(plans.sortBy(c => (cost(c), -c.coveredIds.size)))
 
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 
   def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  def topPlan(costs: CostModel) = sorted(costs).pruned.plans.headOption
+  def topPlan(costs: costModel) = sorted(costs).pruned.plans.headOption
 
   def map(f: LogicalPlan => LogicalPlan): CandidateList = copy(plans = plans.map(f))
 }

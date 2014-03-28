@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+import Metrics._
 
-class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
+class SimpleCostModel(cardinality: cardinalityEstimator) extends costModel {
 
   def apply(plan: LogicalPlan): Int = plan match {
     case _: SingleRow =>
@@ -66,4 +67,6 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
     case _: NodeHashJoin =>
       cardinality(plan) * 2
   }
+
+  private def cost(plan: LogicalPlan) = apply(plan)
 }

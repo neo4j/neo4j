@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{costModel, cardinalityEstimator}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -43,8 +42,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
 
   def newMockedLogicalPlanContext(planContext: PlanContext = self.newMockedPlanContext,
-                                  estimator: CardinalityEstimator = CardinalityEstimator.lift(PartialFunction.empty),
-                                  costs: CostModel = self.mock[CostModel],
+                                  estimator: cardinalityEstimator = PartialFunction.empty,
+                                  costs: costModel = self.mock[costModel],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph]) =
     LogicalPlanContext(planContext, estimator, costs, semanticTable, queryGraph)
@@ -66,7 +65,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     plan
   }
 
-  def newStubbedPlanner(cardinality: CardinalityEstimator): Planner =
+  def newStubbedPlanner(cardinality: cardinalityEstimator): Planner =
     new Planner(monitors, monitors.newMonitor[PlanningMonitor]()) {
       override val cardinalityEstimatorFactory = () => cardinality
     }

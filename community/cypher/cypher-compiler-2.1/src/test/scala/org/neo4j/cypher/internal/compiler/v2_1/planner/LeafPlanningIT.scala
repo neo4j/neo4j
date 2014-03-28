@@ -20,93 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CardinalityEstimator
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.stubbing.Answer
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import scala.Some
-import scala.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.FunctionName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.FunctionName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.FunctionName
-import org.neo4j.cypher.internal.compiler.v2_1.ExpressionTypeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics
 
 class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans for all nodes scans") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan => 1
       case _               => 100
     })
@@ -117,7 +44,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for label scans without compile-time label id") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 2
       case _: NodeByLabelScan => 1
@@ -132,7 +59,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for label scans with compile-time label id") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 2
       case _: NodeByLabelScan => 1
@@ -147,7 +74,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for index scan when there is an index on the property") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan         => 1000
       case _: NodeIndexSeek        => 1
       case _: NodeIndexUniqueSeek  => 2
@@ -168,7 +95,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for index seek when there is an index on the property") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan         => 1000
       case _: NodeIndexSeek        => 2
       case _: NodeIndexUniqueSeek  => 1
@@ -189,7 +116,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for node by ID mixed with label scan when node by ID is cheaper") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 1
       case _: NodeByLabelScan => 100
@@ -207,7 +134,7 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for node by ID mixed with label scan when label scan is cheaper") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 10
       case _: NodeByLabelScan => 1

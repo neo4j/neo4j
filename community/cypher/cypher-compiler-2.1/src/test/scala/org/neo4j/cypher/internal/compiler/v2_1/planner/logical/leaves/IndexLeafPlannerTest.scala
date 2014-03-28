@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -65,7 +65,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: AllNodesScan => 1000
         case _: NodeByLabelScan => 100
       })
@@ -98,7 +98,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: AllNodesScan => 1000
         case _: NodeByLabelScan => 100
       })

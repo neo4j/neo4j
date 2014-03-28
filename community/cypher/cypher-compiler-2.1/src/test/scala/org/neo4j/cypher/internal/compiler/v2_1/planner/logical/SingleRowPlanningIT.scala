@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 class SingleRowPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans containing single row") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _ => 100
     })
 

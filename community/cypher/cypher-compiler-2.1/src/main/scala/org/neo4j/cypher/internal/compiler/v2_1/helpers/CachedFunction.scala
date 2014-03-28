@@ -17,22 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+object CachedFunction {
+  def byIdentity[A, B](f: A => B) = new (A => B) {
+    private val cache = new java.util.IdentityHashMap[A, B]()
 
-/*
-This class is responsible for answering questions about cardinality. It does this by asking the database when this
-information is available, or guessing when that's not possible.
- */
-trait CardinalityEstimator extends PlanMetric {
-  final def cardinality(plan: LogicalPlan): Int = apply(plan)
-}
-
-class CachingCardinalityEstimator(metric: CardinalityEstimator) extends CachingPlanMetric[CardinalityEstimator](metric) with CardinalityEstimator
-
-object CardinalityEstimator {
-  def lift(f: PartialFunction[LogicalPlan, Int]) = new CardinalityEstimator {
-    def apply(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
+    def apply(input: A): B = Option(cache.get(input)) match {
+      case Some(value) =>
+        value
+      case None =>
+        val newValue = f(input)
+        cache.put(input, newValue)
+        newValue
+    }
   }
 }

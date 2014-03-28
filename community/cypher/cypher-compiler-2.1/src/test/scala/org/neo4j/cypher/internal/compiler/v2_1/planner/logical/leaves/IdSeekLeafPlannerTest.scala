@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, RelTypeId, DummyPosition}
 import org.mockito.Mockito._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{idSeekLeafPlanner, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, idSeekLeafPlanner}
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -44,7 +44,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: NodeByIdSeek => 1
       }
     )
@@ -71,7 +71,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: NodeByIdSeek => 1
       }
     )
@@ -103,7 +103,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: DirectedRelationshipByIdSeek => 1
       }
     )
@@ -133,7 +133,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }
     )
@@ -166,7 +166,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: DirectedRelationshipByIdSeek => 1
       }
     )
@@ -200,7 +200,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }
     )
@@ -235,7 +235,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }
     )
@@ -276,7 +276,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }
     )

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 
-class GuessingEstimator extends CardinalityEstimator {
+class GuessingEstimator extends Metrics.cardinalityEstimator {
   private val ALL_NODES_SCAN_CARDINALITY: Int = 1000
   private val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
   private val LABEL_SELECTIVITY: Double = 0.1
@@ -60,7 +60,7 @@ class GuessingEstimator extends CardinalityEstimator {
       (cardinality(left) * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
 
     case Selection(predicates, left) =>
-      (cardinality(left) * predicates.map(predicateSelectivity).foldLeft(1.0)(_ * _)).toInt
+      (cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)).toInt
 
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
@@ -78,8 +78,11 @@ class GuessingEstimator extends CardinalityEstimator {
       1
   }
 
-  private def predicateSelectivity(predicate: Expression): Double = predicate match {
+  private def cardinality(plan: LogicalPlan) = apply(plan)
+
+  private def selectivity(predicate: Expression): Double = predicate match {
     case HasLabels(_, Seq(label)) => if (label.id.isDefined) LABEL_SELECTIVITY else LABEL_NOT_FOUND_SELECTIVITY
     case _ => PREDICATE_SELECTIVITY
   }
+
 }

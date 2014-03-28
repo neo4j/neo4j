@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 case class LogicalPlanContext(planContext: PlanContext,
-                              cardinality: CardinalityEstimator,
-                              cost: CostModel,
+                              cardinality: Metrics.cardinalityEstimator,
+                              cost: Metrics.costModel,
                               semanticTable: SemanticTable,
                               queryGraph: QueryGraph)
 

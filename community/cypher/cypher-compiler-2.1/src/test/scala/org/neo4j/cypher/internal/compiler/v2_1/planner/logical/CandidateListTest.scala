@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.costModel
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val context = newMockedLogicalPlanContext()
@@ -51,7 +52,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = newMockedLogicalPlan("a")
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, a, b)(CostModel.lift {
+    assertTopPlan(winner = b, a, b)(Metrics.newCostModel {
       case `a` => 100
       case `b` => 50
     })
@@ -61,7 +62,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, ab, b)(CostModel.lift {
+    assertTopPlan(winner = b, ab, b)(Metrics.newCostModel {
       case `ab` => 100
       case `b` => 50
     })
@@ -71,13 +72,13 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val c = newMockedLogicalPlan("c")
 
-    assertTopPlan(winner = ab, ab, c)(CostModel.lift {
+    assertTopPlan(winner = ab, ab, c)(Metrics.newCostModel {
       case `ab` => 50
       case `c` => 50
     })
   }
 
-  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(costs: CostModel) {
+  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(costs: costModel) {
     CandidateList(candidates).topPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).topPlan(costs) should equal(Some(winner))
   }

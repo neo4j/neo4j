@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, DummyPosition}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{labelScanLeafPlanner, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Metrics, labelScanLeafPlanner}
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -41,7 +41,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: NodeByLabelScan => 1
       })
 
@@ -61,7 +61,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+      estimator = Metrics.newCardinalityEstimator {
         case _: NodeByLabelScan => 100
       })
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)

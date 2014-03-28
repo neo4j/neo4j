@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, NotEquals}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, NotEquals}
 
 class NodeHashJoinPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans containing joins") {
-    implicit val planner = newStubbedPlanner(CardinalityEstimator.lift {
+    implicit val planner = newStubbedPlanner(Metrics.newCardinalityEstimator {
       case _: AllNodesScan                    => 200
       case Expand(_, IdName("b"), _, _, _, _) => 10000
       case _: Expand                          => 10
@@ -53,5 +48,4 @@ class NodeHashJoinPlanningIT extends CypherFunSuite with LogicalPlanningTestSupp
       )
     )
   }
-
 }
