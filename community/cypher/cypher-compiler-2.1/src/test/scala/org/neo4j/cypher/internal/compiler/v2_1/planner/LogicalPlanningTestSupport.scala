@@ -66,12 +66,13 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     plan
   }
 
-  def newStubbedPlanner(cardinality: CardinalityEstimator, monitor: PlanningMonitor): Planner =
-    new Planner(monitors, monitor) {
+  def newStubbedPlanner(cardinality: CardinalityEstimator): Planner =
+    new Planner(monitors, monitors.newMonitor[PlanningMonitor]()) {
       override val cardinalityEstimatorFactory = () => cardinality
     }
 
-  def produceLogicalPlan(queryText: String, planContext: PlanContext = newMockedPlanContext)(implicit planner: Planner) = {
+  def produceLogicalPlan(queryText: String)
+                        (implicit planner: Planner, planContext: PlanContext = newMockedPlanContext) = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)

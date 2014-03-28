@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.leaves
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.mockito.Mockito._
@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner, CardinalityEstimator}
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

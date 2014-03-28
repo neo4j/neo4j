@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.leaves
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NodeByLabelScan, IdName}
@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{labelScanLeafPlanner, CardinalityEstimator}
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
