@@ -38,7 +38,7 @@ case class Planner(monitors: Monitors, monitor: PlanningMonitor) extends PipeBui
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
 
-  val cardinalityEstimatorFactory: () => cardinalityEstimator = () => new GuessingEstimator
+  val cardinalityEstimatorFactory: () => cardinalityEstimator = () => new GuessingCardinalityEstimator(new GuessingSelectivityEstimator)
   val costModelFactory: (cardinalityEstimator => costModel) = new SimpleCostModel(_)
 
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)

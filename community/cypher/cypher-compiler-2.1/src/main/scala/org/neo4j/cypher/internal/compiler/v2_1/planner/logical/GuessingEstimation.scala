@@ -25,14 +25,19 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 
-class GuessingEstimator extends Metrics.cardinalityEstimator {
-  private val ALL_NODES_SCAN_CARDINALITY: Int = 1000
-  private val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
-  private val LABEL_SELECTIVITY: Double = 0.1
-  private val PREDICATE_SELECTIVITY: Double = 0.2
-  private val INDEX_SEEK_SELECTIVITY: Double = 0.08
-  private val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
-  private val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
+object GuessingEstimation {
+  val ALL_NODES_SCAN_CARDINALITY: Int = 1000
+  val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
+  val LABEL_SELECTIVITY: Double = 0.1
+  val PREDICATE_SELECTIVITY: Double = 0.2
+  val INDEX_SEEK_SELECTIVITY: Double = 0.08
+  val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
+  val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
+}
+
+class GuessingCardinalityEstimator(selectivity: Metrics.selectivityEstimator) extends Metrics.cardinalityEstimator {
+
+  import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Int = plan match {
     case AllNodesScan(_) =>
@@ -79,10 +84,14 @@ class GuessingEstimator extends Metrics.cardinalityEstimator {
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)
+}
 
-  private def selectivity(predicate: Expression): Double = predicate match {
+class GuessingSelectivityEstimator extends Metrics.selectivityEstimator {
+
+  import GuessingEstimation._
+
+  def apply(predicate: Expression): Double = predicate match {
     case HasLabels(_, Seq(label)) => if (label.id.isDefined) LABEL_SELECTIVITY else LABEL_NOT_FOUND_SELECTIVITY
     case _ => PREDICATE_SELECTIVITY
   }
-
 }

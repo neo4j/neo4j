@@ -1,5 +1,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 object Metrics {
@@ -12,7 +13,12 @@ object Metrics {
   // (e.g. by asking the database for heuristics)
   type cardinalityEstimator = LogicalPlan => Int
 
+  // This metric estimates the selectivity of an expression
+  // (e.g. by algebraic analysis or using heuristics)
+  type selectivityEstimator = Expression => Double
+
   def newCostModel[A](pf: PartialFunction[A, Int]) = pf.lift.andThen(_.getOrElse(Int.MaxValue))
   def newCardinalityEstimator[A](pf: PartialFunction[A, Int]) = pf.lift.andThen(_.getOrElse(Int.MaxValue))
+  def newSelectivityEstimator[A](pf: PartialFunction[A, Double]) = pf.lift.andThen(_.getOrElse(1.0d))
 }
 
