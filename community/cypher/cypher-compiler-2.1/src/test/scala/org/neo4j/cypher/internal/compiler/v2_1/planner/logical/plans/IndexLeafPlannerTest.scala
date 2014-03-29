@@ -50,7 +50,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: AllNodesScan => 1000
         case _: NodeByLabelScan => 100
       }.newMetrics)
@@ -83,7 +83,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
     implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: AllNodesScan    => 1000
         case _: NodeByLabelScan => 100
       }.newMetrics)

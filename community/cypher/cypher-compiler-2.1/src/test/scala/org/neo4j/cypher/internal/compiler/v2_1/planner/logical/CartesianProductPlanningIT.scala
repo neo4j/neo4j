@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("should build plans for simple cartesian product") {
-    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
       case _: AllNodesScan => 1000
     })
 
@@ -47,7 +47,7 @@ class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("should build plans for simple cartesian product with a predicate on the elements") {
-    implicit val planner = newPlanner(newMetricsFactory.amendCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
       case _: AllNodesScan => 1000
     })
 
@@ -70,7 +70,7 @@ class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTest
     val labelIdB = Right(LabelId(10))
     val labelIdC = Right(LabelId(20))
 
-    implicit val planner = newPlanner(newMetricsFactory.withCardinalityEstimator {
+    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
       case _: AllNodesScan                             => 1000
       case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
     })
@@ -98,7 +98,7 @@ class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTest
 
     implicit val planner = newPlanner(
       newMetricsFactory
-        .withSelectivityEstimator({
+        .replaceSelectivityEstimator({
           case Equals(Property(Identifier(lhs), _), Property(Identifier(rhs), _)) =>
             (lhs, rhs) match {
               case ("a", "b") => /* 60 */ 0.5 // => 30

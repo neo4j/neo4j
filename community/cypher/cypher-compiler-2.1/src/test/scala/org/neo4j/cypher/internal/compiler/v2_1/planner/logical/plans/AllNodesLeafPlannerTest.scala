@@ -32,7 +32,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: AllNodesScan => 1
       }.newMetrics
     )

@@ -51,7 +51,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = newMockedLogicalPlan("a")
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, a, b)(newMetricsFactory.withCostModel {
+    assertTopPlan(winner = b, a, b)(newMetricsFactory.replaceCostModel {
       case `a` => 100
       case `b` => 50
     })
@@ -61,7 +61,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, ab, b)(newMetricsFactory.withCostModel {
+    assertTopPlan(winner = b, ab, b)(newMetricsFactory.replaceCostModel {
       case `ab` => 100
       case `b` => 50
     })
@@ -71,7 +71,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val c = newMockedLogicalPlan("c")
 
-    assertTopPlan(winner = ab, ab, c)(newMetricsFactory.withCostModel {
+    assertTopPlan(winner = ab, ab, c)(newMetricsFactory.replaceCostModel {
       case `ab` => 50
       case `c` => 50
     })

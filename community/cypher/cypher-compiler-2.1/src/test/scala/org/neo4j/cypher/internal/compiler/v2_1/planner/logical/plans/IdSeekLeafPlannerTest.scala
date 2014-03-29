@@ -41,7 +41,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: NodeByIdSeek => 1
       }.newMetrics
     )
@@ -68,7 +68,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: NodeByIdSeek => 1
       }.newMetrics
     )
@@ -100,7 +100,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: DirectedRelationshipByIdSeek => 1
       }.newMetrics
     )
@@ -130,7 +130,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }.newMetrics
     )
@@ -163,7 +163,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: DirectedRelationshipByIdSeek => 1
       }.newMetrics
     )
@@ -197,7 +197,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }.newMetrics
     )
@@ -232,7 +232,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }.newMetrics
     )
@@ -273,7 +273,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: UndirectedRelationshipByIdSeek => 2
       }.newMetrics
     )

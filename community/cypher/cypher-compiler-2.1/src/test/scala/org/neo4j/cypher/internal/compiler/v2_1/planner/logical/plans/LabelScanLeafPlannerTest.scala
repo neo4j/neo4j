@@ -37,7 +37,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: NodeByLabelScan => 1
       }.newMetrics)
 
@@ -58,7 +58,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     implicit val context = newMockedLogicalPlanContext(
       queryGraph = qg,
-      metrics = newMetricsFactory.withCardinalityEstimator {
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: NodeByLabelScan => 100
       }.newMetrics
     )
