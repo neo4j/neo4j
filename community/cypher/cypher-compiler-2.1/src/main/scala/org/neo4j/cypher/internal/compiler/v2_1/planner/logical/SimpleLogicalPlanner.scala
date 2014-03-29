@@ -24,12 +24,25 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
-case class iterateUntilConverged(f: PlanTableTransformer) extends PlanTableTransformer {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-    val stream = Stream.iterate(planTable)(table => f(table))
-    stream.sliding(2).collectFirst {
-      case pair if pair(0) == pair(1) => pair(0)
-    }.get
+object iterateUntilConverged {
+  def apply[A, C](f: Function1WithImplicit1[A, A, C]): Function1WithImplicit1[A, A, C] = {
+    new Function1WithImplicit1[A, A, C] {
+      def apply(seed: A)(implicit context: C): A = {
+        val stream = Stream.iterate(seed)(x => f(x))
+        stream.sliding(2).collectFirst {
+          case pair if pair(0) == pair(1) => pair(0)
+        }.get
+      }
+    }
+  }
+
+  def apply[A](f: (A) => A): (A) => A = {
+    (seed: A) => {
+      val stream = Stream.iterate(seed)(x => f(x))
+      stream.sliding(2).collectFirst {
+        case pair if pair(0) == pair(1) => pair(0)
+      }.get
+    }
   }
 }
 

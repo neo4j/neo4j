@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.SemanticError
-import scala.Some
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
@@ -33,7 +32,7 @@ object FunctionInvocation {
     FunctionInvocation(name, distinct = false, IndexedSeq(expression))(name.position)
 }
 
-case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, arguments: IndexedSeq[Expression])
+case class FunctionInvocation(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
                              (val position: InputPosition) extends Expression {
   val name = functionName.name
   val function = Function.lookup.get(name.toLowerCase)

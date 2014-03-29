@@ -60,7 +60,6 @@ case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPositi
 }
 
 case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
-  val arguments = Vector(lhs, rhs)
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     SemanticError("Unknown operation '!=' (you probably meant to use '<>', which is the operator for inequality testing)", position)
 }

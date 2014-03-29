@@ -24,12 +24,10 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.Answer
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.indexSeekLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.uniqueIndexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
