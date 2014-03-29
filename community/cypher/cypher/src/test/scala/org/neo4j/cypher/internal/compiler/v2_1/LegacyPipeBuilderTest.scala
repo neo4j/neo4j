@@ -40,10 +40,16 @@ import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateNode, DeletePrope
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlanningMonitor, Planner, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleMetricsFactory
 
-class LegacyPipeBuilderTest extends CypherFunSuite with GraphDatabaseTestSupport with Timed with MockitoSugar {
+class LegacyPipeBuilderTest
+  extends CypherFunSuite
+  with GraphDatabaseTestSupport
+  with Timed
+  with MockitoSugar
+{
   val ast = mock[Statement]
-  val planner = new Planner(mock[Monitors], mock[PlanningMonitor])
+  val planner = new Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor])
 
   test("should not accept returning the input execution plan") {
     val q = Query.empty

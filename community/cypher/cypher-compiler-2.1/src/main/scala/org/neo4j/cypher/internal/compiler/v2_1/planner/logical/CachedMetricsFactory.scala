@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.CachedFunction
+import Metrics._
 
-trait PlanMetric extends (LogicalPlan => Int)
+case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
+  def newSelectivityEstimator =
+    CachedFunction.byIdentity(metricsFactory.newSelectivityEstimator)
 
-class CachingPlanMetric[T <: PlanMetric](metric: T) extends PlanMetric {
-  private val cache = new mutable.WeakHashMap[LogicalPlan, Int]
+  def newCardinalityEstimator(selectivity: selectivityEstimator) =
+    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(selectivity))
 
-  def apply(plan: LogicalPlan): Int = cache.getOrElseUpdate(plan, metric(plan))
+  def newCostModel(cardinality: cardinalityEstimator) =
+    CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
 }

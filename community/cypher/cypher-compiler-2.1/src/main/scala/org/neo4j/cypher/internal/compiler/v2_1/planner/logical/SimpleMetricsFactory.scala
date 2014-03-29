@@ -19,20 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{selectivityEstimator, cardinalityEstimator, costModel}
 
-/*
-This class is responsible for answering questions about cardinality. It does this by asking the database when this
-information is available, or guessing when that's not possible.
- */
-trait CardinalityEstimator extends PlanMetric {
-  final def cardinality(plan: LogicalPlan): Int = apply(plan)
-}
+object SimpleMetricsFactory extends MetricsFactory {
+  def newCostModel(cardinality: cardinalityEstimator): costModel =
+    new SimpleCostModel(cardinality)
 
-class CachingCardinalityEstimator(metric: CardinalityEstimator) extends CachingPlanMetric[CardinalityEstimator](metric) with CardinalityEstimator
+  def newCardinalityEstimator(selectivity: selectivityEstimator): cardinalityEstimator =
+    new GuessingCardinalityEstimator(selectivity)
 
-object CardinalityEstimator {
-  def lift(f: PartialFunction[LogicalPlan, Int]) = new CardinalityEstimator {
-    def apply(plan: LogicalPlan): Int = f.lift(plan).getOrElse(Int.MaxValue)
-  }
+  def newSelectivityEstimator: selectivityEstimator =
+    new GuessingSelectivityEstimator
 }

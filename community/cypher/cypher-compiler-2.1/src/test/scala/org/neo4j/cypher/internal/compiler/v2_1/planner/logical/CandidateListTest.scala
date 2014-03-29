@@ -51,7 +51,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = newMockedLogicalPlan("a")
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, a, b)(CostModel.lift {
+    assertTopPlan(winner = b, a, b)(newMetricsFactory.replaceCostModel {
       case `a` => 100
       case `b` => 50
     })
@@ -61,7 +61,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, ab, b)(CostModel.lift {
+    assertTopPlan(winner = b, ab, b)(newMetricsFactory.replaceCostModel {
       case `ab` => 100
       case `b` => 50
     })
@@ -71,13 +71,14 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val c = newMockedLogicalPlan("c")
 
-    assertTopPlan(winner = ab, ab, c)(CostModel.lift {
+    assertTopPlan(winner = ab, ab, c)(newMetricsFactory.replaceCostModel {
       case `ab` => 50
       case `c` => 50
     })
   }
 
-  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(costs: CostModel) {
+  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(metrics: MetricsFactory) {
+    val costs = metrics.newMetrics.cost
     CandidateList(candidates).topPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).topPlan(costs) should equal(Some(winner))
   }

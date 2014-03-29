@@ -17,33 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.leaves
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NodeByLabelScan, IdName}
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Identifier, HasLabels}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.{LabelId, DummyPosition}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{labelScanLeafPlanner, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlanner
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  private val pos = DummyPosition(0)
 
   test("simple label scan without compile-time label id") {
     // given
     val idName = IdName("n")
-    val projections = Map("n" -> Identifier("n")(pos))
-    val hasLabels = HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")()(pos)))(pos)
+    val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
+    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")()_))_
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: NodeByLabelScan => 1
-      })
+      }.newMetrics)
 
     // when
     val resultPlans = labelScanLeafPlanner(Map(idName -> Set(hasLabels)))()
@@ -55,15 +51,17 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   test("simple label scan with a compile-time label ID") {
     // given
     val idName = IdName("n")
-    val projections = Map("n" -> Identifier("n")(pos))
+    val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val labelId = LabelId(12)
-    val hasLabels = HasLabels(Identifier("n")(pos), Seq(LabelName("Awesome")(Some(labelId))(pos)))(pos)
+    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")(Some(labelId))_))_
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      estimator = CardinalityEstimator.lift {
+    implicit val context = newMockedLogicalPlanContext(
+      queryGraph = qg,
+      metrics = newMetricsFactory.replaceCardinalityEstimator {
         case _: NodeByLabelScan => 100
-      })
+      }.newMetrics
+    )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // when
