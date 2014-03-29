@@ -53,13 +53,13 @@ class SimpleCostModel(cardinality: cardinalityEstimator) extends costModel {
       cardinality(plan)
 
     case projection: Projection =>
-      cost(projection.left) + (cardinality(projection.left) * 0.01 * projection.numExpressions).toInt
+      cost(projection.left) + (cardinality(projection) * 0.01 * projection.numExpressions).toInt
 
     case selection: Selection =>
-      cost(selection.left) + (cardinality(selection.left) * .2 * selection.numPredicates).toInt
+      cost(selection.left) + (cardinality(selection) * .2 * selection.numPredicates).toInt
 
     case cartesian: CartesianProduct =>
-      cardinality(cartesian.left) * cost(cartesian.right) + cost(cartesian.left)
+      cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
 
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
