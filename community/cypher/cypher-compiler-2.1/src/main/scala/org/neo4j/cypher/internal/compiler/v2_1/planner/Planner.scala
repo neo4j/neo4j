@@ -36,7 +36,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-  val logicalPlanner = new SimpleLogicalPlanner()
+  val logicalPlanner = new GreedyOperatorOrderingPlanner()
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)

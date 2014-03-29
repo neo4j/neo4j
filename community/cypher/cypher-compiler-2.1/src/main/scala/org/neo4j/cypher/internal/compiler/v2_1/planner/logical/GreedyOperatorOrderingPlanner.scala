@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-class SimpleLogicalPlanner {
+class GreedyOperatorOrderingPlanner {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = (
     (applySelectionsToPlanTable(_)) andThen
       iterateUntilConverged[PlanTable](planTable => (
