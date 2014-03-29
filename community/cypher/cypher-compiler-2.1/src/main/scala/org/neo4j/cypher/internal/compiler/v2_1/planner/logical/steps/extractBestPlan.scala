@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContex
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanProducer
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, SingleRow}
 
-object extractBestPlan extends PlanProducer[PlanTable] {
+object extractBestPlan {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): LogicalPlan = {
     if (planTable.size > 1)
       throw new SyntaxException("Expected the final plan table to have no more than 1 plan")

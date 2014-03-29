@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanTransformer
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, Projection}
 
-object project extends PlanTransformer {
+object project {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val ids: Map[String, Expression] = plan.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)

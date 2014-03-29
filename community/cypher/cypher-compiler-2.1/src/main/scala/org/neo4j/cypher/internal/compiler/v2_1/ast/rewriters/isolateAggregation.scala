@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, AggregatingFunction, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.CountStar
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.iterateUntilConverged
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so

@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.helpers.Converge
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-
-case class includeBestPlan(planTable: PlanTable) {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): PlanTable = {
-    candidateList.topPlan(context.cost).foldLeft(planTable)(_ + _)
+object iterateUntilConverged {
+  def apply[A](f: (A => A)): (A => A) = {
+    (seed: A) => {
+      val stream = Stream.iterate(seed)(f)
+      stream.sliding(2).collectFirst {
+        case pair if pair(0) == pair(1) => pair(0)
+      }.get
+    }
   }
 }

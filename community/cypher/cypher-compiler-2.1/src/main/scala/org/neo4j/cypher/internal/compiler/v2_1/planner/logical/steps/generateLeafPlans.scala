@@ -28,10 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.uniqueIndexSeekLe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.indexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.idSeekLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.PlanTableGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
 
-object generateLeafPlans extends PlanTableGenerator {
+object generateLeafPlans {
   def apply()(implicit context: LogicalPlanContext): PlanTable = {
     val predicates: Seq[Expression] = context.queryGraph.selections.flatPredicates
     val labelPredicateMap = context.queryGraph.selections.labelPredicates

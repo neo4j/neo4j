@@ -19,60 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.helpers.{Function1WithImplicit1, Function0WithImplicit1}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
-object iterateUntilConverged {
-  def apply[A, C](f: Function1WithImplicit1[A, A, C]): Function1WithImplicit1[A, A, C] = {
-    new Function1WithImplicit1[A, A, C] {
-      def apply(seed: A)(implicit context: C): A = {
-        val stream = Stream.iterate(seed)(x => f(x))
-        stream.sliding(2).collectFirst {
-          case pair if pair(0) == pair(1) => pair(0)
-        }.get
-      }
-    }
-  }
-
-  def apply[A](f: (A) => A): (A) => A = {
-    (seed: A) => {
-      val stream = Stream.iterate(seed)(x => f(x))
-      stream.sliding(2).collectFirst {
-        case pair if pair(0) == pair(1) => pair(0)
-      }.get
-    }
-  }
-}
-
-object SimpleLogicalPlanner {
-  type PlanTableGenerator = Function0WithImplicit1[PlanTable, LogicalPlanContext]
-  type PlanTransformer = Function1WithImplicit1[LogicalPlan, LogicalPlan, LogicalPlanContext]
-  type PlanTableTransformer = Function1WithImplicit1[PlanTable, PlanTable, LogicalPlanContext]
-  type PlanCandidateGenerator = Function1WithImplicit1[PlanTable, CandidateList, LogicalPlanContext]
-  type PlanProducer[A] = Function1WithImplicit1[A, LogicalPlan, LogicalPlanContext]
-  type PlanTableProducer[A] = Function1WithImplicit1[A, PlanTable, LogicalPlanContext]
-  type CandidateListTransformer = Function1WithImplicit1[CandidateList, CandidateList, LogicalPlanContext]
-}
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class SimpleLogicalPlanner {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = (
-    generateLeafPlans andThen
-    applySelectionsToPlanTable andThen
-    iterateUntilConverged(new PlanTableTransformer {
-      def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-        val expanded = expand(planTable)
-        val joined = join(planTable)
-        val allCandidates = expanded ++ joined
-        (applySelectionsToCandidateList andThen includeBestPlan(planTable))(allCandidates)
-      }
-    }) andThen
-    iterateUntilConverged(new PlanTableTransformer {
-      def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable =
-        (cartesianProduct andThen applySelectionsToCandidateList andThen includeBestPlan(planTable))(planTable)
-    }) andThen
-    extractBestPlan andThen
-    project
-  )()
+    (applySelectionsToPlanTable(_)) andThen
+      iterateUntilConverged[PlanTable](planTable => (
+        (applySelectionsToCandidateList(_)) andThen
+        (includeBestPlan(planTable)(_))
+      )(expand(planTable) ++ join(planTable))) andThen
+      iterateUntilConverged[PlanTable](planTable => (
+        (cartesianProduct(_)) andThen
+        (applySelectionsToCandidateList(_)) andThen
+        (includeBestPlan(planTable)(_))
+      )(planTable)) andThen
+      (extractBestPlan(_)) andThen
+      (project(_))
+  )(generateLeafPlans())
 }

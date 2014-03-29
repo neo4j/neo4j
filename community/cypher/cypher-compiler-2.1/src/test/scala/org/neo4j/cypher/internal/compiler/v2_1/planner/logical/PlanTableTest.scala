@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 
 class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
