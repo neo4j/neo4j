@@ -38,13 +38,12 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.SimpleLogicalPlanner.{PlanTableTransformer, PlanTransformer, CandidateListTransformer}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection}
 
-object applySelections extends PlanTransformer {
+object applySelections {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val predicates = context.queryGraph.selections.predicatesGiven(plan.coveredIds).filter {
       case predicate => !plan.solvedPredicates.contains(predicate)
@@ -57,13 +56,13 @@ object applySelections extends PlanTransformer {
   }
 }
 
-object applySelectionsToCandidateList extends CandidateListTransformer {
+object applySelectionsToCandidateList {
   def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): CandidateList = {
     CandidateList(candidateList.plans.map(applySelections(_)))
   }
 }
 
-object applySelectionsToPlanTable extends PlanTableTransformer {
+object applySelectionsToPlanTable {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
     PlanTable(planTable.m.mapValues(applySelections(_)))
   }
