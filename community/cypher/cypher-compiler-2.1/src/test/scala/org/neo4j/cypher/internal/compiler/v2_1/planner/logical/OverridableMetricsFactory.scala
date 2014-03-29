@@ -30,15 +30,6 @@ case class OverridableMetricsFactory(
   altNewCardinalityEstimator: Option[(selectivityEstimator) => cardinalityEstimator] = None,
   altNewCostModel: Option[(cardinalityEstimator) => costModel] = None) extends MetricsFactory {
 
-  def withCostModel(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCostModel = Some((_: cardinalityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
-
-  def withCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some((_: selectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
-
-  def withSelectivityEstimator(pf: PartialFunction[Expression, Double]) =
-    copy(altNewSelectivityEstimator = Some(() => pf.lift.andThen(_.getOrElse(1.0d))))
-
   def newCostModel(cardinality: cardinalityEstimator): costModel =
     altNewCostModel.getOrElse(metricsFactory.newCostModel(_))(cardinality)
 
@@ -47,4 +38,21 @@ case class OverridableMetricsFactory(
 
   def newSelectivityEstimator: selectivityEstimator =
     altNewSelectivityEstimator.getOrElse(() => metricsFactory.newSelectivityEstimator)()
+
+  def withCostModel(pf: PartialFunction[LogicalPlan, Int]) =
+    copy(altNewCostModel = Some((_: cardinalityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+
+  def withCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
+    copy(altNewCardinalityEstimator = Some((_: selectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+
+  def amendCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
+    copy(altNewCardinalityEstimator = Some({ (selectivity: selectivityEstimator) =>
+      val fallback: PartialFunction[LogicalPlan, Int] = {
+        case plan => metricsFactory.newCardinalityEstimator(selectivity)(plan)
+      }
+      (pf `orElse` fallback).lift.andThen(_.getOrElse(Int.MaxValue))
+    }))
+
+  def withSelectivityEstimator(pf: PartialFunction[Expression, Double]) =
+    copy(altNewSelectivityEstimator = Some(() => pf.lift.andThen(_.getOrElse(1.0d))))
 }
