@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.SemanticError
-import scala.Some
 
 object FunctionInvocation {
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =

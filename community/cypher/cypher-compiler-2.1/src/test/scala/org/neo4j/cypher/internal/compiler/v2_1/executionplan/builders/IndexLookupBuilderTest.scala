@@ -20,17 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.junit.Test
+import org.neo4j.cypher.IndexHintException
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
-import org.neo4j.cypher.IndexHintException
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.commands.HasLabel
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Property
 
 class IndexLookupBuilderTest extends BuilderTest {

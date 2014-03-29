@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.CTNode
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import scala.Some
 
 case class NodeUniqueIndexSeekPipe(ident: String,
                                    label: Either[String, LabelId],
