@@ -1,3 +1,7 @@
+1.9.7-SNAPSHOT
+--------------
+o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
+
 1.9.6 (2014-01-31)
 ------------------
 o Fixes issue with batch inserter which could lead to record not in use exception

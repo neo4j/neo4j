@@ -19,6 +19,25 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
+import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.configuration.ConfigurationMigrator;
+import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.MonitorGc;
+
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
@@ -39,25 +58,6 @@ import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.range;
 import static org.neo4j.helpers.Settings.setting;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.BooleanSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.FloatSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.IntegerSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.NumberOfBytesSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.OptionsSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.PortSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSetting.StringSetting;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.configuration.ConfigurationMigrator;
-import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
-import org.neo4j.kernel.configuration.Migrator;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.MonitorGc;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -173,7 +173,7 @@ public abstract class GraphDatabaseSettings
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
             "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions.")
-    public static final StringSetting keep_logical_logs = new StringSetting( setting("keep_logical_logs", STRING, TRUE, illegalValueMessage( "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for " +
+    public static final StringSetting keep_logical_logs = new StringSetting( setting("keep_logical_logs", STRING, "7 days", illegalValueMessage( "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for " +
                         "limiting logical log space on disk to 100Mb," +
                         " or '200k txs' for limiting the number of transactions to keep to 200 000.", matches(ANY))));
     
