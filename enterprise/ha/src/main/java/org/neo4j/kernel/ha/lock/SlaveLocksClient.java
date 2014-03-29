@@ -52,6 +52,7 @@ class SlaveLocksClient implements Locks.Client
     private final AvailabilityGuard availabilityGuard;
     private final SlaveLockManager.Configuration config;
 
+    // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
 
@@ -178,36 +179,70 @@ class SlaveLocksClient implements Locks.Client
     @Override
     public void releaseShared( Locks.ResourceType resourceType, long... resourceIds )
     {
-        client.releaseShared( resourceType, resourceIds );
+        Map<Long, AtomicInteger> lockMap = getLockMap( sharedLocks, resourceType );
+        for ( long resourceId : resourceIds )
+        {
+            AtomicInteger counter = lockMap.get( resourceId );
+            if(counter == null)
+            {
+                throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
+                        resourceType + "[" + resourceId + "]" );
+            }
+            if(counter.decrementAndGet() == 0)
+            {
+                lockMap.remove( resourceId );
+                client.releaseShared( resourceType, resourceId );
+            }
+        }
     }
 
     @Override
     public void releaseExclusive( Locks.ResourceType resourceType, long... resourceIds )
     {
-        client.releaseExclusive( resourceType, resourceIds );
+        Map<Long, AtomicInteger> lockMap = getLockMap( exclusiveLocks, resourceType );
+        for ( long resourceId : resourceIds )
+        {
+            AtomicInteger counter = lockMap.get( resourceId );
+            if(counter == null)
+            {
+                throw new IllegalStateException( this + " cannot release lock it does not hold: EXCLUSIVE " +
+                        resourceType + "[" + resourceId + "]" );
+            }
+            if(counter.decrementAndGet() == 0)
+            {
+                lockMap.remove( resourceId );
+                client.releaseExclusive( resourceType, resourceId );
+            }
+        }
     }
 
     @Override
     public void releaseAllShared()
     {
+        sharedLocks.clear();
         client.releaseAllShared();
     }
 
     @Override
     public void releaseAllExclusive()
     {
+        exclusiveLocks.clear();
         client.releaseAllExclusive();
     }
 
     @Override
     public void releaseAll()
     {
+        sharedLocks.clear();
+        exclusiveLocks.clear();
         client.releaseAll();
     }
 
     @Override
     public void close()
     {
+        sharedLocks.clear();
+        exclusiveLocks.clear();
         client.close();
     }
 
