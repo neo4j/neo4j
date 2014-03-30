@@ -54,15 +54,11 @@ object applySelections {
     else
       Selection(predicates, plan)
   }
-}
 
-object applySelectionsToCandidateList {
   def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): CandidateList = {
     CandidateList(candidateList.plans.map(applySelections(_)))
   }
-}
 
-object applySelectionsToPlanTable {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
     PlanTable(planTable.m.mapValues(applySelections(_)))
   }

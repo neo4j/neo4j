@@ -32,7 +32,7 @@ object cartesianProduct {
         for {
           planA <- plans
           planB <- plans if planA != planB
-        } yield applySelections(CartesianProduct(planA, planB))
+        } yield CartesianProduct(planA, planB)
       CandidateList(cartesianProducts.toList)
     } else {
       CandidateList(Seq.empty)

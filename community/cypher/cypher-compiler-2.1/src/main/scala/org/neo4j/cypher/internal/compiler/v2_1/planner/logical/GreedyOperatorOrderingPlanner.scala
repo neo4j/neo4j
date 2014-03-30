@@ -26,17 +26,17 @@ import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class GreedyOperatorOrderingPlanner {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = (
-    (applySelectionsToPlanTable(_)) andThen
-      iterateUntilConverged[PlanTable](planTable => (
-        (applySelectionsToCandidateList(_)) andThen
-        (includeBestPlan(planTable)(_))
-      )(expand(planTable) ++ join(planTable))) andThen
-      iterateUntilConverged[PlanTable](planTable => (
-        (cartesianProduct(_)) andThen
-        (applySelectionsToCandidateList(_)) andThen
-        (includeBestPlan(planTable)(_))
-      )(planTable)) andThen
-      (extractBestPlan(_)) andThen
-      (project(_))
+    (applySelections(_: PlanTable)) andThen
+    iterateUntilConverged[PlanTable](planTable => (
+      (applySelections(_: CandidateList)) andThen
+      (includeBestPlan(planTable)(_))
+    )(expand(planTable) ++ join(planTable))) andThen
+    iterateUntilConverged[PlanTable](planTable => (
+      (cartesianProduct(_)) andThen
+      (applySelections(_: CandidateList)) andThen
+      (includeBestPlan(planTable)(_))
+    )(planTable)) andThen
+    (extractBestPlan(_)) andThen
+    (project(_))
   )(generateLeafPlans())
 }
