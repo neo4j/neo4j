@@ -20,6 +20,9 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.commons.{CypherJUnitSuite, CypherFunSuite}
+import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.graphdb.{Node, PropertyContainer}
+import collection.JavaConverters._
 
 abstract class GraphDatabaseJUnitSuite
   extends CypherJUnitSuite with GraphDatabaseTestSupport
@@ -28,4 +31,50 @@ abstract class ExecutionEngineJUnitSuite
   extends CypherJUnitSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
 
 abstract class ExecutionEngineFunSuite
-  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
+  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
+
+  case class haveProperty(propName: String) extends Matcher[PropertyContainer] {
+    def apply(left: PropertyContainer): MatchResult = {
+
+      val result = graph.inTx {
+        left.hasProperty(propName)
+      }
+
+      MatchResult(
+        result,
+        s"Didn't have expected property `${propName}`",
+        s"Has property ${propName}, expected it not to"
+      )
+    }
+
+    def withValue(value: Any) = this and new Matcher[PropertyContainer] {
+      def apply(left: PropertyContainer): MatchResult = {
+        val propValue = graph.inTx(left.getProperty(propName))
+        val result = propValue == value
+        MatchResult(
+          result,
+          s"Property `${propName}` didn't have expected value. Expected: ${value}\nbut was: ${propValue}",
+          s"Expected `${propName}` not to have value `${value}`, but it does."
+        )
+      }
+    }
+  }
+
+  case class haveLabels(expectedLabels: String*) extends Matcher[Node] {
+    def apply(left: Node): MatchResult = {
+
+      val labels = graph.inTx {
+        left.getLabels.asScala.map(_.name()).toSet
+      }
+
+      val result = expectedLabels.forall(labels)
+
+      MatchResult(
+        result,
+        s"Expected node to have labels ${expectedLabels}, but it was ${labels.mkString}",
+        s"Expected node to not have labels ${expectedLabels}, but it did."
+      )
+    }
+  }
+
+}

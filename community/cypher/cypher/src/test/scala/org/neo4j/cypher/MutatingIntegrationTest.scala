@@ -35,35 +35,7 @@ class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
 
   val stats = QueryStatistics()
 
-  @Test
-  def set_node_property_to_null_will_remove_existing_property() {
-    // given
-    val node = createNode("property" -> 12)
 
-    // when
-    val result = execute("MATCH (n) SET n.property = null")
-
-    // then
-    assertStats(result, propertiesSet = 1)
-    graph.inTx {
-      assertFalse("Node property wasn't removed when set to null", node.hasProperty("property"))
-    }
-  }
-
-  @Test
-  def set_relationship_property_to_null_will_remove_existing_property() {
-    // given
-    val relationship = relate(createNode(), createNode(), "property" -> 12)
-
-    // when
-    val result = execute("MATCH ()-[r]->() SET r.property = null")
-
-    // then
-    assertStats(result, propertiesSet = 1)
-    graph.inTx {
-      assertFalse("Relationship property wasn't removed when set to null", relationship.hasProperty("property"))
-    }
-  }
 
   @Test
   def create_a_single_node() {
@@ -178,28 +150,6 @@ class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
   }
 
   @Test
-  def set_a_property() {
-    val a = createNode("name" -> "Andres")
-
-    val result = execute("start n = node(0) set n.name = 'Michael'")
-    assertStats(result,      propertiesSet = 1    )
-
-    assertThat(a, inTx(graph, hasProperty("name").withValue("Michael")))
-  }
-
-  @Test
-  def set_a_property_to_an_expression() {
-    val a = createNode("name" -> "Andres")
-
-    val result = execute("start n = node(0) set n.name = n.name + ' was here'")
-    assertStats(result,
-      propertiesSet = 1
-    )
-
-    assertThat(a, inTx(graph, hasProperty("name").withValue("Andres was here")))
-  }
-
-  @Test
   def set_a_property_to_a_collection() {
     createNode("Andres")
     createNode("Michael")
@@ -235,13 +185,6 @@ class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
     assertThat(n, inTx(graph, hasProperty("age").withValue(66)))
   }
 
-  @Test
-  def set_property_for_null_removes_the_property() {
-    val n = createNode("name" -> "Michael")
-    execute("start n = node(0) set n.name = null return n")
-
-    assertThat(n, inTx(graph, not(hasProperty("name"))))
-  }
 
   @Test
   def create_rel_from_map_values() {
@@ -254,29 +197,6 @@ class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
     assertThat(r, inTx(graph, hasProperty("age").withValue(66)))
   }
 
-  @Test
-  def mark_nodes_in_path() {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    relate(a, b)
-    relate(b, c)
-
-    val q = """
-start a = node(0), c = node(2)
-match p=a-->b-->c
-with p
-foreach(n in nodes(p) |
-  set n.marked = true
-)
-            """
-
-    execute(q)
-
-    assertThat(a, inTx(graph, hasProperty("marked").withValue(true)))
-    assertThat(b, inTx(graph, hasProperty("marked").withValue(true)))
-    assertThat(c, inTx(graph, hasProperty("marked").withValue(true)))
-  }
 
   @Test
   def match_and_delete() {
@@ -365,13 +285,6 @@ return distinct center""")
   }
 
   @Test
-  def extract_on_arrays() {
-    createNode()
-    val result = execute( """start n=node(0) set n.x=[1,2,3] return extract (i in n.x | i/2.0) as x""")
-    assert(result.toList === List(Map("x" -> List(0.5, 1.0, 1.5))))
-  }
-
-  @Test
   def delete_optionals() {
     createNode()
     val a = createNode()
@@ -397,20 +310,6 @@ return distinct center""")
     //https://github.com/neo4j/community/issues/523
     val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     assert(result.size == 2)
-  }
-
-  @Test
-  def concatenate_to_a_collection() {
-    val result = executeScalar[Array[Long]]("create (a {foo:[1,2,3]}) set a.foo = a.foo + [4,5] return a.foo")
-
-    assert(result.toList === List(1,2,3,4,5))
-  }
-
-  @Test
-  def concatenate_to_a_collection_in_reverse() {
-    val result = executeScalar[Array[Long]]("create (a {foo:[3,4,5]}) set a.foo = [1,2] + a.foo return a.foo")
-
-    assert(result.toList === List(1,2,3,4,5))
   }
 
   @Test
@@ -568,15 +467,6 @@ return distinct center""")
     assertStats(result, nodesCreated = 1, labelsAdded = 2);
   }
 
-  @Test
-  def should_be_able_to_add_label_to_node() {
-    createNode()
-    val result = execute("start n=node(0) set n:FOO return n")
-    val createdNode = result.columnAs[Node]("n").next()
-
-    assertThat(createdNode, inTx(graph, hasLabels("FOO")))
-    assertStats(result, labelsAdded = 1)
-  }
 
   @Test
   def complete_graph() {
