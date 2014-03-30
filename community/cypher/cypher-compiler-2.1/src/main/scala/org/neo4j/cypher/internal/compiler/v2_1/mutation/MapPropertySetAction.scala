@@ -29,7 +29,7 @@ import org.neo4j.graphdb.{Node, Relationship, PropertyContainer}
 import collection.Map
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.{IsMap, MapSupport}
 
-case class MapPropertySetAction(element: Expression, mapExpression: Expression)
+case class MapPropertySetAction(element: Expression, mapExpression: Expression, removeOtherProps:Boolean)
   extends UpdateAction with GraphElementPropertyFunctions with MapSupport {
 
   def exec(context: ExecutionContext, state: QueryState) = {
@@ -84,8 +84,10 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
     val properties = ops.propertyKeyIds(id(target)).filterNot(map.contains).toSet
 
     /*Remove all other properties from the property container*/
-    for ( propertyKeyId <- properties ) {
-      ops.removeProperty(id(target), propertyKeyId)
+    if (removeOtherProps) {
+      for (propertyKeyId <- properties) {
+        ops.removeProperty(id(target), propertyKeyId)
+      }
     }
   }
 
@@ -93,7 +95,7 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression)
 
   def children = Seq(element, mapExpression)
 
-  def rewrite(f: (Expression) => Expression) = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f))
+  def rewrite(f: (Expression) => Expression) = MapPropertySetAction(element.rewrite(f), mapExpression.rewrite(f), removeOtherProps)
 
   def symbolTableDependencies = element.symbolTableDependencies ++ mapExpression.symbolTableDependencies
 

@@ -26,11 +26,10 @@ import commands.values.{UnresolvedLabel, TokenType, KeyToken}
 import commands.values.TokenType.PropertyKey
 import helpers.LabelSupport
 import mutation._
-import org.neo4j.cypher.{MissingIndexException, SyntaxException}
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
-import java.net.URL
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import ast.convert.StatementConverters._
 
@@ -2311,11 +2310,25 @@ class CypherParserTest extends CypherFunSuite {
   test("set to param") {
     val q2 = Query.
       start().
-      updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"))).
+      updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"), removeOtherProps = true)).
       returns()
 
     expectQuery(
       "start n=node(0) set n = {prop}",
+      Query.
+        start(NodeById("n", 0)).
+        tail(q2).
+        returns(AllIdentifiers()))
+  }
+
+  test("inclusive set to param") {
+    val q2 = Query.
+      start().
+      updates(MapPropertySetAction(Identifier("n"), ParameterExpression("prop"), removeOtherProps = false)).
+      returns()
+
+    expectQuery(
+      "start n=node(0) set n += {prop}",
       Query.
         start(NodeById("n", 0)).
         tail(q2).
@@ -2327,7 +2340,7 @@ class CypherParserTest extends CypherFunSuite {
       "start n=node(0) set n = {key: 'value', foo: 1}", {
       val q2 = Query.
         start().
-        updates(MapPropertySetAction(Identifier("n"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))))).
+        updates(MapPropertySetAction(Identifier("n"), LiteralMap(Map("key" -> Literal("value"), "foo" -> Literal(1))), removeOtherProps = true)).
         returns()
 
       Query.
@@ -2950,7 +2963,7 @@ class CypherParserTest extends CypherFunSuite {
       "MATCH (a)-[r:KNOWS]->(b) SET r = { id: 42 }",
       Query.
         matches(RelatedTo("a", "b", "r", "KNOWS", Direction.OUTGOING)).
-        tail(Query.updates(MapPropertySetAction(Identifier("r"), LiteralMap(Map("id"->Literal(42))))).returns()).
+        tail(Query.updates(MapPropertySetAction(Identifier("r"), LiteralMap(Map("id"->Literal(42))), removeOtherProps = true)).returns()).
         returns(AllIdentifiers()))
   }
 

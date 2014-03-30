@@ -111,7 +111,8 @@ trait Clauses extends Parser
 
   private def SetItem: Rule1[ast.SetItem] = rule (
       PropertyExpression ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetPropertyItem(_, _))
-    | Identifier ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetPropertiesFromMapItem(_, _))
+    | Identifier ~~ group(operator("=") ~~ Expression) ~~>> (ast.SetExactPropertiesFromMapItem(_, _))
+    | Identifier ~~ group(operator("+=") ~~ Expression) ~~>> (ast.SetIncludingPropertiesFromMapItem(_, _))
     | group(Identifier ~~ NodeLabels) ~~>> (ast.SetLabelItem(_, _))
   )
 

@@ -261,8 +261,10 @@ object StatementConverters {
             mutation.PropertySetAction(setItem.property.asCommandProperty, setItem.expression.asCommandExpression)
           case setItem: ast.SetLabelItem =>
             commands.LabelAction(setItem.expression.asCommandExpression, commands.LabelSetOp, setItem.labels.map(l => commandvalues.KeyToken.Unresolved(l.name, commandvalues.TokenType.Label)))
-          case setItem: ast.SetPropertiesFromMapItem =>
-            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), setItem.expression.asCommandExpression)
+          case setItem: ast.SetExactPropertiesFromMapItem =>
+            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), setItem.expression.asCommandExpression, true)
+          case setItem: ast.SetIncludingPropertiesFromMapItem =>
+            mutation.MapPropertySetAction(commandexpressions.Identifier(setItem.identifier.name), setItem.expression.asCommandExpression, false)
         }
       case c: ast.Delete =>
         c.expressions.map(e => mutation.DeleteEntityAction(e.asCommandExpression))
