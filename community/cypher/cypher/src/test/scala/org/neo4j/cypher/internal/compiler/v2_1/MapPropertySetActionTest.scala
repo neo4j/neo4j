@@ -40,7 +40,7 @@ class MapPropertySetActionTest extends GraphDatabaseJUnitSuite {
   @After
   def teardown() {
     tx.failure()
-    tx.finish()
+    tx.close()
   }
 
   @Test def set_single_value_on_node() {
@@ -109,8 +109,36 @@ class MapPropertySetActionTest extends GraphDatabaseJUnitSuite {
     assert(state.getStatistics.propertiesSet === 1)
   }
 
+  @Test def should_overwrite_but_keep_other_values() {
+    val from = Map("a" -> 1)
+    val to = createNode("a" -> "apa", "b" -> "apa")
+
+    setPropertiesWithoutCleaning(to, from)
+
+    assert(to.getProperty("a") === 1)
+    assert(to.getProperty("b") === "apa")
+    assert(state.getStatistics.propertiesSet === 1)
+  }
+
+  @Test def explicit_null_removes_values() {
+    val from = Map("a" -> 1, "b" -> null)
+    val to = createNode("a" -> "A", "b" -> "B", "c" -> "C")
+
+    setPropertiesWithoutCleaning(to, from)
+
+    assert(to.getProperty("a") === 1)
+    assert(to.hasProperty("b") === false)
+    assert(to.getProperty("c") === "C")
+    assert(state.getStatistics.propertiesSet === 2)
+  }
+
   private def setProperties(a: PropertyContainer, m: Any) {
-    val setter = MapPropertySetAction(Literal(a), Literal(m))
+    val setter = MapPropertySetAction(Literal(a), Literal(m), removeOtherProps = true)
+    setter.exec(ExecutionContext.empty, state)
+  }
+
+  private def setPropertiesWithoutCleaning(a: PropertyContainer, m: Any) {
+    val setter = MapPropertySetAction(Literal(a), Literal(m), removeOtherProps = false)
     setter.exec(ExecutionContext.empty, state)
   }
 }

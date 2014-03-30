@@ -150,4 +150,58 @@ foreach(n in nodes(p) |
     // then
     result.toList should equal(List(1, 2, 3, 4, 5))
   }
+
+  test("overwrites values when using +=") {
+    // given
+    val a = createNode("foo"->"A", "bar"->"B")
+
+    // when
+    val result = execute("MATCH (n {foo:'A'}) SET n += {bar:'C'}")
+
+    // then
+    a should haveProperty("foo").withValue("A")
+    a should haveProperty("bar").withValue("C")
+  }
+
+  test("old values are kept when using +=") {
+    // given
+    val a = createNode("foo"->"A")
+
+    // when
+    val result = execute("MATCH (n {foo:'A'}) SET n += {bar:'B'}")
+
+    // then
+    a should haveProperty("foo").withValue("A")
+    a should haveProperty("bar").withValue("B")
+  }
+
+  test("explicit null values in map removes old values") {
+    // given
+    val a = createNode("foo"->"A", "bar"->"B")
+
+    // when
+    val result = execute("MATCH (n {foo:'A'}) SET n += {foo:null}")
+
+    // then
+    a should not(haveProperty("foo"))
+    a should haveProperty("bar").withValue("B")
+  }
+
+  test("set += works well inside foreach") {
+    // given
+    val a = createNode("a"->"A")
+    val b = createNode("b"->"B")
+    val c = createNode("c"->"C")
+
+    // when
+    val result = execute("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x += {x:'X'})")
+
+    // then
+    a should haveProperty("a").withValue("A")
+    b should haveProperty("b").withValue("B")
+    c should haveProperty("c").withValue("C")
+    a should haveProperty("x").withValue("X")
+    b should haveProperty("x").withValue("X")
+    c should haveProperty("x").withValue("X")
+  }
 }
