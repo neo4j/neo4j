@@ -64,8 +64,8 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
 
-    case _: NodeHashJoin =>
-      cardinality(plan) * 2
+    case join: NodeHashJoin =>
+      cost(join.left) + cardinality(join.left) * cost(join.right)
   }
 
   private def cost(plan: LogicalPlan) = apply(plan)
