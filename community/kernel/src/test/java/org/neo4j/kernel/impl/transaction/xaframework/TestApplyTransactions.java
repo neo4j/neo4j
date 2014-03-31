@@ -19,18 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestApplyTransactions
 {
@@ -50,15 +62,14 @@ public class TestApplyTransactions
         origin.createNode();
         tx.success();
         tx.finish();
-        XaDataSource originNeoDataSource = origin.getXaDataSourceManager().getXaDataSource(
-                Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource originNeoDataSource = getXaDataSource( origin );
         int latestTxId = (int) originNeoDataSource.getLastCommittedTxId();
         InMemoryLogBuffer theTx = new InMemoryLogBuffer();
         originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 
         final GraphDatabaseAPI dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( destStoreDir.getPath() );
-        XaDataSource destNeoDataSource = dest.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        XaDataSource destNeoDataSource = getXaDataSource( dest );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
         origin.shutdown();
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( new Runnable()
@@ -81,6 +92,99 @@ public class TestApplyTransactions
         long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
         assertEquals( latestTxId, extractedTxId );
     }
-    
+
+    @Test
+    public void verifyThatRecoveredTransactionsHaveTheirDoneRecordsWrittenInOrder() throws IOException
+    {
+        XaDataSource ds;
+        File archivedLogFilename;
+
+        File originStoreDir = new File( new File( "base" ), "origin" );
+        String logicalLogFilename = "logicallog";
+
+        final GraphDatabaseAPI db1 = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                        .setFileSystem( fs.get() )
+                        .newImpermanentDatabaseBuilder( originStoreDir.getPath() )
+                        .setConfig( InternalAbstractGraphDatabase.Configuration.logical_log, logicalLogFilename )
+                        .newGraphDatabase();
+
+        for ( int i = 0; i < 100; i++ )
+        {
+            Transaction tx = db1.beginTx();
+            db1.createNode();
+            tx.success();
+            tx.finish();
+        }
+
+        ds = getXaDataSource( db1 );
+        archivedLogFilename = ds.getFileName( ds.getCurrentLogVersion() );
+
+        fs.snapshot( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                db1.shutdown();
+            }
+        } );
+
+        removeDoneEntriesFromLog( new File( archivedLogFilename.getParent(), logicalLogFilename + ".1" ) );
+
+        GraphDatabaseAPI db2 = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                        .setFileSystem( fs.get() )
+                        .newImpermanentDatabaseBuilder( originStoreDir.getPath() )
+                        .setConfig( InternalAbstractGraphDatabase.Configuration.logical_log, logicalLogFilename )
+                        .newGraphDatabase();
+
+        ds = getXaDataSource( db2 );
+        archivedLogFilename = ds.getFileName( ds.getCurrentLogVersion() );
+        db2.shutdown();
+
+        List<LogEntry> logEntries = filterDoneEntries( logEntries( fs.get(), archivedLogFilename ) );
+        String errorMessage = "DONE entries should be in order: " + logEntries;
+        int prev = 0;
+        for ( LogEntry entry : logEntries )
+        {
+            int current = entry.getIdentifier();
+            assertThat( errorMessage, current, greaterThan( prev ) );
+            prev = current;
+        }
+    }
+
+    private void removeDoneEntriesFromLog( File archivedLogFilename ) throws IOException
+    {
+        LogTestUtils.LogHook<LogEntry> doneEntryFilter = new LogTestUtils.LogHookAdapter<LogEntry>()
+        {
+            @Override
+            public boolean accept( LogEntry item )
+            {
+                return !(item instanceof LogEntry.Done);
+            }
+        };
+        EphemeralFileSystemAbstraction fsa = fs.get();
+        File tempFile = filterNeostoreLogicalLog( fsa, archivedLogFilename, doneEntryFilter );
+        fsa.deleteFile( archivedLogFilename );
+        fsa.renameFile( tempFile, archivedLogFilename );
+    }
+
+    private XaDataSource getXaDataSource( GraphDatabaseAPI newDest )
+    {
+        return newDest.getXaDataSourceManager().getXaDataSource( Config
+                    .DEFAULT_DATA_SOURCE_NAME );
+    }
+
+    private List<LogEntry> filterDoneEntries( List<LogEntry> logEntries )
+    {
+        Predicate<? super LogEntry> doneEntryPredicate = new Predicate<LogEntry>()
+        {
+            @Override
+            public boolean accept( LogEntry item )
+            {
+                return item instanceof LogEntry.Done;
+            }
+        };
+        return Iterables.toList( Iterables.filter( doneEntryPredicate, logEntries ) );
+    }
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

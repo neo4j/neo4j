@@ -24,12 +24,10 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.transaction.xa.XAException;
@@ -240,13 +238,14 @@ public class XaResourceManager
         }
     }
 
-    private static class TransactionStatus
+    private static class TransactionStatus implements Comparable<TransactionStatus>
     {
         private boolean prepared = false;
         private boolean commitStarted = false;
         private boolean rollback = false;
         private boolean startWritten = false;
         private final XaTransaction xaTransaction;
+        private int sequenceNumber;
 
         TransactionStatus( XaTransaction xaTransaction )
         {
@@ -304,6 +303,18 @@ public class XaResourceManager
             return "TransactionStatus[" + xaTransaction.getIdentifier()
                 + ", prepared=" + prepared + ", commitStarted=" + commitStarted
                 + ", rolledback=" + rollback + "]";
+        }
+
+        public void setSequenceNumber( int sequenceNumber )
+        {
+            this.sequenceNumber = sequenceNumber;
+        }
+
+        @Override
+        public int compareTo( TransactionStatus that )
+        {
+            return this.sequenceNumber > that.sequenceNumber ? 1
+                 : this.sequenceNumber < that.sequenceNumber ? -1 : 0;
         }
     }
 
@@ -370,13 +381,12 @@ public class XaResourceManager
         }
         else
         {
-            txOrderMap.put( xid, nextTxOrder++ );
+            txStatus.setSequenceNumber( nextTxOrder++ );
             txStatus.markAsPrepared();
             return false;
         }
     }
 
-    private final Map<Xid,Integer> txOrderMap = new HashMap<Xid,Integer>();
     private int nextTxOrder = 0;
 
     // called during recovery
@@ -389,7 +399,7 @@ public class XaResourceManager
             throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
-        txOrderMap.put( xid, nextTxOrder++ );
+        txStatus.setSequenceNumber( nextTxOrder++ );
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -405,7 +415,7 @@ public class XaResourceManager
             throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
-        txOrderMap.put( xid, nextTxOrder++ );
+        txStatus.setSequenceNumber( nextTxOrder++ );
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -647,25 +657,11 @@ public class XaResourceManager
             @Override
             public int compare( Xid o1, Xid o2 )
             {
-
-                Integer id1 = txOrderMap.get( o1 );
-                Integer id2 = txOrderMap.get( o2 );
-                if ( id1 == null && id2 == null )
-                {
-                    return 0;
-                }
-                if ( id1 == null )
-                {
-                    return Integer.MAX_VALUE;
-                }
-                if ( id2 == null )
-                {
-                    return Integer.MIN_VALUE;
-                }
-                return id1 - id2;
+                TransactionStatus a = xidMap.get( o1 ).txStatus;
+                TransactionStatus b = xidMap.get( o2 ).txStatus;
+                return a.compareTo( b );
             }
         } );
-        txOrderMap.clear(); // = null;
         while ( !xids.isEmpty() )
         {
             Xid xid = xids.removeFirst();
