@@ -72,19 +72,6 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )))
   }
 
-  test("throws an exception if there are plans with more than one overlapping ID") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(r1Rel, r2Rel, r3Rel))
-    val left: LogicalPlan = newMockedLogicalPlan(Set(aNode, bNode, cNode))
-    val right: LogicalPlan = newMockedLogicalPlan(Set(bNode, cNode, dNode))
-    val planTable = PlanTable(Map(
-      Set(aNode, bNode, cNode) -> left,
-      Set(bNode, cNode, dNode) -> right
-    ))
-    evaluating {
-      join(planTable)
-    } should produce[InternalException]
-  }
-
   test("does not introduce joins if plans do not overlap") {
     implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(r1Rel))
     val left: LogicalPlan = newMockedLogicalPlan(Set(aNode, bNode))
