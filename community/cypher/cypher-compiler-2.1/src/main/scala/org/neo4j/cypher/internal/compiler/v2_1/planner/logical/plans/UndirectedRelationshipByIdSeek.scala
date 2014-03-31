@@ -24,9 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           relIds: Seq[Expression],
                                           leftNode: IdName,
-                                          rightNode: IdName)(val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalPlan {
-  def lhs = None
-  def rhs = None
-
+                                          rightNode: IdName)(val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
   val coveredIds = Set(idName, leftNode, rightNode)
 }

@@ -61,6 +61,11 @@ abstract class LogicalPlan extends Product {
   override def toString = "\n" + toTreeString
 }
 
+abstract class LogicalLeafPlan extends LogicalPlan {
+  final val lhs = None
+  final val rhs = None
+}
+
 final case class IdName(name: String) extends AnyVal
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName]) {

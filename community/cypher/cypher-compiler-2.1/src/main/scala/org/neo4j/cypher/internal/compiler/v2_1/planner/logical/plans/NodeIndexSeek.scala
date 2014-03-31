@@ -23,9 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                        (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalPlan {
-  def lhs = None
-  def rhs = None
-
+                        (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
   val coveredIds = Set(idName)
 }

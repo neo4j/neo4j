@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 
-case class AllNodesScan(idName: IdName) extends LogicalPlan {
-  def lhs = None
-  def rhs = None
-
+case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
   val coveredIds = Set(idName)
   val solvedPredicates = Seq.empty
 }
