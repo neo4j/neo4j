@@ -33,7 +33,7 @@ object join {
       (planA.coveredIds & planB.coveredIds).toList match {
         case id :: Nil => Some(NodeHashJoin(id, planA, planB))
         case Nil => None
-        case _ => None
+        case _ => throw new InternalException("Found more than one overlapping ID when planning hash joins")
       }
     }).flatten
     CandidateList(joinPlans)

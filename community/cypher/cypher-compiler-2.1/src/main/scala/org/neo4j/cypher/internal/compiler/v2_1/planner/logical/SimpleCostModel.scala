@@ -27,13 +27,6 @@ import Metrics._
 
 class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
 
-  val HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW = 0.001
-  val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW = 0.0005
-  val EXPRESSION_PROJECTION_OVERHEAD_PER_ROW = 0.01
-  val EXPRESSION_SELECTION_OVERHEAD_PER_ROW = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
-  val INDEX_OVERHEAD_COST_PER_ROW = 3
-  val LABEL_INDEX_OVERHEAD_COST_PER_ROW = 3
-
   def apply(plan: LogicalPlan): Int = plan match {
     case _: SingleRow =>
       cardinality(plan)
@@ -42,13 +35,13 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
       cardinality(plan)
 
     case _: NodeIndexSeek =>
-      cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW
+      cardinality(plan) * 3
 
     case _: NodeIndexUniqueSeek =>
-      cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW
+      cardinality(plan) * 3
 
     case _: NodeByLabelScan =>
-      cardinality(plan) * LABEL_INDEX_OVERHEAD_COST_PER_ROW
+      cardinality(plan) * 2
 
     case _: NodeByIdSeek =>
       cardinality(plan)
@@ -59,15 +52,11 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
     case _: UndirectedRelationshipByIdSeek =>
       cardinality(plan)
 
-    case projection: Projection => (
-      cost(projection.left) +
-      cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
-    ).toInt
+    case projection: Projection =>
+      cost(projection.left) + (cardinality(projection.left) * 0.01 * projection.numExpressions).toInt
 
-    case selection: Selection => (
-      cost(selection.left) +
-      cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates
-    ).toInt
+    case selection: Selection =>
+      cost(selection.left) + (cardinality(selection.left) * .2 * selection.numPredicates).toInt
 
     case cartesian: CartesianProduct =>
       cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
@@ -75,12 +64,8 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
 
-    case join: NodeHashJoin => (
-      cost(join.left) +
-      cost(join.right) +
-      cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-      cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
-    ).toInt
+    case join: NodeHashJoin =>
+      cost(join.left) + cardinality(join.left) * cost(join.right)
   }
 
   private def cost(plan: LogicalPlan) = apply(plan)
