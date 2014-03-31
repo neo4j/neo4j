@@ -24,16 +24,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -42,11 +34,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import ch.qos.logback.access.jetty.RequestLogImpl;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -58,6 +47,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 import org.neo4j.server.database.InjectableProvider;
@@ -97,6 +87,7 @@ public class Jetty9WebServer implements WebServer
 			return pathSpec;
 		}
 	}
+    private static final int MAX_THREADPOOL_SIZE = 640;
     private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final Logger log = Logger.getLogger( Jetty9WebServer.class );
     public static final int DEFAULT_PORT = 80;
@@ -115,10 +106,11 @@ public class Jetty9WebServer implements WebServer
             new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
-    private int jettyMaxThreads = tenThreadsPerProcessor();
+    private int jettyMaxThreads = Math.min(tenThreadsPerProcessor(), MAX_THREADPOOL_SIZE);
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
+    private final HttpConnectorFactory connectorFactory = new HttpConnectorFactory();
     private File requestLoggingConfiguration;
 
     @Override
@@ -131,26 +123,18 @@ public class Jetty9WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            jetty = new Server( new QueuedThreadPool( jettyMaxThreads ) );
+            QueuedThreadPool pool = createQueuedThreadPool(jettyMaxThreads);
 
-            HttpConfiguration httpConfig = new HttpConfiguration();
-            httpConfig.setRequestHeaderSize( 20 * 1024 );
-            httpConfig.setResponseHeaderSize( 20 * 1024 );
-            HttpConnectionFactory httpFactory = new HttpConnectionFactory( httpConfig );
+            jetty = new Server( pool );
 
-            ServerConnector connector = new ServerConnector(jetty, httpFactory);
-
-            connector.setPort( jettyHttpPort );
-            connector.setHost( jettyAddr );
-
-            jetty.addConnector( connector );
+            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddr, jettyHttpPort, jettyMaxThreads ) );
 
             if ( httpsEnabled )
             {
                 if ( httpsCertificateInformation != null )
                 {
                     jetty.addConnector(
-                        sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr, jettyHttpsPort ) );
+                        sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr, jettyHttpsPort, jettyMaxThreads ) );
                 }
                 else
                 {
@@ -172,6 +156,16 @@ public class Jetty9WebServer implements WebServer
 
         startJetty();
 
+    }
+
+    private QueuedThreadPool createQueuedThreadPool( int jettyMaxThreads )
+    {
+        // see: http://wiki.eclipse.org/Jetty/Howto/High_Load
+        int minThreads = Math.max( 2, jettyMaxThreads / 10 );
+        int maxCapacity = jettyMaxThreads * 1000 * 60; // threads * 1000 req/s * 60 s
+        BlockingQueue<Runnable> queue =  new BlockingArrayQueue<>( minThreads, minThreads, maxCapacity );
+        int maxThreads = Math.max( jettyMaxThreads, minThreads );
+        return new QueuedThreadPool( maxThreads, minThreads , 60000, queue );
     }
 
     @Override
