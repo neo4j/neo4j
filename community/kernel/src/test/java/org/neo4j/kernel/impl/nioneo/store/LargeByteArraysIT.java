@@ -40,7 +40,7 @@ public class LargeByteArraysIT
     @Test
     public void largeByteArrays() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).directory( "bytearrays", true ).getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).cleanDirectory( "bytearrays" ).getAbsolutePath() );
         try
         {
 //            setLogSize( db );

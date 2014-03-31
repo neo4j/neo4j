@@ -52,7 +52,7 @@ public class GetOrCreateDocIT extends AbstractJavaDocTestBase
     public static void init()
     {
         db = new GraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( GetOrCreateDocIT.class ).graphDbDir( true ).getAbsolutePath()
+                TargetDirectory.forTest( GetOrCreateDocIT.class ).makeGraphDbDir().getAbsolutePath()
              );
     }
 

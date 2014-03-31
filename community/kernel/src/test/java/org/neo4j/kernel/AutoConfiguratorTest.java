@@ -55,7 +55,7 @@ public class AutoConfiguratorTest
     @Before
     public void given()
     {
-        storeDir = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName() );
+        storeDir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
     }
 
     @Test

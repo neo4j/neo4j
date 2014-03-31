@@ -164,7 +164,7 @@ public class StandaloneClusterClientIT
 
     @Rule
     public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
-    private final File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
+    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "temp" );
     private LifeSupport life;
     private ClusterClient[] clients;
 
@@ -207,7 +207,7 @@ public class StandaloneClusterClientIT
 
     private File configFile( Map<String, String> config ) throws IOException
     {
-        File directory = TargetDirectory.forTest( getClass() ).directory( "temp", true );
+        File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "temp" );
         File dbConfigFile = new File( directory, "config-file" );
         store( config, dbConfigFile );
         File serverConfigFile = new File( directory, "server-file" );

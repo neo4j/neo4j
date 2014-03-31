@@ -22,7 +22,6 @@ package org.neo4j.com.storecopy;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,7 +34,7 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.verification.VerificationMode;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
@@ -61,7 +60,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 public class RemoteStoreCopierTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test

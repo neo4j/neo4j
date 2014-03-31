@@ -31,7 +31,7 @@ public class OnDiskLastTxIdGetterTest
     public void testGetLastTxIdNoFilePresent() throws Exception
     {
         OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter(
-                TargetDirectory.forTest( getClass() ).directory( "no-store" ) );
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "no-store" ) );
         assertEquals( -1, getter.getLastTxId() );
     }
 }

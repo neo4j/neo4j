@@ -49,7 +49,7 @@ public class StoreLockerTest
 
         try
         {
-            storeLocker.checkLock( target.directory( "unused", true ) );
+            storeLocker.checkLock( target.cleanDirectory( "unused" ) );
 
             // Ok
         }
@@ -67,7 +67,7 @@ public class StoreLockerTest
 
         try
         {
-            storeLocker.checkLock( target.directory( "unused", true ) );
+            storeLocker.checkLock( target.cleanDirectory( "unused" ) );
             // Ok
         }
         catch ( StoreLockException e )
@@ -82,7 +82,7 @@ public class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( false,
                 new IOException( "store dir could not be created" ), null, true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
-        File storeDir = target.directory( "unused", true );
+        File storeDir = target.cleanDirectory( "unused" );
 
         try
         {
@@ -102,7 +102,7 @@ public class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new CannedFileSystemAbstraction( true, null,
                 new IOException( "cannot open lock file" ), true, NOTHING );
         StoreLocker storeLocker = new StoreLocker( fileSystemAbstraction );
-        File storeDir = target.directory( "unused", true );
+        File storeDir = target.cleanDirectory( "unused" );
 
         try
         {
@@ -125,7 +125,7 @@ public class StoreLockerTest
 
         try
         {
-            storeLocker.checkLock( target.directory( "unused", true ) );
+            storeLocker.checkLock( target.cleanDirectory( "unused" ) );
             fail();
         }
         catch ( StoreLockException e )

@@ -98,7 +98,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
         // let the database accept remote neo4j-shell connections
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath() )
+                .newEmbeddedDatabaseBuilder( TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath() )
                 .setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE )
                 .newGraphDatabase();
         ServerConfigurator config;

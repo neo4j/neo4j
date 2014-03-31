@@ -380,7 +380,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
         Set<Integer> versionSet = new HashSet<>();
         for ( int version : versions )
             versionSet.add( version );
-        File path = new File( getStoreDir( this, 0, false ), "index" );
+        File path = new File( target.existingDirectory( "graphdb." + 0 ), "index" );
         for ( File file : nonNull( path.listFiles() ) )
         {
             if ( file.getName().contains( ".log.v" ) )

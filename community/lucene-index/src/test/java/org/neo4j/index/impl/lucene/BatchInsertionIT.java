@@ -47,7 +47,7 @@ import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG
 public class BatchInsertionIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( BatchInsertionIT.class );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( BatchInsertionIT.class );
 
     @Test
     public void shouldIndexNodesWithMultipleLabels() throws Exception

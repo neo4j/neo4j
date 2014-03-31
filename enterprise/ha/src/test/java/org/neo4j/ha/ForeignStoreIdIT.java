@@ -47,14 +47,14 @@ public class ForeignStoreIdIT
         // GIVEN
         // -- one instance running
         firstInstance = new HighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( DIR.directory( "1", true ).getAbsolutePath() )
+                .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
                 .setConfig( ha_server, "127.0.0.1:6031" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( DIR.directory( "2", true ), 0 );
+        String foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 0 );
 
         // WHEN
         // -- the other joins
@@ -79,7 +79,7 @@ public class ForeignStoreIdIT
         // GIVEN
         // -- one instance running
         firstInstance = new HighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( DIR.directory( "1", true ).getAbsolutePath() )
+                .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
@@ -87,7 +87,7 @@ public class ForeignStoreIdIT
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( DIR.directory( "2", true ), 1 );
+        String foreignDbStoreDir = createAnotherStore( DIR.cleanDirectory( "2" ), 1 );
 
         // WHEN
         // -- the other joins

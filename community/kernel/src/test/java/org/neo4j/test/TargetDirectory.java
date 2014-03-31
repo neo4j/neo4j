@@ -38,13 +38,9 @@ public class TargetDirectory
 {
     public class TestDirectory implements TestRule
     {
-        private final boolean clean;
         private File subdir = null;
 
-        private TestDirectory( boolean clean )
-        {
-            this.clean = clean;
-        }
+        private TestDirectory() { }
 
         public String absolutePath()
         {
@@ -60,7 +56,7 @@ public class TargetDirectory
         @Override
         public Statement apply( final Statement base, Description description )
         {
-            subdir = directoryForDescription( description, clean );
+            subdir = directoryForDescription( description );
             return new Statement()
             {
                 @Override
@@ -97,76 +93,9 @@ public class TargetDirectory
     private final FileSystemAbstraction fileSystem;
     private final File base;
 
-    private TargetDirectory( FileSystemAbstraction fileSystem, File base )
-    {
-        this.fileSystem = fileSystem;
-        this.base = base.getAbsoluteFile();
-    }
-
-    public File directory( String name )
-    {
-        return directory( name, false );
-    }
-
-    public File directory( String name, boolean clean )
-    {
-        File dir = new File( base(), name );
-        if ( clean && fileSystem.fileExists( dir ) )
-        {
-            recursiveDelete( dir );
-        }
-        fileSystem.mkdir( dir );
-        return dir;
-    }
-
-    public File directoryForDescription( Description description, boolean clean )
-    {
-        String testName = description.getMethodName();
-        String dirName = DigestUtils.md5Hex( testName );
-        return TargetDirectory.this.registeredDirectory( dirName, testName, clean );
-    }
-
-    private File registeredDirectory( String dirName, String testName, boolean clean )
-    {
-        try
-        {
-            FileUtils.writeToFile( new File( base(), ".register" ), format("%s=%s\n", dirName, testName), true );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return directory( dirName, clean );
-    }
-
-    public File file( String name )
-    {
-        return new File( base(), name );
-    }
-
-    public TestDirectory testDirectory()
-    {
-        return new TestDirectory( false );
-    }
-
-    public TestDirectory cleanTestDirectory()
-    {
-        return new TestDirectory( true );
-    }
-
-    public File graphDbDir( boolean clean )
-    {
-        return directory( "graph-db", clean );
-    }
-
-    public void cleanup() throws IOException
-    {
-        fileSystem.deleteRecursively( base );
-        fileSystem.mkdirs( base );
-    }
-
     public static TargetDirectory forTest( Class<?> owningTest )
     {
+        //noinspection deprecation
         return forTest( new DefaultFileSystemAbstraction(), owningTest );
     }
 
@@ -176,24 +105,71 @@ public class TargetDirectory
                 new File( new File( locateTarget( owningTest ), "test-data" ), owningTest.getName() ) );
     }
 
-    public static TestDirectory testDirForTest( FileSystemAbstraction fileSystem, Class<?> owningTest )
-    {
-        return forTest( fileSystem, owningTest ).testDirectory();
-    }
-
     public static TestDirectory testDirForTest( Class<?> owningTest )
     {
-        return testDirForTest( new DefaultFileSystemAbstraction(), owningTest );
+        //noinspection deprecation
+        return forTest( new DefaultFileSystemAbstraction(), owningTest ).testDirectory();
     }
 
-    public static TestDirectory cleanTestDirForTest( FileSystemAbstraction fileSystem, Class<?> owningTest )
+    private TargetDirectory( FileSystemAbstraction fileSystem, File base )
     {
-        return forTest( fileSystem, owningTest ).cleanTestDirectory();
+        this.fileSystem = fileSystem;
+        this.base = base.getAbsoluteFile();
     }
 
-    public static TestDirectory cleanTestDirForTest( Class<?> owningTest )
+    public File cacheDirectory( String name )
     {
-        return cleanTestDirForTest( new DefaultFileSystemAbstraction(), owningTest );
+        File dir = new File( ensureBase(), name );
+        if ( ! fileSystem.fileExists( dir ) )
+        {
+            fileSystem.mkdir( dir );
+        }
+        return dir;
+    }
+
+    public File existingDirectory( String name )
+    {
+        return new File( base, name );
+    }
+
+    public File cleanDirectory( String name )
+    {
+        File dir = new File( ensureBase(), name );
+        if ( fileSystem.fileExists( dir ) )
+        {
+            recursiveDelete( dir );
+        }
+        fileSystem.mkdir( dir );
+        return dir;
+    }
+
+    public File directoryForDescription( Description description )
+    {
+        String test = description.getMethodName();
+        String dir = DigestUtils.md5Hex( test );
+        register( test, dir );
+        return cleanDirectory( dir );
+    }
+
+    public File file( String name )
+    {
+        return new File( ensureBase(), name );
+    }
+
+    public TestDirectory testDirectory()
+    {
+        return new TestDirectory();
+    }
+
+    public File makeGraphDbDir()
+    {
+        return cleanDirectory( "graph-db" );
+    }
+
+    public void cleanup() throws IOException
+    {
+        fileSystem.deleteRecursively( base );
+        fileSystem.mkdirs( base );
     }
 
     private void recursiveDelete( File file )
@@ -208,7 +184,19 @@ public class TargetDirectory
         }
     }
 
-    private File base()
+    private void register( String test, String dir )
+    {
+        try
+        {
+            FileUtils.writeToFile( new File( ensureBase(), ".register" ), format( "%s=%s\n", dir, test ), true );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private File ensureBase()
     {
         if ( fileSystem.fileExists( base ) && !fileSystem.isDirectory( base ) )
             throw new IllegalStateException( base + " exists and is not a directory!" );

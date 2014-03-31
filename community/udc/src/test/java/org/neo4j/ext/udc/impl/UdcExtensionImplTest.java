@@ -92,7 +92,7 @@ public class UdcExtensionImplTest
     {
         UdcTimerTask.successCounts.clear();
         UdcTimerTask.failureCounts.clear();
-        path = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
+        path = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
     }
 
     /**

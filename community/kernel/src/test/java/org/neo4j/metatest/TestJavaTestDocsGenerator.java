@@ -53,7 +53,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
-    File directory = TargetDirectory.forTest(getClass()).directory("testdocs", false);
+    File directory = TargetDirectory.forTest(getClass()).cleanDirectory( "testdocs"  );
     String sectionName = "testsection";
     File sectionDirectory = new File(directory, sectionName);
 

@@ -46,8 +46,9 @@ import static org.neo4j.helpers.Settings.osIsWindows;
 
 public class BackupEmbeddedIT
 {
-    public static final File PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).directory( "db" );
-    public static final File BACKUP_PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).directory( "backup-db" );
+    public static final File PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).cleanDirectory( "db" );
+    public static final File BACKUP_PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).cleanDirectory( "backup" +
+            "-db" );
 
     private GraphDatabaseService db;
     private String ip;

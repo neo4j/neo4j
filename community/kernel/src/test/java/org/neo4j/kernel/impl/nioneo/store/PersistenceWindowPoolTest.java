@@ -87,7 +87,7 @@ public class PersistenceWindowPoolTest
     @Test
     public void handOverDirtyPersistenceRowToReaderShouldWriteWhenClosing() throws Exception
     {
-        String filename = new File( target.graphDbDir( true ), "dirty" ).getAbsolutePath();
+        String filename = new File( target.makeGraphDbDir(), "dirty" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
         final int blockSize = 8;
         StoreChannel channel = new StoreFileChannel( file.getChannel() );

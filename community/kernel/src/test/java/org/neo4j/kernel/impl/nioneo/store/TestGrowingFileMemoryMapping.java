@@ -48,7 +48,7 @@ public class TestGrowingFileMemoryMapping
         // given
         int NUMBER_OF_RECORDS = 1000000;
 
-        File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+        File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         Config config = new Config( stringMap(
                 nodestore_mapped_memory_size.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
                 NodeStore.Configuration.use_memory_mapped_buffers.name(), "true",

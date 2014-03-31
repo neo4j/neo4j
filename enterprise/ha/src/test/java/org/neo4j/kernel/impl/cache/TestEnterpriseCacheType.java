@@ -72,6 +72,6 @@ public class TestEnterpriseCacheType
         }
     }
 
-    private String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
     private GraphDatabaseAPI db;
 }

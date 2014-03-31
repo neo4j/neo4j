@@ -172,7 +172,7 @@ public class StoreMigratorIT
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private final String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;
     private File storeFileName;

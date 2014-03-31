@@ -42,14 +42,14 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
 import static org.neo4j.test.OtherThreadRule.isWaiting;
-import static org.neo4j.test.TargetDirectory.cleanTestDirForTest;
+import static org.neo4j.test.TargetDirectory.testDirForTest;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class UniquenessConstraintValidationHAIT
 {
     public final @Rule LifeRule life = new LifeRule();
     public final @Rule TargetDirectory.TestDirectory targetDir =
-            cleanTestDirForTest( UniquenessConstraintValidationHAIT.class );
+            testDirForTest( UniquenessConstraintValidationHAIT.class );
     public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Before

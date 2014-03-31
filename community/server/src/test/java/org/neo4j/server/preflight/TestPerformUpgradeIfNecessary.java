@@ -47,7 +47,7 @@ import org.neo4j.test.TargetDirectory;
 
 public class TestPerformUpgradeIfNecessary
 {
-    public static final String HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).graphDbDir( true ).getAbsolutePath();
+    public static final String HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).makeGraphDbDir().getAbsolutePath();
     public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
 
     @Test

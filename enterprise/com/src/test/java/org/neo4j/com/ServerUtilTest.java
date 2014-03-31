@@ -66,7 +66,7 @@ import static org.mockito.Mockito.when;
 public class ServerUtilTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldIgnoreLogicalLogsWhenCopyingFilesForBackup() throws IOException

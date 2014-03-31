@@ -81,7 +81,7 @@ public class XaLogicalLogTest
         when( xaTf.getCurrentVersion() ).thenAnswer( new TxVersion( TxVersion.GET ) );
         // spy on the file system abstraction so that we can spy on the file channel for the logical log
         FileSystemAbstraction fs = spy( ephemeralFs.get() );
-        File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).directory( "log", true );
+        File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).cleanDirectory( "log" );
         // -- when opening the logical log, spy on the file channel we return and count invocations to channel.read(*)
         when( fs.open( new File( dir, "logical.log.1" ), "rw" ) ).thenAnswer( new Answer<StoreChannel>()
         {

@@ -114,7 +114,7 @@ public class TestNeoStore
     private File path;
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private File file( String name )
     {
@@ -125,7 +125,7 @@ public class TestNeoStore
     public void setUpNeoStore() throws Exception
     {
         targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
-        path = targetDirectory.directory( "dir", true );
+        path = targetDirectory.cleanDirectory( "dir" );
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fs.get(), StringLogger.DEV_NULL, null );

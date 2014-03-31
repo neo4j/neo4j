@@ -96,7 +96,7 @@ public class TestIndexingServiceRecovery
     public void shouldRecoverSchemaIndexesAfterNeoStoreFullyRecovered() throws Exception
     {
         // GIVEN a db with schema and some data in it
-        File storeDir = forTest( getClass() ).graphDbDir( true );
+        File storeDir = forTest( getClass() ).makeGraphDbDir();
         Long[] nodeIds = createSchemaData( storeDir );
         // crashed store that has at least one 2PC transaction
         executeSubProcess( getClass(), 30, SECONDS, args( storeDir.getAbsolutePath(), nodeIds ) );

@@ -22,7 +22,6 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -43,7 +42,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class AbstractSubProcessTestBase
 {
-    private final TargetDirectory target;
+    protected final TargetDirectory target;
     protected final Pair<Instance, BreakPoint[]>[] instances;
 
     public AbstractSubProcessTestBase()
@@ -175,7 +174,7 @@ public class AbstractSubProcessTestBase
 
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
         {
-            return stringMap( new HashMap<String, String>( dbConfiguration ),
+            return stringMap( new HashMap<>( dbConfiguration ),
                     GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
         }
 
@@ -194,13 +193,7 @@ public class AbstractSubProcessTestBase
     protected static File getStoreDir( AbstractSubProcessTestBase test, int instance )
             throws IOException
     {
-        return getStoreDir( test, instance, true );
-    }
-
-    protected static File getStoreDir( AbstractSubProcessTestBase test, int instance, boolean clean )
-            throws IOException
-    {
-        return test.target.directory( "graphdb." + instance, clean );
+        return test.target.cleanDirectory( "graphdb." + instance );
     }
 
     protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
@@ -350,13 +343,5 @@ public class AbstractSubProcessTestBase
         {
             super( failure );
         }
-    }
-
-    protected static Field inaccessibleField( Object source, String fieldName )
-            throws NoSuchFieldException
-    {
-        Field field = source.getClass().getDeclaredField( fieldName );
-        field.setAccessible( true );
-        return field;
     }
 }
