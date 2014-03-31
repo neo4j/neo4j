@@ -34,25 +34,6 @@
   });
 </script>
 
-<script type="text/javascript">
-  $(function (){
-    var $content = $('#content section');
-    $('img', $content).addClass('img-responsive');
-    $('div.admonitionblock img', $content).removeClass('img-responsive');
-    $('dl', $content).addClass('dl-horizontal');
-    $('div.table table,div.informaltable table', $content).addClass('table table-condensed table-hover');
-    var $admonblocks = $('div.admonitionblock');
-    $admonblocks.filter('.Note').find('td.content').addClass('alert alert-info');
-    $admonblocks.filter('.Tip').find('td.content').addClass('alert alert-info');
-    $admonblocks.filter('.Important').find('td.content').addClass('alert alert-warning');
-    $admonblocks.filter('.Caution').find('td.content').addClass('alert alert-warning');
-    $admonblocks.filter('.Warning').find('td.content').addClass('alert alert-danger');
-    $('div.sidebar', $content).addClass('alert alert-info');
-    $('#content div.titlepage div.abstract').addClass('alert alert-info');
-  });
-</script>
-
-
 <!-- Cypher Console -->
 
 <script type="text/javascript" src="js/console.js"></script>
