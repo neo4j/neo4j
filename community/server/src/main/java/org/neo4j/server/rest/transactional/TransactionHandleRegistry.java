@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
@@ -252,7 +251,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
                 handle.forceRollback();
                 log.info( format( "Transaction with id %d has been automatically rolled back.", id ) );
             }
-            catch ( TransactionFailureException e )
+            catch ( Throwable e )
             {
                 log.error( format( "Transaction with id %d failed to roll back.", id ), e );
             }
