@@ -28,7 +28,6 @@ import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -53,11 +52,9 @@ import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
@@ -297,15 +294,7 @@ public class TestMasterCommittingAtSlave
         @Override
         public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
         {
-            return LogExtractor.from( FS, dir,
-                    new XaCommandReaderFactory()
-                    {
-                        @Override
-                        public XaCommandReader newInstance( ByteBuffer scratch )
-                        {
-                            return new PhysicalLogNeoXaCommandReader( scratch );
-                        }
-                    },
+            return LogExtractor.from( FS, dir, XaCommandReaderFactory.DEFAULT,
                     new XaCommandWriterFactory()
                     {
                         @Override

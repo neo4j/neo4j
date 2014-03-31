@@ -71,8 +71,7 @@ class PartialTransactionCopier
 
     public void copy( FileChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
     {
-        LogDeserializer deserializer = new LogDeserializer( monitor, sharedBuffer,
-                commandReaderFactory.newInstance( sharedBuffer ) );
+        LogDeserializer deserializer = new LogDeserializer( sharedBuffer, commandReaderFactory );
         consumer.init( targetLog, targetLogVersion );
         Cursor<LogEntry, IOException> cursor = deserializer.cursor( sourceLog );
         while( cursor.next( consumer ) ); // let exceptions propagate, the channel is closed outside
@@ -143,7 +142,7 @@ class PartialTransactionCopier
 
         private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId ) throws IOException
         {
-            LogExtractor extractor = new LogExtractor( positionCache, logLoader, monitor, commandReaderFactory,
+            LogExtractor extractor = new LogExtractor( positionCache, logLoader, commandReaderFactory,
                     commandWriterFactory, logEntryWriter, txId, txId );
 
             try (Cursor<LogEntry, IOException> cursor = extractor.cursor( new InMemoryLogBuffer() ) )

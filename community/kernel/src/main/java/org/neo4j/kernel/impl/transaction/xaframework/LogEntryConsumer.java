@@ -36,7 +36,7 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
     {
         if ( startEntry == null )
         {
-            if ( logEntry == null || !(logEntry instanceof LogEntry.Start) )
+            if ( logEntry == null || logEntry.getType() != LogEntry.TX_START )
             {
                 throw new IOException( "Unable to find start entry" );
             }
@@ -47,7 +47,22 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
         }
 
         logEntry.setIdentifier( xidIdentifier );
-        logEntry.accept( handler );
+
+        if ( logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION )
+        {
+            // need to gather them up
+
+            if ( (logEntry.getType() == LogEntry.TX_1P_COMMIT || logEntry.getType() == LogEntry.TX_2P_COMMIT)  )
+            {
+                // translate them
+                // DO NOT FORGET TO CALL THEM ON THE HANDLER
+            }
+        }
+        else
+        {
+            logEntry.accept( handler );
+        }
+
         return true;
     }
 

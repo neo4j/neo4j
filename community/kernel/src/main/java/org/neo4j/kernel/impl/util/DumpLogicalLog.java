@@ -41,12 +41,9 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
 public class DumpLogicalLog
 {
@@ -70,7 +67,7 @@ public class DumpLogicalLog
             long logVersion, prevLastCommittedTx;
             try
             {
-                long[] header = LogEntryReaderv1.readLogHeader( buffer, fileChannel, true );
+                long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
                 logVersion = header[0];
                 prevLastCommittedTx = header[1];
             }
@@ -85,8 +82,7 @@ public class DumpLogicalLog
                 prevLastCommittedTx + "]" );
 
             LogDeserializer deserializer =
-                    new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class, getClass() ), buffer,
-                            instantiateCommandReader( buffer ) );
+                    new LogDeserializer( buffer, instantiateCommandReaderFactory() );
             PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
 
             try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
@@ -103,9 +99,9 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected XaCommandReader instantiateCommandReader( ByteBuffer scratch )
+    protected XaCommandReaderFactory instantiateCommandReaderFactory()
     {
-        return new PhysicalLogNeoXaCommandReader( scratch );
+        return XaCommandReaderFactory.DEFAULT;
     }
 
     protected String getLogPrefix()

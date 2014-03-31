@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.io.IOException;
-
 public interface Cursor<T, E extends Exception> extends AutoCloseable
 {
     boolean next( Consumer<T, E> consumer ) throws E;
 
     @Override
-    void close() throws IOException;
+    void close() throws E;
 }

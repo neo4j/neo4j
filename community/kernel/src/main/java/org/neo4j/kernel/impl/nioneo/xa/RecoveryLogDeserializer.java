@@ -25,28 +25,18 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
 public class RecoveryLogDeserializer implements LogReader<FileChannel>
 {
-    private final ByteBuffer scratch;
-    private final LogEntryReaderv1 logEntryReader;
+    private final VersionAwareLogEntryReader logEntryReader;
 
-    public RecoveryLogDeserializer( ByteBuffer scratch )
+    public RecoveryLogDeserializer( ByteBuffer scratch, XaCommandReaderFactory commandReaderFactory )
     {
-        this.scratch = scratch;
-        logEntryReader = new LogEntryReaderv1();
-        logEntryReader.setCommandReader( new PhysicalLogNeoXaCommandReader( scratch ) );
-        logEntryReader.setByteBuffer( scratch );
-    }
-
-    public void setXaCommandReader( XaCommandReader xaCommandReader )
-    {
-        logEntryReader.setCommandReader( xaCommandReader );
+        logEntryReader = new VersionAwareLogEntryReader( scratch, commandReaderFactory );
     }
 
     public Cursor<LogEntry, IOException> cursor( FileChannel channel )
@@ -69,30 +59,7 @@ public class RecoveryLogDeserializer implements LogReader<FileChannel>
             // TODO SETUP LOG ENTRY READER
             long position = channel.position();
 
-            scratch.clear();
-            scratch.limit( 1 );
-            if ( channel.read( scratch ) != scratch.limit() )
-            {
-                return false;
-            }
-            scratch.flip();
-
-            byte type = scratch.get();
-
-            if ( type < 0 )
-            {
-                scratch.clear();
-                scratch.limit( 1 );
-                if ( channel.read( scratch ) != scratch.limit() )
-                {
-                    return false;
-                }
-                scratch.flip();
-
-                type = scratch.get();
-            }
-
-            LogEntry entry = logEntryReader.readLogEntry( type, channel );
+            LogEntry entry = logEntryReader.readLogEntry( channel );
             if ( entry instanceof LogEntry.Start )
             {
                 ((LogEntry.Start) entry).setStartPosition( position );

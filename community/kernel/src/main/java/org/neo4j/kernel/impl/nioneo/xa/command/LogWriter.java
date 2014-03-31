@@ -31,8 +31,6 @@ public interface LogWriter extends LogHandler
     {
         LogBuffer getWriteBuffer();
 
-        XaCommandWriter getXaCommandWriter();
-
-        void doTheThing( LogEntry.Start startEntry ) throws IOException;
+        void commitTransactionWithoutTxId( LogEntry.Start startEntry ) throws IOException;
     }
 }

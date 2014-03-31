@@ -264,7 +264,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         };
 
-        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory();
+        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory( nodeEntityType,
+                relationshipEntityType );
         XaCommandWriterFactory commandWriterFactory = new LuceneCommandWriterFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
         DependencyResolver dummy = new DependencyResolver.Adapter()
@@ -387,17 +388,26 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 .getResourceManager(), getBranchId() );
     }
 
-    private class LuceneCommandReaderFactory implements XaCommandReaderFactory
+    public static class LuceneCommandReaderFactory implements XaCommandReaderFactory
     {
+        private final EntityType nodeEntityType;
+        private final EntityType relationshipEntityType;
+
+        public LuceneCommandReaderFactory( EntityType nodeEntityType, EntityType relationshipEntityType )
+        {
+            this.nodeEntityType = nodeEntityType;
+            this.relationshipEntityType = relationshipEntityType;
+        }
+
         @Override
-        public XaCommandReader newInstance( final ByteBuffer scratch )
+        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer scratch )
         {
             return new XaCommandReader()
             {
                 @Override
                 public XaCommand read( ReadableByteChannel channel ) throws IOException
                 {
-                    return LuceneCommand.readCommand( channel, scratch, LuceneDataSource.this );
+                    return LuceneCommand.readCommand( channel, scratch, nodeEntityType, relationshipEntityType );
                 }
             };
         }

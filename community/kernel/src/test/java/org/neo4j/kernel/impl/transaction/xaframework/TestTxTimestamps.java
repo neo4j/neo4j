@@ -37,13 +37,11 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -87,12 +85,11 @@ public class TestTxTimestamps
         FileChannel channel = fileSystem.open( new File( db.getStoreDir(), NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
         try
         {
-            LogEntryReaderv1.readLogHeader( buffer, channel, true );
+            VersionAwareLogEntryReader.readLogHeader( buffer, channel, true );
 
             AConsumer consumer = new AConsumer( expectedCommitTimestamps, expectedStartTimestamps );
 
-            LogDeserializer deserializer = new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class ),
-                    buffer, new PhysicalLogNeoXaCommandReader( buffer ) );
+            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
 
             try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
             {

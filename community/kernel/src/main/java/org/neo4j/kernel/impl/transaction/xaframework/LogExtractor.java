@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class LogExtractor
 {
@@ -160,7 +159,7 @@ public class LogExtractor
         return ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
     }
 
-    public LogExtractor( LogPositionCache cache, LogLoader logLoader, ByteCounterMonitor monitor,
+    public LogExtractor( LogPositionCache cache, LogLoader logLoader,
                          XaCommandReaderFactory commandReaderFactory,
                          XaCommandWriterFactory commandWriterFactory,
                          LogEntryWriter logEntryWriter,
@@ -195,7 +194,7 @@ public class LogExtractor
         }
         this.collector = new KnownTxIdCollector( startTxId, logEntryWriter );
 
-        this.deserializer = new LogDeserializer( monitor, localBuffer, commandReaderFactory.newInstance( localBuffer ) );
+        this.deserializer = new LogDeserializer( localBuffer, commandReaderFactory );
     }
 
     private TxPosition getEarliestStartPosition( long startTxId, long endTxIdHint )
@@ -225,20 +224,7 @@ public class LogExtractor
         public LogEntryCursor( LogBuffer temp ) throws IOException
         {
             extractNext( temp );
-            LogDeserializer logDeserializer = new LogDeserializer( new ByteCounterMonitor()
-            {
-                @Override
-                public void bytesWritten( long numberOfBytes )
-                {
-
-                }
-
-                @Override
-                public void bytesRead( long numberOfBytes )
-                {
-
-                }
-            } , localBuffer, commandReaderFactory.newInstance( localBuffer ) );
+            LogDeserializer logDeserializer = new LogDeserializer( localBuffer, commandReaderFactory );
             cursor = logDeserializer.cursor( temp.getFileChannel() );
         }
 
@@ -612,17 +598,16 @@ public class LogExtractor
     public static LogExtractor from( FileSystemAbstraction fileSystem,
                                      XaCommandReaderFactory commandReaderFactory,
                                      XaCommandWriterFactory commandWriterFactory, LogEntryWriter logEntryWriter,
-                                     File storeDir, ByteCounterMonitor monitor ) throws IOException
+                                     File storeDir ) throws IOException
     {
         // 2 is a "magic" first tx :)
-        return from( fileSystem, storeDir, commandReaderFactory, commandWriterFactory, logEntryWriter, monitor, 2 );
+        return from( fileSystem, storeDir, commandReaderFactory, commandWriterFactory, logEntryWriter, 2 );
     }
     
     public static LogExtractor from( final FileSystemAbstraction fileSystem, final File storeDir,
                                      XaCommandReaderFactory commandReaderFactory,
                                      XaCommandWriterFactory commandWriterFactory,
-                                     LogEntryWriter logEntryWriter,
-                                     ByteCounterMonitor monitor, long startTxId ) throws IOException
+                                     LogEntryWriter logEntryWriter,  long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
         {
@@ -660,7 +645,7 @@ public class LogExtractor
                     File candidateFile = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + postfix );
                     if ( !fileSystem.fileExists( candidateFile ) )
                         continue;
-                    long[] header = LogEntryReaderv1.readLogHeader( fileSystem, candidateFile );
+                    long[] header = VersionAwareLogEntryReader.readLogHeader( fileSystem, candidateFile );
                     result.put( header[0], candidateFile );
                 }
                 return result;
@@ -703,7 +688,7 @@ public class LogExtractor
             }
         };
         
-        return new LogExtractor( new LogPositionCache(), loader, monitor, commandReaderFactory, commandWriterFactory,
+        return new LogExtractor( new LogPositionCache(), loader, commandReaderFactory, commandWriterFactory,
                 logEntryWriter, startTxId, Long.MAX_VALUE );
     }
 }

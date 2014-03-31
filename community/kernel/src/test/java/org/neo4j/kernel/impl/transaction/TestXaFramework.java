@@ -135,7 +135,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private static class DummyCommandReaderFactory implements XaCommandReaderFactory
     {
         @Override
-        public XaCommandReader newInstance( final ByteBuffer buffer )
+        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer buffer )
         {
             return new XaCommandReader()
             {

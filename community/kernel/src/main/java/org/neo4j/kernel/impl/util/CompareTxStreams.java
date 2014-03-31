@@ -21,17 +21,13 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -43,15 +39,7 @@ public class CompareTxStreams
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Monitors monitors = new Monitors();
         compareLogStreams(
-                LogExtractor.from( fileSystem,
-                        new XaCommandReaderFactory()
-                        {
-                            @Override
-                            public XaCommandReader newInstance( ByteBuffer scratch )
-                            {
-                                return new PhysicalLogNeoXaCommandReader( scratch );
-                            }
-                        },
+                LogExtractor.from( fileSystem, XaCommandReaderFactory.DEFAULT,
                         new XaCommandWriterFactory()
                         {
                             @Override
@@ -61,17 +49,9 @@ public class CompareTxStreams
                             }
                         },
                         new LogEntryWriterv1(),
-                        new File(args[0]),
-                        monitors.newMonitor( ByteCounterMonitor.class, CompareTxStreams.class, "logExtractor1" ) ),
+                        new File(args[0]) ),
                 LogExtractor.from( fileSystem,
-                        new XaCommandReaderFactory()
-                        {
-                            @Override
-                            public XaCommandReader newInstance( ByteBuffer scratch )
-                            {
-                                return new PhysicalLogNeoXaCommandReader( scratch );
-                            }
-                        },
+                        XaCommandReaderFactory.DEFAULT,
                         new XaCommandWriterFactory()
                         {
                             @Override
@@ -81,8 +61,7 @@ public class CompareTxStreams
                             }
                         },
                         new LogEntryWriterv1(),
-                        new File( args[1]),
-                        monitors.newMonitor( ByteCounterMonitor.class, CompareTxStreams.class, "logExtractor1" ) ) );
+                        new File( args[1] ) ) );
     }
 
     protected static void compareLogStreams( LogExtractor extractor1, LogExtractor extractor2 ) throws IOException

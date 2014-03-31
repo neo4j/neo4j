@@ -44,9 +44,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.RecoveryLogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.SlaveLogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogFilter;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
@@ -104,8 +102,6 @@ public class XaLogicalLog implements LogLoader
 
     private File fileName = null;
     private final XaResourceManager xaRm;
-    private final XaCommandReader commandReader;
-    private final XaCommandWriter commandWriter;
     private final XaTransactionFactory xaTf;
     private char currentLog = CLEAN;
     private boolean autoRotate;
@@ -161,8 +157,6 @@ public class XaLogicalLog implements LogLoader
 
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                 + Xid.MAXBQUALSIZE * 10 );
-        this.commandReader = commandReaderFactory.newInstance( sharedBuffer );
-        this.commandWriter = commandWriterFactory.newInstance();
 
         msgLog = logging.getMessagesLog( getClass() );
 
@@ -273,7 +267,7 @@ public class XaLogicalLog implements LogLoader
             }
 
             long lastTxId = xaTf.getLastCommittedTx();
-            LogEntryReaderv1.writeLogHeader( sharedBuffer, logVersion, lastTxId );
+            VersionAwareLogEntryReader.writeLogHeader( sharedBuffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
             positionCache.putHeader( logVersion, previousLogLastCommittedTx );
             fileChannel.write( sharedBuffer );
@@ -501,11 +495,12 @@ public class XaLogicalLog implements LogLoader
     private void fixDualLogFiles( File activeLog, File oldLog ) throws IOException
     {
         FileChannel activeLogChannel = fileSystem.open( activeLog, "r" );
-        long[] activeLogHeader = LogEntryReaderv1.readLogHeader( ByteBuffer.allocate( 16 ), activeLogChannel, false );
+        long[] activeLogHeader = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ),
+                activeLogChannel, false );
         activeLogChannel.close();
 
         FileChannel oldLogChannel = fileSystem.open( oldLog, "r" );
-        long[] oldLogHeader = LogEntryReaderv1.readLogHeader( ByteBuffer.allocate( 16 ), oldLogChannel, false );
+        long[] oldLogHeader = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ), oldLogChannel, false );
         oldLogChannel.close();
 
         if ( oldLogHeader == null )
@@ -544,7 +539,7 @@ public class XaLogicalLog implements LogLoader
         }
 
         FileChannel channel = fileSystem.open( logFileName, "rw" );
-        long[] header = LogEntryReaderv1.readLogHeader( ByteBuffer.allocate( 16 ), channel, false );
+        long[] header = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ), channel, false );
         try
         {
             FileUtils.truncateFile( channel, endPosition );
@@ -618,7 +613,7 @@ public class XaLogicalLog implements LogLoader
     static long[] readAndAssertLogHeader( ByteBuffer localBuffer,
                                           ReadableByteChannel channel, long expectedVersion ) throws IOException
     {
-        long[] header = LogEntryReaderv1.readLogHeader( localBuffer, channel, true );
+        long[] header = VersionAwareLogEntryReader.readLogHeader( localBuffer, channel, true );
         if ( header[0] != expectedVersion )
         {
             throw new IOException( "Wrong version in log. Expected " + expectedVersion +
@@ -666,8 +661,7 @@ public class XaLogicalLog implements LogLoader
                 " with committed tx=" + lastCommittedTx, true );
         fileChannel = new BufferedFileChannel( fileChannel );
 
-        RecoveryLogDeserializer reader = new RecoveryLogDeserializer( sharedBuffer );
-        reader.setXaCommandReader( commandReader );
+        RecoveryLogDeserializer reader = new RecoveryLogDeserializer( sharedBuffer, commandReaderFactory );
 
         EntryCountingLogHandler counter = new EntryCountingLogHandler( new LogApplier() );
         RecoveryConsumer consumer = new RecoveryConsumer( counter );
@@ -799,7 +793,8 @@ public class XaLogicalLog implements LogLoader
         logChannel.position( startEntry.getStartPosition() );
         long startedAt = sharedBuffer.position();
 
-        LogDeserializer deserializer = new LogDeserializer( logDeserializerMonitor, sharedBuffer, commandReader );
+        LogDeserializer deserializer =
+                new LogDeserializer( sharedBuffer, commandReaderFactory );
         SkipPrepareLogEntryWriter consumer = new SkipPrepareLogEntryWriter( identifier, targetBuffer );
         try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
         {
@@ -836,8 +831,8 @@ public class XaLogicalLog implements LogLoader
 
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
-        return new LogExtractor( positionCache, this, bufferMonitor, commandReaderFactory, commandWriterFactory,
-                logEntryWriter, startTxId, endTxIdHint );
+        return new LogExtractor( positionCache, this, commandReaderFactory, commandWriterFactory, logEntryWriter,
+                startTxId, endTxIdHint );
     }
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
@@ -978,7 +973,7 @@ public class XaLogicalLog implements LogLoader
     {
         try
         {
-            return LogEntryReaderv1.readLogHeader( sharedBuffer, source, true );
+            return VersionAwareLogEntryReader.readLogHeader( sharedBuffer, source, true );
         }
         catch ( IllegalLogFormatException e )
         {
@@ -1004,7 +999,8 @@ public class XaLogicalLog implements LogLoader
 
         logWriterSPI.bind( forceMode, nextTxId );
 
-        LogReader<ReadableByteChannel> reader = new LogDeserializer( logDeserializerMonitor, sharedBuffer, commandReader );
+        LogReader<ReadableByteChannel> reader =
+                new LogDeserializer( sharedBuffer, commandReaderFactory );
         LogFilter handler = new LogFilter( interceptor,
                 new MasterLogWriter(
                         new LogApplier(), logWriterSPI,
@@ -1043,27 +1039,19 @@ public class XaLogicalLog implements LogLoader
 
         LogEntryConsumer consumer = new LogEntryConsumer();
         consumer.setXidIdentifier( getNextIdentifier() );
-        FuckingUglyHackDoesNotDoNothing handler = new FuckingUglyHackDoesNotDoNothing(
+        ForgetUnsuccessfulReceivedTransaction handler = new ForgetUnsuccessfulReceivedTransaction(
                 new SlaveLogWriter( new LogApplier(), logWriterSPI, logEntryWriter ) );
         consumer.setHandler( handler );
 
-        LogReader<ReadableByteChannel> logDeserializer = new SlaveLogDeserializer( logDeserializerMonitor, sharedBuffer, commandReader );
-        boolean success = true;
+        LogReader<ReadableByteChannel> logDeserializer =
+                new SlaveLogDeserializer( sharedBuffer, commandReaderFactory );
+        boolean success = false;
 
         handler.startLog();
         try ( Cursor<LogEntry, IOException> cursor = logDeserializer.cursor( byteChannel ) )
         {
             while( cursor.next( consumer ) );
-        }
-        catch( IOException e )
-        {
-            success = false;
-            throw e;
-        }
-        catch( RuntimeException e )
-        {
-            e.printStackTrace();
-            throw e;
+            success = true;
         }
         finally
         {
@@ -1133,7 +1121,7 @@ public class XaLogicalLog implements LogLoader
         writeBuffer.force();
         FileChannel newLog = fileSystem.open( newLogFile, "rw" );
         long lastTx = xaTf.getLastCommittedTx();
-        LogEntryReaderv1.writeLogHeader( sharedBuffer, currentVersion + 1, lastTx );
+        VersionAwareLogEntryReader.writeLogHeader( sharedBuffer, currentVersion + 1, lastTx );
         previousLogLastCommittedTx = lastTx;
         if ( newLog.write( sharedBuffer ) != 16 )
         {
@@ -1360,7 +1348,7 @@ public class XaLogicalLog implements LogLoader
                 {
                     try
                     {
-                        long[] headerLongs = LogEntryReaderv1.readLogHeader( fileSystem, file );
+                        long[] headerLongs = VersionAwareLogEntryReader.readLogHeader( fileSystem, file );
                         return headerLongs[1] + 1;
                     }
                     catch ( IOException e )
@@ -1387,8 +1375,8 @@ public class XaLogicalLog implements LogLoader
         {
             ByteBuffer buffer = LogExtractor.newLogReaderBuffer();
             log = getLogicalLog( version );
-            LogEntryReaderv1.readLogHeader( buffer, log, true );
-            LogDeserializer deserializer = new LogDeserializer( logDeserializerMonitor, buffer, commandReader );
+            VersionAwareLogEntryReader.readLogHeader( buffer, log, true );
+            LogDeserializer deserializer = new LogDeserializer( buffer, commandReaderFactory );
 
             TimeWrittenConsumer consumer = new TimeWrittenConsumer();
 
@@ -1407,11 +1395,11 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    public class FuckingUglyHackDoesNotDoNothing extends LogHandler.Filter
+    public class ForgetUnsuccessfulReceivedTransaction extends LogHandler.Filter
     {
         private Start startEntry;
 
-        public FuckingUglyHackDoesNotDoNothing( LogHandler delegate )
+        public ForgetUnsuccessfulReceivedTransaction( LogHandler delegate )
         {
             super( delegate );
         }
@@ -1605,13 +1593,7 @@ public class XaLogicalLog implements LogLoader
         }
 
         @Override
-        public XaCommandWriter getXaCommandWriter()
-        {
-            return commandWriter;
-        }
-
-        @Override
-        public void doTheThing( LogEntry.Start startEntry ) throws IOException
+        public void commitTransactionWithoutTxId( LogEntry.Start startEntry ) throws IOException
         {
             if ( startEntry == null )
             {

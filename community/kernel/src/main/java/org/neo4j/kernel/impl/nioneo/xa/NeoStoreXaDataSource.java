@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -79,7 +78,6 @@ import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -365,14 +363,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
             xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
-                    new XaCommandReaderFactory()
-                    {
-                        @Override
-                        public XaCommandReader newInstance( ByteBuffer scratch )
-                        {
-                            return new PhysicalLogNeoXaCommandReader( scratch );
-                        }
-                    },
+                    XaCommandReaderFactory.DEFAULT,
                     new XaCommandWriterFactory()
                     {
                         @Override

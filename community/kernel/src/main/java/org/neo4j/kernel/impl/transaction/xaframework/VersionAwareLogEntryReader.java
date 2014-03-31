@@ -29,13 +29,20 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
-public class LogEntryReaderv1 implements LogEntryReader<ReadableByteChannel>
+public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteChannel>
 {
-    private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_VERSION ) & 0xFF;
+    private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
+
+    public VersionAwareLogEntryReader( ByteBuffer byteBuffer, XaCommandReaderFactory commandReaderFactory )
+    {
+        this.byteBuffer = byteBuffer;
+        this.commandReaderFactory = commandReaderFactory;
+    }
 
     public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
@@ -86,36 +93,58 @@ public class LogEntryReaderv1 implements LogEntryReader<ReadableByteChannel>
         return buffer;
     }
 
-    public byte readVersion( ReadableByteChannel channel ) throws IOException
+    public LogEntry readLogEntry( ReadableByteChannel channel ) throws IOException
     {
-        try
-        {
-            return readNextByte( channel );
-        }
-        catch ( ReadPastEndException e )
-        {
-            throw new IOException( e );
-        }
-    }
+        /*
+         * This is a hack particular to switching from unversioned to versioned LogEntries. Negative bytes
+         * at the beginning indicate that the indeed exists version info and must be consumed before we get
+         * to the actual type. But, for rolling upgrades from unversioned entries, that does not exist, so the
+         * first byte is the actual type. That is a mismatch that can be resolved externally, hence this conditional
+         * extra byte read. After 2.1 is released we can remove it.
+         */
 
-    public LogEntry readLogEntry( byte type, ReadableByteChannel channel ) throws IOException
-    {
+        byte version = 1;
+
+        byteBuffer.clear();
+        byteBuffer.limit( 1 );
+        if ( channel.read( byteBuffer ) != byteBuffer.limit() )
+        {
+            return null;
+        }
+        byteBuffer.flip();
+
+        byte type = byteBuffer.get();
+
+        if ( type < 0 )
+        {
+            byteBuffer.clear();
+            byteBuffer.limit( 1 );
+            if ( channel.read( byteBuffer ) != byteBuffer.limit() )
+            {
+                return null;
+            }
+            byteBuffer.flip();
+
+            version = type;
+            type = byteBuffer.get();
+        }
+
         try
         {
             switch ( type )
             {
                 case LogEntry.TX_START:
-                    return readTxStartEntry( channel );
+                    return readTxStartEntry( version, channel );
                 case LogEntry.TX_PREPARE:
-                    return readTxPrepareEntry( channel );
+                    return readTxPrepareEntry( version, channel );
                 case LogEntry.TX_1P_COMMIT:
-                    return readTxOnePhaseCommitEntry( channel );
+                    return readTxOnePhaseCommitEntry( version, channel );
                 case LogEntry.TX_2P_COMMIT:
-                    return readTxTwoPhaseCommitEntry( channel );
+                    return readTxTwoPhaseCommitEntry( version, channel );
                 case LogEntry.COMMAND:
-                    return readTxCommandEntry( channel );
+                    return readTxCommandEntry( version, channel );
                 case LogEntry.DONE:
-                    return readTxDoneEntry( channel );
+                    return readTxDoneEntry( version, channel );
                 case LogEntry.EMPTY:
                     return null;
                 default:
@@ -128,7 +157,7 @@ public class LogEntryReaderv1 implements LogEntryReader<ReadableByteChannel>
         }
     }
 
-    private LogEntry.Start readTxStartEntry( ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.Start readTxStartEntry( byte version, ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         // TODO can these arrays be reused, given that each LogEntryReader manages only one start entry at a time
         byte globalIdLength = readNextByte( channel );
@@ -145,43 +174,44 @@ public class LogEntryReaderv1 implements LogEntryReader<ReadableByteChannel>
 
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId );
-        return new LogEntry.Start( xid, identifier, masterId, myId, -1, timeWritten, latestCommittedTxWhenStarted );
+        return new LogEntry.Start( xid, identifier, version, masterId, myId, -1, timeWritten, latestCommittedTxWhenStarted );
     }
 
-    private LogEntry.Prepare readTxPrepareEntry( ReadableByteChannel channel ) throws IOException, ReadPastEndException
+    private LogEntry.Prepare readTxPrepareEntry( byte version, ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        return new LogEntry.Prepare( readNextInt( channel ), readNextLong( channel ) );
+        return new LogEntry.Prepare( readNextInt( channel ), version, readNextLong( channel ) );
     }
 
-    private LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ReadableByteChannel channel )
+    private LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( byte version, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
-        return new LogEntry.OnePhaseCommit( readNextInt( channel ),
-                readNextLong( channel ), readNextLong( channel ) );
+        return new LogEntry.OnePhaseCommit( readNextInt( channel ), version, readNextLong( channel ),
+                readNextLong( channel ) );
     }
 
-    private LogEntry.Done readTxDoneEntry( ReadableByteChannel channel )
+    private LogEntry.Done readTxDoneEntry( byte version, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
-        return new LogEntry.Done( readNextInt( channel ) );
+        return new LogEntry.Done( readNextInt( channel ), version );
     }
 
-    private LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( ReadableByteChannel channel )
+    private LogEntry.TwoPhaseCommit readTxTwoPhaseCommitEntry( byte version, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
-        return new LogEntry.TwoPhaseCommit( readNextInt( channel ), readNextLong( channel ), readNextLong( channel ) );
+        return new LogEntry.TwoPhaseCommit( readNextInt( channel ), version, readNextLong( channel ), readNextLong( channel ) );
     }
 
-    private LogEntry.Command readTxCommandEntry( ReadableByteChannel channel )
+    private LogEntry.Command readTxCommandEntry( byte version, ReadableByteChannel channel )
             throws IOException, ReadPastEndException
     {
         int identifier = readNextInt( channel );
+        XaCommandReader commandReader = commandReaderFactory.newInstance( version, byteBuffer );
         XaCommand command = commandReader.read( channel );
         if ( command == null )
         {
             return null;
         }
-        return new LogEntry.Command( identifier, command );
+        return new LogEntry.Command( identifier, version, command );
     }
 
     private int readNextInt( ReadableByteChannel channel )
@@ -205,50 +235,25 @@ public class LogEntryReaderv1 implements LogEntryReader<ReadableByteChannel>
     private ByteBuffer readIntoBufferAndFlip( ReadableByteChannel channel,
             int numberOfBytes ) throws IOException, ReadPastEndException
     {
-//        byteBuffer.clear();
-//        byteBuffer.limit( numberOfBytes );
-//        if ( channel.read( byteBuffer ) != byteBuffer.limit() )
-//        {
-//            throw new ReadPastEndException();
-//        }
-//        byteBuffer.flip();
-//        return byteBuffer;
         if ( IoPrimitiveUtils.readAndFlip( channel, byteBuffer, numberOfBytes ) )
         {
             return byteBuffer;
         }
-        throw new IOException("fuck");
+        throw new ReadPastEndException();
     }
 
     private byte[] readIntoArray( ReadableByteChannel channel, int numberOfBytes )
             throws IOException, ReadPastEndException
     {
         byte[] result = new byte[ numberOfBytes ];
-//        byteBuffer.clear();
-//        byteBuffer.limit( numberOfBytes );
-//        if ( channel.read( byteBuffer ) != byteBuffer.limit() )
-//        {
-//            throw new ReadPastEndException();
-//        }
-//        byteBuffer.flip();
         if ( IoPrimitiveUtils.readAndFlip( channel, byteBuffer, numberOfBytes ) )
         {
             byteBuffer.get( result );
             return result;
         }
-        throw new IOException("fuck");
+        throw new ReadPastEndException();
     }
 
     private ByteBuffer byteBuffer;
-    private XaCommandReader commandReader;
-
-    public void setCommandReader( XaCommandReader commandReader )
-    {
-        this.commandReader = commandReader;
-    }
-
-    public void setByteBuffer( ByteBuffer byteBuffer )
-    {
-        this.byteBuffer = byteBuffer;
-    }
+    private final XaCommandReaderFactory commandReaderFactory;
 }

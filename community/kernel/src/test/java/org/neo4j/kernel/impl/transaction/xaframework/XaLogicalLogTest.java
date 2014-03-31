@@ -144,15 +144,7 @@ public class XaLogicalLogTest
         // GIVEN
         long maxSize = 1000;
         XaLogicalLog log = new XaLogicalLog( new File( "log" ),
-                mock( XaResourceManager.class ),
-                new XaCommandReaderFactory()
-                {
-                    @Override
-                    public XaCommandReader newInstance( ByteBuffer scratch )
-                    {
-                        return new FixedSizeXaCommandReader( scratch );
-                    }
-                },
+                mock( XaResourceManager.class ), XaCommandReaderFactory.DEFAULT,
                 new XaCommandWriterFactory()
                 {
                     @Override

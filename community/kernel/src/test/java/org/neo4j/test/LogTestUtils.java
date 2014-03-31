@@ -45,14 +45,14 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.TxLog;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
@@ -361,13 +361,11 @@ public class LogTestUtils
         try ( FileChannel fileChannel = fileSystem.open( new File( logPath ), "r" ) )
         {
             // Always a header
-            LogEntryReaderv1.readLogHeader( buffer, fileChannel, true );
+            VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer(
-                    new Monitors().newMonitor( ByteCounterMonitor.class, LogTestUtils.class ), buffer,
-                    new PhysicalLogNeoXaCommandReader( buffer ) );
+            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
 
 
             Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
@@ -455,8 +453,7 @@ public class LogTestUtils
         writer.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
 
         LogDeserializer deserializer =
-                new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class, LogTestUtils.class ), buffer,
-                        new PhysicalLogNeoXaCommandReader( buffer ) );
+                new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
 
         Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
         {
@@ -490,8 +487,8 @@ public class LogTestUtils
     private static void transferLogicalLogHeader( FileChannel in, LogBuffer outBuffer,
             ByteBuffer buffer ) throws IOException
     {
-        long[] header = LogEntryReaderv1.readLogHeader( buffer, in, true );
-        LogEntryReaderv1.writeLogHeader( buffer, header[0], header[1] );
+        long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, in, true );
+        VersionAwareLogEntryReader.writeLogHeader( buffer, header[0], header[1] );
         byte[] headerBytes = new byte[buffer.limit()];
         buffer.get( headerBytes );
         outBuffer.put( headerBytes );

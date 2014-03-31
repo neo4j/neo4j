@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import static java.nio.ByteBuffer.allocate;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.nioneo.xa.CommandMatchers.nodeCommandEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.containsExactly;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.doneEntry;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
@@ -44,11 +44,9 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -86,14 +84,7 @@ public class TestPartialTransactionCopier
         LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
         logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
         PartialTransactionCopier copier = new PartialTransactionCopier(
-                buffer, new XaCommandReaderFactory()
-        {
-            @Override
-            public XaCommandReader newInstance( ByteBuffer scratch )
-            {
-                return new PhysicalLogNeoXaCommandReader( scratch );
-            }
-        }, new XaCommandWriterFactory()
+                buffer, XaCommandReaderFactory.DEFAULT, new XaCommandWriterFactory()
         {
             @Override
             public XaCommandWriter newInstance()
@@ -137,7 +128,7 @@ public class TestPartialTransactionCopier
     private ArrayMap<Integer, LogEntry.Start> createXidMapWithOneStartEntry( int masterId, Integer brokenTxId )
     {
         ArrayMap<Integer, LogEntry.Start> xidentMap = new ArrayMap<Integer, LogEntry.Start>();
-        xidentMap.put( brokenTxId, new LogEntry.Start( null, brokenTxId, masterId, 3, 4, 5, 6 ) );
+        xidentMap.put( brokenTxId, new LogEntry.Start( null, brokenTxId, LogEntry.CURRENT_LOG_ENTRY_VERSION, masterId, 3, 4, 5, 6 ) );
         return xidentMap;
     }
 

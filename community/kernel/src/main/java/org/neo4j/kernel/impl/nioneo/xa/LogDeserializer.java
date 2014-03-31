@@ -24,26 +24,19 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class LogDeserializer implements LogReader<ReadableByteChannel>
 {
-    private final ByteCounterMonitor monitor;
-    private final ByteBuffer scratch;
-    private final LogEntryReaderv1 logEntryReader;
+    private final VersionAwareLogEntryReader logEntryReader;
 
-    public LogDeserializer( ByteCounterMonitor monitor, ByteBuffer scratch, XaCommandReader reader )
+    public LogDeserializer( ByteBuffer scratch, XaCommandReaderFactory commandReaderFactory )
     {
-        this.monitor = monitor;
-        this.scratch = scratch;
-        logEntryReader = new LogEntryReaderv1();
-        logEntryReader.setByteBuffer( scratch );
-        logEntryReader.setCommandReader( reader );
+        logEntryReader = new VersionAwareLogEntryReader( scratch, commandReaderFactory );
     }
 
     @Override
@@ -64,33 +57,7 @@ public class LogDeserializer implements LogReader<ReadableByteChannel>
         @Override
         public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
         {
-            long startedAtPosition = scratch.position();
-
-            scratch.clear();
-            scratch.limit( 1 );
-            if ( channel.read( scratch ) != scratch.limit() )
-            {
-                return false;
-            }
-            scratch.flip();
-
-            byte type = scratch.get();
-
-            if ( type < 0 )
-            {
-                scratch.clear();
-                scratch.limit( 1 );
-                if ( channel.read( scratch ) != scratch.limit() )
-                {
-                    return false;
-                }
-                scratch.flip();
-
-                type = scratch.get();
-            }
-
-            LogEntry entry = logEntryReader.readLogEntry( type, channel );
-            monitor.bytesRead( scratch.position() - startedAtPosition );
+            LogEntry entry = logEntryReader.readLogEntry( channel );
 
             if ( entry == null )
             {

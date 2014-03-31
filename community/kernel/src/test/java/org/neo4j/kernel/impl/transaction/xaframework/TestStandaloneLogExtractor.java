@@ -24,21 +24,16 @@ import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -89,14 +84,7 @@ public class TestStandaloneLogExtractor
                 .getNeoStoreDataSource();
         LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
         logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
-        LogExtractor extractor = LogExtractor.from( snapshot, new XaCommandReaderFactory()
-        {
-            @Override
-            public XaCommandReader newInstance( ByteBuffer scratch )
-            {
-                return new PhysicalLogNeoXaCommandReader( scratch );
-            }
-        },
+        LogExtractor extractor = LogExtractor.from( snapshot, XaCommandReaderFactory.DEFAULT,
         new XaCommandWriterFactory()
         {
             @Override
@@ -104,8 +92,8 @@ public class TestStandaloneLogExtractor
             {
                 return new PhysicalLogNeoXaCommandWriter();
             }
-        }, logEntryWriter, new File( storeDir ),
-        new Monitors().newMonitor( ByteCounterMonitor.class ) );
+        },
+        logEntryWriter, new File( storeDir ) );
         long expectedTxId = 2;
         while ( true )
         {

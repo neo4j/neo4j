@@ -23,5 +23,5 @@ import java.io.IOException;
 
 public interface LogEntryReader<S>
 {
-    LogEntry readLogEntry( byte type, S source ) throws IOException;
+    LogEntry readLogEntry( S source ) throws IOException;
 }

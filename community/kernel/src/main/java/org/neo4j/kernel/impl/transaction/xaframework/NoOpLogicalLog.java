@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.regex.Pattern;
 
@@ -29,7 +28,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
@@ -40,14 +38,7 @@ public class NoOpLogicalLog extends XaLogicalLog
 {
     public NoOpLogicalLog( Logging logging )
     {
-        super( null, null, new XaCommandReaderFactory()
-        {
-            @Override
-            public XaCommandReader newInstance( ByteBuffer scratch )
-            {
-                return null;
-            }
-        }, new XaCommandWriterFactory()
+        super( null, null, XaCommandReaderFactory.DEFAULT, new XaCommandWriterFactory()
         {
             @Override
             public XaCommandWriter newInstance()

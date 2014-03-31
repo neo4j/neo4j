@@ -254,7 +254,7 @@ public class TestLogPruneStrategy
                     " and prune strategy " + log.pruning, FS.fileExists( file ) );
             if ( empty.contains( i ) )
             {
-                assertEquals( "Log v" + i + " should be empty", LogEntryReaderv1.LOG_HEADER_SIZE, FS.getFileSize( file ) );
+                assertEquals( "Log v" + i + " should be empty", VersionAwareLogEntryReader.LOG_HEADER_SIZE, FS.getFileSize( file ) );
                 empty.remove( i );
             }
             else
@@ -318,11 +318,11 @@ public class TestLogPruneStrategy
         private void clearAndWriteHeader()
         {
             activeBuffer.clear();
-            LogEntryReaderv1.writeLogHeader( activeBuffer, version, tx );
+            VersionAwareLogEntryReader.writeLogHeader( activeBuffer, version, tx );
             
             // Because writeLogHeader does flip()
             activeBuffer.limit( activeBuffer.capacity() );
-            activeBuffer.position( LogEntryReaderv1.LOG_HEADER_SIZE );
+            activeBuffer.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
         }
         
         @Override

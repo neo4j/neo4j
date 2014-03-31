@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 
 public class LogEntryWriterv1 implements LogEntryWriter
 {
-    private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_VERSION ) & 0xFF;
+    private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
 
     public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
@@ -43,6 +43,7 @@ public class LogEntryWriterv1 implements LogEntryWriter
 
     public void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException
     {
+        buffer.put( entry.getVersion() );
         switch ( entry.getType() )
         {
             case LogEntry.TX_START:
@@ -98,7 +99,8 @@ public class LogEntryWriterv1 implements LogEntryWriter
         byte globalId[] = xid.getGlobalTransactionId();
         byte branchId[] = xid.getBranchQualifier();
         int formatId = xid.getFormatId();
-        logBuffer.put( LogEntry.TX_START )
+        logBuffer
+              .put( LogEntry.TX_START )
               .put( (byte) globalId.length )
               .put( (byte) branchId.length )
               .put( globalId ).put( branchId )

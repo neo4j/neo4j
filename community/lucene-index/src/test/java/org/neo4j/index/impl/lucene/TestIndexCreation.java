@@ -22,8 +22,8 @@ package org.neo4j.index.impl.lucene;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,15 +41,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 /**
@@ -129,16 +125,9 @@ public class TestIndexCreation
         ReadableByteChannel log = ds.getLogicalLog( version );
         final ByteBuffer buffer = newLogReaderBuffer();
         readLogHeader( buffer, log, true );
-        XaCommandReader commandReader = new XaCommandReader()
-        {
-            @Override
-            public XaCommand read( ReadableByteChannel channel ) throws IOException
-            {
-                return LuceneCommand.readCommand( channel, buffer, null );
-            }
-        };
 
-        LogDeserializer deserializer = new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class ), buffer, commandReader );
+        LogDeserializer deserializer = new LogDeserializer( buffer,
+                new LuceneDataSource.LuceneCommandReaderFactory( null, null ) );
 
 
         final AtomicBoolean success = new AtomicBoolean( false );

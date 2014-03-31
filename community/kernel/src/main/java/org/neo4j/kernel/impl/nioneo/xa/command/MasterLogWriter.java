@@ -126,7 +126,7 @@ public class MasterLogWriter extends LogHandler.Filter
         {
             throw new IOException( e );
         }
-        spi.doTheThing( startEntry );
+        spi.commitTransactionWithoutTxId( startEntry );
         super.endLog( success );
     }
 }

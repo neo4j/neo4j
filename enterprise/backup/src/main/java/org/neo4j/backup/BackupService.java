@@ -61,7 +61,7 @@ import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -192,7 +192,7 @@ class BackupService
                                     ds.getFileName( logVersion ),
                                     "rw" ).getChannel();
                             newLog.truncate( 0 );
-                            LogEntryReaderv1.writeLogHeader( scratch, logVersion, -1 );
+                            VersionAwareLogEntryReader.writeLogHeader( scratch, logVersion, -1 );
                             // scratch buffer is flipped by writeLogHeader
                             newLog.write( scratch );
                             ReadableByteChannel received = tx.third().extract();

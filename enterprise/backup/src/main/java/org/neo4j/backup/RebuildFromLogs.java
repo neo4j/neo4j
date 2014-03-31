@@ -51,16 +51,14 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReaderv1;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.util.Consumer;
@@ -90,14 +88,7 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( FS, new XaCommandReaderFactory()
-                    {
-                        @Override
-                        public XaCommandReader newInstance( ByteBuffer scratch )
-                        {
-                            return new PhysicalLogNeoXaCommandReader( scratch );
-                        }
-                    },
+            extractor = LogExtractor.from( FS, XaCommandReaderFactory.DEFAULT,
                     new XaCommandWriterFactory()
                     {
                         @Override
@@ -253,10 +244,10 @@ class RebuildFromLogs
             try
             {
                 ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
-                txId.set( LogEntryReaderv1.readLogHeader( buffer, channel, true )[1] );
-                XaCommandReader reader = new PhysicalLogNeoXaCommandReader( buffer );
+                txId.set( VersionAwareLogEntryReader.readLogHeader( buffer, channel, true )[1] );
 
-                LogDeserializer deserializer = new LogDeserializer( new Monitors().newMonitor( ByteCounterMonitor.class ), buffer, reader );
+                LogDeserializer deserializer = new LogDeserializer(
+                        new Monitors().newMonitor( ByteCounterMonitor.class ), buffer, XaCommandReaderFactory.DEFAULT );
 
                 Cursor<LogEntry, IOException> cursor = deserializer.cursor ( channel );
 

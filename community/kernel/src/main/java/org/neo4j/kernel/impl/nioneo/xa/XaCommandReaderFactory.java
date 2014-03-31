@@ -21,7 +21,18 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+
 public interface XaCommandReaderFactory
 {
-    XaCommandReader newInstance( ByteBuffer scratch );
+    XaCommandReader newInstance( byte logEntryVersion, ByteBuffer scratch );
+
+    public static final XaCommandReaderFactory DEFAULT = new XaCommandReaderFactory()
+    {
+        @Override
+        public XaCommandReader newInstance( byte logEntryVersion, ByteBuffer scratch )
+        {
+            return new PhysicalLogNeoXaCommandReader( scratch );
+        }
+    };
 }

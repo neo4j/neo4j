@@ -34,12 +34,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.LogTestUtils;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -58,13 +55,11 @@ public class LogMatchers
         try
         {
             // Always a header
-            LogEntryReaderv1.readLogHeader( buffer, fileChannel, true );
+            VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer(
-                    new Monitors().newMonitor( ByteCounterMonitor.class, LogTestUtils.class ), buffer,
-                    new PhysicalLogNeoXaCommandReader( buffer ) );
+            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
 
 
             Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
