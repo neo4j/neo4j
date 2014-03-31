@@ -22,20 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
@@ -45,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
