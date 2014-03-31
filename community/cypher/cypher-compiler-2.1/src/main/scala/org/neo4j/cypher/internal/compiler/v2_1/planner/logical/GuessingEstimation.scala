@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabel
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 
 object GuessingEstimation {
-  val ALL_NODES_SCAN_CARDINALITY: Int = 1000
+  val ALL_NODES_SCAN_CARDINALITY: Int = 1000000
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
   val LABEL_SELECTIVITY: Double = 0.1
   val PREDICATE_SELECTIVITY: Double = 0.2
   val INDEX_SEEK_SELECTIVITY: Double = 0.08
   val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
-  val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
+  val EXPAND_RELATIONSHIP_DEGREE: Int = 2
 }
 
 class GuessingCardinalityEstimator(selectivity: Metrics.SelectivityEstimator) extends Metrics.CardinalityEstimator {
@@ -62,7 +62,7 @@ class GuessingCardinalityEstimator(selectivity: Metrics.SelectivityEstimator) ex
       (cardinality(left) + cardinality(right)) / 2
 
     case Expand(left, _, _, _, _, _) =>
-      (cardinality(left) * EXPAND_RELATIONSHIP_SELECTIVITY).toInt
+      (cardinality(left) * EXPAND_RELATIONSHIP_DEGREE).toInt
 
     case Selection(predicates, left) =>
       (cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)).toInt
