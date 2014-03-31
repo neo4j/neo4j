@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import Metrics._
 
-class SimpleCostModel(cardinality: cardinalityEstimator) extends costModel {
+class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
 
   def apply(plan: LogicalPlan): Int = plan match {
     case _: SingleRow =>

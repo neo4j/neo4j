@@ -35,7 +35,7 @@ object GuessingEstimation {
   val EXPAND_RELATIONSHIP_SELECTIVITY: Double = 0.02
 }
 
-class GuessingCardinalityEstimator(selectivity: Metrics.selectivityEstimator) extends Metrics.cardinalityEstimator {
+class GuessingCardinalityEstimator(selectivity: Metrics.SelectivityEstimator) extends Metrics.CardinalityEstimator {
 
   import GuessingEstimation._
 
@@ -86,7 +86,7 @@ class GuessingCardinalityEstimator(selectivity: Metrics.selectivityEstimator) ex
   private def cardinality(plan: LogicalPlan) = apply(plan)
 }
 
-class GuessingSelectivityEstimator extends Metrics.selectivityEstimator {
+class GuessingSelectivityEstimator extends Metrics.SelectivityEstimator {
 
   import GuessingEstimation._
 

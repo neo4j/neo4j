@@ -26,27 +26,27 @@ import Metrics._
 // Helper class mainly used via LogicalPlanningTestSupport
 case class OverridableMetricsFactory(
   metricsFactory: MetricsFactory,
-  altNewSelectivityEstimator: Option[() => selectivityEstimator] = None,
-  altNewCardinalityEstimator: Option[(selectivityEstimator) => cardinalityEstimator] = None,
-  altNewCostModel: Option[(cardinalityEstimator) => costModel] = None) extends MetricsFactory {
+  altNewSelectivityEstimator: Option[() => SelectivityEstimator] = None,
+  altNewCardinalityEstimator: Option[(SelectivityEstimator) => CardinalityEstimator] = None,
+  altNewCostModel: Option[(CardinalityEstimator) => CostModel] = None) extends MetricsFactory {
 
-  def newCostModel(cardinality: cardinalityEstimator): costModel =
+  def newCostModel(cardinality: CardinalityEstimator): CostModel =
     altNewCostModel.getOrElse(metricsFactory.newCostModel(_))(cardinality)
 
-  def newCardinalityEstimator(selectivity: selectivityEstimator): cardinalityEstimator =
+  def newCardinalityEstimator(selectivity: SelectivityEstimator): CardinalityEstimator =
     altNewCardinalityEstimator.getOrElse(metricsFactory.newCardinalityEstimator(_))(selectivity)
 
-  def newSelectivityEstimator: selectivityEstimator =
+  def newSelectivityEstimator: SelectivityEstimator =
     altNewSelectivityEstimator.getOrElse(() => metricsFactory.newSelectivityEstimator)()
 
   def replaceCostModel(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCostModel = Some((_: cardinalityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+    copy(altNewCostModel = Some((_: CardinalityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
 
   def replaceCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some((_: selectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+    copy(altNewCardinalityEstimator = Some((_: SelectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
 
   def amendCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some({ (selectivity: selectivityEstimator) =>
+    copy(altNewCardinalityEstimator = Some({ (selectivity: SelectivityEstimator) =>
       val fallback: PartialFunction[LogicalPlan, Int] = {
         case plan => metricsFactory.newCardinalityEstimator(selectivity)(plan)
       }

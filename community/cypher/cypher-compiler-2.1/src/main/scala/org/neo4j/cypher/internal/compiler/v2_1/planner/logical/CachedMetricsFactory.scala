@@ -26,9 +26,9 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
   def newSelectivityEstimator =
     CachedFunction.byIdentity(metricsFactory.newSelectivityEstimator)
 
-  def newCardinalityEstimator(selectivity: selectivityEstimator) =
+  def newCardinalityEstimator(selectivity: SelectivityEstimator) =
     CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(selectivity))
 
-  def newCostModel(cardinality: cardinalityEstimator) =
+  def newCostModel(cardinality: CardinalityEstimator) =
     CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
 }

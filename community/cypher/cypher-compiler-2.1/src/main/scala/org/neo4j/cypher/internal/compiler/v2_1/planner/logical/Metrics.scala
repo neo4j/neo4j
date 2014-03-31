@@ -27,23 +27,23 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type costModel = LogicalPlan => Int
+  type CostModel = LogicalPlan => Int
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for heuristics)
-  type cardinalityEstimator = LogicalPlan => Int
+  type CardinalityEstimator = LogicalPlan => Int
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using heuristics)
-  type selectivityEstimator = Expression => Double
+  type SelectivityEstimator = Expression => Double
 }
 
-case class Metrics(cost: costModel, cardinality: cardinalityEstimator, selectivity: selectivityEstimator)
+case class Metrics(cost: CostModel, cardinality: CardinalityEstimator, selectivity: SelectivityEstimator)
 
 trait MetricsFactory {
-  def newSelectivityEstimator: selectivityEstimator
-  def newCardinalityEstimator(selectivity: selectivityEstimator): cardinalityEstimator
-  def newCostModel(cardinality: cardinalityEstimator): costModel
+  def newSelectivityEstimator: SelectivityEstimator
+  def newCardinalityEstimator(selectivity: SelectivityEstimator): CardinalityEstimator
+  def newCostModel(cardinality: CardinalityEstimator): CostModel
 
   def newMetrics = {
     val selectivity = newSelectivityEstimator
