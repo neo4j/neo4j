@@ -72,7 +72,7 @@ public class LogMatchers
         }
     }
 
-    public static Iterable<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
+    public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         return logEntries( fileSystem, file.getPath() );
     }
