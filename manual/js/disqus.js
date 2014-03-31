@@ -32,47 +32,58 @@ function initDisqus()
   $body.append( $thread );
   $wrapper.append( $body );
 
-  function scrollToComments()
-  {
-    var scroll = $pageContent.scrollTop() + $wrapper.offset().top - $pageContent.offset().top;
-    $pageContent.animate( {
-      scrollTop : ( scroll )
-    }, 500 );
-  }
-
   var initialized = false;
   var heightUpdated = false;
-  var isOpen = false;
+
+  function scrollToComments( openDuringLoad )
+  {
+    $pageContent.scrollTo( openDuringLoad ? $thread : $wrapper );
+  }
+  
+  function showComments( openDuringLoad )
+  {
+    $body.css( 'display', 'block' );
+    if ( !initialized )
+    {
+      initialized = true;
+      $thread.mutate( 'height', function()
+      {
+        if ( !heightUpdated )
+        {
+          heightUpdated = true;
+          scrollToComments( openDuringLoad );
+        }
+      } );
+      runDisqus( $thread );
+    }
+    $toggle.removeClass( CLOSED_ICON ).addClass( OPEN_ICON );
+  }
+  
+  function hideComments()
+  {
+    $body.css( 'display', 'none' );
+    $toggle.removeClass( OPEN_ICON ).addClass( CLOSED_ICON );
+  }
 
   $header.click( function()
   {
     if ( $toggle.hasClass( OPEN_ICON ) )
     {
-      $body.css( 'display', 'none' );
-      $toggle.removeClass( OPEN_ICON ).addClass( CLOSED_ICON );
+      hideComments();
     }
     else
     {
-      $body.css( 'display', 'block' );
-      if ( !initialized )
-      {
-        initialized = true;
-        $thread.mutate( 'height', function()
-        {
-          if ( !heightUpdated )
-          {
-            heightUpdated = true;
-            scrollToComments();
-          }
-        } );
-        runDisqus( $thread );
-      }
-      $toggle.removeClass( CLOSED_ICON ).addClass( OPEN_ICON );
+      showComments();
     }
-    isOpen = !isOpen;
   } );
 
   $( '#content > footer' ).first().prepend( $wrapper );
+  
+  var hash = window.location.hash;
+  if ( hash && hash.length > 10 && hash.indexOf( '#comment' ) === 0 )
+  {
+    showComments( true );
+  }
 }
 
 $( document ).ready( initDisqus );

@@ -40,7 +40,25 @@ $( document ).ready( function()
       return false;
     } );
   }
+  addBootstrapStyling();
 } );
+
+function addBootstrapStyling()
+{
+  var $content = $('#content section');
+  $('img', $content).addClass('img-responsive');
+  $('div.admonitionblock img', $content).removeClass('img-responsive');
+  $('dl', $content).addClass('dl-horizontal');
+  $('div.table table,div.informaltable table', $content).addClass('table table-condensed table-hover');
+  var $admonblocks = $('div.admonitionblock');
+  $admonblocks.filter('.Note').find('td.content').addClass('alert alert-info');
+  $admonblocks.filter('.Tip').find('td.content').addClass('alert alert-info');
+  $admonblocks.filter('.Important').find('td.content').addClass('alert alert-warning');
+  $admonblocks.filter('.Caution').find('td.content').addClass('alert alert-warning');
+  $admonblocks.filter('.Warning').find('td.content').addClass('alert alert-danger');
+  $('div.sidebar', $content).addClass('alert alert-info');
+  $('#content div.titlepage div.abstract').addClass('alert alert-info');
+}
 
 function initialize()
 {
@@ -173,24 +191,6 @@ function initialize()
       $ICON.clone().addClass( "fa-file-o" ).insertBefore( $file );
     }
   } );
-
-  // When you click on a link to an
-  // anchor, scroll down
-  // 120 px to cope with the fact that the
-  // banner
-  // hides the top 95px or so of the page.
-  // This code deals with the problem when
-  // you click on a link from another
-  // page.
-  var hash = window.location.hash;
-  if ( hash )
-  {
-    var targetOffset = $( hash ).offset().top - 120;
-    $( 'html,body' ).animate( {
-      'scrollTop' : targetOffset
-    }, 200 );
-    return false;
-  }
 }
 
 /**
