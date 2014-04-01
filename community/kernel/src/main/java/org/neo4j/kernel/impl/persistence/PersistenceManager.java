@@ -32,7 +32,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -325,6 +324,9 @@ public class PersistenceManager
             try
             {
                 releaseConnections( tx );
+            }
+            finally
+            {
                 // Release locks held in the old transaction state
                 if ( param == Status.STATUS_COMMITTED )
                 {
@@ -333,18 +335,6 @@ public class PersistenceManager
                 else
                 {
                     state.rollback();
-                }
-            }
-            finally
-            {
-                // Release locks held by the kernel API stack
-                try
-                {
-                    resourceHolder.resource.kernelTransaction().release();
-                }
-                catch ( ReleaseLocksFailedKernelException e )
-                {
-                    msgLog.error( "Error releasing resources for " + tx, e );
                 }
             }
         }

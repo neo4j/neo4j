@@ -304,7 +304,7 @@ public class TransactionHandle
                 errors.add( deserializationErrors.next() );
             }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
         }
@@ -353,7 +353,7 @@ public class TransactionHandle
                 errors.add( deserializationErrors.next() );
             }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
         }
