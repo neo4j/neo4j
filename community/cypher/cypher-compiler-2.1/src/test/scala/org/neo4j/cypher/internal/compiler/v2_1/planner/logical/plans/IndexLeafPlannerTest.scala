@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{uniqueIndexSeekL
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  implicit val heuristics = newDefaultHeuristics
+
   test("index scan when there is an index on the property") {
     // given
     val identifier = Identifier("n")_

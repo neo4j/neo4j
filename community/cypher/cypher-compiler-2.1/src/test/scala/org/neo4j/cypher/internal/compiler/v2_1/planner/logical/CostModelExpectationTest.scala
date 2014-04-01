@@ -34,6 +34,8 @@ import org.neo4j.graphdb.Direction
 
 class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  implicit val heuristics = newDefaultHeuristics
+
   test("select(label scan) < select(all nodes scan)") {
     val cost = newMetricsFactory.newMetrics.cost
 

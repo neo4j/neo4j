@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 
 object GuessingEstimation {
   val ALL_NODES_SCAN_CARDINALITY: Int = 1000000
@@ -35,19 +35,19 @@ object GuessingEstimation {
   val EXPAND_RELATIONSHIP_DEGREE: Int = 2
 }
 
-class GuessingCardinalityEstimator(selectivity: Metrics.SelectivityEstimator) extends Metrics.CardinalityEstimator {
-
+class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
+                                   selectivity: Metrics.SelectivityEstimator) extends Metrics.CardinalityEstimator {
   import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Int = plan match {
     case AllNodesScan(_) =>
-      ALL_NODES_SCAN_CARDINALITY
+      heuristics.numNodes
 
     case NodeByLabelScan(_, Left(_)) =>
       (ALL_NODES_SCAN_CARDINALITY * LABEL_NOT_FOUND_SELECTIVITY).toInt
 
-    case NodeByLabelScan(_, Right(_)) =>
-      (ALL_NODES_SCAN_CARDINALITY * LABEL_SELECTIVITY).toInt
+    case NodeByLabelScan(_, Right(labelId)) =>
+      heuristics.numNodesWithLabel(labelId)
 
     case NodeByIdSeek(_, nodeIds) =>
       nodeIds.size
@@ -61,7 +61,8 @@ class GuessingCardinalityEstimator(selectivity: Metrics.SelectivityEstimator) ex
     case NodeHashJoin(_, left, right) =>
       (cardinality(left) + cardinality(right)) / 2
 
-    case Expand(left, _, _, _, _, _) =>
+    case expand @ Expand(left, _, dir, types, _, _) =>
+      // val labels = expand.left.solvedPredicates.collect { case HasLabels(Identifier(name), Seq(labelName)) => ??? }
       (cardinality(left) * EXPAND_RELATIONSHIP_DEGREE).toInt
 
     case Selection(predicates, left) =>

@@ -29,6 +29,7 @@ case class LogicalPlanContext(planContext: PlanContext,
                               semanticTable: SemanticTable,
                               queryGraph: QueryGraph) {
 
+  def heuristics = planContext.heuristics
   def cost = metrics.cost
   def cardinality = metrics.cardinality
 }

@@ -24,14 +24,13 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.kernel.InternalAbstractGraphDatabase
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphHeuristics, PlanContext}
+import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import collection.JavaConverters._
 
-class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
+class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
@@ -92,4 +91,6 @@ class TransactionBoundPlanContext(statement:Statement, gdb:GraphDatabaseService)
     }
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
+
+  def heuristics: GraphHeuristics = new TransactionBoundGraphHeuristics(kernelAPI.heuristics())
 }

@@ -33,12 +33,12 @@ public interface Heuristics
     /** Relationship type id -> relative occurrence, value between 0 and 1. The total adds up to 1 */
     LabelledDistribution<Integer> relationshipTypeDistribution();
 
-    /** Relationship degree distribution for a label/reltype/direction triplet. */
+    /** Relationship degree distribution for a label/rel type/direction triplet. */
     double degree( int labelId, int relType, Direction direction );
 
-    /** fraction between 0 and 1 of nodes that could be read (weren't deleted or couldn't be read) */
+    /** value between 0 and 1 representing fraction of nodes that could be read (weren't deleted or couldn't be read) */
     double liveNodesRatio();
 
     /** maximum number of nodes currently addressable in the database */
-    long maxNodes();
+    long maxAddressableNodes();
 }

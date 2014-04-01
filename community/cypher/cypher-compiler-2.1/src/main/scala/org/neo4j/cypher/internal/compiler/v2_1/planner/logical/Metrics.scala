@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import Metrics._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 
 object Metrics {
   // This metric calculates how expensive executing a logical plan is.
@@ -41,13 +42,13 @@ object Metrics {
 case class Metrics(cost: CostModel, cardinality: CardinalityEstimator, selectivity: SelectivityEstimator)
 
 trait MetricsFactory {
-  def newSelectivityEstimator: SelectivityEstimator
-  def newCardinalityEstimator(selectivity: SelectivityEstimator): CardinalityEstimator
+  def newSelectivityEstimator(heuristics: GraphHeuristics): SelectivityEstimator
+  def newCardinalityEstimator(heuristics: GraphHeuristics, selectivity: SelectivityEstimator): CardinalityEstimator
   def newCostModel(cardinality: CardinalityEstimator): CostModel
 
-  def newMetrics = {
-    val selectivity = newSelectivityEstimator
-    val cardinality = newCardinalityEstimator(selectivity)
+  def newMetrics(implicit heuristics: GraphHeuristics) = {
+    val selectivity = newSelectivityEstimator(heuristics)
+    val cardinality = newCardinalityEstimator(heuristics, selectivity)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, selectivity)
   }

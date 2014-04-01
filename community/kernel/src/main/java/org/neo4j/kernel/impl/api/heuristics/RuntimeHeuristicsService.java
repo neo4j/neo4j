@@ -147,13 +147,13 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     @Override
     public double liveNodesRatio()
     {
-        return data.liveNodes();
+        return data.liveNodesRatio();
     }
 
     @Override
-    public long maxNodes()
+    public long maxAddressableNodes()
     {
-        return data.maxNodes();
+        return data.maxAddressableNodes();
     }
 
     public void save( FileSystemAbstraction fs, File path ) throws IOException

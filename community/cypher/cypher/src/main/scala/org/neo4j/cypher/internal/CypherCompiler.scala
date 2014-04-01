@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.spi.v2_1.{TransactionBoundPlanContext => PlanCo
 import org.neo4j.cypher.internal.spi.v2_0.{TransactionBoundPlanContext => PlanContext_v2_0}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_1}
 import org.neo4j.cypher.internal.compiler.v2_0.spi.{ExceptionTranslatingQueryContext => ExceptionTranslatingQueryContext_v2_0}
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.monitoring.{Monitors=>KernelMonitors}
 
 object CypherCompiler {
@@ -45,7 +45,10 @@ object CypherCompiler {
   private val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
 }
 
-class CypherCompiler(graph: GraphDatabaseService, kernelMonitors: KernelMonitors, defaultVersion: CypherVersion = CypherVersion.vDefault) {
+class CypherCompiler(graph: GraphDatabaseService,
+                     kernelAPI: KernelAPI,
+                     kernelMonitors: KernelMonitors,
+                     defaultVersion: CypherVersion = CypherVersion.vDefault) {
 
   private val queryCacheSize: Int = getQueryCacheSize
 
@@ -62,7 +65,7 @@ class CypherCompiler(graph: GraphDatabaseService, kernelMonitors: KernelMonitors
 
     version match {
       case CypherVersion.v2_1 =>
-        val (plan, extractedParameters) = compiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, context))
+        val (plan, extractedParameters) = compiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
         (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
 
       case CypherVersion.v2_0 =>

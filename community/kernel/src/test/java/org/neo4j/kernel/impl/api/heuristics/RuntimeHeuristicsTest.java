@@ -104,8 +104,8 @@ public class RuntimeHeuristicsTest
         heuristics.run();
 
         // Then
-        assertThat( heuristics.degree( 1, 0, Direction.INCOMING ), closeTo( 44.0, 10.0 ));
-        assertThat( heuristics.degree( 1, 0, Direction.OUTGOING ), closeTo( 4.4,   1.0 ));
+        assertThat( heuristics.degree(1, 0, Direction.INCOMING), closeTo( 44.0, 10.0 ));
+        assertThat( heuristics.degree(1, 0, Direction.OUTGOING), closeTo( 4.4,   1.0 ));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class RuntimeHeuristicsTest
         heuristics.run();
 
         // Then
-        assertThat( heuristics.maxNodes(), equalTo( 1000L ) );
+        assertThat( heuristics.maxAddressableNodes(), equalTo( 1000L ) );
     }
 
     @Test

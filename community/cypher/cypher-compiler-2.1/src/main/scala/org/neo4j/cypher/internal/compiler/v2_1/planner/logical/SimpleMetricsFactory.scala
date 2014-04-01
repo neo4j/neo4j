@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityEstimator, CardinalityEstimator, CostModel}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 
 object SimpleMetricsFactory extends MetricsFactory {
   def newCostModel(cardinality: CardinalityEstimator): CostModel =
     new SimpleCostModel(cardinality)
 
-  def newCardinalityEstimator(selectivity: SelectivityEstimator): CardinalityEstimator =
-    new GuessingCardinalityEstimator(selectivity)
+  def newCardinalityEstimator(heuristics: GraphHeuristics, selectivity: SelectivityEstimator): CardinalityEstimator =
+    new GuessingCardinalityEstimator(heuristics, selectivity)
 
-  def newSelectivityEstimator: SelectivityEstimator =
+  def newSelectivityEstimator(heuristics: GraphHeuristics): SelectivityEstimator =
     new GuessingSelectivityEstimator
 }

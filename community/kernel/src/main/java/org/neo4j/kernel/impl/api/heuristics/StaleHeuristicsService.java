@@ -50,7 +50,7 @@ public class StaleHeuristicsService extends LifecycleAdapter implements Heuristi
     @Override
     public double degree( int labelId, int relType, Direction direction )
     {
-        return delegate.degree( labelId, relType, direction );
+        return delegate.degree(labelId, relType, direction);
     }
 
     @Override
@@ -60,8 +60,8 @@ public class StaleHeuristicsService extends LifecycleAdapter implements Heuristi
     }
 
     @Override
-    public long maxNodes()
+    public long maxAddressableNodes()
     {
-        return delegate.maxNodes();
+        return delegate.maxAddressableNodes();
     }
 }

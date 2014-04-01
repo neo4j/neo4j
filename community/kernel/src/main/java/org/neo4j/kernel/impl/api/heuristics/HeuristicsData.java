@@ -42,7 +42,7 @@ public class HeuristicsData implements Serializable
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> incomingDegrees = new HashMap<>();
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
 
-    private final NodeLivenessTracker liveNodeTracker = new NodeLivenessTracker();
+    private final EntityLivenessData nodeLivenessData = new EntityLivenessData();
 
     public HeuristicsData()
     {
@@ -63,15 +63,15 @@ public class HeuristicsData implements Serializable
         recordNodeDegree( nodeLabels, nodeIncoming, bothDegrees );
         recordNodeDegree( nodeLabels, nodeOutgoing, bothDegrees );
 
-        liveNodeTracker.recordLiveNode();
+        nodeLivenessData.recordLiveEntity();
     }
 
     public void addSkippedNodeObservation()
     {
-        liveNodeTracker.recordDeadNode();
+        nodeLivenessData.recordDeadEntity();
     }
 
-    public void addMaxNodesObservation( long maxNodes ) { liveNodeTracker.setMaxNodes( maxNodes ); }
+    public void addMaxNodesObservation( long maxNodes ) { nodeLivenessData.setMaxEntities(maxNodes); }
 
     private void recordNodeDegree( List<Integer> nodeLabels,
                                    Map<Integer, Integer> source,
@@ -104,7 +104,7 @@ public class HeuristicsData implements Serializable
     {
         labels.recalculate();
         relationships.recalculate();
-        liveNodeTracker.recalculate();
+        nodeLivenessData.recalculate();
     }
 
     public LabelledDistribution<Integer> labels()
@@ -144,14 +144,14 @@ public class HeuristicsData implements Serializable
         return 0.0;
     }
 
-    public double liveNodes()
+    public double liveNodesRatio()
     {
-        return liveNodeTracker.liveNodes();
+        return nodeLivenessData.liveEntitiesRatio();
     }
 
-    public long maxNodes()
+    public long maxAddressableNodes()
     {
-        return liveNodeTracker.maxNodes();
+        return nodeLivenessData.maxAddressableEntities();
     }
 
     @Override

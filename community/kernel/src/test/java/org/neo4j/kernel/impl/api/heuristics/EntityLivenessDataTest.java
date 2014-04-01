@@ -25,28 +25,28 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 
-public class NodeLivenessTrackerTest
+public class EntityLivenessDataTest
 {
-    @Test
-    public void shouldReport1_0LiveNodesWhenNotHavingSeenAnySamples()
-    {
-        // given
-        NodeLivenessTracker tracker = new NodeLivenessTracker();
-
-        // then
-        assertThat( tracker.liveNodes(), equalTo( 1.0 ) );
-    }
+//    @Test
+//    public void shouldReport1_0LiveNodesWhenNotHavingSeenAnySamples()
+//    {
+//        // given
+//        EntityLivenessData tracker = new EntityLivenessData();
+//
+//        // then
+//        assertThat( tracker.liveEntitiesRatio(), equalTo( 1.0 ) );
+//    }
 
     @Test
     public void shouldReportNonZeroLiveNodesWhenNotHavingSeenAnyLiveNodes()
     {
         // given
-        NodeLivenessTracker tracker = new NodeLivenessTracker();
+        EntityLivenessData tracker = new EntityLivenessData();
 
         // when
-        tracker.recordDeadNode();
+        tracker.recordDeadEntity();
 
         // then
-        assertThat( tracker.liveNodes(), not( equalTo( 0.0 ) ) );
+        assertThat( tracker.liveEntitiesRatio(), not( equalTo( 0.0 ) ) );
     }
 }

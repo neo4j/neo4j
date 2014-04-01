@@ -43,6 +43,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   // true means we run inside REST server
   protected val isServer = false
   protected val graphAPI = graph.asInstanceOf[GraphDatabaseAPI]
+  protected val kernel = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.api.KernelAPI])
   protected val kernelMonitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   protected val compiler = createCompiler()
 
@@ -137,7 +138,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     val version = optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name
     )
-    new CypherCompiler(graph, kernelMonitors, CypherVersion(version))
+    new CypherCompiler(graph, kernel, kernelMonitors, CypherVersion(version))
   }
 
   private def getPlanCacheSize: Int =
