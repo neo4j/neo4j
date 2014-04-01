@@ -22,13 +22,16 @@ package org.neo4j.ext.udc.impl;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.jersey.spi.container.ContainerRequest;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -58,6 +61,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.stub;
 
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
@@ -82,9 +87,7 @@ public class UdcExtensionImplTest
     public TestName testName = new TestName();
 
     private File path;
-    private LocalTestServer server;
     private PingerHandler handler;
-    private String serverAddress;
     private Map<String, String> config;
 
     @Before
@@ -175,16 +178,16 @@ public class UdcExtensionImplTest
     private void setupServer() throws Exception
     {
         // first, set up the test server
-        server = new LocalTestServer( null, null );
+        LocalTestServer server = new LocalTestServer( null, null );
         handler = new PingerHandler();
         server.register( "/*", handler );
         server.start();
 
         int servicePort = server.getServicePort();
         String serviceHostName = server.getServiceHostName();
-        serverAddress = serviceHostName + ":" + servicePort;
+        String serverAddress = serviceHostName + ":" + servicePort;
 
-        config = new HashMap<String, String>();
+        config = new HashMap<>();
         config.put( UdcSettings.first_delay.name(), "100" );
         config.put( UdcSettings.udc_host.name(), serverAddress );
 
@@ -194,7 +197,7 @@ public class UdcExtensionImplTest
     private void blockUntilServerAvailable( final URL url ) throws Exception
     {
         final CountDownLatch latch = new CountDownLatch( 1 );
-        final PointerTo<Boolean> flag = new PointerTo<Boolean>( false );
+        final PointerTo<Boolean> flag = new PointerTo<>( false );
 
         Thread t = new Thread( new Runnable()
         {
@@ -264,8 +267,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "test", handler.getQueryMap().get( TAGS ) );
-
+        assertEquals( "test,web", handler.getQueryMap().get( TAGS ) );
 
         destroy( graphdb );
     }
@@ -284,7 +286,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldBeAbleToDetermineUserAgent() throws Exception
     {
-        CollectUserAgentFilter.addUserAgent( "test/1.0" );
+        makeRequestWithAgent( "test/1.0" );
         setupServer();
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
@@ -297,8 +299,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldBeAbleToDetermineUserAgents() throws Exception
     {
-        CollectUserAgentFilter.addUserAgent( "test/1.0" );
-        CollectUserAgentFilter.addUserAgent( "foo/bar" );
+        makeRequestWithAgent( "test/1.0" );
+        makeRequestWithAgent( "foo/bar" );
         setupServer();
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
@@ -313,7 +315,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldUpdateTheUserAgentsPerPing() throws Exception
     {
-        CollectUserAgentFilter.addUserAgent( "test/1.0" );
+        makeRequestWithAgent( "test/1.0" );
         setupServer();
         config.put( UdcSettings.interval.name(), "1000" );
         GraphDatabaseService graphdb = createDatabase( config );
@@ -321,13 +323,14 @@ public class UdcExtensionImplTest
         String userAgents = handler.getQueryMap().get( USER_AGENTS );
         assertEquals( true, userAgents.contains( "test/1.0" ) );
 
-        CollectUserAgentFilter.addUserAgent( "foo/bar" );
+        makeRequestWithAgent( "foo/bar" );
 
         Thread.sleep( 1000 );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
 
         userAgents = handler.getQueryMap().get( USER_AGENTS );
         assertEquals( true, userAgents.contains( "foo/bar" ) );
+        assertEquals( false, userAgents.contains( "test/1.0" ) );
 
         destroy( graphdb );
     }
@@ -522,7 +525,7 @@ public class UdcExtensionImplTest
 
     private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
     {
-        InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase) dbToDestroy;
+        @SuppressWarnings("deprecation") InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase) dbToDestroy;
         dbToDestroy.shutdown();
         FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
     }
@@ -545,5 +548,18 @@ public class UdcExtensionImplTest
         {
             this.value = value;
         }
+    }
+
+    private ContainerRequest makeRequestWithAgent( String agent )
+    {
+        return CollectUserAgentFilter.instance().filter( request( agent ) );
+    }
+
+    private static ContainerRequest request( String... userAgent )
+    {
+        ContainerRequest request = mock( ContainerRequest.class );
+        List<String> headers = Arrays.asList( userAgent );
+        stub(request.getRequestHeader( "User-Agent" )).toReturn( headers );
+        return request;
     }
 }
