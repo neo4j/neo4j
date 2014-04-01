@@ -55,6 +55,8 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.store.CacheLayer;
+import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
@@ -72,6 +74,7 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -169,6 +172,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     private LabelScanStore labelScanStore;
     private final IndexingService.Monitor indexingServiceMonitor;
+    private final FileSystemAbstraction fs;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -265,7 +269,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                                 IndexingService.Monitor indexingServiceMonitor )
+                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -284,6 +288,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.schemaWriteGuard = schemaWriteGuard;
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;
+        this.fs = fs;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -368,9 +373,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
             fileListing = new NeoStoreFileListing( xaContainer, storeDir, labelScanStore, indexingService );
 
-            kernel = life.add( new Kernel( txManager, propertyKeyTokens, labelTokens, relationshipTypeTokens,
+            kernel = life.add( new Kernel( txManager, propertyKeyTokens,
                     persistenceManager, updateableSchemaState, schemaWriteGuard,
-                    indexingService, nodeManager, neoStore, persistenceCache, schemaCache, providerMap, labelScanStore,
+                    indexingService, nodeManager, neoStore, schemaCache, providerMap, fs, config, labelScanStore,
+                    new CacheLayer(
+                        new DiskLayer( propertyKeyTokens, labelTokens, relationshipTypeTokens,
+                            new SchemaStorage( neoStore.getSchemaStore() ), neoStore, indexingService ),
+                        persistenceCache, indexingService, schemaCache, nodeManager ),
+                    scheduler,
                     readOnly ));
 
             kernel.registerTransactionHook( transactionEventHandlers );

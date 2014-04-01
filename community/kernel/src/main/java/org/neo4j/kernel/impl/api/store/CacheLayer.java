@@ -147,7 +147,22 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
+    public boolean nodeExists( long nodeId )
+    {
+        // Write a proper implementation later
+        try
+        {
+            persistenceCache.getNode( nodeId );
+            return true;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         return persistenceCache.nodeHasLabel( nodeId, labelId, nodeLabelLoader );
     }
@@ -460,5 +475,11 @@ public class CacheLayer implements StoreReadLayer
         RelationshipImpl relationship = persistenceCache.getRelationship( relationshipId );
         relationshipVisitor.visit( relationshipId, relationship.getStartNodeId(), relationship.getEndNodeId(),
                 relationship.getTypeId());
+    }
+
+    @Override
+    public long highestNodeIdInUse()
+    {
+        return diskLayer.highestNodeIdInUse();
     }
 }

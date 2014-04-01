@@ -172,7 +172,7 @@ public class StateHandlingStatementOperations implements
             }
         }
 
-        return storeLayer.nodeHasLabel( state, nodeId, labelId );
+        return storeLayer.nodeHasLabel( nodeId, labelId );
     }
 
     @Override

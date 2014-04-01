@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api;
 
 
+import org.neo4j.kernel.api.heuristics.Heuristics;
+
 /**
  * The main API through which access to the Neo4j kernel is made, both read
  * and write operations are supported as well as creating transactions.
@@ -39,4 +41,7 @@ public interface KernelAPI
 
     void registerTransactionHook( TransactionHook hook );
     void unregisterTransactionHook( TransactionHook hook );
+
+    /** Access live updated heuristics for the data the kernel manages. */
+    Heuristics heuristics();
 }

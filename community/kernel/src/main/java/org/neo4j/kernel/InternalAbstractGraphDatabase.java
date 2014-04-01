@@ -200,6 +200,8 @@ public abstract class InternalAbstractGraphDatabase
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
+        public static final Setting<Boolean> heuristics_enabled =
+                setting("heuristics_enabled", Settings.BOOLEAN, Settings.FALSE);
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -945,7 +947,7 @@ public abstract class InternalAbstractGraphDatabase
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 persistenceManager, lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ) );
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
