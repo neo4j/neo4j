@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.web;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.matchers.JUnitMatchers.hasItem;
 
+@Ignore( "This flaky test has been rewritten in master but the fix is not easy to backport." )
 public class UserAgentCollectorDocIT extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
@@ -43,7 +45,6 @@ public class UserAgentCollectorDocIT extends AbstractRestFunctionalTestBase
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
-
 
     @Test
     public void shouldRecordUserAgent() throws Exception {
