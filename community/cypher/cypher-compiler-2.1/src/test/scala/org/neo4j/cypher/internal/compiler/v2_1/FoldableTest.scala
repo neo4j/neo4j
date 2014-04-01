@@ -73,7 +73,6 @@ class FoldableTest extends CypherFunSuite {
   }
 
   test("should allow using exist to find patterns deeply nested") {
-
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
     ast.exists {

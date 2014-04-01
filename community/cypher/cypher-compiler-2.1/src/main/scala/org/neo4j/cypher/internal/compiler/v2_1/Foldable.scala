@@ -52,34 +52,48 @@ object Foldable {
       foldAcc(mutable.ArrayStack(that), init, f.lift)
 
     def treeFold[R](init: R)(f: PartialFunction[Any, (R, R => R) => R]): R =
-      treeFoldAcc(mutable.ArrayStack(that), init, f)
+      treeFoldAcc(mutable.ArrayStack(that), init, f.lift)
 
-    def exists(f: PartialFunction[Any, Boolean]) = this.fold(false) {
-      case o if f.isDefinedAt(o) && f(o) => acc => true
-      case _ => acc => acc
-    }
+    def exists(f: PartialFunction[Any, Boolean]) =
+      existsAcc(mutable.ArrayStack(that), f.lift)
   }
 
   @tailrec
   private def foldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[R => R]): R =
-    if (remaining.isEmpty)
+    if (remaining.isEmpty) {
       acc
-    else {
+    } else {
       val that = remaining.pop()
       foldAcc(remaining ++= that.reverseChildren, f(that).fold(acc)(_(acc)), f)
     }
 
   // partially tail-recursive (recursion is unavoidable for partial function matches)
-  private def treeFoldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: PartialFunction[Any, (R, R => R) => R]): R =
-    if (remaining.isEmpty)
+  private def treeFoldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[(R, R => R) => R]): R =
+    if (remaining.isEmpty) {
       acc
-    else {
+    } else {
       val that = remaining.pop()
-      if (f.isDefinedAt(that))
-        treeFoldAcc(remaining, f(that)(acc, treeFoldAcc(mutable.ArrayStack() ++= that.reverseChildren, _, f)), f)
-      else
-        treeFoldAcc(remaining ++= that.reverseChildren, acc, f)
-  }
+      f(that) match {
+        case None =>
+          treeFoldAcc(remaining ++= that.reverseChildren, acc, f)
+        case Some(pf) =>
+          treeFoldAcc(remaining, pf(acc, treeFoldAcc(mutable.ArrayStack() ++= that.reverseChildren, _, f)), f)
+      }
+    }
+
+  @tailrec
+  private def existsAcc(remaining: mutable.ArrayStack[Any], f: Any => Option[Boolean]): Boolean =
+    if (remaining.isEmpty) {
+      false
+    } else {
+      val that = remaining.pop()
+      f(that) match {
+        case Some(true) =>
+          true
+        case _ =>
+          existsAcc(remaining ++= that.reverseChildren, f)
+      }
+    }
 }
 
 trait Foldable
