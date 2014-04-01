@@ -35,4 +35,10 @@ public interface Heuristics
 
     /** Relationship degree distribution for a label/reltype/direction triplet. */
     double degree( int labelId, int relType, Direction direction );
+
+    /** fraction between 0 and 1 of nodes that could be read (weren't deleted or couldn't be read) */
+    double liveNodesRatio();
+
+    /** maximum number of nodes currently addressable in the database */
+    long maxNodes();
 }

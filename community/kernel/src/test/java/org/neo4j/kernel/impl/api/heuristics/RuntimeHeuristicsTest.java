@@ -109,6 +109,34 @@ public class RuntimeHeuristicsTest
     }
 
     @Test
+    public void shouldGatherLiveNodes() throws Throwable
+    {
+        // Given
+        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore( 0.6 ), null );
+
+        // When
+        heuristics.run();
+        heuristics.run();
+
+        // Then
+        assertThat( heuristics.liveNodesRatio(), closeTo( 0.6, 0.1 ) );
+    }
+
+    @Test
+    public void shouldGatherMaxNodes() throws Throwable
+    {
+        // Given
+        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore( 0.6 ), null );
+
+        // When
+        heuristics.run();
+        heuristics.run();
+
+        // Then
+        assertThat( heuristics.maxNodes(), equalTo( 1000L ) );
+    }
+
+    @Test
     public void shouldSerializeAndDeserialize() throws Exception
     {
         // Given
@@ -125,9 +153,14 @@ public class RuntimeHeuristicsTest
 
     private StoreReadLayer generateStore() throws EntityNotFoundException
     {
+        return generateStore( 1.0 );
+    }
+
+    private StoreReadLayer generateStore( double liveNodes ) throws EntityNotFoundException
+    {
         StoreReadLayer store = mock( StoreReadLayer.class );
         when(store.highestNodeIdInUse()).thenReturn( 1000l );
-        when(store.nodeExists( anyLong() )).thenReturn( true );
+        mockNodeLiveness(liveNodes, store);
 
         when(store.nodeGetLabels( anyLong() )).then( answerWithDistribution(
                 20, ids(0),
@@ -145,6 +178,21 @@ public class RuntimeHeuristicsTest
                 85, degree(5) ) );
 
         return store;
+    }
+
+    private void mockNodeLiveness(double liveNodes, StoreReadLayer store) {
+        int alive = (int) (liveNodes * 100);
+        int dead = 100-alive;
+
+        // smallest percentile first
+        if ( alive < dead )
+        {
+            when(store.nodeExists(anyLong())).then(answerWithDistribution(alive, value(true), dead, value(false)));
+        }
+        else
+        {
+            when(store.nodeExists(anyLong())).then(answerWithDistribution(dead, value(false), alive, value(true)));
+        }
     }
 
     private Answer<?> answerWithDistribution( Object ... alternatingPercentileAndProvider )
@@ -192,12 +240,18 @@ public class RuntimeHeuristicsTest
 
     private Provider<Integer> degree( final int degree )
     {
-        return new Provider<Integer>()
+        return value( degree );
+    }
+
+
+    private <V> Provider<V> value( final V value )
+    {
+        return new Provider<V>()
         {
             @Override
-            public Integer instance()
+            public V instance()
             {
-                return degree;
+                return value;
             }
         };
     }

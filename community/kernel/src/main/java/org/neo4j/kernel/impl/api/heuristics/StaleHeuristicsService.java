@@ -52,4 +52,16 @@ public class StaleHeuristicsService extends LifecycleAdapter implements Heuristi
     {
         return delegate.degree( labelId, relType, direction );
     }
+
+    @Override
+    public double liveNodesRatio()
+    {
+        return delegate.liveNodesRatio();
+    }
+
+    @Override
+    public long maxNodes()
+    {
+        return delegate.maxNodes();
+    }
 }

@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.api.heuristics;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
@@ -33,12 +31,16 @@ import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 
 public class HeuristicsData implements Serializable
 {
+    public static final int WINDOW_SIZE = 1024;
+
     private final LabelledDistribution<Integer> labels = new LabelledDistribution<>();
     private final LabelledDistribution<Integer> relationships = new LabelledDistribution<>();
 
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> outgoingDegrees = new HashMap<>();
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> incomingDegrees = new HashMap<>();
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
+
+    private final NodeLivenessTracker liveNodeTracker = new NodeLivenessTracker();
 
     public HeuristicsData()
     {
@@ -58,7 +60,16 @@ public class HeuristicsData implements Serializable
 
         recordNodeDegree( nodeLabels, nodeIncoming, bothDegrees );
         recordNodeDegree( nodeLabels, nodeOutgoing, bothDegrees );
+
+        liveNodeTracker.recordLiveNode();
     }
+
+    public void addSkippedNodeObservation()
+    {
+        liveNodeTracker.recordDeadNode();
+    }
+
+    public void addMaxNodesObservation( long maxNodes ) { liveNodeTracker.setMaxNodes( maxNodes ); }
 
     private void recordNodeDegree( List<Integer> nodeLabels,
                                    Map<Integer, Integer> source,
@@ -78,7 +89,7 @@ public class HeuristicsData implements Serializable
                 RollingAverage histogram = reltypeMap.get( entry.getKey() );
                 if(histogram == null)
                 {
-                    histogram = new RollingAverage( /*windowSize*/1024 );
+                    histogram = new RollingAverage( WINDOW_SIZE );
                     reltypeMap.put( entry.getKey(), histogram );
                 }
 
@@ -91,6 +102,7 @@ public class HeuristicsData implements Serializable
     {
         labels.recalculate();
         relationships.recalculate();
+        liveNodeTracker.recalculate();
     }
 
     public LabelledDistribution<Integer> labels()
@@ -128,6 +140,16 @@ public class HeuristicsData implements Serializable
         }
 
         return 0.0;
+    }
+
+    public double liveNodes()
+    {
+        return liveNodeTracker.liveNodes();
+    }
+
+    public long maxNodes()
+    {
+        return liveNodeTracker.maxNodes();
     }
 
     @Override

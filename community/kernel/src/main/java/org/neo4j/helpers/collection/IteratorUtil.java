@@ -1303,13 +1303,13 @@ public abstract class IteratorUtil
             {
                 resource.close();
             }
-            
+
             @Override
             public long next()
             {
                 return iterator.next();
             }
-            
+
             @Override
             public boolean hasNext()
             {
