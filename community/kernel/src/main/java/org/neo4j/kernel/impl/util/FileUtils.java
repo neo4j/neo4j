@@ -43,7 +43,7 @@ import org.neo4j.graphdb.NotFoundException;
 
 public class FileUtils
 {
-    private static int WINDOWS_RETRY_COUNT = 3;
+    private static int WINDOWS_RETRY_COUNT = 5;
 
     public static void deleteRecursively( File directory ) throws IOException
     {
@@ -56,7 +56,7 @@ public class FileUtils
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
             {
-                Files.delete( file );
+                deleteFileWithRetries( file, 0 );
                 return FileVisitResult.CONTINUE;
             }
 
@@ -87,7 +87,7 @@ public class FileUtils
             if ( !deleted )
             {
                 count++;
-                waitSome();
+                waitAndThenTriggerGC();
             }
         }
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
@@ -181,7 +181,7 @@ public class FileUtils
             if ( !renamed )
             {
                 count++;
-                waitSome();
+                waitAndThenTriggerGC();
             }
         }
         while ( !renamed && count <= WINDOWS_RETRY_COUNT );
@@ -223,7 +223,10 @@ public class FileUtils
         }
     }
 
-    private static void waitSome()
+    /*
+     * See http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154.
+     */
+    private static void waitAndThenTriggerGC()
     {
         try
         {
@@ -369,5 +372,30 @@ public class FileUtils
             }
         }
         throw storedIoe;
+    }
+
+    private static void deleteFileWithRetries( Path file, int tries ) throws IOException
+    {
+        try
+        {
+            Files.delete( file );
+        }
+        catch ( IOException e )
+        {
+            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) && tries < WINDOWS_RETRY_COUNT )
+            {
+                waitAndThenTriggerGC();
+                deleteFileWithRetries( file, tries + 1 );
+            }
+            else
+            {
+                throw e;
+            }
+        }
+    }
+
+    private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
+    {
+        return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
     }
 }
