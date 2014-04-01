@@ -24,8 +24,6 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.neo4j.server.web.HttpConnectorFactory;
 
-import java.util.Arrays;
-
 
 public class SslSocketConnectorFactory extends HttpConnectorFactory
 {

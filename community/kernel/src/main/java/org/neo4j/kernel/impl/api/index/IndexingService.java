@@ -338,7 +338,6 @@ public class IndexingService extends LifecycleAdapter
         }
         else
         {
-            logger.debug( "Updating indexes while " + state + ": " + updates.changedNodeIds() );
             if( state == State.NOT_STARTED )
             {
                 recoveredNodeIds.addAll( updates.changedNodeIds() );

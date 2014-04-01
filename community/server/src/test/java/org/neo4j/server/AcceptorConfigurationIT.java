@@ -20,19 +20,8 @@
 package org.neo4j.server;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.server.rest.RESTDocsGenerator;
-import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
