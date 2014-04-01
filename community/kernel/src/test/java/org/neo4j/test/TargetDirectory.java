@@ -62,16 +62,7 @@ public class TargetDirectory
                 @Override
                 public void evaluate() throws Throwable
                 {
-                    boolean success = false;
-                    try
-                    {
-                        base.evaluate();
-                        success = true;
-                    }
-                    finally
-                    {
-                        complete( success );
-                    }
+                    base.evaluate();
                 }
             };
         }
@@ -81,12 +72,6 @@ public class TargetDirectory
         {
             String subdirName = subdir == null ? "<uninitialized>" : subdir.toString();
             return format( "%s[%s]", getClass().getSimpleName(), subdirName );
-        }
-
-        private void complete( boolean success )
-        {
-            if ( success && subdir != null ) recursiveDelete( subdir );
-            subdir = null;
         }
     }
 
