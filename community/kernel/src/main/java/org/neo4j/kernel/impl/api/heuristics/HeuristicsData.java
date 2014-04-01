@@ -33,6 +33,8 @@ public class HeuristicsData implements Serializable
 {
     public static final int WINDOW_SIZE = 1024;
 
+    private static final long serialVersionUID = 5430534253089297623L;
+
     private final LabelledDistribution<Integer> labels = new LabelledDistribution<>();
     private final LabelledDistribution<Integer> relationships = new LabelledDistribution<>();
 

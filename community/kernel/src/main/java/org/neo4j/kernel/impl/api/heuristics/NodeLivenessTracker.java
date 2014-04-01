@@ -26,7 +26,9 @@ import java.io.Serializable;
 /**
  * Track percentage of live nodes vs dead (deleted or corrupt) node (records).
  */
-public class NodeLivenessTracker implements Serializable {
+public final class NodeLivenessTracker implements Serializable {
+
+    private static final long serialVersionUID = -8657743503560688270L;
 
     private final RollingAverage liveNodes = new RollingAverage( HeuristicsData.WINDOW_SIZE );
     private final RollingAverage deadNodes = new RollingAverage( HeuristicsData.WINDOW_SIZE );
