@@ -37,8 +37,15 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
+
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+    public interface BackupProvider
+    {
+        TheBackupInterface newBackup();
+    }
+
     // This is the role used to announce that a cluster member can handle backups
     public static final String BACKUP = "backup";
     // In this context, the IPv4 zero-address is understood as "any address on this host."
@@ -46,22 +53,46 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     private Config config;
     private GraphDatabaseAPI graphDatabaseAPI;
-    private XaDataSourceManager xaDataSourceManager;
-    private KernelPanicEventGenerator kpeg;
     private Logging logging;
     private final Monitors monitors;
     private BackupServer server;
+    private final BackupProvider backupProvider;
     private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, XaDataSourceManager
-            xaDataSourceManager, KernelPanicEventGenerator kpeg, Logging logging, Monitors monitors )
+    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final XaDataSourceManager
+            xaDataSourceManager, final KernelPanicEventGenerator kpeg, final Logging logging, final Monitors monitors )
+    {
+        this(config, graphDatabaseAPI, new BackupProvider()
+        {
+            @Override
+            public TheBackupInterface newBackup()
+            {
+                return new BackupImpl( logging.getMessagesLog( BackupImpl.class ), new BackupImpl.SPI()
+                {
+                    @Override
+                    public String getStoreDir()
+                    {
+                        return graphDatabaseAPI.getStoreDir();
+                    }
+
+                    @Override
+                    public StoreId getStoreId()
+                    {
+                        return graphDatabaseAPI.storeId();
+                    }
+                }, xaDataSourceManager, kpeg, monitors );
+            }
+        }, monitors, logging);
+    }
+
+    public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
+                                        Monitors monitors, Logging logging )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
-        this.xaDataSourceManager = xaDataSourceManager;
-        this.kpeg = kpeg;
-        this.logging = logging;
+        this.backupProvider = provider;
         this.monitors = monitors;
+        this.logging = logging;
     }
 
     @Override
@@ -74,24 +105,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            TheBackupInterface backup = new BackupImpl( logging.getMessagesLog( BackupImpl.class ), new BackupImpl.SPI()
-            {
-                @Override
-                public String getStoreDir()
-                {
-                    return graphDatabaseAPI.getStoreDir();
-                }
-
-                @Override
-                public StoreId getStoreId()
-                {
-                    return graphDatabaseAPI.storeId();
-                }
-            }, xaDataSourceManager, kpeg, monitors );
             try
             {
-                server = new BackupServer( backup,
-                        config.get( OnlineBackupSettings.online_backup_server ), logging, monitors );
+                server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ), logging, monitors );
                 server.init();
                 server.start();
 

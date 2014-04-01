@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 This class is responsible for taking unsolved StartItems and transforming them into StartPipes
  */
 class StartPointBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, context: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -45,7 +45,7 @@ class StartPointBuilder extends PlanBuilder {
 
   override def missingDependencies(plan: ExecutionPlanInProgress): Seq[String] = super.missingDependencies(plan)
 
-  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     plan.query.start.exists({ (itemToken: QueryToken[StartItem]) =>
       mapQueryToken().isDefinedAt((context, itemToken))
     })
@@ -65,7 +65,7 @@ class StartPointBuilder extends PlanBuilder {
       entityFactory.relationshipById orElse
       entityFactory.relationshipsAll
 
-  private def mapQueryToken(): PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
+  private def mapQueryToken()(implicit pipeMonitor: PipeMonitor): PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
     val entityFactory = new EntityProducerFactory
     val nodeStart = genNodeStart(entityFactory)
     val relationshipStart = genRelationshipStart(entityFactory)

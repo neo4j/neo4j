@@ -255,7 +255,7 @@ public abstract class GraphDatabaseSettings
 
     @Description("Relationship count threshold for considering a node dense")
     public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
-    
+
     private static String[] availableCaches()
     {
         List<String> available = new ArrayList<>();

@@ -41,12 +41,10 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.StoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -54,28 +52,22 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
-import org.neo4j.kernel.ha.lock.LockableNode;
-import org.neo4j.kernel.ha.lock.LockableRelationship;
-import org.neo4j.kernel.impl.core.GraphProperties;
-import org.neo4j.kernel.impl.core.IndexLock;
-import org.neo4j.kernel.impl.core.SchemaLock;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.locking.IndexEntryLock;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.LEGACY_INDEX;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -99,7 +91,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         boolean isAccessible();
 
-        void acquireLock( LockGrabber grabber, Object... entities );
+        void acquireLock( LockGrabber grabber, Locks.ResourceType type, long[] resourceIds  );
 
         Transaction beginTx() throws SystemException, NotSupportedException;
 
@@ -108,8 +100,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         void suspendTransaction() throws SystemException;
 
         void resumeTransaction( Transaction transaction );
-
-        GraphProperties graphProperties();
 
         IdAllocation allocateIds( IdType idType );
 
@@ -231,13 +221,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     private Response<LockResult> acquireLock( RequestContext context,
-                                              LockGrabber lockGrabber, Object... entities )
+                                              LockGrabber lockGrabber,
+                                              Locks.ResourceType type,
+                                              long ... resourceIds )
     {
         assertCorrectEpoch( context );
         resumeTransaction( context );
         try
         {
-            spi.acquireLock( lockGrabber, entities );
+            spi.acquireLock( lockGrabber, type, resourceIds );
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
@@ -327,64 +319,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             transactions.remove( txId );
         }
-    }
-
-    @Override
-    public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes )
-    {
-        return acquireLock( context, READ_LOCK_GRABBER, (Object[])nodesById( nodes ) );
-    }
-
-    @Override
-    public Response<LockResult> acquireNodeWriteLock( RequestContext context, long... nodes )
-    {
-        return acquireLock( context, WRITE_LOCK_GRABBER, (Object[])nodesById( nodes ) );
-    }
-
-    @Override
-    public Response<LockResult> acquireRelationshipReadLock( RequestContext context,
-                                                             long... relationships )
-    {
-        return acquireLock( context, READ_LOCK_GRABBER, (Object[])relationshipsById( relationships ) );
-    }
-
-    @Override
-    public Response<LockResult> acquireRelationshipWriteLock( RequestContext context,
-                                                              long... relationships )
-    {
-        return acquireLock( context, WRITE_LOCK_GRABBER, (Object[])relationshipsById( relationships ) );
-    }
-
-    @Override
-    public Response<LockResult> acquireGraphReadLock( RequestContext context )
-    {
-        return acquireLock( context, READ_LOCK_GRABBER, spi.graphProperties() );
-    }
-
-    @Override
-    public Response<LockResult> acquireGraphWriteLock( RequestContext context )
-    {
-        return acquireLock( context, WRITE_LOCK_GRABBER, spi.graphProperties() );
-    }
-
-    private Node[] nodesById( long[] ids )
-    {
-        Node[] result = new Node[ids.length];
-        for ( int i = 0; i < ids.length; i++ )
-        {
-            result[i] = new LockableNode( ids[i] );
-        }
-        return result;
-    }
-
-    private Relationship[] relationshipsById( long[] ids )
-    {
-        Relationship[] result = new Relationship[ids.length];
-        for ( int i = 0; i < ids.length; i++ )
-        {
-            result[i] = new LockableRelationship( ids[i] );
-        }
-        return result;
     }
 
     @Override
@@ -511,58 +445,39 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     public static interface LockGrabber
     {
-        void grab( LockManager lockManager, TransactionState state, Object entity );
+        void grab( Statement statement, Locks.ResourceType type, long resourceId );
     }
 
-    private static LockGrabber READ_LOCK_GRABBER = new LockGrabber()
+    private static LockGrabber SHARED_LOCK_GRABBER = new LockGrabber()
     {
         @Override
-        public void grab( LockManager lockManager, TransactionState state, Object entity )
+        public void grab( Statement statement, Locks.ResourceType type, long resourceId )
         {
-            state.acquireReadLock( entity );
+            statement.readOperations().acquireShared( type, resourceId );
         }
     };
 
-    private static LockGrabber WRITE_LOCK_GRABBER = new LockGrabber()
+    private static LockGrabber EXCLUSIVE_LOCK_GRABBER = new LockGrabber()
     {
         @Override
-        public void grab( LockManager lockManager, TransactionState state, Object entity )
+        public void grab( Statement statement, Locks.ResourceType type, long resourceId )
         {
-            state.acquireWriteLock( entity );
+            statement.readOperations().acquireExclusive( type, resourceId );
         }
     };
 
     @Override
-    public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key )
+    public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long...
+            resourceIds )
     {
-        return acquireLock( context, READ_LOCK_GRABBER, new IndexLock( index, key ) );
+        return acquireLock( context, EXCLUSIVE_LOCK_GRABBER, type, resourceIds );
     }
 
     @Override
-    public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index,
-                                                       String key )
+    public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long...
+            resourceIds )
     {
-        return acquireLock( context, WRITE_LOCK_GRABBER, new IndexLock( index, key ) );
-    }
-
-    @Override
-    public Response<LockResult> acquireSchemaReadLock( RequestContext context )
-    {
-        return acquireLock( context, READ_LOCK_GRABBER, new SchemaLock() );
-    }
-
-    @Override
-    public Response<LockResult> acquireSchemaWriteLock( RequestContext context )
-    {
-        return acquireLock( context, WRITE_LOCK_GRABBER, new SchemaLock() );
-    }
-
-    @Override
-    public Response<LockResult> acquireIndexEntryWriteLock( RequestContext context, long labelId, long propertyKeyId,
-                                                            String propertyValue )
-    {
-        return acquireLock( context, WRITE_LOCK_GRABBER, new IndexEntryLock(
-                safeCastLongToInt( labelId ), safeCastLongToInt( propertyKeyId ), propertyValue ) );
+        return acquireLock( context, SHARED_LOCK_GRABBER, type, resourceIds );
     }
 
     @Override

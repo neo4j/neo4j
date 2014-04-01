@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -113,7 +112,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final PersistenceManager persistenceManager;
-    private final LockManager lockManager;
     private final UpdateableSchemaState schemaState;
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
@@ -134,7 +132,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyKeyTokenHolder propertyKeyTokenHolder,
                    LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-                   PersistenceManager persistenceManager, LockManager lockManager, UpdateableSchemaState schemaState,
+                   PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
                    IndexingService indexService, NodeManager nodeManager, NeoStore neoStore, PersistenceCache persistenceCache,
                    SchemaCache schemaCache, SchemaIndexProviderMap providerMap, LabelScanStore labelScanStore, boolean readOnly )
@@ -144,7 +142,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.labelTokenHolder = labelTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.persistenceManager = persistenceManager;
-        this.lockManager = lockManager;
         this.schemaState = schemaState;
         this.providerMap = providerMap;
         this.readOnly = readOnly;
@@ -184,8 +181,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         checkIfShutdown();
         return new KernelTransactionImplementation( statementOperations, readOnly,
                 schemaWriteGuard, labelScanStore, indexService, transactionManager, nodeManager,
-                schemaState, new LockHolderImpl( lockManager, getJTATransaction(), nodeManager ),
-                persistenceManager, providerMap, neoStore, getLegacyTxState(), hooks );
+                schemaState, persistenceManager, providerMap, neoStore, getLegacyTxState(), hooks );
     }
 
     @Override
@@ -261,7 +257,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( schemaState ) );
+                new SchemaStateConcern( schemaState ), null);
 
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
@@ -276,7 +272,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 parts.schemaWriteOperations() );
 
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null );
+                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null );
 
         // + Locking
         LockingStatementOperations lockingContext = new LockingStatementOperations(
@@ -284,7 +280,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
-        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext );
+        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext );
 
         return parts;
     }

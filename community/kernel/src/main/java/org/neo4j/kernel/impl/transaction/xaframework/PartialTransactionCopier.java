@@ -21,18 +21,17 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
  * During log rotation, any unfinished transactions in the current log need to be copied over to the
@@ -48,14 +47,12 @@ class PartialTransactionCopier
     private final LogExtractor.LogPositionCache positionCache;
     private final LogExtractor.LogLoader logLoader;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
-    private final ByteCounterMonitor monitor;
     private final DoesSomethingConsumer consumer;
 
     PartialTransactionCopier( ByteBuffer sharedBuffer, XaCommandReaderFactory commandReaderFactory,
                               XaCommandWriterFactory commandWriterFactory, StringLogger log,
                               LogExtractor.LogPositionCache positionCache, LogExtractor.LogLoader logLoader,
-                              LogEntryWriterv1 logEntryWriter,
-                              ArrayMap<Integer, LogEntry.Start> xidIdentMap, ByteCounterMonitor monitor )
+                              LogEntryWriterv1 logEntryWriter, ArrayMap<Integer, LogEntry.Start> xidIdentMap )
     {
         this.sharedBuffer = sharedBuffer;
         this.logEntryWriter = logEntryWriter;
@@ -65,11 +62,10 @@ class PartialTransactionCopier
         this.positionCache = positionCache;
         this.logLoader = logLoader;
         this.xidIdentMap = xidIdentMap;
-        this.monitor = monitor;
         consumer = new DoesSomethingConsumer();
     }
 
-    public void copy( FileChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
+    public void copy( StoreChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
     {
         LogDeserializer deserializer = new LogDeserializer( sharedBuffer, commandReaderFactory );
         consumer.init( targetLog, targetLogVersion );

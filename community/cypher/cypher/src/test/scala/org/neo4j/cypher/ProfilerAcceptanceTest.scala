@@ -90,30 +90,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "SimplePatternMatcher")
   }
 
-
-  test("tracks pattern matcher start items") {
-    //GIVEN
-    createNode()
-    val result: ExecutionResult = engine.profile("match (n:Person)-->(x) return x")
-
-    //WHEN THEN
-    assertDbHits(0)(result)("ColumnFilter")
-    assertDbHits(0)(result)("ColumnFilter", "TraversalMatcher")
-
-    val start = result.executionPlanDescription()
-      .asJava
-      .cd("TraversalMatcher")
-      .getArguments
-      .get("start")
-      .asInstanceOf[java.util.Map[String, Any]]
-      .asScala
-
-    assert( "Person" === start("label") )
-    assert( "NodeByLabel" === start("producer") )
-    assert( Seq("n") === start("identifiers").asInstanceOf[java.lang.Iterable[String]].asScala.toSeq )
-  }
-
-
   test("tracks merge node producers") {
     //GIVEN
     val result: ExecutionResult = engine.profile("merge (n:Person {id: 1})")

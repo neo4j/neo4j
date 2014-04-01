@@ -35,6 +35,7 @@
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>
+    <module>monitor-logging</module>
     <module>lucene-index</module>
     <module>graph-algo</module>
     <module>graph-matching</module>

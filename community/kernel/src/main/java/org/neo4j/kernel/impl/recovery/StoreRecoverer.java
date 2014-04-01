@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.recovery;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,6 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogRecoveryCheck;
 
@@ -88,7 +88,7 @@ public class StoreRecoverer
             return true;
         }
 
-        FileChannel logChannel = null;
+        StoreChannel logChannel = null;
         try
         {
             logChannel = fs.open( log, "r" );

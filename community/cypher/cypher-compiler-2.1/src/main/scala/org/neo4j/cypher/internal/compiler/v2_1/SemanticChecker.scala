@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.verifiers.HintVerifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
 import org.neo4j.cypher.SyntaxException
 
@@ -35,7 +34,6 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
     } else {
       val query = statement.asQuery
       query.verifySemantics()
-      HintVerifier.verify(query)
       semanticCheckMonitor.finishSemanticCheckSuccess(queryText)
     }
     semanticErrors.map {

@@ -29,8 +29,12 @@ import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
 import collection.mutable.{Map=>MutableMap}
 import scala.util.Random
+import org.scalatest.mock.MockitoSugar
 
-class SortPipeTest extends JUnitSuite {
+class SortPipeTest extends JUnitSuite with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test def emptyInIsEmptyOut() {
     val source = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = new SortPipe(source, List(SortItem(Identifier("x"), true)))

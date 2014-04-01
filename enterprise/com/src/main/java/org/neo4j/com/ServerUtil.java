@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.com.RequestContext.Tx;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -110,8 +111,7 @@ public class ServerUtil
         {
             try
             {
-                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(),
-                        ds.getXaContainer().getResourceManager().rotateLogicalLog() );
+                appliedTransactions[i++] = RequestContext.lastAppliedTx( ds.getName(), ds.rotateLogicalLog() );
             }
             catch ( IOException e )
             {
@@ -135,18 +135,25 @@ public class ServerUtil
                                                                 FileSystemAbstraction fs,
                                                                 BackupMonitor backupMonitor )
     {
+        logger.info( "Initiating log rotation and store copy" );
         File baseDir = getBaseDir( storeDir );
         RequestContext context = RequestContext.anonymous( rotateLogs( dsManager, kernelPanicEventGenerator, logger ) );
+        logger.info( "Log rotation done" );
         backupMonitor.finishedRotatingLogicalLogs();
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
+            logger.info( "Beginning file copy for store of datasource " + ds.getName() );
             copyStoreFiles( writer, fs, baseDir, temporaryBuffer, ds, backupMonitor );
             if ( includeLogicalLogs )
             {
+                logger.info( "Beginning logical log copy for datasource " + ds.getName() );
                 copyLogicalLogs( writer, fs, baseDir, temporaryBuffer, ds, backupMonitor );
+                logger.info( "Logical log copy for datasource " + ds.getName() + " done" );
             }
+            logger.info( "File copy for store of datasource " + ds.getName() + " done");
         }
+        logger.info( "Log rotation and store copy done" );
         return context;
     }
 
@@ -195,7 +202,7 @@ public class ServerUtil
             ByteBuffer temporaryBuffer, File storeFile, BackupMonitor backupMonitor ) throws IOException
     {
         backupMonitor.streamingFile( storeFile );
-        try ( FileChannel fileChannel = fs.open( storeFile, "r" ) )
+        try ( StoreChannel fileChannel = fs.open( storeFile, "r" ) )
         {
             writer.write( relativePath( baseDir, storeFile ), fileChannel, temporaryBuffer,
                     storeFile.length() > 0 );
@@ -318,16 +325,15 @@ public class ServerUtil
      * have. This way every response returned acts as an update for the slave.
      *
      * @param <T>      The type of the response
-     * @param graphDb  The graph database to use
      * @param context  The slave context
      * @param response The response being packed
-     * @param filter   A {@link Predicate} to apply on each txid, selecting only
+     * @param txFilter   A {@link Predicate} to apply on each txid, selecting only
      *                 those that evaluate to true
      * @return The response, packed with the latest transactions
      */
     // TODO update javadoc of ServerUtil.packResponse
     public static <T> Response<T> packResponse( StoreId storeId, XaDataSourceManager dsManager,
-                                                RequestContext context, T response, Predicate<Long> filter )
+                                                RequestContext context, T response, Predicate<Long> txFilter )
     {
         List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
         Set<String> resourceNames = new HashSet<>();
@@ -350,7 +356,7 @@ public class ServerUtil
                 }
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
                         dataSource, txEntry.getTxId() + 1, serverLastTx, stream,
-                        filter );
+                        txFilter );
                 logExtractors.add( logExtractor );
             }
             return new Response<>( response, storeId, createTransactionStream( resourceNames,

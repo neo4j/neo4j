@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class FoldConstantsTest extends CypherFunSuite {
-  import parser.ParserFixture._
+class FoldConstantsTest extends CypherFunSuite with RewriteTest {
+
+  val rewriterUnderTest: Rewriter = foldConstants
 
   test("solve literal expressions") {
     assertRewrite("RETURN 1+1 AS r", "RETURN 2 AS r")
@@ -38,13 +39,5 @@ class FoldConstantsTest extends CypherFunSuite {
     assertRewrite("MATCH n RETURN 12 * n.prop * 5 AS r", "MATCH n RETURN n.prop * 60 AS r")
     assertRewrite("MATCH n RETURN (12 * n.prop) * 5 AS r", "MATCH n RETURN n.prop * 60 AS r")
     assertRewrite("MATCH n RETURN 12 * (n.prop * 5) AS r", "MATCH n RETURN n.prop * 60 AS r")
-  }
-
-  private def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parser.parse(originalQuery)
-    val expected = parser.parse(expectedQuery)
-
-    val result = original.rewrite(bottomUp(foldConstants))
-    assert(result === expected)
   }
 }

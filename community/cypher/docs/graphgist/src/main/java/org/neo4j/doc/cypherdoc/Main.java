@@ -19,13 +19,13 @@
  */
 package org.neo4j.doc.cypherdoc;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 
 /**
  * Parses AsciiDoc files with some special markup to produce Cypher tutorials.
@@ -98,7 +98,7 @@ public class Main
                 {
                     throw new RuntimeException( String.format( "Failed while executing file: %s in the "
                                                                + "directory %s", fileInDir.getName(),
-                            destinationDir.getAbsolutePath() ) );
+                            destinationDir.getAbsolutePath() ), e );
                 }
             }
         }

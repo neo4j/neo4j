@@ -22,6 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.ExecutionResult
+
+trait PipeMonitor {
+  def startSetup(queryId: AnyRef, pipe: Pipe)
+  def stopSetup(queryId: AnyRef, pipe: Pipe)
+  def startStep(queryId: AnyRef, pipe: Pipe)
+  def stopStep(queryId: AnyRef, pipe: Pipe)
+}
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -30,10 +38,25 @@ import org.neo4j.helpers.ThisShouldNotHappenError
  * the execute the query.
  */
 trait Pipe {
+  self: Pipe =>
+
+  def monitor: PipeMonitor
+
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
-    val decoratedState = state.decorator.decorate(this, state)
-    val result = internalCreateResults(decoratedState)
-    state.decorator.decorate(this, result)
+    val decoratedState = state.decorator.decorate(self, state)
+    monitor.startSetup(state.queryId, self)
+    val innerResult = internalCreateResults(decoratedState)
+    val result = new Iterator[ExecutionContext] {
+      def hasNext = innerResult.hasNext
+      def next() = {
+        monitor.startStep(state.queryId, self)
+        val value = innerResult.next()
+        monitor.stopStep(state.queryId, self)
+        value
+      }
+    }
+    monitor.stopSetup(state.queryId, self)
+    state.decorator.decorate(self, result)
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
@@ -57,15 +80,17 @@ trait Pipe {
   def exists(pred: Pipe => Boolean): Boolean
 }
 
-case class NullPipe(symbols: SymbolTable = SymbolTable(),
-                    executionPlanDescription:PlanDescription = NullPlanDescription) extends Pipe {
+case class NullPipe(symbols: SymbolTable = SymbolTable())
+                   (implicit val monitor: PipeMonitor) extends Pipe {
   def internalCreateResults(state: QueryState) =
     Iterator(state.initialContext getOrElse ExecutionContext.empty)
 
   def exists(pred: Pipe => Boolean) = pred(this)
+
+  def executionPlanDescription: PlanDescription = new NullPlanDescription(this)
 }
 
-abstract class PipeWithSource(source: Pipe) extends Pipe {
+abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
   override def createResults(state: QueryState): Iterator[ExecutionContext] = {
     val sourceResult = source.createResults(state)
 

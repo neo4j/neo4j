@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -93,6 +95,7 @@ public class TestStandaloneLogExtractor
                 return new PhysicalLogNeoXaCommandWriter();
             }
         },
+        new Monitors().newMonitor( ByteCounterMonitor.class ),
         logEntryWriter, new File( storeDir ) );
         long expectedTxId = 2;
         while ( true )

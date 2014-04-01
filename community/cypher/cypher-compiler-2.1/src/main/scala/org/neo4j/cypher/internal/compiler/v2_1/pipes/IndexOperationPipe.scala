@@ -24,7 +24,7 @@ import commands._
 import symbols._
 import org.neo4j.cypher.SyntaxException
 
-class IndexOperationPipe(indexOp: IndexOperation) extends Pipe {
+class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val queryContext = state.query
 

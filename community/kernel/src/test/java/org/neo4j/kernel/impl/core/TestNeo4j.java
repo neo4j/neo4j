@@ -143,8 +143,8 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         // );
         // assertTrue( relCount <= nm.getHighestPossibleIdInUse(
         // Relationship.class ) );
-        Node n1 = nm.createNode();
-        Node n2 = nm.createNode();
+        Node n1 = nm.newNodeProxyById(nm.createNode());
+        Node n2 = nm.newNodeProxyById(nm.createNode());
         Relationship r1 = n1.createRelationshipTo( n2, MyRelTypes.TEST );
         // assertEquals( nodeCount + 2, nm.getNumberOfIdsInUse( Node.class ) );
         // assertEquals( relCount + 1, nm.getNumberOfIdsInUse(

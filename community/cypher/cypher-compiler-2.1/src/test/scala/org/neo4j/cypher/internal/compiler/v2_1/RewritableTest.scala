@@ -122,19 +122,6 @@ class RewritableTest extends CypherFunSuite {
     assert(result === Add(Val(99), Options(Seq((Val(99), Val(99)), (Val(99), Val(99))))))
   }
 
-  test("untilMatch should match and replace primitives and trees") {
-    val ast = Add(Val(8), Add(Val(2), Val(3)))
-
-    val result = ast.rewrite(untilMatched(Rewriter.lift {
-      case Val(_) =>
-        Val(1)
-      case Add(Val(x), Val(y)) =>
-        Val(x + y)
-    }))
-
-    assert(result === Add(Val(1), Val(5)))
-  }
-
   test("bottomUp should be identical when no rule matches") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 

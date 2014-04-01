@@ -19,29 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -49,21 +44,16 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 import org.neo4j.kernel.impl.util.RelIdIterator;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
 
 public class WritableTransactionState implements TransactionState
 {
     // Dependencies
-    private final LockManager lockManager;
+    private final Locks.Client locks;
     private final NodeManager nodeManager;
-    private final StringLogger log;
-    private final Transaction tx;
     private final RemoteTxHook txHook;
     private final TxIdGenerator txIdGenerator;
 
     // State
-    private List<LockElement> lockElements;
     private PrimitiveElement primitiveElement;
     private ResourceHolder neoStoreTransaction;
 
@@ -303,57 +293,19 @@ public class WritableTransactionState implements TransactionState
         }
     }
 
-    public WritableTransactionState( LockManager lockManager,
-            NodeManager nodeManager, Logging logging, Transaction tx, RemoteTxHook txHook, TxIdGenerator txIdGenerator )
+    public WritableTransactionState( Locks.Client locks,
+                                     NodeManager nodeManager, RemoteTxHook txHook, TxIdGenerator txIdGenerator )
     {
-        this.lockManager = lockManager;
+        this.locks = locks;
         this.nodeManager = nodeManager;
-        this.tx = tx;
         this.txHook = txHook;
         this.txIdGenerator = txIdGenerator;
-        this.log = logging.getMessagesLog( getClass() );
     }
 
     @Override
-    public LockElement acquireWriteLock( Object resource )
+    public Locks.Client locks()
     {
-        lockManager.getWriteLock( resource, tx );
-        LockElement lock = new LockElement( resource, tx, LockType.WRITE, lockManager );
-        addLockToTransaction( lock );
-        return lock;
-    }
-
-    @Override
-    public LockElement acquireReadLock( Object resource )
-    {
-        lockManager.getReadLock( resource, tx );
-        LockElement lock = new LockElement( resource, tx, LockType.READ, lockManager );
-        addLockToTransaction( lock );
-        return lock;
-    }
-
-    private void addLockToTransaction( LockElement lock )
-    {
-        boolean firstLock = false;
-        if ( lockElements == null )
-        {
-            lockElements = new ArrayList<>();
-            firstLock = true;
-        }
-        lockElements.add( lock );
-
-        if ( firstLock )
-        {
-            try
-            {
-                tx.registerSynchronization( new ReadOnlyTxReleaser() );
-            }
-            catch ( Exception e )
-            {
-                throw new TransactionFailureException(
-                        "Failed to register lock release synchronization hook", e );
-            }
-        }
+        return locks;
     }
 
     @Override
@@ -406,7 +358,7 @@ public class WritableTransactionState implements TransactionState
     @Override
     public void commit()
     {
-        releaseLocks();
+        locks.close();
     }
 
     @Override
@@ -418,38 +370,13 @@ public class WritableTransactionState implements TransactionState
     @Override
     public void rollback()
     {
-        applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
-        releaseLocks();
-    }
-
-    private void releaseLocks()
-    {
-        if ( lockElements != null )
+        try
         {
-            Collection<LockElement> releaseFailures = null;
-            Exception releaseException = null;
-            for ( LockElement lockElement : lockElements )
-            {
-                try
-                {
-                    lockElement.releaseIfAcquired();
-                }
-                catch ( Exception e )
-                {
-                    releaseException = e;
-                    if ( releaseFailures == null )
-                    {
-                        releaseFailures = new ArrayList<>();
-                    }
-                    releaseFailures.add( lockElement );
-                }
-            }
-
-            if ( releaseException != null )
-            {
-                log.warn( "Unable to release locks: " + releaseFailures + ". Example of exception:" +
-                        releaseException );
-            }
+            applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
+        }
+        finally
+        {
+            locks.close();
         }
     }
 
@@ -792,21 +719,7 @@ public class WritableTransactionState implements TransactionState
     @Override
     public boolean hasChanges()
     {
-        return primitiveElement != null || lockElements != null;
-    }
-
-    private class ReadOnlyTxReleaser implements Synchronization
-    {
-        @Override
-        public void beforeCompletion()
-        {
-        }
-
-        @Override
-        public void afterCompletion( int status )
-        {
-            releaseLocks();
-        }
+        return primitiveElement != null;
     }
 
     @Override

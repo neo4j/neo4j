@@ -302,7 +302,9 @@ public class TestMasterCommittingAtSlave
                         {
                             return new PhysicalLogNeoXaCommandWriter();
                         }
-                    }, new LogEntryWriterv1(), new Monitors().newMonitor( ByteCounterMonitor.class ), startTxId );
+                    },
+                    new Monitors().newMonitor( ByteCounterMonitor.class ),
+                    new LogEntryWriterv1(), startTxId );
         }
 
         @Override

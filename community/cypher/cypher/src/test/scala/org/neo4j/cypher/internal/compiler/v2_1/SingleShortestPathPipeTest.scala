@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import commands._
-import pipes.{ShortestPathPipe, FakePipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ShortestPathPipe, FakePipe}
 import symbols._
 import org.neo4j.cypher.GraphDatabaseJUnitSuite
 import org.neo4j.graphdb.{Direction, Node, Path}
@@ -28,7 +28,7 @@ import org.junit.Test
 import collection.mutable.Map
 
 class SingleShortestPathPipeTest extends GraphDatabaseJUnitSuite {
-
+  private implicit val monitor = mock[PipeMonitor]
   val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
 
   def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {

@@ -23,27 +23,25 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-
-import static java.nio.ByteBuffer.allocateDirect;
-
-import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.readIntoBuffer;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class LegacyRelationshipStoreReader implements Closeable
 {
+    public interface Visitor
+    {
+        void visit( long relId, RelationshipRecord record );
+    }
+
     public static final String FROM_VERSION = "RelationshipStore " + LegacyStore.LEGACY_VERSION;
     public static final int RECORD_SIZE = 33;
 
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
     private final long maxId;
-    private final ByteBuffer buffer = allocateDirect( RECORD_SIZE );
 
     public LegacyRelationshipStoreReader( FileSystemAbstraction fs, File fileName ) throws IOException
     {
@@ -57,29 +55,35 @@ public class LegacyRelationshipStoreReader implements Closeable
         return maxId;
     }
 
-    public Iterator<RelationshipRecord> readRelationshipStore()
+    public void accept( Visitor visitor ) throws IOException
     {
-        return new PrefetchingIterator<RelationshipRecord>()
-        {
-            long id = 0;
+        ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
 
-            @Override
-            protected RelationshipRecord fetchNextOrNull()
+        long position = 0, fileSize = fileChannel.size();
+        while(position < fileSize)
+        {
+            int recordOffset = 0;
+            buffer.clear();
+            fileChannel.read( buffer, position );
+            // Visit each record in the page
+            while(recordOffset < buffer.capacity() && (recordOffset + position) < fileSize)
             {
-                RelationshipRecord record = null;
-                while ( record == null && id <= maxId )
-                {
-                    record = getRecord( id++ );
-                }
-                return record;
+                buffer.position(recordOffset);
+                long id = (position + recordOffset) / RECORD_SIZE;
+
+                visitor.visit( id, readRecord( buffer, id ) );
+
+                recordOffset += RECORD_SIZE;
             }
-        };
+
+            position += buffer.capacity()   ;
+        }
     }
-    
-    public RelationshipRecord getRecord( long id )
+
+    private RelationshipRecord readRecord( ByteBuffer buffer, long id )
     {
         RelationshipRecord record;
-        readIntoBuffer( fileChannel, buffer, id*RECORD_SIZE, RECORD_SIZE );
+
         long inUseByte = buffer.get();
 
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();

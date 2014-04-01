@@ -26,7 +26,6 @@ import pipes._
 import profiler.Profiler
 import org.neo4j.cypher.{CypherException, PeriodicCommitInOpenTransactionException}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Planner}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{UpdateCountingQueryContext, CSVResources, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.PeriodicCommitQuery
@@ -35,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.{EagerMappingBuilder, MappingBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -46,33 +46,23 @@ case class PeriodicCommitInfo(size: Option[Long]) {
 
 trait NewQueryPlanSuccessRateMonitor {
   def newQuerySeen(queryText: String, ast:Statement)
-  def unableToHandleQuery(queryText: String, ast:Statement)
+  def unableToHandleQuery(queryText: String, ast:Statement, origin: CantHandleQueryException)
+}
+
+trait PipeBuilder {
+  def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo
 }
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService,
-                           monitor: NewQueryPlanSuccessRateMonitor,
-                           pipeBuilder: PipeBuilder = new PipeBuilder,
-                           execPlanBuilder: Planner = new Planner()) extends PatternGraphBuilder {
+                           pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
 
   def build(planContext: PlanContext, inputQuery: ParsedQuery): ExecutionPlan = {
-    val ast = inputQuery.statement
     val abstractQuery = inputQuery.abstractQuery
-    val semanticQuery = inputQuery.semanticQuery
 
-    val PipeInfo(p, isUpdating, periodicCommitInfo) = try {
-      val queryText = abstractQuery.getQueryText
-      try {
-        monitor.newQuerySeen(queryText, ast)
-        execPlanBuilder.producePlan(ast, semanticQuery)(planContext)
-      } catch {
-        case _: CantHandleQueryException =>
-          monitor.unableToHandleQuery(queryText, ast)
-          pipeBuilder.buildPipes(planContext, abstractQuery)
-      }
-    }
+    val PipeInfo(pipe, isUpdating, periodicCommitInfo) = pipeBuilder.producePlan(inputQuery, planContext)
 
-    val columns = getQueryResultColumns(abstractQuery, p.symbols)
-    val func = getExecutionPlanFunction(p, columns, periodicCommitInfo, isUpdating)
+    val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
+    val func = getExecutionPlanFunction(pipe, columns, periodicCommitInfo, isUpdating, abstractQuery.getQueryText)
 
     new ExecutionPlan {
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
@@ -107,7 +97,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
   private def getExecutionPlanFunction(pipe: Pipe,
                                        columns: List[String],
                                        periodicCommit: Option[PeriodicCommitInfo],
-                                       updating: Boolean) =
+                                       updating: Boolean,
+                                       queryId: AnyRef) =
     (queryContext: QueryContext, params: Map[String, Any], profile: Boolean) => {
 
       val builder = new ExecutionWorkflowBuilder(queryContext)
@@ -123,7 +114,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       if (profile)
         builder.setPipeDecorator(new Profiler())
 
-      builder.runWithQueryState(graph, params) {
+      builder.runWithQueryState(graph, queryId, params) {
         state =>
           val results = pipe.createResults(state)
           val closingIterator = builder.buildClosingIterator(results)
@@ -170,9 +161,9 @@ class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
   def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean) =
     () => pipeDecorator.decorate(pipe.executionPlanDescription, isProfileReady)
 
-  def runWithQueryState[T](graph: GraphDatabaseService, params: Map[String, Any])(f: QueryState => T) = {
+  def runWithQueryState[T](graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any])(f: QueryState => T) = {
     taskCloser.addTask(queryContext.close)
-    val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator)
+    val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator, queryId = queryId)
     try {
       try {
         f(state)

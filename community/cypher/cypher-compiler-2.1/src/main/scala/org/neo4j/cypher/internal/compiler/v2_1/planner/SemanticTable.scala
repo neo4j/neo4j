@@ -24,4 +24,5 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
 
 case class SemanticTable(types: IdentityMap[Expression, ExpressionTypeInfo] = IdentityMap.empty) {
   def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
+  def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
 }

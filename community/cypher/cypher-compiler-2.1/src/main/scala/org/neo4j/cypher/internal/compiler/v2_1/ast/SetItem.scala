@@ -37,7 +37,17 @@ case class SetLabelItem(expression: Expression, labels: Seq[LabelName])(val posi
     expression.expectType(CTNode.covariant)
 }
 
-case class SetPropertiesFromMapItem(identifier: Identifier, expression: Expression)(val position: InputPosition) extends SetItem {
+case class SetExactPropertiesFromMapItem(identifier: Identifier, expression: Expression)
+                                        (val position: InputPosition) extends SetItem {
+  def semanticCheck =
+    identifier.semanticCheck(Expression.SemanticContext.Simple) then
+    identifier.expectType(CTNode.covariant | CTRelationship.covariant) then
+    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.expectType(CTMap.covariant)
+}
+
+case class SetIncludingPropertiesFromMapItem(identifier: Identifier, expression: Expression)
+                                        (val position: InputPosition) extends SetItem {
   def semanticCheck =
     identifier.semanticCheck(Expression.SemanticContext.Simple) then
     identifier.expectType(CTNode.covariant | CTRelationship.covariant) then

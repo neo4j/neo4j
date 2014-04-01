@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.EmptyResultPipe
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, EmptyResultPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 /**
  * This builder should make sure that the execution result is consumed, even if the user didn't ask for any results
  */
 class EmptyResultBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val resultPipe = new EmptyResultPipe(plan.pipe)
 
     plan.copy(pipe = resultPipe)
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
 
     val noSortingLeftToDo = q.sort.isEmpty

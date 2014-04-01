@@ -25,6 +25,14 @@ o Add the function split(...)
 o Reading a non-existent property from a map returns null rather than failing
 o MERGE will choose a direction when it has to create a relationship if you use an undirected relationship pattern
 
+Kernel:
+o Fixes an issue with tx log reading in severely damaged log files.
+o Fixes a JVM deadlock issue between committing and a reading thread
+o Can now handle more gracefully a larger set of failed index states
+
+Server:
+o Fixes github issues #1872, #961 that deal with Content-Encoding headers
+
 2.0.1 (2014-01-04)
 ------------------
 Kernel:

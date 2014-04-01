@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{FilterPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, FilterPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 class FilterBuilder extends PlanBuilder {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
@@ -64,6 +65,6 @@ class FilterBuilder extends PlanBuilder {
     case _                         => false
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
     plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
 }

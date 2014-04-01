@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -118,6 +117,9 @@ import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -127,9 +129,6 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.LockManagerImpl;
-import org.neo4j.kernel.impl.transaction.RagManager;
 import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
@@ -163,7 +162,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
+import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -198,6 +197,9 @@ public abstract class InternalAbstractGraphDatabase
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
         public static final Setting<File> logical_log = GraphDatabaseSettings.logical_log;
+
+        // Kept here to have it not be publicly documented.
+        public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -227,7 +229,7 @@ public abstract class InternalAbstractGraphDatabase
     protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
     protected XaDataSourceManager xaDataSourceManager;
-    protected LockManager lockManager;
+    protected Locks lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected NioNeoDbPersistenceSource persistenceSource;
     protected PersistenceManager persistenceManager;
@@ -275,7 +277,7 @@ public abstract class InternalAbstractGraphDatabase
                                              Iterable<CacheProvider> cacheProviders,
                                              Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        config.registerSettingsClasses( getSettingsClasses( kernelExtensions, cacheProviders ));
+        config.registerSettingsClasses( getSettingsClasses( kernelExtensions, cacheProviders ) );
 
         this.config = config;
         this.loggingProvider = loggingProvider;
@@ -695,14 +697,14 @@ public abstract class InternalAbstractGraphDatabase
                 }
 
                 @Override
-                public Node createNode()
+                public long createNode()
                 {
                     guard.check();
                     return super.createNode();
                 }
 
                 @Override
-                public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode,
+                public long createRelationship( Node startNodeProxy, NodeImpl startNode,
                                                         Node endNode, long relationshipTypeId )
                 {
                     guard.check();
@@ -744,14 +746,14 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public Node createNode()
+            public long createNode()
             {
                 guard.check();
                 return super.createNode();
             }
 
             @Override
-            public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode,
+            public long createRelationship( Node startNodeProxy, NodeImpl startNode,
                                                     Node endNode, long relationshipTypeId )
             {
                 guard.check();
@@ -897,9 +899,36 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultIdGeneratorFactory();
     }
 
-    protected LockManager createLockManager()
+    protected Locks createLockManager()
     {
-        return new LockManagerImpl( new RagManager() );
+        String key = config.get( Configuration.lock_manager );
+        for ( Locks.Factory candidate : Service.load(Locks.Factory.class) )
+        {
+            String candidateId = candidate.getKeys().iterator().next();
+            if( candidateId.equals( key ))
+            {
+                return candidate.newInstance( ResourceTypes.values() );
+            }
+            else if(key.equals( "" ))
+            {
+                logging.getMessagesLog( InternalAbstractGraphDatabase.class )
+                        .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
+                return candidate.newInstance( ResourceTypes.values() );
+            }
+        }
+
+        if( key.equals( "community" ) )
+        {
+            return new CommunityLockManger();
+        }
+        else if(key.equals( "" ))
+        {
+            logging.getMessagesLog( InternalAbstractGraphDatabase.class )
+                    .info( "No locking implementation specified, defaulting to 'community'" );
+            return new CommunityLockManger();
+        }
+
+        throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
     }
 
     protected Logging createLogging()
@@ -950,11 +979,11 @@ public abstract class InternalAbstractGraphDatabase
         {
             if ( transactionRunning() )
             {
-                return new PlaceboTransaction( persistenceManager, txManager, txManager.getTransactionState() );
+                return new PlaceboTransaction( txManager, statementContextProvider );
             }
 
             txManager.begin( forceMode );
-            return new TopLevelTransaction( persistenceManager, txManager, txManager.getTransactionState() );
+            return new TopLevelTransaction( txManager, statementContextProvider );
         }
         catch ( SystemException e )
         {
@@ -1238,7 +1267,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( txManager );
             }
-            else if ( LockManager.class.isAssignableFrom( type ) && type.isInstance( lockManager ) )
+            else if ( Locks.class.isAssignableFrom( type ) && type.isInstance( lockManager ) )
             {
                 // Locks used to ensure pessimistic concurrency control between transactions
                 return type.cast( lockManager );

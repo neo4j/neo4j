@@ -309,12 +309,6 @@ terms of the relevant Commercial Agreement.
       <groupId>org.neo4j.doc</groupId>
       <artifactId>neo4j-manual</artifactId>
       <version>${neo4j.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.doc</groupId>
-      <artifactId>neo4j-manual</artifactId>
-      <version>${neo4j.version}</version>
       <classifier>manpages</classifier>
     </dependency>
     <dependency>

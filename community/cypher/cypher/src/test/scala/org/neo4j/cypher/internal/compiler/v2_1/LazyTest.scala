@@ -39,9 +39,6 @@ import collection.JavaConverters._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.kernel.impl.api.OperationsFacade
-import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.NewQueryPlanSuccessRateMonitor
-import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserMonitor
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
 
@@ -50,6 +47,8 @@ class LazyTest extends ExecutionEngineFunSuite {
   var aNode: Node = null
   var bNode: Node = null
   var cNode: Node = null
+
+  private implicit val pipeMonitor = mock[PipeMonitor]
 
   override protected def initTest() {
     super.initTest()
@@ -185,16 +184,11 @@ class LazyTest extends ExecutionEngineFunSuite {
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
-    val monitors = mock[Monitors]
+    val monitors = new org.neo4j.kernel.monitoring.Monitors()
 
     val fakeDataStatement = mock[OperationsFacade]
     val fakeReadStatement = mock[ReadOperations]
     val fakeStatement = mock[Statement]
-
-    when(monitors.newMonitor(classOf[NewQueryPlanSuccessRateMonitor], "compiler2.1")).thenReturn(mock[NewQueryPlanSuccessRateMonitor])
-    when(monitors.newMonitor(classOf[SemanticCheckMonitor], "compiler2.1")).thenReturn(mock[SemanticCheckMonitor])
-    when(monitors.newMonitor(classOf[AstRewritingMonitor], "compiler2.1")).thenReturn(mock[AstRewritingMonitor])
-    when(monitors.newMonitor(classOf[ParserMonitor], "compiler2.1")).thenReturn(mock[ParserMonitor])
 
     when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.instance()).thenReturn(fakeStatement)
@@ -203,15 +197,13 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)
     when(dependencies.resolveDependency(classOf[ThreadToStatementContextBridge])).thenReturn(bridge)
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
-    when(dependencies.resolveDependency(classOf[Monitors])).thenReturn(monitors)
+    when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(
-      new Answer[(LRUCache[String, (ExecutionPlan, Map[String, Any])], Compiler)]() {
-      def answer(invocation: InvocationOnMock) = {
-        (cache, new Compiler(fakeGraph, monitors, CypherVersion.v2_1))
-      }
+      new Answer[LRUCache[String, (ExecutionPlan, Map[String, Any])]]() {
+        def answer(invocation: InvocationOnMock) = { cache }
     })
 
     val engine = new ExecutionEngine(fakeGraph)

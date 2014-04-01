@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
-import org.neo4j.kernel.impl.transaction.LockException;
+import org.neo4j.kernel.impl.locking.community.LockException;
 
 /**
  * Makes a {@link PersistenceWindow} "lockable" meaning it can be locked by a
@@ -31,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.LockException;
  */
 public abstract class LockableWindow implements PersistenceWindow
 {
-    private final FileChannel fileChannel;
+    private final StoreChannel fileChannel;
 
     private Thread lockingThread = null;
     private final LinkedList<LockElement> waitingThreadList = 
@@ -42,7 +41,7 @@ public abstract class LockableWindow implements PersistenceWindow
 
     private boolean isDirty = false;
 
-    LockableWindow( FileChannel fileChannel )
+    LockableWindow( StoreChannel fileChannel )
     {
         this.fileChannel = fileChannel;
     }
@@ -52,13 +51,13 @@ public abstract class LockableWindow implements PersistenceWindow
         return position() <= position && position < position() + size();
     }
 
-    FileChannel getFileChannel()
+    StoreChannel getFileChannel()
     {
         return fileChannel;
     }
 
     /**
-     * Writes out any changes to the underlying {@link FileChannel} and is then
+     * Writes out any changes to the underlying {@link StoreChannel} and is then
      * considered unusable.
      */
     protected final void writeOutAndClose()

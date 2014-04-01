@@ -20,15 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{Query, Union}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{DistinctPipe, UnionPipe, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, DistinctPipe, UnionPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 
 
-class UnionBuilder(queryBuilder: {def buildQuery(q: Query, context:PlanContext):  PipeInfo}) {
-  def buildUnionQuery(union: Union, context:PlanContext): PipeInfo = {
+trait QueryBuilder {
+  def buildQuery(q: Query, context:PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo
+}
+
+class UnionBuilder(queryBuilder: QueryBuilder) {
+  def buildUnionQuery(union: Union, context:PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo = {
     checkQueriesHaveSameColumns(union)
 
     val combined = union.queries.map( q => queryBuilder.buildQuery(q, context))

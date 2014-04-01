@@ -28,6 +28,7 @@ trait FilteringExpression extends Expression {
   def identifier: Identifier
   def expression: Expression
   def innerPredicate: Option[Expression]
+  override def arguments = Seq(expression)
 
   def semanticCheck(ctx: SemanticContext) =
     expression.semanticCheck(ctx) then

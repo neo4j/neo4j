@@ -287,6 +287,36 @@ public abstract class XaDataSource implements Lifecycle
     }
 
     /**
+     * Should return a log writer that remains usable after this {@link XaDataSource} has been shut down.
+     * This log writer is guaranteed to not be used against any existing store locations while this data source
+     * is running.
+     */
+    public LogBufferFactory createLogBufferFactory()
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+    }
+
+    /**
      * Returns previous value
      */
     public boolean setRecovered( boolean recovered )

@@ -23,11 +23,11 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
@@ -138,10 +139,10 @@ public class LegacyStore implements Closeable
     {
         byte[] trailer = UTF8.encode( versionTrailer );
         long fileSize = 0;
-        try ( FileChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
+        try ( StoreChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
         {
             fileSize = fileChannel.size();
-            fileChannel.position( fileChannel.size()-trailer.length );
+            fileChannel.position( fileChannel.size() - trailer.length );
             fileChannel.write( ByteBuffer.wrap( trailer ) );
         }
         catch ( IllegalArgumentException e )
@@ -250,7 +251,7 @@ public class LegacyStore implements Closeable
         return relStoreReader;
     }
 
-    static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, long atPosition, int nrOfBytes )
+    static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, long atPosition, int nrOfBytes )
     {
         try
         {
@@ -263,7 +264,7 @@ public class LegacyStore implements Closeable
         }
     }
 
-    static void readIntoBuffer( FileChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
+    static void readIntoBuffer( StoreChannel fileChannel, ByteBuffer buffer, int nrOfBytes )
     {
         buffer.clear();
         buffer.limit( nrOfBytes );
@@ -276,5 +277,16 @@ public class LegacyStore implements Closeable
             throw new RuntimeException( e );
         }
         buffer.flip();
+    }
+
+    public void copyLegacyIndexStoreFile( File toDirectory ) throws IOException
+    {
+        File legacyDirectory = storageFileName.getParentFile();
+        File fromFile = new File( legacyDirectory, IndexStore.INDEX_DB_FILE_NAME );
+        if ( fromFile.exists() )
+        {
+            File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
+            fs.copyFile( fromFile, toFile );
+        }
     }
 }

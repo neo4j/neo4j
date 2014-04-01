@@ -70,7 +70,7 @@ public class NeoStoreTransactionContext
         propertyTraverser = new PropertyTraverser();
         propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
-        relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore );
+        relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter);
     }
 
@@ -129,7 +129,7 @@ public class NeoStoreTransactionContext
     public void bind( TransactionState txState )
     {
         this.txState = txState;
-        locker.setTransactionState( txState );
+        locker.setLockClient( txState.locks() );
     }
 
     public void close()
@@ -137,7 +137,7 @@ public class NeoStoreTransactionContext
         recordChangeSet.close();
         commandSet.close();
 
-        locker.setTransactionState( null );
+        locker.setLockClient( null );
         txState = null;
         supplier.release( this );
     }

@@ -26,7 +26,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,6 +36,7 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -147,7 +147,7 @@ public class TestDynamicStore
         try
         {
             createEmptyStore( dynamicStoreFile(), 30 );
-            FileChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
+            StoreChannel fileChannel = fs.get().open( dynamicStoreFile(), "rw" );
             fileChannel.truncate( fileChannel.size() - 2 );
             fileChannel.close();
             DynamicArrayStore store = newStore();

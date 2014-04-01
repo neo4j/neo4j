@@ -102,7 +102,13 @@ public class TestJetty9WebServer
         // TODO: This is a really poor test, but does not feel worth re-visiting right now since we're removing the
         // guard in subsequent releases.
     }
-    
+
+    @Test
+    public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
+    {
+        new Jetty9WebServer().stop();
+    }
+
     @Rule
     public Mute mute = muteAll();
 

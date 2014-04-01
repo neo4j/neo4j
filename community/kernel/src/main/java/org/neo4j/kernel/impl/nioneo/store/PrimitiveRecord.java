@@ -22,7 +22,11 @@ package org.neo4j.kernel.impl.nioneo.store;
 public abstract class PrimitiveRecord extends Abstract64BitRecord
 {
     private long nextProp;
-    private final long committedNextProp;
+    private long committedNextProp;
+
+    public PrimitiveRecord()
+    {
+    }
 
     public PrimitiveRecord( long id, long nextProp )
     {

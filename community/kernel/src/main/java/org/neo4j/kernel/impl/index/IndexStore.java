@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -74,7 +74,7 @@ public class IndexStore extends LifecycleAdapter
             return;
         }
         
-        FileChannel channel = null;
+        StoreChannel channel = null;
         try
         {
             channel = fileSystem.open( fileToReadFrom, "r" );
@@ -114,7 +114,7 @@ public class IndexStore extends LifecycleAdapter
         read();
     }
     
-    private Map<String, Map<String, String>> readMap( FileChannel channel,
+    private Map<String, Map<String, String>> readMap( StoreChannel channel,
             Map<String, Map<String, String>> map, Integer sizeOrTillEof ) throws IOException
     {
         for ( int i = 0; sizeOrTillEof == null || i < sizeOrTillEof; i++ )
@@ -159,7 +159,7 @@ public class IndexStore extends LifecycleAdapter
         return array != null ? readNextInt( channel ) : null;
     }
 
-    private void close( FileChannel channel )
+    private void close( StoreChannel channel )
     {
         if ( channel != null )
         {
@@ -282,7 +282,7 @@ public class IndexStore extends LifecycleAdapter
     
     private void write( File file )
     {
-        FileChannel channel = null;
+        StoreChannel channel = null;
         try
         {
             channel = fileSystem.open( file, "rw" );
@@ -302,7 +302,7 @@ public class IndexStore extends LifecycleAdapter
         }
     }
 
-    private void writeMap( FileChannel channel, Map<String, Map<String, String>> map ) throws IOException
+    private void writeMap( StoreChannel channel, Map<String, Map<String, String>> map ) throws IOException
     {
         IoPrimitiveUtils.writeInt( channel, buffer( 4 ), map.size() );
         for ( Map.Entry<String, Map<String, String>> entry : map.entrySet() )
@@ -317,12 +317,12 @@ public class IndexStore extends LifecycleAdapter
         }
     }
 
-    private void writeInt( FileChannel channel, int value ) throws IOException
+    private void writeInt( StoreChannel channel, int value ) throws IOException
     {
         IoPrimitiveUtils.writeInt( channel, buffer( 4 ), value );
     }
     
-    private void writeString( FileChannel channel, String value ) throws IOException
+    private void writeString( StoreChannel channel, String value ) throws IOException
     {
         IoPrimitiveUtils.writeLengthAndString( channel, buffer( 200 ), value );
     }

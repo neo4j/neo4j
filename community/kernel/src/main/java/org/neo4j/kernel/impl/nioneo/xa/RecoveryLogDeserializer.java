@@ -22,15 +22,15 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
-public class RecoveryLogDeserializer implements LogReader<FileChannel>
+public class RecoveryLogDeserializer implements LogReader<StoreChannel>
 {
     private final VersionAwareLogEntryReader logEntryReader;
 
@@ -39,16 +39,16 @@ public class RecoveryLogDeserializer implements LogReader<FileChannel>
         logEntryReader = new VersionAwareLogEntryReader( scratch, commandReaderFactory );
     }
 
-    public Cursor<LogEntry, IOException> cursor( FileChannel channel )
+    public Cursor<LogEntry, IOException> cursor( StoreChannel channel )
     {
         return new RecoveryCursor( channel );
     }
 
     private class RecoveryCursor implements Cursor<LogEntry, IOException>
     {
-        private final FileChannel channel;
+        private final StoreChannel channel;
 
-        private RecoveryCursor( FileChannel channel )
+        private RecoveryCursor( StoreChannel channel )
         {
             this.channel = channel;
         }

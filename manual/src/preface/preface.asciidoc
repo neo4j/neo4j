@@ -35,10 +35,6 @@ There's other documentation resources besides the manual as well:
 * Neo4j GraphGist, an online tool for creating interactive web pages with executable Cypher statements: http://gist.neo4j.org/.
 * The main Neo4j site at http://www.neo4j.org/ is a good starting point to learn about Neo4j.
 
-ifndef::nonhtmloutput[]
-For a PDF version of the manual, see http://docs.neo4j.org/.
-endif::nonhtmloutput[]
-
 _Who should read this?_
 
 The topics should be relevant to architects, administrators, developers and operations personnel.

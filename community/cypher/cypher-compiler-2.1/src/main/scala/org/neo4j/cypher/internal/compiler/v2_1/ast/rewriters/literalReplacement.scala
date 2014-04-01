@@ -40,9 +40,9 @@ object literalReplacement {
     case _: ast.Clause | _: ast.PeriodicCommitHint =>
       (acc, _) => acc
     case n: ast.NodePattern =>
-      (acc, _) => n.properties.foldt(acc)(literalMatcher)
+      (acc, _) => n.properties.treeFold(acc)(literalMatcher)
     case r: ast.RelationshipPattern =>
-      (acc, _) => r.properties.foldt(acc)(literalMatcher)
+      (acc, _) => r.properties.treeFold(acc)(literalMatcher)
     case l: ast.StringLiteral =>
       (acc, _) => acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position))
     case l: ast.IntegerLiteral =>
@@ -54,17 +54,17 @@ object literalReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    val containsParameter: Boolean = term.fold(false) {
+    val containsParameter: Boolean = term.treeFold(false) {
       case term: Parameter =>
-        (acc: Boolean) => true
+        (acc, _) => true
       case _ =>
-        identity
+        (acc, children) => if (acc) true else children(acc)
     }
 
     if (containsParameter) {
       (Rewriter.noop, Map.empty)
     } else {
-      val replaceableLiterals = term.foldt(IdentityMap.empty: LiteralReplacements)(literalMatcher)
+      val replaceableLiterals = term.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
 
       val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
         case (l, p) => (p.name, l.value)

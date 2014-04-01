@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols.{SymbolTable, CypherType}
 import collection.Map
+import org.scalatest.mock.MockitoSugar
 
-class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe {
+class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, CypherType)*) extends Pipe with MockitoSugar {
 
   def this(data: Traversable[Map[String, Any]], identifiers: (String, CypherType)*) = this(data.toIterator, identifiers:_*)
 
@@ -34,4 +35,6 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
   def executionPlanDescription = PlanDescription(this, "Fake")
 
   def exists(pred: Pipe => Boolean) = ???
+
+  val monitor: PipeMonitor = mock[PipeMonitor]
 }

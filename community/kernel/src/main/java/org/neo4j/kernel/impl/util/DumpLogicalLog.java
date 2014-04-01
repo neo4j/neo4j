@@ -28,12 +28,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
@@ -42,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
@@ -61,7 +60,7 @@ public class DumpLogicalLog
         {
             logsFound++;
             out.println( "=== " + fileName + " ===" );
-            FileChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
+            StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
             ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
                     + Xid.MAXBQUALSIZE * 10 );
             long logVersion, prevLastCommittedTx;

@@ -146,7 +146,7 @@ public abstract class Bootstrapper
         }
         catch ( Exception e )
         {
-            log.error( "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ",
+            log.error( e, "Failed to cleanly shutdown Neo Server on port [%d], database [%s]. Reason [%s] ",
             		configurator.configuration().getInt(Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT), location, e.getMessage() );
             return 1;
         }

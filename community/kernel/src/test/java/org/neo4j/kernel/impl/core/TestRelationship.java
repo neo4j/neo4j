@@ -19,30 +19,34 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.impl.MyRelTypes.TEST;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
@@ -818,7 +822,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         Node node = getGraphDb().createNode();
         Node otherNode = getGraphDb().createNode();
-        RelationshipType[] types = new RelationshipType[] {withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )}; 
+        RelationshipType[] types = new RelationshipType[] {withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )};
         int count = 30; // 30*4 > 100 (rel grabSize)
         for ( int i = 0; i < types.length*count; i++ )
         {
@@ -843,12 +847,12 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( 1, loopCount );
         assertEquals( count, delCount );
     }
-    
+
     @Test
     public void getAllRelationships() throws Exception
     {
         Set<Relationship> existingRelationships = addToCollection( at( getGraphDb() ).getAllRelationships(), new HashSet<Relationship>() );
-        
+
         Set<Relationship> createdRelationships = new HashSet<>();
         Node node = getGraphDb().createNode();
         for ( int i = 0; i < 100; i++ )
@@ -856,11 +860,11 @@ public class TestRelationship extends AbstractNeo4jTestCase
             createdRelationships.add( node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST ) );
         }
         newTransaction();
-        
+
         Set<Relationship> allRelationships = new HashSet<>();
         allRelationships.addAll( existingRelationships );
         allRelationships.addAll( createdRelationships );
-        
+
         int count = 0;
         for ( Relationship rel : at( getGraphDb() ).getAllRelationships() )
         {
@@ -869,7 +873,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
         assertEquals( allRelationships.size(), count );
     }
-    
+
     @Test
     public void createAndClearCacheBeforeCommit()
     {
@@ -879,7 +883,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         clearCache();
         assertEquals( 1, IteratorUtil.count( node.getRelationships() ) );
     }
-    
+
     @Test
     public void setPropertyAndClearCacheBeforeCommit() throws Exception
     {
@@ -902,5 +906,35 @@ public class TestRelationship extends AbstractNeo4jTestCase
 
         // then
         assertEquals( 1, relationships );
+    }
+
+    @Test
+    public void shouldLoadAllRelationships() throws Exception
+    {
+        // GIVEN
+        GraphDatabaseAPI db = getGraphDbAPI();
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            for ( int i = 0; i < 112; i++ )
+            {
+                node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+                db.createNode().createRelationshipTo( node, MyRelTypes.TEST );
+            }
+            tx.success();
+        }
+        // WHEN
+        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        int one, two;
+        try ( Transaction tx = db.beginTx() )
+        {
+            one = count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+            two = count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+            tx.success();
+        }
+
+        // THEN
+        assertEquals( two, one );
     }
 }

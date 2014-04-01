@@ -24,12 +24,13 @@ import javax.transaction.Transaction;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.logging.Logging;
 
 public class TransactionStateFactory
 {
-    protected LockManager lockManager;
+    protected Locks locks;
     protected NodeManager nodeManager;
     protected final Logging logging;
     protected RemoteTxHook txHook;
@@ -40,10 +41,10 @@ public class TransactionStateFactory
         this.logging = logging;
     }
     
-    public void setDependencies( LockManager lockManager,
+    public void setDependencies( Locks lockManager,
             NodeManager nodeManager, RemoteTxHook txHook, TxIdGenerator txIdGenerator )
     {
-        this.lockManager = lockManager;
+        this.locks = lockManager;
         this.nodeManager = nodeManager;
         this.txHook = txHook;
         this.txIdGenerator = txIdGenerator;
@@ -51,8 +52,8 @@ public class TransactionStateFactory
     
     public TransactionState create( Transaction tx )
     {
-        return new WritableTransactionState( lockManager, nodeManager,
-                logging, tx, txHook, txIdGenerator );
+        return new WritableTransactionState( locks.newClient(), nodeManager,
+                txHook, txIdGenerator );
     }
     
     public static TransactionStateFactory noStateFactory( Logging logging )

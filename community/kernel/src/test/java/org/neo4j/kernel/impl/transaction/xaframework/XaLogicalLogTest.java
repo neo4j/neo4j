@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -36,7 +37,6 @@ import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.N
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 
@@ -51,6 +51,8 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
@@ -65,7 +67,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
-
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class XaLogicalLogTest
 {
@@ -86,12 +88,12 @@ public class XaLogicalLogTest
         FileSystemAbstraction fs = spy( ephemeralFs.get() );
         File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).directory( "log", true );
         // -- when opening the logical log, spy on the file channel we return and count invocations to channel.read(*)
-        when( fs.open( new File( dir, "logical.log.1" ), "rw" ) ).thenAnswer( new Answer<FileChannel>()
+        when( fs.open( new File( dir, "logical.log.1" ), "rw" ) ).thenAnswer( new Answer<StoreChannel>()
         {
             @Override
-            public FileChannel answer( InvocationOnMock invocation ) throws Throwable
+            public StoreChannel answer( InvocationOnMock invocation ) throws Throwable
             {
-                FileChannel channel = (FileChannel) invocation.callRealMethod();
+                StoreFileChannel channel = (StoreFileChannel) invocation.callRealMethod();
                 return mock( channel.getClass(), withSettings()
                         .spiedInstance( channel )
                         .name( "channel" )
@@ -143,8 +145,10 @@ public class XaLogicalLogTest
     {
         // GIVEN
         long maxSize = 1000;
-        XaLogicalLog log = new XaLogicalLog( new File( "log" ),
-                mock( XaResourceManager.class ), XaCommandReaderFactory.DEFAULT,
+        ephemeralFs.get().mkdir( new File("asd") );
+        XaLogicalLog log = new XaLogicalLog( new File( "asd/log" ),
+                mock( XaResourceManager.class ),
+                XaCommandReaderFactory.DEFAULT,
                 new XaCommandWriterFactory()
                 {
                     @Override
@@ -175,6 +179,51 @@ public class XaLogicalLogTest
 
         // THEN
         assertEquals( initialLogVersion+1, log.getHighestLogVersion() );
+    }
+
+    @Test
+    public void shouldDetermineHighestArchivedLogVersionFromFileNamesIfTheyArePresent() throws Exception
+    {
+        // Given
+        int lowAndIncorrectLogVersion = 0;
+        EphemeralFileSystemAbstraction fs = ephemeralFs.get();
+        File dir = new File( "db" );
+        fs.mkdir( dir );
+        fs.create( new File(dir, "log.v100") ).close();
+        fs.create( new File(dir, "log.v101") ).close();
+
+        StoreChannel active = fs.create( new File(dir, "log.1" ) );
+        ByteBuffer buff = ByteBuffer.allocate( 128 );
+        VersionAwareLogEntryReader.writeLogHeader( buff, lowAndIncorrectLogVersion, 0 );
+        active.write( buff );
+        active.force( false );
+        active.close();
+
+        // When
+        XaLogicalLog log = new XaLogicalLog( new File(dir, "log" ),
+                mock( XaResourceManager.class ),
+                XaCommandReaderFactory.DEFAULT,
+                new XaCommandWriterFactory()
+                {
+                    @Override
+                    public XaCommandWriter newInstance()
+                    {
+                        return new FixedSizeXaCommandWriter();
+                    }
+                },
+                new VersionRespectingXaTransactionFactory(),
+                ephemeralFs.get(),
+                new Monitors(),
+                new DevNullLoggingService(),
+                NO_PRUNING,
+                mock( TransactionStateFactory.class ), 10,
+                ALLOW_ALL, Functions.<List<LogEntry>>identity() );
+        log.open();
+        log.rotate();
+
+        // Then
+        assertThat( fs.fileExists( new File( dir, "log.v102" ) ), equalTo( true ) );
+
     }
 
     private static class FixedSizeXaCommand extends XaCommand

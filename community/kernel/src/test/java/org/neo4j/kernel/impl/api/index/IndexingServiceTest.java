@@ -440,6 +440,20 @@ public class IndexingServiceTest
         assertThat( asCollection( files ), equalTo( asCollection( iterator( theFile ) ) ) );
     }
 
+    @Test
+    public void shouldIgnoreActivateCallDuringRecovery() throws Exception
+    {
+        // given
+        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+
+        life.start();
+
+        // when
+        indexingService.activateIndex( 0 );
+
+        // then no exception should be thrown.
+    }
+
     private Answer waitForLatch( final CountDownLatch latch ) {
         return new Answer() {
             @Override

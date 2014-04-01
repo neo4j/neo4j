@@ -27,9 +27,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Property
+import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
-class FilterBuilderTest extends BuilderTest {
+class FilterBuilderTest extends BuilderTest with MockitoSugar {
 
+  private implicit val monitor: PipeMonitor = mock[PipeMonitor]
   val builder = new FilterBuilder
 
   @Test

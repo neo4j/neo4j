@@ -24,6 +24,7 @@ import java.util.List;
 import javax.transaction.Transaction;
 
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.locking.community.LockNotFoundException;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.logging.Logging;
 
@@ -43,7 +44,7 @@ import org.neo4j.kernel.logging.Logging;
  * all the locks. Same for write locks correspondingly.
  * <p>
  * LockManager just maps locks to resources and they do all the hard work
- * together with a {@link RagManager resource allocation graph}.
+ * together with a {@link org.neo4j.kernel.impl.locking.community.RagManager resource allocation graph}.
  */
 public interface LockManager
 {
@@ -100,7 +101,7 @@ public interface LockManager
      *
      * @param resource the resource
      * @throws IllegalResourceException if an illegal resource is supplied
-     * @throws LockNotFoundException if given transaction don't have read lock on the given {@code resource}.
+     * @throws org.neo4j.kernel.impl.locking.community.LockNotFoundException if given transaction don't have read lock on the given {@code resource}.
      */
     void releaseReadLock( Object resource, Transaction tx )
             throws LockNotFoundException, IllegalResourceException;
@@ -126,25 +127,4 @@ public interface LockManager
      */
     void dumpLocksOnResource( Object resource, Logging logging );
 
-    /**
-     * @return a {@link List} of all locks currently active.
-     */
-    List<LockInfo> getAllLocks();
-
-    /**
-     * Returns info about locks that have been awaited for {@code minWaitTime} milliseconds.
-     * @param minWaitTime the threshold time in milliseconds for inclusion in the resulting {@link List}.
-     * @return locks that have been awaited for at least {@code minWaitTime} milliseconds.
-     */
-    List<LockInfo> getAwaitedLocks( long minWaitTime );
-
-    /**
-     * Utility method for debugging. Dumps the resource allocation graph to {@code logging}.
-     */
-    void dumpRagStack( Logging logging );
-
-    /**
-     * Utility method for debugging. Dumps info about each lock to {@code logging}.
-     */
-    void dumpAllLocks( Logging logging );
 }

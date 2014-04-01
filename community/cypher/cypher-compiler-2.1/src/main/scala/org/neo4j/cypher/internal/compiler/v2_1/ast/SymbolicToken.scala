@@ -38,6 +38,11 @@ final case class LabelName(name: String)(val id: Option[LabelId] = None)(val pos
   extends ASTNode with SymbolicName with SymbolicToken[LabelId] {
 
   def withId(newId: LabelId) = copy()(id = Some(updatedId(newId)))(position)
+
+  def toEither() = id match{
+    case Some(labelId) => Right(labelId)
+    case _             => Left(name)
+  }
 }
 
 final case class PropertyKeyName(name: String)(val id: Option[PropertyKeyId] = None)(val position: InputPosition)

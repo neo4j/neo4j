@@ -26,7 +26,8 @@ import symbols._
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends PipeWithSource(source) {
+class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
+               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   val symbols = source.symbols
 

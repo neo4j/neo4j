@@ -24,8 +24,11 @@ import javax.transaction.Transaction;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
@@ -33,23 +36,30 @@ import static org.mockito.Mockito.*;
 
 public class TestPlaceboTransaction
 {
-    private AbstractTransactionManager mockTxManager;
     private Transaction mockTopLevelTx;
     private PlaceboTransaction placeboTx;
-    private TransactionState state;
-    private PropertyContainer resource;
+    private Node resource;
     private PersistenceManager persistenceManager;
+    private ReadOperations readOps;
 
     @Before
     public void before() throws Exception
     {
-        mockTxManager = mock( AbstractTransactionManager.class );
+        AbstractTransactionManager mockTxManager = mock( AbstractTransactionManager.class );
         mockTopLevelTx = mock( Transaction.class );
         when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        state = mock( TransactionState.class );
         persistenceManager = mock( PersistenceManager.class );
-        placeboTx = new PlaceboTransaction( persistenceManager,mockTxManager, state );
-        resource = mock( PropertyContainer.class );
+
+        ThreadToStatementContextBridge stmtProvider = mock( ThreadToStatementContextBridge.class );
+        Statement stmt = mock( Statement.class );
+        readOps = mock(ReadOperations.class);
+
+        when( stmtProvider.instance()).thenReturn( stmt );
+        when( stmt.readOperations()).thenReturn( readOps );
+
+        placeboTx = new PlaceboTransaction( mockTxManager, stmtProvider );
+        resource = mock( Node.class );
+        when(resource.getId()).thenReturn( 1l );
     }
 
     @Test
@@ -103,8 +113,7 @@ public class TestPlaceboTransaction
         placeboTx.acquireReadLock( resource );
         
         // then
-        verify( persistenceManager ).ensureKernelIsEnlisted();
-        verify( state ).acquireReadLock( resource );
+        verify( readOps ).acquireShared( ResourceTypes.NODE, 1l );
     }
 
     @Test
@@ -114,7 +123,6 @@ public class TestPlaceboTransaction
         placeboTx.acquireWriteLock( resource );
         
         // then
-        verify( persistenceManager ).ensureKernelIsEnlisted();
-        verify( state ).acquireWriteLock( resource );
+        verify( readOps ).acquireExclusive( ResourceTypes.NODE, 1l );
     }
 }

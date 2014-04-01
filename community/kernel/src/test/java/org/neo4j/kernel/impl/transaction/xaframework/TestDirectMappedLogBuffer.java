@@ -19,32 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.mockfs.BreakableFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.FileSystemGuard;
+import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 public class TestDirectMappedLogBuffer
 {
-    class FileChannelWithChoppyDisk extends FileChannel
+    class FileChannelWithChoppyDisk extends StoreFileChannel
     {
 
         ByteBuffer buff = ByteBuffer.allocate(1024);
@@ -52,27 +50,8 @@ public class TestDirectMappedLogBuffer
 
         public FileChannelWithChoppyDisk(int writeThisMuchAtATime)
         {
+            super( (FileChannel) null );
             this.chunkSize = writeThisMuchAtATime;
-        }
-
-        @Override
-        public int read( ByteBuffer byteBuffer ) throws IOException
-        { return 0; }
-
-        @Override
-        public long read( ByteBuffer[] byteBuffers, int i, int i1 ) throws IOException
-        { return 0; }
-
-        @Override
-        public int write( ByteBuffer byteBuffer ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long write( ByteBuffer[] byteBuffers, int i, int i1 ) throws IOException
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -103,7 +82,7 @@ public class TestDirectMappedLogBuffer
         }
 
         @Override
-        public FileChannel position( long l ) throws IOException
+        public StoreFileChannel position( long l ) throws IOException
         {
             buff.position( (int) l );
             return this;
@@ -116,55 +95,13 @@ public class TestDirectMappedLogBuffer
         }
 
         @Override
-        public FileChannel truncate( long l ) throws IOException
+        public StoreFileChannel truncate( long l ) throws IOException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void force( boolean b ) throws IOException  { }
-
-        @Override
-        public long transferTo( long l, long l1, WritableByteChannel writableByteChannel ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long transferFrom( ReadableByteChannel readableByteChannel, long l, long l1 ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int read( ByteBuffer byteBuffer, long l ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public MappedByteBuffer map( MapMode mapMode, long l, long l1 ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public FileLock lock( long l, long l1, boolean b ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public FileLock tryLock( long l, long l1, boolean b ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        protected void implCloseChannel() throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
     }
 
     @Test

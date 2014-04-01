@@ -262,6 +262,20 @@ class LoadCsvAcceptanceTest
     }
   }
 
+  test("should reject URLs that are not file://, http://, https://, ftp://") {
+    val exception = intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM 'morsecorba://sos' AS line CREATE (a {name:line[0]})")
+    }
+    exception.getMessage should equal("Invalid URL specified (unknown protocol: morsecorba)")
+  }
+
+  test("should reject invalid URLs") {
+    val exception = intercept[LoadExternalResourceException] {
+      execute(s"LOAD CSV FROM 'foo.bar' AS line CREATE (a {name:line[0]})")
+    }
+    exception.getMessage should equal("Invalid URL specified (no protocol: foo.bar)")
+  }
+
   private def ensureNoIllegalCharsInWindowsFilePath(filename: String) = {
     // isWindows?
     if ('\\' == File.separatorChar) {

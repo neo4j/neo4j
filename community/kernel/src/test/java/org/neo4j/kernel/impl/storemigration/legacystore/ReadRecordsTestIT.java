@@ -21,17 +21,14 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.junit.Assert.*;
 import static org.neo4j.test.Unzip.unzip;
 
 public class ReadRecordsTestIT
@@ -43,16 +40,20 @@ public class ReadRecordsTestIT
         LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs,
                 new File( storeDir, "neostore.nodestore.db" ) );
         assertEquals( 1003, nodeStoreReader.getMaxId() );
-        Iterator<NodeRecord> records = nodeStoreReader.readNodeStore();
-        int nodeCount = 0;
-        for ( NodeRecord record : loop( records ) )
+
+        final AtomicInteger nodeCount = new AtomicInteger( 0 );
+        nodeStoreReader.accept( new LegacyNodeStoreReader.Visitor()
         {
-            if ( record.inUse() )
+            @Override
+            public void visit( NodeRecord record )
             {
-                nodeCount++;
+                if(record.inUse())
+                {
+                    nodeCount.incrementAndGet();
+                }
             }
-        }
-        assertEquals( 501, nodeCount );
+        } );
+        assertEquals( 501, nodeCount.get() );
         nodeStoreReader.close();
     }
 

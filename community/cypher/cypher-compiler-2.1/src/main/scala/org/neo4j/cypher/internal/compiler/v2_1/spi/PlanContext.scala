@@ -32,6 +32,10 @@ import org.neo4j.kernel.api.index.IndexDescriptor
  */
 trait PlanContext extends TokenContext {
 
+  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+
+  def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
+
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
@@ -42,6 +46,5 @@ trait PlanContext extends TokenContext {
 
   def checkRelIndex(idxName: String)
 
-  def hasLocalFileAccess: Boolean
+  def getOrCreateFromSchemaState[T](key: Any, f: => T): T
 }
-

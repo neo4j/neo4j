@@ -177,11 +177,19 @@ public class RelIdArray implements SizeOfObject
         return null;
     }
 
-    public RelIdArray shrink()
+    public void shrink()
     {
-        IdBlock shrunkOut = outBlock != null ? outBlock.shrink() : null;
-        IdBlock shrunkIn = inBlock != null ? inBlock.shrink() : null;
-        return shrunkOut == outBlock && shrunkIn == inBlock ? this : new RelIdArray( type, shrunkOut, shrunkIn );
+        shrink( outBlock );
+        shrink( inBlock );
+        shrink( getLastLoopBlock() );
+    }
+
+    protected void shrink( IdBlock block )
+    {
+        if ( block != null )
+        {
+            block.shrink();
+        }
     }
 
     protected void setLastLoopBlock( IdBlock block )
@@ -254,13 +262,13 @@ public class RelIdArray implements SizeOfObject
             {
                 ids.outBlock = block;
             }
-            
+
             @Override
             public long getNextRel( RelationshipGroupRecord group )
             {
                 return group.getFirstOut();
             }
-            
+
             @Override
             public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
             {
@@ -292,13 +300,13 @@ public class RelIdArray implements SizeOfObject
             {
                 ids.inBlock = block;
             }
-            
+
             @Override
             public long getNextRel( RelationshipGroupRecord group )
             {
                 return group.getFirstIn();
             }
-            
+
             @Override
             public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
             {
@@ -330,13 +338,13 @@ public class RelIdArray implements SizeOfObject
             {
                 ids.setLastLoopBlock( block );
             }
-            
+
             @Override
             public long getNextRel( RelationshipGroupRecord group )
             {
                 return group.getFirstLoop();
             }
-            
+
             @Override
             public void setNextRel( RelationshipGroupRecord group, long firstNextRel )
             {
@@ -380,7 +388,7 @@ public class RelIdArray implements SizeOfObject
         public abstract long getNextRel( RelationshipGroupRecord group );
 
         public abstract void setNextRel( RelationshipGroupRecord group, long firstNextRel );
-        
+
         public abstract DirectionWrapper[] allDirections();
     }
 
@@ -397,14 +405,7 @@ public class RelIdArray implements SizeOfObject
 
     public static abstract class IdBlock implements SizeOfObject
     {
-        /**
-         * @return a shrunk version of itself. It returns itself if there is
-         * no need to shrink it or a {@link #copyAndShrink()} if there is slack in the array.
-         */
-        IdBlock shrink()
-        {
-            return length() == capacity() ? this : copyAndShrink();
-        }
+        abstract void shrink();
 
         void add( long id )
         {
@@ -512,6 +513,15 @@ public class RelIdArray implements SizeOfObject
         }
 
         @Override
+        void shrink()
+        {
+            if ( capacity() > length() )
+            {
+                ids = Arrays.copyOf( ids, length()+1 );
+            }
+        }
+
+        @Override
         protected IdBlock copyAndShrink()
         {
             LowIdBlock copy = new LowIdBlock();
@@ -615,6 +625,14 @@ public class RelIdArray implements SizeOfObject
         IdBlock upgradeToHighIdBlock()
         {
             return this;
+        }
+
+        @Override
+        void shrink()
+        {
+            int itemsToCopy = length()+1;
+            ids = Arrays.copyOf( ids, itemsToCopy );
+            highBits = Arrays.copyOf( highBits, itemsToCopy );
         }
 
         @Override
@@ -747,18 +765,14 @@ public class RelIdArray implements SizeOfObject
         @Override
         public RelIdIterator updateSource( RelIdArray newSource, DirectionWrapper direction )
         {
-            if ( ids != newSource || newSource.couldBeNeedingUpdate() )
+            ids = newSource;
+            // Blocks may have gotten upgraded to support a linked list
+            // of blocks, so reestablish those references.
+            for ( int i = 0; i < states.length; i++ )
             {
-                ids = newSource;
-
-                // Blocks may have gotten upgraded to support a linked list
-                // of blocks, so reestablish those references.
-                for ( int i = 0; i < states.length; i++ )
+                if ( states[i] != null )
                 {
-                    if ( states[i] != null )
-                    {
-                        states[i].update( directions[i].getBlock( ids ) );
-                    }
+                    states[i].update( directions[i].getBlock( ids ) );
                 }
             }
             return this;
@@ -914,19 +928,6 @@ public class RelIdArray implements SizeOfObject
                 }
             }
         }
-    }
-
-    /**
-     * Optimization in the lazy loading of relationships for a node.
-     * {@link RelIdIterator#updateSource(RelIdArray, org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper)}
-     * is only called if this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
-     * gotten upgraded to handle f.ex loops or high id ranges so that the
-     * {@link RelIdIterator} gets updated accordingly.
-     */
-    public boolean couldBeNeedingUpdate()
-    {
-        return (outBlock != null && outBlock instanceof HighIdBlock) ||
-                (inBlock != null && inBlock instanceof HighIdBlock);
     }
 
     public int length( DirectionWrapper dir )

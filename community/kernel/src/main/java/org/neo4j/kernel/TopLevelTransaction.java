@@ -25,8 +25,8 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
@@ -66,17 +66,17 @@ public class TopLevelTransaction implements Transaction
         }
     }
 
-    private final PersistenceManager persistenceManager;
-    private final AbstractTransactionManager transactionManager;
-    protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
-    private final TransactionState state;
+    private final static PropertyContainerLocker locker = new PropertyContainerLocker();
 
-    public TopLevelTransaction( PersistenceManager persistenceManager, AbstractTransactionManager transactionManager,
-            TransactionState state )
+    private final AbstractTransactionManager transactionManager;
+    private final ThreadToStatementContextBridge stmtProvider;
+    protected final TransactionOutcome transactionOutcome = new TransactionOutcome();
+
+    public TopLevelTransaction( AbstractTransactionManager transactionManager,
+                                ThreadToStatementContextBridge stmtProvider )
     {
-        this.persistenceManager = persistenceManager;
         this.transactionManager = transactionManager;
-        this.state = state;
+        this.stmtProvider = stmtProvider;
     }
 
     @Override
@@ -149,14 +149,12 @@ public class TopLevelTransaction implements Transaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
-        persistenceManager.ensureKernelIsEnlisted();
-        return state.acquireWriteLock( entity );
+        return locker.exclusiveLock( stmtProvider, entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        persistenceManager.ensureKernelIsEnlisted();
-        return state.acquireReadLock( entity );
+        return locker.sharedLock( stmtProvider, entity );
     }
 }

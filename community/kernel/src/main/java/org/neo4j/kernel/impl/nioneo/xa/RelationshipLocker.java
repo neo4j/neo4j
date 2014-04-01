@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+
 public interface RelationshipLocker
 {
-    void getWriteLock( long relId );
+    void getWriteLock( long relId ) throws AcquireLockTimeoutException;
 
     public static final RelationshipLocker NO_LOCKING = new RelationshipLocker()
     {

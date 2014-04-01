@@ -104,12 +104,18 @@ public interface Status
                 "perform data operations, and vice versa." ),
 
         ReleaseLocksFailed( DatabaseError, "The transaction was unable to release one or more of its locks." ),
+        AcquireLockTimeout( TransientError, "The transaction was unable to acquire a lock, for instance due to a " +
+                "timeout or the transaction thread being interrupted." ),
         DeadlockDetected( TransientError, "This transaction, and at least one more transaction, has acquired locks " +
-                "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
-                "will most likely be successful."),
+        "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
+        "will most likely be successful."),
 
         EventHandlerThrewException( ClientError, "A transaction event handler threw an exception. The transaction " +
-                "will be rolled back." );
+        "will be rolled back." ),
+
+        ;
+
+
         private final Code code;
 
         @Override

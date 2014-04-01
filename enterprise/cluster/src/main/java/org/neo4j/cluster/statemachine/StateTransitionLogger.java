@@ -35,6 +35,9 @@ public class StateTransitionLogger
 {
     private final Logging logging;
 
+    /** Throttle so don't flood occurences of the same message over and over */
+    private String lastLogMessage = "";
+
     public StateTransitionLogger( Logging logging )
     {
         this.logging = logging;
@@ -73,10 +76,22 @@ public class StateTransitionLogger
                 line.append( " conversation-id:" + transition.getMessage().getHeader( CONVERSATION_ID ) );
             }
 
-            line.append( " payload:" + transition.getMessage().getPayload() );
+            Object payload = transition.getMessage().getPayload();
+            if ( payload != null )
+            {
+                line.append( " payload:" + payload );
+            }
+
+            // Throttle
+            String msg = line.toString();
+            if( msg.equals( lastLogMessage ) )
+            {
+                return;
+            }
 
             // Log it
             logger.debug( line.toString() );
+            lastLogMessage = msg;
         }
     }
 }

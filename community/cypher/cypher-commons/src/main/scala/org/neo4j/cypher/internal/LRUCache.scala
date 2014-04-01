@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
 import org.neo4j.cypher.CypherVersion
 
-class LRUCache[K, V](cacheSize: Int) {
+class LRUCache[K, V](cacheSize: Int) extends ((K, => V) => V) {
 
   val inner = new ConcurrentLinkedHashMap.Builder[K, V]
     .maximumWeightedCapacity(cacheSize)
@@ -57,4 +57,6 @@ class LRUCache[K, V](cacheSize: Int) {
   def put(key: K, value: V) = inner.put(key, value)
 
   def containsKey(key: K) = inner.containsKey(key)
+
+  def apply(key: K, value: => V): V = getOrElseUpdate(key, value)
 }

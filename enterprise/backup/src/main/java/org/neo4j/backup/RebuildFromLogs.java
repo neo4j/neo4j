@@ -97,8 +97,9 @@ class RebuildFromLogs
                             return new PhysicalLogNeoXaCommandWriter();
                         }
                     },
+                    new Monitors().newMonitor( ByteCounterMonitor.class ),
                     new LogEntryWriterv1(),
-                    sourceDir, new Monitors().newMonitor( ByteCounterMonitor.class ) );
+                    sourceDir );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );
@@ -246,8 +247,7 @@ class RebuildFromLogs
                 ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
                 txId.set( VersionAwareLogEntryReader.readLogHeader( buffer, channel, true )[1] );
 
-                LogDeserializer deserializer = new LogDeserializer(
-                        new Monitors().newMonitor( ByteCounterMonitor.class ), buffer, XaCommandReaderFactory.DEFAULT );
+                LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
 
                 Cursor<LogEntry, IOException> cursor = deserializer.cursor ( channel );
 

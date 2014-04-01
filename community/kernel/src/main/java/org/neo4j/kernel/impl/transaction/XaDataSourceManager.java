@@ -258,8 +258,7 @@ public class XaDataSourceManager
             return;
         }
 
-        byte branchId[] = getBranchId(
-                dataSource.getXaConnection().getXaResource() );
+        byte branchId[] = getBranchId( dataSource.getXaConnection().getXaResource() );
         dataSources.remove( name );
         branchIdMapping.remove( UTF8.decode( branchId ) );
         sourceIdMapping.remove( name );

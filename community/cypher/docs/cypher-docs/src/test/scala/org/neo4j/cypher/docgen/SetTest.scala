@@ -36,7 +36,7 @@ class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     "Emil KNOWS Peter")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l, "awesome" -> true),
+    "Andres" -> Map("age" -> 36l, "hungry" -> true),
     "Peter" -> Map("age" -> 34l))
 
   def section = "Set"
@@ -70,7 +70,23 @@ will remove all other properties on the receiving graph element.""".stripMargin,
       optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the Peter node.",
       assertions = (p) => {
         assert(node("Andres").getProperty("name") === "Peter")
-        assertFalse("Didn't expect the Andres node to have an awesome property", node("Andres").hasProperty("awesome"))
+        assertFalse("Didn't expect the Andres node to have an hungry property", node("Andres").hasProperty("hungry"))
+      })
+  }
+
+  @Test def inclusive_set_properties_from_map() {
+    testQuery(
+      title = "Adding properties from maps",
+      text =
+        """When setting properties from a map (literal, paremeter, or graph element), you can use the `+=` form of SET
+          |to only add properties, and not remove any of the older properties on the graph element.
+        """.stripMargin,
+      queryText = "match (peter {name: 'Peter'}) SET peter += { hungry: true, position: 'Entrepreneur' }",
+      optionalResultExplanation = "",
+      assertions = (p) => {
+        assert(node("Peter").getProperty("name") === "Peter")
+        assert(node("Peter").getProperty("hungry") === true)
+        assert(node("Peter").getProperty("position") === "Entrepreneur")
       })
   }
 
@@ -96,6 +112,15 @@ This will replace all existing properties on the node with the new set provided 
       queryText = "match (n {name: 'Andres'}) set n = {props} return n",
       optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 4))
+  }
+
+  @Test def set_multiple_properties_in_one_set_clause() {
+    testQuery(
+      title = "Set multiple properties using one SET clause",
+      text = "If you want to set multiple properties in one go, simply separate them with a comma.",
+      queryText = "match (n {name: 'Andres'}) set n.position = 'Developer', n.surname = 'Taylor'",
+      optionalResultExplanation = "",
+      assertions = (p) => assertStats(p, nodesCreated = 0, propertiesSet = 2))
   }
 
   @Test def set_single_label_on_a_node() {

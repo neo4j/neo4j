@@ -75,7 +75,10 @@ public class TestTxSuspendResume
         {
             try
             {
-                while ( main.getState() != Thread.State.WAITING ) Thread.sleep( 1 );
+                while ( main.getState() != Thread.State.WAITING && main.getState() != State.TIMED_WAITING )
+                {
+                    Thread.sleep( 1 );
+                }
                 tm.resume( tx );
                 tm.getTransaction().commit();
                 success = true;

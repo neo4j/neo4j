@@ -27,7 +27,6 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAnd
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,6 +38,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class LogExtractor
 {
@@ -597,16 +598,18 @@ public class LogExtractor
 
     public static LogExtractor from( FileSystemAbstraction fileSystem,
                                      XaCommandReaderFactory commandReaderFactory,
-                                     XaCommandWriterFactory commandWriterFactory, LogEntryWriter logEntryWriter,
+                                     XaCommandWriterFactory commandWriterFactory,
+                                     ByteCounterMonitor monitor, LogEntryWriter logEntryWriter,
                                      File storeDir ) throws IOException
     {
         // 2 is a "magic" first tx :)
-        return from( fileSystem, storeDir, commandReaderFactory, commandWriterFactory, logEntryWriter, 2 );
+        return from( fileSystem, storeDir, commandReaderFactory, commandWriterFactory, monitor, logEntryWriter, 2 );
     }
     
     public static LogExtractor from( final FileSystemAbstraction fileSystem, final File storeDir,
                                      XaCommandReaderFactory commandReaderFactory,
                                      XaCommandWriterFactory commandWriterFactory,
+                                     final ByteCounterMonitor monitor,
                                      LogEntryWriter logEntryWriter,  long startTxId ) throws IOException
     {
         LogLoader loader = new LogLoader()
@@ -625,9 +628,9 @@ public class LogExtractor
                     name = activeLogFiles.get( version );
                     if ( name == null ) throw new NoSuchLogVersionException( version );
                 }
-                FileChannel channel = fileSystem.open( name, "r" );
+                StoreChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
-                return new BufferedFileChannel( channel );
+                return new BufferedFileChannel( channel, monitor );
             }
             
             private long maxKey( Map<Long, File> activeLogFiles )

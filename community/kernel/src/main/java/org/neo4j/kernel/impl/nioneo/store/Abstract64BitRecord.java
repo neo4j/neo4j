@@ -21,23 +21,26 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 public abstract class Abstract64BitRecord extends AbstractBaseRecord
 {
-    private final long id;
+    private long id;
+
+    protected Abstract64BitRecord()
+    {
+
+    }
 
     protected Abstract64BitRecord( long id )
     {
-        super( false );
-        this.id = id;
-    }
-
-    Abstract64BitRecord( long id, boolean inUse )
-    {
-        super( inUse );
         this.id = id;
     }
 
     public long getId()
     {
         return id;
+    }
+
+    public void setId( long id )
+    {
+        this.id = id;
     }
     
     @Override

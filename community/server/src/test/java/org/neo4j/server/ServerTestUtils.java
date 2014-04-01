@@ -31,13 +31,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
-import org.neo4j.test.server.HTTP;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
-
 public class ServerTestUtils
 {
     public static File createTempDir() throws IOException
@@ -67,7 +60,7 @@ public class ServerTestUtils
     {
         writePropertyToFile( outerPropertyName, asOneLine( properties ), propertyFile );
     }
-    
+
     public static void writePropertiesToFile( Map<String, String> properties, File propertyFile )
     {
         Properties props = loadProperties( propertyFile );

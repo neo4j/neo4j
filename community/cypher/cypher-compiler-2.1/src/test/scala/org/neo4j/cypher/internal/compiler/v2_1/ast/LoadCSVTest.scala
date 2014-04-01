@@ -50,20 +50,6 @@ class LoadCSVTest extends CypherFunSuite {
     assert(expressionType === CTCollection(CTString).invariant)
   }
 
-  test("should reject URLs that are not file://, http://, https://, ftp://") {
-    val literal = StringLiteral("morsecorba://sos")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck(SemanticState.clean)
-    assert(result.errors === Vector(SemanticError("invalid URL specified (unknown protocol: morsecorba)", DummyPosition(4))))
-  }
-
-  test("should accept http:// URLs") {
-    val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
-    val loadCSV = LoadCSV(withHeaders = false, literal, identifier, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck(SemanticState.clean)
-    assert(result.errors === Vector.empty)
-  }
-
   test("should accept one-character wide field terminators") {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
     val loadCSV = LoadCSV(withHeaders = false, literal, identifier, Some(StringLiteral("\t")(DummyPosition(0))))(DummyPosition(6))

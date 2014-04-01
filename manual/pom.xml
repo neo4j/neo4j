@@ -24,7 +24,7 @@
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>15</doctools.version>
+    <doctools.version>16</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
     <maven.site.skip>true</maven.site.skip>
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
@@ -349,8 +349,7 @@
             <configuration>
               <executable>make</executable>
               <arguments>
-                <argument>init</argument>
-                <argument>preview</argument>
+                <argument>webhelp_dist</argument>
               </arguments>
             </configuration>
           </execution>
@@ -360,6 +359,109 @@
             <groupId>org.neo4j.doc</groupId>
             <artifactId>neo4j-graphgist</artifactId>
             <version>${neo4j.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>com.agilejava.docbkx</groupId>
+        <artifactId>docbkx-maven-plugin</artifactId>
+        <version>2.0.15</version>
+        <executions>
+          <execution>
+            <id>generate-webhelp-html</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>generate-webhelp</goal>
+            </goals>
+            <configuration>
+              <includes>neo4j-manual-html.xml</includes>
+              <admonGraphicsPath>images/icons/admon/</admonGraphicsPath>
+              <generateToc>
+                article toc,title
+                book toc,title
+                chapter toc,title
+                part toc,title
+                preface
+                toc,title
+                qandadiv toc
+                qandaset toc
+                reference toc,title
+                sect1 toc
+                sect2 toc
+                sect3 toc
+                sect4 toc
+                sect5 toc
+                section toc
+                set toc,title
+              </generateToc>
+              <postProcess>
+                <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
+                  <fileset dir="${docs.tools}/main/resources/images"/>
+                </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
+                  <fileset dir="${project.build.directory}/src/images"/>
+                </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/css" overwrite="true">
+                  <fileset dir="${docs.tools}/main/resources/css"/>
+                </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/common" overwrite="true">
+                  <fileset dir="${project.basedir}/common"/>
+                </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/js" overwrite="true">
+                  <fileset dir="${project.build.directory}/src/js"/>
+                </copy>
+              </postProcess>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-pdf</id>
+            <!-- requires the "docbook" goal to be executed in make. -->
+            <phase>none</phase>
+            <goals>
+              <goal>generate-pdf</goal>
+            </goals>
+            <configuration>
+              <includes>neo4j-manual-shortinfo.xml</includes>
+              <generateToc>
+                book toc
+                part toc
+              </generateToc>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <xincludeSupported>true</xincludeSupported>
+          <webhelpCustomization>conf/webhelp.xsl</webhelpCustomization>
+          <foCustomization>conf/fo.xsl</foCustomization>
+          <externalFOPConfiguration>conf/fop.xml</externalFOPConfiguration>
+          <glossarySort>true</glossarySort>
+          <tocMaxDepth>2</tocMaxDepth>
+          <generateSectionTocLevel>1</generateSectionTocLevel>
+          <admonGraphics>true</admonGraphics>
+          <admonGraphicsExtension>.svg</admonGraphicsExtension>
+          <htmlExt>.html</htmlExt>
+          <chunkerOutputOmitXmlDeclaration>yes</chunkerOutputOmitXmlDeclaration>
+          <generateLegalnoticeLink>true</generateLegalnoticeLink>
+          <useIdAsFilename>true</useIdAsFilename>
+          <chunkSectionDepth>1</chunkSectionDepth>
+          <chapterAutolabel>1</chapterAutolabel>
+          <sectionAutolabel>1</sectionAutolabel>
+          <sectionAutolabelMaxDepth>1</sectionAutolabelMaxDepth>
+          <appendixAutolabel>true</appendixAutolabel>
+          <sourceDirectory>${project.build.directory}</sourceDirectory>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>neo4j-docbook-xml</artifactId>
+            <version>4.5</version>
+          </dependency>
+          <dependency>
+            <groupId>org.neo4j.build.plugins</groupId>
+            <artifactId>webhelp-xhtml5-xsl</artifactId>
+            <version>1.78.1</version>
+            <type>zip</type>
+            <classifier>ns-resources</classifier>
           </dependency>
         </dependencies>
       </plugin>
@@ -374,6 +476,31 @@
             <exclude>src/js/**</exclude>
           </excludes>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.github.goldin</groupId>
+        <artifactId>copy-maven-plugin</artifactId>
+        <version>0.2.5</version>
+        <executions>
+          <execution>
+            <id>copy-images</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <verbose>true</verbose>
+              <resources>
+                <resource>
+                  <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
+                  <targetPath>${project.build.directory}/chunked/csv</targetPath>
+                  <preservePath>true</preservePath>
+                  <include>**/*.csv</include>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
@@ -393,6 +520,72 @@
         <configuration>
           <tag>${releaseVersion}</tag>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>manpages</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assemblies/manpages.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
+          <execution>
+            <id>manpagesenterprise</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assemblies/manpages-enterprise.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
+          <execution>
+            <id>upgrade</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assemblies/upgrade.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
+          <execution>
+            <id>contents</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assemblies/contents.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -421,7 +614,7 @@
                 <configuration>
                   <executable>make</executable>
                   <arguments>
-                    <argument>dist</argument>
+                    <argument>webhelp_dist</argument>
                     <argument>KEEP=1</argument>
                     <argument>VERBOSE=1</argument>
                   </arguments>
@@ -431,194 +624,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>neo-full-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>execute-asciidoc</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>make</executable>
-                  <arguments>
-                    <argument>dist</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>zip</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>assemblies/zip.xml</descriptor>
-                  </descriptors>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <appendAssemblyId>false</appendAssemblyId>
-                  <attach>true</attach>
-                </configuration>
-              </execution>
-              <execution>
-                <id>manpages</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>assemblies/manpages.xml</descriptor>
-                  </descriptors>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <attach>true</attach>
-                </configuration>
-              </execution>
-              <execution>
-                <id>manpagesenterprise</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>assemblies/manpages-enterprise.xml</descriptor>
-                  </descriptors>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <attach>true</attach>
-                </configuration>
-              </execution>
-              <execution>
-                <id>upgrade</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>assemblies/upgrade.xml</descriptor>
-                  </descriptors>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <attach>true</attach>
-                </configuration>
-              </execution>
-              <execution>
-                <id>contents</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>assemblies/contents.xml</descriptor>
-                  </descriptors>
-                  <finalName>${project.artifactId}-${project.version}</finalName>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <attach>true</attach>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-      <properties>
-        <attach-docs-phase>none</attach-docs-phase>
-      </properties>
-    </profile>
-    <profile>
-      <id>neo-docs-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>docsBuild</name>
-        </property>
-      </activation>
-      <properties>
-        <attach-docs-phase>none</attach-docs-phase>
-      </properties>
-    </profile>
-    <profile>
-      <id>neo-full-manual-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullManualBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>execute-asciidoc</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>make</executable>
-                  <arguments>
-                    <argument>dist</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.github.goldin</groupId>
-            <artifactId>copy-maven-plugin</artifactId>
-            <version>0.2.5</version>
-            <executions>
-              <execution>
-                <id>copy-images</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <verbose>true</verbose>
-                  <resources>
-                    <resource>
-                      <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
-                      <targetPath>${project.build.directory}/chunked/csv</targetPath>
-                      <preservePath>true</preservePath>
-                      <include>**/*.csv</include>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-      <properties>
-        <attach-docs-phase>none</attach-docs-phase>
-      </properties>
     </profile>
     <profile>
       <id>publish-manual</id>

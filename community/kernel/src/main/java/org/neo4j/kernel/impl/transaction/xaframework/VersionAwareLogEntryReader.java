@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -46,7 +46,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
 
     public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        FileChannel channel = fileSystem.open( file, "r" );
+        StoreChannel channel = fileSystem.open( file, "r" );
         try
         {
             return readLogHeader( ByteBuffer.allocateDirect( 100*1000 ), channel, true );

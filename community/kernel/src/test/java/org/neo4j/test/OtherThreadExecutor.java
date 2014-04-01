@@ -218,7 +218,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
 
     public WaitDetails waitUntilWaiting() throws TimeoutException
     {
-        return waitUntilThreadState( Thread.State.WAITING );
+        return waitUntilThreadState( Thread.State.WAITING, Thread.State.TIMED_WAITING );
     }
 
     public WaitDetails waitUntilBlocked() throws TimeoutException
@@ -299,7 +299,12 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         {
             commandExecutor.awaitTermination( 10, TimeUnit.SECONDS );
         }
-        catch ( Exception e )
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            // shutdownNow() will interrupt running tasks if necessary
+        }
+        if ( ! commandExecutor.isTerminated() )
         {
             commandExecutor.shutdownNow();
         }
@@ -333,6 +338,14 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             }
         }
         return true;
+    }
+
+    public void interrupt()
+    {
+        if(thread != null)
+        {
+            thread.interrupt();
+        }
     }
 
     void printStackTrace( PrintStream out )

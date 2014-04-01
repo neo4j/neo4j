@@ -40,6 +40,8 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.com.storecopy.RemoteStoreCopier;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
@@ -57,7 +59,6 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
-import org.neo4j.kernel.ha.SlaveStoreWriter;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -87,7 +89,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
@@ -604,7 +605,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     resolver.resolveDependency( LabelTokenHolder.class ),
                     resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                     resolver.resolveDependency( PersistenceManager.class ),
-                    resolver.resolveDependency( LockManager.class ),
+                    resolver.resolveDependency( Locks.class ),
                     (SchemaWriteGuard)graphDb,
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ));
@@ -624,19 +625,29 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void copyStoreFromMaster( URI masterUri ) throws Throwable
     {
+        FileSystemAbstraction fs = graphDb.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
         // Must be called under lock on XaDataSourceManager
         LifeSupport life = new LifeSupport();
         try
         {
             // Remove the current store - neostore file is missing, nothing we can really do
             stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
-            MasterClient copyMaster = newMasterClient( masterUri, null, life );
-
+            final MasterClient copyMaster = newMasterClient( masterUri, null, life );
             life.start();
 
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
-            new SlaveStoreWriter( config, kernelExtensions, console ).copyStore( copyMaster );
+            new RemoteStoreCopier( config, kernelExtensions, console,
+                    fs ).copyStore( new RemoteStoreCopier.StoreCopyRequester()
+
+            {
+                @Override
+                public Response<?> copyStore( StoreWriter writer )
+                {
+                    return copyMaster.copyStore( new RequestContext( 0,
+                            config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0, 0 ), writer );
+                }
+            } );
 
             startServicesAgain();
             console.log( "Finished copying store from master" );

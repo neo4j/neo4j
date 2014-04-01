@@ -93,7 +93,7 @@ class MatchTest extends DocumentingTestBase {
       text = "When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this: ",
       queryText = """match (martin {name:'Martin Sheen'})-->(movie) return movie.title""",
       optionalResultExplanation = """Returns nodes connected to Martin by outgoing relationships.""",
-      assertions = (p) => assertEquals(List("Wall Street", "The American President"), p.columnAs[Node]("movie.title").toList)
+      assertions = (p) => assertEquals(Set("Wall Street", "The American President"), p.columnAs[Node]("movie.title").toSet)
     )
   }
 

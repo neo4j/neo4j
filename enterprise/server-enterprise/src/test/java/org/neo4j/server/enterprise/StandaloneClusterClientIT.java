@@ -268,7 +268,7 @@ public class StandaloneClusterClientIT
             // or rather when the first client sees it as joined. If the latch awaiting times out it
             // (most likely) means that this cluster client couldn't be started. The reason for not
             // being able to start is assumed in this test to be that the specified port already is in use.
-            return latch.await( 5, SECONDS );
+            return latch.await( 10, SECONDS );
         }
         finally
         {

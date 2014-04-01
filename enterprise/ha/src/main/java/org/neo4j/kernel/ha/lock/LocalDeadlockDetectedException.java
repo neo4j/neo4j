@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import javax.transaction.Transaction;
+import java.util.Arrays;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.LockType;
-import org.neo4j.kernel.info.LockInfo;
+import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
 
 import static java.lang.String.format;
 
@@ -42,25 +43,19 @@ import static java.lang.String.format;
  */
 public class LocalDeadlockDetectedException extends DeadlockDetectedException
 {
-    public LocalDeadlockDetectedException( LockManager lockManager, Transaction tx, Object resource,
+    public LocalDeadlockDetectedException( Locks.Client lockClient, Locks lockManager, Locks.ResourceType resourceType, long[] resourceIds,
             LockType type )
     {
-        super( constructHelpfulDiagnosticsMessage( lockManager, tx, resource, type ) );
+        super( constructHelpfulDiagnosticsMessage( lockClient, lockManager, resourceType, resourceIds, type ) );
     }
 
-    private static String constructHelpfulDiagnosticsMessage( LockManager lockManager,
-            Transaction tx, Object resource, LockType type )
+    private static String constructHelpfulDiagnosticsMessage( Locks.Client client, Locks lockManager,
+                                                  Locks.ResourceType resourceType, long[] resourceIds, LockType type )
     {
         StringBuilder builder = new StringBuilder( format(
-                "%s tried to apply local %s lock on %s after acquired on master. Currently these locks exist:%n",
-                tx, type, resource ) );
-        for ( LockInfo lock : lockManager.getAllLocks() )
-        {
-            if ( lock.getReadCount() > 0 || lock.getWriteCount() > 0 )
-            {
-                builder.append( format( lock.toString() /*lock.toString includes a %n at the end*/ ) );
-            }
-        }
+                "%s tried to apply local %s lock on %s(%s) after acquired on master. Currently these locks exist:%n",
+                client, type, resourceType, Arrays.toString(resourceIds) ) );
+        lockManager.accept( new DumpLocksVisitor(new StringBuilderStringLogger(builder)) );
         return builder.toString();
     }
 }

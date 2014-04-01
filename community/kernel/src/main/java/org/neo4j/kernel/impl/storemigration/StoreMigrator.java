@@ -20,19 +20,15 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
@@ -40,9 +36,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * Migrates a neo4j database from one version to the next. Instantiated with a {@link LegacyStore}
@@ -53,6 +46,10 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  */
 public class StoreMigrator
 {
+    // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
+    // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
+    // complete upgrades in a reasonable time period.
+
     private final MigrationProgressMonitor progressMonitor;
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor )
@@ -78,7 +75,7 @@ public class StoreMigrator
         {
             this.legacyStore = legacyStore;
             this.neoStore = neoStore;
-            totalEntities = legacyStore.getNodeStoreReader().getMaxId();
+            totalEntities = legacyStore.getRelStoreReader().getMaxId();
         }
 
         private void migrate() throws IOException
@@ -103,6 +100,7 @@ public class StoreMigrator
             legacyStore.copyLabelTokenNameStore( neoStore );
             legacyStore.copyNodeLabelStore( neoStore );
             legacyStore.copySchemaStore( neoStore );
+            legacyStore.copyLegacyIndexStoreFile( neoStore.getStorageFileName().getParentFile() );
         }
 
         private void migrateNodesAndRelationships() throws IOException
@@ -116,31 +114,93 @@ public class StoreMigrator
              *
              * Keep ids */
 
-            NodeStore nodeStore = neoStore.getNodeStore();
-            RelationshipStore relationshipStore = neoStore.getRelationshipStore();
-            RelationshipGroupStore relGroupStore = neoStore.getRelationshipGroupStore();
-            LegacyNodeStoreReader nodeReader = legacyStore.getNodeStoreReader();
-            LegacyRelationshipStoreReader relReader = legacyStore.getRelStoreReader();
+            final NodeStore nodeStore = neoStore.getNodeStore();
+            final RelationshipStore relationshipStore = neoStore.getRelationshipStore();
+            final RelationshipGroupStore relGroupStore = neoStore.getRelationshipGroupStore();
+            final LegacyNodeStoreReader nodeReader = legacyStore.getNodeStoreReader();
+            final LegacyRelationshipStoreReader relReader = legacyStore.getRelStoreReader();
             nodeStore.setHighId( nodeReader.getMaxId() );
-            int denseNodeThreshold = neoStore.getDenseNodeThreshold();
             relationshipStore.setHighId( relReader.getMaxId() );
+
+            final ArrayBlockingQueue<RelChainBuilder> chainsToWrite = new ArrayBlockingQueue<>( 24 );
+            final AtomicReference<Throwable> writerException = new AtomicReference<>();
+
+            Thread writerThread = new RelationshipWriter( chainsToWrite, neoStore.getDenseNodeThreshold(), nodeStore,
+                    relationshipStore, relGroupStore, nodeReader, writerException );
+            writerThread.start();
+
             try
             {
-                for ( NodeRecord node : loop( nodeReader.readNodeStore() ) )
+
+                final Map<Long, RelChainBuilder> relChains = new HashMap<>();
+                relReader.accept( new LegacyRelationshipStoreReader.Visitor()
                 {
-                    reportProgress( node.getId() );
-                    Collection<RelationshipRecord> relationships = loadRelationships( node, relReader );
-                    if ( relationships.size() >= denseNodeThreshold )
+                    @Override
+                    public void visit( long id, RelationshipRecord record )
                     {
-                        migrateDenseNode( nodeStore, relationshipStore, relGroupStore, node, relationships );
+                        reportProgress( id );
+                        if ( record.inUse() )
+                        {
+                            appendToRelChain( record.getFirstNode(), record.getFirstPrevRel(),
+                                    record.getFirstNextRel(), record );
+                            appendToRelChain( record.getSecondNode(), record.getSecondPrevRel(),
+                                    record.getSecondNextRel(), record );
+                        }
                     }
-                    else
+
+                    private void appendToRelChain( long nodeId, long prevRel, long nextRel, RelationshipRecord record )
                     {
-                        migrateNormalNode( nodeStore, relationshipStore, node, relationships );
+                        RelChainBuilder chain = relChains.get( nodeId );
+                        if ( chain == null )
+                        {
+                            chain = new RelChainBuilder( nodeId );
+                            relChains.put( nodeId, chain );
+                        }
+
+                        chain.append( record, prevRel, nextRel );
+
+                        if ( chain.isComplete() )
+                        {
+                            assertNoWriterException( writerException );
+                            try
+                            {
+                                chainsToWrite.put( relChains.remove( nodeId ) );
+                            }
+                            catch ( InterruptedException e )
+                            {
+                                Thread.interrupted();
+                                throw new RuntimeException( "Interrupted while reading relationships.", e );
+                            }
+                        }
                     }
+                } );
+
+                try
+                {
+                    chainsToWrite.put( new RelChainBuilder( -1 ) );
+                    writerThread.join();
+                    assertNoWriterException( writerException );
                 }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( "Interrupted.", e);
+                }
+
                 legacyStore.copyNodeStoreIdFile( neoStore );
                 legacyStore.copyRelationshipStoreIdFile( neoStore );
+
+                // Migrate nodes with no relationships
+                nodeReader.accept(new LegacyNodeStoreReader.Visitor()
+                {
+                    @Override
+                    public void visit( NodeRecord record )
+                    {
+                        if(record.inUse() && record.getNextRel() == Record.NO_NEXT_RELATIONSHIP.intValue())
+                        {
+                            nodeStore.forceUpdateRecord( record );
+                        }
+                    }
+                });
             }
             finally
             {
@@ -149,197 +209,12 @@ public class StoreMigrator
             }
         }
 
-        private void migrateNormalNode( NodeStore nodeStore, RelationshipStore relationshipStore,
-                NodeRecord node, Collection<RelationshipRecord> relationships )
+        private void assertNoWriterException( AtomicReference<Throwable> writerException )
         {
-            /* Add node record
-             * Add/update all relationship records */
-            nodeStore.forceUpdateRecord( node );
-            int i = 0;
-            for ( RelationshipRecord record : relationships )
+            if(writerException.get() != null)
             {
-                if ( i == 0 )
-                {
-                    setDegree( node.getId(), record, relationships.size() );
-                }
-                applyChangesToRecord( node.getId(), record, relationshipStore );
-                relationshipStore.forceUpdateRecord( record );
-                i++;
+                throw new RuntimeException( writerException.get() );
             }
-        }
-
-        private void migrateDenseNode( NodeStore nodeStore, RelationshipStore relationshipStore,
-                RelationshipGroupStore relGroupStore, NodeRecord node, Collection<RelationshipRecord> records )
-        {
-            Map<Integer, Relationships> byType = splitUp( node.getId(), records );
-            List<RelationshipGroupRecord> groupRecords = new ArrayList<>();
-            for ( Map.Entry<Integer, Relationships> entry : byType.entrySet() )
-            {
-                Relationships relationships = entry.getValue();
-                applyLinks( node.getId(), relationships.out, relationshipStore, Direction.OUTGOING );
-                applyLinks( node.getId(), relationships.in, relationshipStore, Direction.INCOMING );
-                applyLinks( node.getId(), relationships.loop, relationshipStore, Direction.BOTH );
-                RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( relGroupStore.nextId(), entry.getKey() );
-                groupRecords.add( groupRecord );
-                groupRecord.setInUse( true );
-                if ( !relationships.out.isEmpty() )
-                {
-                    groupRecord.setFirstOut( first( relationships.out ).getId() );
-                }
-                if ( !relationships.in.isEmpty() )
-                {
-                    groupRecord.setFirstIn( first( relationships.in ).getId() );
-                }
-                if ( !relationships.loop.isEmpty() )
-                {
-                    groupRecord.setFirstLoop( first( relationships.loop ).getId() );
-                }
-            }
-
-            RelationshipGroupRecord previousGroup = null;
-            for ( int i = 0; i < groupRecords.size(); i++ )
-            {
-                RelationshipGroupRecord groupRecord = groupRecords.get( i );
-                if ( i+1 < groupRecords.size() )
-                {
-                    RelationshipGroupRecord nextRecord = groupRecords.get( i+1 );
-                    groupRecord.setNext( nextRecord.getId() );
-                }
-                if ( previousGroup != null )
-                {
-                    groupRecord.setPrev( previousGroup.getId() );
-                }
-                previousGroup = groupRecord;
-            }
-            for ( RelationshipGroupRecord groupRecord : groupRecords )
-            {
-                relGroupStore.forceUpdateRecord( groupRecord );
-            }
-
-            node.setNextRel( groupRecords.get( 0 ).getId() );
-            node.setDense( true );
-            nodeStore.forceUpdateRecord( node );
-        }
-
-        private void applyLinks( long nodeId, List<RelationshipRecord> records, RelationshipStore relationshipStore, Direction dir )
-        {
-            for ( int i = 0; i < records.size(); i++ )
-            {
-                RelationshipRecord record = records.get( i );
-                if ( i > 0 )
-                {   // link previous
-                    long previous = records.get( i-1 ).getId();
-                    if ( record.getFirstNode() == nodeId )
-                    {
-                        record.setFirstPrevRel( previous );
-                    }
-                    if ( record.getSecondNode() == nodeId )
-                    {
-                        record.setSecondPrevRel( previous );
-                    }
-                }
-                else
-                {
-                    setDegree( nodeId, record, records.size() );
-                }
-
-                if ( i < records.size()-1 )
-                {   // link next
-                    long next = records.get( i+1 ).getId();
-                    if ( record.getFirstNode() == nodeId )
-                    {
-                        record.setFirstNextRel( next );
-                    }
-                    if ( record.getSecondNode() == nodeId )
-                    {
-                        record.setSecondNextRel( next );
-                    }
-                }
-                else
-                {   // end of chain
-                    if ( record.getFirstNode() == nodeId )
-                    {
-                        record.setFirstNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-                    }
-                    if ( record.getSecondNode() == nodeId )
-                    {
-                        record.setSecondNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-                    }
-                }
-                applyChangesToRecord( nodeId, record, relationshipStore );
-                relationshipStore.forceUpdateRecord( record );
-            }
-        }
-
-        private void setDegree( long nodeId, RelationshipRecord record, int size )
-        {
-            if ( nodeId == record.getFirstNode() )
-            {
-                record.setFirstInFirstChain( true );
-                record.setFirstPrevRel( size );
-            }
-            if ( nodeId == record.getSecondNode() )
-            {
-                record.setFirstInSecondChain( true );
-                record.setSecondPrevRel( size );
-            }
-        }
-
-        private void applyChangesToRecord( long nodeId, RelationshipRecord record, RelationshipStore relationshipStore )
-        {
-            try
-            {
-                RelationshipRecord existingRecord = relationshipStore.getRecord( record.getId() );
-                // Not necessary for loops since those records will just be copied.
-                if ( nodeId == record.getFirstNode() )
-                {   // Copy end node stuff from the existing record
-                    record.setFirstInSecondChain( existingRecord.isFirstInSecondChain() );
-                    record.setSecondPrevRel( existingRecord.getSecondPrevRel() );
-                    record.setSecondNextRel( existingRecord.getSecondNextRel() );
-                }
-                else
-                {   // Copy start node stuff from the existing record
-                    record.setFirstInFirstChain( existingRecord.isFirstInFirstChain() );
-                    record.setFirstPrevRel( existingRecord.getFirstPrevRel() );
-                    record.setFirstNextRel( existingRecord.getFirstNextRel() );
-                }
-            }
-            catch ( InvalidRecordException e )
-            {   // No need to apply changes, doesn't exist
-            }
-        }
-
-        private Collection<RelationshipRecord> loadRelationships( NodeRecord nodeRecord,
-                LegacyRelationshipStoreReader relReader )
-        {
-            Collection<RelationshipRecord> records = new ArrayList<>();
-            long rel = nodeRecord.getNextRel();
-            long node = nodeRecord.getId();
-            while ( rel != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                RelationshipRecord record = relReader.getRecord( rel );
-                records.add( record );
-                rel = record.getFirstNode() == node ?
-                        record.getFirstNextRel() : record.getSecondNextRel();
-            }
-            return records;
-        }
-
-        private Map<Integer, Relationships> splitUp( long nodeId, Collection<RelationshipRecord> records )
-        {
-            Map<Integer, Relationships> result = new HashMap<>();
-            for ( RelationshipRecord record : records )
-            {
-                Integer type = record.getType();
-                Relationships relationships = result.get( type );
-                if ( relationships == null )
-                {
-                    relationships = new Relationships( nodeId );
-                    result.put( type, relationships );
-                }
-                relationships.add( record );
-            }
-            return result;
         }
 
         private void reportProgress( long id )
@@ -350,44 +225,6 @@ public class StoreMigrator
                 percentComplete = newPercent;
                 progressMonitor.percentComplete( percentComplete );
             }
-        }
-    }
-
-    private static class Relationships
-    {
-        private final long nodeId;
-        final List<RelationshipRecord> out = new ArrayList<>();
-        final List<RelationshipRecord> in = new ArrayList<>();
-        final List<RelationshipRecord> loop = new ArrayList<>();
-
-        Relationships( long nodeId )
-        {
-            this.nodeId = nodeId;
-        }
-
-        void add( RelationshipRecord record )
-        {
-            if ( record.getFirstNode() == nodeId )
-            {
-                if ( record.getSecondNode() == nodeId )
-                {   // Loop
-                    loop.add( record );
-                }
-                else
-                {   // Out
-                    out.add( record );
-                }
-            }
-            else
-            {   // In
-                in.add( record );
-            }
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Relationships[" + nodeId + ",out:" + out.size() + ", in:" + in.size() + ", loop:" + loop.size() + "]";
         }
     }
 }

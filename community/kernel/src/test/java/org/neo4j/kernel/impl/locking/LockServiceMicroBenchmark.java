@@ -27,8 +27,8 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
-import org.neo4j.kernel.impl.transaction.LockManagerImpl;
-import org.neo4j.kernel.impl.transaction.RagManager;
+import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
+import org.neo4j.kernel.impl.locking.community.RagManager;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

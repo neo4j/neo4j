@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class StoreVersionCheck
 {
@@ -39,7 +39,7 @@ public class StoreVersionCheck
 
     public Pair<Outcome,String> hasVersion( File storeFile, String expectedVersion )
     {
-        FileChannel fileChannel = null;
+        StoreChannel fileChannel = null;
         byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
         try
         {
@@ -96,7 +96,7 @@ public class StoreVersionCheck
         return expectedVersion.substring( 0, spaceIndex );
     }
 
-    private String readVersion( FileChannel fileChannel, int bytesToRead ) throws IOException
+    private String readVersion( StoreChannel fileChannel, int bytesToRead ) throws IOException
     {
         fileChannel.position( fileChannel.size() - bytesToRead );
         byte[] foundVersionBytes = new byte[bytesToRead];

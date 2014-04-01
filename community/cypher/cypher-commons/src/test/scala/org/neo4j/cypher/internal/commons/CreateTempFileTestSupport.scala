@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.commons
 
 import scala.reflect.io.File
 import java.io.PrintWriter
+import scala.io.Codec
 
 trait CreateTempFileTestSupport extends CypherTestSupport {
   self: CypherTestSuite =>
@@ -52,7 +53,7 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
   private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit): File =  {
     val file = new File(java.io.File.createTempFile(name, ext, null))
     try {
-      val writer = file.printWriter()
+      val writer = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8), true)
       try {
         f(writer)
       } finally {

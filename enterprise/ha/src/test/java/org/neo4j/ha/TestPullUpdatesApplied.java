@@ -34,6 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -48,7 +49,8 @@ import org.neo4j.test.RepeatRule;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.test.TargetDirectory.forTest;
 
 /**
@@ -167,11 +169,11 @@ public class TestPullUpdatesApplied
                 } );
 
         // Temporary debugging
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Starting instance " + toKill + " in separate process..");
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Starting instance " + toKill + " in separate process..");
         runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
 
         // Temporary debugging
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Waiting for instance to start..");
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Waiting for instance to start..");
         if ( !latch2.await( 60, TimeUnit.SECONDS ) )
         {
             throw new IllegalStateException( "Timeout waiting for instance to fail" );

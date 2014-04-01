@@ -49,7 +49,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         // when
         boolean wasClosed = window.writeOutAndCloseIfFree( false );
@@ -65,7 +66,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         window.markAsInUse();
 
@@ -83,7 +85,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        final MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        final MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         window.markAsInUse();
         OtherThreadExecutor<Void> executor = new OtherThreadExecutor<>( "other thread", null );
@@ -113,7 +116,8 @@ public class MappedPersistenceWindowTest
         // given
         String filename = new File( directory.directory(), "mapped.file" ).getAbsolutePath();
         RandomAccessFile file = resources.add( new RandomAccessFile( filename, "rw" ) );
-        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, file.getChannel(), READ_WRITE );
+        StoreChannel channel = new StoreFileChannel( file.getChannel() );
+        MappedPersistenceWindow window = new MappedPersistenceWindow( 0, 8, 16, channel, READ_WRITE );
 
         window.markAsInUse();
         window.lock( OperationType.WRITE );

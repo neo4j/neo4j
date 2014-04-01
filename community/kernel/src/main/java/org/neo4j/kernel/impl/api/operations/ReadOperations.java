@@ -19,6 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-public interface ReadOperations extends KeyReadOperations, EntityReadOperations, SchemaReadOperations
+public interface ReadOperations extends KeyReadOperations, EntityReadOperations, SchemaReadOperations, LockOperations
 {
 }

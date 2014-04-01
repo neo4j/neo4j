@@ -24,16 +24,16 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
-public class LimitedFileChannel extends FileChannel
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+
+public class LimitedFileChannel implements StoreChannel
 {
 
-    private final FileChannel inner;
+    private final StoreChannel inner;
     private LimitedFilesystemAbstraction fs;
 
-    public LimitedFileChannel( FileChannel inner, LimitedFilesystemAbstraction limitedFilesystemAbstraction )
+    public LimitedFileChannel( StoreChannel inner, LimitedFilesystemAbstraction limitedFilesystemAbstraction )
     {
         this.inner = inner;
         fs = limitedFilesystemAbstraction;
@@ -52,6 +52,12 @@ public class LimitedFileChannel extends FileChannel
     }
 
     @Override
+    public long read( ByteBuffer[] dsts ) throws IOException
+    {
+        return 0;
+    }
+
+    @Override
     public int write( ByteBuffer byteBuffer ) throws IOException
     {
         fs.ensureHasSpace();
@@ -66,15 +72,21 @@ public class LimitedFileChannel extends FileChannel
     }
 
     @Override
+    public long write( ByteBuffer[] srcs ) throws IOException
+    {
+        return 0;
+    }
+
+    @Override
     public long position() throws IOException
     {
         return inner.position();
     }
 
     @Override
-    public FileChannel position( long l ) throws IOException
+    public LimitedFileChannel position( long l ) throws IOException
     {
-        return inner.position( l );
+        return new LimitedFileChannel( inner.position( l ), fs );
     }
 
     @Override
@@ -84,9 +96,9 @@ public class LimitedFileChannel extends FileChannel
     }
 
     @Override
-    public FileChannel truncate( long l ) throws IOException
+    public LimitedFileChannel truncate( long l ) throws IOException
     {
-        return inner.truncate( l );
+        return new LimitedFileChannel( inner.truncate( l ), fs );
     }
 
     @Override
@@ -97,22 +109,15 @@ public class LimitedFileChannel extends FileChannel
     }
 
     @Override
-    public long transferTo( long l, long l1, WritableByteChannel writableByteChannel ) throws IOException
-    {
-        return inner.transferTo( l, l1, writableByteChannel );
-    }
-
-    @Override
-    public long transferFrom( ReadableByteChannel readableByteChannel, long l, long l1 ) throws IOException
-    {
-        fs.ensureHasSpace();
-        return inner.transferFrom( readableByteChannel, l, l1 );
-    }
-
-    @Override
     public int read( ByteBuffer byteBuffer, long l ) throws IOException
     {
         return inner.read( byteBuffer, l );
+    }
+
+    @Override
+    public FileLock tryLock() throws IOException
+    {
+        return inner.tryLock();
     }
 
     @Override
@@ -122,25 +127,20 @@ public class LimitedFileChannel extends FileChannel
     }
 
     @Override
-    public MappedByteBuffer map( MapMode mapMode, long l, long l1 ) throws IOException
+    public MappedByteBuffer map( FileChannel.MapMode mapMode, long l, long l1 ) throws IOException
     {
         return inner.map( mapMode, l, l1 );
     }
 
     @Override
-    public FileLock lock( long l, long l1, boolean b ) throws IOException
+    public boolean isOpen()
     {
-        return inner.lock( l, l1, b );
+        return inner.isOpen();
     }
 
     @Override
-    public FileLock tryLock( long l, long l1, boolean b ) throws IOException
+    public void close() throws IOException
     {
-        return inner.tryLock( l, l1, b );
-    }
-
-    @Override
-    protected void implCloseChannel() throws IOException
-    {
+        inner.close();
     }
 }

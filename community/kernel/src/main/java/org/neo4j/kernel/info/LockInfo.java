@@ -20,77 +20,28 @@
 package org.neo4j.kernel.info;
 
 import java.beans.ConstructorProperties;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 public final class LockInfo
 {
     private final String resource;
-    private final ResourceType type;
-    private final int readCount;
-    private final int writeCount;
-    private final List<WaitingThread> waitingThreads;
-    private final List<LockingTransaction> lockingTransactions;
+    private final String description;
+    private final String type;
 
-    @ConstructorProperties( { "resourceType", "resourceId", "readCount", "writeCount", "lockingTransactions",
-            "waitingThreads" } )
-    public LockInfo( ResourceType type, String resourceId, int readCount, int writeCount,
-            List<LockingTransaction> lockingTransactions, List<WaitingThread> waitingThreads )
+    @ConstructorProperties( { "resourceType", "resourceId", "description" } )
+    public LockInfo( String type, String resourceId, String description )
     {
         this.type = type;
         this.resource = resourceId;
-        this.readCount = readCount;
-        this.writeCount = writeCount;
-        this.lockingTransactions = new ArrayList<LockingTransaction>( lockingTransactions );
-        this.waitingThreads = new ArrayList<WaitingThread>( waitingThreads );
-    }
-
-    public LockInfo( ResourceType type, String resourceId, int readCount, int writeCount,
-            Collection<LockingTransaction> locking )
-    {
-        this.type = type;
-        this.resource = resourceId;
-        this.readCount = readCount;
-        this.writeCount = writeCount;
-        this.waitingThreads = new ArrayList<WaitingThread>();
-        this.lockingTransactions = new ArrayList<LockingTransaction>( locking );
-        for ( LockingTransaction tx : lockingTransactions )
-        {
-            if ( tx instanceof WaitingThread )
-            {
-                waitingThreads.add( (WaitingThread) tx );
-            }
-        }
+        this.description = description;
     }
 
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder(  );
-        builder.append( "Total lock count: readCount=" + this.getReadCount() + " writeCount="
-                + this.getWriteCount() + " for "
-                + this.getResourceType().toString( this.getResourceId() ) ).append( "\n" );
-        builder.append( "Lock holders:\n" );
-        for ( LockingTransaction tle : this.getLockingTransactions() )
-        {
-            builder.append( tle ).append( "\n" );
-        }
-        builder.append( "Waiting list:" ).append( "\n" );
-        StringBuilder waitList = new StringBuilder();
-        String sep = "";
-        for ( WaitingThread we : this.getWaitingThreads() )
-        {
-            waitList.append( sep ).append( we );
-            sep = ", ";
-        }
-        builder.append( waitList ).append( "\n" );
-
-        return builder.toString();
+        return description;
     }
 
-    public ResourceType getResourceType()
+    public String getResourceType()
     {
         return type;
     }
@@ -100,28 +51,8 @@ public final class LockInfo
         return resource;
     }
 
-    public int getWriteCount()
+    public String getDescription()
     {
-        return writeCount;
-    }
-
-    public int getReadCount()
-    {
-        return readCount;
-    }
-
-    public int getWaitingThreadsCount()
-    {
-        return waitingThreads.size();
-    }
-
-    public List<WaitingThread> getWaitingThreads()
-    {
-        return Collections.unmodifiableList( waitingThreads );
-    }
-
-    public List<LockingTransaction> getLockingTransactions()
-    {
-        return Collections.unmodifiableList( lockingTransactions );
+        return description;
     }
 }

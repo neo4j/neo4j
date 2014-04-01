@@ -26,8 +26,12 @@ import symbols._
 import org.scalatest.Assertions
 import org.junit.Test
 import util.Random
+import org.scalatest.mock.MockitoSugar
 
-class TopPipeTest extends Assertions {
+class TopPipeTest extends Assertions with MockitoSugar {
+
+  private implicit val monitor = mock[PipeMonitor]
+
   @Test def top10From5ReturnsAll() {
     val input = createFakePipeWith(5)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(10))

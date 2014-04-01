@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{FunctionInvocation, Identifier, Equals}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{FunctionName, FunctionInvocation, Identifier, Equals}
 
 object normalizeEqualsArgumentOrder extends Rewriter {
   override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
@@ -33,9 +33,9 @@ object normalizeEqualsArgumentOrder extends Rewriter {
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move id(n) on equals to the left
-    case predicate @ Equals(FunctionInvocation(Identifier("id"), _, _), _) =>
+    case predicate @ Equals(FunctionInvocation(FunctionName("id"), _, _), _) =>
       predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(Identifier("id"), _, _)) =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(FunctionName("id"), _, _)) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
   }
 }

@@ -189,6 +189,28 @@ public class ExportTest
     }
 
     @Test
+    public void testEscapingStringPropertyWithBackslash() throws Exception
+    {
+        Node n = gdb.createNode();
+        n.setProperty( "name", "Some\\thing" );
+        final ExecutionResult result = result( "node", n );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
+        assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\thing\"})" + NL,
+                doExportGraph( graph ) );
+    }
+
+    @Test
+    public void testEscapingStringPropertyWithBackslashAndDoubleQuote() throws Exception
+    {
+        Node n = gdb.createNode();
+        n.setProperty( "name", "Some\\\"thing" );
+        final ExecutionResult result = result( "node", n );
+        final SubGraph graph = CypherResultSubGraph.from( result, gdb, false );
+        assertEquals( "create (_" + n.getId() + " {`name`:\"Some\\\\\\\"thing\"})" + NL,
+                doExportGraph( graph ) );
+    }
+
+    @Test
     public void testSingleNodeWithArrayProperties() throws Exception
     {
         Node n = gdb.createNode();

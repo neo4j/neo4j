@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
 
 trait Phase {
   self =>
 
   def myBuilders: Seq[PlanBuilder]
 
-  def apply(inPlan: ExecutionPlanInProgress, context: PlanContext): ExecutionPlanInProgress = {
+  def apply(inPlan: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor:PipeMonitor): ExecutionPlanInProgress = {
     var plan = inPlan
     while (myBuilders.exists(_.canWorkWith(plan, context))) {
       val matchingBuilders = myBuilders.filter(_.canWorkWith(plan, context))
@@ -49,7 +50,7 @@ trait Phase {
   def andThen(other: Phase) = new Phase {
     def myBuilders: Seq[PlanBuilder] = self.myBuilders ++ other.myBuilders
 
-    override def apply(inPlan: ExecutionPlanInProgress, context: PlanContext): ExecutionPlanInProgress = {
+    override def apply(inPlan: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
       val firstStep = self(inPlan, context)
       other(firstStep, context)
     }

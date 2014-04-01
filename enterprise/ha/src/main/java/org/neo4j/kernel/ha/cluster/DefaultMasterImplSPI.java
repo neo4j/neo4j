@@ -30,7 +30,7 @@ import javax.transaction.TransactionManager;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.StoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
@@ -39,19 +39,17 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
-import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -86,14 +84,14 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public void acquireLock( MasterImpl.LockGrabber grabber, Object... entities )
+    public void acquireLock( MasterImpl.LockGrabber grabber, Locks.ResourceType type, long[] resourceIds )
     {
-        LockManager lockManager = resolve( LockManager.class );
-        AbstractTransactionManager dbTxManager = resolve( AbstractTransactionManager.class );
-        TransactionState state = dbTxManager.getTransactionState();
-        for ( Object entity : entities )
+        try( Statement stmt = resolve( ThreadToStatementContextBridge.class ).instance())
         {
-            grabber.grab( lockManager, state, entity );
+            for ( long resourceId : resourceIds )
+            {
+                grabber.grab( stmt, type, resourceId );
+            }
         }
     }
 
@@ -141,12 +139,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         {
             throw Exceptions.launderedException( e );
         }
-    }
-
-    @Override
-    public GraphProperties graphProperties()
-    {
-        return resolve( NodeManager.class ).getGraphProperties();
     }
 
     @Override

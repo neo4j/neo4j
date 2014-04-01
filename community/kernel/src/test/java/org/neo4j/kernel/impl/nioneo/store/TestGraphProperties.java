@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.concurrent.Future;
 
@@ -276,7 +275,7 @@ public class TestGraphProperties
     {
         // Remove the last record, next startup will look like as if we're upgrading an old store
         File neoStoreFile = new File( storeDir, NeoStore.DEFAULT_NAME );
-        FileChannel channel = fileSystem.open( neoStoreFile, "rw" );
+        StoreChannel channel = fileSystem.open( neoStoreFile, "rw" );
         channel.position( NeoStore.RECORD_SIZE * 7/*position of "next prop"*/ );
         int trail = (int) (channel.size() - channel.position());
         ByteBuffer trailBuffer = null;

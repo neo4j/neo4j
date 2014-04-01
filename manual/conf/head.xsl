@@ -1,9 +1,7 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" exclude-result-prefixes="d">
 
-  <xsl:import href="breadcrumbs.xsl"/>
-  
-<xsl:template name="user.head.content">
-  <xsl:text disable-output-escaping="yes">
+<xsl:template name="user.webhelp.head.content">
+<xsl:text disable-output-escaping="yes">
 <![CDATA[
 
 <!-- favicon -->
@@ -11,79 +9,74 @@
 <link rel="shortcut icon" href="http://neo4j.org/favicon.ico" type="image/vnd.microsoft.icon" />
 <link rel="icon" href="http://neo4j.org/favicon.ico" type="image/x-icon" />
 
-<!-- style -->
+<!-- fonts -->
 
-<link href="css/shCore.css" rel="stylesheet" type="text/css" />
-<link href="css/shCoreEclipse.css" rel="stylesheet" type="text/css" />
-<link href="css/shThemeEclipse.css" rel="stylesheet" type="text/css" />
-<link href="css/neo.css" rel="stylesheet" type="text/css" />
-
-<!-- JQuery -->
-
-<script type="text/javascript" src="js/jquery-1.6.4.min.js"></script>
-<script type="text/javascript" src="js/jquery-ui-1.10.3.custom.min.js"></script>
-
-<!-- Replace SVG for browsers that lack support. -->
-<script type="text/javascript" src="js/svgreplacer.js"></script>
-
-<!-- Image Scaler -->
-
-<script type="text/javascript" src="js/imagescaler.js"></script>
-
-<!-- Table Styler -->
-
-<script type="text/javascript" src="js/tablestyler.js"></script>
-
-<!-- Version -->
-
-<script type="text/javascript" src="js/version.js"></script>
-
-<!-- Version Switcher -->
-
-<script type="text/javascript" src="js/versionswitcher.js"></script>
-
-<!-- Cypher Console -->
-
-<link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.min.css" rel="stylesheet">
-<script type="text/javascript" src="js/console.js"></script>
-<script type="text/javascript" src="js/cypherconsole.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono|PT+Sans:400,700,400italic' rel='stylesheet' type='text/css' />
 
 <!-- Syntax Highlighter -->
 
-<script type="text/javascript" src="js/shCore.js"></script>
-<script type="text/javascript" src="js/shBrushJava.js"></script>
-<script type="text/javascript" src="js/shBrushJScript.js"></script>
-<script type="text/javascript" src="js/shBrushBash.js"></script>
-<script type="text/javascript" src="js/shBrushPlain.js"></script>
-<script type="text/javascript" src="js/shBrushXml.js"></script>
-<script type="text/javascript" src="js/shBrushGroovy.js"></script>
-<script type="text/javascript" src="js/shBrushCypher.js"></script>
-<script type="text/javascript" src="js/shBrushScala.js"></script>
-<script type="text/javascript" src="js/shBrushSql.js"></script>
-<script type="text/javascript" src="js/shBrushPython.js"></script>
-<script type="text/javascript" src="js/shBrushProperties.js"></script>
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/codemirror.min.css" />
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/codemirror.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/addon/runmode/runmode.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/javascript/javascript.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/shell/shell.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/sql/sql.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/xml/xml.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/clike/clike.min.js"></script>
 
-<!-- activate when needed
-<script type="text/javascript" src="js/shBrushRuby.js"></script>
-<script type="text/javascript" src="js/shBrushCSharp.js"></script>
--->
+<link rel="stylesheet" href="http://gist.neo4j.org/css/codemirror-neo.css" />
+<script src="http://gist.neo4j.org/js/codemirror-cypher.js"></script>
+<script src="js/colorize.js"></script>
  
 <script type="text/javascript">
-  SyntaxHighlighter.defaults['tab-size'] = 4;
-  SyntaxHighlighter.defaults['gutter'] = false;
-  SyntaxHighlighter.defaults['toolbar'] = false;
-  SyntaxHighlighter.all()
+  $(function (){
+    CodeMirror.colorize();
+  });
 </script>
 
-<!-- Online Sidebar -->
+<script type="text/javascript">
+  $(function (){
+    var $content = $('#content section');
+    $('img', $content).addClass('img-responsive');
+    $('div.admonitionblock img', $content).removeClass('img-responsive');
+    $('dl', $content).addClass('dl-horizontal');
+    $('div.table table,div.informaltable table', $content).addClass('table table-condensed table-hover');
+    var $admonblocks = $('div.admonitionblock');
+    $admonblocks.filter('.Note').find('td.content').addClass('alert alert-info');
+    $admonblocks.filter('.Tip').find('td.content').addClass('alert alert-info');
+    $admonblocks.filter('.Important').find('td.content').addClass('alert alert-warning');
+    $admonblocks.filter('.Caution').find('td.content').addClass('alert alert-warning');
+    $admonblocks.filter('.Warning').find('td.content').addClass('alert alert-danger');
+    $('div.sidebar', $content).addClass('alert alert-info');
+    $('#content div.titlepage div.abstract').addClass('alert alert-info');
+  });
+</script>
 
-<script type="text/javascript" src="../sidebar.js"></script>
 
+<!-- Cypher Console -->
+
+<script type="text/javascript" src="js/console.js"></script>
+<script type="text/javascript" src="js/cypherconsole.js"></script>
+
+<!-- Version -->
+<script type="text/javascript" src="js/version.js"></script>
+<script type="text/javascript" src="http://docs.neo4j.org/chunked/versions.js"></script>
+<script type="text/javascript" src="js/versionswitcher.js"></script>
+
+<!-- Discuss -->
+<script type="text/javascript" src="js/mutate.min.js"></script>
+<script type="text/javascript" src="js/disqus.js"></script>
+
+<script type="text/javascript">
+    /*@cc_on @*/
+    /*@
+     $( '#content' ).addClass( 'internet-explorer' );
+     @*/
+</script>
+ 
 ]]>
-  </xsl:text>
-  
-  <xsl:call-template name="breadcrumbs"/>
-  
+</xsl:text>
+
 </xsl:template>
 
 </xsl:stylesheet>

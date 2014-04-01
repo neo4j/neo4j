@@ -41,7 +41,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createNode("a")
     val node = createNode("b")
 
-    executeScalarWithNewPlanner[Node](s"match n where  ${node.getId} = id(n) return n") should equal(node)
+    executeScalarWithNewPlanner[Node](s"match n where ${node.getId} = id(n) return n") should equal(node)
   }
 
   test("Seek node by id given on the right") {
@@ -51,38 +51,104 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     executeScalarWithNewPlanner[Node](s"match n where id(n) = ${node.getId} return n") should equal(node)
   }
 
-  test("Seeking two nodes by a tautological id() comparison") {
-    val nodes = Set(createNode("a"), createNode("b"))
+  test("Seek node by id with multiple values") {
+    createNode("a")
+    val n1= createNode("b")
+    val n2 = createNode("c")
 
-    executeWithNewPlanner(s"match n where id(n) = id(n) return n").columnAs[Node]("n").toSet should equal(nodes)
+    val result = executeWithNewPlanner(s"match n where id(n) IN [${n1.getId}, ${n2.getId}] return n")
+    result.columnAs("n").toList should equal(Seq(n1, n2))
   }
 
-  test("Can use both label scan (left) and node by id (right)") {
+  test("Can use both label scan (left) and node by id (right) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
     executeScalarWithNewPlanner[Node](s"match n where n:Person and ${node.getId} = id(n) return n") should equal(node)
   }
 
-  test("Can use both label scan (right) and node by id (left)") {
+  test("Can use both label scan (right) and node by id (left) when there are no indices") {
     createLabeledNode("Person")
     val node = createLabeledNode("Person")
 
     executeScalarWithNewPlanner[Node](s"match n where ${node.getId} = id(n) and n:Person return n") should equal(node)
   }
 
-  // 2014-03-12 SP: Enable once Ronja accepts relationship patterns
-  ignore("Seek relationship by id given on the left") {
+  test("Can find nodes by id and apply a predicate on it") {
+    createNode("prop"->1)
+    val n = createNode("prop"->2)
+    executeScalarWithNewPlanner[Node](s"match n where n.prop = 2 return n") should equal(n)
+  }
+
+  test("Seek relationship by id given on the left") {
     val rel = relate(createNode("a"), createNode("b"))
 
     executeScalarWithNewPlanner[Node](s"match ()-[r]->() where ${rel.getId} = id(r) return r") should equal(rel)
   }
 
-  // 2014-03-12 SP: Enable once Ronja accepts relationship patterns
-  ignore("Seek relationship by id given on the right") {
+  test("Seek relationship by id given on the right") {
     val rel = relate(createNode("a"), createNode("b"))
 
     executeScalarWithNewPlanner[Node](s"match ()-[r]->() where id(r) = ${rel.getId} return r") should equal(rel)
+  }
+
+  test("Seek relationship by id with multiple values") {
+    relate(createNode("x"), createNode("y"))
+    val rel1 = relate(createNode("a"), createNode("b"))
+    val rel2 = relate(createNode("c"), createNode("d"))
+
+    val result = executeWithNewPlanner(s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
+    result.columnAs("r").toList should equal(Seq(rel1, rel2))
+  }
+
+  test("Seek relationship by id with no direction") {
+    val a = createNode("x")
+    val b = createNode("x")
+    val r = relate(a, b)
+
+    val result = executeWithNewPlanner(s"match (a)-[r]-(b) where id(r) = ${r.getId} return a,r,b")
+    result.toList should equal(List(
+      Map("r" -> r, "a" -> a, "b" -> b),
+      Map("r" -> r, "a" -> b, "b" -> a)))
+  }
+
+  test("Seek relationship by id with type that is not matching") {
+    val r = relate(createNode("x"), createNode("y"), "FOO")
+
+    val result = executeWithNewPlanner(s"match ()-[r:BAR]-() where id(r) = ${r.getId} return r")
+    result.toList shouldBe empty
+  }
+
+  test("Scan index with property given in where") {
+    createLabeledNode("Person")
+    graph.createIndex("Person", "prop")
+
+    val node = createLabeledNode(Map("prop" -> 42), "Person")
+    executeScalarWithNewPlanner[Node](s"match (n:Person) where n.prop = 42 return n") should equal(node)
+  }
+
+  test("Scan index with property given in node pattern") {
+    createLabeledNode("Person")
+    graph.createIndex("Person", "prop")
+
+    val node = createLabeledNode(Map("prop" -> 42), "Person")
+    executeScalarWithNewPlanner[Node](s"match (n:Person {prop: 42}) return n") should equal(node)
+  }
+
+  test("Seek index with property given in where") {
+    createLabeledNode("Person")
+    graph.createConstraint("Person", "prop")
+
+    val node = createLabeledNode(Map("prop" -> 42), "Person")
+    executeScalarWithNewPlanner[Node](s"match (n:Person) where n.prop = 42 return n") should equal(node)
+  }
+
+  test("Seek index with property given in node pattern") {
+    createLabeledNode("Person")
+    graph.createConstraint("Person", "prop")
+
+    val node = createLabeledNode(Map("prop" -> 42), "Person")
+    executeScalarWithNewPlanner[Node](s"match (n:Person {prop: 42}) return n") should equal(node)
   }
 }
 

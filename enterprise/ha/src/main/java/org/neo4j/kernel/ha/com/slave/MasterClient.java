@@ -28,7 +28,7 @@ import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.StoreWriter;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
@@ -63,20 +63,6 @@ public interface MasterClient extends Master
     public Response<Integer> createRelationshipType( RequestContext context, final String name );
 
     public Response<Void> initializeTx( RequestContext context );
-
-    public Response<LockResult> acquireNodeReadLock( RequestContext context, long... nodes );
-
-    public Response<LockResult> acquireRelationshipWriteLock( RequestContext context, long... relationships );
-
-    public Response<LockResult> acquireRelationshipReadLock( RequestContext context, long... relationships );
-
-    public Response<LockResult> acquireGraphWriteLock( RequestContext context );
-
-    public Response<LockResult> acquireGraphReadLock( RequestContext context );
-
-    public Response<LockResult> acquireIndexReadLock( RequestContext context, String index, String key );
-
-    public Response<LockResult> acquireIndexWriteLock( RequestContext context, String index, String key );
 
     public Response<Long> commitSingleResourceTransaction( RequestContext context, final String resource,
             final TxExtractor txGetter );

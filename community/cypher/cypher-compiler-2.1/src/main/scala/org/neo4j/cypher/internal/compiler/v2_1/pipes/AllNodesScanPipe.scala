@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols._
 
-case class AllNodesScanPipe(ident: String) extends Pipe {
+case class AllNodesScanPipe(ident: String)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     state.query.nodeOps.all.map(n => ExecutionContext.from(ident -> n))
@@ -32,4 +32,6 @@ case class AllNodesScanPipe(ident: String) extends Pipe {
   def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("ident" -> ident))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
+
+  override def monitor = pipeMonitor
 }

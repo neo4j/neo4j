@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{FunctionInvocation, SignedIntegerLiteral, Equals, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
 class NormalizeEqualsArgumentOrderTest extends CypherFunSuite {
 
@@ -53,5 +56,5 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite {
     normalizeEqualsArgumentOrder(Equals(lhs, rhs)(pos)) should equal(Some(Equals(rhs, lhs)(pos)))
   }
 
-  private def id(name: String) = FunctionInvocation(Identifier("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
+  private def id(name: String) = FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
 }

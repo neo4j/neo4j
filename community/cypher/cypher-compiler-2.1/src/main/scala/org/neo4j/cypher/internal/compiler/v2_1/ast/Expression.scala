@@ -56,11 +56,17 @@ object Expression {
 }
 
 import Expression._
+import Foldable._
 
 abstract class Expression extends ASTNode with SemanticChecking {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
   def types: TypeGenerator = s => s.expressionType(this).actual
+
+  def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
+    case e: Expression if e != this =>
+      (acc, _) => acc :+ e
+  }
 
   def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
     s => specifyType(typeGen(s))(s)
@@ -87,7 +93,6 @@ trait SimpleTyping { self: Expression =>
 }
 
 trait FunctionTyping { self: Expression =>
-  def arguments: IndexedSeq[Expression]
 
   case class Signature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
 
@@ -129,16 +134,13 @@ trait FunctionTyping { self: Expression =>
 
 trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>
   def rhs: Expression
-  val arguments = Vector(rhs)
 }
 
 trait PostfixFunctionTyping extends FunctionTyping { self: Expression =>
   def lhs: Expression
-  val arguments = Vector(lhs)
 }
 
 trait InfixFunctionTyping extends FunctionTyping { self: Expression =>
   def lhs: Expression
   def rhs: Expression
-  val arguments = Vector(lhs, rhs)
 }

@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class CompareTxStreams
@@ -48,6 +49,7 @@ public class CompareTxStreams
                                 return new PhysicalLogNeoXaCommandWriter();
                             }
                         },
+                        monitors.newMonitor( ByteCounterMonitor.class ),
                         new LogEntryWriterv1(),
                         new File(args[0]) ),
                 LogExtractor.from( fileSystem,
@@ -60,6 +62,7 @@ public class CompareTxStreams
                                 return new PhysicalLogNeoXaCommandWriter();
                             }
                         },
+                        monitors.newMonitor( ByteCounterMonitor.class ),
                         new LogEntryWriterv1(),
                         new File( args[1] ) ) );
     }

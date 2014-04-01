@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, ExecuteUpdateCommandsPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, Pipe, ExecuteUpdateCommandsPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.UpdateAction
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{UpdatingStartItem, StartItem}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class UpdateActionBuilder extends PlanBuilder with UpdateCommandExpander {
-  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val updateCmds: Seq[QueryToken[UpdateAction]] = extractValidUpdateActions(plan, plan.pipe)
     val startItems: Seq[QueryToken[StartItem]] = extractValidStartItems(plan, plan.pipe)
     val startCmds = startItems.map(_.map(_.asInstanceOf[UpdatingStartItem].updateAction))
@@ -54,7 +54,7 @@ class UpdateActionBuilder extends PlanBuilder with UpdateCommandExpander {
     plan.query.updates.filter(cmd => cmd.unsolved && cmd.token.symbolDependenciesMet(p.symbols))
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val uas = extractValidUpdateActions(plan, plan.pipe).nonEmpty
     val sitems = extractValidStartItems(plan, plan.pipe).nonEmpty
 

@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.NotInTransactionException
 import collection.mutable
 
-case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])
-  extends PipeWithSource(source) with CollectionSupport with NoLushEntityCreation {
+case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with CollectionSupport with NoLushEntityCreation {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) = input.flatMap {
     case ctx => executeMutationCommands(ctx, state, commands.size == 1)

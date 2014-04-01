@@ -25,13 +25,6 @@ public abstract class AbstractRecord extends AbstractBaseRecord
 
     AbstractRecord( int id )
     {
-        super( false );
-        this.id = id;
-    }
-
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
         this.id = id;
     }
 

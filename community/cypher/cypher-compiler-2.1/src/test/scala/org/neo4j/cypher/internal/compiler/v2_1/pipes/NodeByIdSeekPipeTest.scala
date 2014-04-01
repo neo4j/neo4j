@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal}
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
+  implicit val monitor = mock[PipeMonitor]
   import Mockito.when
 
   test("should seek node by id") {
@@ -38,9 +39,30 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     )
 
     // when
-    val result = NodeByIdSeekPipe("a", Literal(17)).createResults(queryState)
+    val result = NodeByIdSeekPipe("a", Seq(Literal(17))).createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(List(node))
+  }
+
+  test("should seek nodes by multiple ids") {
+    // given
+    val node1 = mock[Node]
+    val node2 = mock[Node]
+    val node3 = mock[Node]
+    val nodeOps = mock[Operations[Node]]
+
+    when(nodeOps.getById(42)).thenReturn(node1)
+    when(nodeOps.getById(21)).thenReturn(node2)
+    when(nodeOps.getById(11)).thenReturn(node3)
+    val queryState = QueryStateHelper.emptyWith(
+      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
+    )
+
+    // whens
+    val result = NodeByIdSeekPipe("a", Seq(Literal(42), Literal(21), Literal(11))).createResults(queryState)
+
+    // then
+    result.map(_("a")).toList should equal(List(node1, node2, node3))
   }
 }

@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
-import static org.neo4j.com.Protocol.LONG_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_SERIALIZER;
-import static org.neo4j.com.Protocol.readBoolean;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
-
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 
@@ -36,16 +29,23 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
-import org.neo4j.com.ToNetworkStoreWriter;
+import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.ha.com.slave.MasterClient18.AquireLockCall;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readBoolean;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public enum HaRequestType201 implements RequestType<Master>
 {
@@ -95,7 +95,7 @@ public enum HaRequestType201 implements RequestType<Master>
         @Override
         public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
-            return master.acquireNodeWriteLock( context, ids );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER )
     {
@@ -112,7 +112,7 @@ public enum HaRequestType201 implements RequestType<Master>
         @Override
         public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
-            return master.acquireNodeReadLock( context, ids );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER )
     {
@@ -129,7 +129,7 @@ public enum HaRequestType201 implements RequestType<Master>
         @Override
         public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
-            return master.acquireRelationshipWriteLock( context, ids );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER )
     {
@@ -146,7 +146,7 @@ public enum HaRequestType201 implements RequestType<Master>
         @Override
         public Response<LockResult> lock( Master master, RequestContext context, long... ids )
         {
-            return master.acquireRelationshipReadLock( context, ids );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER )
     {
@@ -255,7 +255,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.acquireGraphWriteLock( context );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER )
     {
@@ -273,7 +273,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.acquireGraphReadLock( context );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER )
     {
@@ -291,7 +291,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.acquireIndexReadLock( context, readString( input ), readString( input ) );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
 
     }, LOCK_SERIALIZER )
@@ -310,7 +310,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.acquireIndexWriteLock( context, readString( input ), readString( input ) );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
 
     }, LOCK_SERIALIZER )
@@ -362,7 +362,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.acquireSchemaReadLock( context );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
 
     }, LOCK_SERIALIZER )
@@ -381,7 +381,7 @@ public enum HaRequestType201 implements RequestType<Master>
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.acquireSchemaWriteLock( context );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
 
     }, LOCK_SERIALIZER )
@@ -391,13 +391,14 @@ public enum HaRequestType201 implements RequestType<Master>
         {
             return true;
         }
-    }, ACQUIRE_INDEX_ENTRY_WRITE_LOCK( new TargetCaller<Master,LockResult>()
+    },
+    ACQUIRE_INDEX_ENTRY_WRITE_LOCK( new TargetCaller<Master,LockResult>()
     {
         @Override
         public Response<LockResult> call( Master master, RequestContext context, ChannelBuffer input,
                                           ChannelBuffer target )
         {
-            return master.acquireIndexEntryWriteLock( context, input.readLong(), input.readLong(), readString( input ) );
+            throw new ThisShouldNotHappenError( "Jake", "Older clients should not be allowed to talk to new masters" );
         }
     }, LOCK_SERIALIZER );
 
@@ -434,5 +435,22 @@ public enum HaRequestType201 implements RequestType<Master>
     public boolean isLock()
     {
         return false;
+    }
+
+    private static abstract class AquireLockCall implements TargetCaller<Master, LockResult>
+    {
+        @Override
+        public Response<LockResult> call( Master master, RequestContext context,
+                                          ChannelBuffer input, ChannelBuffer target )
+        {
+            long[] ids = new long[input.readInt()];
+            for ( int i = 0; i < ids.length; i++ )
+            {
+                ids[i] = input.readLong();
+            }
+            return lock( master, context, ids );
+        }
+
+        protected abstract Response<LockResult> lock( Master master, RequestContext context, long... ids );
     }
 }

@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
 
-case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression]) extends PipeWithSource(source) {
+case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
+                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   val symbols: SymbolTable = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)

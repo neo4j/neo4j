@@ -25,19 +25,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
+@Ignore("Jake: This assumes completely fair locking, which is not guaranteed, discuss what to do here before merging.")
 public class TestRaceOnMultipleNodeImpl
 {
     @Test
@@ -82,7 +81,7 @@ public class TestRaceOnMultipleNodeImpl
                 original.removeProperty( "not existing" ); // block to make sure that we wait until "remover" is done
                 root.setProperty( "key", "root" ); // reuse property record with same key for different node
             }
-        } ) );
+        }));
         clearCaches(); // mess things up by giving threads different NodeImpl instances
         final AtomicBoolean precondition = new AtomicBoolean( false ); // just used as a mutable Boolean
         final CountDownLatch readyToBlockOnLock = latch(), done = latch();

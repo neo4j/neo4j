@@ -19,43 +19,48 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Where
-import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
 
 /*
 An abstract representation of the query graph being solved at the current step
  */
-case class QueryGraph(projections: Map[String, ast.Expression],
+case class QueryGraph(projections: Map[String, Expression],
                       selections: Selections,
-                      identifiers: Set[IdName])
+                      patternNodes: Set[IdName],
+                      patternRelationships: Set[PatternRelationship]) {
+  def knownLabelsOnNode(node: IdName): Seq[LabelName] =
+    selections
+      .labelPredicates.getOrElse(node, Seq.empty)
+      .flatMap(_.labels).toSeq
 
-object SelectionPredicates {
-  def fromWhere(where: Where) = extractPredicates(where.expression)
-
-  private def extractPredicates(predicate: ast.Expression): Seq[(Set[IdName], ast.Expression)] = predicate match {
-    // n:Label
-    case predicate@HasLabels(identifier@Identifier(name), labels) =>
-      labels.map( (label: LabelName) => Set(IdName(name)) -> HasLabels(identifier, Seq(label))(predicate.position) )
-
-    // id(n) = 12
-    case predicate@Equals(FunctionInvocation(Identifier("id"), _, IndexedSeq(Identifier(ident))), _) =>
-      Seq(Set(IdName(ident)) -> predicate)
-
-    // and
-    case predicate@And(predicateLhs, predicateRhs) =>
-      extractPredicates(predicateLhs) ++ extractPredicates(predicateRhs)
-
-    case _ =>
-      throw new CantHandleQueryException
+  def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] = patternRelationships.filter {
+    r => r.nodes._1 == id || r.nodes._2 == id
   }
 }
 
-case class Selections(predicates: Seq[(Set[IdName], ast.Expression)] = Seq.empty) {
-  def apply(availableIds: Set[IdName]): Seq[ast.Expression] =
-    predicates.collect { case (k, v) if k.subsetOf(availableIds) => v }
+object SelectionPredicates {
+  def fromWhere(where: Where): Seq[(Set[IdName], Expression)] = extractPredicates(where.expression)
+
+  private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
+    case id: Identifier =>
+      (acc: Set[IdName], _) => acc + IdName(id.name)
+  }
+
+  private def extractPredicates(predicate: Expression): Seq[(Set[IdName], Expression)] = {
+    predicate.treeFold(Seq.empty[(Set[IdName], Expression)]) {
+      // n:Label
+      case predicate@HasLabels(identifier@Identifier(name), labels) =>
+        (acc, _) => acc ++ labels.map { label: LabelName =>
+          Set(IdName(name)) -> predicate.copy(labels = Seq(label))(predicate.position)
+        }
+      // and
+      case _: And =>
+        (acc, children) => children(acc)
+      case predicate: Expression =>
+        (acc, _) => acc :+ (idNames(predicate) -> predicate)
+    }
+  }
 }
+
+
