@@ -26,7 +26,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Commons Lang
   JTA 1.1
 
 Eclipse Public License, Version 1.0
