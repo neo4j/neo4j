@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
@@ -72,6 +73,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -251,7 +253,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         };
                     }
                 };
-                
+
                 map.put( "store_dir", path().getPath() );
                 xaContainer = xaFactory.newXaContainer( this, resourceFile(),
                         new DummyCommandFactory(),
@@ -396,12 +398,13 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         Map<String, String> config = new HashMap<String, String>();
         config.put( "store_dir", "target/var" );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        KernelHealth kernelHealth = mock( KernelHealth.class );
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory( new Config( config, GraphDatabaseSettings.class ),
                         TxIdGenerator.DEFAULT, new PlaceboTm( null, getGraphDbAPI().getTxIdGenerator() ),
                         fileSystem, new Monitors(), new DevNullLoggingService(),
-                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -465,10 +468,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             Map<String, String> config = new HashMap<String, String>();
             config.put( "store_dir", "target/var" );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            KernelHealth kernelHealth = mock( KernelHealth.class );
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
                             (AbstractTransactionManager)tm, fileSystem, new Monitors(), new DevNullLoggingService(),
-                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
+                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ) ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr
                     .getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();

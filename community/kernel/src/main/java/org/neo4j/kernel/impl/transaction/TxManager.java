@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -38,11 +39,9 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
@@ -71,10 +70,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<RecoveredBranchInfo, Boolean>();
     private volatile TxLog txLog = null;
-    private boolean tmOk = false;
-    private Throwable tmNotOkCause;
-
-    private final KernelPanicEventGenerator kpe;
 
     private final AtomicInteger startedTxCount = new AtomicInteger( 0 );
     private final AtomicInteger comittedTxCount = new AtomicInteger( 0 );
@@ -90,15 +85,16 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
     private final Factory<byte[]> xidGlobalIdFactory;
+    private final KernelHealth kernelHealth;
     private final Monitors monitors;
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
-                      KernelPanicEventGenerator kpe,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory,
                       Factory<byte[]> xidGlobalIdFactory,
+                      KernelHealth kernelHealth,
                       Monitors monitors
     )
     {
@@ -106,9 +102,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.xaDataSourceManager = xaDataSourceManager;
         this.fileSystem = fileSystem;
         this.log = log;
-        this.kpe = kpe;
         this.stateFactory = stateFactory;
         this.xidGlobalIdFactory = xidGlobalIdFactory;
+        this.kernelHealth = kernelHealth;
         this.monitors = monitors;
     }
 
@@ -250,15 +246,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     synchronized void setTmNotOk( Throwable cause )
     {
-        if ( !tmOk )
-        {
-            return;
-        }
-        
-        tmOk = false;
-        tmNotOkCause = cause;
-        log.error( "setting TM not OK", cause );
-        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, tmNotOkCause );
+        kernelHealth.panic( cause );
     }
 
     @Override
@@ -290,17 +278,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private void assertTmOk( String source ) throws SystemException
     {
-        if ( !tmOk )
-        {
-            SystemException ex = new SystemException( "TM has encountered some problem, "
-                    + "please perform neccesary action (tx recovery/restart)" );
-            if(tmNotOkCause != null)
-            {
-                ex = Exceptions.withCause( ex, tmNotOkCause );
-            }
-
-            throw ex;
-        }
+        kernelHealth.assertHealthy( SystemException.class );
     }
 
     // called when a resource gets enlisted
@@ -340,7 +318,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 throw logAndReturn( "TM error tx commit", new IllegalStateException( "Tx status is: "
                         + getTxStatusAsString( tx.getStatus() ) ) );
             }
-
 
             tx.doBeforeCompletion();
             // delist resources?
@@ -650,7 +627,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         assertTmOk( "get transaction" );
         return txThreadMap.get();
     }
-    
+
     @Override
     public void resume( Transaction tx ) throws IllegalStateException,
             SystemException
@@ -661,7 +638,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         {
             throw new ThreadAssociatedWithOtherTransactionException( Thread.currentThread(), associatedTx, tx );
         }
-        
+
         TransactionImpl txImpl = (TransactionImpl) tx;
         if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
         {
@@ -797,7 +774,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
             getTxLog().truncate();
             recovered = true;
-            tmOk = true;
         }
         catch ( Throwable t )
         {
@@ -947,7 +923,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         return tx != null ? ((TransactionImpl)tx).getState() : TransactionState.NO_STATE;
     }
-    
+
     private class TxManagerDataSourceRegistrationListener implements DataSourceRegistrationListener
     {
         @Override

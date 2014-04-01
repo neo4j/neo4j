@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -35,6 +36,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
@@ -100,7 +103,6 @@ public class XaLogicalLog implements LogLoader
 
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
-    private long recoveredTxCount;
 
     private final StringLogger msgLog;
 
@@ -117,17 +119,19 @@ public class XaLogicalLog implements LogLoader
     // We need separate monitors to differentiate between network/disk I/O
     protected final ByteCounterMonitor bufferMonitor;
     protected final ByteCounterMonitor logDeserializerMonitor;
+    private final KernelHealth kernelHealth;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
-                         long rotateAtSize )
+                         KernelHealth kernelHealth, long rotateAtSize )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
+        this.kernelHealth = kernelHealth;
         this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
         this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );
         this.pruneStrategy = pruneStrategy;
@@ -223,7 +227,7 @@ public class XaLogicalLog implements LogLoader
         else
         {
             logVersion = xaTf.getCurrentVersion();
-            
+
             /* This is for compensating for that, during rotation, renaming the active log
              * file and updating the log version via xaTf isn't atomic. First the file gets
              * renamed and then the version is updated. If a crash occurs in between those
@@ -236,8 +240,10 @@ public class XaLogicalLog implements LogLoader
                 logVersionChanged = true;
             }
             if ( logVersionChanged )
+            {
                 xaTf.setVersion( logVersion );
-            
+            }
+
             long lastTxId = xaTf.getLastCommittedTx();
             LogIoUtils.writeLogHeader( sharedBuffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
@@ -271,7 +277,7 @@ public class XaLogicalLog implements LogLoader
 
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid, int masterId, int myId ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId )
     {
         int xidIdent = getNextIdentifier();
         long timeWritten = System.currentTimeMillis();
@@ -289,6 +295,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void writeStartEntry( int identifier )
             throws XAException
     {
+        kernelHealth.assertHealthy( XAException.class );
         try
         {
             long position = writeBuffer.getFileChannelPosition();
@@ -523,7 +530,6 @@ public class XaLogicalLog implements LogLoader
         if ( doingRecovery )
         {
             lastRecoveredTx = txId;
-            recoveredTxCount++;
         }
     }
 
@@ -760,13 +766,13 @@ public class XaLogicalLog implements LogLoader
             return;
         }
         logVersion = header[0];
-        
+
         /* This is for compensating for that, during rotation, renaming the active log
          * file and updating the log version via xaTf isn't atomic. First the file gets
          * renamed and then the version is updated. If a crash occurs in between those
          * two we need to detect and repair it the next startup */
         xaTf.setVersion( logVersion );
-        
+
         long lastCommittedTx = header[1];
         previousLogLastCommittedTx = lastCommittedTx;
         positionCache.putHeader( logVersion, previousLogLastCommittedTx );
@@ -1129,11 +1135,12 @@ public class XaLogicalLog implements LogLoader
                     apply();
                     return false;
                 }
-                catch ( Error e )
+                catch ( Throwable e )
                 {
                     startEntry = null;
                     commitEntry = null;
-                    throw e;
+                    kernelHealth.panic( e );
+                    throw launderedException( IOException.class, "Failure applying transaction", e );
                 }
             }
             entry.setIdentifier( newXidIdentifier );
@@ -1155,7 +1162,7 @@ public class XaLogicalLog implements LogLoader
             // default do nothing
         }
 
-        private void apply() throws IOException
+        protected void apply() throws IOException
         {
             for ( LogEntry entry : logEntries )
             {
@@ -1223,6 +1230,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
                                                           long nextTxId, ForceMode forceMode ) throws IOException
     {
+        kernelHealth.assertHealthy( IOException.class );
         int xidIdent = 0;
         LogEntry.Start startEntry = null;
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
@@ -1235,15 +1243,11 @@ public class XaLogicalLog implements LogLoader
         logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
                 ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
 
-        long logEntriesFound = 0;
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
-        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
-        {
-            logEntriesFound++;
-        }
+        exhaust( logApplier, xidIdent );
         byteChannel.close();
         startEntry = logApplier.getStartEntry();
         if ( startEntry == null )
@@ -1279,9 +1283,17 @@ public class XaLogicalLog implements LogLoader
         checkLogRotation();
     }
 
+    private void exhaust( LogDeserializer logApplier, int xidIdent ) throws IOException
+    {
+        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+        {   // Just loop through
+        }
+    }
+
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
             throws IOException
     {
+        kernelHealth.assertHealthy( IOException.class );
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
@@ -1289,7 +1301,7 @@ public class XaLogicalLog implements LogLoader
         boolean successfullyApplied = false;
         try
         {
-            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) );
+            exhaust( logApplier, xidIdent );
             successfullyApplied = true;
         }
         finally

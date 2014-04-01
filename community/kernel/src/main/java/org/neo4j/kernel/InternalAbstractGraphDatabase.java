@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -191,6 +192,7 @@ public abstract class InternalAbstractGraphDatabase
     protected NodeManager nodeManager;
     protected IndexManagerImpl indexManager;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
+    protected KernelHealth kernelHealth;
     protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
     protected XaDataSourceManager xaDataSourceManager;
@@ -320,8 +322,8 @@ public abstract class InternalAbstractGraphDatabase
             {
                 // TODO do not explicitly depend on order of start() calls in txManager and XaDatasourceManager
                 // use two booleans instead
-                if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) && txManager
-                        instanceof TxManager )
+                if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) &&
+                    txManager instanceof TxManager )
                 {
                     InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup();
                 }
@@ -422,6 +424,8 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
+        kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
+
         xaDataSourceManager = life.add( createXaDataSourceManager() );
 
         txHook = createTxHook();
@@ -442,9 +446,9 @@ public abstract class InternalAbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
+                txManager = new TxManager( this.storeDir, xaDataSourceManager,
                         logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory,
-                        xidGlobalIdFactory, monitors );
+                        xidGlobalIdFactory, kernelHealth, monitors );
             }
             else
             {
@@ -525,7 +529,7 @@ public abstract class InternalAbstractGraphDatabase
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
                 monitors, logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
-                fileSystem, keepLogicalLogsConfig ) );
+                fileSystem, keepLogicalLogsConfig ), kernelHealth );
 
         createNeoDataSource();
 

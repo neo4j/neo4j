@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
@@ -50,6 +51,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -66,6 +68,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 
@@ -137,7 +140,7 @@ public class TestXa
         log = Logger
                 .getLogger( "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource" );
         log.setLevel( level );
-        
+
         for ( String file : new String[] {
                 "neo",
                 "neo.nodestore.db",
@@ -154,7 +157,7 @@ public class TestXa
             fileSystem.deleteFile( file( file ) );
             fileSystem.deleteFile( file( file + ".id" ) );
         }
-        
+
         File file = new File( "." );
         for ( File nioFile : fileSystem.listFiles( file ) )
         {
@@ -179,11 +182,15 @@ public class TestXa
         }
         file = new File( logBaseFileName.getPath() + ".active" );
         assertTrue( fileSystem.deleteFile( file ) );
-        
+
         // Delete the last .v file
         for ( int i = 5; i >= 0; i-- )
+        {
             if ( fileSystem.deleteFile( new File( logBaseFileName.getPath() + ".v" + i ) ) )
+            {
                 break;
+            }
+        }
     }
 
     public static void renameCopiedLogicalLog( FileSystemAbstraction fileSystem,
@@ -191,7 +198,7 @@ public class TestXa
     {
         fileSystem.deleteFile( files.first().first() );
         fileSystem.renameFile( files.first().other(), files.first().first() );
-        
+
         fileSystem.deleteFile( files.other().first() );
         fileSystem.renameFile( files.other().other(), files.other().first() );
     }
@@ -339,11 +346,12 @@ public class TestXa
             }
         }
 
+        KernelHealth kernelHealth = mock( KernelHealth.class );
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf, lockManager,
                 StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         fileSystem, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
+                        LogPruneStrategies.NO_PRUNING, kernelHealth ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         new DependencyResolver.Adapter()
 
@@ -450,12 +458,14 @@ public class TestXa
     {
         copyClearRename( true );
     }
-    
+
     private void copyClearRename( boolean clearTransactions ) throws IOException
     {
         Pair<Pair<File, File>, Pair<File, File>> copies = copyLogicalLog( fileSystem, logBaseFileName );
         if ( clearTransactions )
+        {
             xaCon.clearAllTransactions();
+        }
         ds.stop();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( fileSystem, copies );

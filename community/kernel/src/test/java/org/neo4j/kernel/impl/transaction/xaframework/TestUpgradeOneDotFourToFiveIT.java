@@ -19,18 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.File;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
@@ -46,15 +50,10 @@ public class TestUpgradeOneDotFourToFiveIT
     public void cannotRecoverNoncleanShutdownDbWithOlderLogFormat() throws Exception
     {
         copyRecursively( new File( TestUpgradeOneDotFourToFiveIT.class.getResource( "non-clean-1.4.2-db/neostore" ).getFile() ).getParentFile(), PATH );
-//        Map<Object, Object> config = new HashMap<Object, Object>();
-//        config.put( "store_dir", PATH.getAbsolutePath() );
-//        config.put( StringLogger.class, StringLogger.DEV_NULL );
-//        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
-//        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
-        
+        KernelHealth kernelHealth = mock( KernelHealth.class );
         XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null,
                 defaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
-                TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), 25 * 1024 * 1024 );
+                TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), kernelHealth, 25 * 1024 * 1024 );
         log.open();
         fail( "Shouldn't be able to start" );
     }
