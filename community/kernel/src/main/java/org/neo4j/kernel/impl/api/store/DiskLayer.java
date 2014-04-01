@@ -29,6 +29,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -101,10 +102,18 @@ public class DiskLayer
     private final RelationshipStore relationshipStore;
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
+    private final Provider<PropertyStore> propertyStoreProvider;
 
+    /**
+     * A note on this taking Provider<NeoStore> rather than just neo store: This is a workaround until the cache is
+     * removed. Because the neostore may be restarted while the database is running, and because lazy properties keep
+     * a reference to the property store, we need a way to resolve the property store on demand for properties in the
+     * cache. As such, this takes a provider, and uses that provider to provide property store references when resolving
+     * lazy properties.
+     */
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                       RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
-                      NeoStore neoStore, IndexingService indexService )
+                      final Provider<NeoStore> neoStore, IndexingService indexService )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -113,10 +122,18 @@ public class DiskLayer
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.neoStore = neoStore;
-        this.nodeStore = neoStore.getNodeStore();
-        this.relationshipStore = neoStore.getRelationshipStore();
-        this.propertyStore = neoStore.getPropertyStore();
+        this.neoStore = neoStore.instance();
+        this.nodeStore = this.neoStore.getNodeStore();
+        this.relationshipStore = this.neoStore.getRelationshipStore();
+        this.propertyStore = this.neoStore.getPropertyStore();
+        this.propertyStoreProvider = new Provider<PropertyStore>()
+        {
+            @Override
+            public PropertyStore instance()
+            {
+                return neoStore.instance().getPropertyStore();
+            }
+        };
     }
 
     public int labelGetOrCreateForName( String label ) throws TooManyLabelsException
@@ -447,7 +464,7 @@ public class DiskLayer
         {
             for ( PropertyBlock block : record.getPropertyBlocks() )
             {
-                properties.add( block.getType().readProperty( block.getKeyIndexId(), block, propertyStore ) );
+                properties.add( block.getType().readProperty( block.getKeyIndexId(), block, propertyStoreProvider ) );
             }
         }
         return properties.iterator();

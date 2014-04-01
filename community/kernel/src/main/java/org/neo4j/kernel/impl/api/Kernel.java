@@ -23,6 +23,7 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -118,6 +119,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
     private final NeoStore neoStore;
+    private final Provider<NeoStore> neoStoreProvider;
     private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final SchemaIndexProviderMap providerMap;
@@ -135,7 +137,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                    LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                    PersistenceManager persistenceManager, LockManager lockManager, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
-                   IndexingService indexService, NodeManager nodeManager, NeoStore neoStore, PersistenceCache persistenceCache,
+                   IndexingService indexService, NodeManager nodeManager, Provider<NeoStore> neoStore, PersistenceCache persistenceCache,
                    SchemaCache schemaCache, SchemaIndexProviderMap providerMap, LabelScanStore labelScanStore, boolean readOnly )
     {
         this.transactionManager = transactionManager;
@@ -149,7 +151,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.indexService = indexService;
-        this.neoStore = neoStore;
+        this.neoStore = neoStore.instance();
+        this.neoStoreProvider = neoStore;
         this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
         this.labelScanStore = labelScanStore;
@@ -239,7 +242,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // Bottom layer: Read-access to committed data
         StoreReadLayer storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokenHolder,
-                relationshipTypeTokenHolder, new SchemaStorage( neoStore.getSchemaStore() ), neoStore,
+                relationshipTypeTokenHolder, new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider,
                 indexService ), persistenceCache, indexService, schemaCache );
 
         // + Transaction state handling
