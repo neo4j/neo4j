@@ -27,7 +27,7 @@ The Neo4j Browser module is built using http://nodejs.org[Node.js]. For skipping
 * Test execution is, of course, part of the build.
 * To add execution of integration tests, use: `mvn clean install -DrunITs`
 * In case you just want the jars, without compiling the tests, this is for you: `mvn clean install -DminimalBuild`
-* To skip building the browser module, use `-DskipBrowser` (note that you might not be able to build the server without it.)
+* To skip building the browser module, use `-DskipBrowser` (note: that you might not be able to build the server without it.)
 * To build everything, including running all tests, producing documentation and assembling product packages, use `mvn clean install -DfullBuild`
 * To build the documentation see the link:manual/[Neo4j manual]
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
