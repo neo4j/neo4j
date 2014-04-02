@@ -22,6 +22,7 @@ package org.neo4j.server.preflight;
 import org.junit.Test;
 
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.BufferingLogging;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
@@ -30,7 +31,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
-import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
 
 public class TestPreflightTasks
 {
@@ -58,7 +58,7 @@ public class TestPreflightTasks
     @Test
     public void shouldLogFailedRule()
     {
-        Logging logging = bufferingLogging();
+        Logging logging = new BufferingLogging();
         PreFlightTasks check = new PreFlightTasks( logging, getWithOneFailingRule() );
         check.run();
 

@@ -19,38 +19,99 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+
+import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.TransactionInterceptorProviders;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
-/**
- * Is one-phase commit always performed when only one (or many isSameRM)
- * resource(s) are present in the transaction?
- * 
- * If so it could be tested...
- */
-// public void test1PhaseCommit()
-// {
-//	
-// }
 public class DummyXaDataSource extends XaDataSource
 {
-    private XAResource xaResource = null;
+    private XaContainer xaContainer = null;
 
-    public DummyXaDataSource( String name, byte[] branchId, XAResource xaResource )
-        throws InstantiationException
+    public DummyXaDataSource( byte[] branchId, String name, XaFactory xaFactory,
+            TransactionStateFactory stateFactory, File logFile ) throws InstantiationException
     {
         super( branchId, name );
-        this.xaResource = xaResource;
+        try
+        {
+            xaContainer = xaFactory.newXaContainer( this, logFile, new DummyCommandFactory(),
+                    new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
+                            Iterables.<TransactionInterceptorProvider>empty(),
+                            new DependencyResolver.Adapter()
+                            {
+                                @Override
+                                public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
+                                {
+                                    return type.cast( new Config( MapUtil.stringMap(
+                                            GraphDatabaseSettings.intercept_committing_transactions.name(),
+                                            Settings.FALSE,
+                                            GraphDatabaseSettings.intercept_deserialized_transactions.name(),
+                                            Settings.FALSE
+                                            ) ) );
+                                }
+                            } ) );
+            xaContainer.openLogicalLog();
+        }
+        catch ( IOException e )
+        {
+            throw new InstantiationException( "" + e );
+        }
     }
 
+    @Override
+    public void init()
+    {
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+        xaContainer.close();
+        // cleanup dummy resource log
+        //            deleteAllResourceFiles();
+    }
+
+    @Override
+    public void shutdown()
+    {
+    }
+
+    @Override
     public XaConnection getXaConnection()
     {
-        return new DummyXaConnection( xaResource );
+        return new DummyXaConnection( xaContainer.getResourceManager() );
     }
 
     @Override
@@ -59,52 +120,181 @@ public class DummyXaDataSource extends XaDataSource
         return 0;
     }
 
-    public void init()
+    static class DummyXaResource extends XaResourceHelpImpl
     {
+        DummyXaResource( XaResourceManager xaRm )
+        {
+            super( xaRm, null );
+        }
+
+        @Override
+        public boolean isSameRM( XAResource resource )
+        {
+            return resource instanceof DummyXaResource;
+        }
     }
 
-    public void start()
-    {
-    }
-
-    public void stop()
-    {
-    }
-
-    public void shutdown()
-    {
-    }
-
-    static class DummyXaConnection implements XaConnection
+    static class DummyXaConnection extends XaConnectionHelpImpl
     {
         private XAResource xaResource = null;
 
-        public DummyXaConnection( XAResource xaResource )
+        public DummyXaConnection( XaResourceManager xaRm )
         {
-            this.xaResource = xaResource;
+            super( xaRm );
+            xaResource = new DummyXaResource( xaRm );
         }
 
+        @Override
         public XAResource getXaResource()
         {
             return xaResource;
         }
 
-        public void destroy()
+        public void doStuff1() throws XAException
+        {
+            validate();
+            getTransaction().addCommand( new DummyCommand( 1 ) );
+        }
+
+        public void doStuff2() throws XAException
+        {
+            validate();
+            getTransaction().addCommand( new DummyCommand( 2 ) );
+        }
+
+        public void enlistWithTx( TransactionManager tm ) throws Exception
+        {
+            tm.getTransaction().enlistResource( xaResource );
+        }
+
+        public void delistFromTx( TransactionManager tm ) throws Exception
+        {
+            tm.getTransaction().delistResource( xaResource,
+                    XAResource.TMSUCCESS );
+        }
+
+        public int getTransactionId() throws Exception
+        {
+            return getTransaction().getIdentifier();
+        }
+    }
+
+    private static class DummyCommand extends XaCommand
+    {
+        private int type = -1;
+
+        DummyCommand( int type )
+        {
+            this.type = type;
+        }
+
+        @Override
+        public void execute()
+        {
+        }
+
+        // public void writeToFile( FileChannel fileChannel, ByteBuffer buffer )
+        // throws IOException
+        @Override
+        public void writeToFile( LogBuffer buffer ) throws IOException
+        {
+            // buffer.clear();
+            buffer.putInt( type );
+            // buffer.flip();
+            // fileChannel.write( buffer );
+        }
+    }
+
+    static class DummyCommandFactory extends XaCommandFactory
+    {
+        @Override
+        public XaCommand readCommand( ReadableByteChannel byteChannel,
+                                      ByteBuffer buffer ) throws IOException
+        {
+            buffer.clear();
+            buffer.limit( 4 );
+            if ( byteChannel.read( buffer ) == 4 )
+            {
+                buffer.flip();
+                return new DummyCommand( buffer.getInt() );
+            }
+            return null;
+        }
+    }
+
+    private static class DummyTransaction extends XaTransaction
+    {
+        private final java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
+
+        public DummyTransaction( int identifier, XaLogicalLog log, TransactionState state )
+        {
+            super( identifier, log, state );
+            setCommitTxId( 0 );
+        }
+
+        @Override
+        public void doAddCommand( XaCommand command )
+        {
+            commandList.add( command );
+        }
+
+        @Override
+        public void doPrepare()
+        {
+
+        }
+
+        @Override
+        public void doRollback()
         {
         }
 
         @Override
-        public boolean enlistResource( Transaction javaxTx )
-            throws SystemException, RollbackException
+        public void doCommit()
         {
-            return javaxTx.enlistResource( xaResource );
         }
 
         @Override
-        public boolean delistResource( Transaction tx, int tmsuccess )
-            throws IllegalStateException, SystemException
+        public boolean isReadOnly()
         {
-            return tx.delistResource( xaResource, tmsuccess );
+            return false;
+        }
+    }
+
+    static class DummyTransactionFactory extends XaTransactionFactory
+    {
+        @Override
+        public XaTransaction create( int identifier, TransactionState state )
+        {
+            return new DummyTransaction( identifier, getLogicalLog(), state );
+        }
+
+        @Override
+        public void flushAll()
+        {
+        }
+
+        @Override
+        public long getAndSetNewVersion()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getCurrentVersion()
+        {
+            return 0;
+        }
+
+        @Override
+        public void setVersion( long version )
+        {
+        }
+
+        @Override
+        public long getLastCommittedTx()
+        {
+            return 0;
         }
     }
 }

@@ -27,10 +27,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import com.sun.jersey.api.client.Client;
@@ -46,7 +46,7 @@ public class NeoServerStartupLoggingDocIT extends ExclusiveServerTestBase
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        logging = ServerBuilder.bufferingLogging();
+        logging = new BufferingLogging();
         server = ServerHelper.createNonPersistentServer( logging );
     }
 
