@@ -23,9 +23,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val context: LogicalPlanContext = newMockedLogicalPlanContext()
+  implicit val planContext = newMockedPlanContext
+  implicit val context = newMockedLogicalPlanContext(planContext)
+
   val x = newMockedLogicalPlan("x")
   val y = newMockedLogicalPlan("y")
   val xAndY = newMockedLogicalPlan("x", "y")
@@ -51,30 +55,42 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = newMockedLogicalPlan("a")
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, a, b)(newMetricsFactory.replaceCostModel {
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
       case `a` => 100
       case `b` => 50
+      case _   => Double.MaxValue
     })
+
+    assertTopPlan(winner = b, a, b)(factory)
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val b = newMockedLogicalPlan("b")
 
-    assertTopPlan(winner = b, ab, b)(newMetricsFactory.replaceCostModel {
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
       case `ab` => 100
-      case `b` => 50
+      case `b`  => 50
+      case _    => Double.MaxValue
     })
+
+    assertTopPlan(winner = b, ab, b)(factory)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
     val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
     val c = newMockedLogicalPlan("c")
 
-    assertTopPlan(winner = ab, ab, c)(newMetricsFactory.replaceCostModel {
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
       case `ab` => 50
-      case `c` => 50
+      case `c`  => 50
+      case _    => Double.MaxValue
     })
+
+    assertTopPlan(winner = ab, ab, c)(factory)
   }
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(metrics: MetricsFactory) {

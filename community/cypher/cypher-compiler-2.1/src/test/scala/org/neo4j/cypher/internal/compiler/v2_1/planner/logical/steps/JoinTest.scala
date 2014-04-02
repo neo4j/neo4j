@@ -41,7 +41,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val r3Rel = PatternRelationship(r3Name, (cNode, dNode), Direction.OUTGOING, Seq.empty)
 
   test("finds a single join") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(r1Rel, r2Rel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(r1Rel, r2Rel)
+    )
     val left: LogicalPlan = newMockedLogicalPlan(Set(aNode, bNode))
     val right: LogicalPlan = newMockedLogicalPlan(Set(bNode, cNode))
     val planTable = PlanTable(Map(
@@ -55,7 +58,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("finds multiple joins") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(r1Rel, r2Rel, r3Rel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(r1Rel, r2Rel, r3Rel)
+    )
     val left: LogicalPlan = newMockedLogicalPlan(Set(aNode, bNode))
     val middle: LogicalPlan = newMockedLogicalPlan(Set(bNode, cNode))
     val right: LogicalPlan = newMockedLogicalPlan(Set(cNode, dNode))
@@ -73,7 +79,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("does not introduce joins if plans do not overlap") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(r1Rel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(r1Rel)
+    )
     val left: LogicalPlan = newMockedLogicalPlan(Set(aNode, bNode))
     val right: LogicalPlan = newMockedLogicalPlan(Set(cNode))
     val planTable = PlanTable(Map(
@@ -84,7 +93,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("does not join a plan with itself") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph())
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph()
+    )
     val left: LogicalPlan = newMockedLogicalPlan(Set(aNode))
     val planTable = PlanTable(Map(
       Set(aNode) -> left

@@ -47,8 +47,9 @@ import org.neo4j.graphdb.Direction
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  implicit val planContext = newMockedPlanContext
   implicit val pipeMonitor = monitors.newMonitor[PipeMonitor]()
-  implicit val context = newMockedLogicalPlanContext()
+  implicit val context = newMockedLogicalPlanContext(planContext)
 
   val planBuilder = new PipeExecutionPlanBuilder(monitors)
   val pos = DummyPosition(0)

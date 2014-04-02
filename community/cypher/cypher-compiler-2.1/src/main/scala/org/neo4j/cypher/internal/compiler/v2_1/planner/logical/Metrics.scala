@@ -46,7 +46,7 @@ trait MetricsFactory {
   def newCardinalityEstimator(heuristics: GraphHeuristics, selectivity: SelectivityEstimator): CardinalityEstimator
   def newCostModel(cardinality: CardinalityEstimator): CostModel
 
-  def newMetrics(implicit heuristics: GraphHeuristics) = {
+  def newMetrics(heuristics: GraphHeuristics) = {
     val selectivity = newSelectivityEstimator(heuristics)
     val cardinality = newCardinalityEstimator(heuristics, selectivity)
     val cost = newCostModel(cardinality)

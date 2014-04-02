@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
+import org.mockito.Matchers._
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val heuristics = newDefaultHeuristics
+  val heuristics = newMockedHeuristics
 
   test("index scan when there is an index on the property") {
     // given
@@ -48,12 +49,16 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val expressions: Seq[Expression] = Seq(equals, hasLabels)
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan    => 1000
+      case _: NodeByLabelScan => 100
+      case _                  => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: AllNodesScan => 1000
-        case _: NodeByLabelScan => 100
-      }.newMetrics)
+      metrics = factory.newMetrics(heuristics))
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
     when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
       override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
@@ -82,11 +87,16 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val expressions: Seq[Expression] = Seq(equals, hasLabels)
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
-    implicit val context = newMockedLogicalPlanContext(queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: AllNodesScan    => 1000
-        case _: NodeByLabelScan => 100
-      }.newMetrics)
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan    => 1000
+      case _: NodeByLabelScan => 100
+      case _                  => Double.MaxValue
+    })
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = qg,
+      metrics = factory.newMetrics(heuristics))
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {

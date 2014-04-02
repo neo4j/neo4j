@@ -25,10 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Identifier, HasLabels}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlanner
+import org.mockito.Matchers._
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val heuristics = newDefaultHeuristics
+  val heuristics = newMockedHeuristics
 
   test("simple label scan without compile-time label id") {
     // given
@@ -37,11 +38,16 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")()_))_
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByLabelScan => 1
+      case _                  => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: NodeByLabelScan => 1
-      }.newMetrics)
+      metrics = factory.newMetrics(heuristics)
+    )
 
     // when
     val resultPlans = labelScanLeafPlanner(Map(idName -> Set(hasLabels)))()
@@ -58,11 +64,15 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")(Some(labelId))_))_
     val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty)
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByLabelScan => 100
+      case _                  => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: NodeByLabelScan => 100
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 

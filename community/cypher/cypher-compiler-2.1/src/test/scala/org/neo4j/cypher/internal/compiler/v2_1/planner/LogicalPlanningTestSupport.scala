@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.mockito.Mockito
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CostModel, CardinalityEstimator, SelectivityEstimator}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -44,21 +45,34 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
 
-  def newMetricsFactory = OverridableMetricsFactory(SimpleMetricsFactory)
+  class DummyMetricsFactory extends MetricsFactory {
+    def newSelectivityEstimator(heuristics: GraphHeuristics) =
+      SimpleMetricsFactory.newSelectivityEstimator(heuristics)
+    def newCostModel(cardinality: CardinalityEstimator) =
+      SimpleMetricsFactory.newCostModel(cardinality)
+    def newCardinalityEstimator(heuristics: GraphHeuristics, selectivity: SelectivityEstimator) =
+      SimpleMetricsFactory.newCardinalityEstimator(heuristics, selectivity)
+  }
 
-  def newMockedLogicalPlanContext(planContext: PlanContext = self.newMockedPlanContext,
+  def newMetricsFactory = SimpleMetricsFactory
+  def newMockedMetricsFactory = Mockito.spy(new DummyMetricsFactory)
+
+  def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph]) =
+
     LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan
   }
 
-  def newMockedPlanContext = {
+  def newMockedHeuristics = mock[GraphHeuristics]
+
+  def newMockedPlanContext(implicit heuristics: GraphHeuristics = newMockedHeuristics) = {
     val context = mock[PlanContext]
-    doReturn(newDefaultHeuristics).when(context).heuristics
+    doReturn(heuristics).when(context).heuristics
     context
   }
 
@@ -77,7 +91,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
 
   def produceLogicalPlan(queryText: String)
-                        (implicit planner: Planner, planContext: PlanContext = newMockedPlanContext) = {
+                        (implicit planner: Planner, planContext: PlanContext) = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
@@ -90,16 +104,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     }
   }
 
-  def newMockedHeuristics =
-    mock[GraphHeuristics]
-
-  def newDefaultHeuristics = {
-    val heuristics = newMockedHeuristics
-    doReturn(1000000.0d).when(heuristics).numNodes
-    heuristics
-  }
-
-  implicit def withHeuristics(implicit planContext: PlanContext) = planContext.heuristics
+//  implicit def withHeuristics(implicit planContext: PlanContext) = planContext.heuristics
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(DummyPosition(0))
 

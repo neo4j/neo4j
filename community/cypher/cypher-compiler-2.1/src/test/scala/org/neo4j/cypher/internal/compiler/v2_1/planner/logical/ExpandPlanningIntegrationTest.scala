@@ -21,22 +21,28 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
 import org.mockito.Mockito._
+import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
 class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
+    implicit val heuristics = newMockedHeuristics
+    implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
     produceLogicalPlan("MATCH (a)-[r]->(b) RETURN r") should equal(
@@ -51,6 +57,8 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans containing expand for two unrelated relationship patterns") {
+    implicit val heuristics = newMockedHeuristics
+    implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
     produceLogicalPlan("MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2") should equal(
@@ -77,6 +85,8 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
+    implicit val heuristics = newMockedHeuristics
+    implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
     produceLogicalPlan("MATCH (a)-[r]->(a) RETURN r") should equal(
@@ -94,6 +104,8 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
+    implicit val heuristics = newMockedHeuristics
+    implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
     produceLogicalPlan("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2") should equal(
@@ -117,9 +129,15 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
-    implicit val planner = newPlanner(newMetricsFactory)
-
     implicit val planContext = newMockedPlanContext
+    val factory: DummyMetricsFactory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeIndexSeek => 10.0
+      case _: AllNodesScan  => 100.04
+      case _                => Double.MaxValue
+    })
+    implicit val planner = newPlanner(factory)
+
     when(planContext.getOptRelTypeId("x")).thenReturn(None)
     when(planContext.getOptPropertyKeyId("name")).thenReturn(None)
 

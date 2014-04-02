@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
@@ -31,28 +34,34 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityEstimator, CardinalityEstimator}
+import org.mockito.stubbing.Answer
+import org.mockito.invocation.InvocationOnMock
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("should build plans for simple cartesian product") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
-      case _: AllNodesScan => 1000
-    })
-
+    implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(newMockedMetricsFactory)
     produceLogicalPlan("MATCH n, m RETURN n, m") should equal(
       CartesianProduct(AllNodesScan(IdName("n")), AllNodesScan(IdName("m")))
     )
   }
 
   test("should build plans for simple cartesian product with a predicate on the elements") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
-      case _: AllNodesScan => 1000
-      case _: NodeByLabelScan => (1000 * 0.3).toInt
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan     => 1000
+      case _: NodeByLabelScan  => 100
+      case _: Selection        => 500
+      case _                   => Double.MaxValue
     })
 
     implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(factory)
     when(planContext.getOptLabelId("Label")).thenReturn(None)
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(None)
 
@@ -72,12 +81,18 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     val labelIdB = Right(LabelId(10))
     val labelIdC = Right(LabelId(20))
 
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
+    val factory = newMockedMetricsFactory
+    def f(plan: LogicalPlan): Double = plan match {
       case _: AllNodesScan                             => 1000
       case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
-    })
+      case CartesianProduct(left, right)               => f(left) * f(right)
+      case _                                           => Double.MaxValue
+    }
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn(f _)
 
     implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(factory)
+
     when(planContext.getOptLabelId("A")).thenReturn(Some(30))
     when(planContext.getOptLabelId("B")).thenReturn(Some(10))
     when(planContext.getOptLabelId("C")).thenReturn(Some(20))
@@ -98,24 +113,34 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     val labelIdB = Right(LabelId(20))
     val labelIdC = Right(LabelId(10))
 
-    implicit val planner = newPlanner(
-      newMetricsFactory
-        .replaceSelectivityEstimator({
-          case Equals(Property(Identifier(lhs), _), Property(Identifier(rhs), _)) =>
-            (lhs, rhs) match {
-              case ("a", "b") => /* 60 */ 0.5 // => 30
-              case ("b", "c") => /* 20 */ 1.0 // => 20
-              case ("a", "c") => /* 30 */ 0.5 // => 15
-            }
-          case _ => 1.0
-        })
-        .amendCardinalityEstimator({
-          case _: AllNodesScan                             => 1000
-          case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
-        })
-    )
+    val factory = newMockedMetricsFactory
+    when(factory.newSelectivityEstimator(any())).thenReturn((expression: Expression) => expression match {
+      case Equals(Property(Identifier(lhs), _), Property(Identifier(rhs), _)) =>
+        (lhs, rhs) match {
+          case ("a", "b") => /* 60 */ 0.5 // => 30
+          case ("b", "c") => /* 20 */ 1.0 // => 20
+          case ("a", "c") => /* 30 */ 0.5 // => 15
+        }
+    })
+
+    when(factory.newCardinalityEstimator(any(), any())).thenAnswer(new Answer[CardinalityEstimator] {
+      def answer(invocation: InvocationOnMock): CardinalityEstimator = {
+        val selectivity = invocation.getArguments()(1).asInstanceOf[SelectivityEstimator]
+        new CardinalityEstimator {
+          def apply(plan: LogicalPlan): Double = plan match {
+            case _: AllNodesScan                             => 1000
+            case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
+            case CartesianProduct(left, right)               => apply(left) * apply(right)
+            case Selection(predicates, left)                 => predicates.foldLeft(1.0)(_ * selectivity(_)) * apply(left)
+            case _                                           => Double.MaxValue
+          }
+        }
+      }
+    })
 
     implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(factory)
+
     when(planContext.getOptLabelId("A")).thenReturn(Some(30))
     when(planContext.getOptLabelId("B")).thenReturn(Some(20))
     when(planContext.getOptLabelId("C")).thenReturn(Some(10))

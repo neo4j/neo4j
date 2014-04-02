@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.idSeekLeafPlanner
-import org.mockito.Mockito._
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.idSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
-  implicit val heuristics = newDefaultHeuristics
+  private val heuristics = newMockedHeuristics
 
   test("simple node by id seek with a node id expression") {
     // given
@@ -41,11 +42,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")), Set.empty)
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByIdSeek => 1
+      case _               => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: NodeByIdSeek => 1
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
@@ -68,11 +73,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")), Set.empty)
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByIdSeek => 1
+      case _               => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: NodeByIdSeek => 1
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
@@ -100,11 +109,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: DirectedRelationshipByIdSeek => 1
+      case _                               => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: DirectedRelationshipByIdSeek => 1
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -130,11 +143,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => 2
+      case _                                 => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: UndirectedRelationshipByIdSeek => 2
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
 
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -163,11 +180,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: DirectedRelationshipByIdSeek => 1
+      case _                               => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: DirectedRelationshipByIdSeek => 1
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -197,11 +218,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => 2
+      case _                                 => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: UndirectedRelationshipByIdSeek => 2
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -232,11 +257,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => 2
+      case _                                 => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: UndirectedRelationshipByIdSeek => 2
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -273,11 +302,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => 2
+      case _                                 => Double.MaxValue
+    })
     implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = newMetricsFactory.replaceCardinalityEstimator {
-        case _: UndirectedRelationshipByIdSeek => 2
-      }.newMetrics
+      metrics = factory.newMetrics(heuristics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 

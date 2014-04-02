@@ -31,13 +31,16 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 import org.neo4j.graphdb.Direction
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  implicit val heuristics = newDefaultHeuristics
-
   test("select(label scan) < select(all nodes scan)") {
-    val cost = newMetricsFactory.newMetrics.cost
+    val heuristics = newMockedHeuristics
+    when(heuristics.nodesCardinality).thenReturn(1000)
+    val cost = newMetricsFactory.newMetrics(heuristics).cost
 
     val cost1 = cost(
       Selection(
@@ -60,7 +63,9 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("label scan < select(all nodes scan)") {
-    val cost = newMetricsFactory.newMetrics.cost
+    val heuristics = newMockedHeuristics
+    when(heuristics.nodesCardinality).thenReturn(1000)
+    val cost = newMetricsFactory.newMetrics(heuristics).cost
 
     val cost1 = cost(
       NodeByLabelScan("a", Left("Label"))()
@@ -80,7 +85,9 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("all node scan < select(all nodes scan)") {
-    val cost = newMetricsFactory.newMetrics.cost
+    val heuristics = newMockedHeuristics
+    when(heuristics.nodesCardinality).thenReturn(1000)
+    val cost = newMetricsFactory.newMetrics(heuristics).cost
 
     val cost1 = cost(
       AllNodesScan("a")
@@ -101,8 +108,9 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("expand(select(all nodes scan)) < expand(all node scan)") {
-    val cost = newMetricsFactory.newMetrics.cost
-
+    val heuristics = newMockedHeuristics
+    when(heuristics.nodesCardinality).thenReturn(1000)
+    val cost = newMetricsFactory.newMetrics(heuristics).cost
 
     val cost1 = cost(
       Expand(
@@ -128,7 +136,9 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("expand(select(all nodes scan)) < select(expand(all node scan))") {
-    val cost = newMetricsFactory.newMetrics.cost
+    val heuristics = newMockedHeuristics
+    when(heuristics.nodesCardinality).thenReturn(1000)
+    val cost = newMetricsFactory.newMetrics(heuristics).cost
 
     val cost1 = cost(
       Expand(
