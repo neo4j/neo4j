@@ -24,9 +24,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -36,10 +33,12 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
@@ -50,7 +49,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class RuntimeHeuristicsTest
+public class RuntimeHeuristicsServiceTest
 {
     @Rule
     public TargetDirectory.TestDirectory dir = TargetDirectory.cleanTestDirForTest( getClass() );
@@ -61,62 +60,75 @@ public class RuntimeHeuristicsTest
     public void shouldGatherLabelDistribution() throws Throwable
     {
         // Given
-        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore(), null );
+        double equalityTolerance = 0.2d;
+        HeuristicsCollector collector = new HeuristicsCollector(
+                new RollingAverage.Parameters( RollingAverage.Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance )
+        );
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( collector, generateStore(), null );
+        HeuristicsData heuristics = service.heuristics();
 
         // When
-        heuristics.run();
-        heuristics.run();
+        service.run();
+        service.run();
 
         // Then
-        assertThat( heuristics.labelDistribution(), closeToDistribution(
-                new LabelledDistribution<Integer>()
-                        .record( asList(0), 20 )
-                        .record( asList(1), 80 )
-                        .recalculate() ) );
+        assertThat( heuristics.labelDistribution(), equalTo(
+                new LabelledDistribution<Integer>( equalityTolerance )
+                        .record(asList(0), 20)
+                        .record(asList(1), 80)
+                        .recalculate()
+        ) );
     }
 
     @Test
     public void shouldGatherRelationshipTypeAndDirectionDistribution() throws Exception
     {
         // Given
-        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore(), null );
+        double equalityTolerance = 0.2d;
+        HeuristicsCollector collector = new HeuristicsCollector(
+            new RollingAverage.Parameters( RollingAverage.Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance )
+        );
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( collector, generateStore(), null );
+        HeuristicsData heuristics = service.heuristics();
 
         // When
-        heuristics.run();
-        heuristics.run();
+        service.run();
+        service.run();
 
         // Then
         assertThat( heuristics.relationshipTypeDistribution(),
-                closeToDistribution( new LabelledDistribution<Integer>()
-                        .record( asList( 0 ), 40 )
-                        .record( asList( 1 ), 60 )
-                        .recalculate() ) );
+                equalTo(new LabelledDistribution<Integer>( equalityTolerance )
+                        .record(asList(0), 40)
+                        .record(asList(1), 60)
+                        .recalculate()) );
     }
 
     @Test
     public void shouldGatherRelationshipDegreeByLabelDistribution() throws Exception
     {
         // Given
-        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore(), null );
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( generateStore(), null );
+        HeuristicsData heuristics = service.heuristics();
 
         // When
-        heuristics.run();
-        heuristics.run();
+        service.run();
+        service.run();
 
         // Then
-        assertThat( heuristics.degree(1, 0, Direction.INCOMING), closeTo( 44.0, 10.0 ));
-        assertThat( heuristics.degree(1, 0, Direction.OUTGOING), closeTo( 4.4,   1.0 ));
+        assertThat( heuristics.degree( 1, 0, Direction.INCOMING ), closeTo( 44.0, 10.0 ));
+        assertThat( heuristics.degree( 1, 0, Direction.OUTGOING ), closeTo( 4.4,   1.0 ));
     }
 
     @Test
     public void shouldGatherLiveNodes() throws Throwable
     {
         // Given
-        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore( 0.6 ), null );
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( generateStore( 0.6 ), null );
+        HeuristicsData heuristics = service.heuristics();
 
         // When
-        heuristics.run();
-        heuristics.run();
+        service.run();
+        service.run();
 
         // Then
         assertThat( heuristics.liveNodesRatio(), closeTo( 0.6, 0.1 ) );
@@ -126,11 +138,12 @@ public class RuntimeHeuristicsTest
     public void shouldGatherMaxNodes() throws Throwable
     {
         // Given
-        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( generateStore( 0.6 ), null );
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( generateStore(), null );
+        HeuristicsData heuristics = service.heuristics();
 
         // When
-        heuristics.run();
-        heuristics.run();
+        service.run();
+        service.run();
 
         // Then
         assertThat( heuristics.maxAddressableNodes(), equalTo( 1000L ) );
@@ -141,14 +154,14 @@ public class RuntimeHeuristicsTest
     {
         // Given
         StoreReadLayer store = generateStore();
-        RuntimeHeuristicsService heuristics = new RuntimeHeuristicsService( store, null );
-        heuristics.run();
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( store, null );
+        service.run();
 
         // When
-        heuristics.save( fs, new File( dir.directory(), "somefile" ) );
+        service.save(fs, new File(dir.directory(), "somefile"));
 
         // Then
-        assertThat( RuntimeHeuristicsService.load( fs, new File( dir.directory(), "somefile" ), store, null ), equalTo( heuristics ));
+        assertThat( RuntimeHeuristicsService.load( fs, new File( dir.directory(), "somefile" ), store, null ), equalTo( service ));
     }
 
     private StoreReadLayer generateStore() throws EntityNotFoundException
@@ -255,23 +268,4 @@ public class RuntimeHeuristicsTest
             }
         };
     }
-
-    private Matcher<? super LabelledDistribution<Integer>> closeToDistribution( final LabelledDistribution<Integer> expected )
-    {
-        return new TypeSafeMatcher<LabelledDistribution<Integer>>()
-        {
-            @Override
-            protected boolean matchesSafely( LabelledDistribution<Integer> item )
-            {
-                return item.equals( expected, 0.2f );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( expected.toString() );
-            }
-        };
-    }
-
 }

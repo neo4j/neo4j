@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.spi.v2_1
 
-import org.neo4j.kernel.api.heuristics.Heuristics
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
+import org.neo4j.kernel.api.heuristics.HeuristicsData
 
-class TransactionBoundGraphHeuristics(heuristics: Heuristics) extends GraphHeuristics {
+class TransactionBoundGraphHeuristics(heuristics: HeuristicsData) extends GraphHeuristics {
 
   def numNodes() =
     ( heuristics.liveNodesRatio() * heuristics.maxAddressableNodes() ).toInt

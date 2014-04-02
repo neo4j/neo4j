@@ -156,6 +156,34 @@ public abstract class ArrayUtil
         throw new IllegalArgumentException( "Not an array type: " + array.getClass() );
     }
 
+    public static boolean approximatelyEqual( double[] that, double[] other, double tolerance )
+    {
+        if ( that == other )
+        {
+            return true;
+        }
+
+        if ( ( null == that ) || ( null == other ) )
+        {
+            return false;
+        }
+
+        if ( that.length != other.length )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < that.length; i++ )
+        {
+            if ( Math.abs( other[i] - that[i] ) > tolerance )
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private ArrayUtil()
     {   // No instances allowed
     }

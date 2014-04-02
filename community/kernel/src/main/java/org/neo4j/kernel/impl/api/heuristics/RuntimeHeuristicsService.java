@@ -32,10 +32,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
@@ -46,16 +46,16 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     private final JobScheduler scheduler;
     private final Random random = new Random();
 
-    private final HeuristicsData data;
+    private final HeuristicsCollector collector;
 
     public static RuntimeHeuristicsService load( FileSystemAbstraction fs, File path, StoreReadLayer store, JobScheduler scheduler )
     {
-        if(fs.fileExists( path ))
+        if ( fs.fileExists( path ) )
         {
             try
             {
                 ObjectInputStream in = new ObjectInputStream( fs.openAsInputStream( path ) );
-                return new RuntimeHeuristicsService((HeuristicsData)in.readObject(), store, scheduler);
+                return new RuntimeHeuristicsService((HeuristicsCollector)in.readObject(), store, scheduler);
             }
             catch ( Exception e )
             {
@@ -68,20 +68,20 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
 
     public RuntimeHeuristicsService( StoreReadLayer store, JobScheduler scheduler )
     {
-        this(new HeuristicsData(), store, scheduler);
+        this(new HeuristicsCollector(), store, scheduler);
     }
 
-    private RuntimeHeuristicsService( HeuristicsData data, StoreReadLayer store, JobScheduler scheduler )
+    public RuntimeHeuristicsService( HeuristicsCollector collector, StoreReadLayer store, JobScheduler scheduler )
     {
         this.store = store;
         this.scheduler = scheduler;
-        this.data = data;
+        this.collector = collector;
     }
 
     @Override
     public void start() throws Throwable
     {
-        scheduler.scheduleRecurring( JobScheduler.Group.heuristics, this, 30, TimeUnit.SECONDS );
+        scheduler.scheduleRecurring(JobScheduler.Group.heuristics, this, 30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -109,56 +109,31 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
                         outgoingDegrees.put(relType, store.nodeGetDegree(id, Direction.OUTGOING, relType));
                     }
 
-                    data.addNodeObservation(labels, relTypes, incomingDegrees, outgoingDegrees);
+                    collector.addNodeObservation(labels, relTypes, incomingDegrees, outgoingDegrees);
                 } catch (EntityNotFoundException e) {
                     // Node was deleted while we read it, or something. In any case, just exclude it from the run.
-                    data.addSkippedNodeObservation();
+                    collector.addSkippedNodeObservation();
                 }
             }
             else
             {
-                data.addSkippedNodeObservation();
+                collector.addSkippedNodeObservation();
             }
         }
 
-        data.addMaxNodesObservation(store.highestNodeIdInUse());
+        collector.addMaxNodesObservation(store.highestNodeIdInUse());
 
-        data.recalculate();
+        collector.recalculate();
     }
 
     @Override
-    public LabelledDistribution<Integer> labelDistribution()
-    {
-        return data.labels();
-    }
-
-    @Override
-    public LabelledDistribution<Integer> relationshipTypeDistribution()
-    {
-        return data.relationships();
-    }
-
-    @Override
-    public double degree( int labelId, int relType, Direction direction )
-    {
-        return data.degree( labelId, relType, direction );
-    }
-
-    @Override
-    public double liveNodesRatio()
-    {
-        return data.liveNodesRatio();
-    }
-
-    @Override
-    public long maxAddressableNodes()
-    {
-        return data.maxAddressableNodes();
+    public HeuristicsData heuristics() {
+        return collector;
     }
 
     public void save( FileSystemAbstraction fs, File path ) throws IOException
     {
-        if(!fs.fileExists( path ))
+        if (!fs.fileExists( path ) )
         {
             fs.deleteFile( path );
         }
@@ -166,7 +141,7 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
         try(OutputStream out = fs.openAsOutputStream( path, false ))
         {
             ObjectOutputStream objStream = new ObjectOutputStream( out );
-            objStream.writeObject( this.data );
+            objStream.writeObject( this.collector);
             objStream.close();
             out.flush();
         }
@@ -179,24 +154,20 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
         {
             return true;
         }
+
         if ( o == null || getClass() != o.getClass() )
         {
             return false;
         }
 
         RuntimeHeuristicsService that = (RuntimeHeuristicsService) o;
+        return collector.equals(that.collector);
 
-        if ( !data.equals( that.data ) )
-        {
-            return false;
-        }
-
-        return true;
     }
 
     @Override
     public int hashCode()
     {
-        return data.hashCode();
+        return collector.hashCode();
     }
 }

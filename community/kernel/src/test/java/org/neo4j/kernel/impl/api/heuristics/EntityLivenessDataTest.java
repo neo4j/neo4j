@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.heuristics;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +42,7 @@ public class EntityLivenessDataTest
     public void shouldReportNonZeroLiveNodesWhenNotHavingSeenAnyLiveNodes()
     {
         // given
-        EntityLivenessData tracker = new EntityLivenessData();
+        EntityLivenessData tracker = new EntityLivenessData( new RollingAverage.Parameters() );
 
         // when
         tracker.recordDeadEntity();

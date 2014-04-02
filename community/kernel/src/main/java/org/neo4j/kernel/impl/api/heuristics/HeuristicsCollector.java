@@ -26,26 +26,37 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
 import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 
-public class HeuristicsData implements Serializable
-{
-    public static final int WINDOW_SIZE = 1024;
+public class HeuristicsCollector implements Serializable, HeuristicsData {
 
     private static final long serialVersionUID = 5430534253089297623L;
 
-    private final LabelledDistribution<Integer> labels = new LabelledDistribution<>();
-    private final LabelledDistribution<Integer> relationships = new LabelledDistribution<>();
+    private final LabelledDistribution<Integer> labels;
+    private final LabelledDistribution<Integer> relationships;
 
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> outgoingDegrees = new HashMap<>();
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> incomingDegrees = new HashMap<>();
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
 
-    private final EntityLivenessData nodeLivenessData = new EntityLivenessData();
+    private final EntityLivenessData nodeLivenessData;
 
-    public HeuristicsData()
+    private final transient RollingAverage.Parameters parameters;
+
+    public HeuristicsCollector()
     {
+        this( new RollingAverage.Parameters() );
+    }
+
+    public HeuristicsCollector( RollingAverage.Parameters parameters )
+    {
+        this.parameters = parameters;
+        this.nodeLivenessData = new EntityLivenessData( parameters );
+        this.labels = new LabelledDistribution<>( parameters.equalityTolerance );
+        this.relationships = new LabelledDistribution<>( parameters.equalityTolerance );
+
         outgoingDegrees.put( -1, new HashMap<Integer, RollingAverage>() );
         incomingDegrees.put( -1, new HashMap<Integer, RollingAverage>() );
         bothDegrees.put(     -1, new HashMap<Integer, RollingAverage>() );
@@ -91,7 +102,7 @@ public class HeuristicsData implements Serializable
                 RollingAverage histogram = reltypeMap.get( entry.getKey() );
                 if(histogram == null)
                 {
-                    histogram = new RollingAverage( WINDOW_SIZE );
+                    histogram = new RollingAverage( parameters );
                     reltypeMap.put( entry.getKey(), histogram );
                 }
 
@@ -107,17 +118,20 @@ public class HeuristicsData implements Serializable
         nodeLivenessData.recalculate();
     }
 
-    public LabelledDistribution<Integer> labels()
+    @Override
+    public LabelledDistribution<Integer> labelDistribution()
     {
         return labels;
     }
 
-    public LabelledDistribution<Integer> relationships()
+    @Override
+    public LabelledDistribution<Integer> relationshipTypeDistribution()
     {
         return relationships;
     }
 
-    public double degree( int labelId, int relType, Direction direction )
+    @Override
+    public double degree(int labelId, int relType, Direction direction)
     {
         Map<Integer, Map<Integer, RollingAverage>> labelMap;
         switch ( direction )
@@ -144,41 +158,43 @@ public class HeuristicsData implements Serializable
         return 0.0;
     }
 
+    @Override
     public double liveNodesRatio()
     {
         return nodeLivenessData.liveEntitiesRatio();
     }
 
+    @Override
     public long maxAddressableNodes()
     {
         return nodeLivenessData.maxAddressableEntities();
     }
 
     @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        HeuristicsData that = (HeuristicsData) o;
+        HeuristicsCollector that = (HeuristicsCollector) o;
 
-        if ( !labels.equals( that.labels, 0.0001f ) )
-        {
-            return false;
-        }
-
-        return true;
+        return
+            bothDegrees.equals(that.bothDegrees)
+            && incomingDegrees.equals(that.incomingDegrees)
+            && outgoingDegrees.equals(that.outgoingDegrees)
+            && nodeLivenessData.equals(that.nodeLivenessData)
+            && labels.equals(that.labels)
+            && relationships.equals(that.relationships);
     }
 
     @Override
-    public int hashCode()
-    {
-        return labels.hashCode();
+    public int hashCode() {
+        int result = labels.hashCode();
+        result = 31 * result + relationships.hashCode();
+        result = 31 * result + outgoingDegrees.hashCode();
+        result = 31 * result + incomingDegrees.hashCode();
+        result = 31 * result + bothDegrees.hashCode();
+        result = 31 * result + nodeLivenessData.hashCode();
+        return result;
     }
 }
+

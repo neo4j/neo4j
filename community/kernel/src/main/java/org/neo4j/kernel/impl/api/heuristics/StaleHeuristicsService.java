@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.heuristics;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -36,32 +35,7 @@ public class StaleHeuristicsService extends LifecycleAdapter implements Heuristi
     }
 
     @Override
-    public LabelledDistribution<Integer> labelDistribution()
-    {
-        return delegate.labelDistribution();
-    }
-
-    @Override
-    public LabelledDistribution<Integer> relationshipTypeDistribution()
-    {
-        return delegate.relationshipTypeDistribution();
-    }
-
-    @Override
-    public double degree( int labelId, int relType, Direction direction )
-    {
-        return delegate.degree(labelId, relType, direction);
-    }
-
-    @Override
-    public double liveNodesRatio()
-    {
-        return delegate.liveNodesRatio();
-    }
-
-    @Override
-    public long maxAddressableNodes()
-    {
-        return delegate.maxAddressableNodes();
+    public HeuristicsData heuristics() {
+        return delegate.heuristics();
     }
 }
