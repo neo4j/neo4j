@@ -31,8 +31,6 @@
 
   <modules>
     <module>community</module>
-    <module>advanced</module>
-    <module>enterprise</module>
   </modules>
 
   <build>
