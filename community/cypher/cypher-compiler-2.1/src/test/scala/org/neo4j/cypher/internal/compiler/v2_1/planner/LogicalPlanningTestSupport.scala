@@ -95,7 +95,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
 
   def newDefaultHeuristics = {
     val heuristics = newMockedHeuristics
-    doReturn(1000000).when(heuristics).numNodes
+    doReturn(1000000.0d).when(heuristics).numNodes
     heuristics
   }
 

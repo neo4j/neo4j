@@ -41,25 +41,30 @@ case class OverridableMetricsFactory(
   def newSelectivityEstimator(heuristics: GraphHeuristics): SelectivityEstimator =
     altNewSelectivityEstimator.getOrElse(metricsFactory.newSelectivityEstimator(_))(heuristics)
 
-  def replaceCostModel(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCostModel = Some((_: CardinalityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+  def replaceCostModel(pf: PartialFunction[LogicalPlan, Double]) =
+    copy(altNewCostModel = Some((_: CardinalityEstimator) => mapToDouble(pf).lift.andThen(_.getOrElse(Double.MaxValue))))
 
-  def replaceCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some((_: GraphHeuristics, _: SelectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+  def replaceCardinalityEstimator(pf: PartialFunction[LogicalPlan, Double]) =
+    copy(altNewCardinalityEstimator = Some((_: GraphHeuristics, _: SelectivityEstimator) => mapToDouble(pf).lift.andThen(_.getOrElse(Double.MaxValue))))
 
-  def amendCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some({ (heuristics: GraphHeuristics, selectivity: SelectivityEstimator) =>
-      val fallback: PartialFunction[LogicalPlan, Int] = {
+  def amendCardinalityEstimator(pf: PartialFunction[LogicalPlan, Double]) =
+    copy(altNewCardinalityEstimator = Some({    (heuristics: GraphHeuristics, selectivity: SelectivityEstimator) =>
+      val fallback: PartialFunction[LogicalPlan, Double] = {
         case plan => metricsFactory.newCardinalityEstimator(heuristics, selectivity)(plan)
       }
-      (pf `orElse` fallback).lift.andThen(_.getOrElse(Int.MaxValue))
+      (mapToDouble(pf) `orElse` fallback).lift.andThen(_.getOrElse(Double.MaxValue))
     }))
 
   def replaceSelectivityEstimator(pf: PartialFunction[Expression, Double]) =
-    copy(altNewSelectivityEstimator = Some((_: GraphHeuristics) => pf.lift.andThen(_.getOrElse(1.0d))))
+    copy(altNewSelectivityEstimator = Some((_: GraphHeuristics) => mapToDouble(pf).lift.andThen(_.getOrElse(1.0d))))
 
   override def newMetrics(implicit heuristics: GraphHeuristics): Metrics = altGraphHeuristics match {
     case Some(mapF) => super.newMetrics(mapF(heuristics))
     case None       => super.newMetrics(heuristics)
   }
+
+  private def mapToDouble[T](pf: PartialFunction[T, Any]): PartialFunction[T, Double] =
+    pf.andThen[Double] {
+      case x: Number => x.doubleValue()
+    }
 }

@@ -34,7 +34,7 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
   val INDEX_OVERHEAD_COST_PER_ROW = 3
   val LABEL_INDEX_OVERHEAD_COST_PER_ROW = 2
 
-  def apply(plan: LogicalPlan): Int = plan match {
+  def apply(plan: LogicalPlan): Double = plan match {
     case _: SingleRow =>
       cardinality(plan)
 
@@ -59,15 +59,13 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
     case _: UndirectedRelationshipByIdSeek =>
       cardinality(plan)
 
-    case projection: Projection => (
+    case projection: Projection =>
       cost(projection.left) +
       cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
-    ).toInt
 
-    case selection: Selection => (
+    case selection: Selection =>
       cost(selection.left) +
       cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates
-    ).toInt
 
     case cartesian: CartesianProduct =>
       cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
@@ -75,12 +73,11 @@ class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
 
-    case join: NodeHashJoin => (
+    case join: NodeHashJoin =>
       cost(join.left) +
       cost(join.right) +
       cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
       cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
-    ).toInt
   }
 
   private def cost(plan: LogicalPlan) = apply(plan)

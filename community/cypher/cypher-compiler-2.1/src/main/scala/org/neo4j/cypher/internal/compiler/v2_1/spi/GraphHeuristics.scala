@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 
 trait GraphHeuristics {
-  def numNodesWithLabel(labelId: LabelId): Int
-  def numNodesWithRelationshipType(relTypeId: RelTypeId): Int
+  def numNodes: Double
+  def numNodesWithLabel(labelId: LabelId): Double
+  def numNodesWithRelationshipType(relTypeId: RelTypeId): Double
+
   def avgDegreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double
-  def numNodes: Int
 }

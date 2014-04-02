@@ -26,13 +26,13 @@ import org.neo4j.kernel.api.heuristics.HeuristicsData
 
 class TransactionBoundGraphHeuristics(heuristics: HeuristicsData) extends GraphHeuristics {
 
-  def numNodes() =
-    ( heuristics.liveNodesRatio() * heuristics.maxAddressableNodes() ).toInt
+  def numNodes =
+    heuristics.liveNodesRatio() * heuristics.maxAddressableNodes()
 
   def numNodesWithLabel(labelId: LabelId) =
-    ( heuristics.labelDistribution().get( labelId.id ) * numNodes ).toInt
+    heuristics.labelDistribution().get( labelId.id ) * numNodes
 
-  def numNodesWithRelationshipType(relTypeId: RelTypeId): Int =
+  def numNodesWithRelationshipType(relTypeId: RelTypeId): Double =
     ??? // numNodesForRatio( heuristics.relationshipTypeDistribution().get( relTypeId.id ) )
 
   def avgDegreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =

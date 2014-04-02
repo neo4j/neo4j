@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesSca
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 
 object GuessingEstimation {
-  val ALL_NODES_SCAN_CARDINALITY: Int = 1000000
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
   val LABEL_SELECTIVITY: Double = 0.1
   val PREDICATE_SELECTIVITY: Double = 0.2
@@ -39,49 +38,49 @@ class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
                                    selectivity: Metrics.SelectivityEstimator) extends Metrics.CardinalityEstimator {
   import GuessingEstimation._
 
-  def apply(plan: LogicalPlan): Int = plan match {
+  def apply(plan: LogicalPlan): Double = plan match {
     case AllNodesScan(_) =>
       heuristics.numNodes
 
     case NodeByLabelScan(_, Left(_)) =>
-      (ALL_NODES_SCAN_CARDINALITY * LABEL_NOT_FOUND_SELECTIVITY).toInt
+      heuristics.numNodes * LABEL_NOT_FOUND_SELECTIVITY
 
     case NodeByLabelScan(_, Right(labelId)) =>
       heuristics.numNodesWithLabel(labelId)
 
     case NodeByIdSeek(_, nodeIds) =>
-      nodeIds.size
+      nodeIds.size.toDouble
 
     case NodeIndexSeek(_, _, _, _) =>
-      (ALL_NODES_SCAN_CARDINALITY * INDEX_SEEK_SELECTIVITY).toInt
+      heuristics.numNodes * INDEX_SEEK_SELECTIVITY
 
     case NodeIndexUniqueSeek(_, _, _, _) =>
-      (ALL_NODES_SCAN_CARDINALITY * UNIQUE_INDEX_SEEK_SELECTIVITY).toInt
+      heuristics.numNodes * UNIQUE_INDEX_SEEK_SELECTIVITY
 
     case NodeHashJoin(_, left, right) =>
-      (cardinality(left) + cardinality(right)) / 2
+      (cardinality(left) + cardinality(right)) / 2.0
 
     case expand @ Expand(left, _, dir, types, _, _) =>
       // val labels = expand.left.solvedPredicates.collect { case HasLabels(Identifier(name), Seq(labelName)) => ??? }
-      (cardinality(left) * EXPAND_RELATIONSHIP_DEGREE).toInt
+      cardinality(left) * EXPAND_RELATIONSHIP_DEGREE
 
     case Selection(predicates, left) =>
-      (cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)).toInt
+      cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)
 
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
-      relIds.size
+      relIds.size.toDouble
 
     case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
-      relIds.size * 2
+      relIds.size * 2.0
 
     case Projection(left, _) =>
       cardinality(left)
 
     case SingleRow() =>
-      1
+      1.0
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)
