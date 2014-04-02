@@ -21,55 +21,47 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.InternalException
 import org.neo4j.graphdb.Direction
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] = {
     predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
+      // MATCH a WHERE id(a) = value
       case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
         (predicate, idExpr, Seq(idValueExpr))
 
       // MATCH (a)-[r]->b WHERE id(r) IN value
+      // MATCH a WHERE id(a) IN value
       case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
         if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
         (predicate, idExpr, idValueExprs)
     }.collect {
-      case (predicate, RelationshipIdName(idName), idValues) =>
-        context.queryGraph.patternRelationships.filter(_.name == idName).collectFirst {
-          case PatternRelationship(relName, (l, r), Direction.BOTH, types) =>
-            createUndirectedRelationshipByIdSeek(relName, l, r, types, idValues, predicate)
-
-          case PatternRelationship(relName, (l, r), dir, types)  =>
-            createDirectedRelationshipByIdSeek(idName, l, r, dir, types, idValues, predicate)
-        }.getOrElse(failIfNotFound(idName.name))
-
-      case (predicate, NodeIdName(idName), idValues) =>
-        NodeByIdSeek(idName, idValues)(Seq(predicate))
+      case (predicate, Identifier(idName), idValues) =>
+        context.queryGraph.patternRelationships.find(_.name.name == idName) match {
+          case Some(relationship) =>
+            createRelationshipByIdSeek(relationship, idValues, predicate)
+          case None =>
+            NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
+        }
     }
   }
 
-  private def failIfNotFound(idName: String): Nothing = {
-    throw new InternalException(s"Identifier ${idName} typed as a relationship, but no relationship found by that name in the query graph ")
+  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {
+    val (left, right) = relationship.nodes
+    val name = relationship.name
+    val plan = relationship.dir match {
+      case Direction.BOTH =>
+        UndirectedRelationshipByIdSeek(name, idValues, left, right)(Seq(predicate))
+      case Direction.INCOMING =>
+        DirectedRelationshipByIdSeek(name, idValues, right, left)(Seq(predicate))
+      case Direction.OUTGOING =>
+        DirectedRelationshipByIdSeek(name, idValues, left, right)(Seq(predicate))
+    }
+    filterIfNeeded(plan, name.name, relationship.types)
   }
 
-  private def createDirectedRelationshipByIdSeek(relName: IdName, l: IdName, r: IdName, dir: Direction, types: Seq[RelTypeName], idExpr: Seq[Expression], predicate: Expression)
-                                                (implicit context: LogicalPlanContext) = {
-    val (from, to) = if (dir == Direction.OUTGOING) (l, r) else (r, l)
-    val relById = DirectedRelationshipByIdSeek(relName, idExpr, from, to)(Seq(predicate))
-    filterIfNeeded(relById, relName.name, types)
-  }
-
-  private def createUndirectedRelationshipByIdSeek(relName: IdName, l: IdName, r: IdName, types: Seq[RelTypeName], idExpr: Seq[Expression], predicate: Expression)
-                                                  (implicit context: LogicalPlanContext) = {
-    val relById = UndirectedRelationshipByIdSeek(relName, idExpr, l, r)(Seq(predicate))
-    filterIfNeeded(relById, relName.name, types)
-
-  }
-
-  private def filterIfNeeded(plan: LogicalPlan, relName: String, types: Seq[RelTypeName])
-                            (implicit context: LogicalPlanContext): LogicalPlan =
+  private def filterIfNeeded(plan: LogicalPlan, relName: String, types: Seq[RelTypeName]): LogicalPlan =
     if (types.isEmpty)
       plan
     else {
