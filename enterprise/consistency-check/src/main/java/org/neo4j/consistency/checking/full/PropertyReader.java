@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 public class PropertyReader
 {
     private final PropertyStore propertyStore;
@@ -51,6 +53,6 @@ public class PropertyReader
 
     public DefinedProperty propertyValue( PropertyBlock block )
     {
-        return block.getType().readProperty( block.getKeyIndexId(), block, propertyStore );
+        return block.getType().readProperty( block.getKeyIndexId(), block, singletonProvider(propertyStore) );
     }
 }
