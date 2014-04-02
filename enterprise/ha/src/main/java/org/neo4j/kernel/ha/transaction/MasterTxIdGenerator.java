@@ -53,6 +53,7 @@ import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -131,6 +132,17 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     private final StringLogger log;
     private final Configuration config;
     private final Slaves slaves;
+    private final CappedOperation<Throwable> slaveCommitFailureLogger = new CappedOperation<Throwable>(
+            CappedOperation.time( 5, TimeUnit.SECONDS ),
+            CappedOperation.differentItemClasses() )
+    {
+        @Override
+        protected void triggered( Throwable failure )
+        {
+            log.error( "Slave commit threw " + (failure instanceof ComException ? "communication" : "" )
+                    + " exception", failure );
+        }
+    };
 
     public MasterTxIdGenerator( Configuration config, StringLogger log, Slaves slaves )
     {
@@ -169,6 +181,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     {
     }
 
+    @Override
     public long generate( final XaDataSource dataSource, final int identifier ) throws XAException
     {
         return TxIdGenerator.DEFAULT.generate( dataSource, identifier );
@@ -298,8 +311,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
         catch ( ExecutionException e )
         {
-            log.error( "Slave commit threw " + (e.getCause() instanceof ComException ? "communication" : "" )
-                    + " exception", e );
+            slaveCommitFailureLogger.event( e.getCause() );
             return false;
         }
         catch ( CancellationException e )
@@ -367,8 +379,8 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         };
     }
 
-    private Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<Integer, BlockingQueue<PullUpdateFuture>>(  );
-    private List<ExecutorService> pullUpdateWorkers = new ArrayList<ExecutorService>(  );
+    private final Map<Integer, BlockingQueue<PullUpdateFuture>> pullUpdateQueues = new HashMap<Integer, BlockingQueue<PullUpdateFuture>>(  );
+    private final List<ExecutorService> pullUpdateWorkers = new ArrayList<ExecutorService>(  );
 
     private void commitAtSlave( final XaDataSource dataSource, Slave slave, final long txId )
     {
@@ -452,12 +464,17 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         catch ( ExecutionException e )
         {
             if (e.getCause() instanceof RuntimeException)
+            {
                 throw ((RuntimeException)e.getCause());
+            }
             else
+            {
                 throw new RuntimeException( e.getCause() );
+            }
         }
     }
 
+    @Override
     public int getCurrentMasterId()
     {
         return config.getServerId();

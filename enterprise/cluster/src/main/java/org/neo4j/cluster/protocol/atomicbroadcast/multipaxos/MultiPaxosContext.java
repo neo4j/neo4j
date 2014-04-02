@@ -59,6 +59,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
@@ -751,7 +752,17 @@ public class MultiPaxosContext
         private long lastLearnedInstanceId = -1;
 
         /** To minimize logging, keep track of the latest learn miss, only log when it changes. */
-        private org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestLearnMiss = null;
+        private final org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId latestLearnMiss = null;
+        CappedOperation<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId> learnMissLogging =
+                new CappedOperation<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId>(
+                        CappedOperation.differentItems() )
+                {
+                    @Override
+                    protected void triggered( InstanceId instanceId )
+                    {
+                        getLogger( LearnerState.class ).debug( "Did not have learned value for instance " + instanceId );
+                    }
+                };
 
         @Override
         public long getLastDeliveredInstanceId()
@@ -851,11 +862,7 @@ public class MultiPaxosContext
        @Override
        public void notifyLearnMiss( org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId instanceId )
        {
-           if(latestLearnMiss != instanceId)
-           {
-               getLogger( LearnerState.class ).debug( "Did not have learned value for instance " + instanceId );
-               latestLearnMiss = instanceId;
-           }
+           learnMissLogging.event( instanceId );
        }
     }
 
