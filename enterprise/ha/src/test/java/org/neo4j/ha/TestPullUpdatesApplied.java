@@ -89,23 +89,6 @@ public class TestPullUpdatesApplied
         }
     }
 
-    private HighlyAvailableGraphDatabase newDb( int i )
-    {
-        return newDb( i, true );
-    }
-
-    private HighlyAvailableGraphDatabase newDb( int i, boolean clear )
-    {
-        return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( dir.directory( "" + i, clear ).getAbsolutePath() )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .setConfig( ClusterSettings.server_id, "" + i )
-                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
-                .setConfig( HaSettings.pull_interval, "0ms" )
-                .newGraphDatabase();
-    }
-
     @After
     public void doAfter() throws Exception
     {
@@ -150,7 +133,7 @@ public class TestPullUpdatesApplied
 
         addNode( master ); // this will be pulled by tne next start up, applied
         // but not written to log.
-        File targetDirectory = dir.directory( "" + toKill, false );
+        File targetDirectory = dir.existingDirectory( "" + toKill );
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -169,11 +152,11 @@ public class TestPullUpdatesApplied
                 } );
 
         // Temporary debugging
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Starting instance " + toKill + " in separate process..");
-        runInOtherJvmToGetExitCode( new String[]{targetDirectory.getAbsolutePath(), "" + toKill} );
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Starting instance " + toKill + " in separate process..");
+        runInOtherJvmToGetExitCode( targetDirectory.getAbsolutePath(), "" + toKill );
 
         // Temporary debugging
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + "Waiting for instance to start..");
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Waiting for instance to start..");
         if ( !latch2.await( 60, TimeUnit.SECONDS ) )
         {
             throw new IllegalStateException( "Timeout waiting for instance to fail" );
@@ -182,7 +165,7 @@ public class TestPullUpdatesApplied
         // This is to allow other instances to mark the dead instance as failed, otherwise on startup it will be denied.
         Thread.sleep( 15000 );
 
-        start( toKill, false ); // recovery and branching.
+        restart( toKill ); // recovery and branching.
         boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );
     }
@@ -190,29 +173,45 @@ public class TestPullUpdatesApplied
     // For executing in a different process than the one running the test case.
     public static void main( String[] args ) throws Exception
     {
-        int i = Integer.parseInt( args[1] );
-        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Starting instance " + i);
-        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( args[0] )
-                .setConfig( ClusterSettings.server_id, "" + i )
-                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + i) )
-                .setConfig( HaSettings.pull_interval, "0ms" )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) + "" )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .newGraphDatabase();
-        db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        String storePath = args[0];
+        int serverId = Integer.parseInt( args[1] );
+
+        System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Starting instance " + serverId);
+        database( serverId, storePath ).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         System.out.println(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + " Done, commencing sepukku.");
         // this is the bug trigger
         // no shutdown, emulates a crash.
     }
 
-    public static int runInOtherJvmToGetExitCode( String... args ) throws Exception
+    private HighlyAvailableGraphDatabase newDb( int serverId )
     {
-        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp",
+        return database( serverId, dir.cleanDirectory( Integer.toString( serverId ) ).getAbsolutePath() );
+    }
+
+    private void restart( int serverId )
+    {
+        dbs[serverId] = database( serverId, dir.existingDirectory( Integer.toString( serverId ) ).getAbsolutePath() );
+    }
+
+    private static HighlyAvailableGraphDatabase database( int serverId, String path )
+    {
+        return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                newHighlyAvailableDatabaseBuilder( path )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )
+                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + serverId) )
+                .setConfig( HaSettings.pull_interval, "0ms" )
+                .newGraphDatabase();
+    }
+
+    private static int runInOtherJvmToGetExitCode( String... args ) throws Exception
+    {
+        List<String> allArgs = new ArrayList<>( Arrays.asList( "java", "-cp",
                 System.getProperty( "java.class.path" ), TestPullUpdatesApplied.class.getName() ) );
         allArgs.addAll( Arrays.asList( args ) );
         Process p = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
-        List<Thread> threads = new LinkedList<Thread>();
+        List<Thread> threads = new LinkedList<>();
         launchStreamConsumers( threads, p );
         /*
          * Yes, timeouts suck but HAGD does not terminate politely, since it still has
@@ -238,11 +237,6 @@ public class TestPullUpdatesApplied
         join.add( err );
         out.start();
         err.start();
-    }
-
-    private void start( int master, boolean clear )
-    {
-        dbs[master] = newDb( master, clear );
     }
 
     private long addNode( int dbId )

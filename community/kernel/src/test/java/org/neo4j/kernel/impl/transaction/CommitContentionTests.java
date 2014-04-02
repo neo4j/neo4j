@@ -96,7 +96,7 @@ public class CommitContentionTests
     };
 
     @Rule
-    public TargetDirectory.TestDirectory storeLocation = target.cleanTestDirectory();
+    public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
 
     private GraphDatabaseService db;
 

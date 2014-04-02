@@ -85,7 +85,7 @@ public class DumpProcessInformationTest
 
     private static final String SIGNAL = "here";
 
-    private final File directory = TargetDirectory.forTest( getClass() ).directory( "dump" );
+    private final File directory = TargetDirectory.forTest( getClass() ).cleanDirectory( "dump" );
 
     private void awaitSignal( Process process ) throws IOException
     {

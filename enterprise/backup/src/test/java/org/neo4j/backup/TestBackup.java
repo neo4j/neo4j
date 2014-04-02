@@ -65,7 +65,7 @@ public class TestBackup
     @Before
     public void before() throws Exception
     {
-        File base = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
+        File base = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
         serverPath = new File( base, "server" );
         otherServerPath = new File( base, "server2" );
         backupPath = new File( base, "backuedup-serverdb" );

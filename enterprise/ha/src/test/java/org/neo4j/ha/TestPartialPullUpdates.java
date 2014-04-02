@@ -67,8 +67,8 @@ public class TestPartialPullUpdates
     public void setup() throws Exception
     {
         master = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
-                        "master", true ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).cleanDirectory(
+                        "master" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( HaSettings.tx_push_factor, "0" ).
@@ -81,8 +81,8 @@ public class TestPartialPullUpdates
         tx.finish();
 
         slave1 = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).directory(
-                        "slave1", true ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestPartialPullUpdates.class ).cleanDirectory(
+                        "slave1" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
                 setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
                 setConfig( ClusterSettings.server_id, "2" ).

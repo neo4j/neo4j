@@ -163,7 +163,7 @@ public class TestPropertyDataRace
         
         if ( !done.await( 1, MINUTES ) )
         {
-            File dumpDirectory = targetDir.directory( "dump", true );
+            File dumpDirectory = targetDir.cleanDirectory( "dump" );
             dumpVmInfo( dumpDirectory );
             new DumpProcessInformation( new SystemOutLogging(), dumpDirectory ).doThreadDump(
                     stringContains( SubProcess.class.getSimpleName() ) );

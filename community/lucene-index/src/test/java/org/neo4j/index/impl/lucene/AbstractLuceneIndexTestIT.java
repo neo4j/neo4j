@@ -46,7 +46,7 @@ public abstract class AbstractLuceneIndexTestIT
     @BeforeClass
     public static void setUpStuff()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( AbstractLuceneIndexTest.class ).directory( "dir", true ).getAbsolutePath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( AbstractLuceneIndexTest.class ).cleanDirectory( "dir" ).getAbsolutePath() );
     }
 
     @AfterClass

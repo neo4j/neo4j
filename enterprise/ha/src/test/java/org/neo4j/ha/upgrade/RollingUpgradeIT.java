@@ -62,7 +62,7 @@ public class RollingUpgradeIT
     private static final String OLD_VERSION = "2.0.0";
     
     private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
-    private final File DBS_DIR = DIR.directory( "dbs", true );
+    private final File DBS_DIR = DIR.cleanDirectory( "dbs" );
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
 
@@ -141,7 +141,7 @@ public class RollingUpgradeIT
         debug( "Downloading " + OLD_VERSION + " package" );
         File oldVersionPackage = downloadAndUnpack(
                 "http://download.neo4j.org/artifact?edition=enterprise&version=" + OLD_VERSION + "&distribution=zip",
-                DIR.directory( "download" ), OLD_VERSION + "-enterprise" );
+                DIR.cacheDirectory( "download" ), OLD_VERSION + "-enterprise" );
         String classpath = assembleClassPathFromPackage( oldVersionPackage );
         debug( "Starting " + OLD_VERSION + " cluster in separate jvms" );
         @SuppressWarnings( "rawtypes" )

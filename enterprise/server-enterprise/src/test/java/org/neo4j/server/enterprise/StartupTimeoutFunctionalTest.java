@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 public class StartupTimeoutFunctionalTest
 {
     @Rule
-    public TargetDirectory.TestDirectory target = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( getClass() );
 
     public EnterpriseNeoServer server;
 

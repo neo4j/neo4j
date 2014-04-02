@@ -50,7 +50,7 @@ public class TxManagerTest
     public void settingTmNotOkShouldAttachCauseToSubsequentErrors() throws Exception
     {
         // Given
-        File txLogDir = TargetDirectory.forTest( fs.get(), getClass() ).directory( "log", true );
+        File txLogDir = TargetDirectory.forTest( fs.get(), getClass() ).cleanDirectory( "log" );
         TxManager txm = new TxManager( txLogDir, mockXaManager, panicGenerator, StringLogger.DEV_NULL, fs.get(), null,
                 null, new Monitors() );
         txm.doRecovery(); // Make the txm move to an ok state

@@ -56,11 +56,11 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception
     {
         // given
-        File logDirectory = TargetDirectory.forTest( this.getClass() ).directory(
-                "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-logdir", true );
+        File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).directory(
-                "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-confdir", true );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-confdir" );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -69,9 +69,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "false" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory(
-                        "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir",
-                        true ).getAbsolutePath() )
+                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                        "givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses-dbdir"
+                ).getAbsolutePath() )
                 .build();
         try
         {
@@ -97,11 +97,11 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
-        File logDirectory = TargetDirectory.forTest( this.getClass() ).directory(
-                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir", true );
+        File logDirectory = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir" );
         FileUtils.forceMkdir( logDirectory );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).directory(
-                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir", true );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir" );
         FileUtils.forceMkdir( confDir );
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -112,9 +112,9 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
         NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory(
-                        "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir",
-                        true ).getAbsolutePath() )
+                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).cleanDirectory(
+                        "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
+                ).getAbsolutePath() )
                 .build();
         try
         {
@@ -146,8 +146,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     public void givenConfigurationWithUnwritableLogDirectoryShouldFailToStartServer() throws Exception
     {
         // given
-        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confdir" );
-        FileUtils.forceMkdir( confDir );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confdir" );
         final File unwritableLogDir = createUnwritableDirectory();
 
         final File configFile = HTTPLoggingPreparednessRuleTest.createConfigFile(
@@ -161,7 +160,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
                 .withPreflightTasks( new EnsurePreparedForHttpLogging( config ) )
                 .withProperty( Configurator.HTTP_LOGGING, "true" )
                 .withProperty( Configurator.HTTP_LOG_CONFIG_LOCATION, configFile.getPath() )
-                .usingDatabaseDir( TargetDirectory.forTest( this.getClass() ).directory( "confdir" ).getAbsolutePath() )
+                .usingDatabaseDir( confDir.getAbsolutePath() )
                 .build();
 
         // when

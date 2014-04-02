@@ -54,7 +54,7 @@ public class ClusterTest
     public void testCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
                 MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
                                   HaSettings.tx_push_factor.name(), "2"));
         try
@@ -104,7 +104,7 @@ public class ClusterTest
         clusters.getClusters().add( cluster );
 
         ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), hostName+":6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
@@ -147,7 +147,7 @@ public class ClusterTest
         clusters.getClusters().add( cluster );
 
         ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
@@ -181,7 +181,7 @@ public class ClusterTest
     public void testArbiterStartsFirstAndThenTwoInstancesJoin() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterWithAdditionalArbiters( 2, 1 ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap());
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ), MapUtil.stringMap());
         try
         {
             clusterManager.start();
@@ -206,7 +206,7 @@ public class ClusterTest
         try
         {
             String masterStoreDir =
-                    TargetDirectory.forTest( getClass() ).directory( "testConflictingClusterPortsMaster", true ).getAbsolutePath();
+                    TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingClusterPortsMaster" ).getAbsolutePath();
             first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
@@ -218,7 +218,7 @@ public class ClusterTest
             try
             {
                 String slaveStoreDir =
-                        TargetDirectory.forTest( getClass() ).directory( "testConflictingClusterPortsSlave", true ).getAbsolutePath();
+                        TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingClusterPortsSlave" ).getAbsolutePath();
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                         newHighlyAvailableDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
@@ -250,7 +250,7 @@ public class ClusterTest
         try
         {
             String storeDir =
-                    TargetDirectory.forTest( getClass() ).directory( "testConflictingHaPorts", true ).getAbsolutePath();
+                    TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingHaPorts" ).getAbsolutePath();
              first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( storeDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
@@ -289,7 +289,7 @@ public class ClusterTest
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "4instances", true ), MapUtil.stringMap() );
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "4instances" ), MapUtil.stringMap() );
         try
         {
             clusterManager.start();
@@ -322,7 +322,8 @@ public class ClusterTest
     public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( getClass() ).directory( "singleinstance", true ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( getClass() ).cleanDirectory(
+                        "singleinstance" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( ClusterSettings.initial_hosts, "" ).
                 newGraphDatabase();

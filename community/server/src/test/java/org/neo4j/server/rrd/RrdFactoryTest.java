@@ -58,7 +58,7 @@ public class RrdFactoryTest
     TargetDirectory target = TargetDirectory.forTest( RrdFactoryTest.class );
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = target.cleanTestDirectory();
+    public TargetDirectory.TestDirectory testDirectory = target.testDirectory();
     @Rule
     public Mute mute = muteAll();
 
@@ -67,7 +67,7 @@ public class RrdFactoryTest
     {
         config = new MapConfiguration( new HashMap<String, String>() );
         db = new WrappedDatabase( new ImpermanentGraphDatabase(
-                TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath()) );
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "rrd" ).getAbsolutePath()) );
     }
 
     @After

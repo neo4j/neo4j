@@ -113,6 +113,6 @@ public class StoreUpgradeIntegrationTest
     }
     
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final File workingDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final File workingDirectory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
 
 }

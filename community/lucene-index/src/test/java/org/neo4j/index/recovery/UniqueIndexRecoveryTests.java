@@ -219,7 +219,7 @@ public class UniqueIndexRecoveryTests
 
     @Rule
     public final TargetDirectory.TestDirectory storeDir =
-            TargetDirectory.cleanTestDirForTest( UniqueIndexRecoveryTests.class );
+            TargetDirectory.testDirForTest( UniqueIndexRecoveryTests.class );
 
     private static final String PROPERTY_KEY = "key";
     private static final String PROPERTY_VALUE = "value";

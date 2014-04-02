@@ -134,8 +134,9 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
     {
         commitTx();
 
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( getClass() ).directory( "filesClosedProperty",
-                true ).getAbsolutePath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(TargetDirectory.forTest( getClass() ).cleanDirectory( "filesClosedProperty"
+
+        ).getAbsolutePath() );
         final Index<Node> index = nodeIndex( "open-files", LuceneIndexImplementation.EXACT_CONFIG );
         final long time = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch( 30 );

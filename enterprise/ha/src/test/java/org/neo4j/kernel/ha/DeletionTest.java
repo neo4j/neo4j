@@ -74,8 +74,8 @@ public class DeletionTest
     public void shouldDeleteRecords() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 2 ), TargetDirectory.forTest( getClass() ).directory(
-                "deleteRecords", true ), stringMap() );
+        clusterManager = new ClusterManager( clusterOfSize( 2 ), TargetDirectory.forTest( getClass() ).cleanDirectory(
+                "deleteRecords" ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 

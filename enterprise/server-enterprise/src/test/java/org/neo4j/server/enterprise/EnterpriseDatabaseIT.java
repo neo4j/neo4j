@@ -36,7 +36,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class EnterpriseDatabaseIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldStartInSingleModeByDefault() throws Throwable

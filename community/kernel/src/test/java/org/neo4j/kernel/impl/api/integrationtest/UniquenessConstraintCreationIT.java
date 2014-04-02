@@ -43,7 +43,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 public class UniquenessConstraintCreationIT extends KernelIntegrationTest
 {
     public @Rule
-    TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     public @Rule
     OtherThreadRule<Void> otherThread = new OtherThreadRule<>();

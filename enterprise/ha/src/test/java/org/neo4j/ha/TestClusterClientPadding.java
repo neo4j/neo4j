@@ -44,7 +44,7 @@ public class TestClusterClientPadding
     public void before() throws Throwable
     {
         clusterManager = new ClusterManager( clusterWithAdditionalClients( 2, 1 ),
-                dir.directory( "dbs", true ), stringMap() );
+                dir.cleanDirectory( "dbs" ), stringMap() );
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
         cluster.await( masterAvailable() );

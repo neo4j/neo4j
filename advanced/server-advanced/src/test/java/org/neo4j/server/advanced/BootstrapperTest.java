@@ -37,7 +37,7 @@ public class BootstrapperTest
     public void shouldBeAbleToRestartServer() throws Exception
     {
         TargetDirectory target = TargetDirectory.forTest( getClass() );
-        String dbDir1 = target.directory( "db1", true ).getAbsolutePath();
+        String dbDir1 = target.cleanDirectory( "db1" ).getAbsolutePath();
         Configurator config = new PropertyFileConfigurator(
                 AdvancedServerBuilder
                         .server()
@@ -59,7 +59,7 @@ public class BootstrapperTest
         assertNotNull( server.getDatabase().getGraph() );
 
         // Change the database location
-        String dbDir2 = target.directory( "db2", true ).getAbsolutePath();
+        String dbDir2 = target.cleanDirectory( "db2" ).getAbsolutePath();
 
         Configuration conf = config.configuration();
         conf.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir2 );

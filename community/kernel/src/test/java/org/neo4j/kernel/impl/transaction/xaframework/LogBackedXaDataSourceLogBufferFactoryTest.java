@@ -42,7 +42,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class LogBackedXaDataSourceLogBufferFactoryTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldAllowWritingLogicalLog() throws Exception

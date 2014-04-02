@@ -43,7 +43,7 @@ public class ConcurrentInstanceStartupIT
     public void concurrentStartupShouldWork() throws Exception
     {
         // Ensures that the instances don't race to create the test's base directory and only care about their own.
-        testDirectory.directory( "nothingToSeeHereMoveAlong" );
+        testDirectory.cleanDirectory( "nothingToSeeHereMoveAlong" );
         StringBuffer initialHostsBuffer = new StringBuffer( "127.0.0.1:5001" );
         for ( int i = 2; i <= INSTANCE_COUNT; i++ )
         {
@@ -126,6 +126,6 @@ public class ConcurrentInstanceStartupIT
 
     private File path( int i )
     {
-        return testDirectory.directory( i+"", true );
+        return testDirectory.cleanDirectory( i + "" );
     }
 }

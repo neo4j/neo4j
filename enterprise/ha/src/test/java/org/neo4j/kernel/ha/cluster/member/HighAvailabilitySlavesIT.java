@@ -50,7 +50,7 @@ public class HighAvailabilitySlavesIT
     public void transactionsGetsPushedToSlaves() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), DIR.directory( "dbs", true ),
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), DIR.cleanDirectory( "dbs" ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ManagedCluster cluster = clusterManager.getDefaultCluster();
