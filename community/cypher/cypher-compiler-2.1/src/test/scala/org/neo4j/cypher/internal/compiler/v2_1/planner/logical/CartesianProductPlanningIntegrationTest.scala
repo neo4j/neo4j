@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
-class CartesianProductPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport  {
+class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("should build plans for simple cartesian product") {
     implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {

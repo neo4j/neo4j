@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
-class SingleRowPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans containing single row") {
     implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
