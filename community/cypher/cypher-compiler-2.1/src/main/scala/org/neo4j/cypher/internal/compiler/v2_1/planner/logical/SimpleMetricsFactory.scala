@@ -30,5 +30,5 @@ object SimpleMetricsFactory extends MetricsFactory {
     new GuessingCardinalityEstimator(heuristics, selectivity)
 
   def newSelectivityEstimator(heuristics: GraphHeuristics): SelectivityEstimator =
-    new GuessingSelectivityEstimator
+    new GuessingSelectivityEstimator(heuristics)
 }

@@ -27,11 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
-  val LABEL_SELECTIVITY: Double = 0.1
   val PREDICATE_SELECTIVITY: Double = 0.2
   val INDEX_SEEK_SELECTIVITY: Double = 0.08
   val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
-  val EXPAND_RELATIONSHIP_DEGREE: Int = 2
+  val EXPAND_RELATIONSHIP_DEGREE: Double = 2.0
 }
 
 class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
@@ -40,25 +39,25 @@ class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
 
   def apply(plan: LogicalPlan): Double = plan match {
     case AllNodesScan(_) =>
-      heuristics.numNodes
+      heuristics.nodesCardinality
 
     case NodeByLabelScan(_, Left(_)) =>
-      heuristics.numNodes * LABEL_NOT_FOUND_SELECTIVITY
+      heuristics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
 
     case NodeByLabelScan(_, Right(labelId)) =>
-      heuristics.numNodesWithLabel(labelId)
+      heuristics.nodesWithLabelCardinality(labelId)
 
     case NodeByIdSeek(_, nodeIds) =>
-      nodeIds.size.toDouble
+      nodeIds.size
 
     case NodeIndexSeek(_, _, _, _) =>
-      heuristics.numNodes * INDEX_SEEK_SELECTIVITY
+      heuristics.nodesCardinality * INDEX_SEEK_SELECTIVITY
 
     case NodeIndexUniqueSeek(_, _, _, _) =>
-      heuristics.numNodes * UNIQUE_INDEX_SEEK_SELECTIVITY
+      heuristics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
 
     case NodeHashJoin(_, left, right) =>
-      (cardinality(left) + cardinality(right)) / 2.0
+      (cardinality(left) + cardinality(right)) / 2
 
     case expand @ Expand(left, _, dir, types, _, _) =>
       // val labels = expand.left.solvedPredicates.collect { case HasLabels(Identifier(name), Seq(labelName)) => ??? }
@@ -71,27 +70,33 @@ class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
       cardinality(left) * cardinality(right)
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
-      relIds.size.toDouble
+      relIds.size
 
     case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
-      relIds.size * 2.0
+      relIds.size * 2
 
     case Projection(left, _) =>
       cardinality(left)
 
     case SingleRow() =>
-      1.0
+      1
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)
 }
 
-class GuessingSelectivityEstimator extends Metrics.SelectivityEstimator {
+class GuessingSelectivityEstimator(heuristics: GraphHeuristics) extends Metrics.SelectivityEstimator {
 
   import GuessingEstimation._
 
   def apply(predicate: Expression): Double = predicate match {
-    case HasLabels(_, Seq(label)) => if (label.id.isDefined) LABEL_SELECTIVITY else LABEL_NOT_FOUND_SELECTIVITY
-    case _ => PREDICATE_SELECTIVITY
+    case HasLabels(_, Seq(label)) =>
+      if (label.id.isDefined)
+        heuristics.nodesWithLabelSelectivity(label.id.get)
+      else
+        LABEL_NOT_FOUND_SELECTIVITY
+
+    case _  =>
+      PREDICATE_SELECTIVITY
   }
 }
