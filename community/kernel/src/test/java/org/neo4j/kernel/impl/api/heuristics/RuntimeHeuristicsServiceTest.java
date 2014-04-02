@@ -164,6 +164,22 @@ public class RuntimeHeuristicsServiceTest
         assertThat( RuntimeHeuristicsService.load( fs, new File( dir.directory(), "somefile" ), store, null ), equalTo( service ));
     }
 
+    @Test
+    public void shouldSerializeTwiceAndDeserialize() throws Exception
+    {
+        // Given
+        StoreReadLayer store = generateStore();
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( store, null );
+        service.run();
+
+        // When
+        service.save(fs, new File(dir.directory(), "somefile"));
+        service.save(fs, new File(dir.directory(), "somefile"));
+
+        // Then
+        assertThat( RuntimeHeuristicsService.load( fs, new File( dir.directory(), "somefile" ), store, null ), equalTo( service ));
+    }
+
     private StoreReadLayer generateStore() throws EntityNotFoundException
     {
         return generateStore( 1.0 );

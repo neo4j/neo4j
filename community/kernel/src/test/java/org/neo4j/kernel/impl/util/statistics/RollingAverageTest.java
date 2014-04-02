@@ -30,7 +30,7 @@ public class RollingAverageTest
     public void shouldCalcAverage() throws Exception
     {
         // Given
-        RollingAverage avg = new RollingAverage( 100 );
+        RollingAverage avg = new RollingAverage( new RollingAverage.Parameters( 100, RollingAverage.Parameters.DEFAULT_EQUALITY_TOLERANCE ) );
 
         avg.record( 1 );
         avg.record( 2 );
@@ -48,7 +48,7 @@ public class RollingAverageTest
     public void shouldCalcAverageWhenWindowsShift() throws Exception
     {
         // Given
-        RollingAverage avg = new RollingAverage( 2 );
+        RollingAverage avg = new RollingAverage( new RollingAverage.Parameters( 2, RollingAverage.Parameters.DEFAULT_EQUALITY_TOLERANCE ) );
 
         avg.record( 10 );
         avg.record( 2 );

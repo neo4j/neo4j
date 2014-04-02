@@ -68,7 +68,7 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
 
     public RuntimeHeuristicsService( StoreReadLayer store, JobScheduler scheduler )
     {
-        this(new HeuristicsCollector(), store, scheduler);
+        this( new HeuristicsCollector(), store, scheduler );
     }
 
     public RuntimeHeuristicsService( HeuristicsCollector collector, StoreReadLayer store, JobScheduler scheduler )
@@ -127,21 +127,18 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     }
 
     @Override
-    public HeuristicsData heuristics() {
+    public HeuristicsData heuristics()
+    {
         return collector;
     }
 
     public void save( FileSystemAbstraction fs, File path ) throws IOException
     {
-        if (!fs.fileExists( path ) )
-        {
-            fs.deleteFile( path );
-        }
         fs.create( path );
-        try(OutputStream out = fs.openAsOutputStream( path, false ))
+        try ( OutputStream out = fs.openAsOutputStream( path, false ) )
         {
             ObjectOutputStream objStream = new ObjectOutputStream( out );
-            objStream.writeObject( this.collector);
+            objStream.writeObject( this.collector );
             objStream.close();
             out.flush();
         }
@@ -161,7 +158,7 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
         }
 
         RuntimeHeuristicsService that = (RuntimeHeuristicsService) o;
-        return collector.equals(that.collector);
+        return collector.equals( that.collector );
 
     }
 
