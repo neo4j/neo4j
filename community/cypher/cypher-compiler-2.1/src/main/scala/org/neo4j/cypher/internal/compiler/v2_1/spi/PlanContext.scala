@@ -47,4 +47,6 @@ trait PlanContext extends TokenContext {
   def checkRelIndex(idxName: String)
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T
+
+  def heuristics: GraphHeuristics
 }

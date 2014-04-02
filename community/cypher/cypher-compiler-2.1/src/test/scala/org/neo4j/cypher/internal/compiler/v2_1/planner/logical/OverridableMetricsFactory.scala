@@ -22,37 +22,44 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import Metrics._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 
 // Helper class mainly used via LogicalPlanningTestSupport
 case class OverridableMetricsFactory(
   metricsFactory: MetricsFactory,
-  altNewSelectivityEstimator: Option[() => SelectivityEstimator] = None,
-  altNewCardinalityEstimator: Option[(SelectivityEstimator) => CardinalityEstimator] = None,
-  altNewCostModel: Option[(CardinalityEstimator) => CostModel] = None) extends MetricsFactory {
+  altNewSelectivityEstimator: Option[(GraphHeuristics) => SelectivityEstimator] = None,
+  altNewCardinalityEstimator: Option[(GraphHeuristics, SelectivityEstimator) => CardinalityEstimator] = None,
+  altNewCostModel: Option[(CardinalityEstimator) => CostModel] = None,
+  altGraphHeuristics: Option[GraphHeuristics => GraphHeuristics] = None) extends MetricsFactory {
 
   def newCostModel(cardinality: CardinalityEstimator): CostModel =
     altNewCostModel.getOrElse(metricsFactory.newCostModel(_))(cardinality)
 
-  def newCardinalityEstimator(selectivity: SelectivityEstimator): CardinalityEstimator =
-    altNewCardinalityEstimator.getOrElse(metricsFactory.newCardinalityEstimator(_))(selectivity)
+  def newCardinalityEstimator(heuristics: GraphHeuristics, selectivity: SelectivityEstimator): CardinalityEstimator =
+    altNewCardinalityEstimator.getOrElse(metricsFactory.newCardinalityEstimator(_, _))(heuristics, selectivity)
 
-  def newSelectivityEstimator: SelectivityEstimator =
-    altNewSelectivityEstimator.getOrElse(() => metricsFactory.newSelectivityEstimator)()
+  def newSelectivityEstimator(heuristics: GraphHeuristics): SelectivityEstimator =
+    altNewSelectivityEstimator.getOrElse(metricsFactory.newSelectivityEstimator(_))(heuristics)
 
   def replaceCostModel(pf: PartialFunction[LogicalPlan, Int]) =
     copy(altNewCostModel = Some((_: CardinalityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
 
   def replaceCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some((_: SelectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
+    copy(altNewCardinalityEstimator = Some((_: GraphHeuristics, _: SelectivityEstimator) => pf.lift.andThen(_.getOrElse(Int.MaxValue))))
 
   def amendCardinalityEstimator(pf: PartialFunction[LogicalPlan, Int]) =
-    copy(altNewCardinalityEstimator = Some({ (selectivity: SelectivityEstimator) =>
+    copy(altNewCardinalityEstimator = Some({ (heuristics: GraphHeuristics, selectivity: SelectivityEstimator) =>
       val fallback: PartialFunction[LogicalPlan, Int] = {
-        case plan => metricsFactory.newCardinalityEstimator(selectivity)(plan)
+        case plan => metricsFactory.newCardinalityEstimator(heuristics, selectivity)(plan)
       }
       (pf `orElse` fallback).lift.andThen(_.getOrElse(Int.MaxValue))
     }))
 
   def replaceSelectivityEstimator(pf: PartialFunction[Expression, Double]) =
-    copy(altNewSelectivityEstimator = Some(() => pf.lift.andThen(_.getOrElse(1.0d))))
+    copy(altNewSelectivityEstimator = Some((_: GraphHeuristics) => pf.lift.andThen(_.getOrElse(1.0d))))
+
+  override def newMetrics(implicit heuristics: GraphHeuristics): Metrics = altGraphHeuristics match {
+    case Some(mapF) => super.newMetrics(mapF(heuristics))
+    case None       => super.newMetrics(heuristics)
+  }
 }

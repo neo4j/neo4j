@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlan
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  implicit val heuristics = newDefaultHeuristics
+
   test("simple label scan without compile-time label id") {
     // given
     val idName = IdName("n")

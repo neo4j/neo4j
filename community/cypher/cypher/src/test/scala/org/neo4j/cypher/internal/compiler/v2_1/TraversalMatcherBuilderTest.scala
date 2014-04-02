@@ -42,7 +42,7 @@ class TraversalMatcherBuilderTest extends GraphDatabaseJUnitSuite with BuilderTe
   @Before def init() {
     builder = new TraversalMatcherBuilder
     tx = graph.beginTx()
-    ctx = new TransactionBoundPlanContext(statement, graph)
+    ctx = new TransactionBoundPlanContext(statement, kernelAPI, graph)
   }
 
   @After def cleanup() {

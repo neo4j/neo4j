@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val context = newMockedLogicalPlanContext()
+  implicit val context: LogicalPlanContext = newMockedLogicalPlanContext()
   val x = newMockedLogicalPlan("x")
   val y = newMockedLogicalPlan("y")
   val xAndY = newMockedLogicalPlan("x", "y")
@@ -78,7 +78,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(metrics: MetricsFactory) {
-    val costs = metrics.newMetrics.cost
+    val costs = metrics.newMetrics(context.heuristics).cost
     CandidateList(candidates).topPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).topPlan(costs) should equal(Some(winner))
   }

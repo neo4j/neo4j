@@ -29,6 +29,8 @@ import org.neo4j.graphdb.Direction
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
+  implicit val heuristics = newDefaultHeuristics
+
   test("simple node by id seek with a node id expression") {
     // given
     val identifier: Identifier = Identifier("n")_

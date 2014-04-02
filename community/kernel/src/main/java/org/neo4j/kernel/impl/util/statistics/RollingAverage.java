@@ -37,7 +37,7 @@ public class RollingAverage implements Serializable
         this.windowSize = windowSize;
     }
 
-    public void record( int value )
+    public void record( long value )
     {
         averages[0] = (averages[0] * samplesInCurrentWindow + value) / (samplesInCurrentWindow + 1);
 

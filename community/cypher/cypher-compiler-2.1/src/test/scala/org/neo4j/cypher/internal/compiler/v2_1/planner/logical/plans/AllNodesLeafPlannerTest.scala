@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.allNodesLeafPlann
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  implicit val heuristics = newDefaultHeuristics
+
   test("simple all nodes scan") {
     // given
     val qg = QueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty)

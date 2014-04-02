@@ -94,33 +94,34 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     @Override
     public void run()
     {
-        for ( int i = 0; i < 100; i++ )
-        {
+        for ( int i = 0; i < 100; i++ ) {
             long id = random.nextLong() % store.highestNodeIdInUse();
-            if(store.nodeExists( id ))
-            {
-                try
-                {
-                    List<Integer> relTypes = asList( store.nodeGetRelationshipTypes( id ) );
-                    List<Integer> labels = asList( store.nodeGetLabels( id ) );
+            if ( store.nodeExists(id) ) {
+                try {
+                    List<Integer> relTypes = asList(store.nodeGetRelationshipTypes(id));
+                    List<Integer> labels = asList(store.nodeGetLabels(id));
 
                     Map<Integer, Integer> incomingDegrees = new HashMap<>();
                     Map<Integer, Integer> outgoingDegrees = new HashMap<>();
 
-                    for ( Integer relType : relTypes )
-                    {
-                        incomingDegrees.put( relType, store.nodeGetDegree( id, Direction.INCOMING, relType ) );
-                        outgoingDegrees.put( relType, store.nodeGetDegree( id, Direction.OUTGOING, relType ) );
+                    for (Integer relType : relTypes) {
+                        incomingDegrees.put(relType, store.nodeGetDegree(id, Direction.INCOMING, relType));
+                        outgoingDegrees.put(relType, store.nodeGetDegree(id, Direction.OUTGOING, relType));
                     }
 
-                    data.addNodeObservation( labels, relTypes, incomingDegrees, outgoingDegrees);
-                }
-                catch ( EntityNotFoundException e )
-                {
+                    data.addNodeObservation(labels, relTypes, incomingDegrees, outgoingDegrees);
+                } catch (EntityNotFoundException e) {
                     // Node was deleted while we read it, or something. In any case, just exclude it from the run.
+                    data.addSkippedNodeObservation();
                 }
             }
+            else
+            {
+                data.addSkippedNodeObservation();
+            }
         }
+
+        data.addMaxNodesObservation(store.highestNodeIdInUse());
 
         data.recalculate();
     }
@@ -141,6 +142,18 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     public double degree( int labelId, int relType, Direction direction )
     {
         return data.degree( labelId, relType, direction );
+    }
+
+    @Override
+    public double liveNodesRatio()
+    {
+        return data.liveNodesRatio();
+    }
+
+    @Override
+    public long maxAddressableNodes()
+    {
+        return data.maxAddressableNodes();
     }
 
     public void save( FileSystemAbstraction fs, File path ) throws IOException
