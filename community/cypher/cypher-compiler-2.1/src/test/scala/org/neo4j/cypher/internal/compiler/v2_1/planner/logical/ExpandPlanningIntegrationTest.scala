@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesSca
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
-class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
     implicit val statistics = newMockedStatistics

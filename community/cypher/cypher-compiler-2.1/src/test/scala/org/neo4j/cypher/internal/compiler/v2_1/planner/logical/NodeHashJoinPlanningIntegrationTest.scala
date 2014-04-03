@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesSca
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
-class NodeHashJoinPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans containing joins") {
     implicit val planContext = newMockedPlanContext
