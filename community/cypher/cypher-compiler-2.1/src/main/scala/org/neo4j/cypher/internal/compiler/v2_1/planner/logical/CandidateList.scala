@@ -36,7 +36,7 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
     CandidateList(result)
   }
 
-  private def sorted(cost: CostModel) = CandidateList(plans.sortBy(c => (cost(c), -c.coveredIds.size)))
+  private def sorted(cost: CostModel) = CandidateList(plans.sortBy[(Double, Int)](c => (cost(c), -c.coveredIds.size)))
 
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 

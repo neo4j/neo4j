@@ -44,7 +44,7 @@ public abstract class MapUtil
 {
     /**
      * A short-hand method for creating a {@link Map} of key/value pairs.
-     * 
+     *
      * @param objects alternating key and value.
      * @param <K> type of keys
      * @param <V> type of values
@@ -54,7 +54,7 @@ public abstract class MapUtil
     {
         return genericMap( new HashMap<K, V>(), objects );
     }
-    
+
     /**
      * A short-hand method for adding key/value pairs into a {@link Map}.
      *
@@ -78,7 +78,7 @@ public abstract class MapUtil
     /**
      * A short-hand method for creating a {@link Map} of key/value pairs where
      * both keys and values are {@link String}s.
-     * 
+     *
      * @param strings alternating key and value.
      * @return a Map with the entries supplied by {@code strings}.
      */
@@ -90,7 +90,7 @@ public abstract class MapUtil
     /**
      * A short-hand method for creating a {@link Map} of key/value pairs where
      * both keys and values are {@link String}s.
-     * 
+     *
      * @param targetMap the {@link Map} to put the objects into.
      * @param strings alternating key and value.
      * @return a Map with the entries supplied by {@code strings}.
@@ -100,11 +100,11 @@ public abstract class MapUtil
     {
         return genericMap( targetMap, (Object[]) strings );
     }
-    
+
     /**
      * A short-hand method for creating a {@link Map} of key/value pairs where
      * keys are {@link String}s and values are {@link Object}s.
-     * 
+     *
      * @param objects alternating key and value.
      * @return a Map with the entries supplied by {@code objects}.
      */
@@ -116,7 +116,7 @@ public abstract class MapUtil
     /**
      * A short-hand method for creating a {@link Map} of key/value pairs where
      * keys are {@link String}s and values are {@link Object}s.
-     * 
+     *
      * @param targetMap the {@link Map} to put the objects into.
      * @param objects alternating key and value.
      * @return a Map with the entries supplied by {@code objects}.
@@ -126,11 +126,11 @@ public abstract class MapUtil
     {
         return genericMap( targetMap, objects );
     }
-    
+
     /**
      * Loads a {@link Map} from a {@link Reader} assuming strings as keys
      * and values.
-     * 
+     *
      * @param reader the {@link Reader} containing a {@link Properties}-like
      * layout of keys and values.
      * @return the read data as a {@link Map}.
@@ -142,12 +142,12 @@ public abstract class MapUtil
         props.load( reader );
         return new HashMap<String, String>( (Map) props );
     }
-    
+
     /**
      * Loads a {@link Map} from a {@link Reader} assuming strings as keys
      * and values. Any {@link IOException} is wrapped and thrown as a
      * {@link RuntimeException} instead.
-     * 
+     *
      * @param reader the {@link Reader} containing a {@link Properties}-like
      * layout of keys and values.
      * @return the read data as a {@link Map}.
@@ -163,11 +163,11 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Loads a {@link Map} from an {@link InputStream} assuming strings as keys
      * and values.
-     * 
+     *
      * @param stream the {@link InputStream} containing a
      * {@link Properties}-like layout of keys and values.
      * @return the read data as a {@link Map}.
@@ -179,12 +179,12 @@ public abstract class MapUtil
         props.load( stream );
         return new HashMap<String, String>( (Map) props );
     }
-    
+
     /**
      * Loads a {@link Map} from an {@link InputStream} assuming strings as keys
      * and values. Any {@link IOException} is wrapped and thrown as a
      * {@link RuntimeException} instead.
-     * 
+     *
      * @param stream the {@link InputStream} containing a
      * {@link Properties}-like layout of keys and values.
      * @return the read data as a {@link Map}.
@@ -200,11 +200,11 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Loads a {@link Map} from a {@link File} assuming strings as keys
      * and values.
-     * 
+     *
      * @param file the {@link File} containing a {@link Properties}-like
      * layout of keys and values.
      * @return the read data as a {@link Map}.
@@ -228,12 +228,12 @@ public abstract class MapUtil
     {
         if ( closeable != null ) closeable.close();
     }
-    
+
     /**
      * Loads a {@link Map} from a {@link File} assuming strings as keys
      * and values. Any {@link IOException} is wrapped and thrown as a
      * {@link RuntimeException} instead.
-     * 
+     *
      * @param file the {@link File} containing a {@link Properties}-like
      * layout of keys and values.
      * @return the read data as a {@link Map}.
@@ -249,7 +249,7 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Stores the data in {@code config} into {@code file} in a standard java
      * {@link Properties} format.
@@ -270,7 +270,7 @@ public abstract class MapUtil
             closeIfNotNull( stream );
         }
     }
-    
+
     /**
      * Stores the data in {@code config} into {@code file} in a standard java
      * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
@@ -289,7 +289,7 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Stores the data in {@code config} into {@code stream} in a standard java
      * {@link Properties} format.
@@ -306,7 +306,7 @@ public abstract class MapUtil
         }
         properties.store( stream, null );
     }
-    
+
     /**
      * Stores the data in {@code config} into {@code stream} in a standard java
      * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
@@ -326,11 +326,11 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Stores the data in {@code config} into {@code writer} in a standard java
      * {@link Properties} format.
-     * 
+     *
      * @param config the data to store in the properties file.
      * @param writer the {@link Writer} to store the properties in.
      * @throws IOException IO error.
@@ -341,12 +341,12 @@ public abstract class MapUtil
         properties.putAll( config );
         properties.store( writer, null );
     }
-    
+
     /**
      * Stores the data in {@code config} into {@code writer} in a standard java
      * {@link Properties} format. Any {@link IOException} is wrapped and thrown
      * as a {@link RuntimeException} instead.
-     * 
+     *
      * @param config the data to store in the properties file.
      * @param writer the {@link Writer} to store the properties in.
      * @throws IOException IO error.
@@ -362,7 +362,7 @@ public abstract class MapUtil
             throw new RuntimeException( e );
         }
     }
-    
+
     /**
      * Reversed a map, making the key value and the value key.
      * @param <K> the type of key in the map to reverse. These will be the
@@ -422,5 +422,29 @@ public abstract class MapUtil
             result.put(pair.first(), pair.other());
         }
         return result;
+    }
+
+    public static <K> boolean approximatelyEqual( Map<K, Double> that, Map<K, Double> other, double tolerance)
+    {
+        if ( that.size() != other.size() )
+        {
+            return false;
+        }
+
+        for ( Map.Entry<K, Double> entry : that.entrySet() )
+        {
+            if ( !other.containsKey( entry.getKey() ) )
+            {
+                return false;
+            }
+
+            double otherValue = other.get( entry.getKey() );
+            if ( Math.abs( otherValue - entry.getValue() ) > tolerance)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

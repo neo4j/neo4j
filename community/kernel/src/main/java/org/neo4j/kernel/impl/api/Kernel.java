@@ -27,9 +27,9 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.heuristics.Heuristics;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.api.heuristics.HeuristicsService;
 import org.neo4j.kernel.impl.api.heuristics.HeuristicsServiceRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -124,7 +124,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private final boolean readOnly;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
-    private final HeuristicsService heuristics;
+    private final HeuristicsService heuristicsService;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final JobScheduler scheduler;
@@ -160,7 +160,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 nodeManager );
         this.storeLayer = storeLayer;
         this.statementOperations = buildStatementOperations();
-        this.heuristics = new HeuristicsServiceRepository( fs, config, storeLayer, scheduler ).loadHeuristics();
+        this.heuristicsService = new HeuristicsServiceRepository( fs, config, storeLayer, scheduler ).loadHeuristics();
     }
 
     @Override
@@ -170,7 +170,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         {
             schemaCache.addSchemaRule( schemaRule );
         }
-        heuristics.start();
+        heuristicsService.start();
     }
 
     @Override
@@ -178,7 +178,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         isShutdown = true;
         new HeuristicsServiceRepository( fs, config, storeLayer, scheduler );
-        heuristics.stop();
+        heuristicsService.stop();
     }
 
     @Override
@@ -203,9 +203,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public Heuristics heuristics()
+    public HeuristicsData heuristics()
     {
-        return heuristics;
+        return heuristicsService.heuristics();
     }
 
     // We temporarily need this until all transaction state has moved into the kernel

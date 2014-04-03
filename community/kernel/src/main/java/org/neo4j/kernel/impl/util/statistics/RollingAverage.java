@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.impl.util.statistics;
 
+import org.neo4j.helpers.ArrayUtil;
+
 import java.io.Serializable;
 
 /** Takes a stream of inputs, tracks the average over time, giving more weight to more recent data. */
 public class RollingAverage implements Serializable
 {
-    private final long windowSize;
+    private static final long serialVersionUID = -230424883810571860L;
+
+    private final Parameters parameters;
 
     /** Tracks averages across 8 windows, index 0 is the current one used. */
     private final double averages[] = new double[8];
-
     private int populatedWindows = 1;
+
     private long samplesInCurrentWindow = 0;
 
-    public RollingAverage( long windowSize )
+    public RollingAverage( Parameters parameters )
     {
-        this.windowSize = windowSize;
+        this.parameters = parameters;
     }
 
     public void record( long value )
@@ -42,7 +46,7 @@ public class RollingAverage implements Serializable
         averages[0] = (averages[0] * samplesInCurrentWindow + value) / (samplesInCurrentWindow + 1);
 
         // Do we need to move the window?
-        if(++samplesInCurrentWindow > windowSize)
+        if(++samplesInCurrentWindow > parameters.windowSize)
         {
             // Shift averages right, dropping the oldest on the floor
             double previous = averages[0], current;
@@ -69,5 +73,78 @@ public class RollingAverage implements Serializable
         }
         int totalWeightMultipliers = (populatedWindows * (populatedWindows + 1) * (populatedWindows * 2 + 1)) / 6;
         return average / totalWeightMultipliers;
+    }
+
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RollingAverage other = (RollingAverage) o;
+
+        return
+            populatedWindows == other.populatedWindows &&
+            parameters.equals( other.parameters ) &&
+            ArrayUtil.approximatelyEqual( averages, other.averages, parameters.equalityTolerance );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = parameters.hashCode();
+        result = 31 * result + populatedWindows;
+        return result;
+    }
+
+    public static class Parameters implements Serializable
+    {
+        private static final long serialVersionUID = 8909006975623003761L;
+
+        public static final int DEFAULT_WINDOW_SIZE = 1024;
+        public static final double DEFAULT_EQUALITY_TOLERANCE = 0.0001d;
+
+        public final long windowSize;
+        public final double equalityTolerance;
+
+        public Parameters()
+        {
+            this( DEFAULT_WINDOW_SIZE, DEFAULT_EQUALITY_TOLERANCE );
+        }
+
+        public Parameters( long windowSize, double equalityTolerance )
+        {
+            this.windowSize = windowSize;
+            this.equalityTolerance = equalityTolerance;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+            {
+                return true;
+            }
+
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            Parameters that = (Parameters) o;
+
+            return
+              Double.compare( that.equalityTolerance, equalityTolerance ) == 0
+              && windowSize == that.windowSize;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = (int) ( windowSize ^ ( windowSize >>> 32 ) ) ;
+            long temp = Double.doubleToLongBits( equalityTolerance );
+            result = 31 * result + (int) ( temp ^ ( temp >>> 32 ) );
+            return result;
+        }
     }
 }

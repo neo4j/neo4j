@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphHeuristics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import collection.JavaConverters._
 
@@ -92,5 +92,5 @@ class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gd
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def heuristics: GraphHeuristics = new TransactionBoundGraphHeuristics(kernelAPI.heuristics())
+  def statistics: GraphStatistics = new TransactionBoundGraphStatistics(kernelAPI.heuristics())
 }

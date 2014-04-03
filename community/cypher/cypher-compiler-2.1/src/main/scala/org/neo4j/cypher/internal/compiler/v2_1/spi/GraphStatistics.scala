@@ -17,24 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.spi
 
-import org.neo4j.kernel.api.heuristics.Heuristics
-import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 
-class TransactionBoundGraphHeuristics(heuristics: Heuristics) extends GraphHeuristics {
-
-  def numNodes() =
-    ( heuristics.liveNodesRatio() * heuristics.maxAddressableNodes() ).toInt
-
-  def numNodesWithLabel(labelId: LabelId) =
-    ( heuristics.labelDistribution().get( labelId.id ) * numNodes ).toInt
-
-  def numNodesWithRelationshipType(relTypeId: RelTypeId): Int =
-    ??? // numNodesForRatio( heuristics.relationshipTypeDistribution().get( relTypeId.id ) )
-
-  def avgDegreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
-    heuristics.degree( labelId.id, relTypeId.id, direction )
+trait GraphStatistics {
+  def nodesCardinality: Double
+  def nodesWithLabelCardinality(labelId: LabelId): Double
+  def nodesWithLabelSelectivity(labelId: LabelId): Double
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double
+  def degreeByLabelTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double
+  def degreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double
 }

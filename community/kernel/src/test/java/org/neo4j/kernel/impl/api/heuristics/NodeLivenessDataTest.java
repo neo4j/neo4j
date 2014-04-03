@@ -20,28 +20,19 @@
 package org.neo4j.kernel.impl.api.heuristics;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 
-public class EntityLivenessDataTest
+public class NodeLivenessDataTest
 {
-//    @Test
-//    public void shouldReport1_0LiveNodesWhenNotHavingSeenAnySamples()
-//    {
-//        // given
-//        EntityLivenessData tracker = new EntityLivenessData();
-//
-//        // then
-//        assertThat( tracker.liveEntitiesRatio(), equalTo( 1.0 ) );
-//    }
-
     @Test
     public void shouldReportNonZeroLiveNodesWhenNotHavingSeenAnyLiveNodes()
     {
         // given
-        EntityLivenessData tracker = new EntityLivenessData();
+        NodeLivenessData tracker = new NodeLivenessData( new RollingAverage.Parameters() );
 
         // when
         tracker.recordDeadEntity();

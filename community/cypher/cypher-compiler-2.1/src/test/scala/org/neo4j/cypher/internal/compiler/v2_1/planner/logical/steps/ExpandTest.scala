@@ -37,14 +37,20 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty)
 
   test("do not expand when no pattern relationships exist in querygraph") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph())
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph()
+    )
     val plan = PlanTable(Map(Set(aNode) -> AllNodesScan(aNode)))
 
     expand(plan) should equal(CandidateList())
   }
 
   test("finds single pattern relationship when start point is picked") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
@@ -53,7 +59,10 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("finds expansion going both sides") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val planA = newMockedLogicalPlan("a")
     val planB = newMockedLogicalPlan("b")
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
@@ -65,7 +74,10 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("does not include plan that has the relationship name already covered") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val aAndB = newMockedLogicalPlan("a", "b", "r")
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
 
@@ -73,7 +85,10 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("self referencing pattern is handled correctly") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rSelfRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rSelfRel)
+    )
     val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
@@ -84,7 +99,10 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("looping pattern is handled as it should") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val aAndB = newMockedLogicalPlan("a", "b")
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
 

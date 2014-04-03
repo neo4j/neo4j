@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.statistics;
 
+import org.neo4j.helpers.collection.MapUtil;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,19 +36,28 @@ import java.util.Map;
  */
 public class LabelledDistribution<T> implements Serializable
 {
-    private long total = 0;
-    private final Map<T, Long> rawData = new HashMap<>();
-    private Map<T, Float> distribution = new HashMap<>();
+    private static final long serialVersionUID = -6076855164000786095L;
 
-    public float get( T label )
+    private final Map<T, Long> rawData = new HashMap<>();
+    private final double equalityTolerance;
+
+    private long total = 0;
+    private Map<T, Double> distribution = new HashMap<>();
+
+    public LabelledDistribution( double equalityTolerance )
     {
-        if(distribution.containsKey( label ))
+        this.equalityTolerance = equalityTolerance;
+    }
+
+    public double get( T label )
+    {
+        if ( distribution.containsKey( label ) )
         {
             return distribution.get( label );
         }
         else
         {
-            return 0.0f;
+            return 0.0d;
         }
     }
 
@@ -73,10 +84,10 @@ public class LabelledDistribution<T> implements Serializable
     {
         synchronized ( rawData )
         {
-            Map<T, Float> newDistribution = new HashMap<>();
+            Map<T, Double> newDistribution = new HashMap<>();
             for ( Map.Entry<T, Long> entry : rawData.entrySet() )
             {
-                newDistribution.put( entry.getKey(), entry.getValue() / (1.0f * total) );
+                newDistribution.put( entry.getKey(), entry.getValue().doubleValue() / total );
             }
             this.distribution = newDistribution;
             return this;
@@ -89,27 +100,28 @@ public class LabelledDistribution<T> implements Serializable
         return distribution.toString();
     }
 
-    public boolean equals( LabelledDistribution<T> other, float tolerance )
+    @Override
+    public boolean equals( Object obj )
     {
-        if(other.distribution.size() != distribution.size())
+        if ( this == obj )
+        {
+            return true;
+        }
+
+        if ( null == obj || getClass() != obj.getClass() )
         {
             return false;
         }
 
-        for ( Map.Entry<T, Float> entry : distribution.entrySet() )
-        {
-            if(!other.distribution.containsKey( entry.getKey() ))
-            {
-                return false;
-            }
+        LabelledDistribution<T> other = (LabelledDistribution<T>) obj;
+        return
+          equalityTolerance == other.equalityTolerance &&
+          MapUtil.approximatelyEqual( this.distribution, other.distribution, equalityTolerance );
+    }
 
-            float otherValue = other.distribution.get( entry.getKey() );
-            if(Math.abs(otherValue - entry.getValue()) > tolerance)
-            {
-                return false;
-            }
-        }
-
-        return true;
+    @Override
+    public int hashCode() {
+        long temp = Double.doubleToLongBits( equalityTolerance );
+        return (int) ( temp ^ ( temp >>> 32 ) );
     }
 }

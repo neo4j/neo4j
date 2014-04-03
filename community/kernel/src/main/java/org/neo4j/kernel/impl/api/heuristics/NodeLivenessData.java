@@ -26,19 +26,23 @@ import java.io.Serializable;
 /**
  * Track percentage of live entities vs dead (deleted or corrupt) entity (records).
  */
-public final class EntityLivenessData implements Serializable {
+public final class NodeLivenessData implements Serializable {
 
     private static final long serialVersionUID = -8657743503560688270L;
 
-    private final RollingAverage liveEntities = new RollingAverage( HeuristicsData.WINDOW_SIZE );
-    private final RollingAverage deadEntities = new RollingAverage( HeuristicsData.WINDOW_SIZE );
+    private final RollingAverage liveEntities;
+    private final RollingAverage deadEntities;
     private long maxEntities = 0;
 
     transient private int liveEntitiesSeenInRound;
     transient private int deadEntitiesSeenInRound;
 
-    public EntityLivenessData() {
+    public NodeLivenessData(RollingAverage.Parameters parameters)
+    {
+        this.liveEntities = new RollingAverage( parameters );
+        this.deadEntities = new RollingAverage( parameters );
     }
+
 
     private void reset()
     {
@@ -96,7 +100,8 @@ public final class EntityLivenessData implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o)
         {
             return true;
@@ -107,23 +112,20 @@ public final class EntityLivenessData implements Serializable {
             return false;
         }
 
-        EntityLivenessData that = (EntityLivenessData) o;
+        NodeLivenessData that = (NodeLivenessData) o;
 
         return
-            liveEntitiesSeenInRound == that.liveEntitiesSeenInRound
-            && maxEntities == that.maxEntities
-            && deadEntitiesSeenInRound == that.deadEntitiesSeenInRound
-            && deadEntities.equals(that.deadEntities)
-            && liveEntities.equals(that.liveEntities);
+            maxEntities == that.maxEntities
+            && deadEntities.equals( that.deadEntities )
+            && liveEntities.equals( that.liveEntities );
+
     }
 
     @Override
     public int hashCode() {
         int result = liveEntities.hashCode();
         result = 31 * result + deadEntities.hashCode();
-        result = 31 * result + (int) (maxEntities ^ (maxEntities >>> 32));
-        result = 31 * result + liveEntitiesSeenInRound;
-        result = 31 * result + deadEntitiesSeenInRound;
+        result = 31 * result + (int) ( maxEntities ^ ( maxEntities >>> 32 ) );
         return result;
     }
 }

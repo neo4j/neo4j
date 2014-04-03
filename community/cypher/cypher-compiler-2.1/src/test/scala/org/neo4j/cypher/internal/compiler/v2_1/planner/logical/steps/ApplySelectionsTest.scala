@@ -47,7 +47,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, Se
 class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
-    implicit val context = newMockedLogicalPlanContext()
+    implicit val planContext = newMockedPlanContext
+    implicit val context = newMockedLogicalPlanContext(planContext)
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
@@ -63,7 +64,8 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("should not try to solve predicates with unmet dependencies") {
     // Given
-    implicit val context = newMockedLogicalPlanContext()
+    implicit val planContext = newMockedPlanContext
+    implicit val context = newMockedLogicalPlanContext(planContext)
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
@@ -78,7 +80,8 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("when two predicates not already solved are solvable, they should be applied") {
     // Given
-    implicit val context = newMockedLogicalPlanContext()
+    implicit val planContext = newMockedPlanContext
+    implicit val context = newMockedLogicalPlanContext(planContext)
     val plan = newMockedLogicalPlan("x")
     val predicate1 = mock[Expression]
     val predicate2 = mock[Expression]
@@ -94,7 +97,8 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("when a predicate that is already solved, it should not be applied again") {
     // Given
-    implicit val context = newMockedLogicalPlanContext()
+    implicit val planContext = newMockedPlanContext
+    implicit val context = newMockedLogicalPlanContext(planContext)
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
@@ -110,7 +114,8 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("a predicate without all dependencies covered should not be applied ") {
     // Given
-    implicit val context = newMockedLogicalPlanContext()
+    implicit val planContext = newMockedPlanContext
+    implicit val context = newMockedLogicalPlanContext(planContext)
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(Set(IdName("x"), IdName("y")) -> predicate))
