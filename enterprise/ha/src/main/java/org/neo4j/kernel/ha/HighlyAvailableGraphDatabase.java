@@ -158,7 +158,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
                 (TxManager) txManager, availabilityGuard, logging, masterDelegateInvocationHandler ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
-                requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, msgLog ) );
+                requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 

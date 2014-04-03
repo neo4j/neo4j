@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.ComException;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -28,6 +29,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -40,6 +42,7 @@ public class UpdatePuller implements Lifecycle
     private final AvailabilityGuard availabilityGuard;
     private final LastUpdateTime lastUpdateTime;
     private final Config config;
+    private final JobScheduler scheduler;
     private final StringLogger logger;
     private boolean pullUpdates = false;
     private ScheduledThreadPoolExecutor updatePuller;
@@ -47,7 +50,7 @@ public class UpdatePuller implements Lifecycle
     public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
                          AvailabilityGuard availabilityGuard, LastUpdateTime lastUpdateTime, Config config,
-                         StringLogger logger )
+                         JobScheduler scheduler, StringLogger logger )
     {
         this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
@@ -56,6 +59,7 @@ public class UpdatePuller implements Lifecycle
         this.availabilityGuard = availabilityGuard;
         this.lastUpdateTime = lastUpdateTime;
         this.config = config;
+        this.scheduler = scheduler;
         this.logger = logger;
     }
 
@@ -78,6 +82,8 @@ public class UpdatePuller implements Lifecycle
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
+                private final AtomicInteger comExceptionCounter = new AtomicInteger(0);
+
                 @Override
                 public void run()
                 {
@@ -91,7 +97,14 @@ public class UpdatePuller implements Lifecycle
                     }
                     catch ( ComException e )
                     {
-                        // Ignore
+                        // Throttle these
+                        if( comExceptionCounter.getAndIncrement() % 10 == 0 )
+                        {
+                            logger.warn( "Pull updates failed due to network error, there have been " +
+                                    comExceptionCounter.get() + " of these exceptions since the previous log message " +
+                                    "on this topic.", e );
+                            comExceptionCounter.set( 1 );
+                        }
                     }
                     catch ( Exception e )
                     {

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +36,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private final StringLogger log;
     private final String id;
+    private final Set<TimerTask> recurringJobs = Collections.newSetFromMap(new ConcurrentHashMap<TimerTask, Boolean>());
 
     private ExecutorService executor;
     private Timer timer; // Note, we may want a pool of these in the future, to minimize contention.
@@ -65,6 +69,12 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public void scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
     {
+        scheduleRecurring( group, runnable, 0, period, timeUnit );
+    }
+
+    @Override
+    public void scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+    {
         timer.schedule( new TimerTask()
         {
             @Override
@@ -78,7 +88,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
                     log.error( "Failed running recurring job.", e );
                 }
             }
-        }, 0, timeUnit.toMillis( period ) );
+        }, timeUnit.toMillis( initialDelay ), timeUnit.toMillis( period ) );
     }
 
     @Override
