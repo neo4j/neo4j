@@ -1,3 +1,8 @@
+1.9.7
+-----
+o Server log and messages.log now share common formatting. Achieved
+  through the use of the same logging framework
+
 1.9.6 (2014-01-31)
 ------------------
 o Fixes issue with transacions leaking when there is an exception while rendering the response

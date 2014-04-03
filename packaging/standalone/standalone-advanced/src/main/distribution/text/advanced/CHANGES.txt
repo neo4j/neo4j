@@ -1,5 +1,18 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+1.9.7         
+-----
+Kernel:
+o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
+o Fixes issue where store migration forgets about legacy indexes
+o Fixes memory leak in XaResourceManager that could lead recovered
+  transaction application to delay noticeably
+o Datasource specific transaction application now respects global TM state
+
+Server:
+o Server log and messages.log now share common formatting. Achieved
+  through the use of the same logging framework
+
 1.9.6 (2014-01-31)
 ------------------
 Kernel:

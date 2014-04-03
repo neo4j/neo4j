@@ -1,6 +1,10 @@
-1.9.7-SNAPSHOT
+1.9.7
 --------------
 o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
+o Fixes issue where store migration forgets about legacy indexes
+o Fixes memory leak in XaResourceManager that could lead recovered
+  transaction application to delay noticeably
+o Datasource specific transaction application now respects global TM state
 
 1.9.6 (2014-01-31)
 ------------------
