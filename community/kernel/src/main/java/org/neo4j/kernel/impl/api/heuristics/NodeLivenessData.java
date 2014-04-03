@@ -26,7 +26,7 @@ import java.io.Serializable;
 /**
  * Track percentage of live entities vs dead (deleted or corrupt) entity (records).
  */
-public final class EntityLivenessData implements Serializable {
+public final class NodeLivenessData implements Serializable {
 
     private static final long serialVersionUID = -8657743503560688270L;
 
@@ -37,7 +37,7 @@ public final class EntityLivenessData implements Serializable {
     transient private int liveEntitiesSeenInRound;
     transient private int deadEntitiesSeenInRound;
 
-    public EntityLivenessData( RollingAverage.Parameters parameters )
+    public NodeLivenessData(RollingAverage.Parameters parameters)
     {
         this.liveEntities = new RollingAverage( parameters );
         this.deadEntities = new RollingAverage( parameters );
@@ -112,7 +112,7 @@ public final class EntityLivenessData implements Serializable {
             return false;
         }
 
-        EntityLivenessData that = (EntityLivenessData) o;
+        NodeLivenessData that = (NodeLivenessData) o;
 
         return
             maxEntities == that.maxEntities

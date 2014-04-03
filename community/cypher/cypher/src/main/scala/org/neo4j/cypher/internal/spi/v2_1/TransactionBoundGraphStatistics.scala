@@ -33,10 +33,12 @@ class TransactionBoundGraphStatistics(statistics: HeuristicsData) extends GraphS
      nodesWithLabelSelectivity(labelId) * nodesCardinality
 
   def nodesWithLabelSelectivity(labelId: LabelId): Double =
-    statistics.labelDistribution().get( labelId.id )
+    statistics.labelDistribution( labelId.id )
 
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double =
-    ??? // numNodesForRatio( heuristics.relationshipTypeDistribution().get( relTypeId.id ) )
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double = ???
+
+  def degreeByLabelTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
+    statistics.degree( HeuristicsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction )
 
   def degreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
     statistics.degree( labelId.id, relTypeId.id, direction )

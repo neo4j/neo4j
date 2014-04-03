@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.heuristics;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -37,11 +32,14 @@ import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
 import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.Arrays.asList;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Random;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
@@ -72,13 +70,10 @@ public class RuntimeHeuristicsServiceTest
         service.run();
 
         // Then
-        assertThat( heuristics.labelDistribution(), equalTo(
-                new LabelledDistribution<Integer>( equalityTolerance )
-                        .record(asList(0), 20)
-                        .record(asList(1), 80)
-                        .recalculate()
-        ) );
+        assertThat(heuristics.labelDistribution(0), closeTo(0.2, equalityTolerance));
+        assertThat(heuristics.labelDistribution(1), closeTo(0.8, equalityTolerance));
     }
+
 
     @Test
     public void shouldGatherRelationshipTypeAndDirectionDistribution() throws Exception
@@ -96,11 +91,8 @@ public class RuntimeHeuristicsServiceTest
         service.run();
 
         // Then
-        assertThat( heuristics.relationshipTypeDistribution(),
-                equalTo(new LabelledDistribution<Integer>( equalityTolerance )
-                        .record(asList(0), 40)
-                        .record(asList(1), 60)
-                        .recalculate()) );
+        assertThat( heuristics.relationshipTypeDistribution( 0 ), closeTo(0.4, equalityTolerance));
+        assertThat( heuristics.relationshipTypeDistribution( 1 ), closeTo(0.5, equalityTolerance));
     }
 
     @Test

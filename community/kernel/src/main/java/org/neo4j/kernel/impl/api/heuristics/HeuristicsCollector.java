@@ -41,7 +41,7 @@ public class HeuristicsCollector implements Serializable, HeuristicsData {
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> incomingDegrees = new HashMap<>();
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
 
-    private final EntityLivenessData nodeLivenessData;
+    private final NodeLivenessData nodeLivenessData;
 
     private final transient RollingAverage.Parameters parameters;
 
@@ -53,13 +53,13 @@ public class HeuristicsCollector implements Serializable, HeuristicsData {
     public HeuristicsCollector( RollingAverage.Parameters parameters )
     {
         this.parameters = parameters;
-        this.nodeLivenessData = new EntityLivenessData( parameters );
+        this.nodeLivenessData = new NodeLivenessData( parameters );
         this.labels = new LabelledDistribution<>( parameters.equalityTolerance );
         this.relationships = new LabelledDistribution<>( parameters.equalityTolerance );
 
-        outgoingDegrees.put( -1, new HashMap<Integer, RollingAverage>() );
-        incomingDegrees.put( -1, new HashMap<Integer, RollingAverage>() );
-        bothDegrees.put(     -1, new HashMap<Integer, RollingAverage>() );
+        outgoingDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
+        incomingDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
+        bothDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
     }
 
     public void addNodeObservation( List<Integer> nodeLabels, List<Integer> nodeRelTypes,
@@ -90,7 +90,12 @@ public class HeuristicsCollector implements Serializable, HeuristicsData {
     {
         for ( Map.Entry<Integer, Integer> entry : source.entrySet() )
         {
-            for ( Integer nodeLabel : Iterables.append( /* Include for looking up without label */-1, nodeLabels) )
+            for ( Integer nodeLabel :
+                    Iterables.append( /* Include for looking up without label */
+                            RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL,
+                                      nodeLabels
+                    )
+                 )
             {
                 Map<Integer, RollingAverage> reltypeMap = degreeMap.get( nodeLabel );
                 if(reltypeMap == null)
@@ -119,15 +124,15 @@ public class HeuristicsCollector implements Serializable, HeuristicsData {
     }
 
     @Override
-    public LabelledDistribution<Integer> labelDistribution()
+    public double labelDistribution(int labelId)
     {
-        return labels;
+        return labels.get(labelId);
     }
 
     @Override
-    public LabelledDistribution<Integer> relationshipTypeDistribution()
+    public double relationshipTypeDistribution(int relType)
     {
-        return relationships;
+        return relationships.get(relType);
     }
 
     @Override

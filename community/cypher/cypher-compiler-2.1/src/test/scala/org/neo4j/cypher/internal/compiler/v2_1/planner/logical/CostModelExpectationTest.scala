@@ -31,9 +31,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 import org.neo4j.graphdb.Direction
-import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -109,7 +108,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("expand(select(all nodes scan)) < expand(all node scan)") {
     val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(1000)
+    when(statistics.nodesCardinality).thenReturn(1000.0)
     val cost = newMetricsFactory.newMetrics(statistics).cost
 
     val cost1 = cost(
@@ -138,6 +137,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand(select(all nodes scan)) < select(expand(all node scan))") {
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
+    when(statistics.degreeByLabelTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
     val cost = newMetricsFactory.newMetrics(statistics).cost
 
     val cost1 = cost(
@@ -146,7 +146,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(Equals(Property(Identifier("a") _, PropertyKeyName("name")() _) _, StringLiteral("Andres") _) _),
           AllNodesScan("a")
         ),
-        "a", Direction.BOTH, Seq(RelTypeName("x")()_), "start", "rel"
+        "a", Direction.BOTH, Seq(RelTypeName("x")(Some(RelTypeId(12)))_), "start", "rel"
       )
     )
 
@@ -155,7 +155,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
         Expand(
           AllNodesScan("start"),
-          "start", Direction.BOTH, Seq(RelTypeName("x")() _), "a", "rel"
+          "start", Direction.BOTH, Seq(RelTypeName("x")(Some(RelTypeId(12))) _), "a", "rel"
         )
       )
     )

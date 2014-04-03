@@ -30,7 +30,7 @@ object GuessingEstimation {
   val PREDICATE_SELECTIVITY: Double = 0.2
   val INDEX_SEEK_SELECTIVITY: Double = 0.08
   val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
-  val EXPAND_RELATIONSHIP_DEGREE: Double = 2.0
+  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE: Double = 2.0
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
@@ -60,8 +60,11 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       (cardinality(left) + cardinality(right)) / 2
 
     case expand @ Expand(left, _, dir, types, _, _) =>
-      // val labels = expand.left.solvedPredicates.collect { case HasLabels(Identifier(name), Seq(labelName)) => ??? }
-      cardinality(left) * EXPAND_RELATIONSHIP_DEGREE
+      val degree = if (types.size <= 0)
+        DEFAULT_EXPAND_RELATIONSHIP_DEGREE
+      else
+        types.foldLeft(0.0)((sum, t) => sum + statistics.degreeByLabelTypeAndDirection(t.id.get, dir)) / types.size
+      cardinality(left) * degree
 
     case Selection(predicates, left) =>
       cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)

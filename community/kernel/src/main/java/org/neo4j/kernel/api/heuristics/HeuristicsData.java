@@ -23,11 +23,13 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
 
 public interface HeuristicsData {
+    public static final int RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL = -1;
+
     /** Label id -> relative occurrence, value between 0 and 1. The total may be > 1, since labels may co-occur. */
-    LabelledDistribution<Integer> labelDistribution();
+    double labelDistribution(int labelId);
 
     /** Relationship type id -> relative occurrence, value between 0 and 1. The total adds up to 1 */
-    LabelledDistribution<Integer> relationshipTypeDistribution();
+    double relationshipTypeDistribution(int relType);
 
     /** Relationship degree distribution for a label/rel type/direction triplet. */
     double degree( int labelId, int relType, Direction direction );
