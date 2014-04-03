@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternLength, PatternRelationship, IdName}
 
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
@@ -41,17 +41,19 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     }
 
     private def destruct(chain: RelationshipChain): (Set[IdName], Set[PatternRelationship]) = chain match {
-      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, None, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
+      // (a)->[r]->(b)
+      case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
-        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes)
+        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length)
         (Set(leftNode, rightNode), Set(r))
 
-      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), _, relTypes, None, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
+      // ...->[r]->(b)
+      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val (idNames, rels) = destruct(relChain)
         val leftNode = IdName(rels.last.nodes._2.name)
         val rightNode = IdName(rightNodeId.name)
-        val resultRels = rels + PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes)
+        val resultRels = rels + PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length)
         (idNames + rightNode, resultRels)
 
       case _ => throw new CantHandleQueryException
@@ -89,5 +91,14 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     }) throw new CantHandleQueryException
 
     QueryGraph(projections.toMap, selections, nodes, rels)
+  }
+
+  private implicit def asPatternLength(length: Option[Option[Range]]): PatternLength = length match {
+    case Some(Some(Range(Some(left), Some(right)))) => PatternLength(left.value.toInt, Some(right.value.toInt))
+    case Some(Some(Range(Some(left), None)))        => PatternLength(left.value.toInt, None)
+    case Some(Some(Range(None, Some(right))))       => PatternLength(1, Some(right.value.toInt))
+    case Some(Some(Range(None, None)))              => PatternLength.unlimited
+    case Some(None)                                 => PatternLength.unlimited
+    case None                                       => PatternLength.fixed(1)
   }
 }

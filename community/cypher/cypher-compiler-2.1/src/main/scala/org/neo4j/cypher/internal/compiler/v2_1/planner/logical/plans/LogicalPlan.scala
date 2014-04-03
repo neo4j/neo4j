@@ -69,11 +69,16 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 
 final case class IdName(name: String) extends AnyVal
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength = PatternLength()) {
+final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength = PatternLength.fixed(1)) {
   def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
 
   def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
 }
 
-case class PatternLength(min: Int = 1, max: Option[Int] = Some(1))
+object PatternLength {
+  def unlimited = PatternLength(1, None)
+  def fixed(length: Int) = PatternLength(length, Some(length))
+}
+
+case class PatternLength(min: Int, max: Option[Int])
 
