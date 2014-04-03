@@ -106,7 +106,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
-    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
+    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
     val factory = newMockedMetricsFactory
@@ -140,7 +140,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
-    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty)
+    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
     val factory = newMockedMetricsFactory
@@ -177,7 +177,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
-    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty)
+    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
     val factory = newMockedMetricsFactory
@@ -215,7 +215,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
-    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty)
+    val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
     val factory = newMockedMetricsFactory
@@ -253,7 +253,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val end = IdName("to")
     val patternRel = PatternRelationship(
       IdName("r"), (from, end), Direction.BOTH,
-      Seq(RelTypeName("X")(Some(RelTypeId(1)))_)
+      Seq(RelTypeName("X")(Some(RelTypeId(1)))_),
+      SimplePatternLength
     )
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 
@@ -298,7 +299,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       Seq(
         RelTypeName("X")(Some(RelTypeId(1)))_,
         RelTypeName("Y")(Some(RelTypeId(2)))_
-      )
+      ),
+      SimplePatternLength
     )
     val qg = QueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel))
 

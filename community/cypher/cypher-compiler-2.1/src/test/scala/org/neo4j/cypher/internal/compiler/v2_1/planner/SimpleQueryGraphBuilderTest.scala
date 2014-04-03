@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternLength, PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, VarPatternLength, PatternRelationship, IdName}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, Selections, SimpleQueryGraphBuilder}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
@@ -162,7 +162,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r]->(b) return a,r") {
     val qg = buildQueryGraph("match (a)-[r]->(b) return a,r")
     qg.patternRelationships should equal(
-      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty)))
+      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map(
@@ -174,8 +174,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {
     val qg = buildQueryGraph("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map(
@@ -188,8 +188,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
     val qg = buildQueryGraph("match (a)-[r]->(b)-[r2]->(a) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map(
@@ -201,8 +201,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
     val qg = buildQueryGraph("match (a)<-[r]-(b)-[r2]-(c) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map(
@@ -214,8 +214,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
     val qg = buildQueryGraph("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty)))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map(
@@ -227,7 +227,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a), (b)-[r:Type]-(c) where b:Label return a,r") {
     val qg = buildQueryGraph("match (a), (b)-[r:Type]-(c) where b:Label return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("b"), IdName("c")), Direction.BOTH, Seq(relType("Type")))))
+      PatternRelationship(IdName("r"), (IdName("b"), IdName("c")), Direction.BOTH, Seq(relType("Type")), SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     qg.selections should equal(Selections(List(
       Set(IdName("b")) -> HasLabels(Identifier("b")(pos), Seq(LabelName("Label")()(pos)))(pos)
@@ -241,7 +241,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
     val qg = buildQueryGraph("match (a)-[r:Type|Foo]-(b) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
     qg.selections should equal(Selections())
     qg.projections should equal(Map(
@@ -253,7 +253,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r:Type*]-(b) return a,r") {
     val qg = buildQueryGraph("match (a)-[r:Type*]-(b) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), PatternLength(1, None))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
     qg.selections should equal(Selections())
     qg.projections should equal(Map(
@@ -265,7 +265,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r:Type*3..]-(b) return a,r") {
     val qg = buildQueryGraph("match (a)-[r:Type*3..]-(b) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), PatternLength(3, None))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
     qg.selections should equal(Selections())
     qg.projections should equal(Map(
@@ -277,7 +277,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)-[r:Type*5]-(b) return a,r") {
     val qg = buildQueryGraph("match (a)-[r:Type*5]-(b) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), PatternLength.fixed(5))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
     qg.selections should equal(Selections())
     qg.projections should equal(Map(
@@ -289,8 +289,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
   test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
     val qg = buildQueryGraph("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
     qg.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, PatternLength(1, None)),
-      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, PatternLength(1, None))))
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map(

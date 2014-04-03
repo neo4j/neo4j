@@ -33,8 +33,8 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aNode = IdName("a")
   val bNode = IdName("b")
   val rName = IdName("r")
-  val rRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty)
-  val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty)
+  val rRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("do not expand when no pattern relationships exist in querygraph") {
     implicit val context = newMockedLogicalPlanContext(
@@ -78,7 +78,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rRel)
     )
-    val aAndB = newMockedLogicalPlan("a", "b", "r")
+    val aAndB = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(rRel))
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
 
     expand(plan) should equal(CandidateList())
