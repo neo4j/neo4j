@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphHeuristics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.compiler.v2_1._
@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CostModel, CardinalityEstimator, SelectivityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CostModel, CardinalityModel, SelectivityModel}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -46,12 +46,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
 
   class DummyMetricsFactory extends MetricsFactory {
-    def newSelectivityEstimator(heuristics: GraphHeuristics) =
-      SimpleMetricsFactory.newSelectivityEstimator(heuristics)
-    def newCostModel(cardinality: CardinalityEstimator) =
+    def newSelectivityEstimator(statistics: GraphStatistics) =
+      SimpleMetricsFactory.newSelectivityEstimator(statistics)
+    def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)
-    def newCardinalityEstimator(heuristics: GraphHeuristics, selectivity: SelectivityEstimator) =
-      SimpleMetricsFactory.newCardinalityEstimator(heuristics, selectivity)
+    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel) =
+      SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity)
   }
 
   def newMetricsFactory = SimpleMetricsFactory
@@ -68,11 +68,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     def asTableEntry = plan.coveredIds -> plan
   }
 
-  def newMockedHeuristics = mock[GraphHeuristics]
+  def newMockedStatistics = mock[GraphStatistics]
 
-  def newMockedPlanContext(implicit heuristics: GraphHeuristics = newMockedHeuristics) = {
+  def newMockedPlanContext(implicit statistics: GraphStatistics = newMockedStatistics) = {
     val context = mock[PlanContext]
-    doReturn(heuristics).when(context).heuristics
+    doReturn(statistics).when(context).statistics
     context
   }
 
@@ -103,8 +103,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
   }
-
-//  implicit def withHeuristics(implicit planContext: PlanContext) = planContext.heuristics
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(DummyPosition(0))
 

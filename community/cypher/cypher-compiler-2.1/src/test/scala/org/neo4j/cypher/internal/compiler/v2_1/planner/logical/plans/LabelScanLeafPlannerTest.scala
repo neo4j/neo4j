@@ -29,7 +29,7 @@ import org.mockito.Matchers._
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val heuristics = newMockedHeuristics
+  val statistics = newMockedStatistics
 
   test("simple label scan without compile-time label id") {
     // given
@@ -46,7 +46,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
 
     // when
@@ -72,7 +72,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 

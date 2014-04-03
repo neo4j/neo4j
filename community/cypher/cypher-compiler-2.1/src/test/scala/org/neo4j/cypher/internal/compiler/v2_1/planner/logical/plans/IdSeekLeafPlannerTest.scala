@@ -30,7 +30,7 @@ import org.mockito.Mockito._
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
-  private val heuristics = newMockedHeuristics
+  private val statistics = newMockedStatistics
 
   test("simple node by id seek with a node id expression") {
     // given
@@ -50,7 +50,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
@@ -81,7 +81,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
@@ -117,7 +117,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -151,7 +151,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
 
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -188,7 +188,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -226,7 +226,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -265,7 +265,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
@@ -310,7 +310,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics)
+      metrics = factory.newMetrics(statistics)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 

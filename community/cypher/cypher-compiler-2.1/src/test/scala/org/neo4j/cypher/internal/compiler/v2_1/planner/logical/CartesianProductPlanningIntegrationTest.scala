@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityEstimator, CardinalityEstimator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel}
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
 
@@ -123,10 +123,10 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         }
     })
 
-    when(factory.newCardinalityEstimator(any(), any())).thenAnswer(new Answer[CardinalityEstimator] {
-      def answer(invocation: InvocationOnMock): CardinalityEstimator = {
-        val selectivity = invocation.getArguments()(1).asInstanceOf[SelectivityEstimator]
-        new CardinalityEstimator {
+    when(factory.newCardinalityEstimator(any(), any())).thenAnswer(new Answer[CardinalityModel] {
+      def answer(invocation: InvocationOnMock): CardinalityModel = {
+        val selectivity = invocation.getArguments()(1).asInstanceOf[SelectivityModel]
+        new CardinalityModel {
           def apply(plan: LogicalPlan): Double = plan match {
             case _: AllNodesScan                             => 1000
             case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId

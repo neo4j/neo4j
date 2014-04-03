@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
-    implicit val heuristics = newMockedHeuristics
+    implicit val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -57,7 +57,7 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans containing expand for two unrelated relationship patterns") {
-    implicit val heuristics = newMockedHeuristics
+    implicit val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -85,7 +85,7 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    implicit val heuristics = newMockedHeuristics
+    implicit val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -104,7 +104,7 @@ class ExpandPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    implicit val heuristics = newMockedHeuristics
+    implicit val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 

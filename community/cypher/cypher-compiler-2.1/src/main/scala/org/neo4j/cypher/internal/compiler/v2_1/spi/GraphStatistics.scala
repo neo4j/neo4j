@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.spi
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 
-trait GraphHeuristics {
+trait GraphStatistics {
   def nodesCardinality: Double
   def nodesWithLabelCardinality(labelId: LabelId): Double
   def nodesWithLabelSelectivity(labelId: LabelId): Double

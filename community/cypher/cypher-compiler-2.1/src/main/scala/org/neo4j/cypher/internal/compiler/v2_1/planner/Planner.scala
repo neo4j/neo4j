@@ -58,7 +58,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
     val resolvedAst = tokenResolver.resolve(ast)(planContext)
     val queryGraph = queryGraphBuilder.produce(resolvedAst)
-    val metrics = metricsFactory.newMetrics(planContext.heuristics)
+    val metrics = metricsFactory.newMetrics(planContext.statistics)
     val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
     logicalPlanner.plan(context)
   }

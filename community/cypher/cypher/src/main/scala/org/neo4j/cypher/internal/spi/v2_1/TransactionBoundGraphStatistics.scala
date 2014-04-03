@@ -19,25 +19,25 @@
  */
 package org.neo4j.cypher.internal.spi.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.heuristics.HeuristicsData
 
-class TransactionBoundGraphHeuristics(heuristics: HeuristicsData) extends GraphHeuristics {
+class TransactionBoundGraphStatistics(statistics: HeuristicsData) extends GraphStatistics {
 
   def nodesCardinality =
-    heuristics.liveNodesRatio() * heuristics.maxAddressableNodes()
+    statistics.liveNodesRatio() * statistics.maxAddressableNodes()
 
   def nodesWithLabelCardinality(labelId: LabelId) =
      nodesWithLabelSelectivity(labelId) * nodesCardinality
 
   def nodesWithLabelSelectivity(labelId: LabelId): Double =
-    heuristics.labelDistribution().get( labelId.id )
+    statistics.labelDistribution().get( labelId.id )
 
   def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double =
     ??? // numNodesForRatio( heuristics.relationshipTypeDistribution().get( relTypeId.id ) )
 
   def degreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
-    heuristics.degree( labelId.id, relTypeId.id, direction )
+    statistics.degree( labelId.id, relTypeId.id, direction )
 }

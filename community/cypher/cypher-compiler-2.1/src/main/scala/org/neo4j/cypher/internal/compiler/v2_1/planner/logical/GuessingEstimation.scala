@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels, Expre
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphHeuristics
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
@@ -33,28 +33,28 @@ object GuessingEstimation {
   val EXPAND_RELATIONSHIP_DEGREE: Double = 2.0
 }
 
-class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
-                                   selectivity: Metrics.SelectivityEstimator) extends Metrics.CardinalityEstimator {
+class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
+                                   selectivity: Metrics.SelectivityModel) extends Metrics.CardinalityModel {
   import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Double = plan match {
     case AllNodesScan(_) =>
-      heuristics.nodesCardinality
+      statistics.nodesCardinality
 
     case NodeByLabelScan(_, Left(_)) =>
-      heuristics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
+      statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
 
     case NodeByLabelScan(_, Right(labelId)) =>
-      heuristics.nodesWithLabelCardinality(labelId)
+      statistics.nodesWithLabelCardinality(labelId)
 
     case NodeByIdSeek(_, nodeIds) =>
       nodeIds.size
 
     case NodeIndexSeek(_, _, _, _) =>
-      heuristics.nodesCardinality * INDEX_SEEK_SELECTIVITY
+      statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
 
     case NodeIndexUniqueSeek(_, _, _, _) =>
-      heuristics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
+      statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
 
     case NodeHashJoin(_, left, right) =>
       (cardinality(left) + cardinality(right)) / 2
@@ -85,14 +85,14 @@ class GuessingCardinalityEstimator(heuristics: GraphHeuristics,
   private def cardinality(plan: LogicalPlan) = apply(plan)
 }
 
-class GuessingSelectivityEstimator(heuristics: GraphHeuristics) extends Metrics.SelectivityEstimator {
+class StatisticsBasedSelectivityModel(statistics: GraphStatistics) extends Metrics.SelectivityModel {
 
   import GuessingEstimation._
 
   def apply(predicate: Expression): Double = predicate match {
     case HasLabels(_, Seq(label)) =>
       if (label.id.isDefined)
-        heuristics.nodesWithLabelSelectivity(label.id.get)
+        statistics.nodesWithLabelSelectivity(label.id.get)
       else
         LABEL_NOT_FOUND_SELECTIVITY
 

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSe
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import Metrics._
 
-class SimpleCostModel(cardinality: CardinalityEstimator) extends CostModel {
+class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
   val HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW = 0.001
   val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW = 0.0005

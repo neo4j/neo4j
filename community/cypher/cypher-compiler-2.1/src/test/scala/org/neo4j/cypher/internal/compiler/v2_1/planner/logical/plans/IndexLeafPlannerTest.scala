@@ -32,7 +32,7 @@ import org.mockito.Matchers._
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val heuristics = newMockedHeuristics
+  val statistics = newMockedStatistics
 
   test("index scan when there is an index on the property") {
     // given
@@ -58,7 +58,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics))
+      metrics = factory.newMetrics(statistics))
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
     when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
       override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
@@ -96,7 +96,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(heuristics))
+      metrics = factory.newMetrics(statistics))
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {

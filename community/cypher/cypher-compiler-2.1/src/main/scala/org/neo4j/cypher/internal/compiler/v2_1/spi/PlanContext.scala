@@ -48,5 +48,5 @@ trait PlanContext extends TokenContext {
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T
 
-  def heuristics: GraphHeuristics
+  def statistics: GraphStatistics
 }
