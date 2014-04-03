@@ -1430,6 +1430,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return (T) DependencyResolverImpl.this;
             }
+            else if ( KernelHealth.class.isAssignableFrom( type ) )
+            {
+                return (T) kernelHealth;
+            }
             return null;
         }
 
