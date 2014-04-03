@@ -20,9 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection, IdName, Expand}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Identifier, Equals}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
 object expand {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
@@ -35,10 +44,10 @@ object expand {
     } yield {
       val otherSide = patternRel.otherSide(nodeId)
       if (plan.coveredIds.contains(otherSide)) {
-        expandAndCheck(plan, nodeId, patternRel.types, dir, patternRel.name, otherSide.name)
+        expandAndCheck(plan, nodeId, patternRel.types, dir, patternRel.name, otherSide.name, patternRel)
       }
       else
-        Expand(plan, nodeId, dir, patternRel.types, otherSide, patternRel.name)
+        Expand(plan, nodeId, dir, patternRel.types, otherSide, patternRel.name)(patternRel)
     }
     CandidateList(expandPlans)
   }
@@ -58,9 +67,10 @@ object expand {
                              types: Seq[RelTypeName],
                              dir: Direction,
                              relName: IdName,
-                             otherSide: String)(implicit context: LogicalPlanContext): LogicalPlan = {
+                             otherSide: String,
+                             pattern:  PatternRelationship)(implicit context: LogicalPlanContext): LogicalPlan = {
     val temp = IdName(otherSide + "$$$")
-    val expand = Expand(source, fromNode, dir, types, temp, relName)
+    val expand = Expand(source, fromNode, dir, types, temp, relName)(pattern)
     val left = Identifier(otherSide)(null)
     val right = Identifier(temp.name)(null)
     Selection(Seq(Equals(left, right)(null)), expand)

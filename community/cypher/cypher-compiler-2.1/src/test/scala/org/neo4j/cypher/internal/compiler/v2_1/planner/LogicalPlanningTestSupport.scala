@@ -84,6 +84,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     doReturn(ids).when(plan).coveredIds
     doReturn(Seq.empty).when(plan).solvedPredicates
+    doReturn(Seq.empty).when(plan).solvedPatterns
     plan
   }
 

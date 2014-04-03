@@ -23,4 +23,5 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 case class SingleRow() extends LogicalLeafPlan {
   val coveredIds = Set.empty[IdName]
   val solvedPredicates = Seq.empty
+  def solvedPatterns = Seq.empty
 }

@@ -33,6 +33,7 @@ abstract class LogicalPlan extends Product {
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
 
+  def solvedPatterns: Seq[PatternRelationship]
   def solvedPredicates: Seq[Expression]
 
   def coveredIds: Set[IdName]
@@ -68,8 +69,11 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 
 final case class IdName(name: String) extends AnyVal
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName]) {
+final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength = PatternLength()) {
   def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
 
   def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
 }
+
+case class PatternLength(min: Int = 1, max: Option[Int] = Some(1))
+

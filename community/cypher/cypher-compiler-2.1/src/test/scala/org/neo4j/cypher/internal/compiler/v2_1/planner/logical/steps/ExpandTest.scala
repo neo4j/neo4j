@@ -55,7 +55,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName))))
+      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName)( null ))))
   }
 
   test("finds expansion going both sides") {
@@ -68,8 +68,8 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName),
-      Expand(left = planB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = aNode, relName = rName)
+      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName)( null ),
+      Expand(left = planB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = aNode, relName = rName)( null )
     )))
   }
 
@@ -94,7 +94,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     expand(plan) should equal(CandidateList(Seq(
       Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
-        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)
+        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)( null )
       ))))
   }
 
@@ -108,10 +108,10 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     expand(plan) should equal(CandidateList(Seq(
       Selection(Seq(Equals(Identifier(bNode.name)(pos), Identifier(bNode.name + "$$$")(pos))(pos)),
-        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(bNode.name + "$$$"), relName = rName)
+        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(bNode.name + "$$$"), relName = rName)( null )
       ),
       Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
-        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)
+        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)( null )
       ))))
   }
 

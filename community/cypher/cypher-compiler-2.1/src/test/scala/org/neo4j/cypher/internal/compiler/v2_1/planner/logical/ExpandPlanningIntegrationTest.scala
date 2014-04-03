@@ -50,7 +50,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Expand(
           AllNodesScan("a"),
           "a", Direction.OUTGOING, Seq.empty, "b", "r"
-        ),
+        )( null ),
         Map("r" -> Identifier("r") _)
       )
     )
@@ -69,11 +69,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Expand(
               AllNodesScan("a"),
               "a", Direction.OUTGOING, Seq.empty, "b", "r1"
-            ),
+            )( null ),
             Expand(
               AllNodesScan("c"),
               "c", Direction.OUTGOING, Seq.empty, "d", "r2"
-            )
+            )( null )
           )
         ),
         Map(
@@ -96,7 +96,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           Expand(
             AllNodesScan("a"),
             "a", Direction.OUTGOING, Seq.empty, "a$$$", "r"
-          )
+          )( null )
         ),
         Map("r" -> Identifier("r") _)
       )
@@ -115,9 +115,9 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           Selection(
             Seq(Equals(Identifier("b") _, Identifier("b$$$") _) _),
             Expand(
-              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1"),
+              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1")( null ),
               "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2"
-            )
+            )( null )
           )
         ),
         Map(
@@ -149,7 +149,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             AllNodesScan("a")
           ),
           "a", Direction.BOTH, Seq(RelTypeName("x")()_), "start", "rel"
-        ),
+        )( null ),
         Map("a" -> Identifier("a") _)
       )
     )

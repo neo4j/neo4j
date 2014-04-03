@@ -25,4 +25,5 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
                           (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
   val coveredIds = Set(idName)
+  val solvedPatterns = Seq.empty
 }
