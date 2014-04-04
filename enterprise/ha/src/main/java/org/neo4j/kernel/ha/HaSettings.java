@@ -55,7 +55,7 @@ public class HaSettings
     public static final Setting<Long> read_timeout = setting( "ha.read_timeout", DURATION, "20s" );
 
     @Description( "Timeout for waiting for instance to become master or slave." )
-    public static final Setting<Long> state_switch_timeout = setting( "ha.state_switch_timeout", DURATION, "20s" );
+    public static final Setting<Long> state_switch_timeout = setting( "ha.state_switch_timeout", DURATION, "120s" );
 
     @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout." )
     public static final Setting<Long> lock_read_timeout = setting( "ha.lock_read_timeout", DURATION, read_timeout );
