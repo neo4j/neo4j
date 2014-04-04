@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -34,20 +31,47 @@ import javax.transaction.xa.Xid;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.transaction.FakeXAResource.FailingFakeXAResource;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestJtaCompliance extends AbstractNeo4jTestCase
 {
+    public class SimpleTxHook implements Synchronization
+    {
+        private volatile boolean gotBefore, gotAfter;
+
+        @Override
+        public void beforeCompletion()
+        {
+            gotBefore = true;
+        }
+
+        @Override
+        public void afterCompletion( int status )
+        {
+            gotAfter = true;
+        }
+    }
+
     // the TransactionManager to use when testing for JTA compliance
     private TransactionManager tm;
     private XaDataSourceManager xaDsMgr;
+    private KernelHealth kernelHealth;
 
     @Before
     public void setUpFramework()
     {
         getTransaction().finish();
         tm = getGraphDbAPI().getTxManager();
+        kernelHealth = getGraphDbAPI().getDependencyResolver().resolveDependency( KernelHealth.class );
         xaDsMgr = getGraphDbAPI().getXaDataSourceManager();
         java.util.Map<String,String> map1 = new java.util.HashMap<String,String>();
         map1.put( "store_dir", "target/var" );
@@ -114,7 +138,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * calling thread with that transaction. o Tests that after commit is
      * invoked transaction is completed and a repeating call to commit/rollback
      * results in an exception.
-     * 
+     *
      * TODO: check if commit is restricted to the thread that started the
      * transaction, if not, do some testing.
      */
@@ -150,7 +174,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
     /**
      * o Tests that after rollback is invoked the transaction is completed and a
      * repeating call to rollback/commit results in an exception.
-     * 
+     *
      * TODO: check if rollback is restricted to the thread that started the
      * transaction, if not, do some testing.
      */
@@ -190,7 +214,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * won't be associated with the calling thread. o Tests that XAResource.end
      * is invoked with TMSUSPEND when transaction is suspended. o Tests that
      * XAResource.start is invoked with TMRESUME when transaction is resumed.
-     * 
+     *
      * TODO: o Test that resume throws an exception if the transaction is
      * already associated with another thread. o Test if a suspended thread may
      * be resumed by another thread.
@@ -566,7 +590,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
 
     /**
      * o Tests if nested transactions are supported
-     * 
+     *
      * TODO: if supported, do some testing :)
      */
     @Test
@@ -637,7 +661,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
      * o Tests that beforeCompletion and afterCompletion are invoked. o Tests
      * that the call is made in the same transaction context. o Tests status in
      * before and after methods depending on commit/rollback.
-     * 
+     *
      * NOTE: Not sure if the check of Status is correct according to
      * specification.
      */
@@ -677,7 +701,7 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
 
     /**
      * Tests that the correct status is returned from TM.
-     * 
+     *
      * TODO: Implement a FakeXAResource to check: STATUS_COMMITTING
      * STATUS_PREPARED STATUS_PREPEARING STATUS_ROLLING_BACK
      */
@@ -691,5 +715,113 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         assertTrue( tm.getStatus() == Status.STATUS_MARKED_ROLLBACK );
         tm.rollback();
         assertTrue( tm.getStatus() == Status.STATUS_NO_TRANSACTION );
+    }
+
+    @Test
+    public void shouldCallAfterCompletionsEvenOnCommitWhenTmNotOK() throws Exception
+    {
+        shouldCallAfterCompletionsEvenOnCloseWhenTmNotOK( commitTransaction() );
+    }
+
+    @Test
+    public void shouldCallAfterCompletionsEvenOnRollbackWhenTmNotOK() throws Exception
+    {
+        shouldCallAfterCompletionsEvenOnCloseWhenTmNotOK( rollbackTransaction() );
+    }
+
+    private void shouldCallAfterCompletionsEvenOnCloseWhenTmNotOK( WorkerCommand<Void, Object> finish )
+            throws Exception
+    {
+        // GIVEN a transaction T1
+        SimpleTxHook hook = new SimpleTxHook();
+        OtherThreadExecutor<Void> t1 = new OtherThreadExecutor<Void>( "T1", null );
+        t1.execute( beginTransaction( hook ) );
+        // and a tx manager going in to a bad state
+        tm.begin();
+        FakeXAResource resource = new FailingFakeXAResource( "XAResource1", true );
+        tm.getTransaction().enlistResource( resource );
+        try
+        {
+            tm.commit();
+            fail( "Should have failed commit" );
+        }
+        catch ( Exception e )
+        {   // YEY
+        }
+
+        // WHEN T1 tries to commit
+        try
+        {
+            t1.execute( finish );
+            fail( "Should've failed" );
+        }
+        catch ( Exception e )
+        {   // YO
+        }
+
+        // THEN after completions should be called
+        kernelHealth.healed();
+        assertTrue( hook.gotAfter );
+    }
+
+    private WorkerCommand<Void, Object> commitTransaction()
+    {
+        return new WorkerCommand<Void, Object>()
+        {
+            @Override
+            public Object doWork( Void state )
+            {
+                try
+                {
+                    tm.commit();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+                return null;
+            }
+        };
+    }
+
+    private WorkerCommand<Void, Object> rollbackTransaction()
+    {
+        return new WorkerCommand<Void, Object>()
+        {
+            @Override
+            public Object doWork( Void state )
+            {
+                try
+                {
+                    tm.rollback();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+                return null;
+            }
+        };
+    }
+
+    private WorkerCommand<Void, Object> beginTransaction( final Synchronization hook )
+    {
+        return new WorkerCommand<Void, Object>()
+        {
+            @Override
+            public Object doWork( Void state )
+            {
+                try
+                {
+                    tm.begin();
+                    tm.getTransaction().registerSynchronization( hook );
+                    return null;
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
     }
 }

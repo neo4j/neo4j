@@ -340,6 +340,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            // Call after completion as a safety net
+            tx.doAfterCompletion();
             txThreadMap.remove();
             tx.finish( successful );
         }
@@ -598,6 +600,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            // Call after completion as a safety net
+            tx.doAfterCompletion();
             txThreadMap.remove();
             tx.finish( false );
         }

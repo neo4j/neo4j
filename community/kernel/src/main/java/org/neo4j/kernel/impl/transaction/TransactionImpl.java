@@ -99,17 +99,17 @@ class TransactionImpl implements Transaction
     {
         return globalId;
     }
-    
+
     boolean hasChanges()
     {
         return hasChanges;
     }
-    
+
     public TransactionState getState()
     {
         return state;
     }
-    
+
     private String getStatusAsString()
     {
         return txManager.getTxStatusAsString( status ) + (active ? "" : " (suspended)");
@@ -420,19 +420,22 @@ class TransactionImpl implements Transaction
 
 	synchronized void doAfterCompletion()
     {
-        for ( Synchronization s : syncHooks )
-        {
-            try
+	    if ( syncHooks != null )
+	    {
+            for ( Synchronization s : syncHooks )
             {
-                s.afterCompletion( status );
+                try
+                {
+                    s.afterCompletion( status );
+                }
+                catch ( Throwable t )
+                {
+                    logger.warn( "Caught exception from tx syncronization[" + s
+                            + "] afterCompletion()", t );
+                }
             }
-            catch ( Throwable t )
-            {
-                logger.warn( "Caught exception from tx syncronization[" + s
-                        + "] afterCompletion()", t );
-            }
-        }
-        syncHooks = null; // help gc
+            syncHooks = null; // help gc
+	    }
     }
 
     @Override
@@ -687,7 +690,7 @@ class TransactionImpl implements Transaction
         }
         active = false;
     }
-    
+
     public ForceMode getForceMode()
     {
         return forceMode;
