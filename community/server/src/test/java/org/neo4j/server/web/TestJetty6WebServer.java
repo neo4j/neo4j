@@ -39,7 +39,7 @@ import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
-import org.neo4j.server.helpers.ServerBuilder;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -115,7 +115,7 @@ public class TestJetty6WebServer {
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
-        Logging logging = ServerBuilder.bufferingLogging();
+        Logging logging = new BufferingLogging();
         final Guard dummyGuard = new Guard(StringLogger.SYSTEM);
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
                 new DefaultGraphDatabaseDependencies( logging ) )

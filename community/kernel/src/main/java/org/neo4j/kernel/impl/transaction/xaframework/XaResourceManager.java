@@ -35,6 +35,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.CommitNotificationFailedException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -96,7 +97,7 @@ public class XaResourceManager
         }
         return status.getTransactionStatus().getTransaction();
     }
-    
+
     synchronized void start( XAResource xaResource, Xid xid )
         throws XAException
     {
@@ -286,7 +287,7 @@ public class XaResourceManager
         {
             return startWritten;
         }
-        
+
         void markStartWritten()
         {
             this.startWritten = true;
@@ -528,7 +529,16 @@ public class XaResourceManager
         }
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )
-            txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+        {
+            try
+            {
+                txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+            }
+            catch ( Exception e )
+            {
+                throw new CommitNotificationFailedException( e );
+            }
+        }
         return xaTransaction;
     }
 
@@ -696,7 +706,7 @@ public class XaResourceManager
         }
         checkIfRecoveryComplete();
     }
-    
+
     private void checkIfRecoveryComplete()
     {
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
@@ -793,7 +803,7 @@ public class XaResourceManager
             throw new RuntimeException( e );
         }
     }
-    
+
     public synchronized long rotateLogicalLog() throws IOException
     {
         return log.rotate();

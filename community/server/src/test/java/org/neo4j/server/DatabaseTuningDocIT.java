@@ -27,13 +27,12 @@ import org.junit.Test;
 
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.ServerBuilder;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
 
 public class DatabaseTuningDocIT extends ExclusiveServerTestBase
 {
@@ -67,7 +66,7 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException
     {
-        Logging logging = bufferingLogging();
+        Logging logging = new BufferingLogging();
         NeoServer server = ServerBuilder.server( logging )
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withNonResolvableTuningFile()

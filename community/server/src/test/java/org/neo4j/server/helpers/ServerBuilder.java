@@ -31,10 +31,7 @@ import java.util.Properties;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
-import org.neo4j.kernel.logging.BufferingLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
@@ -52,8 +49,6 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.tooling.Clock;
 import org.neo4j.tooling.FakeClock;
-
-import static java.lang.String.format;
 
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -484,33 +479,5 @@ public class ServerBuilder
     {
         this.preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL, tasks );
         return this;
-    }
-
-    public static Logging bufferingLogging()
-    {
-        final BufferingLogger log = new BufferingLogger();
-        final BufferingConsoleLogger console = new BufferingConsoleLogger();
-        return new Logging()
-        {
-            @Override
-            public StringLogger getMessagesLog( Class loggingClass )
-            {
-                return log;
-            }
-
-            @Override
-            public ConsoleLogger getConsoleLog( Class loggingClass )
-            {
-                return console;
-            }
-
-            @Override
-            public String toString()
-            {
-                StringBuilder builder = new StringBuilder();
-                builder.append( log.toString() ).append( format( "%n" ) ).append( console.toString() );
-                return builder.toString();
-            }
-        };
     }
 }

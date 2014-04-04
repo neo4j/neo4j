@@ -37,6 +37,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
+import org.neo4j.test.BufferingLogging;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -45,7 +46,6 @@ import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.helpers.ServerBuilder.bufferingLogging;
 
 public class TestCommunityDatabase
 {
@@ -58,7 +58,7 @@ public class TestCommunityDatabase
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
-        logging = bufferingLogging();
+        logging = new BufferingLogging();
         theDatabase = new CommunityDatabase( configuratorWithServerProperties( stringMap(
                 Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ), logging );
     }
