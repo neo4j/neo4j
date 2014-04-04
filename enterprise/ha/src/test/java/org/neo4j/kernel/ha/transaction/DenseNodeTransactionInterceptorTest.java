@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,15 +46,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogEntryVerifyingOutput;
-import org.neo4j.kernel.impl.nioneo.xa.RecordAccessSet;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionDataBuilder;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
-@Ignore("Currently the feature is not in place - enable when done")
 public class DenseNodeTransactionInterceptorTest
 {
     @Test
@@ -59,14 +59,14 @@ public class DenseNodeTransactionInterceptorTest
     {
         // GIVEN the following store contents
         final Id nodeId = id(), relationshipId = id(), type = id();
-        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        NeoStore existingStore = existingStore( new ExistingContents()
         {
             @Override
             public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
             {
                 type.get( neoStore.getRelationshipTypeStore() );
                 relationshipId.get( neoStore.getRelationshipStore() );
-                transaction.create( node( nodeId.get( neoStore.getNodeStore() ) ) );
+                transaction.create( node( nodeId.get( neoStore.getNodeStore() ) ).asInUse() );
             }
         } );
 
@@ -76,7 +76,7 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( nodeId.get() )
+                transaction.update( node( nodeId.get() ),  node( nodeId.get() )
                         .asInUse()
                         .withNextRel( relationshipId.get() ) );
                 transaction.create( relationship( relationshipId.get(),
@@ -87,7 +87,191 @@ public class DenseNodeTransactionInterceptorTest
         List<LogEntry> translated = translate( existingStore, transaction );
 
         // THEN there should have been no change
-        assertEquals( translated, transaction );
+        assertThat( translated, matchesLogEntriesIn( transaction) );
+    }
+
+    private static Matcher<? super List<LogEntry>> matchesLogEntriesIn( final List<LogEntry> transaction )
+    {
+        return new BaseMatcher<List<LogEntry>>()
+        {
+            @Override
+            public boolean matches( Object item )
+            {
+                if ( ! ( item instanceof List ) )
+                {
+                    return false;
+                }
+                List<LogEntry> incoming = (List<LogEntry>) item;
+
+                if ( incoming.size() != transaction.size() )
+                {
+                    return false;
+                }
+                boolean lastCompare = true;
+                for ( int i = 0; i < incoming.size() && lastCompare; i++ )
+                {
+                    LogEntry incomingEntry = incoming.get( i );
+                    LogEntry realEntry = transaction.get( i );
+
+                    if ( incomingEntry.getType() != realEntry.getType() )
+                    {
+                        return false;
+                    }
+
+                    switch ( incomingEntry.getType() )
+                    {
+                        case LogEntry.TX_START:
+                            lastCompare = lastCompare && compareStartEntries( (LogEntry.Start) incomingEntry,
+                                    (LogEntry.Start) realEntry );
+                            break;
+                        case LogEntry.COMMAND:
+                            lastCompare = lastCompare && compareCommandEntries( (LogEntry.Command) incomingEntry,
+                                    (LogEntry.Command) realEntry );
+                            break;
+                        case LogEntry.TX_1P_COMMIT:
+                            lastCompare = lastCompare && compare1PCEntries( (LogEntry.OnePhaseCommit) incomingEntry,
+                                    (LogEntry.OnePhaseCommit) realEntry );
+                            break;
+                        case LogEntry.TX_2P_COMMIT:
+                            lastCompare = lastCompare && compare2PCEntries( (LogEntry.TwoPhaseCommit) incomingEntry,
+                                    (LogEntry.TwoPhaseCommit) realEntry );
+                            break;
+                        case LogEntry.TX_PREPARE:
+                            lastCompare = lastCompare && comparePrepareEntries( (LogEntry.Prepare) incomingEntry,
+                                    (LogEntry.Prepare) realEntry );
+                            break;
+                        case LogEntry.DONE:
+                            lastCompare = lastCompare && compareDoneEntries( (LogEntry.Done) incoming, (LogEntry.Done) realEntry );
+                            break;
+                        default:
+                            throw new IllegalArgumentException(
+                                    "What am i supposed to do with command entry " + incomingEntry + " ?" );
+                    }
+                }
+                return lastCompare;
+            }
+
+            private boolean compareStartEntries( LogEntry.Start incomingEntry, LogEntry.Start realEntry )
+            {
+                if ( !compareBaseEntries( incomingEntry, realEntry ) )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getLastCommittedTxWhenTransactionStarted() != realEntry.getLastCommittedTxWhenTransactionStarted() )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getMasterId() != realEntry.getMasterId() )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getLocalId() != realEntry.getLocalId() )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getStartPosition() != realEntry.getStartPosition() )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getTimeWritten() != realEntry.getTimeWritten() )
+                {
+                    return false;
+                }
+                if ( !incomingEntry.getXid().equals( realEntry.getXid() ) )
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            private boolean compareCommandEntries( LogEntry.Command incomingEntry, LogEntry.Command realEntry )
+            {
+                if ( !compareBaseEntries( incomingEntry, realEntry ) )
+                {
+                    return false;
+                }
+                if ( !incomingEntry.getXaCommand().equals( realEntry.getXaCommand() ) )
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            private boolean compare1PCEntries( LogEntry.OnePhaseCommit incomingEntry, LogEntry.OnePhaseCommit realEntry )
+            {
+                if ( !compareBaseEntries( incomingEntry, realEntry ) )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getTimeWritten() != realEntry.getTimeWritten() )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getTxId() != realEntry.getTxId() )
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            private boolean compare2PCEntries( LogEntry.TwoPhaseCommit incomingEntry, LogEntry.TwoPhaseCommit realEntry )
+            {
+                if ( !compareBaseEntries( incomingEntry, realEntry ) )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getTimeWritten() != realEntry.getTimeWritten() )
+                {
+                    return false;
+                }
+                if ( incomingEntry.getTxId() != realEntry.getTxId() )
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            private  boolean comparePrepareEntries( LogEntry.Prepare incomingEntry, LogEntry.Prepare realEntry )
+            {
+                if ( !compareBaseEntries( incomingEntry, realEntry ) )
+                {
+                    return false;
+                }
+                if( incomingEntry.getTimeWritten() != realEntry.getTimeWritten() )
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            private boolean compareDoneEntries( LogEntry.Done incomingEntry, LogEntry.Done realEntry )
+            {
+                return compareBaseEntries( incomingEntry, realEntry );
+            }
+
+            private boolean compareBaseEntries( LogEntry incoming, LogEntry real )
+            {
+                if ( incoming.getIdentifier() != real.getIdentifier() )
+                {
+                    return false;
+                }
+                if ( incoming.getType() != real.getType() )
+                {
+                    return false;
+                }
+                if ( incoming.getVersion() != real.getVersion() )
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
     }
 
     @Test
@@ -98,7 +282,7 @@ public class DenseNodeTransactionInterceptorTest
         final Id firstRelationshipId = id(), otherRelationshipId = id();
         final Id groupAId = id();
         final Id typeA = id(), typeB = id();
-        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        NeoStore existingStore = existingStore( new ExistingContents()
         {
             @Override
             public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
@@ -112,9 +296,9 @@ public class DenseNodeTransactionInterceptorTest
                         .asDense()
                         .withNextRel( groupAId.get() ) );
                 otherRelationshipId.get( neoStore.getRelationshipStore() );
-                typeB.get( neoStore.getRelationshipGroupStore() );
-                otherNodeId.get( neoStore.getNodeStore() );
-                thirdNodeId.get( neoStore.getNodeStore() );
+                typeB.get( neoStore.getRelationshipTypeStore() );
+                transaction.create( node( otherNodeId.get( neoStore.getNodeStore() ) ).asInUse() );
+                transaction.create( node( thirdNodeId.get( neoStore.getNodeStore() ) ).asInUse() );
             }
         } );
 
@@ -126,9 +310,13 @@ public class DenseNodeTransactionInterceptorTest
             {
                 // This dense node is actually not dense as it looks when arriving, however on the receiving end
                 // we have that node as dense.
-                transaction.create( node( denseNodeId.get() )
-                        .asInUse()
-                        .withNextRel( otherRelationshipId.get() ) );
+                transaction.update( node( denseNodeId.get() ).asInUse()
+                                .asDense()
+                                .withNextRel( groupAId.get() ),
+                        node( denseNodeId.get() )
+                                .asInUse()
+                                .withNextRel( otherRelationshipId.get() )
+                );
                 transaction.create( relationship( otherRelationshipId.get(), thirdNodeId.get(), denseNodeId.get(),
                         (int) typeB.get() )
                         .asInUse()
@@ -148,15 +336,32 @@ public class DenseNodeTransactionInterceptorTest
             {
                 // the node doesn't need to be in this transaction, since it isn't changed in any other way,
                 // but I think we'll include it always anyways for simplicity.
-                transaction.create( node( denseNodeId.get() )
+                transaction.update( node( denseNodeId.get() )
+                                .asInUse()
+                                .asDense()
+                                .withNextRel( groupAId.get() ),
+                        node( denseNodeId.get() )
+                                .asInUse()
+                                .asDense()
+                                .withNextRel( groupAId.get() )
+                );
+                transaction.update( node( otherNodeId.get() ).asInUse(),
+                        node( otherNodeId.get() ).asInUse().withNextRel( firstRelationshipId.get() ) );
+                transaction.update( node( thirdNodeId.get() ).asInUse(), node( thirdNodeId.get() ).asInUse()
+                        .withNextRel( otherRelationshipId.get() ) );
+                transaction.update( relationship( firstRelationshipId.get(), denseNodeId.get(), otherNodeId.get(),
+                        (int) typeA.get() )
                         .asInUse()
-                        .asDense()
-                        .withNextRel( groupAId.get() ) );
-                transaction.create( group( groupAId.get(), (int) typeA.get() )
+                        .withStartPointers( otherRelationshipId.get(), -1 ) );
+                transaction.update( relationship( otherRelationshipId.get(), thirdNodeId.get(), denseNodeId.get(),
+                        (int) typeB.get() )
                         .asInUse()
-                        .withNextGroup( groupAId.get() + 1/*bad assumption perhaps*/ )
+                        .withEndPointers( -1, firstRelationshipId.get() ) );
+                transaction.update( group( groupAId.get(), (int) typeA.get() )
+                        .asInUse()
+                        .withNextGroup( groupAId.get() + 1 )
                         .withFirstOut( firstRelationshipId.get() ) );
-                transaction.create( group( groupAId.get()+1, (int) typeB.get() )
+                transaction.update( group( groupAId.get() + 1, (int) typeB.get() )
                         .asInUse()
                         .withFirstIn( otherRelationshipId.get() ) );
             }
@@ -182,7 +387,7 @@ public class DenseNodeTransactionInterceptorTest
         final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
         final Id groupAId = id(), groupBId = id(), groupCId = id();
         final Id typeA = id(), typeB = id(), typeC = id();
-        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        NeoStore existingStore = existingStore( new ExistingContents()
         {
             @Override
             public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
@@ -231,9 +436,9 @@ public class DenseNodeTransactionInterceptorTest
                 transaction.create( group( groupBId.get(),
                         (int) typeB.get() )
                         .asInUse()
-                        .withFirstOut( rel3Id.get() )
+                        .withFirstOut( rel2Id.get() )
                         .withNextGroup( groupCId.get() ) );
-                transaction.create( group( groupBId.get(),
+                transaction.create( group( groupCId.get(),
                         (int) typeC.get() )
                         .asInUse()
                         .withFirstOut( rel4Id.get() ) );
@@ -250,17 +455,17 @@ public class DenseNodeTransactionInterceptorTest
                 transaction.create( relationship( rel2Id.get(),
                         denseNodeId.get(),
                         target2.get(),
-                        (int) typeA.get() ).asInUse()
+                        (int) typeB.get() ).asInUse()
                         .withStartPointers(
-                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
-                        (int) typeB.get() ).asInUse()
+                        (int) typeA.get() ).asInUse()
                         .withStartPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( relationship( rel4Id.get(),
@@ -282,8 +487,6 @@ public class DenseNodeTransactionInterceptorTest
             {
                 transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
-                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
                 transaction.create( relationship( rel1Id.get(),
                         denseNodeId.get(),
                         target1.get(),
@@ -300,6 +503,8 @@ public class DenseNodeTransactionInterceptorTest
                                 rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.delete( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.delete( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
             }
         } ) );
 
@@ -309,35 +514,30 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-
-                transaction.create( relationship( rel1Id.get(),
-                        denseNodeId.get(),
-                        target1.get(),
-                        (int) typeA.get() ).asInUse()
-                        .withStartPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target2.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target4.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( relationship( rel2Id.get(),
                         denseNodeId.get(),
                         target2.get(),
-                        (int) typeA.get() ) );
+                        (int) typeB.get() ) );
                 transaction.create( relationship( rel4Id.get(),
                         denseNodeId.get(),
                         target4.get(),
                         (int) typeC.get() ) );
-                transaction.create( node( target2.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( group( groupBId.get(), (int) typeB.get() )
                         .asInUse()
+                        .withNextGroup( groupCId.get() )
+                        .withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( group( groupCId.get(), (int) typeC.get() )
+                        .asInUse()
                         .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withFirstOut( rel3Id.get() ) );
-                transaction.create( group( groupCId.get(), (int) typeC.get() ) );
+                        .withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
             }
         } );
     }
 
     @Test
+    @Ignore("Property changes are not supported yet")
     public void deleteRelationshipOnEachSideOfRelationshipWithChangePropertyOnMasterWhichIsDenseOnSlave() throws Exception
     {
         // GIVEN the following store contents on slave (2.1 store format)
@@ -347,7 +547,7 @@ public class DenseNodeTransactionInterceptorTest
         final Id groupAId = id(), groupBId = id(), groupCId = id();
         final Id typeA = id(), typeB = id(), typeC = id();
         final Id propId = id();
-        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        NeoStore existingStore = existingStore( new ExistingContents()
         {
             @Override
             public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
@@ -387,7 +587,6 @@ public class DenseNodeTransactionInterceptorTest
                         .asInUse()
                         .withNextRel( rel4Id.get() ) );
 
-
                 // The groups
                 transaction.create( group( groupAId.get(),
                         (int) typeA.get() )
@@ -397,9 +596,9 @@ public class DenseNodeTransactionInterceptorTest
                 transaction.create( group( groupBId.get(),
                         (int) typeB.get() )
                         .asInUse()
-                        .withFirstOut( rel3Id.get() )
+                        .withFirstOut( rel2Id.get() )
                         .withNextGroup( groupCId.get() ) );
-                transaction.create( group( groupBId.get(),
+                transaction.create( group( groupCId.get(),
                         (int) typeC.get() )
                         .asInUse()
                         .withFirstOut( rel4Id.get() ) );
@@ -410,23 +609,23 @@ public class DenseNodeTransactionInterceptorTest
                         target1.get(),
                         (int) typeA.get() ).asInUse()
                         .withStartPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), rel2Id.get() )
+                                Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( relationship( rel2Id.get(),
                         denseNodeId.get(),
                         target2.get(),
-                        (int) typeA.get() ).asInUse()
+                        (int) typeB.get() ).asInUse()
                         .withStartPointers(
-                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
-                        (int) typeB.get() ).asInUse()
+                        (int) typeA.get() ).asInUse()
                         .withStartPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withNextProperty( propId.get() ) );
@@ -450,11 +649,19 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
-                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
-                transaction.create( relationship( rel1Id.get(),
+                transaction.update( node( target2.get() )
+                                .asInUse()
+                                .withNextRel( rel2Id.get() ),
+                        node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.update( node( target4.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.delete( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeB.get() ) );
+                transaction.delete( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.update( relationship( rel1Id.get(),
                         denseNodeId.get(),
                         target1.get(),
                         (int) typeA.get() ).asInUse()
@@ -462,15 +669,17 @@ public class DenseNodeTransactionInterceptorTest
                                 Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel3Id.get(),
+                transaction.update( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
-                        (int) typeB.get() ).asInUse()
+                        (int) typeA.get() ).asInUse()
                         .withStartPointers(
                                 rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+                transaction.delete( property( propId.get() ).asInUse().withRelId( rel3Id.get() ),
+                        property( propId.get() ).withRelId( rel3Id.get() ) );
             }
         } ) );
 
@@ -480,39 +689,44 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
+                transaction.update( node( target2.get() )
+                                .asInUse()
+                                .withNextRel( rel2Id.get() ),
+                        node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.update( node( target4.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
 
-                transaction.create( relationship( rel1Id.get(),
-                        denseNodeId.get(),
-                        target1.get(),
-                        (int) typeA.get() ).asInUse()
-                        .withStartPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(),
-                        denseNodeId.get(),
-                        target2.get(),
-                        (int) typeA.get() ) );
-                transaction.create( relationship( rel3Id.get(),
+                transaction.update( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
-                        (int) typeB.get() ).asInUse()
+                        (int) typeA.get() ).asInUse()
                         .withStartPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                                rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
-                transaction.create( relationship( rel4Id.get(),
+                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( false ) );
+                transaction.delete( relationship( rel2Id.get(),
+                        denseNodeId.get(),
+                        target2.get(),
+                        (int) typeB.get() ) );
+                transaction.delete( relationship( rel4Id.get(),
                         denseNodeId.get(),
                         target4.get(),
                         (int) typeC.get() ) );
-                transaction.create( node( target2.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( group( groupBId.get(), (int) typeB.get() )
+                transaction.update( group( groupBId.get(), (int) typeB.get() )
                         .asInUse()
-                        .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withFirstOut( rel3Id.get() ) );
-                transaction.create( group( groupCId.get(), (int) typeC.get() ) );
+                        .withNextGroup( groupCId.get() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.update( group( groupCId.get(), (int) typeC.get() )
+                        .asInUse()
+                        .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.delete( property( propId.get() ).asInUse().withRelId( rel3Id.get() ),
+                        property( propId.get() ).withRelId( rel3Id.get() ) );
             }
         } );
     }
@@ -525,7 +739,7 @@ public class DenseNodeTransactionInterceptorTest
         final Id target1 = id(), target2 = id(), target3 = id(), target4 = id();
         final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
         final Id typeA = id(), typeB = id(), typeC = id();
-        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        NeoStore existingStore = existingStore( new ExistingContents()
         {
             @Override
             public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
@@ -546,7 +760,6 @@ public class DenseNodeTransactionInterceptorTest
                 // The nodes
                 transaction.create( node( denseNodeId.get() )
                         .asInUse()
-                        .asDense()
                         .withNextRel( rel1Id.get() ) );
                 transaction.create( node( target1.get() )
                         .asInUse()
@@ -578,7 +791,9 @@ public class DenseNodeTransactionInterceptorTest
                         .withStartPointers(
                                 rel1Id.get(), rel3Id.get() )
                         .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true ) );
                 transaction.create( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
@@ -586,7 +801,9 @@ public class DenseNodeTransactionInterceptorTest
                         .withStartPointers(
                                 rel2Id.get(), rel4Id.get() )
                         .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true ) );
                 transaction.create( relationship( rel4Id.get(),
                         denseNodeId.get(),
                         target4.get(),
@@ -594,7 +811,9 @@ public class DenseNodeTransactionInterceptorTest
                         .withStartPointers(
                                 rel3Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true ) );
             }
         } );
 
@@ -604,11 +823,19 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
-                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
-                transaction.create( relationship( rel1Id.get(),
+                transaction.update( node( target2.get() )
+                                .asInUse()
+                                .withNextRel( rel2Id.get() ),
+                        node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.update( node( target4.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.delete( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.delete( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.update( relationship( rel1Id.get(),
                         denseNodeId.get(),
                         target1.get(),
                         (int) typeA.get() ).asInUse()
@@ -616,7 +843,7 @@ public class DenseNodeTransactionInterceptorTest
                                 Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel3Id.get(),
+                transaction.update( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
                         (int) typeB.get() ).asInUse()
@@ -633,11 +860,19 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
-                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
-                transaction.create( relationship( rel1Id.get(),
+                transaction.update( node( target2.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.update( node( target4.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.delete( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.delete( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.update( relationship( rel1Id.get(),
                         denseNodeId.get(),
                         target1.get(),
                         (int) typeA.get() ).asInUse()
@@ -645,7 +880,7 @@ public class DenseNodeTransactionInterceptorTest
                                 Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel3Id.get(),
+                transaction.update( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
                         (int) typeB.get() ).asInUse()
@@ -658,6 +893,7 @@ public class DenseNodeTransactionInterceptorTest
     }
 
     @Test
+    @Ignore("Property changes are not supported yet")
     public void deleteRelationshipOnEachSideOfRelationshipWithPropertyChangeOnMasterWhichIsNotDenseOnSlave() throws Exception
     {
         // GIVEN the following store contents on slave (2.1 store format)
@@ -666,7 +902,7 @@ public class DenseNodeTransactionInterceptorTest
         final Id rel1Id = id(), rel2Id = id(), rel3Id = id(), rel4Id = id();
         final Id typeA = id(), typeB = id(), typeC = id();
         final Id propId = id();
-        RecordAccessSet existingStore = existingStore( new ExistingContents()
+        NeoStore existingStore = existingStore( new ExistingContents()
         {
             @Override
             public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
@@ -688,7 +924,6 @@ public class DenseNodeTransactionInterceptorTest
                 // The nodes
                 transaction.create( node( denseNodeId.get() )
                         .asInUse()
-                        .asDense()
                         .withNextRel( rel1Id.get() ) );
                 transaction.create( node( target1.get() )
                         .asInUse()
@@ -720,7 +955,9 @@ public class DenseNodeTransactionInterceptorTest
                         .withStartPointers(
                                 rel1Id.get(), rel3Id.get() )
                         .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true ) );
                 transaction.create( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
@@ -729,6 +966,8 @@ public class DenseNodeTransactionInterceptorTest
                                 rel2Id.get(), rel4Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true )
                         .withNextProperty( propId.get() ) );
                 transaction.create( relationship( rel4Id.get(),
                         denseNodeId.get(),
@@ -737,7 +976,9 @@ public class DenseNodeTransactionInterceptorTest
                         .withStartPointers(
                                 rel3Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
-                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                                Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true ));
 
                 // The property
                 transaction.create( property( propId.get() ).asInUse().withRelId( rel3Id.get() ) );
@@ -750,11 +991,15 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
-                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
-                transaction.create( relationship( rel1Id.get(),
+                transaction.update( node( target2.get() )
+                                .asInUse()
+                                .withNextRel( rel2Id.get() ),
+                        node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.update( node( target4.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )  );
+                transaction.update( relationship( rel1Id.get(),
                         denseNodeId.get(),
                         target1.get(),
                         (int) typeA.get() ).asInUse()
@@ -762,7 +1007,7 @@ public class DenseNodeTransactionInterceptorTest
                                 Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel3Id.get(),
+                transaction.update( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
                         (int) typeB.get() ).asInUse()
@@ -770,7 +1015,13 @@ public class DenseNodeTransactionInterceptorTest
                                 rel1Id.get(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+                        .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() )
+                        .asFirstInFirstChain( false )
+                        .asFirstInSecondChain( true ) );
+                transaction.delete( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.delete( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.delete( property( propId.get() ).asInUse().withRelId( rel3Id.get() ),
+                        property( propId.get() ).withRelId( rel3Id.get() ) );
             }
         } ) );
 
@@ -780,11 +1031,16 @@ public class DenseNodeTransactionInterceptorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
-                transaction.create( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
-                transaction.create( relationship( rel1Id.get(),
+                transaction.update( node( target2.get() )
+                                .asInUse()
+                                .withNextRel( rel2Id.get() ),
+                        node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.update( node( target4.get() )
+                                .asInUse()
+                                .withNextRel( rel4Id.get() ),
+                        node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() )
+                );
+                transaction.update( relationship( rel1Id.get(),
                         denseNodeId.get(),
                         target1.get(),
                         (int) typeA.get() ).asInUse()
@@ -792,7 +1048,7 @@ public class DenseNodeTransactionInterceptorTest
                                 Record.NO_PREV_RELATIONSHIP.intValue(), rel3Id.get() )
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( relationship( rel3Id.get(),
+                transaction.update( relationship( rel3Id.get(),
                         denseNodeId.get(),
                         target3.get(),
                         (int) typeB.get() ).asInUse()
@@ -801,6 +1057,10 @@ public class DenseNodeTransactionInterceptorTest
                         .withEndPointers(
                                 Record.NO_PREV_RELATIONSHIP.intValue(), Record.NO_NEXT_RELATIONSHIP.intValue() )
                         .withNextProperty( Record.NO_NEXT_PROPERTY.intValue() ) );
+                transaction.delete( relationship( rel2Id.get(), denseNodeId.get(), target2.get(), (int) typeA.get() ) );
+                transaction.delete( relationship( rel4Id.get(), denseNodeId.get(), target4.get(), (int) typeC.get() ) );
+                transaction.delete( property( propId.get() ).asInUse().withRelId( rel3Id.get() ),
+                        property( propId.get() ).withRelId( rel3Id.get() ) );
             }
         } );
     }
@@ -835,7 +1095,7 @@ public class DenseNodeTransactionInterceptorTest
 
     private List<LogEntry> transaction( TransactionContents contents ) throws IOException
     {
-        List<LogEntry> entries = new ArrayList<>();
+        List<LogEntry> entries = new LinkedList<>();
         TransactionWriter writer = new TransactionWriter( new TransactionWriter.CommandCollector( entries ), 1, 1 );
         TransactionDataBuilder builder = new TransactionDataBuilder( writer );
 
@@ -847,9 +1107,9 @@ public class DenseNodeTransactionInterceptorTest
         return entries;
     }
 
-    private List<LogEntry> translate( RecordAccessSet existingStore, List<LogEntry> transaction )
+    private List<LogEntry> translate( NeoStore neoStore, List<LogEntry> transaction )
     {
-        return new DenseNodeTransactionInterceptor( existingStore ).apply( transaction );
+        return new DenseNodeTransactionInterceptor( neoStore ).apply( transaction );
     }
 
     private interface ExistingContents
@@ -862,7 +1122,7 @@ public class DenseNodeTransactionInterceptorTest
         void fill( TransactionDataBuilder transaction );
     }
 
-    private RecordAccessSet existingStore( ExistingContents contents )
+    private NeoStore existingStore( ExistingContents contents )
     {
         @SuppressWarnings( "deprecation" )
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
@@ -876,7 +1136,7 @@ public class DenseNodeTransactionInterceptorTest
         contents.fill( neoStore, new TransactionDataBuilder( writer ) );
         neoStore.updateIdGenerators();
 
-        return new DirectRecordAccessSet( neoStore );
+        return neoStore;
     }
 
     private void assertTranslatedTransaction( List<LogEntry> translated, TransactionContents transactionContents )
@@ -955,6 +1215,7 @@ public class DenseNodeTransactionInterceptorTest
         public RelationshipRecordWithBenefits( long id, long firstNode, long secondNode, int type )
         {
             super( id, firstNode, secondNode, type );
+            setInUse( false );
         }
 
         public RelationshipRecordWithBenefits withEndPointers( long prev, long next )
@@ -980,6 +1241,18 @@ public class DenseNodeTransactionInterceptorTest
         public RelationshipRecordWithBenefits asInUse()
         {
             setInUse( true );
+            return this;
+        }
+
+        public RelationshipRecordWithBenefits asFirstInFirstChain( boolean firstInFirstChain )
+        {
+            setFirstInFirstChain( firstInFirstChain );
+            return this;
+        }
+
+        public RelationshipRecordWithBenefits asFirstInSecondChain( boolean firstInSecondChain )
+        {
+            setFirstInSecondChain( firstInSecondChain );
             return this;
         }
     }

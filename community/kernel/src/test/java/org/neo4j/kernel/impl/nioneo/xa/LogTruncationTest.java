@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 public class LogTruncationTest
 {
     InMemoryLogBuffer inMemoryBuffer = new InMemoryLogBuffer();
-    PhysicalLogNeoXaCommandReader reader = new PhysicalLogNeoXaCommandReader( ByteBuffer.allocate( 100 ) );
+    PhysicalLogNeoXaCommandReaderV1 reader = new PhysicalLogNeoXaCommandReaderV1( ByteBuffer.allocate( 100 ) );
     PhysicalLogNeoXaCommandWriter writer = new PhysicalLogNeoXaCommandWriter();
 
     @Test

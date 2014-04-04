@@ -142,7 +142,7 @@ public class RelationshipDeleter
                 dir.setNextRel( group, rel.getFirstNextRel() );
                 if ( groupIsEmpty( group ) )
                 {
-                    deleteGroup( startNodeChange, group, recordChanges.getRelGroupRecords() );
+//                    deleteGroup( startNodeChange, group, recordChanges.getRelGroupRecords() );
                 }
             }
             decrementTotalRelationshipCount( startNode.getId(), rel, dir.getNextRel( group ),

@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV0;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
 
 public interface XaCommandReaderFactory
 {
@@ -32,7 +33,15 @@ public interface XaCommandReaderFactory
         @Override
         public XaCommandReader newInstance( byte logEntryVersion, ByteBuffer scratch )
         {
-            return new PhysicalLogNeoXaCommandReader( scratch );
+            switch ( logEntryVersion )
+            {
+                case 0:
+                    return new PhysicalLogNeoXaCommandReaderV0( scratch );
+                case -1:
+                    return new PhysicalLogNeoXaCommandReaderV1( scratch );
+                default:
+                    throw new IllegalArgumentException( "Unknown log entry version " + logEntryVersion );
+            }
         }
     };
 }

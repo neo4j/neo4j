@@ -19,24 +19,201 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.nioneo.xa.RecordAccessSet;
+import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyDeleter;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyTraverser;
+import org.neo4j.kernel.impl.nioneo.xa.RecordChangeSet;
+import org.neo4j.kernel.impl.nioneo.xa.RecordChanges;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipCreator;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipDeleter;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipGroupGetter;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
 public class DenseNodeTransactionInterceptor implements Function<List<LogEntry>, List<LogEntry>>
 {
-    private final RecordAccessSet existingStore;
+    private final NeoStore neoStore;
+    private final RecordChangeSet recordChangeSet;
 
-    public DenseNodeTransactionInterceptor( RecordAccessSet existingStore )
+    public DenseNodeTransactionInterceptor( NeoStore neoStore )
     {
-        this.existingStore = existingStore;
+        this.neoStore = neoStore;
+        this.recordChangeSet = new RecordChangeSet( neoStore );
     }
 
     @Override
     public List<LogEntry> apply( List<LogEntry> from )
     {
-        return from;
+        List<LogEntry> result = new LinkedList<>();
+        List<LogEntry.Command> commands = new LinkedList<>();
+
+        LogEntry commit = null;
+        LogEntry prepare = null;
+        LogEntry done = null;
+        for ( LogEntry logEntry : from )
+        {
+//            assert logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION;
+
+            switch ( logEntry.getType() )
+            {
+                case LogEntry.TX_START:
+                    result.add( logEntry );
+                    break;
+                case LogEntry.TX_1P_COMMIT:
+                case LogEntry.TX_2P_COMMIT:
+                    commit = logEntry;
+                    break;
+                case LogEntry.TX_PREPARE:
+                    prepare = logEntry;
+                    break;
+                case LogEntry.DONE:
+                    done = logEntry;
+                    break;
+                case LogEntry.COMMAND:
+                    handleCommand( (LogEntry.Command) logEntry, commands );
+                    break;
+                default:
+                    throw new IllegalStateException( "Log Entry type " + logEntry.getType() + " is not recognizable" );
+            }
+        }
+        translateRecordChangeSetToEntries( result, commands );
+        if ( commit != null )
+        {
+            result.add( commit );
+        }
+        if ( prepare != null )
+        {
+            result.add( prepare );
+        }
+        if ( done != null )
+        {
+            result.add( done );
+        }
+        return result;
+    }
+
+    private void translateRecordChangeSetToEntries( List<LogEntry> result, List<LogEntry.Command> commands )
+    {
+        for ( RecordChanges.RecordChange<Long, NodeRecord, Void> nodeChange : recordChangeSet.getNodeRecords().changes() )
+        {
+            Command.NodeCommand newCommand = new Command.NodeCommand();
+            newCommand.init( nodeChange.getBefore(), nodeChange.forChangingData() );
+            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+        }
+
+        for ( RecordChanges.RecordChange<Long, RelationshipRecord, Void> relChange :
+                recordChangeSet.getRelRecords().changes() )
+        {
+            Command.RelationshipCommand newCommand = new Command.RelationshipCommand();
+            newCommand.init( relChange.forChangingData() );
+            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+        }
+
+        for ( RecordChanges.RecordChange<Long, RelationshipGroupRecord, Integer> relGroupChange :
+                recordChangeSet.getRelGroupRecords().changes() )
+        {
+            Command.RelationshipGroupCommand newCommand = new Command.RelationshipGroupCommand();
+            newCommand.init( relGroupChange.forChangingData() );
+            result.add( new LogEntry.Command( result.get( 0 ).getIdentifier(), newCommand ) );
+        }
+        for ( LogEntry.Command commandEntry : commands )
+        {
+            Command command = (Command) commandEntry.getXaCommand();
+            if ( command instanceof Command.RelationshipCommand )
+            {
+                long id = ((Command.RelationshipCommand) command).getRecord().getId();
+                if ( recordChangeSet.getRelRecords().getIfLoaded( id ) == null )
+                {
+                    result.add( commandEntry );
+                }
+            }
+            if ( command instanceof Command.NodeCommand )
+            {
+                long id = ((Command.NodeCommand) command).getAfter().getId();
+                if ( recordChangeSet.getNodeRecords().getIfLoaded( id ) == null )
+                {
+                    result.add( commandEntry );
+                }
+            }
+        }
+    }
+
+    private void handleCommand( LogEntry.Command commandEntry, List<LogEntry.Command> commands )
+    {
+        Command command = (Command) commandEntry.getXaCommand();
+        if ( command instanceof Command.NodeCommand )
+        {
+            handleNodeCommand( (Command.NodeCommand) command );
+        }
+        else if ( command instanceof Command.RelationshipCommand )
+        {
+            handleRelationshipCommand( (Command.RelationshipCommand) command );
+        }
+        else
+        {
+            commands.add( commandEntry );
+        }
+    }
+
+    private void handleNodeCommand( Command.NodeCommand command )
+    {
+//        recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null ).forChangingData();
+    }
+
+    private void handleRelationshipCommand( Command.RelationshipCommand command )
+    {
+        RelationshipRecord after = command.getRecord();
+        RelationshipRecord before = neoStore.getRelationshipStore().getLightRel( after.getId() );
+
+        if ( after.inUse() && ( before == null || !before.inUse() ) ) // before either is not in use or does not exist
+        {
+            translateRelationshipCreation( command );
+        }
+        else if ( !after.inUse() && before.inUse() )
+        {
+            translateRelationshipDeletion( command );
+        }
+    }
+
+    private void translateRelationshipCreation( Command.RelationshipCommand command )
+    {
+        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
+        RelationshipCreator relationshipCreator = new RelationshipCreator( new RelationshipLocker()
+        {
+            @Override
+            public void getWriteLock( long relId ) throws AcquireLockTimeoutException
+            {
+                return; // no locking when applying transactions
+            }
+        }, groupGetter, 1 );
+
+        RelationshipRecord record = command.getRecord();
+        relationshipCreator.relationshipCreate( record.getId(), record.getType(), record.getFirstNode(),
+                record.getSecondNode(), recordChangeSet );
+    }
+
+    private void translateRelationshipDeletion( Command.RelationshipCommand command )
+    {
+        RelationshipDeleter deleter = new RelationshipDeleter( new RelationshipLocker()
+        {
+            @Override
+            public void getWriteLock( long relId ) throws AcquireLockTimeoutException
+            {
+                return; // no locking when applying transactions
+            }
+        }, new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() ), new PropertyDeleter(
+                neoStore.getPropertyStore(), new PropertyTraverser() ) );
+
+        RelationshipRecord record = command.getRecord();
+        deleter.relDelete( record.getId(), recordChangeSet );
     }
 }

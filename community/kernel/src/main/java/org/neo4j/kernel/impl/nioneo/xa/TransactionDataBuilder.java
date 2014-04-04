@@ -111,6 +111,18 @@ public class TransactionDataBuilder
         }
     }
 
+     public void update( RelationshipGroupRecord group )
+        {
+            try
+            {
+                writer.update( group );
+            }
+            catch ( IOException e )
+            {
+                throw ioError( e );
+            }
+        }
+
     public void update( NeoStoreRecord record )
     {
         try

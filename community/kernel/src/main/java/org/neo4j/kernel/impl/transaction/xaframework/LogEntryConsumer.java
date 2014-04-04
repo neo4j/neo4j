@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
+import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 import org.neo4j.kernel.impl.util.Consumer;
 
@@ -30,6 +33,13 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
 
     private LogHandler handler;
     private int xidIdentifier;
+    private List<LogEntry> entries;
+    private final Function<List<LogEntry>, List<LogEntry>> translator;
+
+    LogEntryConsumer( Function<List<LogEntry>, List<LogEntry>> translator )
+    {
+        this.translator = translator;
+    }
 
     @Override
     public boolean accept( LogEntry logEntry ) throws IOException
@@ -50,12 +60,23 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
 
         if ( logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION )
         {
-            // need to gather them up
+            if ( entries == null )
+            {
+                entries = new LinkedList<>();
+            }
+            entries.add( logEntry );
 
             if ( (logEntry.getType() == LogEntry.TX_1P_COMMIT || logEntry.getType() == LogEntry.TX_2P_COMMIT)  )
             {
-                // translate them
-                // DO NOT FORGET TO CALL THEM ON THE HANDLER
+                // translate()
+            }
+            if ( logEntry.getType() == LogEntry.DONE )
+            {
+                for ( LogEntry entry : entries )
+                {
+                    entry.accept( handler );
+                }
+                entries = null;
             }
         }
         else

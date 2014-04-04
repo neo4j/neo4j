@@ -264,7 +264,7 @@ public class XaLogicalLog implements LogLoader
 
     private void determineLogVersionFromArchivedFiles()
     {
-        long version = logFiles.determineNextLogVersion(/*default=*/logVersion);
+        long version = logFiles.determineNextLogVersion(/*default=*/logVersion );
         if(version != logVersion)
         {
             logVersion = version;
@@ -491,7 +491,8 @@ public class XaLogicalLog implements LogLoader
     private void fixDualLogFiles( File activeLog, File oldLog ) throws IOException
     {
         StoreChannel activeLogChannel = fileSystem.open( activeLog, "r" );
-        long[] activeLogHeader = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ), activeLogChannel, false );
+        long[] activeLogHeader = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ),
+                activeLogChannel, false );
         activeLogChannel.close();
 
         StoreChannel oldLogChannel = fileSystem.open( oldLog, "r" );
@@ -1030,7 +1031,7 @@ public class XaLogicalLog implements LogLoader
                         new LogApplier(), logWriterSPI,
                         injectedTxValidator, logEntryWriter ) );
 
-        LogEntryConsumer consumer = new LogEntryConsumer();
+        LogEntryConsumer consumer = new LogEntryConsumer( new V0ToV1Translator() );
 
         consumer.setXidIdentifier( getNextIdentifier() );
 
@@ -1061,7 +1062,7 @@ public class XaLogicalLog implements LogLoader
     {
         scanIsComplete = false;
 
-        LogEntryConsumer consumer = new LogEntryConsumer();
+        LogEntryConsumer consumer = new LogEntryConsumer( new V0ToV1Translator() );
         consumer.setXidIdentifier( getNextIdentifier() );
         ForgetUnsuccessfulReceivedTransaction handler = new ForgetUnsuccessfulReceivedTransaction(
                 new SlaveLogWriter( new LogApplier(), logWriterSPI, logEntryWriter ) );

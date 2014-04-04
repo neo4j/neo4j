@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
-public class PhysicalLogNeoXaCommandReader implements XaCommandReader
+public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
 {
     private interface DynamicRecordAdder<T>
     {
@@ -57,7 +57,7 @@ public class PhysicalLogNeoXaCommandReader implements XaCommandReader
     private ByteBuffer scratch;
     private ReadableByteChannel byteChannel;
 
-    public PhysicalLogNeoXaCommandReader( ByteBuffer scratch )
+    public PhysicalLogNeoXaCommandReaderV1( ByteBuffer scratch )
     {
         this.scratch = scratch;
     }

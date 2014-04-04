@@ -34,13 +34,13 @@ public abstract class LogEntry
      * version 3 as of 2013-02-09: neo4j 2.0 Labels & Indexing
      * version 4 as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
      */
-    static final byte CURRENT_LOG_VERSION = (byte) 4;
+    public static final byte CURRENT_LOG_VERSION = (byte) 4;
 
     /*
      * version 0 for Neo4j versions < 2.1
      * version -1 for Neo4j 2.1
      */
-    static final byte CURRENT_LOG_ENTRY_VERSION = (byte) -1;
+    public static final byte CURRENT_LOG_ENTRY_VERSION = (byte) -1;
 
     // empty record due to memory mapped file
     public static final byte EMPTY = (byte) 0;

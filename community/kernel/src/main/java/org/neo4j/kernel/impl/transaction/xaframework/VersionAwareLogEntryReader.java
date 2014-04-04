@@ -103,7 +103,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
          * extra byte read. After 2.1 is released we can remove it.
          */
 
-        byte version = 1;
+        byte version = 0;
 
         byteBuffer.clear();
         byteBuffer.limit( 1 );
