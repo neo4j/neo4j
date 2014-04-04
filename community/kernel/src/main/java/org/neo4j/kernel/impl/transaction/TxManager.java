@@ -774,6 +774,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
             getTxLog().truncate();
             recovered = true;
+            kernelHealth.healed();
         }
         catch ( Throwable t )
         {
