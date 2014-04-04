@@ -34,6 +34,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val bNode = IdName("b")
   val rName = IdName("r")
   val rRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val rVarRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty, VarPatternLength.unlimited)
   val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("do not expand when no pattern relationships exist in querygraph") {
@@ -55,7 +56,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName)( null ))))
+      Expand(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength)(null))))
   }
 
   test("finds expansion going both sides") {
@@ -68,8 +69,8 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName)( null ),
-      Expand(left = planB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = aNode, relName = rName)( null )
+      Expand(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength)(null),
+      Expand(left = planB, from = bNode, Direction.INCOMING, types = Seq.empty, to = aNode, rName, SimplePatternLength)(null)
     )))
   }
 
@@ -94,7 +95,8 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     expand(plan) should equal(CandidateList(Seq(
       Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
-        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)( null )
+        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
+          to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength)(null)
       ))))
   }
 
@@ -108,12 +110,28 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     expand(plan) should equal(CandidateList(Seq(
       Selection(Seq(Equals(Identifier(bNode.name)(pos), Identifier(bNode.name + "$$$")(pos))(pos)),
-        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(bNode.name + "$$$"), relName = rName)( null )
+        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
+          to = IdName(bNode.name + "$$$"), relName = rName, SimplePatternLength)(null)
       ),
       Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
-        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)( null )
+        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty,
+          to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength)(null)
       ))))
   }
+
+  test("unlimited variable length relationship") {
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rVarRel)
+    )
+    val planA = newMockedLogicalPlan("a")
+    val plan = PlanTable(Map(Set(aNode) -> planA))
+
+    expand(plan) should equal(CandidateList(Seq(
+      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length)(null)
+    )))
+  }
+
 
   def pos: InputPosition = null
 }

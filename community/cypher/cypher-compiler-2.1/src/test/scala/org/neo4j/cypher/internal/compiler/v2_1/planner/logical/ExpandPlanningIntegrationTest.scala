@@ -49,7 +49,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Projection(
         Expand(
           AllNodesScan("a"),
-          "a", Direction.OUTGOING, Seq.empty, "b", "r"
+          "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
         )( null ),
         Map("r" -> Identifier("r") _)
       )
@@ -68,11 +68,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           CartesianProduct(
             Expand(
               AllNodesScan("a"),
-              "a", Direction.OUTGOING, Seq.empty, "b", "r1"
+              "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength
             )( null ),
             Expand(
               AllNodesScan("c"),
-              "c", Direction.OUTGOING, Seq.empty, "d", "r2"
+              "c", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
             )( null )
           )
         ),
@@ -95,7 +95,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
           Expand(
             AllNodesScan("a"),
-            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r"
+            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength
           )( null )
         ),
         Map("r" -> Identifier("r") _)
@@ -115,8 +115,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           Selection(
             Seq(Equals(Identifier("b") _, Identifier("b$$$") _) _),
             Expand(
-              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1")( null ),
-              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2"
+              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(null),
+              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength
             )( null )
           )
         ),
@@ -148,7 +148,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
             AllNodesScan("a")
           ),
-          "a", Direction.BOTH, Seq(RelTypeName("x")()_), "start", "rel"
+          "a", Direction.BOTH, Seq(RelTypeName("x")() _), "start", "rel", SimplePatternLength
         )( null ),
         Map("a" -> Identifier("a") _)
       )
