@@ -46,16 +46,17 @@ public class RuntimeHeuristicsServiceTest
         // Given
         StoreReadLayer store = generateStore();
         HeuristicsCollectedData collectedData = new HeuristicsCollectedData();
-        RuntimeHeuristicsService service = new RuntimeHeuristicsService(collectedData, store, null );
-        HeuristicsCollector collector = new HeuristicsCollector(store, collectedData);
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( collectedData, store, null );
+        HeuristicsCollector collector = new HeuristicsCollector( store, collectedData );
         collector.run();
 
         // When
-        service.save(fs, new File(dir.directory(), "somefile"));
+        service.save( fs, new File( dir.directory(), "somefile" ) );
 
         // Then
-        HeuristicsCollectedData expected = (HeuristicsCollectedData) RuntimeHeuristicsService.load(fs, new File(dir.directory(), "somefile"), store, null).heuristics();
-        assertThat(expected, equalTo( collector.collectedData() ));
+        HeuristicsCollectedData expected = (HeuristicsCollectedData) RuntimeHeuristicsService.load( fs,
+                new File( dir.directory(), "somefile" ), store, null ).heuristics();
+        assertThat( expected, equalTo( collector.collectedData() ) );
     }
 
     @Test
@@ -64,16 +65,17 @@ public class RuntimeHeuristicsServiceTest
         // Given
         StoreReadLayer store = generateStore();
         HeuristicsCollectedData collectedData = new HeuristicsCollectedData();
-        RuntimeHeuristicsService service = new RuntimeHeuristicsService(collectedData, store, null );
-        HeuristicsCollector collector = new HeuristicsCollector(store, collectedData);
+        RuntimeHeuristicsService service = new RuntimeHeuristicsService( collectedData, store, null );
+        HeuristicsCollector collector = new HeuristicsCollector( store, collectedData );
         collector.run();
 
         // When
-        service.save(fs, new File(dir.directory(), "somefile"));
-        service.save(fs, new File(dir.directory(), "somefile"));
+        service.save( fs, new File( dir.directory(), "somefile" ) );
+        service.save( fs, new File( dir.directory(), "somefile" ) );
 
         // Then
-        HeuristicsCollectedData expected = (HeuristicsCollectedData) RuntimeHeuristicsService.load(fs, new File(dir.directory(), "somefile"), store, null).heuristics();
-        assertThat(expected, equalTo( collector.collectedData() ));
+        HeuristicsCollectedData expected = (HeuristicsCollectedData) RuntimeHeuristicsService.load( fs,
+                new File( dir.directory(), "somefile" ), store, null ).heuristics();
+        assertThat( expected, equalTo( collector.collectedData() ) );
     }
 }

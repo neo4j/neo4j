@@ -28,23 +28,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.neo4j.kernel.impl.api.heuristics.HeuristicsTestSupport.generateStore;
 
-public class HeuristicsCollectorTest {
+public class HeuristicsCollectorTest
+{
 
     @Test
     public void shouldGatherLabelDistribution() throws Throwable
     {
         // Given
         double equalityTolerance = 0.2d;
-        HeuristicsCollectedData data = new HeuristicsCollectedData( new RollingAverage.Parameters( RollingAverage.Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance ) );
-        HeuristicsCollector collector = new HeuristicsCollector(generateStore(), data );
+        HeuristicsCollectedData data = new HeuristicsCollectedData( new RollingAverage.Parameters( RollingAverage
+                .Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance ) );
+        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
 
         // When
         collector.run();
         collector.run();
 
         // Then
-        assertThat(collector.collectedData().labelDistribution(0), closeTo(0.2, equalityTolerance));
-        assertThat(collector.collectedData().labelDistribution(1), closeTo(0.8, equalityTolerance));
+        assertThat( collector.collectedData().labelDistribution( 0 ), closeTo( 0.2, equalityTolerance ) );
+        assertThat( collector.collectedData().labelDistribution( 1 ), closeTo( 0.8, equalityTolerance ) );
     }
 
 
@@ -53,40 +55,41 @@ public class HeuristicsCollectorTest {
     {
         // Given
         double equalityTolerance = 0.2d;
-        HeuristicsCollectedData data = new HeuristicsCollectedData( new RollingAverage.Parameters( RollingAverage.Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance ) );
-        HeuristicsCollector collector = new HeuristicsCollector(generateStore(), data );
+        HeuristicsCollectedData data = new HeuristicsCollectedData( new RollingAverage.Parameters( RollingAverage
+                .Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance ) );
+        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
 
         // When
         collector.run();
         collector.run();
 
         // Then
-        assertThat( collector.collectedData().relationshipTypeDistribution(0), closeTo(0.4, equalityTolerance));
-        assertThat( collector.collectedData().relationshipTypeDistribution(1), closeTo(0.5, equalityTolerance));
+        assertThat( collector.collectedData().relationshipTypeDistribution( 0 ), closeTo( 0.4, equalityTolerance ) );
+        assertThat( collector.collectedData().relationshipTypeDistribution( 1 ), closeTo( 0.5, equalityTolerance ) );
     }
 
     @Test
     public void shouldGatherRelationshipDegreeByLabelDistribution() throws Exception
     {
         // Given
-        HeuristicsCollectedData data = new HeuristicsCollectedData( );
-        HeuristicsCollector collector = new HeuristicsCollector(generateStore(), data );
+        HeuristicsCollectedData data = new HeuristicsCollectedData();
+        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
 
         // When
         collector.run();
         collector.run();
 
         // Then
-        assertThat( collector.collectedData().degree(1, 0, Direction.INCOMING), closeTo( 44.0, 10.0 ));
-        assertThat( collector.collectedData().degree(1, 0, Direction.OUTGOING), closeTo( 4.4,   1.0 ));
+        assertThat( collector.collectedData().degree( 1, 0, Direction.INCOMING ), closeTo( 44.0, 10.0 ) );
+        assertThat( collector.collectedData().degree( 1, 0, Direction.OUTGOING ), closeTo( 4.4, 1.0 ) );
     }
 
     @Test
     public void shouldGatherLiveNodes() throws Throwable
     {
         // Given
-        HeuristicsCollectedData data = new HeuristicsCollectedData( );
-        HeuristicsCollector collector = new HeuristicsCollector(generateStore( 0.6 ), data );
+        HeuristicsCollectedData data = new HeuristicsCollectedData();
+        HeuristicsCollector collector = new HeuristicsCollector( generateStore( 0.6 ), data );
 
         // When
         collector.run();
@@ -100,14 +103,14 @@ public class HeuristicsCollectorTest {
     public void shouldGatherMaxNodes() throws Throwable
     {
         // Given
-        HeuristicsCollectedData data = new HeuristicsCollectedData( );
-        HeuristicsCollector collector = new HeuristicsCollector(generateStore(), data );
+        HeuristicsCollectedData data = new HeuristicsCollectedData();
+        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
 
         // When
         collector.run();
         collector.run();
 
         // Then
-        assertThat( collector.collectedData().maxAddressableNodes(), equalTo(1000L) );
+        assertThat( collector.collectedData().maxAddressableNodes(), equalTo( 1000L ) );
     }
 }

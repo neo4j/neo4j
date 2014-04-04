@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HeuristicsCollectedData implements HeuristicsData, Serializable {
+public class HeuristicsCollectedData implements HeuristicsData, Serializable
+{
 
     private static final long serialVersionUID = 5430534253089297623L;
 
@@ -42,35 +43,37 @@ public class HeuristicsCollectedData implements HeuristicsData, Serializable {
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
     private final RollingAverage.Parameters parameters;
 
-    public HeuristicsCollectedData() {
-        this(new RollingAverage.Parameters());
+    public HeuristicsCollectedData()
+    {
+        this( new RollingAverage.Parameters() );
     }
 
-    public HeuristicsCollectedData(RollingAverage.Parameters parameters) {
+    public HeuristicsCollectedData( RollingAverage.Parameters parameters )
+    {
         this.parameters = parameters;
         this.nodeLivenessData = new NodeLivenessData( parameters );
         this.labels = new LabelledDistribution<>( parameters.equalityTolerance );
         this.relationships = new LabelledDistribution<>( parameters.equalityTolerance );
 
-        outgoingDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
-        incomingDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
-        bothDegrees.put(    RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
+        outgoingDegrees.put( RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
+        incomingDegrees.put( RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
+        bothDegrees.put( RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
     }
 
     @Override
-    public double labelDistribution(int labelId)
+    public double labelDistribution( int labelId )
     {
-        return labels.get(labelId);
+        return labels.get( labelId );
     }
 
     @Override
-    public double relationshipTypeDistribution(int relType)
+    public double relationshipTypeDistribution( int relType )
     {
-        return relationships.get(relType);
+        return relationships.get( relType );
     }
 
     @Override
-    public double degree(int labelId, int relType, Direction direction)
+    public double degree( int labelId, int relType, Direction direction )
     {
         Map<Integer, Map<Integer, RollingAverage>> labelMap;
         switch ( direction )
@@ -85,10 +88,10 @@ public class HeuristicsCollectedData implements HeuristicsData, Serializable {
                 labelMap = bothDegrees;
         }
 
-        if(labelMap.containsKey( labelId ))
+        if ( labelMap.containsKey( labelId ) )
         {
             Map<Integer, RollingAverage> relTypeMap = labelMap.get( labelId );
-            if(relTypeMap.containsKey( relType ))
+            if ( relTypeMap.containsKey( relType ) )
             {
                 return relTypeMap.get( relType ).average();
             }
@@ -109,65 +112,83 @@ public class HeuristicsCollectedData implements HeuristicsData, Serializable {
         return nodeLivenessData.highestNodeId();
     }
 
-    public void recordLabels(List<Integer> nodeLabels) {
+    public void recordLabels( List<Integer> nodeLabels )
+    {
         labels.record( nodeLabels );
     }
 
-    public void recordRelationshipTypes(List<Integer> nodeRelTypes) {
+    public void recordRelationshipTypes( List<Integer> nodeRelTypes )
+    {
         relationships.record( nodeRelTypes );
     }
 
-    public void recordNodeLiveEntity() {
+    public void recordNodeLiveEntity()
+    {
         nodeLivenessData.recordLiveEntity();
     }
 
-    public void recordNodeDeadEntity() {
+    public void recordNodeDeadEntity()
+    {
         nodeLivenessData.recordDeadEntity();
     }
 
-    public void recordHighestNodeId(long nodeId) {
-        nodeLivenessData.recordHighestId(nodeId);
+    public void recordHighestNodeId( long nodeId )
+    {
+        nodeLivenessData.recordHighestId( nodeId );
     }
 
-    public Map<Integer, Map<Integer, RollingAverage>> getBothDegree() {
+    public Map<Integer, Map<Integer, RollingAverage>> getBothDegree()
+    {
         return bothDegrees;
     }
 
-    public Map<Integer, Map<Integer, RollingAverage>> getIncomingDegree() {
+    public Map<Integer, Map<Integer, RollingAverage>> getIncomingDegree()
+    {
         return incomingDegrees;
     }
 
-    public Map<Integer, Map<Integer, RollingAverage>> getOutcomingDegree() {
+    public Map<Integer, Map<Integer, RollingAverage>> getOutcomingDegree()
+    {
         return outgoingDegrees;
     }
 
-    public void recalculate() {
+    public void recalculate()
+    {
         labels.recalculate();
         relationships.recalculate();
         nodeLivenessData.recalculate();
     }
 
-    public RollingAverage.Parameters getParameters() {
+    public RollingAverage.Parameters getParameters()
+    {
         return parameters;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
 
         HeuristicsCollectedData that = (HeuristicsCollectedData) o;
 
-        return  bothDegrees.equals(that.bothDegrees)
-                && incomingDegrees.equals(that.incomingDegrees)
-                && outgoingDegrees.equals(that.outgoingDegrees)
-                && nodeLivenessData.equals(that.nodeLivenessData)
-                && labels.equals(that.labels)
-                && relationships.equals(that.relationships);
+        return bothDegrees.equals( that.bothDegrees )
+                && incomingDegrees.equals( that.incomingDegrees )
+                && outgoingDegrees.equals( that.outgoingDegrees )
+                && nodeLivenessData.equals( that.nodeLivenessData )
+                && labels.equals( that.labels )
+                && relationships.equals( that.relationships );
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         int result = labels.hashCode();
         result = 31 * result + relationships.hashCode();
         result = 31 * result + outgoingDegrees.hashCode();

@@ -33,7 +33,8 @@ import java.util.Random;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
-public class HeuristicsCollector implements Runnable {
+public class HeuristicsCollector implements Runnable
+{
 
     private final HeuristicsCollectedData collectedData;
     private final StoreReadLayer store;
@@ -46,10 +47,10 @@ public class HeuristicsCollector implements Runnable {
     }
 
     private void addNodeObservation( List<Integer> nodeLabels, List<Integer> nodeRelTypes,
-                                    Map<Integer, Integer> nodeIncoming, Map<Integer, Integer> nodeOutgoing )
+                                     Map<Integer, Integer> nodeIncoming, Map<Integer, Integer> nodeOutgoing )
     {
-        collectedData.recordLabels(nodeLabels);
-        collectedData.recordRelationshipTypes(nodeRelTypes);
+        collectedData.recordLabels( nodeLabels );
+        collectedData.recordRelationshipTypes( nodeRelTypes );
 
         recordNodeDegree( nodeLabels, nodeIncoming, collectedData.getIncomingDegree() );
         recordNodeDegree( nodeLabels, nodeOutgoing, collectedData.getOutcomingDegree() );
@@ -71,17 +72,17 @@ public class HeuristicsCollector implements Runnable {
                             HeuristicsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL,
                             nodeLabels
                     )
-                 )
+                    )
             {
                 Map<Integer, RollingAverage> reltypeMap = degreeMap.get( nodeLabel );
-                if(reltypeMap == null)
+                if ( reltypeMap == null )
                 {
                     reltypeMap = new HashMap<>();
                     degreeMap.put( nodeLabel, reltypeMap );
                 }
 
                 RollingAverage histogram = reltypeMap.get( entry.getKey() );
-                if(histogram == null)
+                if ( histogram == null )
                 {
                     histogram = new RollingAverage( collectedData.getParameters() );
                     reltypeMap.put( entry.getKey(), histogram );
@@ -92,31 +93,40 @@ public class HeuristicsCollector implements Runnable {
         }
     }
 
-    public HeuristicsData collectedData() {
+    public HeuristicsData collectedData()
+    {
         return collectedData;
     }
 
-    /** Perform one sampling run. */
+    /**
+     * Perform one sampling run.
+     */
     @Override
     public void run()
     {
-        for ( int i = 0; i < 100; i++ ) {
+        for ( int i = 0; i < 100; i++ )
+        {
             long id = random.nextLong() % store.highestNodeIdInUse();
-            if ( store.nodeExists(id) ) {
-                try {
-                    List<Integer> relTypes = asList(store.nodeGetRelationshipTypes(id));
-                    List<Integer> labels = asList(store.nodeGetLabels(id));
+            if ( store.nodeExists( id ) )
+            {
+                try
+                {
+                    List<Integer> relTypes = asList( store.nodeGetRelationshipTypes( id ) );
+                    List<Integer> labels = asList( store.nodeGetLabels( id ) );
 
                     Map<Integer, Integer> incomingDegrees = new HashMap<>();
                     Map<Integer, Integer> outgoingDegrees = new HashMap<>();
 
-                    for (Integer relType : relTypes) {
-                        incomingDegrees.put(relType, store.nodeGetDegree(id, Direction.INCOMING, relType));
-                        outgoingDegrees.put(relType, store.nodeGetDegree(id, Direction.OUTGOING, relType));
+                    for ( Integer relType : relTypes )
+                    {
+                        incomingDegrees.put( relType, store.nodeGetDegree( id, Direction.INCOMING, relType ) );
+                        outgoingDegrees.put( relType, store.nodeGetDegree( id, Direction.OUTGOING, relType ) );
                     }
 
-                    addNodeObservation(labels, relTypes, incomingDegrees, outgoingDegrees);
-                } catch (EntityNotFoundException e) {
+                    addNodeObservation( labels, relTypes, incomingDegrees, outgoingDegrees );
+                }
+                catch ( EntityNotFoundException e )
+                {
                     // Node was deleted while we read it, or something. In any case, just exclude it from the run.
                     collectedData.recordNodeDeadEntity();
                 }
@@ -127,7 +137,7 @@ public class HeuristicsCollector implements Runnable {
             }
         }
 
-        collectedData.recordHighestNodeId(store.highestNodeIdInUse());
+        collectedData.recordHighestNodeId( store.highestNodeIdInUse() );
 
         collectedData.recalculate();
     }

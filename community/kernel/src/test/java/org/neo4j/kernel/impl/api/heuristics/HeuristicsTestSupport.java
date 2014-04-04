@@ -39,7 +39,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class HeuristicsTestSupport {
+public class HeuristicsTestSupport
+{
 
     public static StoreReadLayer generateStore() throws EntityNotFoundException
     {
@@ -49,43 +50,46 @@ public class HeuristicsTestSupport {
     public static StoreReadLayer generateStore( double liveNodes ) throws EntityNotFoundException
     {
         StoreReadLayer store = mock( StoreReadLayer.class );
-        when(store.highestNodeIdInUse()).thenReturn( 1000l );
-        mockNodeLiveness(liveNodes, store);
+        when( store.highestNodeIdInUse() ).thenReturn( 1000l );
+        mockNodeLiveness( liveNodes, store );
 
-        when(store.nodeGetLabels( anyLong() )).then( answerWithDistribution(
-                20, ids(0),
-                80, ids(1)) );
-        when(store.nodeGetRelationshipTypes( anyLong() )).then( answerWithDistribution(
-                40, ids(0),
-                60, ids(1)));
-        when(store.nodeGetDegree( anyLong(), eq( Direction.INCOMING), anyInt() ) ).then( answerWithDistribution(
-                10, degree(10),
-                30, degree(40),
-                90, degree(50) ) );
-        when(store.nodeGetDegree( anyLong(), eq(Direction.OUTGOING), anyInt() )).then(  answerWithDistribution(
-                10, degree(1),
-                20, degree(4),
-                85, degree(5) ) );
+        when( store.nodeGetLabels( anyLong() ) ).then( answerWithDistribution(
+                20, ids( 0 ),
+                80, ids( 1 ) ) );
+        when( store.nodeGetRelationshipTypes( anyLong() ) ).then( answerWithDistribution(
+                40, ids( 0 ),
+                60, ids( 1 ) ) );
+        when( store.nodeGetDegree( anyLong(), eq( Direction.INCOMING ), anyInt() ) ).then( answerWithDistribution(
+                10, degree( 10 ),
+                30, degree( 40 ),
+                90, degree( 50 ) ) );
+        when( store.nodeGetDegree( anyLong(), eq( Direction.OUTGOING ), anyInt() ) ).then( answerWithDistribution(
+                10, degree( 1 ),
+                20, degree( 4 ),
+                85, degree( 5 ) ) );
 
         return store;
     }
 
-    private static void mockNodeLiveness(double liveNodes, StoreReadLayer store) {
+    private static void mockNodeLiveness( double liveNodes, StoreReadLayer store )
+    {
         int alive = (int) (liveNodes * 100);
-        int dead = 100-alive;
+        int dead = 100 - alive;
 
         // smallest percentile first
         if ( alive < dead )
         {
-            when(store.nodeExists(anyLong())).then(answerWithDistribution(alive, value(true), dead, value(false)));
+            when( store.nodeExists( anyLong() ) ).then( answerWithDistribution( alive, value( true ), dead,
+                    value( false ) ) );
         }
         else
         {
-            when(store.nodeExists(anyLong())).then(answerWithDistribution(dead, value(false), alive, value(true)));
+            when( store.nodeExists( anyLong() ) ).then( answerWithDistribution( dead, value( false ), alive,
+                    value( true ) ) );
         }
     }
 
-    private static Answer<?> answerWithDistribution( Object ... alternatingPercentileAndProvider )
+    private static Answer<?> answerWithDistribution( Object... alternatingPercentileAndProvider )
     {
         final Random rand = new Random();
         final Map<String, Object> probabilities = map( alternatingPercentileAndProvider );
@@ -96,7 +100,7 @@ public class HeuristicsTestSupport {
         {
             percentiles[i] = (int) raw[i];
         }
-        Arrays.sort(percentiles);
+        Arrays.sort( percentiles );
 
         return new Answer<Object>()
         {
@@ -106,24 +110,24 @@ public class HeuristicsTestSupport {
                 float r = rand.nextInt( 100 );
                 for ( int i = 0; i < percentiles.length; i++ )
                 {
-                    if(r <= percentiles[i])
+                    if ( r <= percentiles[i] )
                     {
-                        return ((Provider<?>)probabilities.get( percentiles[i] )).instance();
+                        return ((Provider<?>) probabilities.get( percentiles[i] )).instance();
                     }
                 }
-                return ((Provider<?>)probabilities.get(percentiles[percentiles.length - 1])).instance();
+                return ((Provider<?>) probabilities.get( percentiles[percentiles.length - 1] )).instance();
             }
         };
     }
 
-    private static Provider<PrimitiveIntIterator> ids( final int ... ids )
+    private static Provider<PrimitiveIntIterator> ids( final int... ids )
     {
         return new Provider<PrimitiveIntIterator>()
         {
             @Override
             public PrimitiveIntIterator instance()
             {
-                return IteratorUtil.asPrimitiveIterator(ids);
+                return IteratorUtil.asPrimitiveIterator( ids );
             }
         };
     }

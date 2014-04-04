@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.heuristics;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import java.io.*;
-import java.util.concurrent.TimeUnit;
 
 
 public class RuntimeHeuristicsService extends LifecycleAdapter implements HeuristicsService
@@ -35,14 +38,15 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     private final JobScheduler scheduler;
     private final HeuristicsCollector collector;
 
-    public static RuntimeHeuristicsService load( FileSystemAbstraction fs, File path, StoreReadLayer store, JobScheduler scheduler )
+    public static RuntimeHeuristicsService load( FileSystemAbstraction fs, File path, StoreReadLayer store,
+                                                 JobScheduler scheduler )
     {
         if ( fs.fileExists( path ) )
         {
             try
             {
                 ObjectInputStream in = new ObjectInputStream( fs.openAsInputStream( path ) );
-                return new RuntimeHeuristicsService((HeuristicsCollectedData)in.readObject(), store, scheduler);
+                return new RuntimeHeuristicsService( (HeuristicsCollectedData) in.readObject(), store, scheduler );
             }
             catch ( Exception e )
             {
@@ -58,16 +62,17 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
         this( new HeuristicsCollectedData(), store, scheduler );
     }
 
-    public RuntimeHeuristicsService( HeuristicsCollectedData collectedData, StoreReadLayer store, JobScheduler scheduler )
+    public RuntimeHeuristicsService( HeuristicsCollectedData collectedData, StoreReadLayer store,
+                                     JobScheduler scheduler )
     {
         this.scheduler = scheduler;
-        this.collector = new HeuristicsCollector(store, collectedData);
+        this.collector = new HeuristicsCollector( store, collectedData );
     }
 
     @Override
     public void start() throws Throwable
     {
-        scheduler.scheduleRecurring(JobScheduler.Group.heuristics, collector, 30, TimeUnit.SECONDS);
+        scheduler.scheduleRecurring( JobScheduler.Group.heuristics, collector, 30, TimeUnit.SECONDS );
     }
 
     @Override
