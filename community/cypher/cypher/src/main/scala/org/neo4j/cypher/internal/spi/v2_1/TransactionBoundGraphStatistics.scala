@@ -37,9 +37,9 @@ class TransactionBoundGraphStatistics(statistics: HeuristicsData) extends GraphS
 
   def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double = ???
 
-  def degreeByLabelTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
+  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
     statistics.degree( HeuristicsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction )
 
-  def degreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
+  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
     statistics.degree( labelId.id, relTypeId.id, direction )
 }

@@ -29,13 +29,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRel
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
-import org.mockito.Mockito
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CostModel, CardinalityModel, SelectivityModel}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
-
-  import Mockito._
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   val monitors = new Monitors(kernelMonitors)
@@ -54,7 +52,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   }
 
   def newMetricsFactory = SimpleMetricsFactory
-  def newMockedMetricsFactory = Mockito.spy(new DummyMetricsFactory)
+  def newMockedMetricsFactory = spy(new DummyMetricsFactory)
 
   def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],

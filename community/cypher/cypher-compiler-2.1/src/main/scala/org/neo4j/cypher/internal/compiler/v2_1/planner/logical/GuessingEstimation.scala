@@ -60,10 +60,10 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       (cardinality(left) + cardinality(right)) / 2
 
     case expand @ Expand(left, _, dir, types, _, _) =>
-      val degree = if (types.size <= 0)
+      val degree = if (types.isEmpty)
         DEFAULT_EXPAND_RELATIONSHIP_DEGREE
       else
-        types.foldLeft(0.0)((sum, t) => sum + statistics.degreeByLabelTypeAndDirection(t.id.get, dir)) / types.size
+        types.foldLeft(0.0)((sum, t) => sum + statistics.degreeByRelationshipTypeAndDirection(t.id.get, dir)) / types.size
       cardinality(left) * degree
 
     case Selection(predicates, left) =>

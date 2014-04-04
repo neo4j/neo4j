@@ -130,7 +130,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand(select(all nodes scan)) < select(expand(all node scan))") {
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
-    when(statistics.degreeByLabelTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
+    when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
     val cost = newMetricsFactory.newMetrics(statistics).cost
 
     val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")(Some(RelTypeId(12))) _)
