@@ -30,6 +30,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -39,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -57,10 +59,11 @@ public class XaResourceManager
         }
     }
 
-    private final ArrayMap<XAResource,ResourceTransaction> xaResourceMap = new ArrayMap<>();
-    private final ArrayMap<Xid,XidStatus> xidMap = new ArrayMap<>();
+    private final ConcurrentMap<XAResource, ResourceTransaction> xaResourceMap = new ConcurrentHashMap<>( 1024, 0.6f, 128 );
+    private final ConcurrentMap<Xid,XidStatus> xidMap = new ConcurrentHashMap<>( 1024, 0.6f, 128 );
+
     private final TransactionMonitor transactionMonitor;
-    private int recoveredTxCount = 0;
+    private AtomicInteger recoveredTxCount = new AtomicInteger( 0 );
     private final Map<Integer, TransactionInfo> recoveredTransactions = new HashMap<>();
 
     private XaLogicalLog log = null;
@@ -73,8 +76,8 @@ public class XaResourceManager
     private final RecoveryVerifier recoveryVerifier;
 
     public XaResourceManager( XaDataSource dataSource, XaTransactionFactory tf,
-            TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
-            RecoveryVerifier recoveryVerifier, String name, Monitors monitors )
+                              TxIdGenerator txIdGenerator, AbstractTransactionManager transactionManager,
+                              RecoveryVerifier recoveryVerifier, String name, Monitors monitors )
     {
         this.dataSource = dataSource;
         this.tf = tf;
@@ -102,20 +105,18 @@ public class XaResourceManager
      * @return the created transaction.
      * @throws XAException if the {@code resource} was already associated with another transaction.
      */
-    synchronized XaTransaction createTransaction( XAResource xaResource )
+    XaTransaction createTransaction( XAResource xaResource )
             throws XAException
     {
-        if ( xaResourceMap.get( xaResource ) != null )
+        XaTransaction xaTx = tf.create( dataSource.getLastCommittedTxId(), transactionManager.getTransactionState() );
+        if(xaResourceMap.putIfAbsent( xaResource, new ResourceTransaction( xaTx ) ) != null)
         {
             throw new XAException( "Resource[" + xaResource + "] already enlisted or suspended" );
         }
-
-        XaTransaction xaTx = tf.create( dataSource.getLastCommittedTxId(), transactionManager.getTransactionState() );
-        xaResourceMap.put( xaResource, new ResourceTransaction( xaTx ) );
         return xaTx;
     }
 
-    synchronized XaTransaction getXaTransaction( XAResource xaRes )
+    XaTransaction getXaTransaction( XAResource xaRes )
             throws XAException
     {
         XidStatus status = xidMap.get( xaResourceMap.get( xaRes ).xid );
@@ -126,7 +127,7 @@ public class XaResourceManager
         return status.getTransactionStatus().getTransaction();
     }
 
-    synchronized void start( XAResource xaResource, Xid xid )
+    void start( XAResource xaResource, Xid xid )
             throws XAException
     {
         ResourceTransaction tx = xaResourceMap.get( xaResource );
@@ -147,7 +148,7 @@ public class XaResourceManager
         }
     }
 
-    synchronized void injectStart( Xid xid, XaTransaction tx )
+    void injectStart( Xid xid, XaTransaction tx )
             throws IOException
     {
         if ( xidMap.get( xid ) != null )
@@ -156,10 +157,10 @@ public class XaResourceManager
                     + " already injected" );
         }
         xidMap.put( xid, new XidStatus( tx ) );
-        recoveredTxCount++;
+        recoveredTxCount.incrementAndGet();
     }
 
-    synchronized void resume( Xid xid ) throws XAException
+    void resume( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
@@ -191,7 +192,7 @@ public class XaResourceManager
         xaResourceMap.put( xaResource, tx );
     }
 
-    synchronized void end( XAResource xaResource, Xid xid ) throws XAException
+    void end( XAResource xaResource, Xid xid ) throws XAException
     {
         if ( xaResourceMap.remove( xaResource ) == null )
         {
@@ -199,7 +200,7 @@ public class XaResourceManager
         }
     }
 
-    synchronized void suspend( Xid xid ) throws XAException
+    void suspend( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
@@ -213,7 +214,7 @@ public class XaResourceManager
         status.setActive( false );
     }
 
-    synchronized void fail( XAResource xaResource, Xid xid ) throws XAException
+    void fail( XAResource xaResource, Xid xid ) throws XAException
     {
         XidStatus xidStatus = xidMap.get( xid );
         if ( xidStatus == null )
@@ -227,7 +228,7 @@ public class XaResourceManager
         xidStatus.getTransactionStatus().markAsRollback();
     }
 
-    synchronized void validate( XAResource xaResource ) throws XAException
+    void validate( XAResource xaResource ) throws XAException
     {
         ResourceTransaction tx = xaResourceMap.get( xaResource );
         XidStatus status = null;
@@ -242,7 +243,7 @@ public class XaResourceManager
     }
 
     // TODO: check so we're not currently committing on the resource
-    synchronized void destroy( XAResource xaResource )
+    void destroy( XAResource xaResource )
     {
         xaResourceMap.remove( xaResource );
     }
@@ -356,16 +357,13 @@ public class XaResourceManager
         XaTransaction xaTransaction;
         TransactionStatus txStatus;
 
-        synchronized ( this )
+        status = xidMap.get( xid );
+        if ( status == null )
         {
-            status = xidMap.get( xid );
-            if ( status == null )
-            {
-                throw new XAException( "Unknown xid[" + xid + "]" );
-            }
-            txStatus = status.getTransactionStatus();
-            xaTransaction = txStatus.getTransaction();
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
+        txStatus = status.getTransactionStatus();
+        xaTransaction = txStatus.getTransaction();
 
         prepareKernelTx( xaTransaction );
 
@@ -397,7 +395,7 @@ public class XaResourceManager
 
     private void oneMoreTransactionRecovered()
     {
-        recoveredTxCount--;
+        recoveredTxCount.decrementAndGet();
         checkIfRecoveryComplete();
     }
 
@@ -485,17 +483,14 @@ public class XaResourceManager
         TransactionStatus txStatus;
         boolean isReadOnly;
 
-        synchronized ( this )
+        XidStatus status = xidMap.get( xid );
+        if ( status == null )
         {
-            XidStatus status = xidMap.get( xid );
-            if ( status == null )
-            {
-                throw new XAException( "Unknown xid[" + xid + "]" );
-            }
-            txStatus = status.getTransactionStatus();
-            xaTransaction = txStatus.getTransaction();
-            isReadOnly = xaTransaction.isReadOnly();
+            throw new XAException( "Unknown xid[" + xid + "]" );
         }
+        txStatus = status.getTransactionStatus();
+        xaTransaction = txStatus.getTransaction();
+        isReadOnly = xaTransaction.isReadOnly();
 
         if ( onePhase && (!isReadOnly && !xaTransaction.isRecovered()) )
         {
@@ -606,7 +601,7 @@ public class XaResourceManager
         {
             log.done( xaTransaction.getIdentifier() );
         }
-        else if ( !log.scanIsComplete() || recoveredTxCount > 0 )
+        else if ( !log.scanIsComplete() || recoveredTxCount.get() > 0 )
         {
             int identifier = xaTransaction.getIdentifier();
             Start startEntry = log.getStartEntry( identifier );
@@ -628,7 +623,7 @@ public class XaResourceManager
         return transactionManager.getForceMode();
     }
 
-    synchronized XaTransaction rollback( Xid xid ) throws XAException
+    XaTransaction rollback( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
@@ -657,7 +652,7 @@ public class XaResourceManager
         return txStatus.getTransaction();
     }
 
-    synchronized XaTransaction forget( Xid xid ) throws XAException
+    XaTransaction forget( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
         if ( status == null )
@@ -761,7 +756,7 @@ public class XaResourceManager
                             + identifier + " as done" );
                     log.doneInternal( identifier );
                     xidMap.remove( xid );
-                    recoveredTxCount--;
+                    recoveredTxCount.decrementAndGet();
                 }
                 else if ( !txStatus.prepared() )
                 {
@@ -769,7 +764,7 @@ public class XaResourceManager
                             + "txIdent[" + identifier + "]" );
                     log.doneInternal( xaTransaction.getIdentifier() );
                     xidMap.remove( xid );
-                    recoveredTxCount--;
+                    recoveredTxCount.decrementAndGet();
                 }
                 else
                 {
@@ -783,7 +778,7 @@ public class XaResourceManager
 
     private void checkIfRecoveryComplete()
     {
-        if ( log.scanIsComplete() && recoveredTxCount == 0 )
+        if ( log.scanIsComplete() && recoveredTxCount.get() == 0 )
         {
             msgLog.info( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
             // log.makeNewLog();
@@ -839,7 +834,7 @@ public class XaResourceManager
      */
     public boolean hasRecoveredTransactions()
     {
-        return recoveredTxCount > 0;
+        return recoveredTxCount.get() > 0;
     }
 
     public synchronized void applyCommittedTransaction(

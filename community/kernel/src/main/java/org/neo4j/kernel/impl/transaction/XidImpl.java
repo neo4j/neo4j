@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.transaction.xa.Xid;
 
@@ -38,13 +39,13 @@ public class XidImpl implements Xid
     
     public static final Seed DEFAULT_SEED = new Seed()
     {
-        private long nextSequenceId = 0;
+        private AtomicLong nextSequenceId = new AtomicLong( 0 );
         private final Random r = new Random();
 
         @Override
-        public synchronized long nextSequenceId()
+        public long nextSequenceId()
         {
-            return nextSequenceId++;
+            return nextSequenceId.getAndIncrement();
         }
         
         @Override
