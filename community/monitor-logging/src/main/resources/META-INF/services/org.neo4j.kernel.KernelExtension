@@ -1,1 +1,1 @@
-org.neo4j.ext.udc.impl.UdcExtensionImpl
+org.neo4j.ext.monitorlogging.MonitorLoggingExtension

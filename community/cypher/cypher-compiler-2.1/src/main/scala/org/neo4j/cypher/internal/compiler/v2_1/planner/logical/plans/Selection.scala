@@ -32,5 +32,6 @@ case class Selection(predicates: Seq[Expression], left: LogicalPlan) extends Log
 
   def coveredIds = left.coveredIds
 
-  def solvedPredicates = predicates ++ left.solvedPredicates
+  val solvedPredicates = predicates ++ left.solvedPredicates
+  def solvedPatterns = left.solvedPatterns
 }

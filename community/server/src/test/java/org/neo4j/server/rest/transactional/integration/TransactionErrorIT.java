@@ -19,20 +19,20 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoStackTraces;

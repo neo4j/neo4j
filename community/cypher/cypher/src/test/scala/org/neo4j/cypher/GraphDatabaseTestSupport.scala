@@ -26,12 +26,13 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.kernel.{monitoring, GraphDatabaseAPI}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.tooling.GlobalGraphOperations
-import org.neo4j.kernel.api.DataWriteOperations
+import org.neo4j.kernel.api.{KernelAPI, DataWriteOperations}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.CypherCompiler
+import org.neo4j.kernel.impl.api.Kernel
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherTestSuite  =>
@@ -215,9 +216,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 
-  def planContext: PlanContext = new TransactionBoundPlanContext(statement, graph)
+  def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
-  def newCurrentCompiler = new CypherCompiler(graph, kernelMonitors)
+  def planContext: PlanContext = new TransactionBoundPlanContext(statement, kernelAPI, graph)
+
+  def newCurrentCompiler = new CypherCompiler(graph, kernelAPI, kernelMonitors)
 }
 
 trait Snitch extends GraphDatabaseAPI {

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -90,8 +91,8 @@ public class NeoStore extends AbstractStore
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
     private final RemoteTxHook txHook;
-    private long lastCommittedTx = -1;
-    private long latestConstraintIntroducingTx = -1;
+    private AtomicLong lastCommittedTx = new AtomicLong( -1 );
+    private AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
     private final int denseNodeThreshold;
 
     private final int REL_GRAB_SIZE;
@@ -334,7 +335,7 @@ public class NeoStore extends AbstractStore
     /**
      * Sets the store version for the given {@code neoStore} file.
      * @param neoStore the NeoStore file.
-     * @param version the version to set.
+     * @param storeVersion the version to set.
      * @return the previous version before writing.
      */
     public static long setStoreVersion( FileSystemAbstraction fileSystem, File neoStore, long storeVersion )
@@ -468,31 +469,41 @@ public class NeoStore extends AbstractStore
                 txId + "] since the current one is[" + current + "]" );
         }
         setRecord( 3, txId );
-        lastCommittedTx = txId;
+        lastCommittedTx.set( txId );
     }
 
-    public synchronized long getLastCommittedTx()
+    public long getLastCommittedTx()
     {
-        if ( lastCommittedTx == -1 )
+        long txId = lastCommittedTx.get();
+        if ( txId == -1 )
         {
-            lastCommittedTx = getRecord( 3 );
+            synchronized ( this )
+            {
+                txId = getRecord( 3 );
+                lastCommittedTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
+            }
         }
-        return lastCommittedTx;
+        return txId;
     }
 
     public long getLatestConstraintIntroducingTx()
     {
-        if(latestConstraintIntroducingTx == -1)
+        long txId = latestConstraintIntroducingTx.get();
+        if( txId == -1)
         {
-            latestConstraintIntroducingTx = getRecord( LATEST_CONSTRAINT_TX_POSITION );
+            synchronized ( this )
+            {
+                txId = getRecord( LATEST_CONSTRAINT_TX_POSITION );
+                latestConstraintIntroducingTx.compareAndSet( -1, txId );
+            }
         }
-        return latestConstraintIntroducingTx;
+        return txId;
     }
 
     public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx )
     {
         setRecord( LATEST_CONSTRAINT_TX_POSITION, latestConstraintIntroducingTx );
-        this.latestConstraintIntroducingTx = latestConstraintIntroducingTx;
+        this.latestConstraintIntroducingTx.set( latestConstraintIntroducingTx );
     }
 
     public long incrementVersion()

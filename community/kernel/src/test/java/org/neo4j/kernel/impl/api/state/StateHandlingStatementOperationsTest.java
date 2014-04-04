@@ -81,7 +81,7 @@ public class StateHandlingStatementOperationsTest
         // ctx.getOrCreateLabelId("0");
         // ctx.getOrCreatePropertyKeyId("0");
 
-        verify( inner, times( 2 ) ).nodeHasLabel( state, 0, 0 );
+        verify( inner, times( 2 ) ).nodeHasLabel( 0, 0 );
         verifyNoMoreInteractions( inner );
     }
 

@@ -261,7 +261,7 @@ public class SchemaTransactionStateTest
                     asAnswer( Arrays.<Integer>asList( nodeLabels.labelIds ) ) );
             for ( int label : nodeLabels.labelIds )
             {
-                when( store.nodeHasLabel( state, nodeLabels.nodeId, label ) ).thenReturn( true );
+                when( store.nodeHasLabel( nodeLabels.nodeId, label ) ).thenReturn( true );
 
                 Collection<Long> nodes = allLabels.get( label );
                 if ( nodes == null )

@@ -47,7 +47,9 @@ import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
  */
 public interface StoreReadLayer
 {
-    boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException;
+    boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
+
+    boolean nodeExists( long nodeId );
 
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
@@ -143,6 +145,8 @@ public interface StoreReadLayer
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
 
     void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException;
+
+    long highestNodeIdInUse();
 
     public interface RelationshipVisitor
     {

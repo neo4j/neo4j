@@ -22,12 +22,14 @@ package org.neo4j.cypher.internal
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.kernel.impl.api.Kernel
 
 class CypherCompilerTest extends CypherFunSuite {
 
   test("isPeriodicCommit handles versioned queries") {
     val gds = mock[GraphDatabaseService]
-    val compiler = new CypherCompiler(gds, new Monitors)
+    val kernel = mock[Kernel]
+    val compiler = new CypherCompiler(gds, kernel, new Monitors)
     compiler.isPeriodicCommit("CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()") should equal(true)
   }
 }

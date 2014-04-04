@@ -24,18 +24,21 @@ import org.mockito.Mockito._
 import org.mockito.stubbing.Answer
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.mockito.invocation.InvocationOnMock
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 
 class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans for all nodes scans") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
+    implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan => 1
-      case _               => 100
+      case _               => Double.MaxValue
     })
+    implicit val planner = newPlanner(factory)
 
     produceLogicalPlan("MATCH (n) RETURN n") should equal(
       AllNodesScan("n")
@@ -43,13 +46,16 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for label scans without compile-time label id") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
+    implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 2
       case _: NodeByLabelScan => 1
+      case _                  => Double.MaxValue
     })
+    implicit val planner = newPlanner(factory)
 
-    implicit val planContext = newMockedPlanContext
     when(planContext.getOptLabelId("Awesome")).thenReturn(None)
 
     produceLogicalPlan("MATCH (n:Awesome) RETURN n") should equal(
@@ -58,13 +64,16 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for label scans with compile-time label id") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
+    implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 2
       case _: NodeByLabelScan => 1
+      case _                  => Double.MaxValue
     })
+    implicit val planner = newPlanner(factory)
 
-    implicit val planContext = newMockedPlanContext
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
 
     produceLogicalPlan("MATCH (n:Awesome) RETURN n") should equal(
@@ -73,14 +82,17 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for index scan when there is an index on the property") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
-      case _: AllNodesScan         => 1000
-      case _: NodeIndexSeek        => 1
-      case _: NodeIndexUniqueSeek  => 2
-      case _: NodeByLabelScan      => 100
-    })
-
     implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan        => 1000
+      case _: NodeIndexSeek       => 1
+      case _: NodeIndexUniqueSeek => 2
+      case _: NodeByLabelScan     => 100
+      case _                      => Double.MaxValue
+    })
+    implicit val planner = newPlanner(factory)
+
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(15))
     when(planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
@@ -94,14 +106,17 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for index seek when there is an index on the property") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
-      case _: AllNodesScan         => 1000
-      case _: NodeIndexSeek        => 2
-      case _: NodeIndexUniqueSeek  => 1
-      case _: NodeByLabelScan      => 100
-    })
-
     implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan        => 1000
+      case _: NodeIndexSeek       => 2
+      case _: NodeIndexUniqueSeek => 1
+      case _: NodeByLabelScan     => 100
+      case _                      => Double.MaxValue
+    })
+    implicit val planner = newPlanner(factory)
+
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(15))
     when(planContext.indexesGetForLabel(12)).thenReturn(Iterator())
@@ -115,13 +130,16 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for node by ID mixed with label scan when node by ID is cheaper") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
+    implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 1
       case _: NodeByLabelScan => 100
+      case _                  => Double.MaxValue
     })
+    implicit val planner = newPlanner(factory)
 
-    implicit val planContext = newMockedPlanContext
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
 
     produceLogicalPlan("MATCH (n:Awesome) WHERE id(n) = 42 RETURN n") should equal(
@@ -133,13 +151,16 @@ class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should build plans for node by ID mixed with label scan when label scan is cheaper") {
-    implicit val planner = newPlanner(newMetricsFactory.replaceCardinalityEstimator {
+    implicit val planContext = newMockedPlanContext
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan    => 1000
       case _: NodeByIdSeek    => 10
       case _: NodeByLabelScan => 1
+      case _                  => Double.MaxValue
     })
+    implicit val planner = newPlanner(factory)
 
-    implicit val planContext = newMockedPlanContext
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
 
     produceLogicalPlan("MATCH (n:Awesome) WHERE id(n) = 42 RETURN n") should equal(

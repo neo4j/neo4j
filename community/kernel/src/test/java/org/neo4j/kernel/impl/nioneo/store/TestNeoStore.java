@@ -97,6 +97,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -181,8 +182,9 @@ public class TestNeoStore
                 InternalAbstractGraphDatabase.Configuration.neo_store.name(), "neo",
                 InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log" ).getPath() ),
                 GraphDatabaseSettings.class );
+        EphemeralFileSystemAbstraction fs = this.fs.get();
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.DEV_NULL, null );
+                fs, StringLogger.DEV_NULL, null );
 
         NodeManager nodeManager = mock(NodeManager.class);
         @SuppressWarnings( "rawtypes" )
@@ -196,7 +198,7 @@ public class TestNeoStore
         when(locks.newClient()).thenReturn( lockClient );
         ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
-                        fs.get(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
+                        fs, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING ), new TransactionStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                                 dependencyResolverForConfig( config ) ), null, new SingleLoggingService( DEV_NULL ),
@@ -205,7 +207,7 @@ public class TestNeoStore
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), locks,
-                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR );
+                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs );
         ds.init();
         ds.start();
 

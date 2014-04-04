@@ -485,4 +485,9 @@ public class DiskLayer
     {
         return relationshipTokenHolder.getOrCreateId( relationshipTypeName );
     }
+
+    public long highestNodeIdInUse()
+    {
+        return nodeStore.getHighestPossibleIdInUse();
+    }
 }

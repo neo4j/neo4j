@@ -33,6 +33,7 @@ abstract class LogicalPlan extends Product {
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
 
+  def solvedPatterns: Seq[PatternRelationship]
   def solvedPredicates: Seq[Expression]
 
   def coveredIds: Set[IdName]
@@ -61,10 +62,33 @@ abstract class LogicalPlan extends Product {
   override def toString = "\n" + toTreeString
 }
 
+abstract class LogicalLeafPlan extends LogicalPlan {
+  final val lhs = None
+  final val rhs = None
+}
+
 final case class IdName(name: String) extends AnyVal
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName]) {
+final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength) {
   def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
 
   def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
 }
+
+object VarPatternLength {
+  def unlimited = VarPatternLength(1, None)
+  def fixed(length: Int) = VarPatternLength(length, Some(length))
+}
+
+trait PatternLength {
+  def isSimple: Boolean
+}
+
+case object SimplePatternLength extends PatternLength {
+  def isSimple = true
+}
+
+case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
+  def isSimple = false
+}
+

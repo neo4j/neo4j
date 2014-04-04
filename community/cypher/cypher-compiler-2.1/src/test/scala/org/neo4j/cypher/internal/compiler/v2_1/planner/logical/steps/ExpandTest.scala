@@ -33,67 +33,85 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aNode = IdName("a")
   val bNode = IdName("b")
   val rName = IdName("r")
-  val rRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty)
-  val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty)
+  val rRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("do not expand when no pattern relationships exist in querygraph") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph())
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph()
+    )
     val plan = PlanTable(Map(Set(aNode) -> AllNodesScan(aNode)))
 
     expand(plan) should equal(CandidateList())
   }
 
   test("finds single pattern relationship when start point is picked") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName))))
+      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName)( null ))))
   }
 
   test("finds expansion going both sides") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val planA = newMockedLogicalPlan("a")
     val planB = newMockedLogicalPlan("b")
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName),
-      Expand(left = planB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = aNode, relName = rName)
+      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName)( null ),
+      Expand(left = planB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = aNode, relName = rName)( null )
     )))
   }
 
   test("does not include plan that has the relationship name already covered") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
-    val aAndB = newMockedLogicalPlan("a", "b", "r")
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
+    val aAndB = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(rRel))
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
 
     expand(plan) should equal(CandidateList())
   }
 
   test("self referencing pattern is handled correctly") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rSelfRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rSelfRel)
+    )
     val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
       Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
-        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)
+        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)( null )
       ))))
   }
 
   test("looping pattern is handled as it should") {
-    implicit val context = newMockedLogicalPlanContext(queryGraph = createQueryGraph(rRel))
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = createQueryGraph(rRel)
+    )
     val aAndB = newMockedLogicalPlan("a", "b")
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
 
     expand(plan) should equal(CandidateList(Seq(
       Selection(Seq(Equals(Identifier(bNode.name)(pos), Identifier(bNode.name + "$$$")(pos))(pos)),
-        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(bNode.name + "$$$"), relName = rName)
+        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = IdName(bNode.name + "$$$"), relName = rName)( null )
       ),
       Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
-        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)
+        Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty, to = IdName(aNode.name + "$$$"), relName = rName)( null )
       ))))
   }
 

@@ -19,15 +19,14 @@
  */
 package org.neo4j.ext.monitorlogging;
 
-import java.io.InputStream;
-import java.util.Properties;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import java.io.InputStream;
+import java.util.Properties;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class MonitorLoggingExtensionFactory  extends KernelExtensionFactory<MonitorLoggingExtensionFactory.Dependencies> {

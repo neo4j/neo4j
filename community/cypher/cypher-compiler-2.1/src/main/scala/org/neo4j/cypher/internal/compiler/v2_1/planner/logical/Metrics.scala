@@ -22,32 +22,33 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import Metrics._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 
 object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type costModel = LogicalPlan => Int
+  type CostModel = LogicalPlan => Double
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for heuristics)
-  type cardinalityEstimator = LogicalPlan => Int
+  type CardinalityModel = LogicalPlan => Double
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using heuristics)
-  type selectivityEstimator = Expression => Double
+  type SelectivityModel = Expression => Double
 }
 
-case class Metrics(cost: costModel, cardinality: cardinalityEstimator, selectivity: selectivityEstimator)
+case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
 
 trait MetricsFactory {
-  def newSelectivityEstimator: selectivityEstimator
-  def newCardinalityEstimator(selectivity: selectivityEstimator): cardinalityEstimator
-  def newCostModel(cardinality: cardinalityEstimator): costModel
+  def newSelectivityEstimator(statistics: GraphStatistics): SelectivityModel
+  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel): CardinalityModel
+  def newCostModel(cardinality: CardinalityModel): CostModel
 
-  def newMetrics = {
-    val selectivity = newSelectivityEstimator
-    val cardinality = newCardinalityEstimator(selectivity)
+  def newMetrics(statistics: GraphStatistics) = {
+    val selectivity = newSelectivityEstimator(statistics)
+    val cardinality = newCardinalityEstimator(statistics, selectivity)
     val cost = newCostModel(cardinality)
     Metrics(cost, cardinality, selectivity)
   }

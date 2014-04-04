@@ -20,10 +20,12 @@
 package org.neo4j.kernel.api;
 
 
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
+
 /**
  * The main API through which access to the Neo4j kernel is made, both read
  * and write operations are supported as well as creating transactions.
- * 
+ *
  * Changes to the graph (i.e. write operations) are performed via a
  * {@link #newTransaction() transaction context} where changes done
  * inside the transaction are visible in read operations for {@link Statement statements}
@@ -39,4 +41,7 @@ public interface KernelAPI
 
     void registerTransactionHook( TransactionHook hook );
     void unregisterTransactionHook( TransactionHook hook );
+
+    /** Access live updated heuristics for the data the kernel manages. */
+    HeuristicsData heuristics();
 }
