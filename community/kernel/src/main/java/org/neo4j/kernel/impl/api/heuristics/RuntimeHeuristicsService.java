@@ -19,33 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.heuristics;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.heuristics.HeuristicsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import java.io.*;
+import java.util.concurrent.TimeUnit;
 
-public class RuntimeHeuristicsService extends LifecycleAdapter implements HeuristicsService, Runnable
+
+public class RuntimeHeuristicsService extends LifecycleAdapter implements HeuristicsService
 {
-    private final StoreReadLayer store;
     private final JobScheduler scheduler;
-    private final Random random = new Random();
-
     private final HeuristicsCollector collector;
 
     public static RuntimeHeuristicsService load( FileSystemAbstraction fs, File path, StoreReadLayer store, JobScheduler scheduler )
@@ -55,7 +42,7 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
             try
             {
                 ObjectInputStream in = new ObjectInputStream( fs.openAsInputStream( path ) );
-                return new RuntimeHeuristicsService((HeuristicsCollector)in.readObject(), store, scheduler);
+                return new RuntimeHeuristicsService((HeuristicsCollectedData)in.readObject(), store, scheduler);
             }
             catch ( Exception e )
             {
@@ -68,68 +55,31 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
 
     public RuntimeHeuristicsService( StoreReadLayer store, JobScheduler scheduler )
     {
-        this( new HeuristicsCollector(), store, scheduler );
+        this( new HeuristicsCollectedData(), store, scheduler );
     }
 
-    public RuntimeHeuristicsService( HeuristicsCollector collector, StoreReadLayer store, JobScheduler scheduler )
+    public RuntimeHeuristicsService( HeuristicsCollectedData collectedData, StoreReadLayer store, JobScheduler scheduler )
     {
-        this.store = store;
         this.scheduler = scheduler;
-        this.collector = collector;
+        this.collector = new HeuristicsCollector(store, collectedData);
     }
 
     @Override
     public void start() throws Throwable
     {
-        scheduler.scheduleRecurring(JobScheduler.Group.heuristics, this, 30, TimeUnit.SECONDS);
+        scheduler.scheduleRecurring(JobScheduler.Group.heuristics, collector, 30, TimeUnit.SECONDS);
     }
 
     @Override
     public void stop() throws Throwable
     {
-        scheduler.cancelRecurring( JobScheduler.Group.heuristics, this );
-    }
-
-    /** Perform one sampling run. */
-    @Override
-    public void run()
-    {
-        for ( int i = 0; i < 100; i++ ) {
-            long id = random.nextLong() % store.highestNodeIdInUse();
-            if ( store.nodeExists(id) ) {
-                try {
-                    List<Integer> relTypes = asList(store.nodeGetRelationshipTypes(id));
-                    List<Integer> labels = asList(store.nodeGetLabels(id));
-
-                    Map<Integer, Integer> incomingDegrees = new HashMap<>();
-                    Map<Integer, Integer> outgoingDegrees = new HashMap<>();
-
-                    for (Integer relType : relTypes) {
-                        incomingDegrees.put(relType, store.nodeGetDegree(id, Direction.INCOMING, relType));
-                        outgoingDegrees.put(relType, store.nodeGetDegree(id, Direction.OUTGOING, relType));
-                    }
-
-                    collector.addNodeObservation(labels, relTypes, incomingDegrees, outgoingDegrees);
-                } catch (EntityNotFoundException e) {
-                    // Node was deleted while we read it, or something. In any case, just exclude it from the run.
-                    collector.addSkippedNodeObservation();
-                }
-            }
-            else
-            {
-                collector.addSkippedNodeObservation();
-            }
-        }
-
-        collector.addMaxNodesObservation(store.highestNodeIdInUse());
-
-        collector.recalculate();
+        scheduler.cancelRecurring( JobScheduler.Group.heuristics, collector );
     }
 
     @Override
     public HeuristicsData heuristics()
     {
-        return collector;
+        return collector.collectedData();
     }
 
     public void save( FileSystemAbstraction fs, File path ) throws IOException
@@ -138,33 +88,9 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
         try ( OutputStream out = fs.openAsOutputStream( path, false ) )
         {
             ObjectOutputStream objStream = new ObjectOutputStream( out );
-            objStream.writeObject( this.collector );
+            objStream.writeObject( this.collector.collectedData() );
             objStream.close();
             out.flush();
         }
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        RuntimeHeuristicsService that = (RuntimeHeuristicsService) o;
-        return collector.equals( that.collector );
-
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return collector.hashCode();
     }
 }
