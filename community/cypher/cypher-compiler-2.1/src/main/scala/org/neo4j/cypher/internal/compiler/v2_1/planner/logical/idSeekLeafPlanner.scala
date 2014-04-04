@@ -52,11 +52,11 @@ case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        UndirectedRelationshipByIdSeek(name, idValues, left, right)(Seq(predicate))
+        UndirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
       case Direction.INCOMING =>
-        DirectedRelationshipByIdSeek(name, idValues, right, left)(Seq(predicate))
+        DirectedRelationshipByIdSeek(name, idValues, right, left)(relationship, Seq(predicate))
       case Direction.OUTGOING =>
-        DirectedRelationshipByIdSeek(name, idValues, left, right)(Seq(predicate))
+        DirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }

@@ -66,7 +66,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
+    val ab = newMockedLogicalPlanWithPatterns(Set(IdName("a"), IdName("b")))
     val b = newMockedLogicalPlan("b")
 
     val factory = newMockedMetricsFactory
@@ -80,7 +80,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
-    val ab = newMockedLogicalPlan(Set(IdName("a"), IdName("b")))
+    val ab = newMockedLogicalPlanWithPatterns(Set(IdName("a"), IdName("b")))
     val c = newMockedLogicalPlan("c")
 
     val factory = newMockedMetricsFactory

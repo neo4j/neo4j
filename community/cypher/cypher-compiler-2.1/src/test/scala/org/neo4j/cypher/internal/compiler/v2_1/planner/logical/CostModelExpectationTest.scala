@@ -23,13 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 import org.neo4j.graphdb.Direction
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
@@ -121,14 +114,14 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           AllNodesScan("b")
         ),
         "b", Direction.OUTGOING, Seq.empty, "c", "r1"
-      )
+      )( null )
     )
 
     val cost2 = cost(
       Expand(
         AllNodesScan("a"),
         "a", Direction.OUTGOING, Seq.empty, "d", "r2"
-      )
+      )( null )
     )
 
     cost1 should be < cost2
@@ -140,14 +133,16 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     when(statistics.degreeByLabelTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
     val cost = newMetricsFactory.newMetrics(statistics).cost
 
+    val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")(Some(RelTypeId(12))) _)
+
     val cost1 = cost(
       Expand(
         Selection(
           Seq(Equals(Property(Identifier("a") _, PropertyKeyName("name")() _) _, StringLiteral("Andres") _) _),
           AllNodesScan("a")
         ),
-        "a", Direction.BOTH, Seq(RelTypeName("x")(Some(RelTypeId(12)))_), "start", "rel"
-      )
+        "a", Direction.BOTH, relTypeX, "start", "rel"
+      )( null )
     )
 
     val cost2 = cost(
@@ -155,8 +150,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
         Expand(
           AllNodesScan("start"),
-          "start", Direction.BOTH, Seq(RelTypeName("x")(Some(RelTypeId(12))) _), "a", "rel"
-        )
+          "start", Direction.BOTH, relTypeX, "a", "rel"
+        )( null )
       )
     )
 

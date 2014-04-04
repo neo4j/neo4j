@@ -26,4 +26,5 @@ case class CartesianProduct(left: LogicalPlan, right: LogicalPlan) extends Logic
 
   val coveredIds = left.coveredIds ++ right.coveredIds
   val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
+  val solvedPatterns = left.solvedPatterns ++ right.solvedPatterns
 }

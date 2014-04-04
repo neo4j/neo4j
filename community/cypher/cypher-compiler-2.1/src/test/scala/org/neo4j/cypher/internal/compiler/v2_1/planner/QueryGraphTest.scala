@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
 import org.neo4j.graphdb.Direction
 
 class QueryGraphTest extends CypherFunSuite {
@@ -32,7 +32,7 @@ class QueryGraphTest extends CypherFunSuite {
   }
 
   test("finds single pattern relationship") {
-    val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty)
+    val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(Map.empty, Selections(), Set.empty, Set(r))
 
     qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
@@ -41,8 +41,8 @@ class QueryGraphTest extends CypherFunSuite {
   }
 
   test("finds multiple pattern relationship") {
-    val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty)
-    val r2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty)
+    val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty, SimplePatternLength)
+    val r2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(Map.empty, Selections(), Set.empty, Set(r, r2))
 
     qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty

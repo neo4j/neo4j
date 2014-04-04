@@ -686,7 +686,7 @@ RETURN x0.name""")
     result shouldBe 'isEmpty
   }
 
-  test("should solve selfreferencing pattern2") {
+  test("should solve self referencing pattern2") {
     val a = createNode()
     val b = createNode()
 
@@ -1080,4 +1080,14 @@ RETURN x0.name""")
       Map("a.name" -> "a")
     ))
   }
+
+  test("should match fixed-size var length pattern") {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b)
+
+    val result = execute("match (a)-[r*1..1]->(b) return r")
+    result.toList should equal (List(Map("r" -> List(r))))
+  }
+
 }

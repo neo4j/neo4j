@@ -21,17 +21,23 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.{InternalException, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, SingleRow}
 
 object extractBestPlan {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): LogicalPlan = {
     if (planTable.size > 1)
-      throw new SyntaxException("Expected the final plan table to have no more than 1 plan")
+      throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${planTable.size})")
+
     val bestPlan = planTable.plans.headOption.getOrElse(SingleRow())
     if (!context.queryGraph.selections.coveredBy(bestPlan.solvedPredicates))
       throw new CantHandleQueryException
+
+    val remainingPatterns = context.queryGraph.patternRelationships -- bestPlan.solvedPatterns.toSet
+    if (remainingPatterns.nonEmpty)
+      throw new CantHandleQueryException
+
     bestPlan
   }
 }
