@@ -86,7 +86,7 @@ public class Neo4jJobSchedulerTest
         scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
 
         scheduler.start();
-        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, 1, MILLISECONDS );
+        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, 2, MILLISECONDS );
 
         // When
         scheduler.cancelRecurring( indexPopulation,  countInvocationsJob);
