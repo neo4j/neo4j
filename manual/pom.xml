@@ -24,7 +24,7 @@
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>16</doctools.version>
+    <doctools.version>18</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
     <maven.site.skip>true</maven.site.skip>
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
@@ -328,6 +328,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
+        <version>1.3-SNAPSHOT</version>
         <executions>
           <execution>
             <id>parse-cypherdoc</id>
@@ -358,6 +359,26 @@
               </arguments>
             </configuration>
           </execution>
+          <execution>
+            <id>execute-w3m-to-generate-upgrade-text-file</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <outputFile>${project.build.directory}/upgrade/UPGRADE.txt</outputFile>
+              <executable>w3m</executable>
+              <arguments>
+                <argument>-cols</argument>
+                <argument>80</argument>
+                <argument>-dump</argument>
+                <argument>-T</argument>
+                <argument>text/html</argument>
+                <argument>-no-graph</argument>
+                <argument>${project.build.directory}/docbkx/html/upgrade/upgrades.html</argument>
+              </arguments>
+            </configuration>
+          </execution>
         </executions>
         <dependencies>
           <dependency>
@@ -368,19 +389,84 @@
         </dependencies>
       </plugin>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>xml-maven-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>validate-docbook</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>validate</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <validationSets>
+            <validationSet>
+              <dir>${project.build.directory}</dir>
+              <includes>
+                <include>*.xml</include>
+                <include>upgrade/*.xml</include>
+              </includes>
+            </validationSet>
+          </validationSets>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>com.agilejava.docbkx</groupId>
         <artifactId>docbkx-maven-plugin</artifactId>
         <version>2.0.15</version>
         <executions>
           <execution>
+            <id>generate-upgrade-html</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>generate-html</goal>
+            </goals>
+            <configuration>
+              <includes>upgrade/upgrades.xml</includes>
+              <calloutGraphics>false</calloutGraphics>
+              <navigGraphics>false</navigGraphics>
+              <admonTextlabel>true</admonTextlabel>
+              <admonGraphics>false</admonGraphics>
+              <htmlCustomization>${docs.tools}/bin/asciidoc/docbook-xsl/text.xsl</htmlCustomization>
+              <preProcess>
+                <replace file="${project.build.directory}/upgrade/upgrades.xml" encoding="UTF-8" token="&amp;#8594;" value="--&gt;" />
+              </preProcess>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-manpages</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>generate-manpages</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.build.directory}/manpages</sourceDirectory>
+            <postProcess>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j.1" destfile="${project.build.directory}/manpages/neo4j.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-shell.1" destfile="${project.build.directory}/manpages/neo4j-shell.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-installer.1" destfile="${project.build.directory}/manpages/neo4j-installer.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-backup.1" destfile="${project.build.directory}/manpages/neo4j-backup.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-arbiter.1" destfile="${project.build.directory}/manpages/neo4j-arbiter.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator.1" destfile="${project.build.directory}/manpages/neo4j-coordinator.1.gz"/>
+              <gzip src="${project.build.directory}/docbkx/manpages/man1/neo4j-coordinator-shell.1" destfile="${project.build.directory}/manpages/neo4j-coordinator-shell.1.gz"/>
+            </postProcess>
+            </configuration>
+          </execution>
+          <execution>
             <id>generate-webhelp-html</id>
-            <phase>prepare-package</phase>
+            <phase>process-classes</phase>
             <goals>
               <goal>generate-webhelp</goal>
             </goals>
             <configuration>
               <includes>neo4j-manual-html.xml</includes>
+              <webhelpCustomization>conf/webhelp.xsl</webhelpCustomization>
               <admonGraphicsPath>images/icons/admon/</admonGraphicsPath>
+              <generateLegalnoticeLink>true</generateLegalnoticeLink>
+              <useIdAsFilename>true</useIdAsFilename>
               <generateToc>
                 article toc,title
                 book toc,title
@@ -399,6 +485,13 @@
                 section toc
                 set toc,title
               </generateToc>
+              <preProcess>
+                <move todir="${project.build.directory}" overwrite="true">
+                  <fileset dir="${project.build.directory}/manpages">
+                    <include name="*.xml"/>
+                  </fileset>
+                </move>
+              </preProcess>
               <postProcess>
                 <copy todir="${project.build.directory}/docbkx/webhelp/images" overwrite="true">
                   <fileset dir="${docs.tools}/main/resources/images"/>
@@ -427,6 +520,8 @@
             </goals>
             <configuration>
               <includes>neo4j-manual-shortinfo.xml</includes>
+              <foCustomization>conf/fo.xsl</foCustomization>
+              <externalFOPConfiguration>conf/fop.xml</externalFOPConfiguration>
               <generateToc>
                 book toc
                 part toc
@@ -436,9 +531,6 @@
         </executions>
         <configuration>
           <xincludeSupported>true</xincludeSupported>
-          <webhelpCustomization>conf/webhelp.xsl</webhelpCustomization>
-          <foCustomization>conf/fo.xsl</foCustomization>
-          <externalFOPConfiguration>conf/fop.xml</externalFOPConfiguration>
           <glossarySort>true</glossarySort>
           <tocMaxDepth>2</tocMaxDepth>
           <generateSectionTocLevel>1</generateSectionTocLevel>
@@ -446,8 +538,6 @@
           <admonGraphicsExtension>.svg</admonGraphicsExtension>
           <htmlExt>.html</htmlExt>
           <chunkerOutputOmitXmlDeclaration>yes</chunkerOutputOmitXmlDeclaration>
-          <generateLegalnoticeLink>true</generateLegalnoticeLink>
-          <useIdAsFilename>true</useIdAsFilename>
           <chunkSectionDepth>1</chunkSectionDepth>
           <chapterAutolabel>1</chapterAutolabel>
           <sectionAutolabel>1</sectionAutolabel>

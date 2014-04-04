@@ -29,7 +29,7 @@ Install libraries
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install graphviz maven libxml2-utils
+  sudo apt-get install graphviz maven w3m
 
 
 
