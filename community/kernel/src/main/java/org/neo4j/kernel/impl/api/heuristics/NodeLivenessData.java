@@ -43,14 +43,6 @@ public final class NodeLivenessData implements Serializable {
         this.deadEntities = new RollingAverage( parameters );
     }
 
-
-    private void reset()
-    {
-        /* This avoids division by zero and ensures a result of 1.0 for an empty database, cf. liveEntitiesRatio() */
-        liveEntitiesSeenInRound = 1;
-        deadEntitiesSeenInRound = 0;
-    }
-
     /**
      * Record a sampled node as being alive (i.e. part of the database state)
      */
@@ -75,8 +67,9 @@ public final class NodeLivenessData implements Serializable {
     {
         liveEntities.record( liveEntitiesSeenInRound );
         deadEntities.record( deadEntitiesSeenInRound );
-        reset();
 
+        liveEntitiesSeenInRound = 0;
+        deadEntitiesSeenInRound = 0;
     }
 
     /**
@@ -85,8 +78,8 @@ public final class NodeLivenessData implements Serializable {
     public double liveEntitiesRatio()
     {
         double alive = liveEntities.average();
-        double dead = deadEntities.average();
-        return alive / (dead + alive);
+        double total = deadEntities.average() + alive;
+        return total <= 0 ? 1.0 : alive / total;
     }
 
     public long highestNodeId()
