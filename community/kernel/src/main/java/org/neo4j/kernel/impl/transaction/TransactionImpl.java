@@ -568,6 +568,7 @@ class TransactionImpl implements Transaction
         }
         status = Status.STATUS_COMMITTING;
         Iterator<ResourceElement> itr = resourceList.iterator();
+        RuntimeException benignException = null;
         while ( itr.hasNext() )
         {
             ResourceElement re = itr.next();
@@ -579,6 +580,10 @@ class TransactionImpl implements Transaction
                 } catch(XAException e)
                 {
                     throw e;
+                }
+                catch ( CommitNotificationFailedException e )
+                {
+                    benignException = e;
                 } catch(Throwable e)
                 {
                     throw Exceptions.withCause( new XAException(XAException.XAER_RMERR), e );
@@ -586,6 +591,11 @@ class TransactionImpl implements Transaction
             }
         }
         status = Status.STATUS_COMMITTED;
+
+        if ( benignException != null )
+        {
+            throw benignException;
+        }
     }
 
     void doRollback() throws XAException

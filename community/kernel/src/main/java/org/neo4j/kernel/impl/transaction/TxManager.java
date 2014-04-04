@@ -375,6 +375,15 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 {
                     tx.doCommit();
                 }
+                catch ( CommitNotificationFailedException e )
+                {
+                    // Let this pass through. Catching this exception here will still have the exception
+                    // propagate out to the user (wrapped in a TransactionFailureException), but will not
+                    // set this transaction manager in "not OK" state.
+                    // At the time of adding this, this approach was chosen over throwing an XAException
+                    // with a specific error code since no error code seemed suitable.
+                    log.warn( "Commit notification failed: " + e );
+                }
                 catch ( XAException e )
                 {
                     // Behold, the error handling decision maker of great power.
@@ -433,15 +442,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
                 catch ( Throwable e )
                 {
                     setTmNotOk( e );
-                    String commitError;
-                    if ( commitFailureCause != null )
-                    {
-                        commitError = "error in commit: " + commitFailureCause;
-                    }
-                    else
-                    {
-                        commitError = "error code in commit: " + xaErrorCode;
-                    }
+                    String commitError = commitFailureCause != null ?
+                            "error in commit: " + commitFailureCause :
+                            "error code in commit: " + xaErrorCode;
                     String rollbackErrorCode = "Unknown error code";
                     if ( e instanceof XAException )
                     {

@@ -79,8 +79,8 @@ public class TestJtaCompliance extends AbstractNeo4jTestCase
         map2.put( "store_dir", "target/var" );
         try
         {
-            xaDsMgr.registerDataSource( new DummyXaDataSource( "fakeRes1", UTF8.encode( "0xDDDDDE" ), new FakeXAResource( "XAResource1" ) ));
-            xaDsMgr.registerDataSource( new DummyXaDataSource( "fakeRes2", UTF8.encode( "0xDDDDDF" ), new FakeXAResource( "XAResource2" ) ));
+            xaDsMgr.registerDataSource( new OtherDummyXaDataSource( "fakeRes1", UTF8.encode( "0xDDDDDE" ), new FakeXAResource( "XAResource1" ) ));
+            xaDsMgr.registerDataSource( new OtherDummyXaDataSource( "fakeRes2", UTF8.encode( "0xDDDDDF" ), new FakeXAResource( "XAResource2" ) ));
         }
         catch ( Exception e )
         {

@@ -53,8 +53,8 @@ public class TestInjectMultipleStartEntries
         // -- a database with one additional data source and some initial data
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
-        XaDataSourceManager xaDs = db.getXaDataSourceManager();
-        XaDataSource additionalDs = new DummyXaDataSource( "dummy", "dummy".getBytes(), new FakeXAResource( "dummy" ) );
+        XaDataSourceManager xaDs = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+        XaDataSource additionalDs = new OtherDummyXaDataSource( "dummy", "dummy".getBytes(), new FakeXAResource( "dummy" ) );
         xaDs.registerDataSource( additionalDs );
         Node node = createNodeWithOneRelationshipToIt( db );
 
@@ -69,14 +69,14 @@ public class TestInjectMultipleStartEntries
         filterNeostoreLogicalLog( fs.get(), new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v0" ),
                 new VerificationLogHook() );
     }
-    
+
     private final String storeDir = "dir";
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    
+
     private static class VerificationLogHook extends LogHookAdapter<LogEntry>
     {
         private final Set<Xid> startXids = new HashSet<Xid>();
-        
+
         @Override
         public boolean accept( LogEntry item )
         {
