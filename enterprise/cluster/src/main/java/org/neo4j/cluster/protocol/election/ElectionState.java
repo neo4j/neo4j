@@ -262,7 +262,7 @@ public enum ElectionState
                         {
                             ElectionMessage.VotedData data = message.getPayload();
                             context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials() );
-                            
+
                             String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
                             logger.debug( voter + " voted " + data );
 
@@ -281,7 +281,7 @@ public enum ElectionState
 
                                 if ( winner != null )
                                 {
-                                    logger.debug( "Elected winner as " + data.getRole() );
+                                    logger.debug( "Elected " + winner + " as " + data.getRole() );
 
                                     // Broadcast this
                                     ClusterMessage.ConfigurationChangeState configurationChangeState = new
