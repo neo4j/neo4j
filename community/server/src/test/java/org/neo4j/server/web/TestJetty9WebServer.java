@@ -26,9 +26,12 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
+import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -36,7 +39,10 @@ import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Mute.muteAll;
 
 @Path("/")
@@ -57,6 +63,7 @@ public class TestJetty9WebServer {
 		// Once that is done, we should instantiate WebServer
 		// here directly.
         AbstractGraphDatabase db = mock(AbstractGraphDatabase.class);
+        when( db.getDependencyResolver() ).thenReturn( noLoggingDependencyResolver() );
 		WrappingNeoServer neoServer = new WrappingNeoServer(db);
 		WebServer server = neoServer.getWebServer();
 
@@ -68,25 +75,43 @@ public class TestJetty9WebServer {
 			server.start();
 			server.stop();
 			server.start();
-		} finally
+		}
+        finally
 		{
 			try
 			{
 				server.stop();
-			} catch(Throwable t)
+			}
+            catch( Throwable t )
 			{
 
 			}
 		}
-
 	}
+
+    private DependencyResolver noLoggingDependencyResolver()
+    {
+        return new DependencyResolver.Adapter()
+        {
+            @Override
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
+                    throws IllegalArgumentException
+            {
+                if ( Logging.class.isAssignableFrom( type ) )
+                {
+                    return type.cast( DevNullLoggingService.DEV_NULL );
+                }
+                return null;
+            }
+        };
+    }
 
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
-        final Guard dummyGuard = new Guard( StringLogger.DEV_NULL );
         @SuppressWarnings("deprecation")
-        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase()
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
+                new DefaultGraphDatabaseDependencies())
         {
         };
 
@@ -107,7 +132,7 @@ public class TestJetty9WebServer {
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new Jetty9WebServer().stop();
+        new Jetty9WebServer( DevNullLoggingService.DEV_NULL ).stop();
     }
 
     @Rule

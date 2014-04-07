@@ -24,6 +24,7 @@ import java.io.File;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -35,6 +36,8 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findDataba
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+
+import static org.mockito.Mockito.mock;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
@@ -50,15 +53,10 @@ public class TestUpgradeOneDotFourToFiveIT
     public void cannotRecoverNoncleanShutdownDbWithOlderLogFormat() throws Exception
     {
         copyRecursively( findDatabaseDirectory( getClass(), "non-clean-1.4.2-db" ), PATH );
-//        Map<Object, Object> config = new HashMap<Object, Object>();
-//        config.put( "store_dir", PATH.getAbsolutePath() );
-//        config.put( StringLogger.class, StringLogger.DEV_NULL );
-//        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
-//        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
-        
+        KernelHealth kernelHealth = mock( KernelHealth.class );
         XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null,
                 defaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
-                TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), 25 * 1024 * 1024, ALLOW_ALL );
+                TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), kernelHealth, 25 * 1024 * 1024, ALLOW_ALL );
         log.open();
         fail( "Shouldn't be able to start" );
     }

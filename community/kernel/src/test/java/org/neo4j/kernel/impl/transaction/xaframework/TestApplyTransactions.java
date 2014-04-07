@@ -33,6 +33,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -43,6 +44,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
+import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
+
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 

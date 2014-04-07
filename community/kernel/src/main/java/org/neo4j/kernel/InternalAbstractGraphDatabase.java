@@ -20,10 +20,10 @@
 package org.neo4j.kernel;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -128,6 +128,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockManagerImpl;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -160,7 +161,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
+import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -174,7 +175,6 @@ import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PRO
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -186,6 +186,24 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+    public interface Dependencies
+    {
+        /**
+         * Allowed to be null. Null means that no external {@link Logging} was created, let the
+         * database create its own logging.
+         * @return
+         */
+        Logging logging();
+
+        Iterable<Class<?>> settingsClasses();
+
+        Iterable<KernelExtensionFactory<?>> kernelExtensions();
+
+        Iterable<CacheProvider> cacheProviders();
+
+        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders();
+    }
+
     public static class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
@@ -223,6 +241,7 @@ public abstract class InternalAbstractGraphDatabase
     protected IndexManagerImpl indexManager;
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
+    protected KernelHealth kernelHealth;
     protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
     protected XaDataSourceManager xaDataSourceManager;
@@ -260,11 +279,7 @@ public abstract class InternalAbstractGraphDatabase
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
 
-    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
-                                             Iterable<Class<?>> settingsClasses,
-                                             Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                             Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
         this.params = params;
 
@@ -274,12 +289,18 @@ public abstract class InternalAbstractGraphDatabase
         params.put( Configuration.store_dir.name(), storeDir );
 
         // SPI - provided services
-        this.cacheProviders = mapCacheProviders( cacheProviders );
-        config = new Config( params, getSettingsClasses( settingsClasses, kernelExtensions, cacheProviders ) );
+        this.cacheProviders = mapCacheProviders( dependencies.cacheProviders() );
+        config = new Config( params, getSettingsClasses(
+                dependencies.settingsClasses(), dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
+        this.logging = dependencies.logging();
 
-        this.kernelExtensions = new KernelExtensions( kernelExtensions, config, getDependencyResolver(),
+        this.kernelExtensions = new KernelExtensions(
+                dependencies.kernelExtensions(),
+                config,
+                getDependencyResolver(),
                 UnsatisfiedDependencyStrategies.fail() );
-        this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
+        this.transactionInterceptorProviders = new TransactionInterceptorProviders(
+                dependencies.transactionInterceptorProviders(),
                 dependencyResolver );
 
         this.storeDir = config.get( Configuration.store_dir );
@@ -397,8 +418,12 @@ public abstract class InternalAbstractGraphDatabase
 
         fileSystem = createFileSystemAbstraction();
 
-        // Create logger
-        this.logging = createLogging();
+        // If no logging was passed in from the outside then create logging and register
+        // with this life
+        if ( this.logging == null )
+        {
+            this.logging = createLogging();
+        }
 
         // Component monitoring
         this.monitors = createMonitors();
@@ -459,6 +484,8 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
+        kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
+
         xaDataSourceManager = life.add( createXaDataSourceManager() );
 
         txHook = createTxHook();
@@ -481,9 +508,9 @@ public abstract class InternalAbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
+                txManager = new TxManager( this.storeDir, xaDataSourceManager,
                         logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory,
-                        xidGlobalIdFactory, monitors );
+                        xidGlobalIdFactory, kernelHealth, monitors );
             }
             else
             {
@@ -557,7 +584,7 @@ public abstract class InternalAbstractGraphDatabase
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
                 monitors, logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
-                fileSystem, keepLogicalLogsConfig ) );
+                fileSystem, keepLogicalLogsConfig ), kernelHealth );
 
         createNeoDataSource();
 
@@ -908,7 +935,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        return life.add( new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC ) );
+        return life.add( DefaultLogging.createDefaultLogging( config ) );
     }
 
     protected void createNeoDataSource()
@@ -1131,8 +1158,8 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
-                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable
-            <CacheProvider> cacheProviders )
+                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                                                   Iterable<CacheProvider> cacheProviders )
     {
         List<Class<?>> totalSettingsClasses = new ArrayList<>();
 

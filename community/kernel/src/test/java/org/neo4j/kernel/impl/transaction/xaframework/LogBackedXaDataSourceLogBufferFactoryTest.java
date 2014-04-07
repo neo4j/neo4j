@@ -29,12 +29,14 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -52,7 +54,8 @@ public class LogBackedXaDataSourceLogBufferFactoryTest
         LogBackedXaDataSource ds = new LogBackedXaDataSource("irrelephant".getBytes(), "irrelephant")
         {
             private XaLogicalLog logicalLog = new XaLogicalLog( new File( testDir.directory(), "my.log" ), null, null,
-                    null, new DefaultFileSystemAbstraction(), new Monitors(), new TestLogging(), null, null, 100, null );
+                    null, new DefaultFileSystemAbstraction(), new Monitors(), new TestLogging(), null, null,
+                    mock( KernelHealth.class ), 100, null );
 
             @Override
             public XaConnection getXaConnection()

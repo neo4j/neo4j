@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.modules;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.statistic.StatisticFilter;
 import org.neo4j.server.web.WebServer;
-import org.apache.commons.configuration.Configuration;
 
 import static org.neo4j.server.configuration.Configurator.WEBSERVER_ENABLE_STATISTICS_COLLECTION;
 
@@ -41,7 +41,7 @@ public class StatisticModule implements ServerModule
     }
 
     @Override
-	public void start(StringLogger logger)
+	public void start()
     {
         if (isStatisticsEnabled())
         {

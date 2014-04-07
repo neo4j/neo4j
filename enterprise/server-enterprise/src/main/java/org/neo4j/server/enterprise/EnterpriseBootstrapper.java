@@ -25,8 +25,8 @@ import org.neo4j.server.advanced.AdvancedBootstrapper;
 public class EnterpriseBootstrapper extends AdvancedBootstrapper
 {
     @Override
-	protected NeoServer createNeoServer() 
+	protected NeoServer createNeoServer()
 	{
-		return new EnterpriseNeoServer( createConfigurator() );
+		return new EnterpriseNeoServer( configurator, logging );
 	}
 }

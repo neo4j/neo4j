@@ -25,51 +25,56 @@ import java.io.PrintStream;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.Logger;
 
-public class PerformRecoveryIfNecessary implements PreflightTask {
-	
-	private final Logger logger = Logger.getLogger( PerformRecoveryIfNecessary.class );
-	private String failureMessage = "Unable to recover database";
+public class PerformRecoveryIfNecessary implements PreflightTask
+{
+    private final String failureMessage = "Unable to recover database";
+    private final Configuration config;
+    private final PrintStream out;
+    private final Map<String, String> dbConfig;
+    private final ConsoleLogger log;
 
-	private Configuration config;
-	private PrintStream out;
-	private Map<String, String> dbConfig;
+    public PerformRecoveryIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out,
+            Logging logging )
+    {
+        this.config = serverConfig;
+        this.dbConfig = dbConfig;
+        this.out = out;
+        this.log = logging.getConsoleLog( getClass() );
+    }
 
-	public PerformRecoveryIfNecessary(Configuration serverConfig, Map<String,String> dbConfig, PrintStream out)
-	{
-		this.config = serverConfig;
-		this.dbConfig = dbConfig;
-		this.out = out;
-	}
-	
-	@Override
-	public boolean run() {
-		try {
-			File dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) );
-			if(dbLocation.exists())
-			{
-				StoreRecoverer recoverer = new StoreRecoverer();
-				
-				if(recoverer.recoveryNeededAt(dbLocation, dbConfig))
-				{
-					out.println("Detected incorrectly shut down database, performing recovery..");
-					recoverer.recover(dbLocation, dbConfig);
-				}
-			}
-			
-			return true;
-		} catch(IOException e) {
-			logger.error("Recovery startup task failed.", e);
-			return false;
-		}
-	}
+    @Override
+    public boolean run()
+    {
+        try
+        {
+            File dbLocation = new File( config.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) );
+            if ( dbLocation.exists() )
+            {
+                StoreRecoverer recoverer = new StoreRecoverer();
+                if ( recoverer.recoveryNeededAt( dbLocation, dbConfig ) )
+                {
+                    out.println( "Detected incorrectly shut down database, performing recovery.." );
+                    recoverer.recover( dbLocation, dbConfig );
+                }
+            }
+            return true;
+        }
+        catch ( IOException e )
+        {
+            log.error( "Recovery startup task failed.", e );
+            return false;
+        }
+    }
 
-	@Override
-	public String getFailureMessage() {
-		return failureMessage;
-	}
-
+    @Override
+    public String getFailureMessage()
+    {
+        return failureMessage;
+    }
 }

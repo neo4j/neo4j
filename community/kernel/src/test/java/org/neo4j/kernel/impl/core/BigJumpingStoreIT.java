@@ -33,15 +33,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -61,10 +56,7 @@ public class BigJumpingStoreIT
     {
         protected TestDatabase( String storeDir, Map<String, String> params )
         {
-            super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
-                    , Iterables.<KernelExtensionFactory<?>,
-                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+            super( storeDir, params, new DefaultGraphDatabaseDependencies() );
             run();
         }
 

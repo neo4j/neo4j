@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -115,6 +117,7 @@ public class XaLogicalLogTest
                                                       new SingleLoggingService( StringLogger.wrap( output.writer() ) ),
                                                       LogPruneStrategies.NO_PRUNING,
                                                       mock( TransactionStateFactory.class ),
+                                                      mock( KernelHealth.class ),
                                                       25 * 1024 * 1024,
                                                       ALLOW_ALL );
         xaLogicalLog.open();
@@ -133,7 +136,7 @@ public class XaLogicalLogTest
         // then
         assertThat( "should not read excessively from the logical log file channel", reads, lessThan( 10 ) );
     }
-    
+
     @Test
     public void shouldRespectCustomLogRotationThreshold() throws Exception
     {
@@ -148,11 +151,13 @@ public class XaLogicalLogTest
                 new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
-                mock( TransactionStateFactory.class ), maxSize,
+                mock( TransactionStateFactory.class ),
+                mock( KernelHealth.class ),
+                maxSize,
                 ALLOW_ALL );
         log.open();
         long initialLogVersion = log.getHighestLogVersion();
-        
+
         // WHEN
         for ( int i = 0; i < 10; i++ )
         {
@@ -162,7 +167,7 @@ public class XaLogicalLogTest
             log.commitOnePhase( identifier, i+1, forced );
             log.done( identifier );
         }
-        
+
         // THEN
         assertEquals( initialLogVersion+1, log.getHighestLogVersion() );
     }
@@ -194,7 +199,9 @@ public class XaLogicalLogTest
                 new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
-                mock( TransactionStateFactory.class ), 10,
+                mock( TransactionStateFactory.class ),
+                mock( KernelHealth.class ),
+                10,
                 ALLOW_ALL );
         log.open();
         log.rotate();
@@ -212,7 +219,7 @@ public class XaLogicalLogTest
         {
             this.data = new byte[payloadSize-2/*2 bytes for describing which size will follow*/];
         }
-        
+
         @Override
         public void execute()
         {   // There's nothing to execute
@@ -225,7 +232,7 @@ public class XaLogicalLogTest
             buffer.put( data );
         }
     }
-    
+
     private static class FixedSizeXaCommandFactory extends XaCommandFactory
     {
         @Override
@@ -260,11 +267,11 @@ public class XaLogicalLogTest
             }
         }
     }
-    
+
     private static class VersionRespectingXaTransactionFactory extends XaTransactionFactory
     {
         private long currentVersion = 0;
-        
+
         @Override
         public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state)
         {
@@ -300,7 +307,7 @@ public class XaLogicalLogTest
             return 0;
         }
     }
-    
+
     public final @Rule EphemeralFileSystemRule ephemeralFs = new EphemeralFileSystemRule();
     public final Xid xid = new XidImpl( "global".getBytes(), "resource".getBytes() );
 }

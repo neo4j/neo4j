@@ -24,12 +24,13 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.guard.GuardingRequestFilter;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CypherService;
@@ -45,39 +46,40 @@ import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUT
 
 public class RESTApiModule implements ServerModule
 {
-    private static final Logger log = Logger.getLogger( RESTApiModule.class );
-
     private PluginManager plugins;
     private final Configuration config;
     private final WebServer webServer;
     private final Database database;
     private GuardingRequestFilter requestTimeLimitFilter;
+    private final ConsoleLogger log;
+    private final Logging logging;
 
-    public RESTApiModule(WebServer webServer, Database database, Configuration config)
+    public RESTApiModule( WebServer webServer, Database database, Configuration config, Logging logging )
     {
         this.webServer = webServer;
         this.config = config;
         this.database = database;
+        this.logging = logging;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
-    public void start( StringLogger logger )
+    public void start()
     {
         try
         {
             URI restApiUri = restApiUri( );
 
             webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
-            loadPlugins( logger );
+            loadPlugins();
 
             setupRequestTimeLimit();
 
-            log.info( "Mounted REST API at [%s]", restApiUri.toString() );
-            if ( logger != null ) logger.logMessage( "Mounted REST API at: " + restApiUri.toString() );
+            log.log( "Mounted REST API at [%s]", restApiUri.toString() );
         }
         catch ( URISyntaxException e )
         {
-            log.warn( e );
+            log.warn( "Unable to mount REST API", e );
         }
     }
 
@@ -100,12 +102,12 @@ public class RESTApiModule implements ServerModule
         {
             webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
 
-            tearDownRequestTimeLimit();
-            unloadPlugins();
+        tearDownRequestTimeLimit();
+        unloadPlugins();
         }
         catch ( URISyntaxException e )
         {
-            log.warn( e );
+          log.warn( "Unable to unmount REST API", e );
         }
     }
 
@@ -139,9 +141,9 @@ public class RESTApiModule implements ServerModule
         return new URI( config.getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) );
     }
 
-    private void loadPlugins( StringLogger logger )
+    private void loadPlugins()
     {
-        plugins = new PluginManager( config, logger );
+        plugins = new PluginManager( config, logging );
     }
 
     private void unloadPlugins() {

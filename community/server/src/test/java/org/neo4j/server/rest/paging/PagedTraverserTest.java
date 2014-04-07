@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
+import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.EphemeralDatabase;
 
@@ -48,7 +49,7 @@ public class PagedTraverserTest
     @Before
     public void clearDb() throws Throwable
     {
-        database = new EphemeralDatabase();
+        database = new EphemeralDatabase( Configurator.EMPTY );
         database.start();
         createLinkedList( LIST_LENGTH, database );
     }

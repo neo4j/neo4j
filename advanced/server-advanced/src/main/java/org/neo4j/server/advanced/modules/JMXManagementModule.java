@@ -26,7 +26,6 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.modules.ServerModule;
@@ -41,7 +40,7 @@ public class JMXManagementModule implements ServerModule
     }
 
     @Override
-    public void start( StringLogger logger )
+    public void start()
     {
         try
         {

@@ -20,21 +20,15 @@
 package org.neo4j.server.database;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.neo4j.server.configuration.Configurator.EMPTY;
-
 public class EphemeralDatabase extends CommunityDatabase
 {
-    public EphemeralDatabase()
-    {
-        this( EMPTY );
-    }
-
     public EphemeralDatabase( Configurator configurator )
     {
-        super( configurator );
+        super( configurator, DevNullLoggingService.DEV_NULL );
     }
 
     @Override

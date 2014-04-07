@@ -19,23 +19,19 @@
  */
 package org.neo4j.kernel;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
  * <p/>
  * Create an instance this way:
- * 
+ *
  * <pre>
  * <code>
  * graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
@@ -58,13 +54,9 @@ public final class EmbeddedReadOnlyGraphDatabase extends InternalAbstractGraphDa
 
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
                                           Map<String, String> params,
-                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                          Iterable<CacheProvider> cacheProviders,
-                                          Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                          Dependencies dependencies )
     {
-        super( storeDir, addReadOnly( params ), Iterables.<Class<?>, Class<?>>iterable( (Class<?>)
-                GraphDatabaseSettings.class ), kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+        super( storeDir, addReadOnly( params ), dependencies );
         run();
     }
 

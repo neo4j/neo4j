@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.CommunityDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
@@ -60,9 +61,9 @@ public class EnterpriseDatabase extends CommunityDatabase
                                                          Map<String, String> databaseProperties );
     }
 
-    public EnterpriseDatabase( Configurator configurator )
+    public EnterpriseDatabase( Configurator configurator, Logging logging )
     {
-        super( configurator );
+        super( configurator, logging );
     }
 
     @Override

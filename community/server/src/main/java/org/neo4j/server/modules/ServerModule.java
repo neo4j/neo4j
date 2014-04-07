@@ -19,18 +19,13 @@
  */
 package org.neo4j.server.modules;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-
-
 /**
  * An interface which the NeoServer uses to initialise server modules (e.g.
  * JAX-RS, static content, webadmin)
  */
 public interface ServerModule
 {
-    // StringLogger here to be removed when logging refactoring is done
-	// it should be passed in through constructors.
-    void start(StringLogger logger);
+    void start();
 
     void stop();
 }

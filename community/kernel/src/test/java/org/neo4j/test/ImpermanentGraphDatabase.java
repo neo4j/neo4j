@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -54,7 +55,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     private static boolean TRACK_UNCLOSED_DATABASE_INSTANCES = false;
     private static final Map<File, Exception> startedButNotYetClosed = new ConcurrentHashMap<>();
     
-    static final String PATH = "target/test-data/impermanent-db";
+    protected static final String PATH = "target/test-data/impermanent-db";
 
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
@@ -98,9 +99,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
                         KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class ) );
+                Service.load( TransactionInterceptorProvider.class )
+        );
     }
-    
+
     /**
      * This is deprecated. Use {@link TestGraphDatabaseFactory} instead
      */
@@ -110,9 +112,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( PATH, withForcedInMemoryConfiguration( params ), kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
-        trackUnclosedUse( PATH );
+        this( PATH, params, kernelExtensions, cacheProviders, transactionInterceptorProviders );
     }
 
     /**
@@ -124,11 +124,28 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                                      Iterable<CacheProvider> cacheProviders,
                                      Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ), kernelExtensions, cacheProviders,
-                transactionInterceptorProviders );
+        this( storeDir, withForcedInMemoryConfiguration( params ),
+                getDependencies( kernelExtensions, cacheProviders, transactionInterceptorProviders ) );
+    }
+
+    private static Dependencies getDependencies(
+            Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            Iterable<CacheProvider> cacheProviders,
+            Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    {
+        GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
+        state.setKernelExtensions( kernelExtensions );
+        state.setCacheProviders( cacheProviders );
+        state.setTransactionInterceptorProviders( transactionInterceptorProviders );
+        return state.databaseDependencies();
+    }
+
+    protected ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    {
+        super( storeDir, withForcedInMemoryConfiguration( params ), dependencies );
         trackUnclosedUse( storeDir );
     }
-    
+
     private void trackUnclosedUse( String path )
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
@@ -136,19 +153,23 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             Exception testThatDidNotCloseDb = startedButNotYetClosed.put( new File( path ),
                     new Exception( "Unclosed database instance" ) );
             if ( testThatDidNotCloseDb != null )
+            {
                 testThatDidNotCloseDb.printStackTrace();
+            }
         }
     }
-    
+
     @Override
     public void shutdown()
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
+        {
             startedButNotYetClosed.remove( new File( getStoreDir() ) );
+        }
 
         super.shutdown();
     }
-    
+
     @Override
     protected FileSystemAbstraction createFileSystemAbstraction()
     {

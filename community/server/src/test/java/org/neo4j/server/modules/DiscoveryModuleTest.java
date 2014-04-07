@@ -24,8 +24,7 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
-
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.Mute;
@@ -40,7 +39,7 @@ import static org.mockito.Mockito.when;
 public class DiscoveryModuleTest
 {
     @Rule
-    public Mute mute = Mute.mute( Mute.System.err );
+    public Mute mute = Mute.mute( Mute.System.err, Mute.System.out );
     
     @SuppressWarnings( "unchecked" )
     @Test
@@ -52,9 +51,9 @@ public class DiscoveryModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        DiscoveryModule module = new DiscoveryModule(webServer);
+        DiscoveryModule module = new DiscoveryModule(webServer, new SystemOutLogging() );
 
-        module.start(StringLogger.DEV_NULL);
+        module.start();
 
         verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );
     }

@@ -27,9 +27,13 @@ import org.neo4j.desktop.ui.DesktopModel;
 import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.desktop.ui.UnableToStartServerException;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerStartupException;
+
+import static org.neo4j.kernel.logging.DefaultLogging.createDefaultLogging;
 
 /**
  * Lifecycle actions for the Neo4j server living inside this JVM. Typically reacts to button presses
@@ -39,6 +43,8 @@ public class DatabaseActions
 {
     private final DesktopModel model;
     private AbstractNeoServer server;
+    private Logging logging;
+    private LifeSupport life;
 
     public DatabaseActions( DesktopModel model )
     {
@@ -52,7 +58,10 @@ public class DatabaseActions
             throw new UnableToStartServerException( "Already started" );
         }
 
-        server = new CommunityNeoServer( model.getServerConfigurator() );
+        Configurator configurator = model.getServerConfigurator();
+        logging = life.add( createDefaultLogging( configurator.getDatabaseTuningProperties() ) );
+        life.start();
+        server = new CommunityNeoServer( configurator, logging );
         try
         {
             server.start();
@@ -92,9 +101,10 @@ public class DatabaseActions
         {
             server.stop();
             server = null;
+            life.shutdown();
         }
     }
-    
+
     public void shutdown()
     {
         if ( isRunning() )

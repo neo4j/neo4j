@@ -20,6 +20,7 @@
 package org.neo4j.server.database;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 
@@ -34,7 +35,7 @@ public class WrappedDatabase extends CommunityDatabase
 
     public WrappedDatabase( AbstractGraphDatabase db, Configurator configurator )
     {
-        super( configurator );
+        super( configurator, getLogging( db ) );
         this.db = db;
         try
         {
@@ -56,5 +57,16 @@ public class WrappedDatabase extends CommunityDatabase
     public void stop() throws Throwable
     {
         // No-op
+    }
+
+    @Override
+    public Logging getLogging()
+    {
+        return getLogging( db );
+    }
+
+    private static Logging getLogging( AbstractGraphDatabase db )
+    {
+        return db.getDependencyResolver().resolveDependency( Logging.class );
     }
 }
