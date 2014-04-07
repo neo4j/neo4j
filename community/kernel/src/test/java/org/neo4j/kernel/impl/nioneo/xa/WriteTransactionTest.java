@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -843,7 +844,7 @@ public class WriteTransactionTest
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
             super( new File( "log" ), null, null, null, fs, new Monitors(), new SingleLoggingService( DEV_NULL ),
-                    LogPruneStrategies.NO_PRUNING, null, 25*1024*1024, ALLOW_ALL );
+                    LogPruneStrategies.NO_PRUNING, null, mock( KernelHealth.class ), 25*1024*1024, ALLOW_ALL );
             this.verifier = verifier;
         }
 

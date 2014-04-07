@@ -20,37 +20,35 @@
 package org.neo4j.server.modules;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.impl.util.StringLogger;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.web.WebServer;
 
 public class Neo4jBrowserModule implements ServerModule
 {
-    private static final Logger log = Logger.getLogger( Neo4jBrowserModule.class );
-
     private static final String DEFAULT_NEO4J_BROWSER_PATH = "/browser";
     private static final String DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION = "browser";
 
-
 	private final Configuration config;
-	private final WebServer webServer;
-	private final Database database;
+    private final WebServer webServer;
+    private final Database database;
+    private final ConsoleLogger log;
 
-    public Neo4jBrowserModule(WebServer webServer, Configuration config, Database database)
+    public Neo4jBrowserModule(WebServer webServer, Configuration config, Logging logging, Database database)
     {
     	this.webServer = webServer;
     	this.config = config;
     	this.database = database;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
-	public void start(StringLogger logger)
+	public void start()
     {
         webServer.addStaticContent( DEFAULT_NEO4J_BROWSER_STATIC_WEB_CONTENT_LOCATION, DEFAULT_NEO4J_BROWSER_PATH );
-        log.info( "Mounted Neo4j Browser at [%s]", DEFAULT_NEO4J_BROWSER_PATH );
-        if ( logger != null )
-            logger.logMessage( "Mounted Neo4j Browser at: " + DEFAULT_NEO4J_BROWSER_PATH );
+        log.log( "Mounted Neo4j Browser at [%s]", DEFAULT_NEO4J_BROWSER_PATH );
     }
 
     @Override

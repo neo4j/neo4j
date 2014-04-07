@@ -21,6 +21,7 @@ package org.neo4j.server.enterprise;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -41,8 +42,9 @@ import static org.neo4j.helpers.collection.Iterables.mix;
 public class EnterpriseNeoServer extends AdvancedNeoServer
 {
 
-    public EnterpriseNeoServer( Configurator configurator )
+    public EnterpriseNeoServer( Configurator configurator, Logging logging )
     {
+        super( logging );
         this.configurator = configurator;
         init();
     }
@@ -51,21 +53,22 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected PreFlightTasks createPreflightTasks()
     {
         return new PreFlightTasks(
+                logging,
                 // TODO: This check should be done in the bootrapper,
                 // and verification of config should be done by the new
                 // config system.
                 //new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
                 new EnsurePreparedForHttpLogging(configurator.configuration()),
                 new PerformUpgradeIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out),
+                        configurator.getDatabaseTuningProperties(), System.out, logging ),
                 new PerformRecoveryIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out));
+                        configurator.getDatabaseTuningProperties(), System.out, logging ));
     }
 
     @Override
     protected Database createDatabase()
     {
-        return new EnterpriseDatabase( configurator );
+        return new EnterpriseDatabase( configurator, logging );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -73,7 +76,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         return mix( asList(
-                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration() ) ),
+                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration(), logging ) ),
                 super.createServerModules() );
     }
 

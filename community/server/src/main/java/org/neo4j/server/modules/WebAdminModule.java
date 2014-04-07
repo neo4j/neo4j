@@ -19,32 +19,29 @@
  */
 package org.neo4j.server.modules;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.logging.Logger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.web.WebServer;
 
 public class WebAdminModule implements ServerModule
 {
-    private static final Logger log = Logger.getLogger( WebAdminModule.class );
-
     private static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
     private static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
 
     private final WebServer webServer;
+    private final ConsoleLogger log;
 
-    public WebAdminModule( WebServer webServer )
+    public WebAdminModule( WebServer webServer, Logging logging )
     {
-    	this.webServer = webServer;
+        this.webServer = webServer;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
-	public void start(StringLogger logger)
+	public void start()
     {
         webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
-
-        log.info( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
-        if ( logger != null )
-            logger.logMessage( "Mounted webadmin at: " + DEFAULT_WEB_ADMIN_PATH );
+        log.log( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
     }
 
     @Override

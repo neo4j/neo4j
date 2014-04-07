@@ -23,13 +23,18 @@ import java.io.File;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
 import org.neo4j.server.advanced.jmx.ServerManagement;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 public class BootstrapperTest
 {
@@ -38,11 +43,11 @@ public class BootstrapperTest
     {
         TargetDirectory target = TargetDirectory.forTest( getClass() );
         String dbDir1 = target.cleanDirectory( "db1" ).getAbsolutePath();
-        Configurator config = new PropertyFileConfigurator(
+        Configurator config = new PropertyFileConfigurator( Validator.NO_VALIDATION,
                 AdvancedServerBuilder
                         .server()
                         .usingDatabaseDir( dbDir1 )
-                        .createPropertiesFiles() );
+                        .createPropertiesFiles(), ConsoleLogger.DEV_NULL );
 
         // TODO: This needs to be here because of a startuphealthcheck
         // that requires this system property. Look into moving
@@ -50,11 +55,12 @@ public class BootstrapperTest
         File irrelevant = target.file( "irrelevant" );
         irrelevant.createNewFile();
 
-        config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath() );
+        config.configuration().setProperty( "org.neo4j.server.properties", irrelevant.getAbsolutePath());
 
-        AdvancedNeoServer server = new AdvancedNeoServer( config );
+        AdvancedNeoServer server = new AdvancedNeoServer( config,
+                new SingleLoggingService( StringLogger.SYSTEM ) );
 
-        server.start();
+        server.start( );
 
         assertNotNull( server.getDatabase().getGraph() );
 

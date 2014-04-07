@@ -48,6 +48,8 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
+
 public class MonitorServiceDocTest implements JobScheduler
 {
     private RrdDbWrapper rrdDb;
@@ -91,7 +93,7 @@ public class MonitorServiceDocTest implements JobScheduler
     {
         database = new WrappedDatabase( (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
 
-        rrdDb = new RrdFactory( new SystemConfiguration() ).createRrdDbAndSampler( database, this );
+        rrdDb = new RrdFactory( new SystemConfiguration(), DEV_NULL ).createRrdDbAndSampler( database, this );
 
         output = new EntityOutputFormat( new JsonFormat(), URI.create( "http://peteriscool.com:6666/" ), null );
         monitorService = new MonitorService( rrdDb.get(), output );

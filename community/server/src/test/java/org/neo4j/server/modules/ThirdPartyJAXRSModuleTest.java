@@ -19,26 +19,26 @@
  */
 package org.neo4j.server.modules;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class ThirdPartyJAXRSModuleTest
 {
@@ -60,8 +60,8 @@ public class ThirdPartyJAXRSModuleTest
 
         when( neoServer.getConfigurator() ).thenReturn( configurator );
 
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, configurator, neoServer );
-        module.start(StringLogger.DEV_NULL);
+        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, configurator, DevNullLoggingService.DEV_NULL, neoServer );
+        module.start();
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );
     }

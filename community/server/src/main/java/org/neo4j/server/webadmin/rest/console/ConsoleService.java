@@ -19,17 +19,9 @@
  */
 package org.neo4j.server.webadmin.rest.console;
 
-import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.Pair;
-import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.Logger;
-import org.neo4j.server.rest.repr.*;
-import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
-import org.neo4j.server.webadmin.console.ScriptSession;
-import org.neo4j.server.webadmin.rest.AdvertisableService;
-import org.neo4j.server.webadmin.rest.representations.ConsoleServiceRepresentation;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -37,11 +29,28 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.configuration.Configuration;
+
+import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.database.CypherExecutor;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
+import org.neo4j.server.rest.repr.ValueRepresentation;
+import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
+import org.neo4j.server.webadmin.console.ScriptSession;
+import org.neo4j.server.webadmin.rest.AdvertisableService;
+import org.neo4j.server.webadmin.rest.representations.ConsoleServiceRepresentation;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.server.configuration.Configurator.DEFAULT_MANAGEMENT_CONSOLE_ENGINES;
 import static org.neo4j.server.configuration.Configurator.MANAGEMENT_CONSOLE_ENGINES;
 
@@ -49,27 +58,27 @@ import static org.neo4j.server.configuration.Configurator.MANAGEMENT_CONSOLE_ENG
 public class ConsoleService implements AdvertisableService
 {
     public static final String SERVICE_PATH = "server/console";
-    
     private static final String SERVICE_NAME = "console";
-    private static final Logger log = Logger.getLogger( ConsoleService.class );
-    
+
     private final ConsoleSessionFactory sessionFactory;
     private final Database database;
     private final OutputFormat output;
+    private final StringLogger log;
 
     @SuppressWarnings("unchecked")
     public ConsoleService( @Context Configuration config, @Context Database database, @Context HttpServletRequest req,
                            @Context OutputFormat output, @Context CypherExecutor cypherExecutor )
     {
         this( new SessionFactoryImpl(req.getSession(true ), config.getList(MANAGEMENT_CONSOLE_ENGINES, DEFAULT_MANAGEMENT_CONSOLE_ENGINES), cypherExecutor),
-                database, output  );
+                database, database.getLogging(), output  );
     }
 
-    public ConsoleService( ConsoleSessionFactory sessionFactory, Database database, OutputFormat output )
+    public ConsoleService( ConsoleSessionFactory sessionFactory, Database database, Logging logging, OutputFormat output )
     {
         this.sessionFactory = sessionFactory;
         this.database = database;
         this.output = output;
+        this.log = logging.getMessagesLog( getClass() );
     }
 
     @Override
@@ -118,14 +127,14 @@ public class ConsoleService implements AdvertisableService
         } catch(IllegalArgumentException e) {
             return output.badRequest(e);
         }
-        
-        log.trace( scriptSession.toString() );
+
+        log.debug( scriptSession.toString() );
         try
         {
             Pair<String, String> result = scriptSession.evaluate( (String) args.get( "command" ) );
             List<Representation> list = new ArrayList<Representation>(
                     asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
-            
+
             return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
         } catch (Exception e)
         {

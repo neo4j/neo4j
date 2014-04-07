@@ -37,4 +37,6 @@ public class DevNullLoggingService
     {
         return new ConsoleLogger( StringLogger.DEV_NULL );
     }
+
+    public static final Logging DEV_NULL = new DevNullLoggingService();
 }

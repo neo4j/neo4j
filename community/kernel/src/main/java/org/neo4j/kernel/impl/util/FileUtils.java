@@ -25,10 +25,12 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.SeekableByteChannel;
@@ -136,13 +138,13 @@ public class FileUtils
         }
         return deletedFiles.toArray( new File[deletedFiles.size()] );
     }
-    
+
     /**
      * Utility method that moves a file from its current location to the
      * new target location. If rename fails (for example if the target is
      * another disk) a copy/delete will be performed instead. This is not a rename,
      * use {@link #renameFile(File, File)} instead.
-     * 
+     *
      * @param toMove The File object to move.
      * @param target Target file to move to.
      * @throws IOException
@@ -150,15 +152,21 @@ public class FileUtils
     public static void moveFile( File toMove, File target ) throws IOException
     {
         if ( !toMove.exists() )
+        {
             throw new NotFoundException( "Source file[" + toMove.getName()
                     + "] not found" );
+        }
         if ( target.exists() )
+        {
             throw new NotFoundException( "Target file[" + target.getName()
                     + "] already exists" );
-        
+        }
+
         if ( toMove.renameTo( target ) )
+        {
             return;
-        
+        }
+
         if ( toMove.isDirectory() )
         {
             target.mkdirs();
@@ -177,11 +185,11 @@ public class FileUtils
      * provided target directory. If rename fails (for example if the target is
      * another disk) a copy/delete will be performed instead. This is not a rename,
      * use {@link #renameFile(File, File)} instead.
-     * 
+     *
      * @param toMove The File object to move.
      * @param targetDirectory the destination directory
      * @return the new file, null iff the move was unsuccessful
-     * @throws IOException 
+     * @throws IOException
      */
     public static File moveFileToDirectory( File toMove, File targetDirectory ) throws IOException
     {
@@ -190,7 +198,7 @@ public class FileUtils
             throw new IllegalArgumentException(
                     "Move target must be a directory, not " + targetDirectory );
         }
-        
+
         File target = new File( targetDirectory, toMove.getName() );
         moveFile( toMove, target );
         return target;
@@ -313,9 +321,13 @@ public class FileUtils
         finally
         {
             if ( input != null )
+            {
                 input.close();
+            }
             if ( output != null )
+            {
                 output.close();
+            }
         }
     }
 
@@ -340,7 +352,7 @@ public class FileUtils
             }
         }
     }
-    
+
     public static void writeToFile( File target, String text, boolean append ) throws IOException
     {
         if ( !target.exists() )
@@ -377,5 +389,75 @@ public class FileUtils
             root = new File( root, part );
         }
         return root;
+    }
+
+    /**
+     * Move the contents of one directory into another directory. Allows moving the contents of a directory into a
+     * sub-directory of itself.
+     */
+    public static void moveDirectoryContents( File baseDir, File targetDir ) throws IOException
+    {
+        if(!baseDir.isDirectory())
+        {
+            throw new IllegalArgumentException( baseDir.getAbsolutePath() + " must be a directory." );
+        }
+
+        if(!targetDir.exists())
+        {
+            targetDir.mkdirs();
+        }
+
+        for ( File file : baseDir.listFiles() )
+        {
+            if(!file.equals( targetDir ))
+            {
+                moveFileToDirectory( file, targetDir );
+            }
+        }
+    }
+
+    /** Gives the recursive size of all files in a directory. */
+    public static long directorySize( File directory )
+    {
+        long length = 0;
+        for (File file : directory.listFiles())
+        {
+            length += file.isFile() ? file.length() : directorySize( file );
+        }
+        return length;
+    }
+
+    public interface LineListener
+    {
+        void line( String line );
+    }
+
+    public static LineListener echo( final PrintStream target )
+    {
+        return new LineListener()
+        {
+            @Override
+            public void line( String line )
+            {
+                target.println( line );
+            }
+        };
+    }
+
+    public static void readTextFile( File file, LineListener listener ) throws IOException
+    {
+        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        try
+        {
+            String line = null;
+            while ( (line = reader.readLine()) != null )
+            {
+                listener.line( line );
+            }
+        }
+        finally
+        {
+            reader.close();
+        }
     }
 }

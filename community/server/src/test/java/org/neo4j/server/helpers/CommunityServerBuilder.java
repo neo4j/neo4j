@@ -33,6 +33,11 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
@@ -50,14 +55,18 @@ import org.neo4j.server.rest.web.DatabaseActions;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class CommunityServerBuilder
 {
+    protected LoggingFactory loggingFactory;
     private String portNo = "7474";
     private String maxThreads = null;
     protected String dbDir = null;
@@ -83,9 +92,14 @@ public class CommunityServerBuilder
     public boolean persistent;
     private Boolean httpsEnabled = FALSE;
 
+    public static CommunityServerBuilder server( Logging logging )
+    {
+        return new CommunityServerBuilder( given( logging ) );
+    }
+
     public static CommunityServerBuilder server()
     {
-        return new CommunityServerBuilder();
+        return new CommunityServerBuilder( null );
     }
 
     public CommunityNeoServer build() throws IOException
@@ -94,22 +108,19 @@ public class CommunityServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        final File configFile = createPropertiesFiles();
+        final File configFile = buildBefore();
 
-        if ( preflightTasks == null )
-        {
-            preflightTasks = new PreFlightTasks()
-            {
-                @Override
-                public boolean run()
-                {
-                    return true;
-                }
-            };
-        }
+        BufferingConsoleLogger console = new BufferingConsoleLogger();
+        Validator validator = new Validator( new DatabaseLocationMustBeSpecifiedRule() );
+        Configurator configurator = new PropertyFileConfigurator( validator, configFile, console );
+        Logging logging = loggingFactory().create( configurator );
+        console.replayInto( logging.getConsoleLog( getClass() ) );
+        return build( configFile, configurator, logging );
+    }
 
-        return new TestCommunityNeoServer( new PropertyFileConfigurator( new Validator(
-                new DatabaseLocationMustBeSpecifiedRule() ), configFile ), configFile );
+    protected CommunityNeoServer build( File configFile, Configurator configurator, Logging logging )
+    {
+        return new TestCommunityNeoServer( configurator, configFile, logging );
     }
 
     public File createPropertiesFiles() throws IOException
@@ -130,6 +141,7 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withLogging( Logging logging )
     {
+        this.loggingFactory = given( logging );
         return this;
     }
 
@@ -244,8 +256,9 @@ public class CommunityServerBuilder
         return f;
     }
 
-    protected CommunityServerBuilder()
+    protected CommunityServerBuilder( LoggingFactory loggingFactory )
     {
+        this.loggingFactory = loggingFactory;
     }
 
     public CommunityServerBuilder persistent()
@@ -316,7 +329,7 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withFailingPreflightTasks()
     {
-        preflightTasks = new PreFlightTasks()
+        preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL )
         {
             @Override
             public boolean run()
@@ -415,17 +428,56 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withPreflightTasks( PreflightTask... tasks )
     {
-        this.preflightTasks = new PreFlightTasks( tasks );
+        this.preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL, tasks );
         return this;
+    }
+
+    private LoggingFactory loggingFactory()
+    {
+        if ( loggingFactory != null )
+        {
+            return loggingFactory;
+        }
+        return persistent ? LoggingFactory.DEFAULT_LOGGING : LoggingFactory.IMPERMANENT_LOGGING;
+    }
+
+    protected DatabaseActions createDatabaseActionsObject( Database database, Configurator configurator )
+    {
+        Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
+
+        return new DatabaseActions(
+                new LeaseManager( clockToUse ),
+                ForceMode.forced,
+                configurator.configuration().getBoolean(
+                        Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                        Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+    }
+
+    protected File buildBefore() throws IOException
+    {
+        File configFile = createPropertiesFiles();
+
+        if ( preflightTasks == null )
+        {
+            preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL )
+            {
+                @Override
+                public boolean run()
+                {
+                    return true;
+                }
+            };
+        }
+        return configFile;
     }
 
     private class TestCommunityNeoServer extends CommunityNeoServer
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
+        private TestCommunityNeoServer( Configurator propertyFileConfigurator, File configFile, Logging logging )
         {
-            super( propertyFileConfigurator );
+            super( propertyFileConfigurator, logging );
             this.configFile = configFile;
         }
 
@@ -439,21 +491,14 @@ public class CommunityServerBuilder
         protected Database createDatabase()
         {
             return persistent ?
-                    new CommunityDatabase( configurator ) :
+                    new CommunityDatabase( configurator, logging ) :
                     new EphemeralDatabase( configurator );
         }
 
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
-
-            return new DatabaseActions(
-                    new LeaseManager( clockToUse ),
-                    ForceMode.forced,
-                    configurator.configuration().getBoolean(
-                            Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                            Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+            return createDatabaseActionsObject( database, configurator );
         }
 
         @Override
@@ -464,5 +509,31 @@ public class CommunityServerBuilder
         }
     }
 
-    ;
+    public static Logging bufferingLogging()
+    {
+        final BufferingLogger log = new BufferingLogger();
+        final BufferingConsoleLogger console = new BufferingConsoleLogger();
+        return new Logging()
+        {
+            @Override
+            public StringLogger getMessagesLog( Class loggingClass )
+            {
+                return log;
+            }
+
+            @Override
+            public ConsoleLogger getConsoleLog( Class loggingClass )
+            {
+                return console;
+            }
+
+            @Override
+            public String toString()
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.append( log.toString() ).append( format( "%n" ) ).append( console.toString() );
+                return builder.toString();
+            }
+        };
+    }
 }

@@ -50,8 +50,10 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.KeyStoreInformation;
 import org.neo4j.server.security.SslSocketConnectorFactory;
@@ -89,7 +91,6 @@ public class Jetty9WebServer implements WebServer
 	}
     private static final int MAX_THREADPOOL_SIZE = 640;
     private static final int DEFAULT_HTTPS_PORT = 7473;
-    public static final Logger log = Logger.getLogger( Jetty9WebServer.class );
     public static final int DEFAULT_PORT = 80;
     public static final String DEFAULT_ADDRESS = "0.0.0.0";
 
@@ -112,6 +113,14 @@ public class Jetty9WebServer implements WebServer
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
     private final HttpConnectorFactory connectorFactory = new HttpConnectorFactory();
     private File requestLoggingConfiguration;
+    private final ConsoleLogger console;
+    private final StringLogger log;
+
+    public Jetty9WebServer( Logging logging )
+    {
+        this.console = logging.getConsoleLog( getClass() );
+        this.log = logging.getMessagesLog( getClass() );
+    }
 
     @Override
     public void init()
@@ -226,7 +235,7 @@ public class Jetty9WebServer implements WebServer
         }
         factory.add( packageNames, injectables );
 
-        log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
+        log.debug( format( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint ) );
     }
 
     @Override
@@ -244,7 +253,7 @@ public class Jetty9WebServer implements WebServer
         }
         factory.add( classNames, injectables );
 
-        log.debug( "Adding JAXRS classes %s at [%s]", classNames, mountPoint );
+        log.debug( format( "Adding JAXRS classes %s at [%s]", classNames, mountPoint ) );
     }
 
     @Override
@@ -470,8 +479,8 @@ public class Jetty9WebServer implements WebServer
         }
         catch ( URISyntaxException e )
         {
-            log.debug( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)",
-                mountPoint );
+            log.debug( format( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)",
+                mountPoint ) );
             return mountPoint;
         }
     }
@@ -479,7 +488,7 @@ public class Jetty9WebServer implements WebServer
     private void loadStaticContent( SessionManager sm, String mountPoint )
     {
         String contentLocation = staticContent.get( mountPoint );
-        log.info( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
+        console.log( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
         try
         {
         	SessionHandler sessionHandler = new SessionHandler( sm );
@@ -492,12 +501,11 @@ public class Jetty9WebServer implements WebServer
                 .getResource( contentLocation );
             if ( resourceLoc != null )
             {
-                log.debug( "Found [%s]", resourceLoc );
-                URL url = resourceLoc.toURI()
-                    .toURL();
+                log.debug( format( "Found [%s]", resourceLoc ) );
+                URL url = resourceLoc.toURI().toURL();
                 final Resource resource = Resource.newResource( url );
                 staticContext.setBaseResource( resource );
-                log.debug( "Mounting static content from [%s] at [%s]", url, mountPoint );
+                log.debug( format( "Mounting static content from [%s] at [%s]", url, mountPoint ) );
 
                 addFiltersTo(staticContext);
 
@@ -505,14 +513,14 @@ public class Jetty9WebServer implements WebServer
             }
             else
             {
-                log.error(
+                console.log(
                     "No static content available for Neo Server at port [%d], management console may not be available.",
                     jettyHttpPort );
             }
         }
         catch ( Exception e )
         {
-            log.error( e );
+            console.error( "Unknown error loading static content", e );
             e.printStackTrace();
             throw new RuntimeException( e );
         }
@@ -533,7 +541,7 @@ public class Jetty9WebServer implements WebServer
     {
         SessionHandler sessionHandler = new SessionHandler( sm );
         sessionHandler.setServer( getJetty() );
-        log.debug( "Mounting servlet at [%s]", mountPoint );
+        log.debug( format( "Mounting servlet at [%s]", mountPoint ) );
         ServletContextHandler jerseyContext = new ServletContextHandler();
         jerseyContext.setServer( getJetty() );
         jerseyContext.setErrorHandler( new NeoJettyErrorHandler() );

@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.preflight;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -37,6 +30,7 @@ import java.util.Properties;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -44,6 +38,15 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary
 {
@@ -58,7 +61,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
@@ -75,12 +78,12 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverProperties,
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
         assertEquals( false, exit );
-        
+
         String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
         assertThat( "'" + lines[0] + "' contains '" + "To enable automatic upgrade, please set configuration parameter " +
                 "\"allow_store_upgrade=true\"", lines[0].contains("To enable automatic upgrade, please set configuration parameter " +
@@ -93,7 +96,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( buildProperties( true ),
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
@@ -110,7 +113,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
@@ -141,7 +144,7 @@ public class TestPerformUpgradeIfNecessary
 
         return serverProperties;
     }
-    
+
     private Map<String,String> loadNeo4jProperties() throws IOException
     {
         String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";

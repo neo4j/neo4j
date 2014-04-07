@@ -21,11 +21,13 @@ package org.neo4j.server.modules;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.logging.DevNullLoggingService;
+
 public class SecurityRulesModuleTest
 {
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new SecurityRulesModule( null, null ).stop();
+        new SecurityRulesModule( null, null, DevNullLoggingService.DEV_NULL ).stop();
     }
 }

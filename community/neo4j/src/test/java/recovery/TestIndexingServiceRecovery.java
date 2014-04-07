@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +58,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
@@ -169,10 +169,8 @@ public class TestIndexingServiceRecovery
             public GraphDatabaseService newEmbeddedDatabase( String path )
             {
                 GraphDatabaseFactoryState state = getStateCopy();
-                return new EmbeddedGraphDatabase( path, new HashMap<String,String>(),
-                        state.getKernelExtension(),
-                        state.getCacheProviders(),
-                        state.getTransactionInterceptorProviders() )
+                return new EmbeddedGraphDatabase( path, stringMap(),
+                        state.databaseDependencies() )
                 {
                     @Override
                     protected void createNeoDataSource()

@@ -30,7 +30,6 @@ import javax.servlet.http.HttpSession;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
 import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
 import org.neo4j.server.webadmin.console.ScriptSession;
@@ -38,21 +37,10 @@ import org.neo4j.server.webadmin.console.ScriptSession;
 public class SessionFactoryImpl implements ConsoleSessionFactory
 {
     private static final Collection<ConsoleSessionCreator> creators = IteratorUtil.asCollection( ServiceLoader.load( ConsoleSessionCreator.class ) );
-    private static final Logger log = Logger.getLogger( SessionFactoryImpl.class );
 
-    static
-    {
-        String info = "Available console sessions: ";
-        for ( ConsoleSessionCreator creator : creators )
-        {
-            info += creator.name() + ": " + creator.getClass() + "\n";
-        }
-        log.info( info );
-    }
-
-    private HttpSession httpSession;
+    private final HttpSession httpSession;
     private final CypherExecutor cypherExecutor;
-    private Map<String, ConsoleSessionCreator> engineCreators = new HashMap<String, ConsoleSessionCreator>();
+    private final Map<String, ConsoleSessionCreator> engineCreators = new HashMap<String, ConsoleSessionCreator>();
 
     public SessionFactoryImpl( HttpSession httpSession, List<String> supportedEngines, CypherExecutor cypherExecutor )
     {
