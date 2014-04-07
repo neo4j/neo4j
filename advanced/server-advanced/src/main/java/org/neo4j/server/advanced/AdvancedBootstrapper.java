@@ -24,11 +24,9 @@ import org.neo4j.server.NeoServer;
 
 public class AdvancedBootstrapper extends CommunityBootstrapper
 {
-	
 	@Override
-	protected NeoServer createNeoServer() 
+	protected NeoServer createNeoServer()
 	{
-		return new AdvancedNeoServer( createConfigurator());
+		return new AdvancedNeoServer( configurator, logging );
 	}
-
 }

@@ -21,36 +21,39 @@ package org.neo4j.server;
 
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 
-public class WrappingNeoServer extends CommunityNeoServer {
+public class WrappingNeoServer extends CommunityNeoServer
+{
+    private final GraphDatabaseAPI db;
 
-	private final GraphDatabaseAPI db;
+    public WrappingNeoServer( GraphDatabaseAPI db )
+    {
+        this( db, new ServerConfigurator( db ) );
+    }
 
-	public WrappingNeoServer(GraphDatabaseAPI db) 
-	{
-		this(db, new ServerConfigurator(db));
-	}
-	
-	public WrappingNeoServer(GraphDatabaseAPI db, Configurator configurator) 
-	{
-		this.configurator = configurator;
-		this.db = db;
-		
-		init();
-	}
+    public WrappingNeoServer( GraphDatabaseAPI db, Configurator configurator )
+    {
+        super( db.getDependencyResolver().resolveDependency( Logging.class ) );
+        this.db = db;
+        this.configurator = configurator;
+        init();
+    }
 
-	@Override
-	protected PreFlightTasks createPreflightTasks() {
-		return new PreFlightTasks();
-	}
+    @Override
+    protected Database createDatabase()
+    {
+        return new WrappedDatabase( (AbstractGraphDatabase)db, configurator );
+    }
 
-	@Override
-	protected Database createDatabase() {
-		return new WrappedDatabase( (AbstractGraphDatabase) db, configurator );
-	}
+    @Override
+    protected PreFlightTasks createPreflightTasks()
+    {
+        return new PreFlightTasks( logging );
+    }
 }

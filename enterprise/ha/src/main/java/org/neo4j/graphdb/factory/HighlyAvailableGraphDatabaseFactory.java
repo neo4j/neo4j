@@ -29,6 +29,7 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
  */
 public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
+
     public GraphDatabaseService newHighlyAvailableDatabase( String path )
     {
         return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
@@ -44,10 +45,8 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );
-                return new HighlyAvailableGraphDatabase( path, config,
-                        state.getKernelExtension(),
-                        state.getCacheProviders(),
-                        state.getTransactionInterceptorProviders() );
+
+                return new HighlyAvailableGraphDatabase( path, config, state.databaseDependencies() );
             }
         } );
     }

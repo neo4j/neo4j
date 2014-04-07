@@ -22,14 +22,14 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
@@ -49,9 +49,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
@@ -133,10 +133,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params,
-                Iterables.<Class<?>,Class<?>>iterable( GraphDatabaseSettings.class, HaSettings.class,ClusterSettings.class ),
-                kernelExtensions,
-                cacheProviders, txInterceptorProviders );
+        this( storeDir, params, new GraphDatabaseDependencies( null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
+                kernelExtensions, cacheProviders, txInterceptorProviders ) );
+    }
+
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    {
+        super( storeDir, params, dependencies );
         run();
     }
 
@@ -485,7 +489,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
                         lastUpdateTime ) );
     }
-    
+
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {

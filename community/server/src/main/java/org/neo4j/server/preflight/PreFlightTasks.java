@@ -19,43 +19,44 @@
  */
 package org.neo4j.server.preflight;
 
-import org.neo4j.server.logging.Logger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * These are tasks that are run on server startup that may take a long time
  * to execute, such as recovery, upgrades and so on.
- * 
+ *
  * This implementation still needs some work, because of some of the refactoring
  * done regarding the NeoServer. Specifically, some of these tasks verify that
  * properties files exist and are valid. Other preflight tasks we might want to
  * add could be auto-generating config files if they don't exist and creating required
  * directories.
- * 
+ *
  * All of these (including auto-generating neo4j.properties and creating directories)
  * except validating and potentially generating neo4j-server.properties depend on having
  * the server configuration available. Eg. we can't both ensure that file exists within these
  * tests, while at the same time depending on that file existing.
- * 
+ *
  * The validation is not a problem, because we will refactor the server config to use the
  * new configuration system from the kernel, which automatically validates itself.
- * 
+ *
  * Ensuring the config file exists (and potentially auto-generating it) is a problem.
  * Either this need to be split into tasks that have dependencies, and tasks that don't.
- * 
+ *
  * Although, it seems it is only this one edge case, so perhaps accepting that and adding
  * code to the bootstrapper to ensure the config file exists is acceptable.
  */
 public class PreFlightTasks
 {
-    public static final Logger log = Logger.getLogger( PreFlightTasks.class );
-
     private final PreflightTask[] tasks;
+    private final ConsoleLogger log;
 
     private PreflightTask failedTask = null;
 
-    public PreFlightTasks(PreflightTask... tasks)
+    public PreFlightTasks( Logging logging, PreflightTask... tasks )
     {
         this.tasks = tasks;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     public boolean run()

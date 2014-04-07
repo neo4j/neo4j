@@ -26,6 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
@@ -36,7 +37,7 @@ import static org.neo4j.helpers.Settings.TRUE;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
- * 
+ *
  * Use {@link #newEmbeddedDatabase(String)} or
  * {@link #newEmbeddedDatabaseBuilder(String)} to create a database instance.
  */
@@ -79,20 +80,14 @@ public class GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
                 config.put( "ephemeral", "false" );
-
+                Dependencies dependencies = state.databaseDependencies();
                 if ( TRUE.equalsIgnoreCase( config.get( read_only.name() ) ) )
                 {
-                    return new EmbeddedReadOnlyGraphDatabase( path, config,
-                            state.getKernelExtension(),
-                            state.getCacheProviders(),
-                            state.getTransactionInterceptorProviders() );
+                    return new EmbeddedReadOnlyGraphDatabase( path, config, dependencies );
                 }
                 else
                 {
-                    return new EmbeddedGraphDatabase( path, config,
-                            state.getKernelExtension(),
-                            state.getCacheProviders(),
-                            state.getTransactionInterceptorProviders() );
+                    return new EmbeddedGraphDatabase( path, config, dependencies );
                 }
             }
         } );
@@ -137,6 +132,8 @@ public class GraphDatabaseFactory
         getCurrentState().setKernelExtensions( newKernelExtensions );
         return this;
     }
+    
+    
 
     /**
      * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.

@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
-
 import java.io.File;
 
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
 * TODO
@@ -44,10 +45,12 @@ public class XaFactory
     private final Logging logging;
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
+    private final KernelHealth kernelHealth;
 
     public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
                       FileSystemAbstraction fileSystemAbstraction,
-                      Monitors monitors, Logging logging, RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+                      Monitors monitors, Logging logging, RecoveryVerifier recoveryVerifier,
+                      LogPruneStrategy pruneStrategy, KernelHealth kernelHealth )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
@@ -57,6 +60,7 @@ public class XaFactory
         this.logging = logging;
         this.recoveryVerifier = recoveryVerifier;
         this.pruneStrategy = pruneStrategy;
+        this.kernelHealth = kernelHealth;
     }
 
     public XaContainer newXaContainer( XaDataSource xaDataSource, File logicalLog, XaCommandFactory cf,
@@ -84,12 +88,12 @@ public class XaFactory
         else if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
         {
             log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, providers, monitors, fileSystemAbstraction,
-                logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator );
+                logging, pruneStrategy, stateFactory, kernelHealth, rotateAtSize, injectedTxValidator );
         }
         else
         {
             log = new XaLogicalLog( logicalLog, rm, cf, tf, fileSystemAbstraction,
-                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator );
+                    monitors, logging, pruneStrategy, stateFactory, kernelHealth, rotateAtSize, injectedTxValidator );
         }
 
         // TODO These setters should be removed somehow

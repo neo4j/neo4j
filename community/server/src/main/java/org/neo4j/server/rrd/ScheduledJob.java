@@ -22,18 +22,18 @@ package org.neo4j.server.rrd;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.neo4j.server.logging.Logger;
+import org.neo4j.kernel.logging.Logging;
 
 public class ScheduledJob
 {
-    private Timer timer;
-    private Logger logger = Logger.getLogger( ScheduledJob.class );
+    private final Timer timer;
 
-    public ScheduledJob( final Runnable job, String name, long delay, long period )
+    public ScheduledJob( final Runnable job, String name, long delay, long period, final Logging logging )
     {
         timer = new Timer( name );
         TimerTask runJob = new TimerTask()
         {
+            @Override
             public void run()
             {
                 try
@@ -41,7 +41,7 @@ public class ScheduledJob
                     job.run();
                 } catch ( Exception e )
                 {
-                    logger.warn( e );
+                    logging.getConsoleLog( getClass() ).warn( "Unable to execute scheduled job", e );
                 }
             }
         };

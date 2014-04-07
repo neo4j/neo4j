@@ -76,6 +76,8 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.mockito.Mockito.mock;
+
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
     private TransactionManager tm;
@@ -385,6 +387,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         Map<String, String> config = new HashMap<String, String>();
         config.put( "store_dir", "target/var" );
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        KernelHealth kernelHealth = mock( KernelHealth.class );
         xaDsMgr.registerDataSource( new DummyXaDataSource(
                 config, UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory(
@@ -392,7 +395,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
                         new PlaceboTm( null, getGraphDbAPI().getDependencyResolver()
                                 .resolveDependency( TxIdGenerator.class ) ),
                         fileSystem, new Monitors(), new DevNullLoggingService(),
-                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -443,10 +446,11 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             Map<String, String> config = new HashMap<String, String>();
             config.put( "store_dir", "target/var" );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            KernelHealth kernelHealth = mock( KernelHealth.class );
             xaDsMgr.registerDataSource( new DummyXaDataSource( config, UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
                             (AbstractTransactionManager)tm, fileSystem, new Monitors(), new DevNullLoggingService(),
-                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ) ) );
+                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ) ) );
             DummyXaDataSource xaDs1 = (DummyXaDataSource) xaDsMgr.getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();
             tm.begin(); // get

@@ -21,9 +21,8 @@ package org.neo4j.server.modules;
 
 import java.util.List;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.Logger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.web.WebServer;
 
@@ -31,23 +30,22 @@ import static org.neo4j.server.JAXRSHelper.listFrom;
 
 public class DiscoveryModule implements ServerModule
 {
-    private static final Logger log = Logger.getLogger( DiscoveryModule.class );
     private static final String ROOT_PATH = "/";
 
     private final WebServer webServer;
+    private final ConsoleLogger log;
 
-    public DiscoveryModule(WebServer webServer)
+    public DiscoveryModule( WebServer webServer, Logging logging )
     {
         this.webServer = webServer;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
-    public void start( StringLogger logger )
+    public void start()
     {
         webServer.addJAXRSClasses( getClassNames(), ROOT_PATH, null );
-        log.info( "Mounted discovery module at [%s]", ROOT_PATH );
-        if ( logger != null )
-            logger.logMessage( "Mounted discovery module (" + Configurator.DISCOVERY_API_PACKAGE + ") at: " + ROOT_PATH );
+        log.log( "Mounted discovery module at [%s]", ROOT_PATH );
     }
 
     private List<String> getClassNames()

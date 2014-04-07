@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -42,6 +37,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
@@ -56,6 +52,13 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.MonitoredReadableByteChannel;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -119,17 +122,19 @@ public class XaLogicalLog implements LogLoader
     // We need separate monitors to differentiate between network/disk I/O
     protected final ByteCounterMonitor bufferMonitor;
     protected final ByteCounterMonitor logDeserializerMonitor;
+    private final KernelHealth kernelHealth;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandFactory cf,
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
-                         long rotateAtSize, InjectedTransactionValidator injectedTxValidator )
+                         KernelHealth kernelHealth, long rotateAtSize, InjectedTransactionValidator injectedTxValidator )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
+        this.kernelHealth = kernelHealth;
         this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
         this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );
         this.pruneStrategy = pruneStrategy;
@@ -280,7 +285,7 @@ public class XaLogicalLog implements LogLoader
      */
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx )
     {
         int xidIdent = getNextIdentifier();
         long timeWritten = System.currentTimeMillis();
@@ -298,6 +303,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void writeStartEntry( int identifier )
             throws XAException
     {
+        kernelHealth.assertHealthy( XAException.class );
         try
         {
             long position = writeBuffer.getFileChannelPosition();
@@ -1167,11 +1173,12 @@ public class XaLogicalLog implements LogLoader
                     apply();
                     return false;
                 }
-                catch ( Error e )
+                catch ( Throwable e )
                 {
                     startEntry = null;
                     commitEntry = null;
-                    throw e;
+                    kernelHealth.panic( e );
+                    throw launderedException( IOException.class, "Failure applying transaction", e );
                 }
             }
             entry.setIdentifier( newXidIdentifier );
@@ -1193,7 +1200,7 @@ public class XaLogicalLog implements LogLoader
             // default do nothing
         }
 
-        private void apply() throws IOException
+        protected void apply() throws IOException
         {
             for ( LogEntry entry : logEntries )
             {
@@ -1261,6 +1268,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
                                                           long nextTxId, ForceMode forceMode ) throws IOException
     {
+        kernelHealth.assertHealthy( IOException.class );
         int xidIdent = 0;
         LogEntry.Start startEntry = null;
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
@@ -1278,9 +1286,7 @@ public class XaLogicalLog implements LogLoader
         xidIdent = getNextIdentifier();
 
         long startEntryPosition = writeBuffer.getFileChannelPosition();
-        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
-        {
-        }
+        exhaust( logApplier, xidIdent );
         byteChannel.close();
         startEntry = logApplier.getStartEntry();
         if ( startEntry == null )
@@ -1328,9 +1334,17 @@ public class XaLogicalLog implements LogLoader
         checkLogRotation();
     }
 
+    private void exhaust( LogDeserializer logApplier, int xidIdent ) throws IOException
+    {
+        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+        {   // Just loop through
+        }
+    }
+
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
             throws IOException
     {
+        kernelHealth.assertHealthy( IOException.class );
         scanIsComplete = false;
         LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
@@ -1338,7 +1352,7 @@ public class XaLogicalLog implements LogLoader
         boolean successfullyApplied = false;
         try
         {
-            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) );
+            exhaust( logApplier, xidIdent );
             successfullyApplied = true;
         }
         finally
