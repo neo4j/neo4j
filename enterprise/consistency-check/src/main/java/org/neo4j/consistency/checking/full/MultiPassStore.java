@@ -39,7 +39,6 @@ public enum MultiPassStore
                 {
                     return storeAccess.getNodeStore();
                 }
-
             },
     RELATIONSHIPS
             {
@@ -48,7 +47,6 @@ public enum MultiPassStore
                 {
                     return storeAccess.getRelationshipStore();
                 }
-
             },
     PROPERTIES
             {
@@ -57,7 +55,6 @@ public enum MultiPassStore
                 {
                     return storeAccess.getPropertyStore();
                 }
-
             },
     STRINGS
             {
@@ -66,7 +63,6 @@ public enum MultiPassStore
                 {
                     return storeAccess.getNodeStore();
                 }
-
             },
     ARRAYS
             {
@@ -75,7 +71,14 @@ public enum MultiPassStore
                 {
                     return storeAccess.getNodeStore();
                 }
-
+            },
+    RELATIONSHIP_GROUPS
+            {
+                @Override
+                RecordStore getRecordStore( StoreAccess storeAccess )
+                {
+                    return storeAccess.getRelationshipGroupStore();
+                }
             };
 
     public static boolean recordInCurrentPass( long id, int iPass, long recordsPerPass )

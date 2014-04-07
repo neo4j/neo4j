@@ -125,6 +125,7 @@ public class RelationshipWriter extends Thread
             RelationshipGroupRecord groupRecord = new RelationshipGroupRecord( relGroupStore.nextId(), entry.getKey() );
             groupRecords.add( groupRecord );
             groupRecord.setInUse( true );
+            groupRecord.setOwningNode( relChain.nodeId() );
             if ( !relationships.out.isEmpty() )
             {
                 groupRecord.setFirstOut( first( relationships.out ).getId() );

@@ -27,6 +27,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -43,8 +44,53 @@ public class RelationshipGroupRecordCheck implements
         List<RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>> list = new ArrayList<>();
         list.add( RelationshipTypeField.RELATIONSHIP_TYPE );
         list.add( GroupField.NEXT );
+        list.add( NodeField.OWNER );
         list.addAll( asList( RelationshipField.values() ) );
         fields = Collections.unmodifiableList( list );
+    }
+
+    private enum NodeField implements
+            RecordField<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport>,
+            ComparativeRecordChecker<RelationshipGroupRecord, NodeRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
+    {
+        OWNER;
+
+        @Override
+        public void checkReference( RelationshipGroupRecord record, NodeRecord referred,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, RecordAccess records )
+        {
+            if ( !referred.inUse() )
+            {
+                engine.report().ownerNotInUse();
+            }
+        }
+
+        @Override
+        public void checkConsistency( RelationshipGroupRecord record,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine, RecordAccess records )
+        {
+            if ( record.getOwningNode() < 0 )
+            {
+                engine.report().illegalOwner();
+            }
+            else
+            {
+                engine.comparativeCheck( records.node( record.getOwningNode() ), this );
+            }
+        }
+
+        @Override
+        public long valueFrom( RelationshipGroupRecord record )
+        {
+            return record.getOwningNode();
+        }
+
+        @Override
+        public void checkChange( RelationshipGroupRecord oldRecord, RelationshipGroupRecord newRecord,
+                CheckerEngine<RelationshipGroupRecord, RelationshipGroupConsistencyReport> engine,
+                DiffRecordAccess records )
+        {   // nothing to check
+        }
     }
 
     private enum RelationshipTypeField implements
@@ -52,6 +98,7 @@ public class RelationshipGroupRecordCheck implements
             ComparativeRecordChecker<RelationshipGroupRecord, RelationshipTypeTokenRecord, ConsistencyReport.RelationshipGroupConsistencyReport>
     {
         RELATIONSHIP_TYPE;
+
         @Override
         public void checkConsistency( RelationshipGroupRecord record,
                 CheckerEngine<RelationshipGroupRecord, ConsistencyReport.RelationshipGroupConsistencyReport> engine,
@@ -132,9 +179,16 @@ public class RelationshipGroupRecordCheck implements
             {
                 engine.report().nextGroupNotInUse();
             }
-            else if ( record.getType() >= referred.getType() )
+            else
             {
-                engine.report().invalidTypeSortOrder();
+                if ( record.getType() >= referred.getType() )
+                {
+                    engine.report().invalidTypeSortOrder();
+                }
+                if ( record.getOwningNode() != referred.getOwningNode() )
+                {
+                    engine.report().nextHasOtherOwner( referred );
+                }
             }
         }
     }
