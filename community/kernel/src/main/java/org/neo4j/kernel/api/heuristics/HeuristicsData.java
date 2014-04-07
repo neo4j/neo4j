@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.heuristics;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
 
 public interface HeuristicsData {
     public static final int RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL = -1;

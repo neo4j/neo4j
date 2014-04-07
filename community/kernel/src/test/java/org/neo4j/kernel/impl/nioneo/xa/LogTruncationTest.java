@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertEquals;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands

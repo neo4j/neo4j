@@ -20,11 +20,7 @@
 package org.neo4j.kernel.impl.api.heuristics;
 
 import org.neo4j.kernel.api.heuristics.HeuristicsData;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-
-import java.io.File;
-import java.io.Serializable;
 
 public interface HeuristicsService extends Lifecycle
 {

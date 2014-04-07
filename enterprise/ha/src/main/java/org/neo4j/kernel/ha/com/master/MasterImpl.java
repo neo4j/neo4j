@@ -67,7 +67,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.LEGACY_INDEX;
 
 /**
  * This is the real master code that executes on a master. The actual
