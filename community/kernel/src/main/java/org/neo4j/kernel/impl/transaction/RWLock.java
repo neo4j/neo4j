@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Set;
-
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.Node;
@@ -502,7 +501,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
     {
         for ( WaitElement thread : waitingThreadList )
         {
-            if ( thread.since < waitStart )
+            if ( thread.since <= waitStart )
             {
                 return visitor.visit( info() );
             }
