@@ -19,35 +19,35 @@
  */
 package org.neo4j.server;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 
+import com.sun.jersey.api.client.Client;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import com.sun.jersey.api.client.Client;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class NeoServerStartupLoggingDocIT extends ExclusiveServerTestBase
 {
-    private static InMemoryAppender appender = new InMemoryAppender( Jetty9WebServer.log );
-
+    private static Logging logging;
     private static NeoServer server;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createNonPersistentServer();
+        logging = CommunityServerBuilder.bufferingLogging();
+        server = ServerHelper.createNonPersistentServer( logging );
     }
 
     @Before
@@ -66,8 +66,7 @@ public class NeoServerStartupLoggingDocIT extends ExclusiveServerTestBase
     public void shouldLogStartup() throws Exception
     {
         // Check the logs
-        assertThat( appender.toString()
-                .length(), is( greaterThan( 0 ) ) );
+        assertThat( logging.toString().length(), is( greaterThan( 0 ) ) );
 
         // Check the server is alive
         Client nonRedirectingClient = Client.create();

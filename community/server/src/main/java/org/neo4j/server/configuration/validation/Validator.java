@@ -22,12 +22,11 @@ package org.neo4j.server.configuration.validation;
 import java.util.ArrayList;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.server.logging.Logger;
+
+import org.neo4j.kernel.logging.ConsoleLogger;
 
 public class Validator
 {
-
-    private static final Logger log = Logger.getLogger( Validator.class );
     private final ArrayList<ValidationRule> validationRules = new ArrayList<ValidationRule>();
 
     public Validator( ValidationRule... rules )
@@ -42,7 +41,7 @@ public class Validator
         }
     }
 
-    public boolean validate( Configuration configuration )
+    public boolean validate( Configuration configuration, ConsoleLogger log )
     {
         for ( ValidationRule vr : validationRules )
         {
@@ -58,4 +57,6 @@ public class Validator
         }
         return true;
     }
+
+    public static final Validator NO_VALIDATION = new Validator();
 }

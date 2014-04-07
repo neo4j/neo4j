@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TargetDirectory;
 
@@ -50,7 +51,7 @@ public class EnterpriseDatabaseIT
                         DATABASE_LOCATION_PROPERTY_KEY,
                         testDirectory.directory().getPath() ) );
             }
-        } );
+        }, DevNullLoggingService.DEV_NULL );
 
         try
         {

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.NeoServer;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -73,17 +74,27 @@ public class ServerHelper
 
     public static NeoServer createNonPersistentServer() throws IOException
     {
-        return createServer( false, null );
+        return createServer( CommunityServerBuilder.server(), false, null );
+    }
+
+    public static NeoServer createNonPersistentServer( Logging logging ) throws IOException
+    {
+        return createServer( CommunityServerBuilder.server( logging ), false, null );
     }
 
     public static NeoServer createPersistentServer( File path ) throws IOException
     {
-        return createServer( true, path );
+        return createServer( CommunityServerBuilder.server(), true, path );
     }
 
-    private static NeoServer createServer( boolean persistent, File path ) throws IOException
+    public static NeoServer createPersistentServer(File path, Logging logging) throws IOException
     {
-        CommunityServerBuilder builder = CommunityServerBuilder.server();
+        return createServer( CommunityServerBuilder.server( logging ), true, path );
+    }
+
+    private static NeoServer createServer( CommunityServerBuilder builder, boolean persistent, File path )
+            throws IOException
+    {
         configureHostname( builder );
         if ( persistent )
         {

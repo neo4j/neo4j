@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -31,9 +32,10 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.shell.ShellSettings;
 
 import static org.neo4j.server.configuration.Configurator.DATABASE_LOCATION_PROPERTY_KEY;
@@ -41,20 +43,22 @@ import static org.neo4j.server.configuration.Configurator.DEFAULT_DATABASE_LOCAT
 
 public class CommunityDatabase implements Database
 {
-    public static final Logger log = Logger.getLogger(Database.class);
-
+    protected final Configurator configurator;
     protected final Configuration serverConfiguration;
+    protected final Logging logging;
+    protected final ConsoleLogger log;
 
-    private final Configurator configurator;
     private boolean isRunning = false;
 
     private AbstractGraphDatabase graph;
 
     @SuppressWarnings("deprecation")
-    public CommunityDatabase( Configurator configurator )
+    public CommunityDatabase( Configurator configurator, Logging logging )
     {
+        this.logging = logging;
         this.configurator = configurator;
         this.serverConfiguration = configurator.configuration();
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     protected AbstractGraphDatabase createDb()
@@ -70,6 +74,12 @@ public class CommunityDatabase implements Database
     public String getLocation()
     {
         return graph.getStoreDir();
+    }
+
+    @Override
+    public Logging getLogging()
+    {
+        return logging;
     }
 
     @Override
@@ -119,7 +129,7 @@ public class CommunityDatabase implements Database
         {
             this.graph = createDb();
             isRunning = true;
-            log.info( "Successfully started database" );
+            log.log( "Successfully started database" );
         }
         catch ( Exception e )
         {
@@ -138,7 +148,7 @@ public class CommunityDatabase implements Database
                 this.graph.shutdown();
                 isRunning = false;
                 this.graph = null;
-                log.info( "Successfully stopped database" );
+                log.log( "Successfully stopped database" );
             }
         }
         catch ( Exception e )
@@ -184,5 +194,4 @@ public class CommunityDatabase implements Database
             databaseProperties.put( configKey, configValue );
         }
     }
-
 }

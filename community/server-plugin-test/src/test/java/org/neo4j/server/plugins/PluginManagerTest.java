@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.rest.repr.formats.NullFormat;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -45,14 +46,17 @@ public class PluginManagerTest
     public static void loadExtensionManager() throws Exception
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        manager = new PluginManager( null, null );
+        manager = new PluginManager( null, DevNullLoggingService.DEV_NULL );
     }
 
     @AfterClass
     public static void destroyExtensionManager()
     {
         manager = null;
-        if ( graphDb != null ) graphDb.shutdown();
+        if ( graphDb != null )
+        {
+            graphDb.shutdown();
+        }
         graphDb = null;
     }
 

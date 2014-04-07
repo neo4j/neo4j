@@ -19,11 +19,11 @@
  */
 package org.neo4j.server;
 
-
 public class CommunityBootstrapper extends Bootstrapper
 {
-	@Override
-	protected NeoServer createNeoServer() {
-		return new CommunityNeoServer( createConfigurator());
-	}
+    @Override
+    protected NeoServer createNeoServer()
+    {
+        return new CommunityNeoServer( configurator, logging );
+    }
 }

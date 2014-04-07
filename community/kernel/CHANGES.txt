@@ -3,6 +3,7 @@
 o Fixes an issue with tx log reading in severely damaged log files.
 o Fixes a JVM deadlock issue between committing and a reading thread
 o Can now handle more gracefully a larger set of failed index states
+o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
 o Fix a cache poisoning issue where large properties would keep a reference to a closed
   store after a HA role switch. Manifested as NullPointerException when reading very large
   properties in rare cases.

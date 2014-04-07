@@ -33,8 +33,8 @@ import org.junit.Test;
 
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.InMemoryAppender;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
@@ -47,6 +47,7 @@ import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.helpers.CommunityServerBuilder.bufferingLogging;
 import static org.neo4j.test.Mute.muteAll;
 
 public class TestCommunityDatabase
@@ -56,13 +57,15 @@ public class TestCommunityDatabase
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;
+    private Logging logging;
 
     @Before
     public void setup() throws Exception
     {
         databaseDirectory = createTempDir();
+        logging = bufferingLogging();
         theDatabase = new CommunityDatabase( configuratorWithServerProperties( stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ), logging );
     }
 
     private static Configurator configuratorWithServerProperties( final Map<String, String> serverProperties )
@@ -101,22 +104,18 @@ public class TestCommunityDatabase
     @Test
     public void shouldLogOnSuccessfulStartup() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( CommunityDatabase.log );
-
         theDatabase.start();
 
-        assertThat( appender.toString(), containsString( "Successfully started database" ) );
+        assertThat( logging.toString(), containsString( "Successfully started database" ) );
     }
 
     @Test
     public void shouldShutdownCleanly() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( CommunityDatabase.log );
-
         theDatabase.start();
         theDatabase.stop();
 
-        assertThat( appender.toString(), containsString( "Successfully stopped database" ) );
+        assertThat( logging.toString(), containsString( "Successfully stopped database" ) );
     }
 
     @Test
@@ -126,7 +125,7 @@ public class TestCommunityDatabase
         theDatabase.start();
 
         CommunityDatabase db = new CommunityDatabase( configuratorWithServerProperties( stringMap(
-                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ) );
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, databaseDirectory.getAbsolutePath() ) ), logging );
 
         try
         {
@@ -169,7 +168,7 @@ public class TestCommunityDatabase
                       ShellSettings.remote_shell_enabled.name(), Settings.TRUE,
                       ShellSettings.remote_shell_port.name(), "" + customPort );
             }
-        } );
+        }, logging );
         otherDb.start();
 
         // Try to connect with a shell client to that custom port.

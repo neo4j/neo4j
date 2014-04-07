@@ -24,6 +24,7 @@ import java.io.PrintStream;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -40,23 +41,25 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.logging.Logger;
 
 public class PerformUpgradeIfNecessary implements PreflightTask
 {
-
-    private final Logger logger = Logger.getLogger( PerformUpgradeIfNecessary.class );
     private String failureMessage = "Unable to upgrade database";
     private final Configuration config;
     private final PrintStream out;
     private final Map<String, String> dbConfig;
+    private final ConsoleLogger log;
 
-    public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out )
+    public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out,
+            Logging logging )
     {
         this.config = serverConfig;
         this.dbConfig = dbConfig;
         this.out = out;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -95,21 +98,21 @@ public class PerformUpgradeIfNecessary implements PreflightTask
             }
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
-                logger.info( e.getMessage() );
+                log.log( e.getMessage() );
                 out.println( e.getMessage() );
                 failureMessage = e.getMessage();
                 return false;
             }
             catch ( StoreUpgrader.UnableToUpgradeException e )
             {
-                logger.error( e );
+                log.error( "Unable to upgrade store", e );
                 return false;
             }
             return true;
         }
         catch ( Exception e )
         {
-            logger.error( e );
+            log.error( "Unknown error", e );
             return false;
         }
     }
@@ -119,5 +122,4 @@ public class PerformUpgradeIfNecessary implements PreflightTask
     {
         return failureMessage;
     }
-
 }

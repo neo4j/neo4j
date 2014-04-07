@@ -27,11 +27,8 @@ import java.util.List;
 import com.sun.jersey.spi.container.ContainerRequest;
 import com.sun.jersey.spi.container.ContainerRequestFilter;
 
-import org.neo4j.server.logging.Logger;
-
 public class CollectUserAgentFilter implements ContainerRequestFilter
 {
-    private static final Logger log = Logger.getLogger( CollectUserAgentFilter.class );
     private static CollectUserAgentFilter INSTANCE;
 
     public static CollectUserAgentFilter instance()
@@ -75,7 +72,7 @@ public class CollectUserAgentFilter implements ContainerRequestFilter
         }
         catch ( RuntimeException e )
         {
-            log.warn( e );
+            // We're fine with that
         }
         return request;
     }

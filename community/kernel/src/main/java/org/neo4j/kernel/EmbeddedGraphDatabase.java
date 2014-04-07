@@ -22,18 +22,13 @@ package org.neo4j.kernel;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
  * in an application. You typically instantiate it by using
  * {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} like so:
  * <p/>
- * 
+ *
  * <pre>
  * <code>
  * GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( &quot;var/graphdb&quot; );
@@ -52,13 +47,11 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
-    public EmbeddedGraphDatabase( String storeDir, Map<String, String> params,
-                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                  Iterable<CacheProvider> cacheProviders,
-                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    public EmbeddedGraphDatabase( String storeDir,
+                                  Map<String, String> params,
+                                  Dependencies dependencies )
     {
-        super( storeDir, params, Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class ),
-                kernelExtensions, cacheProviders, txInterceptorProviders );
+        super( storeDir, params, dependencies );
 
         run();
     }

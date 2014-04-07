@@ -23,12 +23,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.ws.rs.core.Response;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
@@ -46,7 +46,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
 {
@@ -62,7 +64,11 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
                 newImpermanentDatabaseBuilder().
                 setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase() );
-        this.consoleService = new ConsoleService( this, database, new OutputFormat( new JsonFormat(), uri, null ) );
+        this.consoleService = new ConsoleService(
+                this,
+                database,
+                DEV_NULL,
+                new OutputFormat( new JsonFormat(), uri, null ) );
     }
 
     @After

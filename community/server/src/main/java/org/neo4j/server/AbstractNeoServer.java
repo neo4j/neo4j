@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigurationProvider;
 import org.neo4j.server.configuration.Configurator;
@@ -51,7 +52,6 @@ import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.guard.GuardingRequestFilter;
-import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
@@ -95,8 +95,6 @@ import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
-    @Deprecated // Please use #logging instead of this.
-    public static final Logger log = Logger.getLogger( AbstractNeoServer.class );
     private static final long MINIMUM_TIMEOUT = 1000L;
     /**
      * We add a second to the timeout if the user configures a 1-second timeout.
@@ -105,6 +103,7 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
+    protected final Logging logging;
     protected Database database;
     protected CypherExecutor cypherExecutor;
     protected Configurator configurator;
@@ -116,13 +115,19 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
+    protected final ConsoleLogger log;
 
     private RoundRobinJobScheduler rrdDbScheduler;
     private RrdDbWrapper rrdDbWrapper;
 
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
-    private Logging logging;
+
+    public AbstractNeoServer( Logging logging )
+    {
+        this.logging = logging;
+        this.log = logging.getConsoleLog( getClass() );
+    }
 
     protected abstract PreFlightTasks createPreflightTasks();
 
@@ -161,7 +166,6 @@ public abstract class AbstractNeoServer implements NeoServer
                 database.start();
 
                 DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
-                logging = resolveDependency( Logging.class );
     
                 StringLogger diagnosticsLog = diagnosticsManager.getTargetLog();
                 diagnosticsLog.info( "--- SERVER STARTED START ---" );
@@ -169,8 +173,8 @@ public abstract class AbstractNeoServer implements NeoServer
                 databaseActions = createDatabaseActions();
 
                 // TODO: RrdDb is not needed once we remove the old webadmin
-                rrdDbScheduler = new RoundRobinJobScheduler();
-                rrdDbWrapper = new RrdFactory( configurator.configuration() )
+                rrdDbScheduler = new RoundRobinJobScheduler( logging );
+                rrdDbWrapper = new RrdFactory( configurator.configuration(), logging )
                         .createRrdDbAndSampler( database, rrdDbScheduler );
     
                 transactionFacade = createTransactionalActions();
@@ -183,9 +187,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 diagnosticsManager.register( Configurator.DIAGNOSTICS, configurator );
     
-                startModules( diagnosticsLog );
+                startModules();
 
-                startWebServer( diagnosticsLog );
+                startWebServer();
 
                 diagnosticsLog.info( "--- SERVER STARTED END ---" );
             }
@@ -284,8 +288,7 @@ public abstract class AbstractNeoServer implements NeoServer
         InterruptThreadTimer stopStartupTimer;
         if ( startupTimeout > 0 )
         {
-            //noinspection deprecation
-            log.info( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
+            log.log( "Setting startup timeout to: " + startupTimeout + "ms based on " + getConfiguration().getInt(
                     Configurator.STARTUP_TIMEOUT, -1 ) );
             stopStartupTimer = InterruptThreadTimer.createTimer(
                     startupTimeout,
@@ -306,11 +309,11 @@ public abstract class AbstractNeoServer implements NeoServer
         serverModules.add( module );
     }
 
-    private void startModules( StringLogger logger )
+    private void startModules()
     {
         for ( ServerModule module : serverModules )
         {
-            module.start( logger );
+            module.start();
         }
     }
 
@@ -366,8 +369,7 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
-        //noinspection deprecation
-        log.info( format( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads ));
+        log.log( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -381,8 +383,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( sslEnabled )
         {
-            //noinspection deprecation
-            log.info( format( "Enabling HTTPS on port :%s", sslPort ) );
+            log.log( "Enabling HTTPS on port :%s", sslPort );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
     }
@@ -400,7 +401,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 .availableProcessors();
     }
 
-    private void startWebServer( StringLogger logger )
+    private void startWebServer()
     {
         try
         {
@@ -410,12 +411,8 @@ public abstract class AbstractNeoServer implements NeoServer
 
             webServer.start();
 
-            if ( logger != null )
-            {
-                logger.logMessage( "Server started on: " + baseUri() );
-            }
             //noinspection deprecation
-            log.info( format( "Remote interface ready and available at [%s]", baseUri() ) );
+            log.log( format( "Remote interface ready and available at [%s]", baseUri() ) );
         }
         catch ( RuntimeException e )
         {
@@ -524,7 +521,7 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( !certificatePath.exists() )
         {
             //noinspection deprecation
-            log.info( "No SSL certificate found, generating a self-signed certificate.." );
+            log.log( "No SSL certificate found, generating a self-signed certificate.." );
             SslCertificateFactory certFactory = new SslCertificateFactory();
             certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
         }
@@ -568,7 +565,7 @@ public abstract class AbstractNeoServer implements NeoServer
         ).run();
 
         //noinspection deprecation
-        log.info( "Successfully shutdown database." );
+        log.log( "Successfully shutdown database." );
     }
 
     private void stopRrdDb()
@@ -577,6 +574,7 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             if( rrdDbScheduler != null) rrdDbScheduler.stopJobs();
             if( rrdDbWrapper != null )  rrdDbWrapper.close();
+            log.log( "Successfully shutdown Neo4j Server." );
         } catch(IOException e)
         {
             // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
@@ -678,9 +676,9 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new CypherExecutorProvider( cypherExecutor ) );
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
-
         singletons.add( new TransactionFilter( database ) );
-
+        singletons.add( new LoggingProvider( logging ) );
+        
         return singletons;
     }
 

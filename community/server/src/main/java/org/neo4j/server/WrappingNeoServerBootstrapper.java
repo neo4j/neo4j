@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 
@@ -36,7 +37,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
 
     /**
      * Create an instance with default settings.
-     * 
+     *
      * @param db
      */
     public WrappingNeoServerBootstrapper( GraphDatabaseAPI db )
@@ -48,7 +49,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
      * Create an instance with custom documentation.
      * {@link org.neo4j.server.configuration.ServerConfigurator} is written to fit well here, see its'
      * documentation.
-     * 
+     *
      * @param db
      * @param configurator
      */
@@ -59,7 +60,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     @Override
-    protected Configurator createConfigurator()
+    protected Configurator createConfigurator( ConsoleLogger log )
     {
         return configurator;
     }

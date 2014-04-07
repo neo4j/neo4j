@@ -151,6 +151,11 @@ public class VersionAndEditionServiceTest
 
     private class FakeAdvancedNeoServer extends AbstractNeoServer
     {
+        public FakeAdvancedNeoServer()
+        {
+            super( null );
+        }
+
         @Override
         protected PreFlightTasks createPreflightTasks()
         {
