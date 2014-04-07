@@ -30,7 +30,6 @@ import java.util.List;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -524,20 +523,27 @@ public class DenseNodeTransactionInterceptorTest
                         denseNodeId.get(),
                         target4.get(),
                         (int) typeC.get() ) );
-                transaction.create( group( groupBId.get(), (int) typeB.get() )
-                        .asInUse()
-                        .withNextGroup( groupCId.get() )
-                        .withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.create( group( groupCId.get(), (int) typeC.get() )
-                        .asInUse()
-                        .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() )
-                        .withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                /*
+                 *** This code is needed in case we decide to not delete relationship groups when they are empty
+                 transaction.update( group( groupBId.get(), (int) typeB.get() )
+                         .asInUse()
+                         .withNextGroup( groupCId.get() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                 transaction.update( group( groupCId.get(), (int) typeC.get() )
+                         .asInUse()
+                         .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                */
+                /*
+                 *** This code is needed if we decide to delete relationship groups when they are empty
+                 */
+                transaction.update( group( groupAId.get(), (int) typeA.get() ).asInUse().
+                        withFirstOut( rel1Id.get() ).withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.delete( group( groupBId.get(), (int) typeB.get() ) );
+                transaction.delete( group( groupCId.get(), (int) typeC.get() ) );
             }
         } );
     }
 
     @Test
-    @Ignore("Property changes are not supported yet")
     public void deleteRelationshipOnEachSideOfRelationshipWithChangePropertyOnMasterWhichIsDenseOnSlave() throws Exception
     {
         // GIVEN the following store contents on slave (2.1 store format)
@@ -719,14 +725,24 @@ public class DenseNodeTransactionInterceptorTest
                         denseNodeId.get(),
                         target4.get(),
                         (int) typeC.get() ) );
-                transaction.update( group( groupBId.get(), (int) typeB.get() )
-                        .asInUse()
-                        .withNextGroup( groupCId.get() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.update( group( groupCId.get(), (int) typeC.get() )
-                        .asInUse()
-                        .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
-                transaction.delete( property( propId.get() ).asInUse().withRelId( rel3Id.get() ),
-                        property( propId.get() ).withRelId( rel3Id.get() ) );
+                /*
+                 *** This code is needed in case we decide to not delete relationship groups when they are empty
+                 transaction.update( group( groupBId.get(), (int) typeB.get() )
+                         .asInUse()
+                         .withNextGroup( groupCId.get() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                 transaction.update( group( groupCId.get(), (int) typeC.get() )
+                         .asInUse()
+                         .withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() ).withFirstOut( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                */
+                /*
+                 *** This code is needed if we decide to delete relationship groups when they are empty
+                 */
+                 transaction.update( group( groupAId.get(), (int) typeA.get() ).asInUse().
+                         withFirstOut( rel1Id.get() ).withNextGroup( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                 transaction.delete( group( groupBId.get(), (int) typeB.get() ) );
+                 transaction.delete( group( groupCId.get(), (int) typeC.get() ) );
+                 transaction.delete( property( propId.get() ).asInUse().withRelId( rel3Id.get() ),
+                         property( propId.get() ).withRelId( rel3Id.get() ) );
             }
         } );
     }
@@ -893,7 +909,6 @@ public class DenseNodeTransactionInterceptorTest
     }
 
     @Test
-    @Ignore("Property changes are not supported yet")
     public void deleteRelationshipOnEachSideOfRelationshipWithPropertyChangeOnMasterWhichIsNotDenseOnSlave() throws Exception
     {
         // GIVEN the following store contents on slave (2.1 store format)

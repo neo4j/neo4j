@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * Manages changes to records in a transaction. Before/after state is supported as well as
@@ -65,6 +65,14 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
                     loader.load( key, additionalData ), loader, manageBeforeState, false, additionalData );
         }
         return result;
+    }
+
+    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    {
+        RecordChange<KEY, RECORD, ADDITIONAL> recordChange = new RecordChange<>( recordChanges, key, newRecord, loader,
+                manageBeforeState, false, additionalData );
+        recordChanges.put( key, recordChange );
+        recordChange.forChangingData();
     }
 
     public int changeSize()
