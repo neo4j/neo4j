@@ -30,6 +30,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.CommitNotificationFailedException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -503,7 +504,14 @@ public class XaResourceManager
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )
         {
-            txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+            try
+            {
+                txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+            }
+            catch ( Exception e )
+            {
+                throw new CommitNotificationFailedException( e );
+            }
         }
         return xaTransaction;
     }

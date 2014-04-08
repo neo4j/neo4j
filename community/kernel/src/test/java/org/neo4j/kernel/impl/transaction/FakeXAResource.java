@@ -142,4 +142,25 @@ public class FakeXAResource implements XAResource
             new Integer( flags ) }, new String[] { "javax.transaction.xa.Xid",
             "java.lang.Integer" } ) );
     }
+
+    public static class FailingFakeXAResource extends FakeXAResource
+    {
+        private boolean failInCommit;
+
+        public FailingFakeXAResource( String name, boolean failInCommit )
+        {
+            super( name );
+            this.failInCommit = failInCommit;
+        }
+
+        @Override
+        public void commit( Xid xid, boolean onePhase )
+        {
+            if ( failInCommit )
+            {
+                throw new RuntimeException( "I was told to fail" );
+            }
+            super.commit( xid, onePhase );
+        }
+    }
 }

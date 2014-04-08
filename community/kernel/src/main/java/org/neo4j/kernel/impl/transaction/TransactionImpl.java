@@ -102,7 +102,7 @@ class TransactionImpl implements Transaction
     {
         return state;
     }
-    
+
     private String getStatusAsString()
     {
         return txManager.getTxStatusAsString( status ) + (active ? "" : " (suspended)");
@@ -158,7 +158,7 @@ class TransactionImpl implements Transaction
                     if ( similarResource.other() != null )
                     {   // This exact resource is already enlisted
                         ResourceElement resource = similarResource.other();
-                        
+
                         // TODO either enlisted or delisted. is TMJOIN correct then?
                         xaRes.start( resource.getXid(), resource.getStatus() == RS_SUSPENDED ?
                                 XAResource.TMRESUME : XAResource.TMJOIN );
@@ -392,19 +392,22 @@ class TransactionImpl implements Transaction
 
     synchronized void doAfterCompletion()
     {
-        for ( Synchronization s : syncHooks )
-        {
-            try
+	    if ( syncHooks != null )
+	    {
+            for ( Synchronization s : syncHooks )
             {
-                s.afterCompletion( status );
+                try
+                {
+                    s.afterCompletion( status );
+                }
+                catch ( Throwable t )
+                {
+                    logger.warn( "Caught exception from tx syncronization[" + s
+                            + "] afterCompletion()", t );
+                }
             }
-            catch ( Throwable t )
-            {
-                logger.warn( "Caught exception from tx syncronization[" + s
-                        + "] afterCompletion()", t );
-            }
-        }
-        syncHooks = null; // help gc
+            syncHooks = null; // help gc
+	    }
     }
 
     @Override
@@ -535,6 +538,7 @@ class TransactionImpl implements Transaction
         }
         // commit
         status = Status.STATUS_COMMITTING;
+        RuntimeException benignException = null;
         for ( ResourceElement re : resourceList )
         {
             if ( re.getStatus() != RS_READONLY )
@@ -547,13 +551,22 @@ class TransactionImpl implements Transaction
                 {
                     throw e;
                 }
-                catch ( Throwable e )
+                catch ( CommitNotificationFailedException e )
+                {
+                    benignException = e;
+                }
+                catch( Throwable e )
                 {
                     throw Exceptions.withCause( new XAException( XAException.XAER_RMERR ), e );
                 }
             }
         }
         status = Status.STATUS_COMMITTED;
+
+        if ( benignException != null )
+        {
+            throw benignException;
+        }
     }
 
     void doRollback() throws XAException
