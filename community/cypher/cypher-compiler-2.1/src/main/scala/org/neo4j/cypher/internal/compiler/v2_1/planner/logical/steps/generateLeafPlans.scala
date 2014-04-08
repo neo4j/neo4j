@@ -36,10 +36,19 @@ object generateLeafPlans {
     val labelPredicateMap = context.queryGraph.selections.labelPredicates
 
     val leafPlanners = Seq(
+      // MATCH n WHERE id(n) = {id} RETURN n
       idSeekLeafPlanner(predicates),
+
+      // MATCH n WHERE n.prop = {val} RETURN n
       uniqueIndexSeekLeafPlanner(predicates, labelPredicateMap),
+
+      // MATCH n WHERE n.prop = {val} RETURN n
       indexSeekLeafPlanner(predicates, labelPredicateMap),
+
+      // MATCH (n:Person) RETURN n
       labelScanLeafPlanner(labelPredicateMap),
+
+      // MATCH n RETURN n
       allNodesLeafPlanner()
     )
 
