@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
+package org.neo4j.kernel.impl.api.statistics;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,16 +28,16 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.heuristics_enabled;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.statistics_enabled;
 
-public class HeuristicsServiceRepository
+public class StatisticsServiceRepository
 {
     private final FileSystemAbstraction fs;
     private final Config config;
     private final StoreReadLayer store;
     private final JobScheduler scheduler;
 
-    public HeuristicsServiceRepository( FileSystemAbstraction fs, Config config, StoreReadLayer store,
+    public StatisticsServiceRepository( FileSystemAbstraction fs, Config config, StoreReadLayer store,
                                         JobScheduler scheduler )
     {
         this.fs = fs;
@@ -46,30 +46,31 @@ public class HeuristicsServiceRepository
         this.scheduler = scheduler;
     }
 
-    public HeuristicsService loadHeuristics()
+    public StatisticsService loadStatistics()
     {
-        RuntimeHeuristicsService runtime = RuntimeHeuristicsService.load( this.fs, heuristicsFile(), store, scheduler );
-        if(config.get( heuristics_enabled ))
+        SamplingStatisticsService runtime = SamplingStatisticsService.load( this.fs, statisticsFile(), store,
+                scheduler );
+        if(config.get( statistics_enabled ))
         {
             return runtime;
         }
         else
         {
-            return new StaleHeuristicsService( runtime );
+            return new StaleStatisticsService( runtime );
         }
     }
 
-    public void storeHeuristics( HeuristicsService heuristics ) throws IOException
+    public void storeStatistics( StatisticsService statistics ) throws IOException
     {
-        if(heuristics instanceof RuntimeHeuristicsService)
+        if(statistics instanceof SamplingStatisticsService )
         {
-            ((RuntimeHeuristicsService)heuristics).save( fs, heuristicsFile() );
+            ((SamplingStatisticsService)statistics).save( fs, statisticsFile() );
         }
     }
 
-    private File heuristicsFile()
+    private File statisticsFile()
     {
-        return new File( this.config.get( store_dir ), "neo4j.heuristics");
+        return new File( this.config.get( store_dir ), "neo4j.statistics");
     }
 
 }

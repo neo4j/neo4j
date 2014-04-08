@@ -28,11 +28,11 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.heuristics.HeuristicsService;
-import org.neo4j.kernel.impl.api.heuristics.HeuristicsServiceRepository;
+import org.neo4j.kernel.impl.api.statistics.StatisticsService;
+import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -130,7 +130,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private final boolean readOnly;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
-    private final HeuristicsService heuristicsService;
+    private final StatisticsService statisticsService;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final JobScheduler scheduler;
@@ -175,7 +175,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 nodeManager );
         this.storeLayer = storeLayer;
         this.statementOperations = buildStatementOperations();
-        this.heuristicsService = new HeuristicsServiceRepository( fs, config, storeLayer, scheduler ).loadHeuristics();
+        this.statisticsService = new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
     }
 
     @Override
@@ -185,15 +185,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         {
             schemaCache.addSchemaRule( schemaRule );
         }
-        heuristicsService.start();
+        statisticsService.start();
     }
 
     @Override
     public void stop() throws Throwable
     {
         isShutdown = true;
-        new HeuristicsServiceRepository( fs, config, storeLayer, scheduler );
-        heuristicsService.stop();
+        new StatisticsServiceRepository( fs, config, storeLayer, scheduler );
+        statisticsService.stop();
     }
 
     @Override
@@ -218,9 +218,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public HeuristicsData heuristics()
+    public StatisticsData heuristics()
     {
-        return heuristicsService.heuristics();
+        return statisticsService.statistics();
     }
 
     // We temporarily need this until all transaction state has moved into the kernel

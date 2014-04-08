@@ -17,19 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
-import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
-import org.neo4j.kernel.impl.util.statistics.RollingAverage;
+package org.neo4j.kernel.impl.api.statistics;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HeuristicsCollectedData implements HeuristicsData, Serializable
+import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
+import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
+
+public class StatisticsCollectedData implements StatisticsData, Serializable
 {
 
     private static final long serialVersionUID = 5430534253089297623L;
@@ -43,12 +43,12 @@ public class HeuristicsCollectedData implements HeuristicsData, Serializable
     private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
     private final RollingAverage.Parameters parameters;
 
-    public HeuristicsCollectedData()
+    public StatisticsCollectedData()
     {
         this( new RollingAverage.Parameters() );
     }
 
-    public HeuristicsCollectedData( RollingAverage.Parameters parameters )
+    public StatisticsCollectedData( RollingAverage.Parameters parameters )
     {
         this.parameters = parameters;
         this.nodeLivenessData = new NodeLivenessData( parameters );
@@ -176,7 +176,7 @@ public class HeuristicsCollectedData implements HeuristicsData, Serializable
             return false;
         }
 
-        HeuristicsCollectedData that = (HeuristicsCollectedData) o;
+        StatisticsCollectedData that = (StatisticsCollectedData) o;
 
         return bothDegrees.equals( that.bothDegrees )
                 && incomingDegrees.equals( that.incomingDegrees )

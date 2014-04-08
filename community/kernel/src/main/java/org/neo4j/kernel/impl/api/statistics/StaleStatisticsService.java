@@ -17,12 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
+package org.neo4j.kernel.impl.api.statistics;
 
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public interface HeuristicsService extends Lifecycle
+/**
+ * Exposes regular statistics, but does not actively gather new statistics.
+ */
+public class StaleStatisticsService extends LifecycleAdapter implements StatisticsService
 {
-    HeuristicsData heuristics();
+    private final StatisticsService delegate;
+
+    public StaleStatisticsService( StatisticsService delegate )
+    {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public StatisticsData statistics() {
+        return delegate.statistics();
+    }
 }

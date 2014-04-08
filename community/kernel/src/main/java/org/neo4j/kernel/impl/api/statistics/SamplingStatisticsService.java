@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
+package org.neo4j.kernel.impl.api.statistics;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,19 +26,19 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 
-public class RuntimeHeuristicsService extends LifecycleAdapter implements HeuristicsService
+public class SamplingStatisticsService extends LifecycleAdapter implements StatisticsService
 {
     private final JobScheduler scheduler;
-    private final HeuristicsCollector collector;
+    private final StatisticsCollector collector;
 
-    public static RuntimeHeuristicsService load( FileSystemAbstraction fs, File path, StoreReadLayer store,
+    public static SamplingStatisticsService load( FileSystemAbstraction fs, File path, StoreReadLayer store,
                                                  JobScheduler scheduler )
     {
         if ( fs.fileExists( path ) )
@@ -46,27 +46,27 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
             try
             {
                 ObjectInputStream in = new ObjectInputStream( fs.openAsInputStream( path ) );
-                return new RuntimeHeuristicsService( (HeuristicsCollectedData) in.readObject(), store, scheduler );
+                return new SamplingStatisticsService( (StatisticsCollectedData) in.readObject(), store, scheduler );
             }
             catch ( Exception e )
             {
-                // Ignore. This would indicate the file is somehow corrupt, so just start over with new heuristics.
+                // Ignore. This would indicate the file is somehow corrupt, so just start over with new statistics.
             }
         }
 
-        return new RuntimeHeuristicsService( store, scheduler );
+        return new SamplingStatisticsService( store, scheduler );
     }
 
-    public RuntimeHeuristicsService( StoreReadLayer store, JobScheduler scheduler )
+    public SamplingStatisticsService( StoreReadLayer store, JobScheduler scheduler )
     {
-        this( new HeuristicsCollectedData(), store, scheduler );
+        this( new StatisticsCollectedData(), store, scheduler );
     }
 
-    public RuntimeHeuristicsService( HeuristicsCollectedData collectedData, StoreReadLayer store,
-                                     JobScheduler scheduler )
+    public SamplingStatisticsService( StatisticsCollectedData collectedData, StoreReadLayer store,
+                                      JobScheduler scheduler )
     {
         this.scheduler = scheduler;
-        this.collector = new HeuristicsCollector( store, collectedData );
+        this.collector = new StatisticsCollector( store, collectedData );
     }
 
     @Override
@@ -82,7 +82,7 @@ public class RuntimeHeuristicsService extends LifecycleAdapter implements Heuris
     }
 
     @Override
-    public HeuristicsData heuristics()
+    public StatisticsData statistics()
     {
         return collector.collectedData();
     }

@@ -17,30 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.util.statistics.RollingAverage;
+package org.neo4j.kernel.impl.api.statistics;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
-public class HeuristicsCollector implements Runnable
+public class StatisticsCollector implements Runnable
 {
 
-    private final HeuristicsCollectedData collectedData;
+    private final StatisticsCollectedData collectedData;
     private final StoreReadLayer store;
     private final Random random = new Random();
 
-    public HeuristicsCollector( StoreReadLayer store, HeuristicsCollectedData collectedData )
+    public StatisticsCollector( StoreReadLayer store, StatisticsCollectedData collectedData )
     {
         this.collectedData = collectedData;
         this.store = store;
@@ -69,7 +69,7 @@ public class HeuristicsCollector implements Runnable
         {
             for ( Integer nodeLabel :
                     Iterables.append( /* Include for looking up without label */
-                            HeuristicsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL,
+                            StatisticsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL,
                             nodeLabels
                     )
                     )
@@ -93,7 +93,7 @@ public class HeuristicsCollector implements Runnable
         }
     }
 
-    public HeuristicsData collectedData()
+    public StatisticsData collectedData()
     {
         return collectedData;
     }

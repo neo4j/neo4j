@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
+package org.neo4j.kernel.impl.api.statistics;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
-import static org.neo4j.kernel.impl.api.heuristics.HeuristicsTestSupport.generateStore;
+import static org.neo4j.kernel.impl.api.statistics.HeuristicsTestSupport.generateStore;
 
-public class HeuristicsCollectorTest
+public class StatisticsCollectorTest
 {
 
     @Test
@@ -36,9 +36,9 @@ public class HeuristicsCollectorTest
     {
         // Given
         double equalityTolerance = 0.2d;
-        HeuristicsCollectedData data = new HeuristicsCollectedData( new RollingAverage.Parameters( RollingAverage
+        StatisticsCollectedData data = new StatisticsCollectedData( new RollingAverage.Parameters( RollingAverage
                 .Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance ) );
-        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
+        StatisticsCollector collector = new StatisticsCollector( generateStore(), data );
 
         // When
         collector.run();
@@ -55,9 +55,9 @@ public class HeuristicsCollectorTest
     {
         // Given
         double equalityTolerance = 0.2d;
-        HeuristicsCollectedData data = new HeuristicsCollectedData( new RollingAverage.Parameters( RollingAverage
+        StatisticsCollectedData data = new StatisticsCollectedData( new RollingAverage.Parameters( RollingAverage
                 .Parameters.DEFAULT_WINDOW_SIZE, equalityTolerance ) );
-        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
+        StatisticsCollector collector = new StatisticsCollector( generateStore(), data );
 
         // When
         collector.run();
@@ -72,8 +72,8 @@ public class HeuristicsCollectorTest
     public void shouldGatherRelationshipDegreeByLabelDistribution() throws Exception
     {
         // Given
-        HeuristicsCollectedData data = new HeuristicsCollectedData();
-        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
+        StatisticsCollectedData data = new StatisticsCollectedData();
+        StatisticsCollector collector = new StatisticsCollector( generateStore(), data );
 
         // When
         collector.run();
@@ -88,8 +88,8 @@ public class HeuristicsCollectorTest
     public void shouldGatherLiveNodes() throws Throwable
     {
         // Given
-        HeuristicsCollectedData data = new HeuristicsCollectedData();
-        HeuristicsCollector collector = new HeuristicsCollector( generateStore( 0.6 ), data );
+        StatisticsCollectedData data = new StatisticsCollectedData();
+        StatisticsCollector collector = new StatisticsCollector( generateStore( 0.6 ), data );
 
         // When
         collector.run();
@@ -103,8 +103,8 @@ public class HeuristicsCollectorTest
     public void shouldGatherMaxNodes() throws Throwable
     {
         // Given
-        HeuristicsCollectedData data = new HeuristicsCollectedData();
-        HeuristicsCollector collector = new HeuristicsCollector( generateStore(), data );
+        StatisticsCollectedData data = new StatisticsCollectedData();
+        StatisticsCollector collector = new StatisticsCollector( generateStore(), data );
 
         // When
         collector.run();

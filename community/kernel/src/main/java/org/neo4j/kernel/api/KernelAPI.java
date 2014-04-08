@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api;
 
 
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
@@ -42,6 +42,6 @@ public interface KernelAPI
     void registerTransactionHook( TransactionHook hook );
     void unregisterTransactionHook( TransactionHook hook );
 
-    /** Access live updated heuristics for the data the kernel manages. */
-    HeuristicsData heuristics();
+    /** Access live updated statistics for the data the kernel manages. */
+    StatisticsData heuristics();
 }

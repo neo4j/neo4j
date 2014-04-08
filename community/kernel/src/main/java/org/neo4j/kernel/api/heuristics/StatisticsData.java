@@ -21,7 +21,8 @@ package org.neo4j.kernel.api.heuristics;
 
 import org.neo4j.graphdb.Direction;
 
-public interface HeuristicsData {
+public interface StatisticsData
+{
     public static final int RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL = -1;
 
     /** Label id -> relative occurrence, value between 0 and 1. The total may be > 1, since labels may co-occur. */

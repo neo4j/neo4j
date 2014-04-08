@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.spi.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.heuristics.HeuristicsData
+import org.neo4j.kernel.api.heuristics.StatisticsData
 
-class TransactionBoundGraphStatistics(statistics: HeuristicsData) extends GraphStatistics {
+class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
 
   def nodesCardinality =
     statistics.liveNodesRatio() * statistics.maxAddressableNodes()
@@ -38,7 +38,7 @@ class TransactionBoundGraphStatistics(statistics: HeuristicsData) extends GraphS
   def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double = ???
 
   def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
-    statistics.degree( HeuristicsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction )
+    statistics.degree( StatisticsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction )
 
   def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
     statistics.degree( labelId.id, relTypeId.id, direction )

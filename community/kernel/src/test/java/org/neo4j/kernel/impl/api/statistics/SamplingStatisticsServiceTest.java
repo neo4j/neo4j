@@ -17,22 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.heuristics;
+package org.neo4j.kernel.impl.api.statistics;
+
+import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
-import java.io.File;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.kernel.impl.api.heuristics.HeuristicsTestSupport.generateStore;
 
-public class RuntimeHeuristicsServiceTest
+import static org.neo4j.kernel.impl.api.statistics.HeuristicsTestSupport.generateStore;
+
+public class SamplingStatisticsServiceTest
 {
     @Rule
     public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
@@ -45,17 +47,17 @@ public class RuntimeHeuristicsServiceTest
     {
         // Given
         StoreReadLayer store = generateStore();
-        HeuristicsCollectedData collectedData = new HeuristicsCollectedData();
-        RuntimeHeuristicsService service = new RuntimeHeuristicsService( collectedData, store, null );
-        HeuristicsCollector collector = new HeuristicsCollector( store, collectedData );
+        StatisticsCollectedData collectedData = new StatisticsCollectedData();
+        SamplingStatisticsService service = new SamplingStatisticsService( collectedData, store, null );
+        StatisticsCollector collector = new StatisticsCollector( store, collectedData );
         collector.run();
 
         // When
         service.save( fs, new File( dir.directory(), "somefile" ) );
 
         // Then
-        HeuristicsCollectedData expected = (HeuristicsCollectedData) RuntimeHeuristicsService.load( fs,
-                new File( dir.directory(), "somefile" ), store, null ).heuristics();
+        StatisticsCollectedData expected = (StatisticsCollectedData) SamplingStatisticsService.load( fs,
+                new File( dir.directory(), "somefile" ), store, null ).statistics();
         assertThat( expected, equalTo( collector.collectedData() ) );
     }
 
@@ -64,9 +66,9 @@ public class RuntimeHeuristicsServiceTest
     {
         // Given
         StoreReadLayer store = generateStore();
-        HeuristicsCollectedData collectedData = new HeuristicsCollectedData();
-        RuntimeHeuristicsService service = new RuntimeHeuristicsService( collectedData, store, null );
-        HeuristicsCollector collector = new HeuristicsCollector( store, collectedData );
+        StatisticsCollectedData collectedData = new StatisticsCollectedData();
+        SamplingStatisticsService service = new SamplingStatisticsService( collectedData, store, null );
+        StatisticsCollector collector = new StatisticsCollector( store, collectedData );
         collector.run();
 
         // When
@@ -74,8 +76,8 @@ public class RuntimeHeuristicsServiceTest
         service.save( fs, new File( dir.directory(), "somefile" ) );
 
         // Then
-        HeuristicsCollectedData expected = (HeuristicsCollectedData) RuntimeHeuristicsService.load( fs,
-                new File( dir.directory(), "somefile" ), store, null ).heuristics();
+        StatisticsCollectedData expected = (StatisticsCollectedData) SamplingStatisticsService.load( fs,
+                new File( dir.directory(), "somefile" ), store, null ).statistics();
         assertThat( expected, equalTo( collector.collectedData() ) );
     }
 }
