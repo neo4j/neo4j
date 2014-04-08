@@ -92,5 +92,5 @@ class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gd
     statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def statistics: GraphStatistics = new TransactionBoundGraphStatistics(kernelAPI.heuristics())
+  def statistics: GraphStatistics = new HardcodedGraphStatistics
 }
