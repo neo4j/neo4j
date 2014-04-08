@@ -1,6 +1,8 @@
 2.0.2
 -----
 o Fixes github issues #1872, #961 that deal with Content-Encoding headers
+o Server log and messages.log now share common formatting. Achieved
+  through the use of the same logging framework
 
 2.0.1
 -----
@@ -33,6 +35,7 @@ o REST transaction support
 ---------
 o Added support for labels
 o Added support for the new label-based indexes
+o Fixes issue with transacions leaking when there is an exception while rendering the response
 
 1.9.5 (2013-11-11)
 ------------------

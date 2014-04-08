@@ -22,18 +22,14 @@ package org.neo4j.kernel.impl.transaction;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.logging.BufferingLogger;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.test.BufferingLogging;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -60,9 +56,7 @@ public class KernelHealthTest
     public void shouldLogKernelPanicEvent() throws Exception
     {
         // GIVEN
-        BufferingLogger logger = new BufferingLogger();
-        Logging logging = mock( Logging.class );
-        when( logging.getMessagesLog( any( Class.class ) ) ).thenReturn( logger );
+        BufferingLogging logging = new BufferingLogging();
         KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ), logging );
         kernelHealth.healed();
 
@@ -71,6 +65,6 @@ public class KernelHealthTest
         kernelHealth.panic( new Exception( message ) );
 
         // THEN
-        assertThat( logger.toString(), containsString( message ) );
+        assertThat( logging.toString(), containsString( message ) );
     }
 }

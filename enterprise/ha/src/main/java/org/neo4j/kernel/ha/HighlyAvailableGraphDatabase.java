@@ -47,6 +47,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -196,9 +197,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected org.neo4j.graphdb.Transaction beginTx( ForceMode forceMode )
     {
-        // TODO first startup ever we don't have a proper db, so don't even serve read requests
-        // if this is a startup for where we have been a member of this cluster before we
-        // can server (possibly quite outdated) read requests.
         if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
         {
             throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
@@ -206,6 +204,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         }
 
         return super.beginTx( forceMode );
+    }
+
+    @Override
+    public IndexManager index()
+    {
+        if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
+        {
+            throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
+                    + availabilityGuard.describeWhoIsBlocking() );
+        }
+        return super.index();
     }
 
     @Override

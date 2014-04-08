@@ -33,10 +33,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
-import org.neo4j.kernel.logging.BufferingLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
@@ -55,7 +52,6 @@ import org.neo4j.server.rest.web.DatabaseActions;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.lang.String.format;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
@@ -507,33 +503,5 @@ public class CommunityServerBuilder
             super.stop();
             configFile.delete();
         }
-    }
-
-    public static Logging bufferingLogging()
-    {
-        final BufferingLogger log = new BufferingLogger();
-        final BufferingConsoleLogger console = new BufferingConsoleLogger();
-        return new Logging()
-        {
-            @Override
-            public StringLogger getMessagesLog( Class loggingClass )
-            {
-                return log;
-            }
-
-            @Override
-            public ConsoleLogger getConsoleLog( Class loggingClass )
-            {
-                return console;
-            }
-
-            @Override
-            public String toString()
-            {
-                StringBuilder builder = new StringBuilder();
-                builder.append( log.toString() ).append( format( "%n" ) ).append( console.toString() );
-                return builder.toString();
-            }
-        };
     }
 }

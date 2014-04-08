@@ -2,6 +2,9 @@
 -----
 o Fixes issue where failed instances would not be able to rejoin the cluster after restart
 o Throttles output of learn failure messages that could create big messages.log files
+o Adds INSTANCE_ID header to every message, solving class of problems where
+  reusing a URI would cause denied entry errors
+o Introduces throttle in the message logging of cluster transitions
 
 2.0.1
 -----
