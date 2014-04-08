@@ -23,10 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.includeBestPlan
 
 class GreedyPlanningStrategy {
@@ -39,7 +35,7 @@ class GreedyPlanningStrategy {
     project(bestPlan)
   }
 
-  def findExpandOrJoin(planTable: PlanTable) = {
+  def findExpandOrJoin(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
     val expansions = expand(planTable)
     val expansionsWithSelections = applySelections(expansions)
     val joins = join(planTable)
@@ -47,7 +43,7 @@ class GreedyPlanningStrategy {
     includeBestPlan(planTable)(expansionsWithSelections ++ joinsWithSelections)
   }
 
-  def findCartesianProduct(planTable: PlanTable) = {
+  def findCartesianProduct(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
     val cartesianProducts = cartesianProduct(planTable)
     val cartesianProductsWithSelections = applySelections(cartesianProducts)
     includeBestPlan(planTable)(cartesianProductsWithSelections)
