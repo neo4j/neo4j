@@ -44,15 +44,8 @@ object generateLeafPlans {
     )
 
     val plans: Seq[LogicalPlan] = leafPlanners.flatMap(_.apply)
-
-    val candidateLists: Iterable[CandidateList] = plans.foldLeft(Map[Set[IdName], CandidateList]()) {
-      case (acc, plan) =>
-        val candidatesForThisId = acc.getOrElse(plan.coveredIds, CandidateList(Seq.empty)) + plan
-        acc + (plan.coveredIds -> candidatesForThisId)
-    }.values
-
-    candidateLists.foldLeft(PlanTable()) {
-      case (planTable, candidateList) => candidateList.topPlan(context.cost).foldLeft(planTable)(_ + applySelections(_))
-    }
+    val candidateLists: Iterable[CandidateList] = plans.groupBy(_.coveredIds).values.map(CandidateList)
+    val topPlans: Iterable[LogicalPlan] = candidateLists.flatMap(_.topPlan(context.cost))
+    topPlans.foldLeft(PlanTable())(_ + _)
   }
 }

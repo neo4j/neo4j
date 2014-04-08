@@ -128,7 +128,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         return n, x"""
     )
 
-    result.toList should equal(List(
+    result.toSet should equal(Set(
       Map("n" -> n1, "x" -> n3),
       Map("n" -> n4, "x" -> n2)))
 

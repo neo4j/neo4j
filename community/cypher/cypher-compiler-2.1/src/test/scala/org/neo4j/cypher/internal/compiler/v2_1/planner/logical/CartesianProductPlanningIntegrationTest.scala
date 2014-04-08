@@ -47,7 +47,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMockedMetricsFactory)
     produceLogicalPlan("MATCH n, m RETURN n, m") should equal(
-      CartesianProduct(AllNodesScan(IdName("n")), AllNodesScan(IdName("m")))
+      CartesianProduct(AllNodesScan(IdName("m")), AllNodesScan(IdName("n")))
     )
   }
 
