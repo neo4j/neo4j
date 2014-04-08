@@ -272,7 +272,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testMultipleShutdown()
     {
-        getTransaction().close();
+        commit();
         getGraphDb().shutdown();
         getGraphDb().shutdown();
     }

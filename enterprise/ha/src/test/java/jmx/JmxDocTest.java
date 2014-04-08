@@ -85,7 +85,7 @@ public class JmxDocTest
     @BeforeClass
     public static void startDb() throws Exception
     {
-        File storeDir = dir.graphDbDir( /*clean=*/true );
+        File storeDir = dir.makeGraphDbDir( /*clean=*/ );
         CreateEmptyDb.at( storeDir );
         d1b = new HighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() )

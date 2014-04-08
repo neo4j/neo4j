@@ -47,7 +47,7 @@ public class TestLuceneSchemaBatchInsertIT
     public void shouldLoadAndUseLuceneProvider() throws Exception
     {
         // GIVEN
-        String storeDir = forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+        String storeDir = forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
         BatchInserter inserter = inserter( storeDir );
         inserter.createDeferredSchemaIndex( LABEL ).on( "name" ).create();
 

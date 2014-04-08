@@ -19,12 +19,22 @@
  */
 package org.neo4j.com.storecopy;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
@@ -47,36 +57,33 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-
 public class RemoteStoreCopierTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
     public void shouldStoreLogFilesAndRunRecovery() throws Exception
     {
         // Given
-        final String copyDir = new File(testDir.directory(), "copy").getAbsolutePath();
-        final String originalDir = new File(testDir.directory(), "original").getAbsolutePath();
+        final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
+        final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
         RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
 
         // When
-        copier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
+        RemoteStoreCopier.StoreCopyRequester requester = spy( new RemoteStoreCopier.StoreCopyRequester()
         {
+            public Response<Object> response;
+
             @Override
             public Response<?> copyStore( StoreWriter writer )
             {
                 // Data that should be available in the store files
-                try( Transaction tx = original.beginTx() )
+                try ( Transaction tx = original.beginTx() )
                 {
                     original.createNode( label( "BeforeCopyBegins" ) );
                     tx.success();
@@ -89,18 +96,30 @@ public class RemoteStoreCopierTest
                         original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
                         StringLogger.SYSTEM, false, writer, fs,
                         original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
-                                BackupMonitor.class ));
+                                BackupMonitor.class )
+                );
 
                 // Data that should be made available as part of recovery
-                try( Transaction tx = original.beginTx() )
+                try ( Transaction tx = original.beginTx() )
                 {
-                    original.createNode( label( "AfterCopy" ));
+                    original.createNode( label( "AfterCopy" ) );
                     tx.success();
                 }
 
-                return ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL );
+                response = spy( ServerUtil.packResponse( original.storeId(), dsManager, ctx, null,
+                        ServerUtil.ALL ) );
+                return response;
             }
-        });
+
+            @Override
+            public void done()
+            {
+                // Ensure response is closed before this method is called
+                assertNotNull( response );
+                verify( response, times( 1 ) ).close();
+            }
+        } );
+        copier.copyStore( requester );
 
         // Then
         GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
@@ -119,7 +138,7 @@ public class RemoteStoreCopierTest
             original.shutdown();
         }
 
-
+        verify( requester, times( 1 ) ).done();
     }
 
     private List<KernelExtensionFactory<?>> loadKernelExtensions()
@@ -131,5 +150,4 @@ public class RemoteStoreCopierTest
         }
         return kernelExtensions;
     }
-
 }

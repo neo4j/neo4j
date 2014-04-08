@@ -105,7 +105,7 @@ public class StringLoggerTest
     public void makeSureRotationDoesNotRecurse() throws Exception
     {
         final String baseMessage = "base message";
-        File target = TargetDirectory.forTest( StringLoggerTest.class ).directory( "recursionTest", true );
+        File target = TargetDirectory.forTest( StringLoggerTest.class ).cleanDirectory( "recursionTest" );
         final StringLogger logger = StringLogger.loggerDirectory( fileSystem, target,
                 baseMessage.length() /*rotation threshold*/, false );
 
@@ -142,7 +142,7 @@ public class StringLoggerTest
     public void shouldLogDebugMessagesIfToldTo() throws Exception
     {
         // GIVEN
-        File target = TargetDirectory.forTest( StringLoggerTest.class ).directory( "debug", true );
+        File target = TargetDirectory.forTest( StringLoggerTest.class ).cleanDirectory( "debug" );
         StringLogger logger = StringLogger.loggerDirectory( fileSystem, target, DEFAULT_THRESHOLD_FOR_ROTATION, true );
 
         // WHEN

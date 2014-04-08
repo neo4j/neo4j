@@ -43,7 +43,7 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestRecoveryNotHappening
 {
-    private final File storeDirectory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final File storeDirectory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private GraphDatabaseService db;
     
     /* So this test is here to assert that even if we have a scenario where

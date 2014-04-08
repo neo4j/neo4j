@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.RelationshipGroupCommand;
+import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
@@ -698,7 +699,7 @@ public class NeoStoreTransaction extends XaTransaction
             {
                 indexes.updateIndexes( new LazyIndexUpdates(
                         getNodeStore(), getPropertyStore(),
-                        new ArrayList<>( context.getPropCommands() ), new HashMap<>( context.getNodeCommands() ) ) );
+                        groupedNodePropertyCommands( context.getPropCommands() ), new HashMap<>( context.getNodeCommands() ) ) );
             }
 
             // schema rules. Execute these after generating the property updates so. If executed
@@ -744,6 +745,29 @@ public class NeoStoreTransaction extends XaTransaction
                 neoStore.updateIdGenerators();
             }
         }
+    }
+
+    private Collection<List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
+    {
+        // A bit too expensive data structure, but don't know off the top of my head how to make it better.
+        Map<Long, List<PropertyCommand>> groups = new HashMap<>();
+        for ( PropertyCommand command : propCommands )
+        {
+            PropertyRecord record = command.getAfter();
+            if ( !record.isNodeSet() )
+            {
+                continue;
+            }
+
+            long nodeId = command.getAfter().getNodeId();
+            List<PropertyCommand> group = groups.get( nodeId );
+            if ( group == null )
+            {
+                groups.put( nodeId, group = new ArrayList<>() );
+            }
+            group.add( command );
+        }
+        return groups.values();
     }
 
     private Collection<NodeLabelUpdate> gatherLabelUpdatesSortedByNodeId()

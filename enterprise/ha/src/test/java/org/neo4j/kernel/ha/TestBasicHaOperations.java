@@ -60,7 +60,7 @@ public class TestBasicHaOperations
     public void testBasicFailover() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "failover", true ), stringMap() );
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.cleanDirectory( "failover" ), stringMap() );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
 
@@ -98,7 +98,7 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromSlaveToMaster() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.cleanDirectory( "propagation" ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
@@ -130,7 +130,7 @@ public class TestBasicHaOperations
     public void testBasicPropagationFromMasterToSlave() throws Throwable
     {
         // given
-        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory( "propagation", true ),
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.cleanDirectory( "propagation" ),
                 stringMap( tx_push_factor.name(), "2" ) );
         clusterManager.start();
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();

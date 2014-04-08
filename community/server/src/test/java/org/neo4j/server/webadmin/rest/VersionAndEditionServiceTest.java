@@ -22,11 +22,13 @@ package org.neo4j.server.webadmin.rest;
 import javax.ws.rs.core.Response;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.Configurator;
@@ -34,8 +36,8 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.web.WebServer;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -152,7 +154,7 @@ public class VersionAndEditionServiceTest
     {
         public FakeAdvancedNeoServer( Configurator configurator, Database.Factory dbFactory )
         {
-            super( configurator, dbFactory );
+            super( configurator, dbFactory, DevNullLoggingService.DEV_NULL );
         }
 
         @Override

@@ -25,10 +25,12 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.SeekableByteChannel;
@@ -38,6 +40,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.NotFoundException;
 
@@ -92,6 +97,30 @@ public class FileUtils
         }
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
         return deleted;
+    }
+
+    public static File[] deleteFiles( File directory, String regexPattern )
+            throws IOException
+    {
+        Pattern pattern = Pattern.compile( regexPattern );
+        Collection<File> deletedFiles = new ArrayList<>();
+        File[] files = directory.listFiles();
+        if ( files == null )
+        {
+            throw new IllegalArgumentException( directory + " is not a directory" );
+        }
+        for ( File file : files )
+        {
+            if ( pattern.matcher( file.getName() ).find() )
+            {
+                if ( !file.delete() )
+                {
+                    throw new IOException( "Couldn't delete file '" + file.getAbsolutePath() + "'" );
+                }
+                deletedFiles.add( file );
+            }
+        }
+        return deletedFiles.toArray( new File[deletedFiles.size()] );
     }
 
     /**
@@ -397,5 +426,75 @@ public class FileUtils
     private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
     {
         return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
+    }
+
+    /**
+     * Move the contents of one directory into another directory. Allows moving the contents of a directory into a
+     * sub-directory of itself.
+     */
+    public static void moveDirectoryContents( File baseDir, File targetDir ) throws IOException
+    {
+        if(!baseDir.isDirectory())
+        {
+            throw new IllegalArgumentException( baseDir.getAbsolutePath() + " must be a directory." );
+        }
+
+        if(!targetDir.exists())
+        {
+            targetDir.mkdirs();
+        }
+
+        for ( File file : baseDir.listFiles() )
+        {
+            if(!file.equals( targetDir ))
+            {
+                moveFileToDirectory( file, targetDir );
+            }
+        }
+    }
+
+    /** Gives the recursive size of all files in a directory. */
+    public static long directorySize( File directory )
+    {
+        long length = 0;
+        for (File file : directory.listFiles())
+        {
+            length += file.isFile() ? file.length() : directorySize( file );
+        }
+        return length;
+    }
+
+    public interface LineListener
+    {
+        void line( String line );
+    }
+
+    public static LineListener echo( final PrintStream target )
+    {
+        return new LineListener()
+        {
+            @Override
+            public void line( String line )
+            {
+                target.println( line );
+            }
+        };
+    }
+
+    public static void readTextFile( File file, LineListener listener ) throws IOException
+    {
+        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        try
+        {
+            String line = null;
+            while ( (line = reader.readLine()) != null )
+            {
+                listener.line( line );
+            }
+        }
+        finally
+        {
+            reader.close();
+        }
     }
 }

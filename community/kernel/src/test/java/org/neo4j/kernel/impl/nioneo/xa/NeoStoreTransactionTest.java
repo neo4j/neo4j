@@ -37,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -78,6 +79,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -87,10 +89,12 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1235,7 +1239,7 @@ public class NeoStoreTransactionTest
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
             super( new File( "log" ), null, null, null, fs, new Monitors(), new SingleLoggingService( DEV_NULL ),
-                    LogPruneStrategies.NO_PRUNING, null, 25*1024*1024, ALLOW_ALL );
+                    LogPruneStrategies.NO_PRUNING, null, mock( KernelHealth.class ), 25*1024*1024, ALLOW_ALL );
             this.verifier = verifier;
         }
 

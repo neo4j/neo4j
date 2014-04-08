@@ -158,8 +158,8 @@ public class TxPushStrategyConfigIT
 
     private void startCluster( int memberCount, final int pushFactor, final String pushStrategy )
     {
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.directory(
-                name.getMethodName(), true ), stringMap() )
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( memberCount ), dir.cleanDirectory(
+                name.getMethodName() ), stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )

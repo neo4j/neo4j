@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.util.Map;
+
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.Function;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
@@ -43,6 +42,7 @@ import org.neo4j.server.webadmin.rest.MasterInfoServerModule;
 import org.neo4j.server.webadmin.rest.MasterInfoService;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.configuration.Configurator.DB_MODE_KEY;
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
@@ -57,24 +57,21 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     private static final GraphFactory HA_FACTORY = new GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
-                                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                                  Iterable<CacheProvider> cacheProviders,
-                                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String, String> params,
+                Dependencies dependencies )
         {
-            return new HighlyAvailableGraphDatabase( config, loggingProvider,
-                kernelExtensions, cacheProviders, txInterceptorProviders );
+            return new HighlyAvailableGraphDatabase( storeDir, params, dependencies );
         }
     };
 
-    public EnterpriseNeoServer( Configurator configurator )
+    public EnterpriseNeoServer( Configurator configurator, Logging logging )
     {
-        super( configurator, createDbFactory( configurator.configuration() ) );
+        super( configurator, createDbFactory( configurator.configuration() ), logging );
     }
 
-    public EnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory )
+    public EnterpriseNeoServer( Configurator configurator, Database.Factory dbFactory, Logging logging )
     {
-        super( configurator, dbFactory );
+        super( configurator, dbFactory, logging );
     }
 
     protected static Database.Factory createDbFactory( Configuration config )
@@ -89,15 +86,16 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected PreFlightTasks createPreflightTasks()
     {
         return new PreFlightTasks(
+                logging,
                 // TODO: This check should be done in the bootrapper,
                 // and verification of config should be done by the new
                 // config system.
                 //new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
                 new EnsurePreparedForHttpLogging(configurator.configuration()),
                 new PerformUpgradeIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out),
+                        configurator.getDatabaseTuningProperties(), System.out, logging ),
                 new PerformRecoveryIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out));
+                        configurator.getDatabaseTuningProperties(), System.out, logging ));
     }
 
     @SuppressWarnings( "unchecked" )
@@ -105,7 +103,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     protected Iterable<ServerModule> createServerModules()
     {
         return mix( asList(
-                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration() ) ),
+                (ServerModule) new MasterInfoServerModule( webServer, getConfiguration(), logging ) ),
                 super.createServerModules() );
     }
 

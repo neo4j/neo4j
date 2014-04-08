@@ -41,17 +41,19 @@ package org.neo4j.server.webadmin.console;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.logging.Logger;
 
 public class CypherSession implements ScriptSession
 {
     private final CypherExecutor cypherExecutor;
-    private static Logger log = Logger.getLogger( CypherSession.class );
+    private final ConsoleLogger log;
 
-    public CypherSession( CypherExecutor cypherExecutor )
+    public CypherSession( CypherExecutor cypherExecutor, Logging logging )
     {
         this.cypherExecutor = cypherExecutor;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
@@ -74,7 +76,7 @@ public class CypherSession implements ScriptSession
         }
         catch ( Exception exception )
         {
-            log.error( exception );
+            log.error( "Unknown error executing cypher query", exception );
             resultString = "Error: " + exception.getClass().getSimpleName() + " - " + exception.getMessage();
         }
         return Pair.of( resultString, null );

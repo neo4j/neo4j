@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 public class StartupTimeoutFunctionalTest
 {
     @Rule
-    public TargetDirectory.TestDirectory target = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory target = TargetDirectory.testDirForTest( getClass() );
 
     public EnterpriseNeoServer server;
 
@@ -79,7 +79,7 @@ public class StartupTimeoutFunctionalTest
     {
         Configurator configurator = buildProperties();
         configurator.configuration().setProperty( Configurator.STARTUP_TIMEOUT, 20 );
-        server = new EnterpriseNeoServer( configurator )
+        server = new EnterpriseNeoServer( configurator, DevNullLoggingService.DEV_NULL )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -103,7 +103,7 @@ public class StartupTimeoutFunctionalTest
 
     private EnterpriseNeoServer createSlowServer( Configurator configurator )
     {
-        return new EnterpriseNeoServer( configurator )
+        return new EnterpriseNeoServer( configurator, DevNullLoggingService.DEV_NULL )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -111,7 +111,7 @@ public class StartupTimeoutFunctionalTest
                 ServerModule slowModule = new ServerModule()
                 {
                     @Override
-                    public void start( StringLogger logger )
+                    public void start()
                     {
                         try
                         {

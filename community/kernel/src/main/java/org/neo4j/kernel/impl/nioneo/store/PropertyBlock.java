@@ -27,6 +27,8 @@ import java.util.List;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 public class PropertyBlock implements Cloneable
 {
     private static final long KEY_BITMASK = 0xFFFFFFL;
@@ -224,6 +226,6 @@ public class PropertyBlock implements Cloneable
 
     public DefinedProperty newPropertyData( PropertyStore propertyStore )
     {
-        return getType().readProperty( getKeyIndexId(), this, propertyStore );
+        return getType().readProperty( getKeyIndexId(), this, singletonProvider(propertyStore) );
     }
 }

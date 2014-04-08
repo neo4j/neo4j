@@ -45,7 +45,7 @@ public class TestRmiPublication
 
     private int spawnJvm( Class<?> mainClass, String name ) throws Exception
     {
-        String dir = forTest( getClass() ).directory( name, true ).getAbsolutePath();
+        String dir = forTest( getClass() ).cleanDirectory( name ).getAbsolutePath();
         return waitForExit( getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
                 mainClass.getName(), dir } ), 20 );
     }

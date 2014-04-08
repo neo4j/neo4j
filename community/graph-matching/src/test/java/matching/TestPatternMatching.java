@@ -91,7 +91,7 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestPatternMatching.class ).graphDbDir( true ).getAbsolutePath() );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestPatternMatching.class ).makeGraphDbDir().getAbsolutePath() );
     }
 
     @Before

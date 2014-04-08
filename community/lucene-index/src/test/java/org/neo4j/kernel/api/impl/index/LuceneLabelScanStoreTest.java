@@ -416,7 +416,7 @@ public class LuceneLabelScanStoreTest
         assertTrue( "Unexpected nodes in scan store " + nodeSet, nodeSet.isEmpty() );
     }
 
-    private final File dir = TargetDirectory.forTest( getClass() ).directory( "lucene", true );
+    private final File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "lucene" );
     private final Random random = new Random();
     private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private LifeSupport life;

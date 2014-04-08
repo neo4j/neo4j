@@ -27,14 +27,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.test.Mute;
 
-import static java.lang.String.format;
-
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.test.Mute.muteAll;
 
@@ -94,19 +94,12 @@ public class PropertyFileConfiguratorTest
         File tuningPropertiesFile = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
                 .build();
 
-        InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
-        new PropertyFileConfigurator( emptyPropertyFile );
+        BufferingConsoleLogger logger = new BufferingConsoleLogger();
+        new PropertyFileConfigurator( Validator.NO_VALIDATION, emptyPropertyFile, logger );
 
-        // Sometimes the wrong log provider may get onto the class path and then fail this test,
-        // to avoid that we accept both variants
-        String actual = appender.toString();
-        String content = format( ": No database tuning file explicitly set, defaulting to [%s]",
-                tuningPropertiesFile.getAbsolutePath() );
-        assertTrue( "Expected log message to contain hint about missing tuning file being replaced with defaults",
-                actual.contains( "INFO" + content ) ||
-                actual.contains( "Information" + content ) ||
-                actual.contains( "Info" + content )
-        );
+        assertThat( logger.toString(), containsString( String.format(
+                "No database tuning file explicitly set, defaulting to [%s]",
+                tuningPropertiesFile.getAbsolutePath() ) ) );
     }
 
     @Test

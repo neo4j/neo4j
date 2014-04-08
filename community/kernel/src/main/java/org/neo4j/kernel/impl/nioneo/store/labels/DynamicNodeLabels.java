@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store.labels;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -180,6 +181,11 @@ public class DynamicNodeLabels implements NodeLabels
     @Override
     public String toString()
     {
-        return format( "Dynamic(id:%d)", getFirstDynamicRecordId() );
+        if ( node.isLight() )
+        {
+            return format( "Dynamic(id:%d)", getFirstDynamicRecordId() );
+        }
+        return format( "Dynamic(id:%d,[%s])", getFirstDynamicRecordId(),
+                Arrays.toString( NodeStore.getDynamicLabelsArrayFromHeavyRecords( node.getDynamicLabelRecords() ) ) );
     }
 }

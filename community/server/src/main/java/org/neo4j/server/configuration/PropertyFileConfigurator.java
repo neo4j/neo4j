@@ -36,14 +36,12 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
 
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.configuration.validation.Validator;
-import org.neo4j.server.logging.Logger;
 
 public class PropertyFileConfigurator extends Configurator.Adapter
 {
     private static final String NEO4J_PROPERTIES_FILENAME = "neo4j.properties";
-
-    public static final Logger log = Logger.getLogger( PropertyFileConfigurator.class );
 
     private final CompositeConfiguration serverConfiguration = new CompositeConfiguration();
     private File propertyFileDirectory;
@@ -53,15 +51,10 @@ public class PropertyFileConfigurator extends Configurator.Adapter
 
     public PropertyFileConfigurator( File propertiesFile )
     {
-        this( null, propertiesFile );
+        this( Validator.NO_VALIDATION, propertiesFile, ConsoleLogger.DEV_NULL );
     }
 
-    public PropertyFileConfigurator( Validator v )
-    {
-        this( v, null );
-    }
-
-    public PropertyFileConfigurator( Validator v, File propertiesFile )
+    public PropertyFileConfigurator( Validator v, File propertiesFile, ConsoleLogger log )
     {
         if ( propertiesFile == null )
         {
@@ -71,22 +64,21 @@ public class PropertyFileConfigurator extends Configurator.Adapter
         try
         {
             propertyFileDirectory = propertiesFile.getParentFile();
-            loadPropertiesConfig( propertiesFile );
-            loadDatabaseTuningProperties( propertiesFile );
+            loadPropertiesConfig( propertiesFile, log );
+            loadDatabaseTuningProperties( propertiesFile, log );
 
             normalizeUris();
             ensureRelativeUris();
 
             if ( v != null )
             {
-                v.validate( this.configuration() );
+                v.validate( this.configuration(), log );
             }
         }
         catch ( ConfigurationException ce )
         {
-            log.warn( ce );
+            log.warn( "Invalid configuration", ce );
         }
-
     }
 
     @Override
@@ -95,7 +87,7 @@ public class PropertyFileConfigurator extends Configurator.Adapter
         return serverConfiguration == null ? new SystemConfiguration() : serverConfiguration;
     }
 
-    private void loadDatabaseTuningProperties( File configFile ) throws ConfigurationException
+    private void loadDatabaseTuningProperties( File configFile, ConsoleLogger log ) throws ConfigurationException
     {
         String databaseTuningPropertyFileLocation = serverConfiguration.getString( DB_TUNING_PROPERTY_FILE_KEY );
 
@@ -104,12 +96,12 @@ public class PropertyFileConfigurator extends Configurator.Adapter
             if ( propertyFileDirectoryContainsDBTuningFile() )
             {
                 databaseTuningPropertyFileLocation = new File( propertyFileDirectory, NEO4J_PROPERTIES_FILENAME ).getAbsolutePath();
-                log.info( "No database tuning file explicitly set, defaulting to [%s]",
+                log.log( "No database tuning file explicitly set, defaulting to [%s]",
                         databaseTuningPropertyFileLocation );
             }
             else
             {
-                log.info(
+                log.log(
                         "No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.",
                         configFile.getPath() );
                 return;
@@ -135,10 +127,10 @@ public class PropertyFileConfigurator extends Configurator.Adapter
         }
     }
 
-    private void loadPropertiesConfig( File configFile ) throws ConfigurationException
+    private void loadPropertiesConfig( File configFile, ConsoleLogger log ) throws ConfigurationException
     {
         PropertiesConfiguration propertiesConfig = new PropertiesConfiguration( configFile );
-        if ( validator.validate( propertiesConfig ) )
+        if ( validator.validate( propertiesConfig, log ) )
         {
             serverConfiguration.addConfiguration( propertiesConfig );
         }
@@ -146,7 +138,7 @@ public class PropertyFileConfigurator extends Configurator.Adapter
         {
             String failed = String.format( "Error processing [%s], configuration file has failed validation.",
                     configFile.getAbsolutePath() );
-            log.fatal( failed );
+            log.error( failed );
             throw new InvalidServerConfigurationException( failed );
         }
     }

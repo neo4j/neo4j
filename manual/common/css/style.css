@@ -249,6 +249,7 @@ div.admonitionblock {
 
 div.admonitionblock table {
   background: none;
+  min-width: 50%;
 }
 
 div.admonitionblock tbody,div.admonitionblock td,div.admonitionblock th {

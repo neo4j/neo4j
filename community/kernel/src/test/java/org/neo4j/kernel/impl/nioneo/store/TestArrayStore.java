@@ -52,7 +52,7 @@ public class TestArrayStore
     @Before
     public void before() throws Exception
     {
-        dir = TargetDirectory.forTest( getClass() ).directory( "db", true );
+        dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "db" );
         Map<String, String> configParams = MapUtil.stringMap();
         Config config = new Config( configParams );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();

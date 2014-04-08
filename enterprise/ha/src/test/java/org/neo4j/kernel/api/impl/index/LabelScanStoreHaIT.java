@@ -101,7 +101,7 @@ public class LabelScanStoreHaIT
         Second;
     }
 
-    private final File rootDirectory = TargetDirectory.forTest( getClass() ).directory( "root", true );
+    private final File rootDirectory = TargetDirectory.forTest( getClass() ).cleanDirectory( "root" );
     private ClusterManager clusterManager;
     private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;

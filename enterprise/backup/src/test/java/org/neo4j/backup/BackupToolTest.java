@@ -33,11 +33,8 @@ import org.neo4j.consistency.checking.full.TaskExecutionOrder;
 import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.TargetDirectory;
 
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -53,14 +50,12 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.backup.BackupTool.MISMATCHED_STORE_ID;
 
 public class BackupToolTest
 {
     @Test
-    public void shouldSelectFullBackupModeWhenDestinationEmpty() throws Exception
+    public void shouldUseIncrementalOrFallbackToFull() throws Exception
     {
         String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
@@ -70,27 +65,9 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // then
-        verify( service ).doFullBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ) );
-        verify( systemOut ).println( "Performing full backup from 'single://localhost'" );
-        verify( systemOut ).println( "Done" );
-    }
-
-    @Test
-    public void shouldSelectIncrementalBackupModeWhenDestinationExists() throws Exception
-    {
-        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
-        when(service.directoryContainsDb( anyString() )).thenReturn( true );
-        PrintStream systemOut = mock( PrintStream.class );
-
-        // when
-        new BackupTool( service, systemOut ).run( args );
-
-        // then
-        verify( service ).doIncrementalBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ) );
-        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+        verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
+                eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ) );
+        verify( systemOut ).println( "Performing backup from 'single://localhost'" );
         verify( systemOut ).println( "Done" );
     }
 
@@ -105,9 +82,9 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // then
-        verify( service ).doFullBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+        verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
                 eq( "my_backup" ), eq( true ), any( Config.class ) );
-        verify( systemOut ).println( "Performing full backup from 'single://localhost'" );
+        verify( systemOut ).println( "Performing backup from 'single://localhost'" );
         verify( systemOut ).println( "Done" );
     }
 
@@ -123,38 +100,10 @@ public class BackupToolTest
         new BackupTool( service, systemOut ).run( args );
 
         // then
-        verify( service ).doIncrementalBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ) );
-        verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
+        verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
+                eq( "my_backup" ), eq( true ), any(Config.class) );
+        verify( systemOut ).println( "Performing backup from 'single://localhost'" );
         verify( systemOut ).println( "Done" );
-    }
-
-    @Test
-    public void shouldFailWhenDestinationIsForeign() throws Exception
-    {
-        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
-        when( service.directoryContainsDb( anyString() ) ).thenReturn( true );
-        StoreId expected = new StoreId( 42, 87, 117 );
-        StoreId encountered = new StoreId( 287, 345, 756 );
-        when( service.doIncrementalBackup( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ) ) ).thenThrow( new MismatchingStoreIdException( expected, encountered ) );
-        PrintStream systemOut = mock( PrintStream.class );
-
-        // when
-        try
-        {
-            new BackupTool( service, systemOut ).run( args );
-            fail( "should exit abnormally" );
-        }
-        catch ( BackupTool.ToolFailureException e )
-        {
-            // then
-            verify( systemOut ).println( "Performing incremental backup from 'single://localhost'" );
-            verify( systemOut ).println( "Backup failed." );
-            verifyNoMoreInteractions( systemOut ); // no exception traced to stdout
-            assertEquals( format( MISMATCHED_STORE_ID, expected, encountered ), e.getMessage()  );
-        }
     }
 
     @Test
@@ -171,7 +120,8 @@ public class BackupToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).doFullBackup( anyString(), anyInt(), anyString(), anyBoolean(), config.capture() );
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
+                config.capture() );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
@@ -201,7 +151,8 @@ public class BackupToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).doFullBackup( anyString(), anyInt(), anyString(), anyBoolean(), config.capture() );
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
+                config.capture() );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 

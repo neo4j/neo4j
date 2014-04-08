@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -103,11 +108,6 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.Settings.INTEGER;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
@@ -647,6 +647,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 {
                     return copyMaster.copyStore( new RequestContext( 0,
                             config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0, 0 ), writer );
+                }
+
+                @Override
+                public void done()
+                {
                 }
             } );
 

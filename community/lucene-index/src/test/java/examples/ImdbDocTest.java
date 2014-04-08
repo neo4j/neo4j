@@ -211,7 +211,7 @@ public class ImdbDocTest
     public void deleteIndex()
     {
         GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest(
-                getClass() ).directory( "delete", true ).getAbsolutePath() );
+                getClass() ).cleanDirectory( "delete" ).getAbsolutePath() );
         try ( Transaction tx = graphDb.beginTx() )
         {
             // START SNIPPET: delete

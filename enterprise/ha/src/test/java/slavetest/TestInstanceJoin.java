@@ -58,11 +58,11 @@ public class TestInstanceJoin
         HighlyAvailableGraphDatabase slave = null;
         try
         {
-            master = start( dir.directory( "master", true ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
+            master = start( dir.cleanDirectory( "master" ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
                     "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
             createNode( master, "something", "unimportant" );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
-            slave = start( dir.directory( "slave", true ).getAbsolutePath(), 1,
+            slave = start( dir.cleanDirectory( "slave" ).getAbsolutePath(), 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.shutdown();
 
@@ -80,10 +80,10 @@ public class TestInstanceJoin
              * restart.
              */
             master.shutdown();
-            master = start( dir.directory( "master", false ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
+            master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0, stringMap( keep_logical_logs.name(),
                     "1 files", ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
 
-            slave = start( dir.directory( "slave", false ).getAbsolutePath(), 1,
+            slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
                     stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
             slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 

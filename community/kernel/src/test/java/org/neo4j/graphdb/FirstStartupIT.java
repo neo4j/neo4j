@@ -32,7 +32,7 @@ public class FirstStartupIT
 {
 
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldBeEmptyWhenFirstStarted() throws Exception

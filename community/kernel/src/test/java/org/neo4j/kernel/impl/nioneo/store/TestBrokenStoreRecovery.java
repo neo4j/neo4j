@@ -53,8 +53,8 @@ public class TestBrokenStoreRecovery
     public void testTruncatedPropertyStore() throws Exception
     {
         File storeDir = TargetDirectory.forTest(
-                TestBrokenStoreRecovery.class ).directory( "propertyStore",
-                true );
+                TestBrokenStoreRecovery.class ).cleanDirectory( "propertyStore"
+        );
         Process process = Runtime.getRuntime().exec(
             new String[]{
                 "java", "-cp",

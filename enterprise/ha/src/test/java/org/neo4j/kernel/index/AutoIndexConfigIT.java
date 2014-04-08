@@ -45,7 +45,7 @@ public class AutoIndexConfigIT
 
     public void startCluster( int size ) throws Throwable
     {
-        clusterManager = new ClusterManager( clusterOfSize( size ), dir.directory( "dbs", true ), MapUtil.stringMap() )
+        clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( "dbs" ), MapUtil.stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )

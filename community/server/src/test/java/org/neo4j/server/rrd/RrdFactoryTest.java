@@ -29,8 +29,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
@@ -38,6 +40,7 @@ import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
+
 import org.rrd4j.ConsolFun;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
@@ -58,7 +61,7 @@ public class RrdFactoryTest
     TargetDirectory target = TargetDirectory.forTest( RrdFactoryTest.class );
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = target.cleanTestDirectory();
+    public TargetDirectory.TestDirectory testDirectory = target.testDirectory();
     @Rule
     public Mute mute = muteAll();
 
@@ -67,7 +70,7 @@ public class RrdFactoryTest
     {
         config = new MapConfiguration( new HashMap<String, String>() );
         db = new WrappedDatabase( new ImpermanentGraphDatabase(
-                TargetDirectory.forTest( getClass() ).directory( "rrd", true ).getAbsolutePath()) );
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "rrd" ).getAbsolutePath()) );
     }
 
     @After
@@ -173,7 +176,9 @@ public class RrdFactoryTest
         for ( String aList : list )
         {
             if (aList.startsWith( directoryThatShouldExist ))
+            {
                 return;
+            }
         }
 
         fail( String.format( "Didn't find [%s] in [%s]", directoryThatShouldExist, directoryUsed ) );
@@ -196,7 +201,7 @@ public class RrdFactoryTest
 
         public TestableRrdFactory( Configuration config, String tempRrdFile )
         {
-            super( config );
+            super( config, DevNullLoggingService.DEV_NULL );
             this.tempRrdFile = tempRrdFile;
         }
 

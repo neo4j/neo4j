@@ -920,7 +920,7 @@ public abstract class Command extends XaCommand
         }
     };
 
-    static class PropertyCommand extends Command
+    static class PropertyCommand extends Command implements PropertyRecordChange
     {
         private final PropertyStore store;
         private final PropertyRecord before;
@@ -963,11 +963,13 @@ public abstract class Command extends XaCommand
             }
         }
 
+        @Override
         public PropertyRecord getBefore()
         {
             return before;
         }
 
+        @Override
         public PropertyRecord getAfter()
         {
             return after;

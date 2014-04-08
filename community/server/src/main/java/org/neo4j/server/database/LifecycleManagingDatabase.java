@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.database;
 
+import java.util.Map;
+
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.logging.Logger;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -38,26 +37,18 @@ import org.neo4j.server.logging.Logger;
  */
 public class LifecycleManagingDatabase implements Database
 {
-
     public static final GraphFactory EMBEDDED = new GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
-                                                Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                                Iterable<CacheProvider> cacheProviders,
-                                                Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
         {
-            return new EmbeddedGraphDatabase( config, loggingProvider, kernelExtensions, cacheProviders,
-                    txInterceptorProviders );
+            return new EmbeddedGraphDatabase( storeDir, params, dependencies );
         }
     };
 
     public interface GraphFactory
     {
-        GraphDatabaseAPI newGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
-                                           Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                           Iterable<CacheProvider> cacheProviders,
-                                           Iterable<TransactionInterceptorProvider> txInterceptorProviders );
+        GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies );
     }
 
     public static Database.Factory lifecycleManagingDatabase( final GraphFactory graphDbFactory )
@@ -65,30 +56,36 @@ public class LifecycleManagingDatabase implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase( Config config, Function<Config, Logging> loggingProvider )
+            public Database newDatabase( Config config, Logging logging )
             {
-                return new LifecycleManagingDatabase( config, graphDbFactory, loggingProvider );
+                return new LifecycleManagingDatabase( config, graphDbFactory, logging );
             }
         };
     }
 
-    public static final Logger log = Logger.getLogger(Database.class);
-
     private final Config dbConfig;
     private final GraphFactory dbFactory;
-    private final Function<Config, Logging> loggingProvider;
     private final GraphDatabaseFactoryState factoryState = new GraphDatabaseFactoryState();
+    private final ConsoleLogger log;
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
     private ExecutionEngine executionEngine;
+    private Logging logging;
 
-    public LifecycleManagingDatabase( Config dbConfig, GraphFactory dbFactory,
-                                      Function<Config, Logging> loggingProvider )
+    public LifecycleManagingDatabase( Config dbConfig, GraphFactory dbFactory, Logging logging )
     {
         this.dbConfig = dbConfig;
         this.dbFactory = dbFactory;
-        this.loggingProvider = loggingProvider;
+        this.logging = logging;
+        this.factoryState.setLogging( logging );
+        this.log = logging.getConsoleLog( getClass() );
+    }
+
+    @Override
+    public Logging getLogging()
+    {
+        return logging;
     }
 
     @Override
@@ -119,14 +116,11 @@ public class LifecycleManagingDatabase implements Database
     {
         try
         {
-            this.graph = dbFactory.newGraphDatabase( dbConfig,
-                    loggingProvider,
-                    factoryState.getKernelExtension(),
-                    factoryState.getCacheProviders(),
-                    factoryState.getTransactionInterceptorProviders() );
+            this.graph = dbFactory.newGraphDatabase( getLocation(), dbConfig.getParams(),
+                    factoryState.databaseDependencies() );
             this.executionEngine = new ExecutionEngine( graph );
             isRunning = true;
-            log.info( "Successfully started database" );
+            log.log( "Successfully started database" );
         }
         catch ( Exception e )
         {
@@ -145,12 +139,12 @@ public class LifecycleManagingDatabase implements Database
                 graph.shutdown();
                 isRunning = false;
                 graph = null;
-                log.info( "Successfully stopped database" );
+                log.log( "Successfully stopped database" );
             }
         }
         catch ( Exception e )
         {
-            log.error( String.format("Database did not stop cleanly. Reason [%s]", e.getMessage()) );
+            log.error( "Database did not stop cleanly. Reason [%s]", e.getMessage() );
             throw e;
         }
     }

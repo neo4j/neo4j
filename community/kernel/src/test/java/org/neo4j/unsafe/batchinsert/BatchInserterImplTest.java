@@ -80,7 +80,7 @@ public class BatchInserterImplTest
     public void testCreatesStoreLockFile()
     {
         // Given
-        File file = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+        File file = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
 
         // When
         BatchInserter inserter = BatchInserters.inserter( file.getAbsolutePath() );
@@ -94,7 +94,7 @@ public class BatchInserterImplTest
     public void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        File parent = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+        File parent = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         StoreLocker lock = new StoreLocker( new DefaultFileSystemAbstraction() );
         lock.checkLock( parent );
 
@@ -119,7 +119,7 @@ public class BatchInserterImplTest
     private Boolean createInserterAndGetMemoryMappingConfig( Map<String, String> initialConfig ) throws Exception
     {
         BatchInserter inserter = BatchInserters.inserter(
-                TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath(), initialConfig );
+                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath(), initialConfig );
         NeoStore neoStore = ReflectionUtil.getPrivateField( inserter, "neoStore", NeoStore.class );
         Config config = ReflectionUtil.getPrivateField( neoStore, "conf", Config.class );
         inserter.shutdown();

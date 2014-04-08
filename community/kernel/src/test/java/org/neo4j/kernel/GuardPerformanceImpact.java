@@ -36,7 +36,7 @@ import static org.neo4j.test.TargetDirectory.forTest;
 
 public class GuardPerformanceImpact
 {
-    private static String dir = forTest( GuardPerformanceImpact.class ).graphDbDir( true ).getAbsolutePath();
+    private static String dir = forTest( GuardPerformanceImpact.class ).makeGraphDbDir().getAbsolutePath();
     private static final int RUNS = 10;
     private static final int PER_TX = 10000;
     private static final int TX = 100;

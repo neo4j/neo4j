@@ -40,6 +40,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -47,10 +48,12 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -60,6 +63,7 @@ import org.neo4j.test.TargetDirectory;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
@@ -193,6 +197,185 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertNotNull( getLastMasterForCommittedTx( DEFAULT_NAME ) );
+    }
+
+    @Test
+    public void shouldGiveHelpfulErrorMessageIfLogsPrunedPastThePointOfNoReturn() throws Exception
+    {
+        // Given
+        Map<String, String> config = defaultBackupPortHostParams();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        GraphDatabaseAPI db = createDb( storeDir, config );
+        BackupService backupService = new BackupService( fileSystem );
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+
+        // And the log the backup uses is rotated out
+        createAndIndexNode( db, 2 );
+        rotateLog( db );
+        createAndIndexNode( db, 3 );
+        rotateLog( db );
+        createAndIndexNode( db, 3 );
+        rotateLog( db );
+
+
+        // when
+        try
+        {
+            backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false );
+            fail("Should have thrown exception.");
+        }
+
+        // Then
+        catch(IncrementalBackupNotPossibleException e)
+        {
+            assertThat( e.getMessage(), equalTo("It's been too long since this backup was last updated, and it has " +
+                    "fallen too far behind the database transaction stream for incremental backup to be possible. " +
+                    "You need to perform a full backup at this point. You can modify this time interval by setting " +
+                    "the '" + GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a " +
+                    "higher value.") );
+        }
+        db.shutdown();
+    }
+
+    @Test
+    public void shouldFallbackToFullBackupIfIncrementalFailsAndExplicitlyAskedToDoThis() throws Exception
+    {
+        // Given
+        Map<String, String> config = defaultBackupPortHostParams();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        GraphDatabaseAPI db = createDb( storeDir, config );
+        BackupService backupService = new BackupService( fileSystem );
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+
+        // And the log the backup uses is rotated out
+        createAndIndexNode( db, 2 );
+        rotateLog( db );
+        createAndIndexNode( db, 3 );
+        rotateLog( db );
+        createAndIndexNode( db, 3 );
+        rotateLog( db );
+
+
+        // when
+        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, new Config(defaultBackupPortHostParams()));
+
+
+        // Then
+        db.shutdown();
+        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    @Test
+    public void shouldNotOverwriteExistingBackupWithFullIfStoreIdsDontMatch() throws Exception
+    {
+        // Given
+        Map<String, String> config = defaultBackupPortHostParams();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        GraphDatabaseAPI db = createDb( storeDir, config );
+        BackupService backupService = new BackupService( fileSystem );
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+
+        // And then a completely different database runs on that port
+        db.shutdown();
+        FileUtils.deleteRecursively( storeDir );
+        db = createDb( storeDir, config );
+
+        // when
+        try
+        {
+            backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                                                               new Config(defaultBackupPortHostParams()));
+            fail("Should have thrown exception.");
+        }
+
+        // Then
+        catch(MismatchingStoreIdException e)
+        {
+            // good
+        }
+
+        assertTrue( backupDir.exists() );
+
+        db.shutdown();
+    }
+
+    @Test
+    public void shouldNotFallbackToFullBackupIfThereIsNoDiskSpaceForIt() throws Exception
+    {
+        // Given
+        Map<String, String> config = defaultBackupPortHostParams();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        GraphDatabaseAPI db = createDb( storeDir, config );
+        BackupService backupService = new BackupService( fileSystem );
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+
+        // And then a completely different database runs on that port
+        db.shutdown();
+        FileUtils.deleteRecursively( storeDir );
+        db = createDb( storeDir, config );
+
+        // when
+        try
+        {
+            backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                    new Config(defaultBackupPortHostParams()));
+            fail("Should have thrown exception.");
+        }
+
+        // Then
+        catch(MismatchingStoreIdException e)
+        {
+            // good
+        }
+
+        assertTrue( backupDir.exists() );
+
+        db.shutdown();
+    }
+
+    @Test
+    public void shouldDoFullBackupOnIncrementalFallbackToFullIfNoBackupFolderExists() throws Exception
+    {
+        // Given
+        Map<String, String> config = defaultBackupPortHostParams();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        GraphDatabaseAPI db = createDb( storeDir, config );
+        BackupService backupService = new BackupService( fileSystem );
+
+        createAndIndexNode( db, 1 );
+
+        // when
+        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config(defaultBackupPortHostParams()));
+
+        // then
+        db.shutdown();
+        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    private void rotateLog( GraphDatabaseAPI db ) throws IOException
+    {
+        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().rotateLogicalLog();
     }
 
     @Test

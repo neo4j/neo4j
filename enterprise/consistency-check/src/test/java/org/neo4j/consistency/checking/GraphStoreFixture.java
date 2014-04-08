@@ -500,7 +500,7 @@ public abstract class GraphStoreFixture implements TestRule
     public Statement apply( final Statement base, Description description )
     {
         final TargetDirectory.TestDirectory directory = TargetDirectory.forTest( description.getTestClass() )
-                                                                       .cleanTestDirectory();
+                                                                       .testDirectory();
         return directory.apply( new Statement()
         {
             @Override

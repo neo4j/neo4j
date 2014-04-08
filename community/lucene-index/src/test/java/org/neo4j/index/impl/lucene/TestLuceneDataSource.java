@@ -19,11 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -34,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
@@ -42,6 +38,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -50,6 +47,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class TestLuceneDataSource
 {
@@ -98,7 +101,8 @@ public class TestLuceneDataSource
                 new XaFactory( config, TxIdGenerator.DEFAULT,
                         new PlaceboTm( null, null ), new DefaultFileSystemAbstraction(),
                         new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING
+                        LogPruneStrategies.NO_PRUNING,
+                        mock( KernelHealth.class )
                 ),
                 null );
         dataSource.start();
@@ -114,7 +118,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(),
-                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ), null );
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
@@ -133,7 +137,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(),
-                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING ), null );
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -156,7 +160,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         fileSystem, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), null );
+                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -181,7 +185,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), null );
+                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -209,7 +213,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config1, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( config1, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), null );
+                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -230,7 +234,7 @@ public class TestLuceneDataSource
         dataSource = new LuceneDataSource( config, indexStore, new DefaultFileSystemAbstraction(),
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), null );
+                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
         IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, "foo" );
         IndexReference oldSearcher = dataSource.getIndexSearcher( identifier );

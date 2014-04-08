@@ -58,7 +58,7 @@ public class PathFindingDocTest
     @BeforeClass
     public static void startDb()
     {
-        String storeDir = TargetDirectory.forTest( PathFindingDocTest.class ).graphDbDir( true ).getAbsolutePath();
+        String storeDir = TargetDirectory.forTest( PathFindingDocTest.class ).makeGraphDbDir().getAbsolutePath();
         deleteFileOrDirectory( new File( storeDir ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }

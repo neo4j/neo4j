@@ -34,7 +34,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 public class ForsetiServiceLoadingTest
 {
     @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldUseForsetiAsDefaultLockManager() throws Exception

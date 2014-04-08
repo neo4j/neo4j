@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 /**
@@ -348,6 +349,12 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return LabelIdArray.stripNodeId( storedLongs );
     }
 
+    public static long[] getDynamicLabelsArrayFromHeavyRecords( Iterable<DynamicRecord> records )
+    {
+        long[] storedLongs = (long[])
+            DynamicArrayStore.getRightArray( readFullByteArrayFromHeavyRecords( records, PropertyType.ARRAY ) );
+        return LabelIdArray.stripNodeId( storedLongs );
+    }
 
     public Pair<Long, long[]> getDynamicLabelsArrayAndOwner( Iterable<DynamicRecord> records )
     {

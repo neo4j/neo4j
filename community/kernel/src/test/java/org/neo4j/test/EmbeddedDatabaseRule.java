@@ -65,11 +65,12 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         this.temp = new TempDirectory()
         {
             private final TargetDirectory targetDirectory = TargetDirectory.forTest( testClass );
-            
+            private File dbDir;
+
             @Override
             public File root()
             {
-                return targetDirectory.graphDbDir( false );
+                return dbDir;
             }
             
             @Override
@@ -81,7 +82,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             @Override
             public void create()
             {
-                targetDirectory.graphDbDir( true );
+                dbDir = targetDirectory.makeGraphDbDir();
             }
         };
     }

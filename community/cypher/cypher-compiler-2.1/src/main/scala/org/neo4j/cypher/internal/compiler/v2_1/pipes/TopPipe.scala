@@ -23,57 +23,87 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.SortItem
 import commands.expressions.Expression
 import data.SimpleVal
+
 import symbols._
-import collection.mutable.ListBuffer
+import scala.math._
+import java.util.Comparator
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression)
-             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {
+             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with Comparer {
+
+  val sortItems = sortDescription.toArray
+  val sortItemsCount = sortItems.size
+
+  type SortDataWithContext = (Array[Any],ExecutionContext)
+
+  class LessThanComparator(comparer: Comparer)(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
+    override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
+      val v1 = a._1
+      val v2 = b._1
+      var i = 0
+      while (i < sortItemsCount) {
+        val res = signum(comparer.compare(v1(i), v2(i)))
+        if (res != 0) {
+          val sortItem = sortItems(i)
+          return if (sortItem.ascending) res else -res
+        }
+        i += 1
+      }
+      0
+    }
+  }
+
+  def binarySearch(array: Array[SortDataWithContext], comparator: Comparator[SortDataWithContext])(key: SortDataWithContext) = {
+    java.util.Arrays.binarySearch(array.asInstanceOf[Array[SortDataWithContext]],key, comparator)
+  }
+
+  def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext = (sortItems.map(_(ctx)),ctx)
+
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
-    var result = new ListBuffer[ExecutionContext]()
-    var last: Option[ExecutionContext] = None
-    val largerThanLast = (ctx: ExecutionContext) => last.forall(s => compareBy(s, ctx, sortDescription)(state))
-    var size = 0
-    var sorted = false
-
     if (input.isEmpty)
       Iterator.empty
+    else if (sortDescription.isEmpty)
+      input
     else {
+
+      val lessThan = new LessThanComparator(this)
+
       val first = input.next()
       val count = countExpression(first).asInstanceOf[Number].intValue()
+      var result = new Array[SortDataWithContext](count)
+      result(0) = arrayEntry(first)
+      var last : Int = 0
 
-      val iter = new HeadAndTail(first, input)
-      iter.foreach {
-        case ctx =>
+      while ( last < count - 1 && input.hasNext ) {
+        last += 1
+        result(last) = arrayEntry(input.next())
+      }
 
-          if (size < count) {
-            result += ctx
-            size += 1
+      if (input.isEmpty) {
+        result.slice(0,last + 1).sorted(lessThan).iterator.map(_._2)
+      } else {
+        result = result.sorted(lessThan)
 
-            if (largerThanLast(ctx)) {
-              last = Some(ctx)
+        val search = binarySearch(result, lessThan) _
+        input.foreach {
+          ctx =>
+            val next = arrayEntry(ctx)
+            if (lessThan.compare(next, result(last)) < 0) {
+              val idx = - search(next) - 1
+              if (idx >= 0 && idx < count) {
+                Array.copy(result, idx, result, idx + 1, count - idx - 1)
+                result(idx) = next
+              }
             }
-          } else
-            if (!largerThanLast(ctx)) {
-              result -= last.get
-              result += ctx
-              result = result.sortWith((a, b) => compareBy(a, b, sortDescription)(state))
-              sorted = true
-              last = Some(result.last)
-            }
+        }
+        result.toIterator.map(_._2)
       }
     }
-
-    if (!sorted) {
-      result = result.sortWith((a, b) => compareBy(a, b, sortDescription)(state))
-    }
-
-
-    result.toIterator
   }
 
   def executionPlanDescription =
@@ -84,5 +114,5 @@ class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Ex
 
   def symbols = source.symbols
 
-  override def isLazy = false
+  override val isLazy = false
 }

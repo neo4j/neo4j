@@ -50,7 +50,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class RuntimeHeuristicsServiceTest
 {
     @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 

@@ -34,6 +34,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -198,11 +199,18 @@ public class PartialTransactionFailureIT
         {
             super( storeDir,
                     params,
-                    Arrays.asList(
-                            new InMemoryIndexProviderFactory(),
-                            new InMemoryLabelScanStoreExtension() ),
-                    Arrays.<CacheProvider>asList( new SoftCacheProvider() ),
-                    Iterables.<TransactionInterceptorProvider>empty() );
+                    dependencies() );
+        }
+
+        private static Dependencies dependencies()
+        {
+            GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
+            state.addKernelExtensions( Arrays.asList(
+                    new InMemoryIndexProviderFactory(),
+                    new InMemoryLabelScanStoreExtension() ) );
+            state.setCacheProviders( Arrays.<CacheProvider>asList( new SoftCacheProvider() ) );
+            state.setTransactionInterceptorProviders( Iterables.<TransactionInterceptorProvider>empty() );
+            return state.databaseDependencies();
         }
     }
 }

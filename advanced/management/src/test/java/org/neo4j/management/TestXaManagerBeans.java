@@ -41,7 +41,7 @@ public class TestXaManagerBeans
     @Before
     public synchronized void startGraphDb()
     {
-        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(dir.directory( "test" ).getAbsolutePath() );
+        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(dir.cleanDirectory( "test" ).getAbsolutePath() );
         xaManager = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( XaManager.class );
     }

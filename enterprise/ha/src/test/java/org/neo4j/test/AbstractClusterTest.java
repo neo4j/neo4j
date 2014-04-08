@@ -60,7 +60,7 @@ public abstract class AbstractClusterTest
     @Before
     public void before() throws Exception
     {
-        dir = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
+        dir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
         clusterManager = life.add( new ClusterManager( provider, dir, stringMap( default_timeout.name(), "1s" ) )
         {
             @Override

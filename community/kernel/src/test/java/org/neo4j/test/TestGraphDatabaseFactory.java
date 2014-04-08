@@ -26,38 +26,34 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
 
 /**
  * Test factory for graph databases
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
-    private Logging overrideLoggingAndUseThis;
-
     public TestGraphDatabaseFactory()
     {
        super( new TestGraphDatabaseFactoryState() );
     }
 
-    public TestGraphDatabaseFactory(Logging logging)
+    public TestGraphDatabaseFactory( Logging logging )
     {
         super( new TestGraphDatabaseFactoryState() );
-        this.overrideLoggingAndUseThis = logging;
+        setLogging( logging );
     }
 
     public GraphDatabaseService newImpermanentDatabase()
     {
         return newImpermanentDatabaseBuilder().newGraphDatabase();
     }
-    
+
     public GraphDatabaseService newImpermanentDatabase( String storeDir )
     {
         return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }
-    
+
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
     {
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
@@ -85,6 +81,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         getCurrentState().setFileSystem( fileSystem );
         return this;
     }
+    
+    public TestGraphDatabaseFactory setLogging( Logging logging )
+    {
+        getCurrentState().setLogging( logging );
+        return this;
+    }
 
     @Override
     public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
@@ -98,17 +100,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
     }
 
-    public boolean isSystemOutLogging()
-    {
-        return getCurrentState().isSystemOutLogging();
-    }
-
-    public TestGraphDatabaseFactory setSystemOutLogging( boolean systemOutLogging )
-    {
-        getCurrentState().setSystemOutLogging( systemOutLogging );
-        return this;
-    }
-
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
     {
         final TestGraphDatabaseFactoryState state = getStateCopy();
@@ -118,10 +109,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @SuppressWarnings("deprecation")
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                return new ImpermanentGraphDatabase( storeDir, config,
-                        state.getKernelExtension(),
-                        state.getCacheProviders(),
-                        state.getTransactionInterceptorProviders() )
+                return new ImpermanentGraphDatabase( storeDir, config, state.databaseDependencies() )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()
@@ -134,24 +122,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                         else
                         {
                             return super.createFileSystemAbstraction();
-                        }
-                    }
-
-                    @Override
-                    protected Logging createLogging()
-                    {
-                        if(overrideLoggingAndUseThis != null)
-                        {
-                            return overrideLoggingAndUseThis;
-                        }
-
-                        if ( state.isSystemOutLogging() )
-                        {
-                            return new SingleLoggingService( StringLogger.SYSTEM );
-                        }
-                        else
-                        {
-                            return super.createLogging();
                         }
                     }
                 };
