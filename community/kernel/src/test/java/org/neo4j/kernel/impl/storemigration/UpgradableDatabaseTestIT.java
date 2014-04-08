@@ -48,7 +48,7 @@ import org.neo4j.test.Unzip;
 public class UpgradableDatabaseTestIT
 {
     @Rule
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.cleanTestDirForTest( getClass() );
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Before
     public void checkOperatingSystem() {

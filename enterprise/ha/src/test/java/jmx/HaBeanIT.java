@@ -72,7 +72,7 @@ public class HaBeanIT
 
     public void startCluster( int size ) throws Throwable
     {
-        clusterManager = new ClusterManager( clusterOfSize( size ), dir.directory( testName.getMethodName(), true ), MapUtil.stringMap() )
+        clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( testName.getMethodName() ), MapUtil.stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )

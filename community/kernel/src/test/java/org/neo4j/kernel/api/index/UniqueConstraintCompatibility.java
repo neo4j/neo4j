@@ -1003,7 +1003,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     // -- Set Up: Environment parts
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @Before
     public void setUp() {

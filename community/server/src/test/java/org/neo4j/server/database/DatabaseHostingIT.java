@@ -22,17 +22,19 @@ package org.neo4j.server.database;
 import java.io.File;
 import java.util.Map;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigDatabase;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.Assert.assertEquals;
@@ -40,12 +42,12 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.server.NeoServerSettings.config_db_path;
 import static org.neo4j.server.NeoServerSettings.legacy_db_config;
 import static org.neo4j.server.NeoServerSettings.legacy_db_location;
@@ -55,10 +57,10 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 public class DatabaseHostingIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private LifeSupport life = new LifeSupport(  );
-    private TestLogging logging = new TestLogging();
+    private Logging logging = CommunityServerBuilder.bufferingLogging();
     private DatabaseRegistry registry;
     private DatabaseHosting host;
     private ConfigDatabase configDb;
@@ -210,7 +212,7 @@ public class DatabaseHostingIT
         restartHosting();
 
         // Then
-        logging.getMessagesLog( DatabaseHosting.class ).assertExactly( error( "Unable to start database 'lol', " +
+        assertThat( logging.toString(), CoreMatchers.containsString( "Unable to start database 'lol', " +
                 "because there is no database provider called 'doesntexist', which this database has been configured " +
                 "to use." ) );
     }

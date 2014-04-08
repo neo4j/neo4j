@@ -20,30 +20,31 @@
 package org.neo4j.server.security;
 
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.neo4j.server.web.HttpConnectorFactory;
 
 
-public class SslSocketConnectorFactory {
+public class SslSocketConnectorFactory extends HttpConnectorFactory
+{
 
-    public ServerConnector createConnector(Server server, KeyStoreInformation config, String host, int port) {
+    public ServerConnector createConnector( Server server, KeyStoreInformation config, String host, int port, int jettyMaxThreads )
+    {
 
+        SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( config );
+
+        return super.createConnector( server, host, port, jettyMaxThreads, sslConnectionFactory, createHttpConnectionFactory() );
+    }
+
+    private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation config )
+    {
         SslContextFactory sslContextFactory = new SslContextFactory();
 
         sslContextFactory.setKeyStorePath( config.getKeyStorePath() );
         sslContextFactory.setKeyStorePassword( String.valueOf( config.getKeyStorePassword() ) );
         sslContextFactory.setKeyManagerPassword( String.valueOf( config.getKeyPassword() ) );
 
-        ServerConnector connector = new ServerConnector( server, new SslConnectionFactory( sslContextFactory, HttpVersion.HTTP_1_1.asString() ), new HttpConnectionFactory() );
-
-        connector.setPort( port );
-        connector.setHost( host );
-
-        return connector;
-
+        return new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
     }
 
 }

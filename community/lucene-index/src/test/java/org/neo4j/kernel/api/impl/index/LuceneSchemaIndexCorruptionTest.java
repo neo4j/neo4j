@@ -49,7 +49,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken." ));
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
         );
 
         // When
@@ -70,7 +70,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
         );
 
         // When
@@ -92,7 +92,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
         );
 
         // When
@@ -115,7 +115,7 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
         );
 
         // When

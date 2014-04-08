@@ -24,19 +24,13 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.logging.Logging;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
  * in an application. You typically instantiate it by using
  * {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} like so:
  * <p/>
- * 
+ *
  * <pre>
  * <code>
  * GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( &quot;var/graphdb&quot; );
@@ -57,25 +51,11 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
     /**
      * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
      */
-    public EmbeddedGraphDatabase( String storeDir, Map<String, String> params,
-                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                  Iterable<CacheProvider> cacheProviders,
-                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    public EmbeddedGraphDatabase( String storeDir,
+                                  Map<String, String> params,
+                                  Dependencies dependencies )
     {
-        super( storeDir, params, SETTINGS_CLASSES, kernelExtensions, cacheProviders, txInterceptorProviders );
-        run();
-    }
-
-    /**
-     * Internal constructor used by {@link org.neo4j.graphdb.factory.GraphDatabaseFactory}
-     */
-    public EmbeddedGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
-                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                  Iterable<CacheProvider> cacheProviders,
-                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
-    {
-        super( config.registerSettingsClasses( SETTINGS_CLASSES ),
-               loggingProvider, kernelExtensions, cacheProviders, txInterceptorProviders );
+        super( storeDir, params, dependencies );
         run();
     }
 }

@@ -95,7 +95,7 @@ public class ClusterRule extends ExternalResource
     @Override
     protected void before() throws Throwable
     {
-        this.storeDirectory = TargetDirectory.forTest( testClass ).directoryForDescription( description, true );
+        this.storeDirectory = TargetDirectory.forTest( testClass ).directoryForDescription( description );
     }
 
     @Override

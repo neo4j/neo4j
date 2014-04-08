@@ -19,9 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -30,6 +27,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -49,7 +47,8 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
-import ch.qos.logback.classic.LoggerContext;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 public class BackupTool
 {
@@ -153,7 +152,37 @@ public class BackupTool
                 throw new ToolFailureException( e.getMessage() );
             }
         }
-        doBackup( backupURI, to, verify, tuningConfiguration );
+
+        try
+        {
+            systemOut.println("Performing backup from '" + backupURI.toASCIIString() + "'");
+            doBackup( backupURI, to, verify, tuningConfiguration );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( e.getCause() instanceof UpgradeNotAllowedByConfigurationException )
+            {
+                try
+                {
+                    systemOut.println( "The database present in the target directory is of an older version. " +
+                            "Backing that up in target and performing a full backup from source" );
+                    moveExistingDatabase( fs, to );
+
+                }
+                catch ( IOException e1 )
+                {
+                    throw new ToolFailureException( "There was a problem moving the old database out of the way" +
+                            " - cannot continue, aborting.", e );
+                }
+
+                doBackup( backupURI, to, verify, tuningConfiguration );
+            }
+            else
+            {
+                throw new ToolFailureException( "TransactionFailureException from existing backup at '" + from + "'" +
+                        ".", e );
+            }
+        }
     }
 
     private void checkArguments( Args arguments ) throws ToolFailureException
@@ -198,83 +227,20 @@ public class BackupTool
 
     private void doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
     {
-        if ( backupService.directoryContainsDb( to ) )
-        {
-            try
-            {
-                doBackupIncremental( from, to, checkConsistency, tuningConfiguration );
-
-                systemOut.println( "Done" );
-            }
-            catch ( MismatchingStoreIdException e )
-            {
-                systemOut.println("Backup failed.");
-                throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
-            }
-        }
-        else
-        {
-            doBackupFull( from, to, checkConsistency, tuningConfiguration );
-
-            systemOut.println( "Done" );
-        }
-    }
-
-    private void doBackupFull( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws
-            ToolFailureException
-
-    {
-        systemOut.println( "Performing full backup from '" + from + "'" );
         try
         {
-            backupService.doFullBackup( from.getHost(), extractPort( from ), to, checkConsistency,
-                    tuningConfiguration );
+            backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to, checkConsistency,
+                tuningConfiguration );
+            systemOut.println( "Done" );
+        }
+        catch ( MismatchingStoreIdException e )
+        {
+            systemOut.println("Backup failed.");
+            throw new ToolFailureException( String.format( MISMATCHED_STORE_ID, e.getExpected(), e.getEncountered() ) );
         }
         catch ( ComException e )
         {
             throw new ToolFailureException( "Couldn't connect to '" + from + "'", e );
-        }
-    }
-
-    private void doBackupIncremental( URI from, String to, boolean verify, Config tuningConfiguration )
-            throws ToolFailureException
-    {
-        systemOut.println( "Performing incremental backup from '" + from + "'" );
-        boolean failedBecauseOfStoreVersionMismatch = false;
-        try
-        {
-            backupService.doIncrementalBackup( from.getHost(), extractPort( from ), to, verify );
-        }
-        catch ( TransactionFailureException e )
-        {
-            if ( e.getCause() instanceof UpgradeNotAllowedByConfigurationException )
-            {
-                failedBecauseOfStoreVersionMismatch = true;
-            }
-            else
-            {
-                throw new ToolFailureException( "TransactionFailureException from existing backup at '" + from + "'" +
-                        ".", e );
-            }
-        }
-        catch ( ComException e )
-        {
-            throw new ToolFailureException( "Couldn't connect to '" + from + "' ", e );
-        }
-        if ( failedBecauseOfStoreVersionMismatch )
-        {
-            systemOut.println( "The database present in the target directory is of an older version. " +
-                    "Backing that up in target and performing a full backup from source" );
-            try
-            {
-                moveExistingDatabase( fs, to );
-            }
-            catch ( IOException e )
-            {
-                throw new ToolFailureException( "There was a problem moving the old database out of the way" +
-                        " - cannot continue, aborting.", e );
-            }
-            doBackupFull( from, to, verify, tuningConfiguration );
         }
     }
 

@@ -79,9 +79,9 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
-import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -92,7 +92,6 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -105,7 +104,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.noStateFactory;
 
 public class TestNeoStore
 {
@@ -117,7 +116,7 @@ public class TestNeoStore
     private File path;
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private File file( String name )
     {
@@ -128,7 +127,7 @@ public class TestNeoStore
     public void setUpNeoStore() throws Exception
     {
         targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
-        path = targetDirectory.directory( "dir", true );
+        path = targetDirectory.cleanDirectory( "dir" );
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fs.get(), StringLogger.DEV_NULL, null );
@@ -185,6 +184,7 @@ public class TestNeoStore
         EphemeralFileSystemAbstraction fs = this.fs.get();
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
                 fs, StringLogger.DEV_NULL, null );
+        KernelHealth kernelHealth = mock( KernelHealth.class );
 
         NodeManager nodeManager = mock(NodeManager.class);
         @SuppressWarnings( "rawtypes" )
@@ -198,11 +198,12 @@ public class TestNeoStore
         when(locks.newClient()).thenReturn( lockClient );
         ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
-                        fs, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), new TransactionStateFactory( new DevNullLoggingService() ),
-                        new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
-                                dependencyResolverForConfig( config ) ), null, new SingleLoggingService( DEV_NULL ),
-                                new KernelSchemaStateStore(),
+                        // Could be new TransactionStateFactory( new DevNullLoggingService() )
+                        fs, new Monitors(), DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        LogPruneStrategies.NO_PRUNING, kernelHealth ), noStateFactory( DevNullLoggingService.DEV_NULL ),
+                new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
+                        dependencyResolverForConfig( config ) ), null, new DevNullLoggingService(),
+                new KernelSchemaStateStore(),
                 mock(TokenNameLookup.class),
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),

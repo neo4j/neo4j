@@ -85,7 +85,7 @@ public class CreateTransactionsAndDie
             throws Exception
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        String dir = TargetDirectory.forTest( CreateTransactionsAndDie.class ).directory( name, true ).getAbsolutePath();
+        String dir = TargetDirectory.forTest( CreateTransactionsAndDie.class ).cleanDirectory( name ).getAbsolutePath();
         assertEquals( 0, createUncleanDb( dir, nrOf2PcTransactionsToRecover ) );
         filterTxLog( fileSystem, dir, EVERYTHING_BUT_DONE_RECORDS );
         remove2PCAndDoneFromLog( fileSystem, dir );

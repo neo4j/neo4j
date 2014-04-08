@@ -37,7 +37,7 @@ public class TestFileUtils
     @Before
     public void doBefore() throws Exception
     {
-        path = TargetDirectory.forTest( getClass() ).directory( "path", true );
+        path = TargetDirectory.forTest( getClass() ).cleanDirectory( "path" );
     }
     
     @Test

@@ -21,7 +21,6 @@ package org.neo4j.server.database;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -37,7 +36,7 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase( Config config, Function<Config, Logging> loggingProvider )
+            public Database newDatabase( Config config, Logging logging )
             {
                 return new WrappedDatabase( db );
             }
@@ -81,5 +80,11 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     public boolean isRunning()
     {
         return true;
+    }
+
+    @Override
+    public Logging getLogging()
+    {
+        return graph.getDependencyResolver().resolveDependency( Logging.class );
     }
 }

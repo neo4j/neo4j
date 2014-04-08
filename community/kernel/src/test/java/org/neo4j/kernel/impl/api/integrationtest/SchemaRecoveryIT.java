@@ -58,7 +58,7 @@ public class SchemaRecoveryIT
     }
 
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private List<ConstraintDefinition> constraints( GraphDatabaseService database )
     {

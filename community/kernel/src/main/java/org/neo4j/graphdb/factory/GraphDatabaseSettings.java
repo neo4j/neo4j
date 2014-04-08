@@ -159,7 +159,7 @@ public abstract class GraphDatabaseSettings
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
             "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions.")
-    public static final Setting<String> keep_logical_logs = setting("keep_logical_logs", STRING, TRUE, illegalValueMessage( "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for " +
+    public static final Setting<String> keep_logical_logs = setting("keep_logical_logs", STRING, "7 days", illegalValueMessage( "Must be 'true'/'false' or of format '<number><optional unit> <type>' for example '100M size' for " +
                         "limiting logical log space on disk to 100Mb," +
                         " or '200k txs' for limiting the number of transactions to keep to 200 000.", matches(ANY)));
 

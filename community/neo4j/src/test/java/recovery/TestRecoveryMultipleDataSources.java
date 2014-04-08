@@ -42,7 +42,7 @@ import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRecoveryMultipleDataSources
 {
-    private static final String dir = forTest( TestRecoveryMultipleDataSources.class ).graphDbDir( false ).getAbsolutePath();
+    private static final String dir = forTest( TestRecoveryMultipleDataSources.class ).makeGraphDbDir().getAbsolutePath();
     
     /**
      * Tests an issue where loading all relationship types and property indexes after

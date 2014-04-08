@@ -19,7 +19,10 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
+
 import java.net.URI;
+
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -36,8 +39,6 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
@@ -107,7 +108,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
         {
             try
             {
-                server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ), logging, monitors );
+                server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
+                        logging, monitors );
                 server.init();
                 server.start();
 

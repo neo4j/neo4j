@@ -20,33 +20,33 @@
 package org.neo4j.kernel.impl.transaction;
 
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.cache_type;
-import static org.neo4j.test.TargetDirectory.forTest;
-
+import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.transaction.xa.XAException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.TargetDirectory;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.cache_type;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class CommitContentionTests
 {
@@ -96,7 +96,7 @@ public class CommitContentionTests
     };
 
     @Rule
-    public TargetDirectory.TestDirectory storeLocation = target.cleanTestDirectory();
+    public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
 
     private GraphDatabaseService db;
 
@@ -173,13 +173,12 @@ public class CommitContentionTests
 
     private GraphDatabaseService createDb( final TxIdGenerator idGenerator )
     {
-        Iterable<CacheProvider> cacheProviders = asList( (CacheProvider) new NoCacheProvider() );
-        Iterable<TransactionInterceptorProvider> txInterceptorProviders = asList();
-        Iterable<KernelExtensionFactory<?>> kernelExtensions = Iterables.cast( Service.load( KernelExtensionFactory
-                .class ) );
+        GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
+        state.setCacheProviders( asList( (CacheProvider) new NoCacheProvider() ) );
+        state.setTransactionInterceptorProviders( Arrays.<TransactionInterceptorProvider>asList() );
         //noinspection deprecation
         return new EmbeddedGraphDatabase( storeLocation.absolutePath(), stringMap( cache_type.name(),
-                NoCacheProvider.NAME ), kernelExtensions, cacheProviders, txInterceptorProviders )
+                NoCacheProvider.NAME ), state.databaseDependencies() )
         {
             @Override
             protected TxIdGenerator createTxIdGenerator()

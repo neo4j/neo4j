@@ -66,7 +66,7 @@ public class MultiPaxosNetworkTest
     {
         final LifeSupport life = new LifeSupport();
         Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(),
-                TargetDirectory.forTest( getClass() ).directory( "cluster" ).getAbsolutePath() ),
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "cluster" ).getAbsolutePath() ),
                 GraphDatabaseSettings.class );
 
         final LoggerContext loggerContext = new LoggerContext();

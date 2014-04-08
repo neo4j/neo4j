@@ -49,7 +49,7 @@ import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public class TestBranchedData
 {
-    private final File dir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final File dir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
 
     @Test
     public void migrationOfBranchedDataDirectories() throws Exception

@@ -20,26 +20,33 @@
 package org.neo4j.server;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.server.preflight.PreFlightTasks;
 
 import static org.neo4j.server.database.WrappedDatabase.wrappedDatabase;
 
-public class WrappingNeoServer extends CommunityNeoServer {
+public class WrappingNeoServer extends CommunityNeoServer
+{
+    private final GraphDatabaseAPI db;
 
-    public WrappingNeoServer(GraphDatabaseAPI db)
-	{
-		this(db, new ServerConfigurator(db));
-	}
-	
-	public WrappingNeoServer(final GraphDatabaseAPI db, Configurator configurator)
-	{
-		super( configurator, wrappedDatabase( db ));
-	}
+    public WrappingNeoServer( GraphDatabaseAPI db )
+    {
+        this( db, new ServerConfigurator( db ) );
+    }
 
-	@Override
-	protected PreFlightTasks createPreflightTasks() {
-		return new PreFlightTasks();
-	}
+    public WrappingNeoServer( GraphDatabaseAPI db, Configurator configurator )
+    {
+        super( configurator, wrappedDatabase( db ), db.getDependencyResolver().resolveDependency( Logging.class ) );
+        this.db = db;
+        this.configurator = configurator;
+        init();
+    }
+
+    @Override
+    protected PreFlightTasks createPreflightTasks()
+    {
+        return new PreFlightTasks( logging );
+    }
 }

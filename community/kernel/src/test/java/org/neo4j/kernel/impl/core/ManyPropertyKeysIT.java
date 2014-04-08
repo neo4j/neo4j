@@ -83,7 +83,7 @@ public class ManyPropertyKeysIT
         db.shutdown();
     }
     
-    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     
     private GraphDatabaseAPI database()
     {

@@ -25,9 +25,12 @@ import java.util.concurrent.CyclicBarrier;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.test.Mute;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.test.Mute.muteAll;
 
 public class JettyThreadLimitTest
@@ -38,7 +41,7 @@ public class JettyThreadLimitTest
     @Test
     public void shouldHaveConfigurableJettyThreadPoolSize() throws Exception
     {
-    	Jetty9WebServer server = new Jetty9WebServer();
+    	  Jetty9WebServer server = new Jetty9WebServer( DevNullLoggingService.DEV_NULL );
         final int maxThreads = 7;
         server.setMaxThreads( maxThreads );
         server.setPort( 7480 );
@@ -51,7 +54,8 @@ public class JettyThreadLimitTest
             loadThreadPool( threadPool, configuredMaxThreads + 1);
 	        int threads = threadPool.getThreads();
 	        assertTrue( threads <= maxThreads );
-        } finally 
+        }
+        finally
         {
         	server.stop();
         }

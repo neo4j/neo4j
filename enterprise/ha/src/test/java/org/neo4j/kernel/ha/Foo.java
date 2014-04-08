@@ -36,7 +36,7 @@ public class Foo
 
     private void run()
     {
-        File dir = TargetDirectory.forTest( getClass() ).directory( "test", true );
+        File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "test" );
 
         HighlyAvailableGraphDatabase db1 = startDb( 1, dir, "127.0.0.1:5001" );
         HighlyAvailableGraphDatabase db2 = startDb( 2, dir, "127.0.0.1:5001" );

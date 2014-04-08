@@ -33,7 +33,7 @@ public class Unzip
 {
     public static File unzip( Class<?> testClass, String resource ) throws IOException
     {
-        File dir = TargetDirectory.forTest( testClass ).graphDbDir( true );
+        File dir = TargetDirectory.forTest( testClass ).makeGraphDbDir();
         try ( InputStream source = testClass.getResourceAsStream( resource ) )
         {
             if ( source == null )

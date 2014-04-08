@@ -44,10 +44,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary
 {
-    public static final String HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).graphDbDir( true ).getAbsolutePath();
+    public static final String HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).makeGraphDbDir().getAbsolutePath();
     public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
 
     @Test
@@ -58,7 +59,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
@@ -75,7 +76,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverProperties,
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
@@ -93,7 +94,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( buildProperties( true ),
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 
@@ -110,7 +111,7 @@ public class TestPerformUpgradeIfNecessary
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), new PrintStream( outputStream ) );
+        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
 
         boolean exit = upgrader.run();
 

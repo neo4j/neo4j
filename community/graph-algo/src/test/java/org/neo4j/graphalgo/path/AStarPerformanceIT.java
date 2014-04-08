@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.path;
 
 import java.io.File;
-import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,6 +41,20 @@ public class AStarPerformanceIT
 {
     private static final boolean REBUILD = true;
 
+    private final File directory;
+
+    public AStarPerformanceIT()
+    {
+        if (REBUILD)
+        {
+            directory = forTest( getClass() ).cleanDirectory( "graph-db" );
+        }
+        else
+        {
+            directory = forTest( getClass() ).existingDirectory( "graph-db" );
+        }
+    }
+
     @Test
     public void somePerformanceTesting() throws Exception
     {
@@ -49,7 +62,6 @@ public class AStarPerformanceIT
         int numberOfNodes = 200000;
         if ( REBUILD )
         {
-            Random random = new Random();
             GeoDataGenerator generator = new GeoDataGenerator( numberOfNodes, 5d, 1000, 1000 );
             generator.generate( directory );
         }
@@ -96,6 +108,4 @@ public class AStarPerformanceIT
         // THEN
         db.shutdown();
     }
-
-    private final File directory = forTest( getClass() ).graphDbDir( REBUILD );
 }

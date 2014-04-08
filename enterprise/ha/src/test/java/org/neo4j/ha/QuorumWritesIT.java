@@ -56,8 +56,8 @@ public class QuorumWritesIT
     @Test
     public void testMasterStopsWritesWhenMajorityIsUnavailable() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory(
-                "testMasterStopsWritesWhenMajorityIsUnavailable", true );
+        File root = TargetDirectory.forTest( getClass() ).cleanDirectory(
+                "testMasterStopsWritesWhenMajorityIsUnavailable" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
                 MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s"
                 ) );
@@ -145,8 +145,9 @@ public class QuorumWritesIT
     @Test
     public void testInstanceCanBeReplacedToReestablishQuorum() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "testInstanceCanBeReplacedToReestablishQuorum",
-                true );
+        File root = TargetDirectory.forTest( getClass() ).cleanDirectory(
+                "testInstanceCanBeReplacedToReestablishQuorum"
+        );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root,
                 MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2", HaSettings.state_switch_timeout.name(), "5s" ) );
         clusterManager.start();

@@ -63,7 +63,7 @@ public class TestRelationshipGroupStore
     @Before
     public void before() throws Exception
     {
-        directory = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+        directory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }

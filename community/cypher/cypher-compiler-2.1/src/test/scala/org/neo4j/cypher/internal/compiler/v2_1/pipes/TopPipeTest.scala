@@ -40,12 +40,28 @@ class TopPipeTest extends Assertions with MockitoSugar {
     assert(result === List(0, 1, 2, 3, 4))
   }
 
-  @Test def top5From10ReturnsAll() {
-    val input = createFakePipeWith(10)
+  @Test def top10From3ReturnsAllDesc() {
+    val input = createFakePipeWith(3)
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(10))
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+
+    assert(result === List(2, 1, 0))
+  }
+
+  @Test def top5From20ReturnsAll() {
+    val input = createFakePipeWith(20)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     assert(result === List(0, 1, 2, 3, 4))
+  }
+
+  @Test def top3From10ReturnsAllDesc() {
+    val input = createFakePipeWith(10)
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(3))
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+
+    assert(result === List(9, 8, 7))
   }
 
   @Test def reversedTop5From10ReturnsAll() {
@@ -67,11 +83,20 @@ class TopPipeTest extends Assertions with MockitoSugar {
     assert(result === List.empty)
   }
 
+  @Test def nullInputIsNotAProblem() {
+    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
+
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+
+    assert(result === List(10,null))
+  }
+
   private def createFakePipeWith(count: Int): FakePipe = {
 
     val r = new Random(1337)
 
-    val in = (0 until count).toSeq.map(i => Map("a" -> i)).sortBy( x => r.nextInt(100))
+    val in = (0 until count).toSeq.map(i => Map("a" -> i)).sortBy( x => 50 - r.nextInt(100))
     new FakePipe(in, "a" -> CTInteger)
   }
 }

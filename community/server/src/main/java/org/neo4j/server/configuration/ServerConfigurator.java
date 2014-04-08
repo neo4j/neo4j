@@ -52,8 +52,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class ServerConfigurator extends Configurator.Adapter
 {
 
-    private MapBasedConfiguration config = new MapBasedConfiguration();
-    private List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();
+    private final MapBasedConfiguration config = new MapBasedConfiguration();
+    private final List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<>();
 
     public ServerConfigurator( GraphDatabaseAPI db )
     {

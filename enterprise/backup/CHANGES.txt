@@ -1,3 +1,10 @@
+2.0.2
+-----
+o Backup no longer differentiates between full and incremental backup, instead automatically chooses the best option
+  to use. This also handles cases where a backup is very old and can no longer be incrementally backed up.
+  OnlineBackup#incremental(..) and OnlineBackup.full(..) are now deprecated, and will be removed in the next major
+  release (3.0.0).
+
 2.0.1
 -----
 o HA backup instances now are logged as backup instead of "-1"

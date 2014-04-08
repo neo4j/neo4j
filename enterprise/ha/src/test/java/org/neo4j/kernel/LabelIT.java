@@ -95,7 +95,7 @@ public class LabelIT
         return txc;
     }
 
-    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private ClusterManager clusterManager;
 
     private ClusterManager.ManagedCluster startCluster( ClusterManager.Provider provider ) throws Throwable

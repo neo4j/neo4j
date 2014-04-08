@@ -48,7 +48,7 @@ import static org.neo4j.test.Unzip.unzip;
 public class IndexFormatCompatibilityTest
 {
     @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
     private GraphDatabaseService db;
 
     @Before

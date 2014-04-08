@@ -274,7 +274,7 @@ public class TestMasterCommittingAtSlave
         FakeDataSource()
         {
             super( BRANCH, NAME );
-            this.dir = TargetDirectory.forTest( getClass() ).graphDbDir( true );
+            this.dir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         }
 
         @Override

@@ -44,7 +44,7 @@ public class TransactionMonitoringIT
     {
         // GIVEN
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ) );
 
@@ -110,7 +110,7 @@ public class TransactionMonitoringIT
     {
         // GIVEN
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ),
+                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
                 MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
                         HaSettings.tx_push_factor.name(), "0" ) );
 

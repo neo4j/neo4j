@@ -75,8 +75,8 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenEnabledWithGoodConfigSpecified() throws Exception
     {
         // given
-        final File logDir = TargetDirectory.forTest( this.getClass() ).directory( "logDir" );
-        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confDir" );
+        final File logDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "logDir" );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
 
         Configuration config = new MapBasedConfiguration();
         config.setProperty( Configurator.HTTP_LOGGING, "true" );
@@ -96,7 +96,7 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldFailWhenEnabledWithUnwritableLogDirSpecifiedInConfig() throws Exception
     {
         // given
-        final File confDir = TargetDirectory.forTest( this.getClass() ).directory( "confDir" );
+        final File confDir = TargetDirectory.forTest( this.getClass() ).cleanDirectory( "confDir" );
 
         Configuration config = new MapBasedConfiguration();
         config.setProperty( Configurator.HTTP_LOGGING, "true" );
