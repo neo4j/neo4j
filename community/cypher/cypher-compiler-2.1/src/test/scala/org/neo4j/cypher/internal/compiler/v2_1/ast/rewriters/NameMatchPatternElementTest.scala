@@ -42,4 +42,19 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     assert(result === expected)
   }
 
+  test("don't rename unnamed varlength paths while the legacy planner is still around") {
+    val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
+
+    val result = original.rewrite(bottomUp(nameMatchPatternElements))
+
+    assert(result === original)
+  }
+
+  test("rename unnamed varlength paths") {
+    val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
+    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo*]->(m) RETURN n")
+
+    val result = original.rewrite(bottomUp(nameVarLengthRelationships))
+    assert(result === expected)
+  }
 }

@@ -34,7 +34,7 @@ object GuessingEstimation {
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                   selectivity: Metrics.SelectivityModel) extends Metrics.CardinalityModel {
+                                       selectivity: Metrics.SelectivityModel) extends Metrics.CardinalityModel {
   import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Double = plan match {
@@ -57,14 +57,21 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
 
     case NodeHashJoin(_, left, right) =>
-      (cardinality(left) + cardinality(right)) / 2
+      math.min(cardinality(left), cardinality(right))
 
-    case expand @ Expand(left, _, dir, types, _, _) =>
-      val degree = if (types.isEmpty)
-        DEFAULT_EXPAND_RELATIONSHIP_DEGREE
+    case expand @ Expand(left, _, dir, types, _, _, length) =>
+      val degree = if (types.size <= 0)
+        DEFAULT_EXPAND_RELATIONSHIP_DEGREE // statistics.degreeWithoutKnowingAnything()
       else
         types.foldLeft(0.0)((sum, t) => sum + statistics.degreeByRelationshipTypeAndDirection(t.id.get, dir)) / types.size
-      cardinality(left) * degree
+
+      val maxLength = length match {
+        case SimplePatternLength              => 1
+        case VarPatternLength(_, Some(depth)) => depth
+        case VarPatternLength(_, None)        => 42
+      }
+
+      cardinality(left) * math.pow(degree, maxLength)
 
     case Selection(predicates, left) =>
       cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)
