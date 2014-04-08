@@ -24,20 +24,64 @@ import org.neo4j.kernel.impl.util.statistics.RollingAverage;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.closeTo;
 
 public class NodeLivenessDataTest
 {
     @Test
-    public void shouldReportNonZeroLiveNodesWhenNotHavingSeenAnyLiveNodes()
+    public void shouldReportOneIfNoDataAreSampled()
+    {
+        // given
+        NodeLivenessData tracker = new NodeLivenessData( new RollingAverage.Parameters() );
+
+        // when
+        tracker.recalculate();
+
+        // then
+        assertThat( tracker.liveEntitiesRatio(), equalTo( 1.0 ) );
+    }
+
+    @Test
+    public void shouldReportZeroLiveNodesIfItHasSeenNoLiveNodes()
     {
         // given
         NodeLivenessData tracker = new NodeLivenessData( new RollingAverage.Parameters() );
 
         // when
         tracker.recordDeadEntity();
+        tracker.recalculate();
 
         // then
-        assertThat( tracker.liveEntitiesRatio(), not( equalTo( 0.0 ) ) );
+        assertThat( tracker.liveEntitiesRatio(), equalTo( 0.0 ) );
+    }
+
+    @Test
+    public void shouldReportAPercentageOfLiveDeadNodeAccordinglyToTheObservedRecords()
+    {
+        // given
+        NodeLivenessData tracker = new NodeLivenessData( new RollingAverage.Parameters() );
+
+        // when
+        tracker.recordLiveEntity();
+        tracker.recordDeadEntity();
+        tracker.recordLiveEntity();
+        tracker.recalculate();
+
+        // then
+        assertThat( tracker.liveEntitiesRatio(), closeTo( 0.6666, 0.0001 ) );
+    }
+
+    @Test
+    public void shouldReportOneIfOnlyLiveNodesAreRecorded()
+    {
+        // given
+        NodeLivenessData tracker = new NodeLivenessData( new RollingAverage.Parameters() );
+
+        // when
+        tracker.recordLiveEntity();
+        tracker.recalculate();
+
+        // then
+        assertThat( tracker.liveEntitiesRatio(), equalTo( 1.0 ) );
     }
 }

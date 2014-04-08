@@ -51,14 +51,8 @@ public class LabelledDistribution<T> implements Serializable
 
     public double get( T label )
     {
-        if ( distribution.containsKey( label ) )
-        {
-            return distribution.get( label );
-        }
-        else
-        {
-            return 0.0d;
-        }
+        Double value = distribution.get(label);
+        return value == null ? 0.0d : value;
     }
 
     public LabelledDistribution<T> record( Iterable<T> labels, int ticks )

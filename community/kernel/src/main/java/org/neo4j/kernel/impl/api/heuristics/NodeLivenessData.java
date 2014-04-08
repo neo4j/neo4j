@@ -32,7 +32,7 @@ public final class NodeLivenessData implements Serializable {
 
     private final RollingAverage liveEntities;
     private final RollingAverage deadEntities;
-    private long maxEntities = 0;
+    private long highestNodeId = 0;
 
     transient private int liveEntitiesSeenInRound;
     transient private int deadEntitiesSeenInRound;
@@ -41,14 +41,6 @@ public final class NodeLivenessData implements Serializable {
     {
         this.liveEntities = new RollingAverage( parameters );
         this.deadEntities = new RollingAverage( parameters );
-    }
-
-
-    private void reset()
-    {
-        /* This avoids division by zero and ensures a result of 1.0 for an empty database, cf. liveEntitiesRatio() */
-        liveEntitiesSeenInRound = 1;
-        deadEntitiesSeenInRound = 0;
     }
 
     /**
@@ -75,8 +67,9 @@ public final class NodeLivenessData implements Serializable {
     {
         liveEntities.record( liveEntitiesSeenInRound );
         deadEntities.record( deadEntitiesSeenInRound );
-        reset();
 
+        liveEntitiesSeenInRound = 0;
+        deadEntitiesSeenInRound = 0;
     }
 
     /**
@@ -85,18 +78,18 @@ public final class NodeLivenessData implements Serializable {
     public double liveEntitiesRatio()
     {
         double alive = liveEntities.average();
-        double dead = deadEntities.average();
-        return alive / (dead + alive);
+        double total = deadEntities.average() + alive;
+        return total <= 0 ? 1.0 : alive / total;
     }
 
-    public long maxAddressableEntities()
+    public long highestNodeId()
     {
-        return maxEntities;
+        return highestNodeId;
     }
 
-    public void setMaxEntities(long maxEntities)
+    public void recordHighestId(long nodeId)
     {
-        this.maxEntities = maxEntities;
+        this.highestNodeId = nodeId;
     }
 
     @Override
@@ -115,7 +108,7 @@ public final class NodeLivenessData implements Serializable {
         NodeLivenessData that = (NodeLivenessData) o;
 
         return
-            maxEntities == that.maxEntities
+            highestNodeId == that.highestNodeId
             && deadEntities.equals( that.deadEntities )
             && liveEntities.equals( that.liveEntities );
 
@@ -125,7 +118,7 @@ public final class NodeLivenessData implements Serializable {
     public int hashCode() {
         int result = liveEntities.hashCode();
         result = 31 * result + deadEntities.hashCode();
-        result = 31 * result + (int) ( maxEntities ^ ( maxEntities >>> 32 ) );
+        result = 31 * result + (int) ( highestNodeId ^ ( highestNodeId >>> 32 ) );
         return result;
     }
 }

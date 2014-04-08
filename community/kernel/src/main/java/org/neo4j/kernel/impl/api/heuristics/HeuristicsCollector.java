@@ -19,70 +19,47 @@
  */
 package org.neo4j.kernel.impl.api.heuristics;
 
-import java.io.Serializable;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.heuristics.HeuristicsData;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.util.statistics.RollingAverage;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
-import org.neo4j.kernel.impl.util.statistics.LabelledDistribution;
-import org.neo4j.kernel.impl.util.statistics.RollingAverage;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
-public class HeuristicsCollector implements Serializable, HeuristicsData {
+public class HeuristicsCollector implements Runnable
+{
 
-    private static final long serialVersionUID = 5430534253089297623L;
+    private final HeuristicsCollectedData collectedData;
+    private final StoreReadLayer store;
+    private final Random random = new Random();
 
-    private final LabelledDistribution<Integer> labels;
-    private final LabelledDistribution<Integer> relationships;
-
-    private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> outgoingDegrees = new HashMap<>();
-    private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> incomingDegrees = new HashMap<>();
-    private final Map</*label*/Integer, Map</*rel*/Integer, RollingAverage>> bothDegrees = new HashMap<>();
-
-    private final NodeLivenessData nodeLivenessData;
-
-    private final transient RollingAverage.Parameters parameters;
-
-    public HeuristicsCollector()
+    public HeuristicsCollector( StoreReadLayer store, HeuristicsCollectedData collectedData )
     {
-        this( new RollingAverage.Parameters() );
+        this.collectedData = collectedData;
+        this.store = store;
     }
 
-    public HeuristicsCollector( RollingAverage.Parameters parameters )
+    private void addNodeObservation( List<Integer> nodeLabels, List<Integer> nodeRelTypes,
+                                     Map<Integer, Integer> nodeIncoming, Map<Integer, Integer> nodeOutgoing )
     {
-        this.parameters = parameters;
-        this.nodeLivenessData = new NodeLivenessData( parameters );
-        this.labels = new LabelledDistribution<>( parameters.equalityTolerance );
-        this.relationships = new LabelledDistribution<>( parameters.equalityTolerance );
+        collectedData.recordLabels( nodeLabels );
+        collectedData.recordRelationshipTypes( nodeRelTypes );
 
-        outgoingDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
-        incomingDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
-        bothDegrees.put(RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, new HashMap<Integer, RollingAverage>() );
+        recordNodeDegree( nodeLabels, nodeIncoming, collectedData.getIncomingDegree() );
+        recordNodeDegree( nodeLabels, nodeOutgoing, collectedData.getOutcomingDegree() );
+
+        recordNodeDegree( nodeLabels, nodeIncoming, collectedData.getBothDegree() );
+        recordNodeDegree( nodeLabels, nodeOutgoing, collectedData.getBothDegree() );
+
+        collectedData.recordNodeLiveEntity();
     }
-
-    public void addNodeObservation( List<Integer> nodeLabels, List<Integer> nodeRelTypes,
-                                    Map<Integer, Integer> nodeIncoming, Map<Integer, Integer> nodeOutgoing )
-    {
-        labels.record( nodeLabels );
-        relationships.record( nodeRelTypes );
-
-        recordNodeDegree( nodeLabels, nodeIncoming, incomingDegrees );
-        recordNodeDegree( nodeLabels, nodeOutgoing, outgoingDegrees );
-
-        recordNodeDegree( nodeLabels, nodeIncoming, bothDegrees );
-        recordNodeDegree( nodeLabels, nodeOutgoing, bothDegrees );
-
-        nodeLivenessData.recordLiveEntity();
-    }
-
-    public void addSkippedNodeObservation()
-    {
-        nodeLivenessData.recordDeadEntity();
-    }
-
-    public void addMaxNodesObservation( long maxNodes ) { nodeLivenessData.setMaxEntities(maxNodes); }
 
     private void recordNodeDegree( List<Integer> nodeLabels,
                                    Map<Integer, Integer> source,
@@ -92,22 +69,22 @@ public class HeuristicsCollector implements Serializable, HeuristicsData {
         {
             for ( Integer nodeLabel :
                     Iterables.append( /* Include for looking up without label */
-                            RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL,
-                                      nodeLabels
+                            HeuristicsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL,
+                            nodeLabels
                     )
-                 )
+                    )
             {
                 Map<Integer, RollingAverage> reltypeMap = degreeMap.get( nodeLabel );
-                if(reltypeMap == null)
+                if ( reltypeMap == null )
                 {
                     reltypeMap = new HashMap<>();
                     degreeMap.put( nodeLabel, reltypeMap );
                 }
 
                 RollingAverage histogram = reltypeMap.get( entry.getKey() );
-                if(histogram == null)
+                if ( histogram == null )
                 {
-                    histogram = new RollingAverage( parameters );
+                    histogram = new RollingAverage( collectedData.getParameters() );
                     reltypeMap.put( entry.getKey(), histogram );
                 }
 
@@ -116,90 +93,53 @@ public class HeuristicsCollector implements Serializable, HeuristicsData {
         }
     }
 
-    public void recalculate()
+    public HeuristicsData collectedData()
     {
-        labels.recalculate();
-        relationships.recalculate();
-        nodeLivenessData.recalculate();
+        return collectedData;
     }
 
+    /**
+     * Perform one sampling run.
+     */
     @Override
-    public double labelDistribution(int labelId)
+    public void run()
     {
-        return labels.get(labelId);
-    }
-
-    @Override
-    public double relationshipTypeDistribution(int relType)
-    {
-        return relationships.get(relType);
-    }
-
-    @Override
-    public double degree(int labelId, int relType, Direction direction)
-    {
-        Map<Integer, Map<Integer, RollingAverage>> labelMap;
-        switch ( direction )
+        for ( int i = 0; i < 100; i++ )
         {
-            case INCOMING:
-                labelMap = incomingDegrees;
-                break;
-            case OUTGOING:
-                labelMap = outgoingDegrees;
-                break;
-            default:
-                labelMap = bothDegrees;
-        }
-
-        if(labelMap.containsKey( labelId ))
-        {
-            Map<Integer, RollingAverage> relTypeMap = labelMap.get( labelId );
-            if(relTypeMap.containsKey( relType ))
+            long id = random.nextLong() % store.highestNodeIdInUse();
+            if ( store.nodeExists( id ) )
             {
-                return relTypeMap.get( relType ).average();
+                try
+                {
+                    List<Integer> relTypes = asList( store.nodeGetRelationshipTypes( id ) );
+                    List<Integer> labels = asList( store.nodeGetLabels( id ) );
+
+                    Map<Integer, Integer> incomingDegrees = new HashMap<>();
+                    Map<Integer, Integer> outgoingDegrees = new HashMap<>();
+
+                    for ( Integer relType : relTypes )
+                    {
+                        incomingDegrees.put( relType, store.nodeGetDegree( id, Direction.INCOMING, relType ) );
+                        outgoingDegrees.put( relType, store.nodeGetDegree( id, Direction.OUTGOING, relType ) );
+                    }
+
+                    addNodeObservation( labels, relTypes, incomingDegrees, outgoingDegrees );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    // Node was deleted while we read it, or something. In any case, just exclude it from the run.
+                    collectedData.recordNodeDeadEntity();
+                }
+            }
+            else
+            {
+                collectedData.recordNodeDeadEntity();
             }
         }
 
-        return 0.0;
-    }
+        collectedData.recordHighestNodeId( store.highestNodeIdInUse() );
 
-    @Override
-    public double liveNodesRatio()
-    {
-        return nodeLivenessData.liveEntitiesRatio();
-    }
-
-    @Override
-    public long maxAddressableNodes()
-    {
-        return nodeLivenessData.maxAddressableEntities();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        HeuristicsCollector that = (HeuristicsCollector) o;
-
-        return
-            bothDegrees.equals(that.bothDegrees)
-            && incomingDegrees.equals(that.incomingDegrees)
-            && outgoingDegrees.equals(that.outgoingDegrees)
-            && nodeLivenessData.equals(that.nodeLivenessData)
-            && labels.equals(that.labels)
-            && relationships.equals(that.relationships);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = labels.hashCode();
-        result = 31 * result + relationships.hashCode();
-        result = 31 * result + outgoingDegrees.hashCode();
-        result = 31 * result + incomingDegrees.hashCode();
-        result = 31 * result + bothDegrees.hashCode();
-        result = 31 * result + nodeLivenessData.hashCode();
-        return result;
+        collectedData.recalculate();
     }
 }
 
