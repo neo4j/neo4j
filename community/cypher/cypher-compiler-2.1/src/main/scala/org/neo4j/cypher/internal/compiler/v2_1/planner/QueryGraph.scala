@@ -28,7 +28,10 @@ An abstract representation of the query graph being solved at the current step
 case class QueryGraph(projections: Map[String, Expression],
                       selections: Selections,
                       patternNodes: Set[IdName],
-                      patternRelationships: Set[PatternRelationship]) {
+                      patternRelationships: Set[PatternRelationship],
+                      requiredIds: Set[IdName],
+                      optionalMatches: Seq[QueryGraph]) {
+
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
       .labelPredicates.getOrElse(node, Seq.empty)
@@ -37,6 +40,21 @@ case class QueryGraph(projections: Map[String, Expression],
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] = patternRelationships.filter {
     r => r.nodes._1 == id || r.nodes._2 == id
   }
+
+  def coveredIds: Set[IdName] =
+    QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships) ++ optionalMatches.flatMap(_.coveredIds)
+
+  def withAddedOptionalMatch(selections:Selections, nodes:Set[IdName], rels:Set[PatternRelationship]):QueryGraph = {
+    val optRequiredIds = coveredIds intersect QueryGraph.coveredIdsForPatterns(nodes, rels)
+    copy(optionalMatches = optionalMatches :+ QueryGraph(Map.empty, selections, nodes, rels, optRequiredIds, Seq.empty))
+  }
+}
+
+object QueryGraph {
+  def empty: QueryGraph = QueryGraph(Map.empty, Selections(), Set.empty, Set.empty, Set.empty, Seq.empty)
+
+  def coveredIdsForPatterns(patternNodes: Set[IdName], patternRels: Set[PatternRelationship]) =
+    patternNodes ++ patternRels.flatMap(_.coveredIds)
 }
 
 object SelectionPredicates {

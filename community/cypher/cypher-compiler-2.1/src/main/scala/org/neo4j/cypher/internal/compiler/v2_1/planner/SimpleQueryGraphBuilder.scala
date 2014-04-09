@@ -22,21 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NodePattern
-import org.neo4j.cypher.internal.compiler.v2_1.ast.ListedReturnItems
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipPattern
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Match
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Range
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SingleQuery
-import org.neo4j.cypher.internal.compiler.v2_1.ast.EveryPath
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipChain
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Return
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
@@ -77,35 +62,39 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     private def destruct(node: NodePattern): (Set[IdName], Set[PatternRelationship]) = (Set(IdName(node.identifier.get.name)), Set.empty)
   }
 
-  override def produce(ast: Query): QueryGraph = {
+  override def produce(ast: Query): QueryGraph = ast match {
+    case Query(None, SingleQuery(clauses)) =>
+      clauses.foldLeft(QueryGraph.empty)(
+        (qg, clause) =>
+          clause match {
+            case Return(false, ListedReturnItems(expressions), None, None, None) =>
+              val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
+              if (projections.exists {
+                case (_,e) => e.asCommandExpression.containsAggregate
+              }) throw new CantHandleQueryException
 
-    val (projections: Seq[(String, Expression)], selections: Selections, nodes: Set[IdName], rels: Set[PatternRelationship]) = ast match {
-      // return 42
-      case Query(None, SingleQuery(Seq(Return(false, ListedReturnItems(expressions), None, None, None)))) =>
-        val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-        val selections = Selections()
-        val nodes = Set.empty
-        (projections, selections, nodes, Set.empty)
+              qg.copy(projections = projections.toMap)
 
-      // match (n ...) return ...  ||   match (n ...)-[r ...]->(m ...) return ...
-      case Query(None, SingleQuery(Seq(
-      Match(false, pattern: Pattern, Seq(), optWhere),
-      Return(false, ListedReturnItems(expressions), None, None, None)
-      ))) =>
-        val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-        val (nodeIds: Set[IdName], rels: Set[PatternRelationship]) = PatternDestructuring.destruct(pattern)
-        val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-        (projections, selections, nodeIds, rels)
+            case Match(optional@false, pattern: Pattern, Seq(), optWhere) =>
+              if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
+                throw new CantHandleQueryException
 
-      case _ =>
-        throw new CantHandleQueryException
-    }
+              val (nodeIds: Set[IdName], rels: Set[PatternRelationship]) = PatternDestructuring.destruct(pattern)
+              val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
+              qg.copy(selections = selections, patternNodes = nodeIds, patternRelationships = rels)
 
-    if (projections.exists {
-      case (_,e) => e.asCommandExpression.containsAggregate
-    }) throw new CantHandleQueryException
+            case Match(optional@true, pattern: Pattern, Seq(), optWhere) =>
+              val (nodeIds: Set[IdName], rels: Set[PatternRelationship]) = PatternDestructuring.destruct(pattern)
+              val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
+              qg.withAddedOptionalMatch(selections, nodeIds, rels)
 
-    QueryGraph(projections.toMap, selections, nodes, rels)
+            case _ =>
+              throw new CantHandleQueryException
+          }
+      )
+
+    case _ =>
+      throw new CantHandleQueryException
   }
 
   private implicit def asPatternLength(length: Option[Option[Range]]): PatternLength = length match {

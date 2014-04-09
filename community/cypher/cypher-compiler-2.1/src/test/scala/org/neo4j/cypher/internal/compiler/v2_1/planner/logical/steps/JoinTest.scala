@@ -28,7 +28,7 @@ import org.neo4j.cypher.InternalException
 
 class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(Map.empty, Selections(), Set.empty, rels.toSet)
+  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(Map.empty, Selections(), Set.empty, rels.toSet, Set.empty, Seq.empty)
   val aNode = IdName("a")
   val bNode = IdName("b")
   val cNode = IdName("c")
