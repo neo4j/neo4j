@@ -29,10 +29,10 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport>
 {

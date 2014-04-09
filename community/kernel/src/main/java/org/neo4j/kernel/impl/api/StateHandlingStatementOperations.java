@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.Statement;
@@ -61,19 +60,21 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
+import org.neo4j.util.primitive.function.PrimitiveLongPredicate;
 
 import static java.util.Collections.emptyList;
+
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveIntIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.util.primitive.collection.Primitive.filter;
 
 public class StateHandlingStatementOperations implements
         KeyReadOperations,

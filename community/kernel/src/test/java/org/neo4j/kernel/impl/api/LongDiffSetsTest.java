@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.base.PrimitiveLongIteratorForArray;
 
 import static java.util.Arrays.asList;
 

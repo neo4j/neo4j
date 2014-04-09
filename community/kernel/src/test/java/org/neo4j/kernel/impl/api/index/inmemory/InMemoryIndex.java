@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 

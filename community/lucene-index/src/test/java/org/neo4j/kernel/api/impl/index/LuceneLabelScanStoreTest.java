@@ -49,11 +49,11 @@ import org.neo4j.kernel.api.direct.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;

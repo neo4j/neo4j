@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 public abstract class Primitive implements SizeOfObject
 {

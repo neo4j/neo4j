@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 public interface PrimitiveLongResourceIterator extends PrimitiveLongIterator, Resource
 {

@@ -28,8 +28,8 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 interface DataRead
 {

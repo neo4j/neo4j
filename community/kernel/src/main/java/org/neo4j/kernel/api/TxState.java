@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxStateImpl} for details.

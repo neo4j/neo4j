@@ -17,39 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.util.primitive.collection.hopscotch;
 
-import java.util.NoSuchElementException;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
-public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
+public interface PrimitiveLongIntMap
 {
-    public static final PrimitiveLongIteratorForArray EMPTY = new PrimitiveLongIteratorForArray();
+    int put( long key, int value );
 
-    private final long[] values;
+    boolean containsKey( long key );
+    
+    int get( long key );
 
-    int i = 0;
+    int remove( long key );
+    
+    int size();
 
-    public PrimitiveLongIteratorForArray( long... values )
-    {
-        this.values = values;
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-        return i < values.length;
-    }
-
-    @Override
-    public long next()
-    {
-        if ( hasNext() )
-        {
-            return values[i++];
-        }
-        else
-        {
-            throw new NoSuchElementException( );
-        }
-    }
+    PrimitiveLongIterator keyIterator();
 }

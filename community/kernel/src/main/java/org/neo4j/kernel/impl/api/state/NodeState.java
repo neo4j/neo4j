@@ -23,11 +23,10 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-
-import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 public final class NodeState extends PropertyContainerState
 {

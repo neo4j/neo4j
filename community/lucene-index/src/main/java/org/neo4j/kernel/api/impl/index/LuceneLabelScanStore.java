@@ -42,10 +42,10 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 public class LuceneLabelScanStore
         implements LabelScanStore, LabelScanStorageStrategy.StorageService

@@ -65,14 +65,14 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.base.PrimitiveIntIteratorForArray;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
-import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
+import static org.neo4j.util.primitive.collection.base.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the

@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
 

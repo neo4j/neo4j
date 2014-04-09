@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.util.primitive.collection;
 
-public interface FunctionToPrimitiveLong<T>
+public interface PrimitiveSet
 {
-    long apply( T value );
+    boolean isEmpty();
+    
+    void clear();
+    
+    int size();
 }
