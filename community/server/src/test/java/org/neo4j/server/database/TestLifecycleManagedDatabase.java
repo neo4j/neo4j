@@ -34,7 +34,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.Mute;
 
@@ -55,7 +55,7 @@ public class TestLifecycleManagedDatabase
     @Rule
     public Mute mute = muteAll();
 
-    private Logging logging = CommunityServerBuilder.bufferingLogging();
+    private final Logging logging = new BufferingLogging();
 
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logging );

@@ -35,16 +35,34 @@ Kernel:
 o Fixes an issue with tx log reading in severely damaged log files.
 o Fixes a JVM deadlock issue between committing and a reading thread
 o Can now handle more gracefully a larger set of failed index states
+o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
+o Fixes issue where store migration forgets about legacy indexes
+o Fixes memory leak in XaResourceManager that could lead recovered
+  transaction application to delay noticeably
+o Datasource specific transaction application now respects global TM state
 
 Server:
 o Fixes github issues #1872, #961 that deal with Content-Encoding headers
+o Server log and messages.log now share common formatting. Achieved
+  through the use of the same logging framework
+
+Backup:
+o Backup no longer differentiates between full and incremental backup, instead automatically chooses the best option
+  to use. This also handles cases where a backup is very old and can no longer be incrementally backed up.
+  OnlineBackup#incremental(..) and OnlineBackup.full(..) are now deprecated, and will be removed in the next major
+  release (3.0.0).
 
 HA:
 o Fixes potential deadlock when concurrently shutting down the database and role switching
+o Fixes issue where instance would deadlock if it was changing role during a shutdown
+o Fixes issue where cluster would become unresponsive if a message would get lost
 
 Cluster:
 o Fixes issue where failed instances would not be able to rejoin the cluster after restart
 o Throttles output of learn failure messages that could create big messages.log files
+o Adds INSTANCE_ID header to every message, solving class of problems where
+  reusing a URI would cause denied entry errors
+o Introduces throttle in the message logging of cluster transitions
 
 2.0.1 (2014-01-04)
 ------------------

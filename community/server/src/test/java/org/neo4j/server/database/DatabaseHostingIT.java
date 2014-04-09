@@ -34,14 +34,14 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.ConfigDatabase;
-import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
@@ -60,7 +60,7 @@ public class DatabaseHostingIT
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private LifeSupport life = new LifeSupport(  );
-    private Logging logging = CommunityServerBuilder.bufferingLogging();
+    private final Logging logging = new BufferingLogging();
     private DatabaseRegistry registry;
     private DatabaseHosting host;
     private ConfigDatabase configDb;
