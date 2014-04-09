@@ -4,6 +4,8 @@ o Backup no longer differentiates between full and incremental backup, instead a
   to use. This also handles cases where a backup is very old and can no longer be incrementally backed up.
   OnlineBackup#incremental(..) and OnlineBackup.full(..) are now deprecated, and will be removed in the next major
   release (3.0.0).
+o Fixes issue with backup client shutting down the network connection before 
+  the backup complete
 
 2.0.1
 -----

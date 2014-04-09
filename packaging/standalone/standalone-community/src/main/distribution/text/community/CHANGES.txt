@@ -16,9 +16,19 @@ o Fixes a JVM deadlock issue between committing and a reading thread
 o Can now handle more gracefully a larger set of failed index states
 o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
 o Fixes issue where store migration forgets about legacy indexes
+o Datasource specific transaction application now respects global TM state
+o Fix a cache poisoning issue where large properties would keep a reference to a closed
+  store after a HA role switch. Manifested as NullPointerException when reading very large
+  properties in rare cases.
+o Fixes an issue where indexes that have been dropped would fail recovery
+  if commands to activate them were run in recovery.
+o Fixes byte count monitoring
+o Fixes issue with proper update of indexes that came from improper
+  command execution order
 o Fixes memory leak in XaResourceManager that could lead recovered
   transaction application to delay noticeably
-o Datasource specific transaction application now respects global TM state
+o Fixes null pointer exceptions coming from LazyProperties being
+  half loaded while a datasource restart happens
 
 Server:
 o Fixes github issues #1872, #961 that deal with Content-Encoding headers
@@ -33,6 +43,7 @@ o Improve speed of creating label scan store in BatchInserter.
 o Fixes issue with batch inserter which could lead to record not in use exception
   when adding properties
 o Introduces monitoring for reads/writes to the logical log
+
 Server:
 o Fixes issue with transactions leaking when there is an exception while rendering the response
 

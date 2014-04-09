@@ -1,7 +1,6 @@
 2.0.2
 -----
 o Fixes potential deadlock when concurrently shutting down the database and role switching
-o Fixes issue where instance would deadlock if it was changing role during a shutdown
 o Fixes issue where cluster would become unresponsive if a message would get lost
 
 2.0.1
