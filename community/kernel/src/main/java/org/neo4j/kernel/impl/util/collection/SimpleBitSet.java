@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.util.collection;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.util.PrimitiveIntIterable;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterable;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
 
 /**
  * A basic bitset.

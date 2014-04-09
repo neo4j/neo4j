@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
 
 public class DataStatementArgumentVerificationTest
 {

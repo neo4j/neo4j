@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 import static java.lang.String.format;
 

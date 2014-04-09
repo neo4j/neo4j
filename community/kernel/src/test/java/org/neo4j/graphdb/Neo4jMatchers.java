@@ -33,8 +33,8 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;

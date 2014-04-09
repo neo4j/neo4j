@@ -27,9 +27,9 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.FlyweightPool;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
 
 public class ForsetiClient implements Locks.Client
 {

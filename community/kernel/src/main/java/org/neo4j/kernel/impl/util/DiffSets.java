@@ -25,10 +25,12 @@ import java.util.Set;
 
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveLongIterator;
 
 import static java.lang.String.format;
-
 import static java.util.Collections.newSetFromMap;
+
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 

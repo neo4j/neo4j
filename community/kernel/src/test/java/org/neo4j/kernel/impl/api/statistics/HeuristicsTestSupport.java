@@ -19,24 +19,26 @@
  */
 package org.neo4j.kernel.impl.api.statistics;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Random;
+
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
 
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class HeuristicsTestSupport

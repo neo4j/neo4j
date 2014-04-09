@@ -322,7 +322,7 @@ the relevant Commercial Agreement.
 
             <!-- Traverser changed to be a ResourceIterable -->
             <exclude>org/neo4j/graphdb/traversal/Traverser</exclude>
-            
+
             <!-- ResourceIterator extends Resource (which extends AutoCloseable), instead of Closeable -->
             <exclude>org/neo4j/graphdb/ResourceIterator</exclude>
           </excludes>
@@ -332,15 +332,25 @@ the relevant Commercial Agreement.
   </build>
 
   <dependencies>
+    <!-- main dependencies, internal -->
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-primitive-collections</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- main dependencies, external -->
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>
     </dependency>
     <dependency>
-    	<groupId>ch.qos.logback</groupId>
-    	<artifactId>logback-classic</artifactId>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <optional>true</optional>
     </dependency>
+
+    <!-- test dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

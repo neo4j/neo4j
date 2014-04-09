@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.util.primitive.collection.PrimitiveIntIterator;
 
 /**
  * Transform for {@link org.neo4j.kernel.api.TxState} to make it accessible as {@link TransactionData}.
