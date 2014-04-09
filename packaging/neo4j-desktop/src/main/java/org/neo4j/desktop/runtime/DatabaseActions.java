@@ -44,7 +44,7 @@ public class DatabaseActions
     private final DesktopModel model;
     private AbstractNeoServer server;
     private Logging logging;
-    private LifeSupport life;
+    private LifeSupport life = new LifeSupport();
 
     public DatabaseActions( DesktopModel model )
     {
