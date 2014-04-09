@@ -223,6 +223,29 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
     }
 
+    public boolean inUse( long id )
+    {
+        PersistenceWindow window;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return false;
+        }
+
+        try
+        {
+            Buffer buffer = window.getOffsettedBuffer( id );
+            return ((long) buffer.get() & 0x1) == Record.IN_USE.intValue();
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
+    }
+
     private NodeRecord getRecord( long id, PersistenceWindow window,
         RecordLoad load  )
     {
