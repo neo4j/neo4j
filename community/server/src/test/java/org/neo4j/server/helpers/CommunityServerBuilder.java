@@ -36,11 +36,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
-import org.neo4j.kernel.logging.BufferingLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
@@ -59,7 +55,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static java.lang.String.format;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
@@ -514,37 +509,6 @@ public class CommunityServerBuilder
         {
             super.stop();
             configFile.delete();
-        }
-    }
-
-    public static Logging bufferingLogging()
-    {
-        return new BufferingLogging();
-    }
-
-    private static class BufferingLogging extends LifecycleAdapter implements Logging
-    {
-        private final BufferingLogger log = new BufferingLogger();
-        private final BufferingConsoleLogger console = new BufferingConsoleLogger();
-
-        @Override
-        public StringLogger getMessagesLog( Class loggingClass )
-        {
-            return log;
-        }
-
-        @Override
-        public ConsoleLogger getConsoleLog( Class loggingClass )
-        {
-            return console;
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.append( log.toString() ).append( format( "%n" ) ).append( console.toString() );
-            return builder.toString();
         }
     }
 }

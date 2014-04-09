@@ -30,6 +30,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.logging.Logging;
 
 class LearnerContextImpl
@@ -41,7 +42,16 @@ class LearnerContextImpl
     private long lastLearnedInstanceId = -1;
 
     /** To minimize logging, keep track of the latest learn miss, only log when it changes. */
-    private InstanceId latestLearnMiss = null;
+    private final CappedOperation<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId> learnMissLogging =
+            new CappedOperation<org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId>(
+                    CappedOperation.differentItems() )
+    {
+        @Override
+        protected void triggered( InstanceId instanceId )
+        {
+            getLogger( LearnerState.class ).debug( "Did not have learned value for instance " + instanceId );
+        }
+    };
 
     private final HeartbeatContext heartbeatContext;
     private final AcceptorInstanceStore instanceStore;
@@ -170,11 +180,7 @@ class LearnerContextImpl
     @Override
     public void notifyLearnMiss( InstanceId instanceId )
     {
-        if(!instanceId.equals(latestLearnMiss))
-        {
-            getLogger( LearnerState.class ).debug( "Did not have learned value for instance " + instanceId );
-            latestLearnMiss = instanceId;
-        }
+        learnMissLogging.event( instanceId );
     }
 
     public LearnerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,

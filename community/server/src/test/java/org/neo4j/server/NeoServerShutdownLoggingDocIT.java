@@ -27,12 +27,11 @@ import org.junit.Test;
 
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.server.helpers.CommunityServerBuilder.bufferingLogging;
 
 public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
 {
@@ -42,7 +41,7 @@ public class NeoServerShutdownLoggingDocIT extends ExclusiveServerTestBase
     @Before
     public void setupServer() throws IOException
     {
-        logging = bufferingLogging();
+        logging = new BufferingLogging();
         server = ServerHelper.createPersistentServer(folder.getRoot(), logging);
         ServerHelper.cleanTheDatabase( server );
     }

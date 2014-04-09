@@ -28,13 +28,12 @@ import org.junit.Test;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.server.helpers.CommunityServerBuilder.bufferingLogging;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
@@ -44,7 +43,7 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
         int contestedPort = 9999;
         try ( ServerSocket ignored = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS ) ) )
         {
-            Logging logging = bufferingLogging();
+            Logging logging = new BufferingLogging();
             CommunityNeoServer server = CommunityServerBuilder.server()
                     .onPort( contestedPort )
                     .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
