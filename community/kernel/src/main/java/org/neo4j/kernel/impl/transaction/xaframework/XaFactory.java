@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
-
 import java.io.File;
 import java.util.List;
 
@@ -35,6 +33,8 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
 * TODO
@@ -69,7 +69,8 @@ public class XaFactory
                                        XaCommandWriterFactory commandWriterFactory,
                                        InjectedTransactionValidator injectedTxValidator,
                                        XaTransactionFactory tf, TransactionStateFactory stateFactory,
-                                       TransactionInterceptorProviders providers, boolean readOnly )
+                                       TransactionInterceptorProviders providers, boolean readOnly, Function<List
+            <LogEntry>, List<LogEntry>> transactionTranslator )
     {
         if ( logicalLog == null || commandReaderFactory == null || commandWriterFactory == null || tf == null )
         {
@@ -101,7 +102,7 @@ public class XaFactory
                 interceptor = Functions.identity();
             }
             log = new XaLogicalLog( logicalLog, rm, commandReaderFactory, commandWriterFactory, tf, fileSystemAbstraction,
-                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator, interceptor );
+                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator, interceptor, transactionTranslator );
         }
 
         // TODO These setters should be removed somehow

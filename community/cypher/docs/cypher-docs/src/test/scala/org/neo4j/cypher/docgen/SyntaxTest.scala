@@ -74,7 +74,7 @@ END""",
                  ELSE 3
 END as result""",
       returns = "",
-      assertions = (p) => assert(List(Map("result" -> 2), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toList)
+      assertions = (p) => assert(Set(Map("result" -> 2), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toSet)
     )
   }
 
@@ -101,7 +101,7 @@ END""",
                           ELSE 3
 END as result""",
       returns = "",
-      assertions = (p) => assert(List(Map("result" -> 3), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toList)
+      assertions = (p) => assert(Set(Map("result" -> 3), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toSet)
     )
   }
 

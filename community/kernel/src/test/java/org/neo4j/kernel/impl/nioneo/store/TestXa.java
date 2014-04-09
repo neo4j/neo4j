@@ -44,6 +44,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -75,6 +77,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -387,7 +390,15 @@ public class TestXa
                 dependencyResolverForNoIndexProvider( nodeManager ), txManager,
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), mock(Locks.class),
-                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fileSystem );
+                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fileSystem, new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+
+        {
+            @Override
+            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+            {
+                return Functions.identity();
+            }
+        });
         neoStoreXaDataSource.init();
         neoStoreXaDataSource.start();
         return neoStoreXaDataSource;

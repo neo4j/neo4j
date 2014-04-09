@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.util.List;
 import java.util.regex.Pattern;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
@@ -45,7 +46,7 @@ public class NoOpLogicalLog extends XaLogicalLog
             {
                 return null;
             }
-        }, null, null, new Monitors(), logging, null, null, 10000l, null, null );
+        }, null, null, new Monitors(), logging, null, null, 10000l, null, null, Functions.<List<LogEntry>>identity() );
 }
 
     @Override

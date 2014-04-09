@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
@@ -38,6 +35,13 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LogBackedXaDataSourceLogBufferFactoryTest
 {
@@ -53,7 +57,7 @@ public class LogBackedXaDataSourceLogBufferFactoryTest
         {
             private XaLogicalLog logicalLog = new XaLogicalLog( new File( testDir.directory(), "my.log" ), null, null,
                     mock( XaCommandWriterFactory.class ), null, new DefaultFileSystemAbstraction(), new Monitors(),
-                    new TestLogging(), null, null, 100, null, null );
+                    new TestLogging(), null, null, 100, null, null, Functions.<List<LogEntry>>identity() );
 
             @Override
             public XaConnection getXaConnection()

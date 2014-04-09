@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -32,6 +29,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -51,7 +49,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-public class DenseNodeTransactionInterceptorTest
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
+public class DenseNodeTransactionTranslatorTest
 {
     @Test
     public void shouldConvertFirstRelationshipForNodeCreation() throws Exception
@@ -1124,7 +1126,7 @@ public class DenseNodeTransactionInterceptorTest
 
     private List<LogEntry> translate( NeoStore neoStore, List<LogEntry> transaction )
     {
-        return new DenseNodeTransactionInterceptor( neoStore ).apply( transaction );
+        return new DenseNodeTransactionTranslator( neoStore ).apply( transaction );
     }
 
     private interface ExistingContents

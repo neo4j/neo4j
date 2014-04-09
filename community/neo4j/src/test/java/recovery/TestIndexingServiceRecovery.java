@@ -36,6 +36,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -184,7 +186,15 @@ public class TestIndexingServiceRecovery
                                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                                 persistenceManager, lockManager, this, transactionEventHandlers, recoveryMonitor,
-                                new DefaultFileSystemAbstraction() );
+                                new DefaultFileSystemAbstraction(), new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+
+                        {
+                            @Override
+                            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+                            {
+                                return Functions.identity();
+                            }
+                        });
                         xaDataSourceManager.registerDataSource( neoDataSource );
                     }
                 };

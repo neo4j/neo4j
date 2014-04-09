@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
@@ -179,6 +180,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private LabelScanStore labelScanStore;
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
+    private Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -275,7 +277,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs )
+                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, Function
+            <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -295,6 +298,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;
         this.fs = fs;
+        this.translatorFactory = translatorFactory;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -380,7 +384,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                         }
                     },
                     new NeoStoreInjectedTransactionValidator( integrityValidator ), tf,
-                    stateFactory, providers, readOnly  );
+                    stateFactory, providers, readOnly, translatorFactory.apply( neoStore )  );
 
             labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );

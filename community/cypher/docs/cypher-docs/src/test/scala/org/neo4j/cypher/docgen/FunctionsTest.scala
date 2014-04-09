@@ -130,7 +130,7 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = {
         (p) =>
           val iter: Iterable[String] = p.columnAs[Iterable[String]]("labels(a)").next()
-          assert(iter.toList === List("foo", "bar"))
+          assert(iter.toSet === Set("foo", "bar"))
       }
     )
   }

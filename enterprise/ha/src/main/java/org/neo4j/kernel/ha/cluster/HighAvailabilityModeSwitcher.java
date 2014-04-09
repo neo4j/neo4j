@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
@@ -43,6 +42,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.RemoteStoreCopier;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
@@ -72,6 +72,7 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -84,6 +85,7 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -91,6 +93,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
@@ -587,6 +590,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
+            Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory = new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+            {
+                @Override
+                public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+                {
+                    return new DenseNodeTransactionTranslator(neoStore);
+                }
+            };
+
             nioneoDataSource = new NeoStoreXaDataSource( config,
                     resolver.resolveDependency( StoreFactory.class ),
                     resolver.resolveDependency( StringLogger.class ),
@@ -609,7 +621,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     (SchemaWriteGuard)graphDb,
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ),
-                    resolver.resolveDependency( FileSystemAbstraction.class ));
+                    resolver.resolveDependency( FileSystemAbstraction.class ),
+                    translatorFactory);
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

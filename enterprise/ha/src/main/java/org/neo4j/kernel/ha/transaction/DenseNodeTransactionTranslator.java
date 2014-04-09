@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.transaction;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,22 +44,48 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
-public class DenseNodeTransactionInterceptor implements Function<List<LogEntry>, List<LogEntry>>
+public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, List<LogEntry>>
 {
     private final NeoStore neoStore;
-    private final RecordChangeSet recordChangeSet;
+    private RecordChangeSet recordChangeSet;
+    private final List<LogEntry.Command> commands = new LinkedList<>();
+    private final RelationshipGroupGetter groupGetter;
+    private final RelationshipCreator relationshipCreator;
+    private final RelationshipDeleter deleter;
+    private DenseNodeTransactionTranslator.TranslatingNeoCommandVisitor commandVisitor = new TranslatingNeoCommandVisitor();
 
-    public DenseNodeTransactionInterceptor( NeoStore neoStore )
+    public DenseNodeTransactionTranslator( NeoStore neoStore )
     {
         this.neoStore = neoStore;
-        this.recordChangeSet = new RecordChangeSet( neoStore );
+
+        groupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
+        relationshipCreator = new RelationshipCreator( new RelationshipLocker()
+        {
+            @Override
+            public void getWriteLock( long relId ) throws AcquireLockTimeoutException
+            {
+                return; // no locking when applying transactions
+            }
+        }, groupGetter, 1 );
+
+        deleter = new RelationshipDeleter( new RelationshipLocker()
+        {
+            @Override
+            public void getWriteLock( long relId ) throws AcquireLockTimeoutException
+            {
+                return; // no locking when applying transactions
+            }
+        }, groupGetter, new PropertyDeleter(
+                neoStore.getPropertyStore(), new PropertyTraverser() ) );
     }
 
     @Override
-    public List<LogEntry> apply( List<LogEntry> from )
+    public synchronized List<LogEntry> apply( List<LogEntry> from )
     {
-        List<LogEntry> result = new LinkedList<>();
-        List<LogEntry.Command> commands = new LinkedList<>();
+        // Setup the state for this translation
+        this.recordChangeSet = new RecordChangeSet( neoStore );
+        commands.clear();
+        List<LogEntry> result = new ArrayList<>(from.size());
 
         LogEntry commit = null;
         LogEntry prepare = null;
@@ -174,23 +201,8 @@ public class DenseNodeTransactionInterceptor implements Function<List<LogEntry>,
     private void handleCommand( LogEntry.Command commandEntry, List<LogEntry.Command> commands ) throws IOException
     {
         Command command = (Command) commandEntry.getXaCommand();
-        command.accept( new TranslatingNeoCommandVisitor() );
-//        if ( command instanceof Command.NodeCommand )
-//        {
-//            handleNodeCommand( (Command.NodeCommand) command );
-//        }
-//        else if ( command instanceof Command.RelationshipCommand )
-//        {
-//            handleRelationshipCommand( (Command.RelationshipCommand) command );
-//        }
-//        else if ( command instanceof Command.PropertyCommand )
-//        {
-//            handlePropertyCommand( (Command.PropertyCommand) command );
-//        }
-
+        command.accept( commandVisitor );
     }
-
-
 
     private class TranslatingNeoCommandVisitor implements NeoCommandVisitor
     {
@@ -295,16 +307,6 @@ public class DenseNodeTransactionInterceptor implements Function<List<LogEntry>,
 
         private void translateRelationshipCreation( Command.RelationshipCommand command )
         {
-            RelationshipGroupGetter groupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
-            RelationshipCreator relationshipCreator = new RelationshipCreator( new RelationshipLocker()
-            {
-                @Override
-                public void getWriteLock( long relId ) throws AcquireLockTimeoutException
-                {
-                    return; // no locking when applying transactions
-                }
-            }, groupGetter, 1 );
-
             RelationshipRecord record = command.getRecord();
             relationshipCreator.relationshipCreate( record.getId(), record.getType(), record.getFirstNode(),
                     record.getSecondNode(), recordChangeSet );
@@ -312,16 +314,6 @@ public class DenseNodeTransactionInterceptor implements Function<List<LogEntry>,
 
         private void translateRelationshipDeletion( Command.RelationshipCommand command )
         {
-            RelationshipDeleter deleter = new RelationshipDeleter( new RelationshipLocker()
-            {
-                @Override
-                public void getWriteLock( long relId ) throws AcquireLockTimeoutException
-                {
-                    return; // no locking when applying transactions
-                }
-            }, new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() ), new PropertyDeleter(
-                    neoStore.getPropertyStore(), new PropertyTraverser() ) );
-
             RelationshipRecord record = command.getRecord();
             deleter.relDelete( record.getId(), recordChangeSet );
         }

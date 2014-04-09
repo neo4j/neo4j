@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -67,6 +61,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -117,6 +117,7 @@ public class XaLogicalLog implements LogLoader
 
     private final FileSystemAbstraction fileSystem;
     private final Function<List<LogEntry>, List<LogEntry>> interceptor;
+    private Function<List<LogEntry>, List<LogEntry>> transactionTranslator;
     private final LogPruneStrategy pruneStrategy;
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
@@ -139,7 +140,8 @@ public class XaLogicalLog implements LogLoader
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
                          long rotateAtSize, InjectedTransactionValidator injectedTxValidator,
-                         Function<List<LogEntry>, List<LogEntry>> interceptor )
+                         Function<List<LogEntry>, List<LogEntry>> interceptor, Function<List<LogEntry>,
+            List<LogEntry>> transactionTranslator )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
@@ -148,6 +150,7 @@ public class XaLogicalLog implements LogLoader
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
         this.interceptor = interceptor;
+        this.transactionTranslator = transactionTranslator;
         this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
         this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );
         this.pruneStrategy = pruneStrategy;
@@ -1031,7 +1034,7 @@ public class XaLogicalLog implements LogLoader
                         new LogApplier(), logWriterSPI,
                         injectedTxValidator, logEntryWriter ) );
 
-        LogEntryConsumer consumer = new LogEntryConsumer( new V0ToV1Translator() );
+        LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
 
         consumer.setXidIdentifier( getNextIdentifier() );
 
@@ -1062,7 +1065,7 @@ public class XaLogicalLog implements LogLoader
     {
         scanIsComplete = false;
 
-        LogEntryConsumer consumer = new LogEntryConsumer( new V0ToV1Translator() );
+        LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
         consumer.setXidIdentifier( getNextIdentifier() );
         ForgetUnsuccessfulReceivedTransaction handler = new ForgetUnsuccessfulReceivedTransaction(
                 new SlaveLogWriter( new LogApplier(), logWriterSPI, logEntryWriter ) );
