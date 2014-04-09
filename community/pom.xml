@@ -32,6 +32,7 @@
   </scm>
 
   <modules>
+    <module>primitive-collections</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>

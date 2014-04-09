@@ -27,7 +27,10 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+
 import static junit.framework.TestCase.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public class PrimitiveIteratorMatchers

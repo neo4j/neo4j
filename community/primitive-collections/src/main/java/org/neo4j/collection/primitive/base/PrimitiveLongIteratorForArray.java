@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.collection.primitive.base;
 
 import java.util.NoSuchElementException;
 
-import static java.util.Arrays.copyOf;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
-public class PrimitiveIntIteratorForArray implements PrimitiveIntIterator
+public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
 {
-    private final int[] values;
+    public static final PrimitiveLongIteratorForArray EMPTY = new PrimitiveLongIteratorForArray();
+
+    private final long[] values;
 
     int i = 0;
 
-    public PrimitiveIntIteratorForArray( int... values )
+    public PrimitiveLongIteratorForArray( long... values )
     {
         this.values = values;
     }
@@ -41,35 +43,15 @@ public class PrimitiveIntIteratorForArray implements PrimitiveIntIterator
     }
 
     @Override
-    public int next()
+    public long next()
     {
         if ( hasNext() )
         {
             return values[i++];
         }
-        throw new NoSuchElementException( );
-    }
-
-    public static final int[] EMPTY_INT_ARRAY = new int[0];
-
-    public static int[] primitiveIntIteratorToIntArray( PrimitiveIntIterator iterator )
-    {
-        if ( !iterator.hasNext() )
+        else
         {
-            return EMPTY_INT_ARRAY;
+            throw new NoSuchElementException( );
         }
-
-        int[] result = new int[5]; // arbitrary initial size
-        int cursor = 0;
-        while ( iterator.hasNext() )
-        {
-            if ( cursor >= result.length )
-            {
-                result = copyOf( result, result.length*2 );
-            }
-            result[cursor++] = iterator.next();
-        }
-        // shrink if needed
-        return cursor == result.length ? result : copyOf( result, cursor );
     }
 }

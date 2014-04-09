@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 

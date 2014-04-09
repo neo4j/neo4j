@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterable<Long>
 {

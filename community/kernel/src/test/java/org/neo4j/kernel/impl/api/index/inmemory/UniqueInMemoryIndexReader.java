@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singletonPrimitiveLongIterator;

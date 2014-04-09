@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.util;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.base.AbstractPrimitiveLongIterator;
+
 public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLongIterator
 {
     private enum Phase

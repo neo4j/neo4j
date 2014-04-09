@@ -17,39 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.collection.primitive;
 
-import java.util.NoSuchElementException;
-
-public class PrimitiveLongIteratorForArray implements PrimitiveLongIterator
+public interface PrimitiveIntIterable
 {
-    public static final PrimitiveLongIteratorForArray EMPTY = new PrimitiveLongIteratorForArray();
-
-    private final long[] values;
-
-    int i = 0;
-
-    public PrimitiveLongIteratorForArray( long... values )
-    {
-        this.values = values;
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-        return i < values.length;
-    }
-
-    @Override
-    public long next()
-    {
-        if ( hasNext() )
-        {
-            return values[i++];
-        }
-        else
-        {
-            throw new NoSuchElementException( );
-        }
-    }
+    PrimitiveIntIterator iterator();
 }

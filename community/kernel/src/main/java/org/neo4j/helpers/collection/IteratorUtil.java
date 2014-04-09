@@ -33,19 +33,20 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.base.AbstractPrimitiveLongIterator;
+import org.neo4j.collection.primitive.base.PrimitiveIntIteratorForArray;
+import org.neo4j.collection.primitive.base.PrimitiveLongIteratorForArray;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.PrimitiveLongPredicate;
-import org.neo4j.kernel.impl.util.AbstractPrimitiveLongIterator;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIteratorForArray;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.EnumSet.allOf;
+
 import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
@@ -352,32 +353,11 @@ public abstract class IteratorUtil
         }
     }
 
-    /**
-     * Returns the given iterator's single element or {@code itemIfNone} if no
-     * element found. If there is more than one element in the iterator a
-     * {@link NoSuchElementException} will be thrown.
-     *
-     * @param iterator the {@link Iterator} to get elements from.
-     * @return the single element in {@code iterator}, or {@code itemIfNone} if no
-     * element found.
-     * @throws NoSuchElementException if more than one element was found.
-     */
     public static long single( PrimitiveLongIterator iterator, long itemIfNone )
     {
         try
         {
-            if ( iterator.hasNext() )
-            {
-                long result = iterator.next();
-                if ( iterator.hasNext() )
-                {
-                    throw new NoSuchElementException( "More than one element in " +
-                            iterator + ". First element is '" + result +
-                            "' and the second element is '" + iterator.next() + "'" );
-                }
-                return result;
-            }
-            return itemIfNone;
+            return Primitive.single( iterator, itemIfNone );
         }
         finally
         {
@@ -386,62 +366,6 @@ public abstract class IteratorUtil
                 ((Resource) iterator).close();
             }
         }
-    }
-
-    /**
-     * Returns a new iterator with all elements found in the input iterator that are accepted by the given predicate
-     *
-     * @param predicate predicate to use for selecting elements
-     * @param iterator input source of elements to be filtered
-     * @return new iterator that contains exactly all elements from iterator that are accepted by predicate
-     */
-    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
-                                                final PrimitiveLongIterator iterator )
-    {
-        return new PrimitiveLongIterator()
-        {
-            long next = -1;
-            boolean hasNext = false;
-
-            {
-                computeNext();
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return hasNext;
-            }
-
-            @Override
-            public long next()
-            {
-                if ( hasNext )
-                {
-                    long result = next;
-                    computeNext();
-                    return result;
-                }
-                else
-                {
-                    throw new NoSuchElementException();
-                }
-            }
-
-            private void computeNext()
-            {
-                while ( iterator.hasNext() )
-                {
-                    next = iterator.next();
-                    if ( predicate.accept( next ) )
-                    {
-                        hasNext = true;
-                        return;
-                    }
-                }
-                hasNext = false;
-            }
-        };
     }
 
     /**

@@ -24,9 +24,9 @@ import java.io.IOException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 class LuceneIndexAccessorReader implements IndexReader
 {

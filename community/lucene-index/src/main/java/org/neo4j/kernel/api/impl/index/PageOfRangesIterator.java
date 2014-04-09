@@ -27,10 +27,10 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapExtractor;
 import org.neo4j.kernel.api.impl.index.bitmaps.LongPageIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
 {

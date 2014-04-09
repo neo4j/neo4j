@@ -17,9 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.test.randomized;
 
-public interface FunctionToPrimitiveLong<T>
+public interface Action<T,F>
 {
-    long apply( T value );
+    /**
+     * @return {@code true} if the value was applied properly and all checks verifies,
+     * otherwise {@code false}.
+     */
+    F apply( T target );
+
+    /**
+     * For outputting a test case, this is the code that represents this action.
+     */
+    void printAsCode( T source, LinePrinter out, boolean includeChecks );
+    
+    public abstract static class Adapter<T,F> implements Action<T,F>
+    {
+        @Override
+        public void printAsCode( T source, LinePrinter out, boolean includeChecks )
+        {
+            out.println( getClass().getSimpleName() + "#printAsCode not implemented" );
+        }
+    }
 }

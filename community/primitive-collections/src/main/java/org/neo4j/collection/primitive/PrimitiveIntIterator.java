@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.collection.primitive;
 
-public interface PrimitiveLongPredicate
+public interface PrimitiveIntIterator
 {
-    boolean accept( long value );
+    boolean hasNext();
+
+    int next();
 }

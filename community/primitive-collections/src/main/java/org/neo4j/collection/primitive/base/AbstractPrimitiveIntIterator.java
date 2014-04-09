@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.collection.primitive.base;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
 
 /**
  * Subclasses provide a PrimitiveIntIterator by implementing computeNext() which is expected to either

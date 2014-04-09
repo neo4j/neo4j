@@ -23,12 +23,12 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 {

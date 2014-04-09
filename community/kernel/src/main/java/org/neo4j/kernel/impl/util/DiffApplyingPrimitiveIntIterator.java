@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.util;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.base.AbstractPrimitiveIntIterator;
+
 /**
  * Please dedup with {@link DiffApplyingPrimitiveLongIterator}
  */
