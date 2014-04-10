@@ -1061,7 +1061,6 @@ RETURN x0.name""")
     ))
   }
 
-<<<<<<< HEAD
   test("should handle cyclic patterns") {
     // Given
     val a = createNode("a")
@@ -1119,7 +1118,27 @@ RETURN x0.name""")
     val count = executeScalar[Long]("match (a) where rand() < .5 return count(*)")
 
     // should give us a number in the middle, not all or nothing
-    count should not equal(0)
-    count should not equal(100)
+    count should not equal 0
+    count should not equal 100
+  }
+
+  test("should not find any matches when a node in a pattern is null") {
+    // Given empty db
+
+    // when
+    val result = execute("optional match (a) with a match (a)-->(b) return b")
+
+    // should give us a number in the middle, not all or nothing
+    result shouldBe empty
+  }
+
+  test("optional match starting from a null node returns null") {
+    // Given empty db
+
+    // when
+    val result = execute("optional match (a) with a optional match (a)-->(b) return b")
+
+    // should give us a number in the middle, not all or nothing
+    result.toList should equal (List(Map("b"->null)))
   }
 }
