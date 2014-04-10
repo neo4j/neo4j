@@ -17,15 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive;
+package org.neo4j.collection.primitive.hopscotch;
 
-public interface PrimitiveLongSet extends PrimitiveLongCollection, PrimitiveLongIterable
+public class LongKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
 {
-    boolean add( long value );
+    public LongKeyUnsafeTable( int capacity, VALUE valueMarker )
+    {
+        super( capacity, 8, valueMarker );
+    }
 
-    boolean addAll( PrimitiveLongIterator values );
+    @Override
+    protected long internalKey( long keyAddress )
+    {
+        return unsafe.getLong( keyAddress );
+    }
 
-    boolean contains( long value );
+    @Override
+    protected void internalPut( long keyAddress, long key, VALUE value )
+    {
+        unsafe.putLong( keyAddress, key );
+    }
 
-    boolean remove( long value );
+    @Override
+    protected Table<VALUE> newInstance( int newCapacity )
+    {
+        return new LongKeyUnsafeTable<>( newCapacity, valueMarker );
+    }
 }

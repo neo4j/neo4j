@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monito
 
 import static java.lang.String.format;
 
-class DebugMonitor implements Monitor
+class DebugMonitor extends Monitor.Adapter
 {
     // This is not the place to use primitive collections, since we're debugging issues in them
     private final Set<Integer> indexes = new HashSet<>();
@@ -59,12 +59,6 @@ class DebugMonitor implements Monitor
     private String hopBitsAsString( long oldHopBits, long newHopBits )
     {
         return hopBitsAsString( oldHopBits ) + " > " + hopBitsAsString( newHopBits );
-    }
-
-    @Override
-    public boolean tableGrew( int fromCapacity, int toCapacity, int currentSize )
-    {
-        return true;
     }
 
     @Override

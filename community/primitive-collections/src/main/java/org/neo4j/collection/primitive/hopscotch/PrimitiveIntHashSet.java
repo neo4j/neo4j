@@ -19,18 +19,18 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
-public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object> implements PrimitiveLongSet
+public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> implements PrimitiveIntSet
 {
     private final Object valueMarker;
     private final Monitor monitor;
 
-    public PrimitiveLongHashSet( Table<Object> table, Object valueMarker, Monitor monitor )
+    public PrimitiveIntHashSet( Table<Object> table, Object valueMarker, Monitor monitor )
     {
         super( table );
         this.valueMarker = valueMarker;
@@ -38,13 +38,13 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
     }
 
     @Override
-    public boolean add( long value )
+    public boolean add( int value )
     {
         return HopScotchHashingAlgorithm.put( table, monitor, DEFAULT_HASHING, value, valueMarker, this ) == null;
     }
 
     @Override
-    public boolean addAll( PrimitiveLongIterator values )
+    public boolean addAll( PrimitiveIntIterator values )
     {
         boolean changed = false;
         while ( values.hasNext() )
@@ -56,13 +56,13 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
     }
 
     @Override
-    public boolean contains( long value )
+    public boolean contains( int value )
     {
         return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
     }
 
     @Override
-    public boolean remove( long value )
+    public boolean remove( int value )
     {
         return HopScotchHashingAlgorithm.remove( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
     }

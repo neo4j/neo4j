@@ -27,15 +27,14 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_H;
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
 public class HopScotchHashingAlgorithmTest
 {
@@ -45,7 +44,8 @@ public class HopScotchHashingAlgorithmTest
         // GIVEN
         int threshold = figureOutGrowthThreshold();
         TableGrowthAwareMonitor monitor = new TableGrowthAwareMonitor();
-        PrimitiveLongSet set = new PrimitiveLongHashSet( DEFAULT_H, DEFAULT_HASHING, monitor );
+        PrimitiveLongSet set = new PrimitiveLongHashSet(
+                new LongKeyTable<>( DEFAULT_H, VALUE_MARKER ), VALUE_MARKER, monitor );
         Set<Long> added = new HashSet<>();
         for ( int i = 0; i < threshold-1; i++ )
         {
@@ -108,12 +108,15 @@ public class HopScotchHashingAlgorithmTest
                 return true;
             }
         };
-        PrimitiveLongSet set = new PrimitiveLongHashSet( DEFAULT_H, DEFAULT_HASHING, monitor );
-        int i = 0;
-        for ( i = 0; !grew.get(); i++ )
+        try ( PrimitiveLongSet set = new PrimitiveLongHashSet(
+                new LongKeyTable<>( DEFAULT_H, VALUE_MARKER ), VALUE_MARKER, monitor ) )
         {
-            set.add( i*3 );
+            int i = 0;
+            for ( i = 0; !grew.get(); i++ )
+            {
+                set.add( i*3 );
+            }
+            return i;
         }
-        return i;
     }
 }

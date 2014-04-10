@@ -17,21 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.collection.primitive;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
-public interface PrimitiveLongObjectMap<VALUE>
+public interface PrimitiveLongIterable
 {
-    VALUE put( long key, VALUE value );
-
-    boolean containsKey( long key );
-    
-    VALUE get( long key );
-
-    VALUE remove( long key );
-    
-    int size();
-
-    PrimitiveLongIterator keyIterator();
+    PrimitiveLongIterator iterator();
 }

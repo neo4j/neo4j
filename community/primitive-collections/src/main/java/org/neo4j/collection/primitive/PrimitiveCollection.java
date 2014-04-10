@@ -19,13 +19,17 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveLongSet extends PrimitiveLongCollection, PrimitiveLongIterable
+public interface PrimitiveCollection extends AutoCloseable
 {
-    boolean add( long value );
+    boolean isEmpty();
 
-    boolean addAll( PrimitiveLongIterator values );
+    void clear();
 
-    boolean contains( long value );
+    int size();
 
-    boolean remove( long value );
+    /**
+     * Free any attached resources.
+     */
+    @Override
+    public void close();
 }

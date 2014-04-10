@@ -24,14 +24,9 @@ import static java.util.Arrays.fill;
 public class LongKeyTable<VALUE>
         extends IntArrayBasedKeyTable<VALUE>
 {
-    public LongKeyTable( int h, VALUE singleValue )
+    public LongKeyTable( int capacity, VALUE singleValue )
     {
-        super( 3, h, singleValue );
-    }
-
-    protected LongKeyTable( int capacity, int h, VALUE singleValue )
-    {
-        super( capacity, 3, h, singleValue );
+        super( capacity, 3, 32, singleValue );
     }
 
     @Override
@@ -59,6 +54,6 @@ public class LongKeyTable<VALUE>
     @Override
     protected LongKeyTable<VALUE> newInstance( int newCapacity )
     {
-        return new LongKeyTable<>( newCapacity, h, singleValue );
+        return new LongKeyTable<>( newCapacity, singleValue );
     }
 }

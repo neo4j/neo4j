@@ -27,15 +27,9 @@ public class LongKeyIntValueTable extends LongKeyTable<int[]>
     private final int[] transport;
     private int[] values;
 
-    public LongKeyIntValueTable( int h )
+    public LongKeyIntValueTable( int capacity )
     {
-        super( h, new int[] { NULL } );
-        this.transport = new int[1];
-    }
-
-    public LongKeyIntValueTable( int capacity, int h )
-    {
-        super( capacity, h, new int[] { NULL } );
+        super( capacity, new int[] { NULL } );
         this.transport = new int[1];
     }
 
@@ -96,7 +90,7 @@ public class LongKeyIntValueTable extends LongKeyTable<int[]>
     @Override
     protected LongKeyTable<int[]> newInstance( int newCapacity )
     {
-        return new LongKeyIntValueTable( newCapacity, h );
+        return new LongKeyIntValueTable( newCapacity );
     }
 
     private int unpack( int[] value )

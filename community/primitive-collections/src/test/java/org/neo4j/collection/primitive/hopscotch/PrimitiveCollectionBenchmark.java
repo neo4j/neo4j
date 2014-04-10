@@ -28,11 +28,11 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntMap;
 import org.neo4j.test.randomized.RandomizedTester.TargetFactory;
+import org.neo4j.test.randomized.TestResource;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
@@ -204,27 +204,28 @@ public class PrimitiveCollectionBenchmark
         for ( int r = 0; r < RUNS; r++ )
         {
             // GIVEN
-            final MapInterface target = factory.newInstance();
-
-            // WHEN
-            long time = currentTimeMillis();
-            long dataSize = data.length;
-            for ( int i = 0; i < dataSize; i++ )
+            try ( final MapInterface target = factory.newInstance() )
             {
-                target.put( data[i], (int)data[i] );
+                // WHEN
+                long time = currentTimeMillis();
+                long dataSize = data.length;
+                for ( int i = 0; i < dataSize; i++ )
+                {
+                    target.put( data[i], (int)data[i] );
+                }
+                long addTime = currentTimeMillis() - time;
+                time = currentTimeMillis();
+                for ( int i = 0; i < dataSize; i++ )
+                {
+                    target.get( data[i] );
+                }
+                long containsTime = currentTimeMillis() - time;
+                printResults( addTime, containsTime, target );
             }
-            long addTime = currentTimeMillis() - time;
-            time = currentTimeMillis();
-            for ( int i = 0; i < dataSize; i++ )
-            {
-                target.get( data[i] );
-            }
-            long containsTime = currentTimeMillis() - time;
-            printResults( addTime, containsTime, target );
         }
     }
 
-    private interface MapInterface
+    private interface MapInterface extends TestResource
     {
         void put( long key, int value );
 
@@ -269,6 +270,11 @@ public class PrimitiveCollectionBenchmark
         {
             return "" + set.size();
         }
+
+        @Override
+        public void close()
+        {
+        }
     }
 
     private static class JucMap implements MapInterface
@@ -291,6 +297,11 @@ public class PrimitiveCollectionBenchmark
         public String toString()
         {
             return "" + map.size();
+        }
+
+        @Override
+        public void close()
+        {
         }
     }
 
@@ -342,7 +353,7 @@ public class PrimitiveCollectionBenchmark
 
     private static class HopScotchSet implements MapInterface
     {
-        private final PrimitiveLongSet set = new PrimitiveLongHashSet();
+        private final PrimitiveLongSet set = Primitive.offHeapLongSet();
 
         @Override
         public void put( long key, int value )
@@ -361,11 +372,17 @@ public class PrimitiveCollectionBenchmark
         {
             return set.toString();
         }
+
+        @Override
+        public void close()
+        {
+            set.close();
+        }
     }
 
     private static class HopScotchMap implements MapInterface
     {
-        private final PrimitiveLongIntMap map = new PrimitiveLongIntHashMap();
+        private final PrimitiveLongIntMap map = Primitive.longIntMap();
 
         @Override
         public void put( long key, int value )
@@ -383,6 +400,12 @@ public class PrimitiveCollectionBenchmark
         public String toString()
         {
             return map.toString();
+        }
+
+        @Override
+        public void close()
+        {
+            map.close();
         }
     }
 

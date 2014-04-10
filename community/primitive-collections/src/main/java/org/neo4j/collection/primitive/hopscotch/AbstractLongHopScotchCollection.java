@@ -19,19 +19,36 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollection;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
-public class VersionedPrimitiveLongHashSet extends PrimitiveLongHashSet
+public class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
+        implements PrimitiveLongCollection
 {
-    public VersionedPrimitiveLongHashSet( Table<Object> table, Object valueMarker, Monitor monitor )
+    public AbstractLongHopScotchCollection( Table<VALUE> table )
     {
-        super( table, valueMarker, monitor );
+        super( table );
     }
 
     @Override
     public PrimitiveLongIterator iterator()
     {
-        return new VersionedTableIterator<>( table, this );
+        return new TableIterator<>( table, this );
+    }
+
+    @Override
+    public void visit( PrimitiveLongVisitor visitor )
+    {
+        int capacity = table.capacity();
+        long nullKey = table.nullKey();
+        for ( int i = 0; i < capacity; i++ )
+        {
+            long key = table.key( i );
+            if ( key != nullKey )
+            {
+                visitor.visited( key );
+            }
+        }
     }
 }

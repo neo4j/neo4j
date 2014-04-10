@@ -279,6 +279,7 @@ public class HopScotchHashingAlgorithm
     private static <VALUE> Table<VALUE> growTable( Table<VALUE> oldTable, Monitor monitor,
             ResizeMonitor<VALUE> resizeMonitor )
     {
+        monitor.tableGrowing( oldTable.capacity(), oldTable.size() );
         Table<VALUE> newTable = oldTable.grow();
         long nullKey = oldTable.nullKey();
 
@@ -296,8 +297,9 @@ public class HopScotchHashingAlgorithm
                 }
             }
         }
-        assert monitor.tableGrew( oldTable.capacity(), newTable.capacity(), newTable.size() );
+        monitor.tableGrew( oldTable.capacity(), newTable.capacity(), newTable.size() );
         resizeMonitor.tableGrew( newTable );
+        oldTable.close();
         return newTable;
     }
 
@@ -306,6 +308,8 @@ public class HopScotchHashingAlgorithm
      */
     public interface Monitor
     {
+        boolean tableGrowing( int fromCapacity, int currentSize );
+
         boolean tableGrew( int fromCapacity, int toCapacity, int currentSize );
 
         boolean placedAtFreeAndIntendedIndex( long key, int index );
@@ -341,6 +345,12 @@ public class HopScotchHashingAlgorithm
             @Override
             public boolean pulledToFreeIndex( int intendedIndex, long newHopBits, long key,
                     int fromIndex, int toIndex )
+            {
+                return true;
+            }
+
+            @Override
+            public boolean tableGrowing( int fromCapacity, int currentSize )
             {
                 return true;
             }

@@ -33,7 +33,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     protected final VALUE singleValue;
     private final int itemsPerEntry;
 
-    public IntArrayBasedKeyTable( int itemsPerEntry, int h, VALUE singleValue )
+    protected IntArrayBasedKeyTable( int itemsPerEntry, int h, VALUE singleValue )
     {
         this( baseCapacity( h ), itemsPerEntry, h, singleValue );
     }
@@ -110,13 +110,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     @Override
     public long hopBits( int index )
     {
-        return table[index( index )+itemsPerEntry-1];
-    }
-
-    @Override
-    public long nullKey()
-    {
-        return -1L;
+        return table[index( index )+itemsPerEntry-1] & 0x00000000FFFFFFFFL;
     }
 
     private int hopBit( int hd )

@@ -21,14 +21,9 @@ package org.neo4j.collection.primitive.hopscotch;
 
 public class IntKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
 {
-    public IntKeyTable( int h, VALUE singleValue )
+    public IntKeyTable( int capacity, VALUE singleValue )
     {
-        super( 2, h, singleValue );
-    }
-
-    protected IntKeyTable( int capacity, int h, VALUE singleValue )
-    {
-        super( capacity, 2, h, singleValue );
+        super( capacity, 2, 32, singleValue );
     }
 
     @Override
@@ -52,6 +47,6 @@ public class IntKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
     @Override
     protected IntArrayBasedKeyTable<VALUE> newInstance( int newCapacity )
     {
-        return new IntKeyTable<>( newCapacity, h, singleValue );
+        return new IntKeyTable<>( newCapacity, singleValue );
     }
 }
