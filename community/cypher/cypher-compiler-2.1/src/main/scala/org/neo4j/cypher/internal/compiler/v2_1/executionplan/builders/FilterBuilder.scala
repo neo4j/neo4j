@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, FilterPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 class FilterBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
     val q = plan.query
     val p = plan.pipe
 
-    val item = q.where.filter(pred => yesOrNo(pred, p))
+    val onlyDeterministic = !allPatternsSolved(plan)
+    val item = q.where.filter(pred => yesOrNo(pred, p, onlyDeterministic))
     val pred: Predicate = item.map(_.token).reduce(_ ++ _)
 
     val newPipe = if (pred == True()) {
@@ -48,7 +48,6 @@ class FilterBuilder extends PlanBuilder {
     )
   }
 
-
   override def missingDependencies(plan: ExecutionPlanInProgress) = {
     val querySoFar = plan.query
     val pipe = plan.pipe
@@ -56,15 +55,21 @@ class FilterBuilder extends PlanBuilder {
     val unsolvedPredicates = querySoFar.where.filter(_.unsolved).map(_.token)
 
     unsolvedPredicates.
-      flatMap(pred => pipe.symbols.missingSymbolTableDependencies(pred)).
-      map("Unknown identifier `%s`".format(_))
+    flatMap(pred => pipe.symbols.missingSymbolTableDependencies(pred)).
+    map("Unknown identifier `%s`".format(_))
   }
 
-  private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
-    case Unsolved(pred: Predicate) => pred.symbolDependenciesMet(p.symbols)
+  private def allPatternsSolved(plan: ExecutionPlanInProgress) =
+    plan.query.patterns.forall(_.solved)
+
+  private def yesOrNo(q: QueryToken[_], p: Pipe, onlyDeterministic: Boolean) = q match {
+    case Unsolved(pred: Predicate) =>
+      pred.symbolDependenciesMet(p.symbols) && (!onlyDeterministic || pred.isDeterministic)
     case _                         => false
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) =
-    plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
+    val onlyDeterministic = !allPatternsSolved(plan)
+    plan.query.where.exists(pred => yesOrNo(pred, plan.pipe, onlyDeterministic))
+  }
 }

@@ -1061,6 +1061,7 @@ RETURN x0.name""")
     ))
   }
 
+<<<<<<< HEAD
   test("should handle cyclic patterns") {
     // Given
     val a = createNode("a")
@@ -1106,4 +1107,19 @@ RETURN x0.name""")
     result.toList should equal (List(Map("r" -> List(r))))
   }
 
+  test("should only evaluate non-deterministic predicates after pattern is matched") {
+    // Given
+    graph.inTx {
+      (0 to 100) foreach {
+        x => createNode()
+      }
+    }
+
+    // when
+    val count = executeScalar[Long]("match (a) where rand() < .5 return count(*)")
+
+    // should give us a number in the middle, not all or nothing
+    count should not equal(0)
+    count should not equal(100)
+  }
 }
