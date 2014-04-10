@@ -19,11 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveSet
+public interface PrimitiveLongVisitor
 {
-    boolean isEmpty();
-    
-    void clear();
-    
-    int size();
+    void visited( long value );
 }

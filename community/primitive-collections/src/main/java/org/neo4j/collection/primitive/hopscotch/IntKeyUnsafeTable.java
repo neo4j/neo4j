@@ -19,19 +19,31 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
-
-public class VersionedPrimitiveLongHashSet extends PrimitiveLongHashSet
+public class IntKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
 {
-    public VersionedPrimitiveLongHashSet( Table<Object> table, Object valueMarker, Monitor monitor )
+    public IntKeyUnsafeTable( int capacity, VALUE valueMarker )
     {
-        super( table, valueMarker, monitor );
+        super( capacity, 4, valueMarker );
     }
 
     @Override
-    public PrimitiveLongIterator iterator()
+    protected long internalKey( long keyAddress )
     {
-        return new VersionedTableIterator<>( table, this );
+        return unsafe.getInt( keyAddress );
+    }
+
+    @Override
+    protected void internalPut( long keyAddress, long key, VALUE value )
+    {
+        assert (int)key == key : "Illegal key " + key + ", it's bigger than int";
+
+        // We can "safely" cast to int here, assuming that this call trickles in via a PrimitiveIntCollection
+        unsafe.putInt( keyAddress, (int) key );
+    }
+
+    @Override
+    protected Table<VALUE> newInstance( int newCapacity )
+    {
+        return new IntKeyUnsafeTable<>( newCapacity, valueMarker );
     }
 }

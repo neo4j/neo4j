@@ -26,8 +26,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.test.randomized.Action;
 import org.neo4j.test.randomized.LinePrinter;
 import org.neo4j.test.randomized.Printable;
@@ -45,9 +45,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
-
 public class PrimitiveLongSetRIT
 {
     @Test
@@ -58,20 +55,19 @@ public class PrimitiveLongSetRIT
         {
             long seed = currentTimeMillis();
             final Random random = new Random( seed );
-            final int h = random.nextInt( 28 ) + 4;
             int max = random.nextInt( 200_000 ) + 100;
-            System.out.println( "run: seed: " + seed + ", h: " + h + ", #ops: " + max );
+            System.out.println( "run: seed: " + seed + ", #ops: " + max );
             RandomizedTester<Sets,String> actions =
-                    new RandomizedTester<>( setFactory( h ), actionFactory( random ) );
+                    new RandomizedTester<>( setFactory(), actionFactory( random ) );
 
             Result<Sets,String> result = actions.run( max );
             if ( result.isFailure() )
             {
                 System.out.println( "Found failure at " + result );
-                actions.testCaseWriter( "shouldOnlyContainAddedValues", given( h ) ).print( System.out );
+                actions.testCaseWriter( "shouldOnlyContainAddedValues", given() ).print( System.out );
                 System.out.println( "Actually, minimal reproducible test of that is..." );
                 actions.findMinimalReproducible().testCaseWriter( "shouldOnlyContainAddedValues",
-                        given( h ) ).print( System.out );
+                        given() ).print( System.out );
                 fail( "Failed, see printed test case for how to reproduce" );
             }
             fullVerification( result.getTarget(), random );
@@ -91,15 +87,15 @@ public class PrimitiveLongSetRIT
         }
     }
 
-    private Printable given( final int h )
+    private Printable given()
     {
         return new Printable()
         {
             @Override
             public void print( LinePrinter out )
             {
-                out.println( PrimitiveLongSet.class.getSimpleName() + " set = new " +
-                        PrimitiveLongHashSet.class.getSimpleName() + "( " + h + " );" );
+                out.println( PrimitiveLongSet.class.getSimpleName() + " set = " +
+                        Primitive.class.getSimpleName() + ".longSet();" );
             }
         };
     }
@@ -116,14 +112,14 @@ public class PrimitiveLongSetRIT
         };
     }
 
-    private TargetFactory<Sets> setFactory( final int h )
+    private TargetFactory<Sets> setFactory()
     {
         return new TargetFactory<Sets>()
         {
             @Override
             public Sets newInstance()
             {
-                return new Sets( h );
+                return new Sets();
             }
         };
     }
@@ -287,16 +283,12 @@ public class PrimitiveLongSetRIT
     private static class Sets implements TestResource
     {
         final Set<Long> normalSet = new HashSet<>();
-        final PrimitiveLongSet set;
-
-        Sets( int h )
-        {
-            this.set = new PrimitiveLongHashSet( h, DEFAULT_HASHING, NO_MONITOR );
-        }
+        final PrimitiveLongSet set = Primitive.longSet();
 
         @Override
         public void close()
         {
+            set.close();
         }
     }
 }

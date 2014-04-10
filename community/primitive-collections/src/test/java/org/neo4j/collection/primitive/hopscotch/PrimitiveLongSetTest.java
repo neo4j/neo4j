@@ -19,86 +19,68 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
+import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
 public class PrimitiveLongSetTest
 {
-    @Test
-    public void shouldResolveCollisions() throws Exception
+    private PrimitiveLongHashSet newSet( int h )
     {
-        // GIVEN
-        /* These are the index placements of the first 100 values (0-99)
-         * 0:  [0, 17, 34, 51, 68, 85]
-         * 1:  [1, 16, 35, 50, 69, 84]
-         * 2:  [2, 19, 32, 49, 70, 87]
-         * 3:  [3, 18, 33, 48, 71, 86]
-         * 4:  [4, 21, 38, 55, 64, 81, 98]
-         * 5:  [5, 20, 39, 54, 65, 80, 99]
-         * 6:  [6, 23, 36, 53, 66, 83, 96]
-         * 7:  [7, 22, 37, 52, 67, 82, 97]
-         * 8:  [8, 25, 42, 59, 76, 93]
-         * 9:  [9, 24, 43, 58, 77, 92]
-         * 10: [10, 27, 40, 57, 78, 95]
-         * 11: [11, 26, 41, 56, 79, 94]
-         * 12: [12, 29, 46, 63, 72, 89]
-         * 13: [13, 28, 47, 62, 73, 88]
-         * 14: [14, 31, 44, 61, 74, 91]
-         * 15: [15, 30, 45, 60, 75, 90]
-         */
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 4, DEFAULT_HASHING, onlyAllowGrowing( 1 ) );
-        set.add( 1 );  // index 1
-        set.add( 2 );  // index 2
-        set.add( 19 ); // index 3 (originally 2)
-        set.add( 4 );  // index 4
-        set.add( 21 ); // index 5 (originally 4)
-        set.add( 6 );  // index 6
-        set.add( 23 ); // index 7 (originally 6)
-        set.add( 8 );  // index 8
-        set.add( 25 ); // index 9 (originally 8)
-        set.add( 10 ); // index 10
+        return newSet( h, NO_MONITOR );
+    }
 
-        // WHEN
-        assertTrue( "Couldn't add 35", set.add( 35 ) ); // 35 hashes to index 1
-
-        // THEN
-        assertTrue( "Didn't contain 35", set.contains( 35 ) );
+    private PrimitiveLongHashSet newSet( int h, Monitor monitor )
+    {
+        return new PrimitiveLongHashSet(
+                new LongKeyTable<>( h, VALUE_MARKER ), VALUE_MARKER, monitor );
     }
 
     @Test
     public void shouldContainAddedValues_generated_1() throws Exception
     {
         // GIVEN
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 15, DEFAULT_HASHING, NO_MONITOR );
-        set.add( 1207043189 );
-        set.add( 380713862 );
-        set.add( 1902858197 );
-        set.add( 1996873101 );
-        set.add( 1357024628 );
-        set.add( 1044248801 );
-        set.add( 1558157493 );
-        set.add( 2040311008 );
-        set.add( 2017660098 );
-        set.add( 1332670047 );
-        set.add( 663662790 );
-        set.add( 2063747422 );
-        set.add( 1554358949 );
-        set.add( 1761477445 );
-        set.add( 1141526838 );
-        set.add( 1698679618 );
-        set.add( 1279767067 );
-        set.add( 508574 );
-        set.add( 2071755904 );
+        PrimitiveLongSet set = newSet( 15 );
+        Set<Long> expectedValues = new HashSet<>();
+        long[] valuesToAdd = new long[] {
+                1207043189,
+                380713862,
+                1902858197,
+                1996873101,
+                1357024628,
+                1044248801,
+                1558157493,
+                2040311008,
+                2017660098,
+                1332670047,
+                663662790,
+                2063747422,
+                1554358949,
+                1761477445,
+                1141526838,
+                1698679618,
+                1279767067,
+                508574,
+                2071755904
+        };
+        for ( long key : valuesToAdd )
+        {
+            set.add( key );
+            expectedValues.add( key );
+        }
 
         // WHEN/THEN
         boolean existedBefore = set.contains( 679990875 );
@@ -107,13 +89,25 @@ public class PrimitiveLongSetTest
         assertFalse( "679990875 should not exist before adding here", existedBefore );
         assertTrue( "679990875 should be reported as added here", added );
         assertTrue( "679990875 should exist", existsAfter );
+        expectedValues.add( 679990875L );
+
+        final Set<Long> visitedKeys = new HashSet<>();
+        set.visit( new PrimitiveLongVisitor()
+        {
+            @Override
+            public void visited( long value )
+            {
+                assertTrue( visitedKeys.add( value ) );
+            }
+        } );
+        assertEquals( expectedValues, visitedKeys );
     }
 
     @Test
     public void shouldContainAddedValues_generated_6() throws Exception
     {
         // GIVEN
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 11, DEFAULT_HASHING, NO_MONITOR );
+        PrimitiveLongSet set = newSet( 11 );
         set.add( 492321488 );
         set.add( 877087251 );
         set.add( 1809668113 );
@@ -146,7 +140,7 @@ public class PrimitiveLongSetTest
     public void shouldContainAddedValues_generated_4() throws Exception
     {
         // GIVEN
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 9, DEFAULT_HASHING, NO_MONITOR );
+        PrimitiveLongSet set = newSet( 9 );
         set.add( 1934106304 );
         set.add( 783754072 );
         set.remove( 1934106304 );
@@ -164,7 +158,7 @@ public class PrimitiveLongSetTest
     public void shouldOnlyContainAddedValues_generated_8() throws Exception
     {
         // GIVEN
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 7, DEFAULT_HASHING, NO_MONITOR );
+        PrimitiveLongSet set = newSet( 7 );
         set.add( 375712513 );
         set.remove( 1507941820 );
         set.add( 671750317 );
@@ -209,7 +203,7 @@ public class PrimitiveLongSetTest
     public void shouldContainReallyBigLongValue() throws Exception
     {
         // GIVEN
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 10, DEFAULT_HASHING, NO_MONITOR );
+        PrimitiveLongSet set = newSet( 10 );
         set.add( 7416509207113022571L );
 
         // WHEN/THEN
@@ -225,8 +219,7 @@ public class PrimitiveLongSetTest
     public void shouldOnlyContainAddedValues() throws Exception
     {
         // GIVEN
-        PrimitiveLongSet set = new PrimitiveLongHashSet( 13, DEFAULT_HASHING,
-                new DebugMonitor( new int[] {}, new long[] {5547940863757133161L, 5085293141623130492L, 5547940866926051327L} ) );
+        PrimitiveLongSet set = newSet( 13 );
         set.add( 52450040186687566L );
         set.add( 52450040186687566L );
         set.add( 5165002753277288833L );

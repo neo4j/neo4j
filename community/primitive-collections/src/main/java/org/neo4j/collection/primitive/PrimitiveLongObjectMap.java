@@ -19,13 +19,15 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveLongSet extends PrimitiveLongCollection, PrimitiveLongIterable
+public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
 {
-    boolean add( long value );
+    VALUE put( long key, VALUE value );
 
-    boolean addAll( PrimitiveLongIterator values );
+    boolean containsKey( long key );
 
-    boolean contains( long value );
+    VALUE get( long key );
 
-    boolean remove( long value );
+    VALUE remove( long key );
+
+    void visitEntries( PrimitiveLongObjectVisitor<VALUE> visitor );
 }

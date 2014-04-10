@@ -19,72 +19,51 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.HashFunction;
+import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.PrimitiveLongIntVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_H;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
-public class PrimitiveLongIntHashMap extends AbstractHopScotchCollection<int[]> implements PrimitiveLongIntMap
+public class PrimitiveLongIntHashMap extends AbstractLongHopScotchCollection<int[]> implements PrimitiveLongIntMap
 {
     private final int[] transport = new int[1];
-    private final HashFunction hashFunction;
     private final Monitor monitor;
 
-    public PrimitiveLongIntHashMap( int h, HashFunction hashFunction, Monitor monitor )
+    public PrimitiveLongIntHashMap( Table<int[]> table, Monitor monitor )
     {
-        super( new LongKeyIntValueTable( h ) );
-        this.hashFunction = hashFunction;
+        super( table );
         this.monitor = monitor;
-    }
-
-    public PrimitiveLongIntHashMap( int h )
-    {
-        this( h, DEFAULT_HASHING, NO_MONITOR );
-    }
-
-    public PrimitiveLongIntHashMap()
-    {
-        this( DEFAULT_H, DEFAULT_HASHING, NO_MONITOR );
     }
 
     @Override
     public int put( long key, int value )
     {
-        return unpack( HopScotchHashingAlgorithm.put( table, monitor, hashFunction, key, pack( value ), this ) );
+        return unpack( HopScotchHashingAlgorithm.put( table, monitor, DEFAULT_HASHING, key, pack( value ), this ) );
     }
 
     @Override
     public boolean containsKey( long key )
     {
-        return HopScotchHashingAlgorithm.get( table, monitor, hashFunction, key ) != null;
+        return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, key ) != null;
     }
 
     @Override
     public int get( long key )
     {
-        return unpack( HopScotchHashingAlgorithm.get( table, monitor, hashFunction, key ) );
+        return unpack( HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, key ) );
     }
 
     @Override
     public int remove( long key )
     {
-        return unpack( HopScotchHashingAlgorithm.remove( table, monitor, hashFunction, key ) );
+        return unpack( HopScotchHashingAlgorithm.remove( table, monitor, DEFAULT_HASHING, key ) );
     }
 
     @Override
     public int size()
     {
         return table.size();
-    }
-
-    @Override
-    public PrimitiveLongIterator keyIterator()
-    {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     @Override
@@ -102,5 +81,24 @@ public class PrimitiveLongIntHashMap extends AbstractHopScotchCollection<int[]> 
     private int unpack( int[] result )
     {
         return result != null ? result[0] : LongKeyIntValueTable.NULL;
+    }
+
+    @Override
+    public void visitEntries( PrimitiveLongIntVisitor visitor )
+    {
+        long nullKey = table.nullKey();
+        int capacity = table.capacity();
+        for ( int i = 0; i < capacity; i++ )
+        {
+            long key = table.key( i );
+            if ( key != nullKey )
+            {
+                int[] value = table.value( i );
+                if ( value != null )
+                {
+                    visitor.visited( key, value[0] );
+                }
+            }
+        }
     }
 }

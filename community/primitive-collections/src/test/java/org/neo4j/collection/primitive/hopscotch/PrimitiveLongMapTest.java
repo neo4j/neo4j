@@ -19,18 +19,20 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectMap;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
 public class PrimitiveLongMapTest
 {
@@ -38,11 +40,17 @@ public class PrimitiveLongMapTest
     public void shouldContainAddedValues() throws Exception
     {
         // GIVEN
-        PrimitiveLongObjectMap<Integer> map = new PrimitiveLongObjectHashMap<>( 6 );
-        map.put( 1994703545, 59 );
-        map.put( 1583732120, 98 );
-        map.put( 756530774, 56 );
-        map.put( 1433091763, 22 );
+        Map<Long, Integer> expectedEntries = new HashMap<>();
+        expectedEntries.put( 1994703545L, 59 );
+        expectedEntries.put( 1583732120L, 98 );
+        expectedEntries.put( 756530774L, 56 );
+        expectedEntries.put( 1433091763L, 22 );
+
+        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
+        for ( Map.Entry<Long, Integer> entry : expectedEntries.entrySet() )
+        {
+            map.put( entry.getKey().longValue(), entry.getValue().intValue() );
+        }
 
         // WHEN/THEN
         boolean existedBefore = map.containsKey( 1433091763 );
@@ -51,23 +59,34 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 1433091763 );
         Integer valueAfter = map.get( 1433091763 );
         assertTrue( "1433091763 should exist before putting here", existedBefore );
-        assertEquals( (Integer)22, valueBefore );
-        assertEquals( (Integer)22, previous );
+        assertEquals( (Integer) 22, valueBefore );
+        assertEquals( (Integer) 22, previous );
         assertTrue( "(1433091763, 35) should exist", existsAfter );
-        assertEquals( (Integer)35, valueAfter );
+        assertEquals( (Integer) 35, valueAfter );
+        expectedEntries.put( 1433091763L, 35 );
+
+        final Map<Long, Integer> visitedEntries = new HashMap<>();
+        map.visitEntries( new PrimitiveLongObjectVisitor<Integer>()
+        {
+            @Override
+            public void visited( long key, Integer value )
+            {
+                visitedEntries.put( key, value );
+            }
+        } );
+        assertEquals( expectedEntries, visitedEntries );
     }
 
     @Test
     public void shouldContainAddedValues_2() throws Exception
     {
         // GIVEN
-        PrimitiveLongObjectMap<Integer> map = new PrimitiveLongObjectHashMap<>( 28 );
+        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
         map.put( 1950736976, 4 );
         map.put( 1054824202, 58 );
         map.put( 348690619, 54 );
         map.put( 1224909480, 79 );
         map.put( 1508493474, 82 );
-
         // WHEN/THEN
         boolean existedBefore = map.containsKey( 1508493474 );
         Integer valueBefore = map.get( 1508493474 );
@@ -75,17 +94,17 @@ public class PrimitiveLongMapTest
         boolean existsAfter = map.containsKey( 1508493474 );
         Integer valueAfter = map.get( 1508493474 );
         assertTrue( "1508493474 should exist before putting here", existedBefore );
-        assertEquals( "value before should be 82", (Integer)82, valueBefore );
-        assertEquals( "value returned from put should be 82", (Integer)82, previous );
+        assertEquals( "value before should be 82", (Integer) 82, valueBefore );
+        assertEquals( "value returned from put should be 82", (Integer) 82, previous );
         assertTrue( "1508493474 should exist", existsAfter );
-        assertEquals( "value after putting should be 62", (Integer)62, valueAfter );
+        assertEquals( "value after putting should be 62", (Integer) 62, valueAfter );
     }
 
     @Test
     public void shouldContainAddedValues_3() throws Exception
     {
         // GIVEN
-        PrimitiveLongObjectMap<Integer> map = new PrimitiveLongObjectHashMap<>( 6 );
+        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
         map.remove( 1338037218 );
         map.put( 680125236, 83 );
         map.put( 680125236, 76 );
@@ -118,7 +137,6 @@ public class PrimitiveLongMapTest
         map.remove( 671477921 );
         map.put( 1572965945, 59 );
         map.put( 880140639, 87 );
-
         // WHEN/THEN
         boolean existedBefore = map.containsKey( 468007595 );
         Integer valueBefore = map.get( 468007595 );
@@ -129,14 +147,14 @@ public class PrimitiveLongMapTest
         assertNull( "value before putting should be null", valueBefore );
         assertNull( "value returned from putting should be null", previous );
         assertTrue( "468007595 should exist", existsAfter );
-        assertEquals( "value after putting should be 67", (Integer)67, valueAfter );
+        assertEquals( "value after putting should be 67", (Integer) 67, valueAfter );
     }
 
     @Test
     public void shouldHaveCorrectSize() throws Exception
     {
         // GIVEN
-        PrimitiveLongObjectMap<Integer> map = new PrimitiveLongObjectHashMap<>( 24 );
+        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
         map.put( 152407843, 17 );
         map.put( 435803197, 29 );
         map.put( 2063473573, 75 );
@@ -201,7 +219,6 @@ public class PrimitiveLongMapTest
         map.put( 1995076951, 91 );
         map.put( 322776761, 4 );
         map.put( 1011369342, 36 );
-
         // WHEN/THEN
         int sizeBefore = map.size();
         boolean existedBefore = map.containsKey( 679686325 );
@@ -215,7 +232,7 @@ public class PrimitiveLongMapTest
         assertNull( "value before putting should be null", valueBefore );
         assertNull( "value returned from putting should be null", previous );
         assertTrue( "679686325 should exist", existsAfter );
-        assertEquals( "value after putting should be 63", (Integer)63, valueAfter );
+        assertEquals( "value after putting should be 63", (Integer) 63, valueAfter );
         assertEquals( "Size after put should have been 65", 65, sizeAfter );
     }
 
@@ -223,12 +240,11 @@ public class PrimitiveLongMapTest
     public void shouldMoveValuesWhenMovingEntriesAround() throws Exception
     {
         // GIVEN
-        PrimitiveLongObjectMap<Integer> map = new PrimitiveLongObjectHashMap<>( 25 );
+        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
         map.put( 206243105, 47 );
         map.put( 2083304695, 63 );
         map.put( 689837337, 7 );
         map.remove( 206243105 );
-
         // WHEN/THEN
         int sizeBefore = map.size();
         boolean existedBefore = map.containsKey( 689837337 );
@@ -239,10 +255,10 @@ public class PrimitiveLongMapTest
         int sizeAfter = map.size();
         assertEquals( "Size before put should have been 2", 2, sizeBefore );
         assertTrue( "689837337 should exist before putting here", existedBefore );
-        assertEquals( "value before should be 7", (Integer)7, valueBefore );
-        assertEquals( "value returned from put should be 7", (Integer)7, previous );
+        assertEquals( "value before should be 7", (Integer) 7, valueBefore );
+        assertEquals( "value returned from put should be 7", (Integer) 7, previous );
         assertTrue( "689837337 should exist", existsAfter );
-        assertEquals( "value after putting should be 20", (Integer)20, valueAfter );
+        assertEquals( "value after putting should be 20", (Integer) 20, valueAfter );
         assertEquals( "Size after put should have been 2", 2, sizeAfter );
     }
 
@@ -250,12 +266,11 @@ public class PrimitiveLongMapTest
     public void shouldReturnCorrectPreviousValue() throws Exception
     {
         // GIVEN
-        PrimitiveLongIntMap map = new PrimitiveLongIntHashMap( 27 );
+        PrimitiveLongIntMap map = Primitive.longIntMap();
         map.remove( 2050585513 );
         map.put( 429170228, 99 );
         map.put( 1356282827, 24 );
         map.remove( 1341095873 );
-
         // WHEN/THEN
         int sizeBefore = map.size();
         boolean existedBefore = map.containsKey( 429170228 );
@@ -277,7 +292,7 @@ public class PrimitiveLongMapTest
     public void shouldOnlyContainAddedValues() throws Exception
     {
         // GIVEN
-        PrimitiveLongIntMap map = new PrimitiveLongIntHashMap( 24 );
+        PrimitiveLongIntMap map = Primitive.longIntMap();
         map.put( 1179059774, 54 );
         map.put( 612612792, 91 );
         map.put( 853030395, 81 );
@@ -344,7 +359,6 @@ public class PrimitiveLongMapTest
         map.put( 1925017947, 8 );
         map.put( 1290391303, 59 );
         map.put( 1938779966, 27 );
-
         // WHEN/THEN
         int sizeBefore = map.size();
         boolean existedBefore = map.containsKey( 1452811669 );
@@ -366,8 +380,7 @@ public class PrimitiveLongMapTest
     public void shouldOnlyContainAddedValues_2() throws Exception
     {
         // GIVEN
-        PrimitiveLongIntMap map = new PrimitiveLongIntHashMap( 27, DEFAULT_HASHING, new DebugMonitor(
-                new int[] {63}, new long[] {947430652} ) );
+        PrimitiveLongIntMap map = Primitive.longIntMap();
         map.put( 913910231, 25 );
         map.put( 102310782, 40 );
         map.put( 634960377, 32 );
@@ -395,7 +408,6 @@ public class PrimitiveLongMapTest
         map.put( 1967716733, 55 );
         map.put( 1965379174, 5 );
         map.put( 913910231, 40 );
-
         // WHEN/THEN
         boolean existedBefore = map.containsKey( 947430652 );
         int valueBefore = map.get( 947430652 );
@@ -407,5 +419,423 @@ public class PrimitiveLongMapTest
         assertEquals( "value returned from remove should be 26", 26, removed );
         assertFalse( "947430652 should not exist", existsAfter );
         assertEquals( "value after removing should be -1", -1, valueAfter );
+    }
+
+    @Test
+    public void shouldOnlyContainAddedValues_3() throws Exception
+    {
+        // GIVEN
+        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
+        map.put( 2083704227957337692L, 50 );
+        map.put( 1039748383662879297L, 12 );
+        map.put( 6296247210943123044L, 45 );
+        map.put( 8004677065031068097L, 5 );
+        map.put( 1039748383662879297L, 70 );
+        map.put( 5386804704064477958L, 97 );
+        map.remove( 1506507783133586973L );
+        map.put( 4287434858289406631L, 29 );
+        map.put( 8004677065031068097L, 17 );
+        map.put( 986286772325632801L, 14 );
+        map.put( 7880139640446289959L, 68 );
+        map.put( 8004677065031068097L, 23 );
+        map.put( 5386804704064477958L, 72 );
+        map.put( 5386804704064477958L, 71 );
+        map.put( 2300381985575721987L, 0 );
+        map.put( 6144230340727188436L, 31 );
+        map.put( 425423457410117293L, 88 );
+        map.put( 2083704227957337692L, 65 );
+        map.put( 7805027477403310582L, 72 );
+        map.put( 2254081933055750443L, 66 );
+        map.put( 5386804704064477958L, 46 );
+        map.put( 5787098127909281443L, 45 );
+        map.put( 5508645210651400664L, 45 );
+        map.put( 6092264867460428040L, 65 );
+        map.put( 4551026293109220157L, 52 );
+        map.put( 4669163071261559807L, 33 );
+        map.put( 5790325306669462860L, 96 );
+        map.put( 4337317298737908324L, 78 );
+        map.put( 986286772325632801L, 71 );
+        map.put( 4287434858289406631L, 47 );
+        map.put( 1827085004206892313L, 30 );
+        map.put( 6070945099342863711L, 88 );
+        map.remove( 6300957726732252611L );
+        map.put( 2300381985575721987L, 22 );
+        map.put( 2083704227957337692L, 2 );
+        map.put( 2885272279767063039L, 71 );
+        map.put( 3627867780921264529L, 5 );
+        map.remove( 5330274310754559602L );
+        map.put( 8902857048431919030L, 23 );
+        map.remove( 4287434858289406631L );
+        map.put( 5459968256561120197L, 8 );
+        map.put( 5790325306669462860L, 17 );
+        map.put( 9003964541346458616L, 45 );
+        map.put( 3832091967762842783L, 79 );
+        map.put( 1332274446340546922L, 62 );
+        map.put( 6610784890222945257L, 20 );
+        map.put( 3627867780921264529L, 65 );
+        map.put( 7988336790991560848L, 89 );
+        map.put( 5386804704064477958L, 15 );
+        map.put( 6296247210943123044L, 19 );
+        map.put( 7776019112299874624L, 67 );
+        map.put( 5827611175622537127L, 18 );
+        map.remove( 8004677065031068097L );
+        map.put( 2451971987846333787L, 48 );
+        map.put( 3627867780921264529L, 16 );
+        map.put( 2506727685914893570L, 61 );
+        map.put( 6629089416451699826L, 89 );
+        map.put( 875078333857781813L, 38 );
+        map.put( 439984342972777679L, 51 );
+        map.put( 9077428346047966819L, 19 );
+        map.put( 7045299269724516542L, 73 );
+        map.put( 8055487013098459354L, 24 );
+        map.put( 6610784890222945257L, 65 );
+        map.put( 986286772325632801L, 29 );
+        map.put( 133928815519522465L, 81 );
+        map.put( 5780114596098993316L, 15 );
+        map.put( 3790785290324207363L, 91 );
+        map.put( 2795040354588080479L, 48 );
+        map.put( 4218658174275197144L, 59 );
+        map.put( 6610784890222945257L, 70 );
+        map.remove( 3722940212039795685L );
+        map.put( 1817899559164238906L, 30 );
+        map.put( 4551026293109220157L, 35 );
+        map.put( 986286772325632801L, 57 );
+        map.put( 3811462607668925015L, 57 );
+        map.put( 2795040354588080479L, 85 );
+        map.put( 8460476221939231932L, 86 );
+        map.remove( 8957537157979159052L );
+        map.put( 2032224502814063026L, 57 );
+        map.remove( 8924941903092284834L );
+        map.put( 5386804704064477958L, 2 );
+        map.put( 6629089416451699826L, 18 );
+        map.put( 425423457410117293L, 31 );
+        map.put( 4337317298737908324L, 35 );
+        map.remove( 5337770067730257989L );
+        map.put( 6150561851033498431L, 49 );
+        map.put( 5067121328094576685L, 46 );
+        map.remove( 3742103310924563011L );
+        map.put( 1327614778938791146L, 49 );
+        map.put( 255729841510922319L, 16 );
+        map.put( 8785988080128503533L, 69 );
+        map.put( 4218658174275197144L, 20 );
+        map.put( 1265271287408386915L, 43 );
+        map.put( 255729841510922319L, 5 );
+        map.put( 8651736753344997668L, 41 );
+        map.put( 4363375305508283265L, 4 );
+        map.put( 4185381066643227500L, 29 );
+        map.put( 3790785290324207363L, 58 );
+        map.put( 3058911485922749695L, 1 );
+        map.put( 8629268898854377850L, 66 );
+        map.put( 1762013345156514959L, 5 );
+        map.remove( 4354754593499656793L );
+        map.put( 1332274446340546922L, 16 );
+        map.put( 4953501292937412915L, 87 );
+        map.put( 2330841365833073849L, 83 );
+        map.put( 8096564328797694553L, 44 );
+        map.put( 8935185623148330821L, 7 );
+        map.put( 6150561851033498431L, 48 );
+        map.remove( 5827611175622537127L );
+        map.put( 8048363335369773749L, 25 );
+        map.put( 3627867780921264529L, 48 );
+        map.put( 4806848030248674690L, 14 );
+        map.put( 5430628648110105698L, 30 );
+        map.remove( 7261476188677343032L );
+        map.put( 1265271287408386915L, 61 );
+        map.put( 9077428346047966819L, 32 );
+        map.put( 1827085004206892313L, 95 );
+        map.put( 6377023652046870199L, 8 );
+        map.remove( 8096564328797694553L );
+        map.put( 458594253548258561L, 37 );
+        map.put( 4418108647578170347L, 60 );
+        map.put( 4363375305508283265L, 50 );
+        map.remove( 3220719966247388754L );
+        map.put( 5067121328094576685L, 86 );
+        map.put( 8030171618634928529L, 9 );
+        map.remove( 5790325306669462860L );
+        map.remove( 1693435088303118108L );
+        map.put( 1817899559164238906L, 48 );
+        map.put( 2823063986711596775L, 58 );
+        map.put( 5065867711051034527L, 1 );
+        map.put( 6144553725832876585L, 16 );
+        map.put( 6066303112518690730L, 96 );
+        map.put( 1627429134135319103L, 64 );
+        map.put( 2083704227957337692L, 48 );
+        map.put( 5074984076240598083L, 46 );
+        map.put( 273737562207470342L, 60 );
+        map.put( 5065867711051034527L, 7 );
+        map.put( 1425720210238734727L, 23 );
+        map.put( 8840483239403421070L, 42 );
+        map.put( 622393419539870960L, 66 );
+        map.put( 4649317581471627693L, 84 );
+        map.put( 6344284253098418581L, 10 );
+        map.put( 6066303112518690730L, 14 );
+        map.put( 2032224502814063026L, 72 );
+        map.put( 3860451022347437817L, 26 );
+        map.put( 1931469116507191845L, 30 );
+        map.put( 7264376865632246862L, 81 );
+        map.put( 875078333857781813L, 41 );
+        map.put( 6066303112518690730L, 65 );
+        map.put( 357446231240164192L, 80 );
+        map.put( 90138258774469874L, 73 );
+        map.put( 2550828149718879762L, 72 );
+        map.put( 357446231240164192L, 17 );
+        map.put( 4233359298058523722L, 83 );
+        map.put( 7879882017779927485L, 33 );
+        map.put( 4554977248866184403L, 64 );
+        map.put( 2032224502814063026L, 11 );
+        map.put( 8460476221939231932L, 65 );
+        map.put( 4404294840535520232L, 58 );
+        map.put( 439984342972777679L, 83 );
+        map.put( 143440583901416159L, 59 );
+        map.put( 6980461179076170770L, 9 );
+        map.put( 4253079906814783119L, 93 );
+        map.put( 6377023652046870199L, 20 );
+        map.put( 2885272279767063039L, 5 );
+        map.put( 1115850061381524772L, 37 );
+        map.put( 4288489609244987651L, 22 );
+        map.put( 1869499448099043543L, 73 );
+        map.put( 2233583342469238733L, 84 );
+        map.put( 8785988080128503533L, 61 );
+        map.put( 7396264003126204068L, 81 );
+        map.put( 6553509363155186775L, 96 );
+        map.put( 1265663249510580286L, 89 );
+        map.put( 8824139147632000339L, 49 );
+        map.put( 8629268898854377850L, 10 );
+        map.put( 6463027127151126151L, 57 );
+        map.put( 2577561266405706623L, 46 );
+        map.put( 2942302849662258387L, 40 );
+        map.put( 2233583342469238733L, 56 );
+        map.put( 7971826071187872579L, 53 );
+        map.put( 1425720210238734727L, 27 );
+        map.remove( 7194434791627009043L );
+        map.put( 1429250394105883546L, 82 );
+        map.put( 8048363335369773749L, 19 );
+        map.put( 425423457410117293L, 51 );
+        map.remove( 3570674569632664356L );
+        map.remove( 5925614419318569326L );
+        map.put( 245367449754197583L, 27 );
+        map.put( 8724491045048677021L, 55 );
+        map.put( 1037934857236019066L, 66 );
+        map.put( 8902857048431919030L, 61 );
+        map.put( 4806848030248674690L, 17 );
+        map.put( 8840483239403421070L, 95 );
+        map.put( 2931578375554111170L, 54 );
+        map.put( 5352224688502007093L, 36 );
+        map.put( 6675404627060358866L, 64 );
+        map.put( 5011448804620449550L, 48 );
+        map.put( 9003964541346458616L, 44 );
+        map.put( 8614830761978541860L, 70 );
+        map.put( 3790785290324207363L, 95 );
+        map.put( 3524676886726253569L, 54 );
+        map.put( 6858076293577130289L, 60 );
+        map.put( 6721253107702965701L, 41 );
+        map.put( 655525227420977141L, 94 );
+        map.put( 2344362186561469072L, 29 );
+        map.put( 6144230340727188436L, 76 );
+        map.put( 6751209943070153529L, 22 );
+        map.put( 5528119873376392874L, 44 );
+        map.put( 6675404627060358866L, 20 );
+        map.put( 6167523814676644161L, 50 );
+        map.put( 4288489609244987651L, 82 );
+        map.remove( 3362704467864439992L );
+        map.put( 8629268898854377850L, 50 );
+        map.remove( 8824139147632000339L );
+        map.remove( 8563575034946766108L );
+        map.put( 4391871381220263726L, 20 );
+        map.remove( 6143313773038364355L );
+        map.remove( 3225044803974988142L );
+        map.remove( 8048363335369773749L );
+        map.remove( 439984342972777679L );
+        map.put( 7776019112299874624L, 8 );
+        map.put( 5414055783993307402L, 13 );
+        map.put( 425423457410117293L, 91 );
+        map.put( 8407567928758710341L, 30 );
+        map.put( 6070945099342863711L, 14 );
+        map.put( 5644323748441073606L, 91 );
+        map.put( 5297141920581728538L, 61 );
+        map.put( 7880139640446289959L, 1 );
+        map.put( 2300381985575721987L, 92 );
+        map.put( 8253246663621301435L, 26 );
+        map.remove( 2074764355175726009L );
+        map.remove( 3823843425563676964L );
+        map.put( 8314906688468605292L, 91 );
+        map.put( 6864119235983684905L, 56 );
+        map.put( 6610784890222945257L, 85 );
+        map.put( 3790785290324207363L, 7 );
+        map.put( 9077428346047966819L, 20 );
+        map.put( 5594781060356781714L, 76 );
+        map.put( 4288489609244987651L, 24 );
+        map.put( 5427718399315377322L, 93 );
+        map.put( 6858076293577130289L, 41 );
+        map.put( 4233359298058523722L, 43 );
+        map.put( 3058911485922749695L, 88 );
+        map.remove( 1327614778938791146L );
+        map.put( 4665341449948530032L, 26 );
+        map.remove( 2860868006143077426L );
+        map.put( 6167523814676644161L, 70 );
+        map.remove( 8314906688468605292L );
+        map.put( 6396314739926743170L, 25 );
+        map.put( 8924527320597926970L, 40 );
+        map.put( 1817899559164238906L, 84 );
+        map.remove( 4391871381220263726L );
+        map.put( 8850817829384121639L, 50 );
+        map.put( 6513548978704592547L, 52 );
+        map.remove( 6066303112518690730L );
+        map.remove( 3946964103425920940L );
+        map.put( 7971826071187872579L, 71 );
+        map.put( 90138258774469874L, 78 );
+        map.put( 8309039683334256753L, 44 );
+        map.put( 327300646665050265L, 52 );
+        map.put( 4239841777571533415L, 22 );
+        map.put( 7391753878925882699L, 46 );
+        map.put( 5987501380005333533L, 31 );
+        map.put( 6734545541042861356L, 45 );
+        map.remove( 6566682167801344029L );
+        map.put( 4218658174275197144L, 16 );
+        map.put( 4363586488886891680L, 88 );
+        map.put( 8030171618634928529L, 19 );
+        map.put( 6513548978704592547L, 95 );
+        map.put( 6721253107702965701L, 55 );
+        map.put( 2153470608693815785L, 9 );
+        map.put( 5807454155419905847L, 7 );
+        map.remove( 4528425347504500078L );
+        map.put( 339083533777732657L, 72 );
+        map.put( 5162811261582626928L, 68 );
+        map.put( 5459968256561120197L, 89 );
+        map.put( 946125626260258615L, 97 );
+        map.put( 986286772325632801L, 26 );
+        map.put( 8309039683334256753L, 74 );
+        map.put( 1609193622622537433L, 84 );
+        map.put( 2506727685914893570L, 9 );
+        map.put( 143440583901416159L, 33 );
+        map.put( 7716482408003289208L, 30 );
+        map.put( 7880139640446289959L, 74 );
+        map.put( 5472992709007694577L, 27 );
+        map.put( 3367972495572249232L, 8 );
+        map.put( 6002824320296423294L, 71 );
+        map.put( 5162811261582626928L, 10 );
+        map.remove( 8309039683334256753L );
+        map.put( 3103455156394998975L, 1 );
+        map.put( 4943074037151902792L, 38 );
+        map.put( 1455801901314190156L, 98 );
+        map.put( 3502583509759951230L, 22 );
+        map.remove( 8464127935014315372L );
+        map.put( 6858076293577130289L, 35 );
+        map.put( 8487179770790306175L, 5 );
+        map.put( 946125626260258615L, 85 );
+        map.put( 722144778357869055L, 1 );
+        map.remove( 6832604792388788147L );
+        map.remove( 7879882017779927485L );
+        map.put( 4636443662717865247L, 98 );
+        map.put( 6950926592851406543L, 12 );
+        map.put( 8536120340569832116L, 73 );
+        map.put( 86730768989854734L, 66 );
+        map.put( 4558683789229895837L, 26 );
+        map.put( 4806848030248674690L, 11 );
+        map.put( 425423457410117293L, 38 );
+        map.put( 8713875164075871710L, 97 );
+        map.put( 3790785290324207363L, 77 );
+        map.put( 4632006356221328093L, 21 );
+        map.put( 7628512490650429100L, 28 );
+        map.remove( 4651124484202085669L );
+        map.put( 4320012891688937760L, 22 );
+        map.put( 6092264867460428040L, 86 );
+        map.put( 6610784890222945257L, 71 );
+        map.remove( 3515175120945606156L );
+        map.put( 5787098127909281443L, 10 );
+        map.put( 5057609667342409825L, 50 );
+        map.put( 5903362554916539560L, 75 );
+        map.remove( 5339209082212961633L );
+        map.put( 3502583509759951230L, 36 );
+        map.put( 4198420341072443663L, 75 );
+        map.put( 5037754181090593008L, 34 );
+        map.put( 39606137866137388L, 19 );
+        map.remove( 622393419539870960L );
+        map.put( 2783004740411041924L, 79 );
+        map.put( 6232331175163415825L, 72 );
+        map.put( 4367206208262757151L, 33 );
+        map.remove( 5879159150292946046L );
+        map.put( 722144778357869055L, 80 );
+        map.put( 9006426844471489361L, 92 );
+        map.put( 550025535839604778L, 32 );
+        map.remove( 5855895659233120621L );
+        map.put( 1455801901314190156L, 24 );
+        map.put( 3860451022347437817L, 81 );
+        map.put( 2672104991948169160L, 57 );
+        map.remove( 3860451022347437817L );
+        map.remove( 655525227420977141L );
+        map.put( 2413633498546493443L, 68 );
+        map.put( 4185381066643227500L, 54 );
+        map.put( 1280345971255663584L, 39 );
+        map.put( 5796123963544961504L, 76 );
+        map.put( 1892786158672061630L, 55 );
+        map.remove( 5352224688502007093L );
+        map.put( 3711105805930144213L, 47 );
+        map.put( 4608237982157900285L, 41 );
+        map.put( 4175794211341763944L, 31 );
+        map.put( 2315250912582233395L, 81 );
+        map.put( 357446231240164192L, 87 );
+        map.put( 4110861648946406824L, 75 );
+        map.put( 6912381889380280106L, 22 );
+        map.put( 6721253107702965701L, 43 );
+        map.put( 8536120340569832116L, 87 );
+        map.put( 9134483648483594929L, 77 );
+        map.put( 9132976039160654816L, 69 );
+        map.remove( 7698175804504341415L );
+        map.remove( 9134483648483594929L );
+        map.put( 215721718639621876L, 11 );
+        map.put( 8367455298026304238L, 78 );
+        map.put( 215721718639621876L, 13 );
+        map.put( 1398628381776162625L, 12 );
+        map.put( 3818698536247649025L, 91 );
+        map.put( 146020861698406718L, 41 );
+        map.put( 39606137866137388L, 93 );
+        map.put( 2032224502814063026L, 29 );
+        map.remove( 6363504799104250810L );
+        map.put( 7198198302699040275L, 75 );
+        map.put( 1659665859871881503L, 35 );
+        map.put( 2032224502814063026L, 25 );
+        map.put( 7006780191094382053L, 2 );
+        map.put( 2626850727701928459L, 97 );
+        map.put( 5371963064889126677L, 49 );
+        map.put( 2777831232791546183L, 35 );
+        map.remove( 1265271287408386915L );
+        map.remove( 1078791602714388223L );
+        map.put( 7355915493826998767L, 39 );
+        map.remove( 1557741259882614531L );
+        map.put( 318456745029053198L, 18 );
+        map.put( 5731549637584761783L, 77 );
+        map.put( 875078333857781813L, 80 );
+        map.remove( 4288489609244987651L );
+        map.put( 6296247210943123044L, 67 );
+        map.put( 6513548978704592547L, 60 );
+        map.put( 7484688824700837146L, 79 );
+        map.put( 4551026293109220157L, 77 );
+        map.put( 2961669147182343860L, 80 );
+        map.put( 4481942776688563562L, 28 );
+        map.put( 5879809531485088687L, 63 );
+        map.put( 5799223884087101214L, 94 );
+        map.put( 8394473765965282856L, 59 );
+        map.remove( 7273585073251585620L );
+        map.remove( 5518575735665118270L );
+        map.put( 1946691597339845823L, 64 );
+        map.put( 1191724556568067952L, 33 );
+        map.remove( 1803989601564179749L );
+        map.put( 7909563548070411816L, 98 );
+        // WHEN/THEN
+        int sizeBefore = map.size();
+        boolean existedBefore = map.containsKey( 5826258075197365143L );
+        Integer valueBefore = map.get( 5826258075197365143L );
+        Integer previous = map.put( 5826258075197365143L, 6 );
+        boolean existsAfter = map.containsKey( 5826258075197365143L );
+        Integer valueAfter = map.get( 5826258075197365143L );
+        int sizeAfter = map.size();
+        assertEquals( "Size before put should have been 199", 199, sizeBefore );
+        assertFalse( "5826258075197365143 should not exist before putting here", existedBefore );
+        assertNull( "value before putting should be null", valueBefore );
+        assertNull( "value returned from putting should be null", previous );
+        assertTrue( "5826258075197365143 should exist", existsAfter );
+        assertEquals( "value after putting should be 6", (Integer) 6, valueAfter );
+        assertEquals( "Size after put should have been 200", 200, sizeAfter );
     }
 }

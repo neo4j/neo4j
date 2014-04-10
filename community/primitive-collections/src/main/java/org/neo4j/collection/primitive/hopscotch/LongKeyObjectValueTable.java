@@ -25,14 +25,9 @@ public class LongKeyObjectValueTable<VALUE> extends LongKeyTable<VALUE>
 {
     private VALUE[] values;
 
-    public LongKeyObjectValueTable( int h )
+    public LongKeyObjectValueTable( int capacity )
     {
-        super( h, null );
-    }
-
-    private LongKeyObjectValueTable( int capacity, int h )
-    {
-        super( capacity, h, null );
+        super( capacity, null );
     }
 
     @Override
@@ -76,7 +71,7 @@ public class LongKeyObjectValueTable<VALUE> extends LongKeyTable<VALUE>
     @Override
     protected LongKeyTable<VALUE> newInstance( int newCapacity )
     {
-        return new LongKeyObjectValueTable<>( newCapacity, h );
+        return new LongKeyObjectValueTable<>( newCapacity );
     }
 
     @SuppressWarnings( "unchecked" )

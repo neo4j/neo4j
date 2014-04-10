@@ -26,8 +26,8 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.test.randomized.Action;
 import org.neo4j.test.randomized.LinePrinter;
 import org.neo4j.test.randomized.Printable;
@@ -56,20 +56,19 @@ public class PrimitiveLongIntMapRIT
         {
             long seed = currentTimeMillis();
             final Random random = new Random( seed );
-            final int h = random.nextInt( 28 ) + 4;
             int max = random.nextInt( 100_000 ) + 100;
-            System.out.println( "run: seed: " + seed + ", h: " + h + ", #ops: " + max );
+            System.out.println( "run: seed: " + seed + ", #ops: " + max );
             RandomizedTester<Maps,String> actions =
-                    new RandomizedTester<>( mapFactory( h ), actionFactory( random ) );
+                    new RandomizedTester<>( mapFactory(), actionFactory( random ) );
 
             Result<Maps,String> result = actions.run( max );
             if ( result.isFailure() )
             {
                 System.out.println( "Found failure at " + result );
-                actions.testCaseWriter( "shouldOnlyContainAddedValues", given( h ) ).print( System.out );
+                actions.testCaseWriter( "shouldOnlyContainAddedValues", given() ).print( System.out );
                 System.out.println( "Actually, minimal reproducible test of that is..." );
                 actions.findMinimalReproducible().testCaseWriter( "shouldOnlyContainAddedValues",
-                        given( h ) ).print( System.out );
+                        given() ).print( System.out );
                 fail( "Failed, see printed test case for how to reproduce" );
             }
 
@@ -91,15 +90,15 @@ public class PrimitiveLongIntMapRIT
         }
     }
 
-    private Printable given( final int h )
+    private Printable given()
     {
         return new Printable()
         {
             @Override
             public void print( LinePrinter out )
             {
-                out.println( PrimitiveLongIntMap.class.getSimpleName() + " map = new " +
-                        PrimitiveLongIntHashMap.class.getSimpleName() + "( " + h + " );" );
+                out.println( PrimitiveLongIntMap.class.getSimpleName() + " map = " +
+                        Primitive.class.getSimpleName() + ".longIntMap();" );
             }
         };
     }
@@ -116,14 +115,14 @@ public class PrimitiveLongIntMapRIT
         };
     }
 
-    private TargetFactory<Maps> mapFactory( final int h )
+    private TargetFactory<Maps> mapFactory()
     {
         return new TargetFactory<Maps>()
         {
             @Override
             public Maps newInstance()
             {
-                return new Maps( h );
+                return new Maps();
             }
         };
     }
@@ -323,12 +322,7 @@ public class PrimitiveLongIntMapRIT
     private static class Maps implements TestResource
     {
         final Map<Long,Integer> normalMap = new HashMap<>();
-        final PrimitiveLongIntMap map;
-
-        Maps( int h )
-        {
-            this.map = new PrimitiveLongIntHashMap( h );
-        }
+        final PrimitiveLongIntMap map = Primitive.longIntMap();
 
         @Override
         public String toString()

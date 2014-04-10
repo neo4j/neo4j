@@ -17,21 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.collection.primitive;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
-public interface PrimitiveIntObjectMap<VALUE>
+public interface PrimitiveIntSet extends PrimitiveIntCollection
 {
-    VALUE put( int key, VALUE value );
+    boolean add( int value );
 
-    boolean containsKey( int key );
-    
-    VALUE get( int key );
+    boolean addAll( PrimitiveIntIterator values );
 
-    VALUE remove( int key );
-    
-    int size();
+    boolean contains( int value );
 
-    PrimitiveLongIterator keyIterator();
+    boolean remove( int value );
 }

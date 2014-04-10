@@ -39,7 +39,7 @@ package org.neo4j.collection.primitive.hopscotch;
  * by always returning the same and constant number in both {@link #version()} and {@link #version(int)}.
  * Versioning helps iterating over a constant set of entries at the same time as modifying the table.
  */
-public interface Table<VALUE>
+public interface Table<VALUE> extends AutoCloseable
 {
     /**
      * @return {@code H} as defined by the hop-scotch algorithm, i.e. how many entries can share the same
@@ -195,4 +195,10 @@ public interface Table<VALUE>
      * @return the version of the entry by the given {@code index} in this table.
      */
     int version( int index );
+
+    /**
+     * Free any resources
+     */
+    @Override
+    public void close();
 }

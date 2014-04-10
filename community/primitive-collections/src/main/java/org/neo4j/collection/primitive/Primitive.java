@@ -24,27 +24,96 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.base.PrimitiveIntIteratorForArray;
 import org.neo4j.collection.primitive.base.PrimitiveLongIteratorForArray;
+import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
+import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
+import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
+import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
+import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
+import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
+import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntMap;
+import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
 import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
+
+import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
 /**
  * Convenient factory for common primitive sets and maps.
  */
 public class Primitive
 {
+    /**
+     * Used as value marker for sets, where values aren't applicable. The hop scotch algorithm still
+     * deals with values so having this will have no-value collections, like sets communicate
+     * the correct semantics to the algorithm.
+     */
+    public static final Object VALUE_MARKER = new Object();
+    public static final int BASE_CAPACITY = 1 << 8;
+
     // Some example would be...
     public static PrimitiveLongSet longSet()
     {
-        return new PrimitiveLongHashSet();
+        return longSet( BASE_CAPACITY );
+    }
+
+    public static PrimitiveLongSet longSet( int capacity )
+    {
+        return new PrimitiveLongHashSet( new LongKeyTable<>( capacity, VALUE_MARKER ),
+                VALUE_MARKER, NO_MONITOR );
+    }
+
+    public static PrimitiveLongSet offHeapLongSet()
+    {
+        return offHeapLongSet( 1 << 20 );
+    }
+
+    public static PrimitiveLongSet offHeapLongSet( int capacity )
+    {
+        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( capacity, VALUE_MARKER ),
+                VALUE_MARKER, NO_MONITOR );
     }
 
     public static PrimitiveLongIntMap longIntMap()
     {
-        return new PrimitiveLongIntHashMap();
+        return longIntMap( BASE_CAPACITY );
+    }
+
+    public static PrimitiveLongIntMap longIntMap( int capacity )
+    {
+        return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( capacity ), NO_MONITOR );
+    }
+
+    public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()
+    {
+        return longObjectMap( BASE_CAPACITY );
+    }
+
+    public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap( int capacity )
+    {
+        return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( capacity ), NO_MONITOR );
+    }
+
+    public static PrimitiveIntSet intSet()
+    {
+        return intSet( BASE_CAPACITY );
+    }
+
+    public static PrimitiveIntSet intSet( int capacity )
+    {
+        return new PrimitiveIntHashSet( new IntKeyTable<>( capacity, VALUE_MARKER ), VALUE_MARKER, NO_MONITOR );
+    }
+
+    public static PrimitiveIntSet offHeapIntSet()
+    {
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( 1 << 20, VALUE_MARKER ), VALUE_MARKER, NO_MONITOR );
+    }
+
+    public static PrimitiveIntSet offHeapIntSet( int capacity )
+    {
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( capacity, VALUE_MARKER ), VALUE_MARKER, NO_MONITOR );
     }
 
     public static PrimitiveIntIterator intIteratorOver( int... values )
@@ -167,10 +236,7 @@ public class Primitive
                     computeNext();
                     return result;
                 }
-                else
-                {
-                    throw new NoSuchElementException();
-                }
+                throw new NoSuchElementException();
             }
 
             private void computeNext()
