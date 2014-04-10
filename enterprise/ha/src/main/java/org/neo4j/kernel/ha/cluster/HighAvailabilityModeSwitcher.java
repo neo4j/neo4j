@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -108,6 +109,8 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.helpers.NamedThreadFactory.named;
+
 /**
  * Performs the internal switches from pending to slave/master, by listening for
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
@@ -160,9 +163,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final RequestContextFactory requestContextFactory;
     private MasterClientResolver masterClientResolver;
 
-    private ScheduledExecutorService scheduledExecutorService;
-
+    private ScheduledExecutorService modeSwitcherExecutor;
     private volatile URI me;
+    private volatile Future<?> modeSwitcherFuture;
+    private volatile HighAvailabilityMemberState currentTargetState;
 
     public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier,
                                          DelegateInvocationHandler<Master> delegateHandler,
@@ -194,7 +198,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     @Override
     public synchronized void init() throws Throwable
     {
-        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(  );
+        modeSwitcherExecutor = Executors.newSingleThreadScheduledExecutor( named( "HA Mode switcher" ) );
 
         stateHandler.addHighAvailabilityMemberListener( this );
         bindingListener = new BindingListener()
@@ -227,9 +231,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         stateHandler.removeHighAvailabilityMemberListener( this );
         bindingNotifier.removeBindingListener( bindingListener );
 
-        scheduledExecutorService.shutdown();
+        modeSwitcherExecutor.shutdown();
 
-        scheduledExecutorService.awaitTermination( 60, TimeUnit.SECONDS );
+        modeSwitcherExecutor.awaitTermination( 60, TimeUnit.SECONDS );
 
         haCommunicationLife.shutdown();
     }
@@ -279,6 +283,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         {
             return;
         }
+
+        currentTargetState = event.getNewState();
         switch ( event.getNewState() )
         {
             case TO_MASTER:
@@ -316,49 +322,66 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToMaster()
     {
-        msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
-        try
+        startModeSwitching( new Runnable()
         {
-            DependencyResolver resolver = graphDb.getDependencyResolver();
-            HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
-            synchronized ( xaDataSourceManager )
+            @Override
+            public void run()
             {
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                final TransactionManager txManager = graphDb.getDependencyResolver()
-                        .resolveDependency( TransactionManager.class );
+                if ( currentTargetState != HighAvailabilityMemberState.TO_MASTER )
+                {
+                    return;
+                }
 
-                idGeneratorFactory.switchToMaster();
+                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
+                try
+                {
+                    DependencyResolver resolver = graphDb.getDependencyResolver();
+                    HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
+                    /*
+                     * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
+                     * particular, it is possible to get a masterIsElected while recovering the database. That is generally
+                     * going to break things. Synchronizing on the xaDSM as HaKPH does solves this.
+                     */
+                    synchronized ( xaDataSourceManager )
+                    {
+                        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        final TransactionManager txManager = graphDb.getDependencyResolver()
+                                .resolveDependency( TransactionManager.class );
 
-                Monitors monitors = graphDb.getDependencyResolver().resolveDependency( Monitors.class );
+                        idGeneratorFactory.switchToMaster();
 
-                MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager, monitors );
+                        Monitors monitors = graphDb.getDependencyResolver().resolveDependency( Monitors.class );
 
-                MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
-                        logging, config );
+                        MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager, monitors );
 
-                MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                        new BranchDetectingTxVerifier( graphDb ),
-                        monitors );
-                haCommunicationLife.add( masterImpl );
-                haCommunicationLife.add( masterServer );
-                assignMaster( masterImpl );
-                idGeneratorFactory.switchToMaster();
+                        MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
+                                logging, config );
 
-                haCommunicationLife.start();
+                        MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
+                                new BranchDetectingTxVerifier( graphDb ),
+                                monitors );
+                        haCommunicationLife.add( masterImpl );
+                        haCommunicationLife.add( masterServer );
+                        assignMaster( masterImpl );
 
-                masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
-                        ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
-                        masterServer.getSocketAddress().getPort() + "?serverId=" +
-                        config.get( ClusterSettings.server_id ) );
-                clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
-                msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
-                        ", successfully moved to master" );
+                        haCommunicationLife.start();
+
+                        masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress() ).contains
+                                ( "0.0.0.0" ) ? me.getHost() : ServerUtil.getHostString( masterServer.getSocketAddress() )) + ":" +
+                                masterServer.getSocketAddress().getPort() + "?serverId=" +
+                                config.get( ClusterSettings.server_id ) );
+                        clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI );
+                        msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
+                                ", successfully moved to master" );
+                    }
+                }
+                catch ( Throwable e )
+                {
+                    msgLog.logMessage( "Failed to switch to master", e );
+                    return;
+                }
             }
-        }
-        catch ( Throwable e )
-        {
-            msgLog.logMessage( "Failed to switch to master", e );
-        }
+        } );
     }
 
     private void assignMaster( Master master )
@@ -385,12 +408,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max wait time.
         final AtomicLong wait = new AtomicLong();
-        scheduledExecutorService.schedule( new Runnable()
+        startModeSwitching( new Runnable()
         {
             @Override
             public void run()
             {
-                if (haCommunicationLife.getStatus() == LifecycleStatus.STARTED)
+                if (haCommunicationLife.getStatus() == LifecycleStatus.STARTED ||
+                        currentTargetState != HighAvailabilityMemberState.TO_SLAVE)
                 {
                     return; // Already switched - this can happen if a second master becomes available while waiting
                 }
@@ -444,11 +468,22 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 wait.set( (1 + wait.get()*2) ); // Exponential backoff
                 wait.set(Math.min(wait.get(), 5*60)); // Wait maximum 5 minutes
 
-                scheduledExecutorService.schedule( this, wait.get(), TimeUnit.SECONDS );
+                modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );
 
                 msgLog.logMessage( "Attempting to switch to slave in "+wait.get()+"s");
             }
-        }, wait.get(), TimeUnit.SECONDS);
+        } );
+    }
+
+    private void startModeSwitching( Runnable switcher )
+    {
+        if ( modeSwitcherFuture != null )
+        {
+            // Cancel any delayed previous switching
+            modeSwitcherFuture.cancel( false );
+        }
+
+        modeSwitcherFuture = modeSwitcherExecutor.submit( switcher );
     }
 
     private boolean startHaCommunication( HaXaDataSourceManager xaDataSourceManager,

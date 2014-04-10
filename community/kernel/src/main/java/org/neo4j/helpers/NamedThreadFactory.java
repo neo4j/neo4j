@@ -53,4 +53,14 @@ public class NamedThreadFactory implements ThreadFactory
         result.setPriority( priority );
         return result;
     }
+
+    public static ThreadFactory named( String threadNamePrefix )
+    {
+        return new NamedThreadFactory( threadNamePrefix );
+    }
+
+    public static ThreadFactory named( String threadNamePrefix, int priority )
+    {
+        return new NamedThreadFactory( threadNamePrefix, priority );
+    }
 }
