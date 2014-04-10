@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_0.executionplan.builders
 
 import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_0.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_0.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_0.commands.Equals
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Property
+import org.neo4j.cypher.internal.compiler.v2_0.commands.{SingleNode, Predicate, Equals}
+import org.mockito.Mockito._
+import org.mockito.Matchers._
+import org.scalatest.mock.MockitoSugar
 
-class FilterBuilderTest extends BuilderTest {
+class FilterBuilderTest extends BuilderTest with MockitoSugar {
 
   val builder = new FilterBuilder
 
@@ -65,5 +65,35 @@ class FilterBuilderTest extends BuilderTest {
     assert(resultPlan.query.where.toSet === Set(
       Solved(Equals(Property(Identifier("s"), PropertyKey("foo")), Literal("bar"))),
       Unsolved(Equals(Property(Identifier("x"), PropertyKey("foo")), Literal("bar")))))
+  }
+
+  @Test
+  def does_not_take_on_non_deterministic_predicates_until_the_whole_pattern_is_solved() {
+    val nonDeterministicPredicate = mock[Predicate]
+    when(nonDeterministicPredicate.isDeterministic).thenReturn(false)
+    when(nonDeterministicPredicate.symbolDependenciesMet(any())).thenReturn(true)
+
+    val q = PartiallySolvedQuery().copy(
+      where = Seq(Unsolved(nonDeterministicPredicate)),
+      patterns = Seq(Unsolved(SingleNode("a"))))
+
+    val pipe = createPipe(nodes = Seq("s"))
+
+    assertRejects(pipe, q)
+  }
+
+  @Test
+  def takes_on_predicates_that_are_deterministic_as_soon_as_possible() {
+    val nonDeterministicPredicate = mock[Predicate]
+    when(nonDeterministicPredicate.isDeterministic).thenReturn(true)
+    when(nonDeterministicPredicate.symbolDependenciesMet(any())).thenReturn(true)
+
+    val q = PartiallySolvedQuery().copy(
+      where = Seq(Unsolved(nonDeterministicPredicate)),
+      patterns = Seq(Unsolved(SingleNode("a"))))
+
+    val pipe = createPipe(nodes = Seq("s"))
+
+    assertAccepts(pipe, q)
   }
 }
