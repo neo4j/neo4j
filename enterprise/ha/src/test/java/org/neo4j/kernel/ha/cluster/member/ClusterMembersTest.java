@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster.member;
 
 import static java.net.URI.create;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -303,6 +304,60 @@ public class ClusterMembersTest
         assertThat(
                 members.getMembers(),
                 CoreMatchers.<ClusterMember>hasItem( sameMemberAs( new ClusterMember( clusterId1 ) ) ) );
+    }
+
+    @Test
+    public void missingMasterUnavailabilityEventDoesNotClobberState() throws Exception
+    {
+        // given
+        Cluster cluster = mock(Cluster.class);
+        Heartbeat heartbeat = mock( Heartbeat.class );
+        ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
+
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
+
+        ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
+        verify( cluster ).addClusterListener( listener.capture() );
+        listener.getValue().enteredCluster( clusterConfiguration( clusterUri1, clusterUri2, clusterUri3 ) );
+
+        ArgumentCaptor<ClusterMemberListener> clusterMemberListener = ArgumentCaptor.forClass( ClusterMemberListener.class );
+        verify( clusterMemberEvents ).addClusterMemberListener( clusterMemberListener.capture() );
+
+        // when
+        // first we are available as slaves
+        clusterMemberListener.getValue().memberIsAvailable( SLAVE, clusterId1, haUri1 );
+        // and then for some reason as master, without an unavailable message in between
+        clusterMemberListener.getValue().memberIsAvailable( MASTER, clusterId1, haUri1 );
+
+        // then
+        assertThat( members.getSelf().getHARole(), equalTo( MASTER ) );
+    }
+
+    @Test
+    public void missingSlaveUnavailabilityEventDoesNotClobberState() throws Exception
+    {
+        // given
+        Cluster cluster = mock(Cluster.class);
+        Heartbeat heartbeat = mock( Heartbeat.class );
+        ClusterMemberEvents clusterMemberEvents = mock(ClusterMemberEvents.class);
+
+        ClusterMembers members = new ClusterMembers( cluster, heartbeat, clusterMemberEvents, clusterId1 );
+
+        ArgumentCaptor<ClusterListener> listener = ArgumentCaptor.forClass( ClusterListener.class );
+        verify( cluster ).addClusterListener( listener.capture() );
+        listener.getValue().enteredCluster( clusterConfiguration( clusterUri1, clusterUri2, clusterUri3 ) );
+
+        ArgumentCaptor<ClusterMemberListener> clusterMemberListener = ArgumentCaptor.forClass( ClusterMemberListener.class );
+        verify( clusterMemberEvents ).addClusterMemberListener( clusterMemberListener.capture() );
+
+        // when
+        // first we are available as master
+        clusterMemberListener.getValue().memberIsAvailable( MASTER, clusterId1, haUri1 );
+        // and then for some reason as slave, without an unavailable message in between
+        clusterMemberListener.getValue().memberIsAvailable( SLAVE, clusterId1, haUri1 );
+
+        // then
+        assertThat( members.getSelf().getHARole(), equalTo( SLAVE ) );
     }
 
     private ClusterConfiguration clusterConfiguration( URI... uris )
