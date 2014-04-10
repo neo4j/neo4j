@@ -324,7 +324,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
 
-
     val result = execute("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
 
     result.toSet should equal(
@@ -332,6 +331,23 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A")),
         Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B")),
         Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C")))
+      )
+  }
+
+  test("simple var length acceptance test") {
+    createNodes("A", "B", "C", "D")
+    relate("A" -> "CONTAINS" -> "B")
+    relate("B" -> "CONTAINS" -> "C")
+    relate("C" -> "CONTAINS" -> "D")
+
+
+    val result = execute("match (a {name:'A'})-[*]->x return x")
+
+    result.toSet should equal(
+      Set(
+        Map("x" -> node("B")),
+        Map("x" -> node("C")),
+        Map("x" -> node("D")))
       )
   }
 

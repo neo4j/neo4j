@@ -113,14 +113,14 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           ),
           AllNodesScan("b")
         ),
-        "b", Direction.OUTGOING, Seq.empty, "c", "r1"
+        "b", Direction.OUTGOING, Seq.empty, "c", "r1", SimplePatternLength
       )( null )
     )
 
     val cost2 = cost(
       Expand(
         AllNodesScan("a"),
-        "a", Direction.OUTGOING, Seq.empty, "d", "r2"
+        "a", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
       )( null )
     )
 
@@ -141,7 +141,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(Equals(Property(Identifier("a") _, PropertyKeyName("name")() _) _, StringLiteral("Andres") _) _),
           AllNodesScan("a")
         ),
-        "a", Direction.BOTH, relTypeX, "start", "rel"
+        "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
       )( null )
     )
 
@@ -150,7 +150,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
         Expand(
           AllNodesScan("start"),
-          "start", Direction.BOTH, relTypeX, "a", "rel"
+          "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength
         )( null )
       )
     )

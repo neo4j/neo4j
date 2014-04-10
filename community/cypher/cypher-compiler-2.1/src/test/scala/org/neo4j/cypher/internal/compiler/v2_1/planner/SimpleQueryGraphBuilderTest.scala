@@ -262,6 +262,20 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     ))
   }
 
+  test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
+    val qg = buildQueryGraph("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
+    qg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
+      PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    qg.selections should equal(Selections())
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "b" -> Identifier("b")(pos),
+      "c" -> Identifier("c")(pos)
+    ))
+  }
+
   test("match (a)-[r:Type*3..]-(b) return a,r") {
     val qg = buildQueryGraph("match (a)-[r:Type*3..]-(b) return a,r")
     qg.patternRelationships should equal(Set(

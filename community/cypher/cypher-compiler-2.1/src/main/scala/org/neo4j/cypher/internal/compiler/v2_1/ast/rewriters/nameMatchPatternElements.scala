@@ -42,3 +42,20 @@ object nameMatchPatternElements extends Rewriter {
       m.copy(pattern = rewrittenPattern)(m.position)
   }
 }
+
+// TODO: When Ronja is the only planner left, move this to the object above
+object nameVarLengthRelationships extends Rewriter {
+  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+
+  private val namingRewriter: Rewriter = Rewriter.lift {
+    case pattern: RelationshipPattern if !pattern.identifier.isDefined && pattern.length.isDefined =>
+      val syntheticName = "  UNNAMED" + pattern.position.offset
+      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+  }
+
+  private val findingRewriter: Rewriter = Rewriter.lift {
+    case m: Match =>
+      val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
+      m.copy(pattern = rewrittenPattern)(m.position)
+  }
+}
