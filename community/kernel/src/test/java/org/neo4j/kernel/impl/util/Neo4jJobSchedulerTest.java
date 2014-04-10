@@ -26,14 +26,35 @@ import org.junit.Test;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 public class Neo4jJobSchedulerTest
 {
     private Neo4jJobScheduler scheduler;
+    private AtomicInteger invocations = new AtomicInteger( 0 );
+
+    private Runnable countInvocationsJob = new Runnable()
+    {
+        public void run()
+        {
+            try
+            {
+                invocations.incrementAndGet();
+            }
+            catch ( Throwable e )
+            {
+                e.printStackTrace();
+                throw launderedException( e );
+            }
+        }
+    };
 
     @After
     public void stopScheduler()
@@ -45,28 +66,30 @@ public class Neo4jJobSchedulerTest
     public void shouldRunRecurringJob() throws Exception
     {
         // Given
+        long period = 10;
         scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
-        final AtomicInteger invocations = new AtomicInteger( 0 );
 
         // When
         scheduler.start();
-        scheduler.scheduleRecurring( indexPopulation, new Runnable()
-        {
-            public void run()
-            {
-                invocations.incrementAndGet();
-            }
-        }, 500, MILLISECONDS );
-        sleep( 1500 );
+        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
+        awaitFirstInvocation();
+        sleep( period*2 );
         scheduler.stop();
 
         // Then
         int actualInvocations = invocations.get();
-        assertTrue( actualInvocations >= 2); // <-- Dunno how to better assert that this works correctly :/
-        assertTrue( actualInvocations < 6);
+        assertThat( actualInvocations, greaterThanOrEqualTo( 2 ) ); // <-- Dunno how to better assert that this works correctly :/
+        assertThat( actualInvocations, lessThan( 10 ) );
 
-        sleep( 1000 );
+        sleep( period );
         assertThat( invocations.get(), equalTo(actualInvocations) );
     }
 
+    private void awaitFirstInvocation()
+    {
+        while ( invocations.get() == 0 )
+        {   // Wait for the job to start running
+            Thread.yield();
+        }
+    }
 }
