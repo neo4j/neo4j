@@ -30,7 +30,8 @@ class FilterBuilder extends PlanBuilder {
     val q = plan.query
     val p = plan.pipe
 
-    val item = q.where.filter(pred => yesOrNo(pred, p))
+    val onlyDeterministic = !allPatternsSolved(plan)
+    val item = q.where.filter(pred => yesOrNo(pred, p, onlyDeterministic))
     val pred: Predicate = item.map(_.token).reduce(_ ++ _)
 
     val newPipe = if (pred == True()) {
@@ -47,7 +48,6 @@ class FilterBuilder extends PlanBuilder {
     )
   }
 
-
   override def missingDependencies(plan: ExecutionPlanInProgress) = {
     val querySoFar = plan.query
     val pipe = plan.pipe
@@ -59,11 +59,17 @@ class FilterBuilder extends PlanBuilder {
       map("Unknown identifier `%s`".format(_))
   }
 
-  private def yesOrNo(q: QueryToken[_], p: Pipe) = q match {
-    case Unsolved(pred: Predicate) => pred.symbolDependenciesMet(p.symbols)
+  private def yesOrNo(q: QueryToken[_], p: Pipe, onlyDeterministic: Boolean) = q match {
+    case Unsolved(pred: Predicate) =>
+      pred.symbolDependenciesMet(p.symbols) && (!onlyDeterministic || pred.isDeterministic)
     case _                         => false
   }
 
-  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) =
-    plan.query.where.exists(pred => yesOrNo(pred, plan.pipe))
+  private def allPatternsSolved(plan:ExecutionPlanInProgress) =
+    plan.query.patterns.forall(_.solved)
+
+  def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext) = {
+    val onlyDeterministic = !allPatternsSolved(plan)
+    plan.query.where.exists(pred => yesOrNo(pred, plan.pipe, onlyDeterministic))
+  }
 }
