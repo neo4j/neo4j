@@ -26,10 +26,13 @@ import org.junit.Test;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
 
 public class Neo4jJobSchedulerTest
@@ -45,9 +48,10 @@ public class Neo4jJobSchedulerTest
             {
                 invocations.incrementAndGet();
             }
-            catch(Throwable e)
+            catch ( Throwable e )
             {
                 e.printStackTrace();
+                throw launderedException( e );
             }
         }
     };
@@ -62,20 +66,22 @@ public class Neo4jJobSchedulerTest
     public void shouldRunRecurringJob() throws Exception
     {
         // Given
+        long period = 10;
         scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
 
         // When
         scheduler.start();
-        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, 10, MILLISECONDS );
-        sleep( 15 );
+        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
+        awaitFirstInvocation();
+        sleep( period*2 );
         scheduler.stop();
 
         // Then
         int actualInvocations = invocations.get();
-        assertThat( actualInvocations, greaterThanOrEqualTo( 2 )); // <-- Dunno how to better assert that this works correctly :/
-        assertThat( actualInvocations, lessThan( 6 ) );
+        assertThat( actualInvocations, greaterThanOrEqualTo( 2 ) ); // <-- Dunno how to better assert that this works correctly :/
+        assertThat( actualInvocations, lessThan( 10 ) );
 
-        sleep( 10 );
+        sleep( period );
         assertThat( invocations.get(), equalTo(actualInvocations) );
     }
 
@@ -83,18 +89,27 @@ public class Neo4jJobSchedulerTest
     public void shouldCancelRecurringJob() throws Exception
     {
         // Given
+        long period = 2;
         scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
 
         scheduler.start();
-        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, 2, MILLISECONDS );
+        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
+        awaitFirstInvocation();
 
         // When
         scheduler.cancelRecurring( indexPopulation,  countInvocationsJob);
 
         // Then
         int recorded = invocations.get();
-        sleep( 10 );
+        sleep( period*100 );
         assertThat( invocations.get(), equalTo(recorded) );
     }
 
+    private void awaitFirstInvocation()
+    {
+        while ( invocations.get() == 0 )
+        {   // Wait for the job to start running
+            Thread.yield();
+        }
+    }
 }

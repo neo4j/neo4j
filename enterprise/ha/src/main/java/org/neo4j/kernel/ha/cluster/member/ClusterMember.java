@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster.member;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
@@ -115,7 +116,17 @@ public class ClusterMember
 
     ClusterMember availableAs( String role, URI roleUri )
     {
-        return new ClusterMember( this.memberId, MapUtil.copyAndPut( roles, role, roleUri ), this.alive );
+        Map<String, URI> copy = new HashMap<String, URI>( roles );
+        if ( role.equals( HighAvailabilityModeSwitcher.MASTER ) )
+        {
+            copy.remove( HighAvailabilityModeSwitcher.SLAVE );
+        }
+        else if ( role.equals( HighAvailabilityModeSwitcher.SLAVE ) )
+        {
+            copy.remove( HighAvailabilityModeSwitcher.MASTER );
+        }
+        copy.put( role, roleUri );
+        return new ClusterMember( this.memberId, copy, this.alive );
     }
 
     ClusterMember unavailableAs( String role )

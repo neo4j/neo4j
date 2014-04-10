@@ -23,9 +23,16 @@ o Fix a cache poisoning issue where large properties would keep a reference to a
   properties in rare cases.
 o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
 o Fixes issue where store migration forgets about legacy indexes
+o Datasource specific transaction application now respects global TM state
+o Fixes an issue where indexes that have been dropped would fail recovery
+  if commands to activate them were run in recovery.
+o Fixes byte count monitoring
+o Fixes issue with proper update of indexes that came from improper
+  command execution order
 o Fixes memory leak in XaResourceManager that could lead recovered
   transaction application to delay noticeably
-o Datasource specific transaction application now respects global TM state
+o Fixes null pointer exceptions coming from LazyProperties being
+  half loaded while a datasource restart happens
 
 2.0.1
 -----

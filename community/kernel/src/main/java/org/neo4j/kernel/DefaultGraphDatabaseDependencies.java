@@ -50,7 +50,7 @@ public class DefaultGraphDatabaseDependencies extends GraphDatabaseDependencies
     {
         super(
                 logging,
-                Arrays.asList( settingsClasses ),
+                Arrays.<Class<?>>asList( settingsClasses ),
                 Iterables.<KernelExtensionFactory<?>,KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ),
                 Service.load( TransactionInterceptorProvider.class ) );
