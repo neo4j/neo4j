@@ -36,7 +36,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.primitiveLongIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 
 public class NodeProxySingleRelationshipTest
 {
@@ -118,7 +118,7 @@ public class NodeProxySingleRelationshipTest
         when( stmCtxBridge.instance() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
-        when(readOps.nodeGetRelationships( 1, Direction.OUTGOING, 2 )).thenReturn( primitiveLongIterator(relIds) );
+        when(readOps.nodeGetRelationships( 1, Direction.OUTGOING, 2 )).thenReturn( iterator(relIds) );
         return nodeImpl;
     }
 }

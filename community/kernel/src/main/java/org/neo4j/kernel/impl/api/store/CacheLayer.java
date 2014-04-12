@@ -40,9 +40,9 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.PrimitiveIntIteratorForArray;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
@@ -69,10 +69,10 @@ import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 
-import static org.neo4j.collection.primitive.base.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
@@ -123,7 +123,7 @@ public class CacheLayer implements StoreReadLayer
         @Override
         public int[] load( long id ) throws EntityNotFoundException
         {
-            return primitiveIntIteratorToIntArray( diskLayer.nodeGetLabels( id ) );
+            return asArray( diskLayer.nodeGetLabels( id ) );
         }
     };
 
@@ -170,7 +170,7 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
-        return new PrimitiveIntIteratorForArray( persistenceCache.nodeGetLabels( nodeId, nodeLabelLoader ) );
+        return iterator( persistenceCache.nodeGetLabels( nodeId, nodeLabelLoader ) );
     }
 
     @Override
@@ -466,7 +466,7 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
     {
-        return toPrimitiveIntIterator( persistenceCache.getNode( nodeId ).getRelationshipTypes( nodeManager ) );
+        return PrimitiveIntCollections.toPrimitiveIterator( persistenceCache.getNode( nodeId ).getRelationshipTypes( nodeManager ) );
     }
 
     @Override

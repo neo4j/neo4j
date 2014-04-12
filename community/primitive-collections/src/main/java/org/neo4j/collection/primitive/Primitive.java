@@ -19,11 +19,6 @@
  */
 package org.neo4j.collection.primitive;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
-import org.neo4j.collection.primitive.base.PrimitiveIntIteratorForArray;
-import org.neo4j.collection.primitive.base.PrimitiveLongIteratorForArray;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
@@ -34,14 +29,14 @@ import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
-import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
-import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
 /**
  * Convenient factory for common primitive sets and maps.
+ *
+ * @see PrimitiveIntCollections
+ * @see PrimitiveLongCollections
  */
 public class Primitive
 {
@@ -59,9 +54,9 @@ public class Primitive
         return longSet( BASE_CAPACITY );
     }
 
-    public static PrimitiveLongSet longSet( int capacity )
+    public static PrimitiveLongSet longSet( int initialCapacity )
     {
-        return new PrimitiveLongHashSet( new LongKeyTable<>( capacity, VALUE_MARKER ),
+        return new PrimitiveLongHashSet( new LongKeyTable<>( initialCapacity, VALUE_MARKER ),
                 VALUE_MARKER, NO_MONITOR );
     }
 
@@ -70,9 +65,9 @@ public class Primitive
         return offHeapLongSet( 1 << 20 );
     }
 
-    public static PrimitiveLongSet offHeapLongSet( int capacity )
+    public static PrimitiveLongSet offHeapLongSet( int initialCapacity )
     {
-        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( capacity, VALUE_MARKER ),
+        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
                 VALUE_MARKER, NO_MONITOR );
     }
 
@@ -81,9 +76,9 @@ public class Primitive
         return longIntMap( BASE_CAPACITY );
     }
 
-    public static PrimitiveLongIntMap longIntMap( int capacity )
+    public static PrimitiveLongIntMap longIntMap( int initialCapacity )
     {
-        return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( capacity ), NO_MONITOR );
+        return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
     }
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()
@@ -91,9 +86,9 @@ public class Primitive
         return longObjectMap( BASE_CAPACITY );
     }
 
-    public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap( int capacity )
+    public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap( int initialCapacity )
     {
-        return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( capacity ), NO_MONITOR );
+        return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
     }
 
     public static PrimitiveIntSet intSet()
@@ -101,157 +96,21 @@ public class Primitive
         return intSet( BASE_CAPACITY );
     }
 
-    public static PrimitiveIntSet intSet( int capacity )
+    public static PrimitiveIntSet intSet( int initialCapacity )
     {
-        return new PrimitiveIntHashSet( new IntKeyTable<>( capacity, VALUE_MARKER ), VALUE_MARKER, NO_MONITOR );
+        return new PrimitiveIntHashSet( new IntKeyTable<>( initialCapacity, VALUE_MARKER ),
+                VALUE_MARKER, NO_MONITOR );
     }
 
     public static PrimitiveIntSet offHeapIntSet()
     {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( 1 << 20, VALUE_MARKER ), VALUE_MARKER, NO_MONITOR );
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( 1 << 20, VALUE_MARKER ),
+                VALUE_MARKER, NO_MONITOR );
     }
 
-    public static PrimitiveIntSet offHeapIntSet( int capacity )
+    public static PrimitiveIntSet offHeapIntSet( int initialCapacity )
     {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( capacity, VALUE_MARKER ), VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static PrimitiveIntIterator intIteratorOver( int... values )
-    {
-        return new PrimitiveIntIteratorForArray( values );
-    }
-
-    public static PrimitiveLongIterator longIteratorOver( long... values )
-    {
-        return new PrimitiveLongIteratorForArray( values );
-    }
-
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,
-            final PrimitiveLongIterator source )
-    {
-        return new Iterator<T>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveInt<T> mapFunction,
-            final PrimitiveIntIterator source )
-    {
-        return new Iterator<T>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    /**
-     * Returns the given iterator's single element or {@code itemIfNone} if no
-     * element found. If there is more than one element in the iterator a
-     * {@link NoSuchElementException} will be thrown.
-     *
-     * @param iterator the {@link Iterator} to get elements from.
-     * @return the single element in {@code iterator}, or {@code itemIfNone} if no
-     * element found.
-     * @throws NoSuchElementException if more than one element was found.
-     */
-    public static long single( PrimitiveLongIterator iterator, long itemIfNone )
-    {
-        if ( iterator.hasNext() )
-        {
-            long result = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                throw new NoSuchElementException( "More than one element in " +
-                        iterator + ". First element is '" + result +
-                        "' and the second element is '" + iterator.next() + "'" );
-            }
-            return result;
-        }
-        return itemIfNone;
-    }
-
-    /**
-     * Returns a new iterator with all elements found in the input iterator that are accepted by the given predicate
-     *
-     * @param predicate predicate to use for selecting elements
-     * @param iterator input source of elements to be filtered
-     * @return new iterator that contains exactly all elements from iterator that are accepted by predicate
-     */
-    public static PrimitiveLongIterator filter( final PrimitiveLongPredicate predicate,
-                                                final PrimitiveLongIterator iterator )
-    {
-        return new PrimitiveLongIterator()
-        {
-            long next = -1;
-            boolean hasNext = false;
-
-            {
-                computeNext();
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return hasNext;
-            }
-
-            @Override
-            public long next()
-            {
-                if ( hasNext )
-                {
-                    long result = next;
-                    computeNext();
-                    return result;
-                }
-                throw new NoSuchElementException();
-            }
-
-            private void computeNext()
-            {
-                while ( iterator.hasNext() )
-                {
-                    next = iterator.next();
-                    if ( predicate.accept( next ) )
-                    {
-                        hasNext = true;
-                        return;
-                    }
-                }
-                hasNext = false;
-            }
-        };
+        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
+                VALUE_MARKER, NO_MONITOR );
     }
 }

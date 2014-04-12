@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.AbstractPrimitiveLongIterator;
 import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -155,24 +155,14 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             public PrimitiveLongIterator labelIds()
             {
                 final Token[] labels = neoStoreProvider.evaluate().getLabelTokenStore().getTokens( MAX_VALUE );
-                return new AbstractPrimitiveLongIterator()
+                return new PrimitiveLongBaseIterator()
                 {
                     int index;
-                    {
-                        computeNext();
-                    }
 
                     @Override
-                    protected void computeNext()
+                    protected boolean fetchNext()
                     {
-                        if ( index <= labels.length )
-                        {
-                            next( labels[index++].id() );
-                        }
-                        else
-                        {
-                            endReached();
-                        }
+                        return index <= labels.length ? next( labels[index++].id() ) : false;
                     }
                 };
             }

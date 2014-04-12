@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -70,7 +71,6 @@ import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveIntIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -80,7 +80,7 @@ public class DiskLayer
     private static final Function<UniquenessConstraintRule, UniquenessConstraint> UNIQUENESS_CONSTRAINT_TO_RULE =
             new Function<UniquenessConstraintRule, UniquenessConstraint>()
     {
-        
+
         @Override
         public UniquenessConstraint apply( UniquenessConstraintRule rule )
         {
@@ -160,7 +160,7 @@ public class DiskLayer
             }
         }
     }
-    
+
     public int labelGetForName( String label )
     {
         return labelTokenHolder.getIdByName( label );
@@ -170,14 +170,14 @@ public class DiskLayer
     {
         try
         {
-            return IteratorUtil.contains( nodeGetLabels( nodeId ), labelId );
+            return PrimitiveIntCollections.indexOf( nodeGetLabels( nodeId ), labelId ) != -1;
         }
         catch ( InvalidRecordException e )
         {
             return false;
         }
     }
-    
+
     public PrimitiveIntIterator nodeGetLabels( long nodeId )
     {
         try
@@ -187,14 +187,14 @@ public class DiskLayer
             {
                 private int cursor;
 
-                
+
                 @Override
                 public boolean hasNext()
                 {
                     return cursor < labels.length;
                 }
 
-                
+
                 @Override
                 public int next()
                 {
@@ -210,10 +210,10 @@ public class DiskLayer
         catch ( InvalidRecordException e )
         {   // TODO Might hide invalid dynamic record problem. It's here because this method
             // might get called with a nodeId that doesn't exist.
-            return emptyPrimitiveIntIterator();
+            return PrimitiveIntCollections.emptyIterator();
         }
     }
-    
+
     public String labelGetName( int labelId ) throws LabelNotFoundKernelException
     {
         try
@@ -246,17 +246,17 @@ public class DiskLayer
     {
         return getIndexDescriptorsFor( indexRules( labelId ) );
     }
-    
+
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         return getIndexDescriptorsFor( INDEX_RULES );
     }
-    
+
     public Iterator<IndexDescriptor> uniqueIndexesGetForLabel( int labelId )
     {
         return getIndexDescriptorsFor( constraintIndexRules( labelId ) );
     }
-    
+
     public Iterator<IndexDescriptor> uniqueIndexesGetAll()
     {
         return getIndexDescriptorsFor( CONSTRAINT_INDEX_RULES );
@@ -266,7 +266,7 @@ public class DiskLayer
     {
         return new Predicate<SchemaRule>()
         {
-            
+
             @Override
             public boolean accept( SchemaRule rule )
             {
@@ -279,7 +279,7 @@ public class DiskLayer
     {
         return new Predicate<SchemaRule>()
         {
-            
+
             @Override
             public boolean accept( SchemaRule rule )
             {
@@ -290,7 +290,7 @@ public class DiskLayer
 
     private static final Predicate<SchemaRule> INDEX_RULES = new Predicate<SchemaRule>()
     {
-        
+
         @Override
         public boolean accept( SchemaRule rule )
         {
@@ -298,7 +298,7 @@ public class DiskLayer
         }
     }, CONSTRAINT_INDEX_RULES = new Predicate<SchemaRule>()
     {
-        
+
         @Override
         public boolean accept( SchemaRule rule )
         {
@@ -312,7 +312,7 @@ public class DiskLayer
 
         return map( new Function<SchemaRule, IndexDescriptor>()
         {
-            
+
             @Override
             public IndexDescriptor apply( SchemaRule from )
             {
@@ -367,7 +367,7 @@ public class DiskLayer
             }
         } );
     }
-    
+
     public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
@@ -389,7 +389,7 @@ public class DiskLayer
     {
         return propertyKeyTokenHolder.getIdByName( propertyKey );
     }
-    
+
     public String propertyKeyGetName( int propertyKeyId )
             throws PropertyKeyIdNotFoundKernelException
     {
@@ -415,7 +415,7 @@ public class DiskLayer
             throw new EntityNotFoundException( EntityType.NODE, nodeId, e );
         }
     }
-    
+
     public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
     {

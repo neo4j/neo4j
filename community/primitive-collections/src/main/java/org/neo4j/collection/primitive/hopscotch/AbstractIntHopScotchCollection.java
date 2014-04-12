@@ -20,9 +20,9 @@
 package org.neo4j.collection.primitive.hopscotch;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntCollections.PrimitiveIntBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
-import org.neo4j.collection.primitive.base.AbstractPrimitiveIntIterator;
 
 public class AbstractIntHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
         implements PrimitiveIntCollection
@@ -35,24 +35,13 @@ public class AbstractIntHopScotchCollection<VALUE> extends AbstractHopScotchColl
     @Override
     public PrimitiveIntIterator iterator()
     {
-        final TableIterator<VALUE> longIterator = new TableIterator<>( table, this );
-        return new AbstractPrimitiveIntIterator()
+        final TableKeyIterator<VALUE> longIterator = new TableKeyIterator<>( table, this );
+        return new PrimitiveIntBaseIterator()
         {
-            {
-                computeNext();
-            }
-
             @Override
-            protected void computeNext()
+            protected boolean fetchNext()
             {
-                if ( longIterator.hasNext() )
-                {
-                    next( (int) longIterator.next() );
-                }
-                else
-                {
-                    endReached();
-                }
+                return longIterator.hasNext() ? next( (int) longIterator.next() ) : false;
             }
         };
     }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
@@ -59,8 +60,6 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
 public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
@@ -121,7 +120,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         statement.assertOpen();
         if ( labelId == StatementConstants.NO_SUCH_LABEL )
         {
-            return emptyPrimitiveLongIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
         return dataRead().nodesGetForLabel( statement, labelId );
     }

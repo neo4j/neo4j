@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -51,8 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
@@ -190,9 +190,9 @@ public class NodeCorrectlyIndexedCheckTest
                 {
                     if ( entries.containsKey( value ) )
                     {
-                        return asPrimitiveIterator( entries.get( value ) );
+                        return PrimitiveLongCollections.iterator( entries.get( value ) );
                     }
-                    return emptyPrimitiveLongIterator();
+                    return emptyIterator();
                 }
 
                 @Override

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -131,8 +132,8 @@ public final class TxStateImpl implements TxState
     // This is temporary. It is needed until we've removed nodes and rels from the global cache, to tell
     // that they were created and then deleted in the same tx. This is here just to set a save point to
     // get a large set of changes in, and is meant to be removed in the coming days in a follow-up commit.
-    private Set<Long> nodesCreatedAndDeletedInTx = new HashSet<>();
-    private Set<Long> relsCreatedAndDeletedInTx = new HashSet<>();
+    private final Set<Long> nodesCreatedAndDeletedInTx = new HashSet<>();
+    private final Set<Long> relsCreatedAndDeletedInTx = new HashSet<>();
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
@@ -791,11 +792,11 @@ public final class TxStateImpl implements TxState
     @Override
     public PrimitiveIntIterator nodeRelationshipTypes( long nodeId )
     {
-        if(hasNodeState( nodeId ))
+        if ( hasNodeState( nodeId ) )
         {
             return getOrCreateNodeState( nodeId ).relationshipTypes();
         }
-        return IteratorUtil.emptyPrimitiveIntIterator();
+        return PrimitiveIntCollections.emptyIterator();
     }
 
     @Override
@@ -963,6 +964,7 @@ public final class TxStateImpl implements TxState
        return Iterables.empty();
     }
 
+    @Override
     public Long indexCreatedForConstraint( UniquenessConstraint constraint )
     {
         return createdConstraintIndexesByConstraint == null ? null :

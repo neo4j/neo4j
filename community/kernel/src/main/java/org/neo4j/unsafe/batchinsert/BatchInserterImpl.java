@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -128,10 +129,9 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 
 import static java.lang.Boolean.parseBoolean;
 
-import static org.neo4j.collection.primitive.Primitive.map;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -662,7 +662,7 @@ public class BatchInserterImpl implements BatchInserter
             {
                 NodeRecord record = getNodeRecord( node ).forReadingData();
                 long[] labels = parseLabelsField( record ).get( getNodeStore() );
-                return map( labelIdToLabelFunction, asPrimitiveIterator( labels ) );
+                return map( labelIdToLabelFunction, PrimitiveLongCollections.iterator( labels ) );
             }
         };
     }

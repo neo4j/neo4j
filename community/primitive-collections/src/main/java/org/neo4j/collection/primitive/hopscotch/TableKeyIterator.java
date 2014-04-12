@@ -19,9 +19,9 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.base.AbstractPrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 
-public class TableIterator<VALUE> extends AbstractPrimitiveLongIterator
+public class TableKeyIterator<VALUE> extends PrimitiveLongBaseIterator
 {
     protected final Table<VALUE> stable;
     protected final AbstractHopScotchCollection<VALUE> collection;
@@ -30,18 +30,22 @@ public class TableIterator<VALUE> extends AbstractPrimitiveLongIterator
     private final int max;
     private int i;
 
-    TableIterator( Table<VALUE> table, AbstractHopScotchCollection<VALUE> collection )
+    TableKeyIterator( Table<VALUE> table, AbstractHopScotchCollection<VALUE> collection )
     {
         this.stable = table;
         this.collection = collection;
         this.nullKey = stable.nullKey();
         this.max = stable.capacity();
         this.version = stable.version();
-        computeNext();
+    }
+
+    protected boolean isVisible( int index, long key )
+    {
+        return key != nullKey;
     }
 
     @Override
-    protected void computeNext()
+    protected boolean fetchNext()
     {
         while ( i < max )
         {
@@ -49,15 +53,9 @@ public class TableIterator<VALUE> extends AbstractPrimitiveLongIterator
             long key = stable.key( index );
             if ( isVisible( index, key ) )
             {
-                next( key );
-                return;
+                return next( key );
             }
         }
-        endReached();
-    }
-
-    protected boolean isVisible( int index, long key )
-    {
-        return key != nullKey;
+        return false;
     }
 }

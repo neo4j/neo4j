@@ -24,13 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.lang.String.format;
-
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveArray;
 
 public class DenseNodeChainPosition implements RelationshipLoadingPosition
 {
@@ -41,7 +40,7 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
 
     public DenseNodeChainPosition( Map<Integer, RelationshipGroupRecord> groups )
     {
-        this.types = toPrimitiveArray( groups.keySet() );
+        this.types = PrimitiveIntCollections.asArray( groups.keySet().iterator() );
         this.groups = groups;
     }
 

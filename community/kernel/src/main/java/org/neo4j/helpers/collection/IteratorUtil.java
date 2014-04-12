@@ -33,12 +33,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.AbstractPrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.PrimitiveIntIteratorForArray;
-import org.neo4j.collection.primitive.base.PrimitiveLongIteratorForArray;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
@@ -343,21 +339,6 @@ public abstract class IteratorUtil
                         + result + "' and the second element is '" + iterator.next() + "'" );
             }
             return result;
-        }
-        finally
-        {
-            if ( iterator instanceof Resource )
-            {
-                ((Resource) iterator).close();
-            }
-        }
-    }
-
-    public static long single( PrimitiveLongIterator iterator, long itemIfNone )
-    {
-        try
-        {
-            return Primitive.single( iterator, itemIfNone );
         }
         finally
         {
@@ -842,16 +823,6 @@ public abstract class IteratorUtil
         };
     }
 
-    public static PrimitiveLongIterator asPrimitiveIterator( final long... array )
-    {
-        return new PrimitiveLongIteratorForArray( array );
-    }
-
-    public static PrimitiveIntIterator asPrimitiveIterator( final int... array )
-    {
-        return new PrimitiveIntIteratorForArray( array );
-    }
-
     @SafeVarargs
     public static <T> Iterator<T> asIterator( final int maxItems, final T... array )
     {
@@ -886,22 +857,6 @@ public abstract class IteratorUtil
         return asIterator( maxItems, items );
     }
 
-    public static PrimitiveLongIterator singletonPrimitiveLongIterator( final long item )
-    {
-        return new AbstractPrimitiveLongIterator()
-        {
-            {
-                next( item );
-            }
-
-            @Override
-            protected void computeNext()
-            {
-                endReached();
-            }
-        };
-    }
-
     @SuppressWarnings( "rawtypes" )
     private static final ResourceIterator EMPTY_ITERATOR = new ResourceIterator()
     {
@@ -930,50 +885,10 @@ public abstract class IteratorUtil
         }
     };
 
-    private static final PrimitiveLongIterator EMPTY_PRIMITIVE_LONG_ITERATOR = new PrimitiveLongIterator()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
-
-        @Override
-        public long next()
-        {
-            throw new NoSuchElementException();
-        }
-    };
-
-    private static final PrimitiveIntIterator EMPTY_PRIMITIVE_INT_ITERATOR = new PrimitiveIntIterator()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
-
-        @Override
-        public int next()
-        {
-            throw new NoSuchElementException();
-        }
-    };
-
     @SuppressWarnings( "unchecked" )
     public static <T> ResourceIterator<T> emptyIterator()
     {
         return EMPTY_ITERATOR;
-    }
-
-    public static PrimitiveLongIterator emptyPrimitiveLongIterator()
-    {
-        return EMPTY_PRIMITIVE_LONG_ITERATOR;
-    }
-
-    public static PrimitiveIntIterator emptyPrimitiveIntIterator()
-    {
-        return EMPTY_PRIMITIVE_INT_ITERATOR;
     }
 
     public static <T> boolean contains( Iterator<T> iterator, T item )
@@ -983,50 +898,6 @@ public abstract class IteratorUtil
             for ( T element : loop( iterator ) )
             {
                 if ( item == null ? element == null : item.equals( element ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        finally
-        {
-            if ( iterator instanceof ResourceIterator<?> )
-            {
-                ((ResourceIterator<?>) iterator).close();
-            }
-        }
-    }
-
-    public static boolean contains( PrimitiveLongIterator iterator, long item )
-    {
-        try
-        {
-            while ( iterator.hasNext() )
-            {
-                if ( item == iterator.next() )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        finally
-        {
-            if ( iterator instanceof ResourceIterator<?> )
-            {
-                ((ResourceIterator<?>) iterator).close();
-            }
-        }
-    }
-
-    public static boolean contains( PrimitiveIntIterator iterator, int item )
-    {
-        try
-        {
-            while ( iterator.hasNext() )
-            {
-                if ( item == iterator.next() )
                 {
                     return true;
                 }
@@ -1139,84 +1010,6 @@ public abstract class IteratorUtil
         return set;
     }
 
-    public static PrimitiveLongIterator toPrimitiveLongIterator( final Iterator<Long> iterator )
-    {
-        return new PrimitiveLongIterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public long next()
-            {
-                Long nextValue = iterator.next();
-                if ( null == nextValue )
-                {
-                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
-                }
-                return nextValue;
-            }
-        };
-    }
-
-    public static PrimitiveIntIterator toPrimitiveIntIterator( final Iterator<Integer> iterator )
-    {
-        return new PrimitiveIntIterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public int next()
-            {
-                Integer nextValue = iterator.next();
-                if ( null == nextValue )
-                {
-                    throw new IllegalArgumentException( "Cannot convert null Long to primitive long" );
-                }
-                return nextValue;
-            }
-        };
-    }
-
-    public static PrimitiveLongIterator flatten( final Iterator<PrimitiveLongIterator> source )
-    {
-        return new PrimitiveLongIterator()
-        {
-            private PrimitiveLongIterator current;
-
-            @Override
-            public boolean hasNext()
-            {
-                while ( current == null || !current.hasNext() )
-                {
-                    if ( !source.hasNext() )
-                    {
-                        return false;
-                    }
-                    current = source.next();
-                }
-                return true;
-            }
-
-            @Override
-            public long next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new NoSuchElementException();
-                }
-                return current.next();
-            }
-        };
-    }
-
     public static PrimitiveLongResourceIterator resourceIterator( final PrimitiveLongIterator iterator,
             final Resource resource )
     {
@@ -1240,36 +1033,5 @@ public abstract class IteratorUtil
                 return iterator.hasNext();
             }
         };
-    }
-
-    public static PrimitiveLongIterator primitiveLongIterator(final long ... values)
-    {
-        return new PrimitiveLongIterator()
-        {
-            private int cursor = 0;
-
-            @Override
-            public boolean hasNext()
-            {
-                return cursor < values.length;
-            }
-
-            @Override
-            public long next()
-            {
-                return values[cursor++];
-            }
-        };
-    }
-
-    public static int[] toPrimitiveArray( Collection<Integer> integers )
-    {
-        int[] out = new int[integers.size()];
-        Iterator<Integer> iter = integers.iterator();
-        for ( int i = 0; i < out.length; i++ )
-        {
-            out[i] = iter.next();
-        }
-        return out;
     }
 }

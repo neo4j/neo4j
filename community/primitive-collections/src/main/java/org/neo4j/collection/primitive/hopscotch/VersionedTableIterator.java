@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-public class VersionedTableIterator<VALUE> extends TableIterator<VALUE>
+public class VersionedTableIterator<VALUE> extends TableKeyIterator<VALUE>
 {
     VersionedTableIterator( Table<VALUE> table, AbstractHopScotchCollection<VALUE> collection )
     {

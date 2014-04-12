@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
@@ -168,7 +168,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
         if ( result.length == 0 )
         {
-            return emptyPrimitiveLongIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
         return new RelationshipIterator( result, this, direction, NO_RELATIONSHIP_TYPES,
                 nodeManager, hasMore, true );
@@ -206,7 +206,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         if ( result.length == 0 )
         {
-            return emptyPrimitiveLongIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
         return new RelationshipIterator( result, this, direction, types, nodeManager, hasMore, false );
     }

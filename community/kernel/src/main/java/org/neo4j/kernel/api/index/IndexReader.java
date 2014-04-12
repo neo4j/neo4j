@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
-
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 
 /**
  * Reader for an {@link IndexAccessor}.
@@ -32,15 +31,15 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterat
 public interface IndexReader extends Resource
 {
     PrimitiveLongIterator lookup( Object value );
-    
+
     IndexReader EMPTY = new IndexReader()
     {
         @Override
         public PrimitiveLongIterator lookup( Object value )
         {
-            return emptyPrimitiveLongIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
-        
+
         @Override
         public void close()
         {

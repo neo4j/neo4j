@@ -31,8 +31,8 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.AbstractPrimitiveLongIterator;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -165,7 +165,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 
-import static org.neo4j.collection.primitive.Primitive.map;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -1628,7 +1628,7 @@ public abstract class InternalAbstractGraphDatabase
         }, input ) );
     }
 
-    private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator
+    private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongBaseIterator
     {
         private final PrimitiveLongIterator nodesWithLabel;
         private final ReadOperations statement;
@@ -1642,11 +1642,10 @@ public abstract class InternalAbstractGraphDatabase
             this.statement = statement;
             this.propertyKeyId = propertyKeyId;
             this.value = value;
-            computeNext();
         }
 
         @Override
-        protected void computeNext()
+        protected boolean fetchNext()
         {
             for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
             {
@@ -1655,8 +1654,7 @@ public abstract class InternalAbstractGraphDatabase
                 {
                     if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
                     {
-                        next( nextValue );
-                        return;
+                        return next( nextValue );
                     }
                 }
                 catch ( EntityNotFoundException e )
@@ -1664,7 +1662,7 @@ public abstract class InternalAbstractGraphDatabase
                     // continue to the next node
                 }
             }
-            endReached();
+            return false;
         }
     }
 

@@ -24,13 +24,13 @@ import java.util.Iterator;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.PrimitiveLongIteratorForArray;
 import org.neo4j.kernel.impl.util.DiffSets;
 
 import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSamePrimitiveItems;
 
 public class LongDiffSetsTest
@@ -50,7 +50,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1l, 2l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 1l, 2l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 1l, 2l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -66,7 +66,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17l, 3l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 1l, 17l, 3l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 1l, 17l, 3l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -82,7 +82,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17l, 3l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 1l, 17l, 3l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 1l, 17l, 3l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -98,15 +98,10 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 19l ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( primitiveSource( 19l ) );
+        PrimitiveLongIterator actual = diffSets.augment( iterator( 19l ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
-    }
-
-    private static PrimitiveLongIterator primitiveSource( long... values  )
-    {
-        return new PrimitiveLongIteratorForArray( values );
     }
 
     private static Iterator<Long> iteratorSource( Long... values )

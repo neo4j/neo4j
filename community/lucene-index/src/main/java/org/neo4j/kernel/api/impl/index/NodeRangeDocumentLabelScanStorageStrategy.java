@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.impl.index.bitmaps.BitmapFormat;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.flatten;
 
 /**
  * {@link org.neo4j.kernel.api.labelscan.LabelScanStore} implemented using Lucene. There's only one big index for all labels
@@ -84,7 +84,7 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     @Override
     public PrimitiveLongIterator nodesWithLabel( IndexSearcher searcher, int labelId )
     {
-        return flatten(
+        return concat(
                 new PageOfRangesIterator( format, searcher, RANGES_PER_PAGE, format.labelQuery( labelId ), labelId ) );
     }
 

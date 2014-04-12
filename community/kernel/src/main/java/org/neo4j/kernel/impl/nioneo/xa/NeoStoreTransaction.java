@@ -32,6 +32,7 @@ import java.util.Map;
 
 import javax.transaction.xa.XAException;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -92,7 +93,6 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -1526,7 +1526,7 @@ public class NeoStoreTransaction extends XaTransaction
     {
         // Don't consider changes in this transaction
         NodeRecord node = getNodeStore().getRecord( nodeId );
-        return asPrimitiveIterator( parseLabelsField( node ).get( getNodeStore() ) );
+        return PrimitiveLongCollections.iterator( parseLabelsField( node ).get( getNodeStore() ) );
     }
 
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )

@@ -34,11 +34,11 @@ public class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCol
     @Override
     public PrimitiveLongIterator iterator()
     {
-        return new TableIterator<>( table, this );
+        return new TableKeyIterator<>( table, this );
     }
 
     @Override
-    public void visit( PrimitiveLongVisitor visitor )
+    public void visitKeys( PrimitiveLongVisitor visitor )
     {
         int capacity = table.capacity();
         long nullKey = table.nullKey();

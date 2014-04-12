@@ -65,7 +65,8 @@ import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 import static java.lang.String.format;
 
-import static org.neo4j.collection.primitive.Primitive.map;
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;

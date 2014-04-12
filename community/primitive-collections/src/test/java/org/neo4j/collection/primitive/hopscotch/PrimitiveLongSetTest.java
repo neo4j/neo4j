@@ -92,7 +92,7 @@ public class PrimitiveLongSetTest
         expectedValues.add( 679990875L );
 
         final Set<Long> visitedKeys = new HashSet<>();
-        set.visit( new PrimitiveLongVisitor()
+        set.visitKeys( new PrimitiveLongVisitor()
         {
             @Override
             public void visited( long value )

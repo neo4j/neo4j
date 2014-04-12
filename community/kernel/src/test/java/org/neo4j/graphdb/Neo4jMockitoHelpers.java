@@ -24,11 +24,10 @@ import java.util.Iterator;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
 
 public class Neo4jMockitoHelpers
 {
@@ -51,7 +50,7 @@ public class Neo4jMockitoHelpers
             @Override
             public PrimitiveLongIterator answer( InvocationOnMock invocation ) throws Throwable
             {
-                return toPrimitiveLongIterator( values.iterator() );
+                return PrimitiveLongCollections.toPrimitiveIterator( values.iterator() );
             }
         };
     }
@@ -63,7 +62,7 @@ public class Neo4jMockitoHelpers
             @Override
             public PrimitiveIntIterator answer( InvocationOnMock invocation ) throws Throwable
             {
-                return toPrimitiveIntIterator( values.iterator() );
+                return PrimitiveIntCollections.toPrimitiveIterator( values.iterator() );
             }
         };
     }

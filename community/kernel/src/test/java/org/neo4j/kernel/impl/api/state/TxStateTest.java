@@ -45,10 +45,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -299,13 +299,13 @@ public class TxStateTest
         // Then
         long otherRel = relId + 1;
         assertTrue( state.hasChanges() );
-        assertThat( state.augmentRelationships( startNode, OUTGOING, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, OUTGOING, iterator( otherRel ) ),
                 containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( startNode, BOTH, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, BOTH, iterator( otherRel ) ),
                 containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( endNode, INCOMING, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, INCOMING, iterator( otherRel ) ),
                 containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( endNode, BOTH, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, BOTH, iterator( otherRel ) ),
                 containsLongs( relId, otherRel ) );
     }
 
@@ -321,13 +321,13 @@ public class TxStateTest
 
         // Then
         long otherRel = relId + 1;
-        assertThat( state.augmentRelationships( startNode, OUTGOING, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, OUTGOING, iterator( otherRel ) ),
                 containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( startNode, BOTH, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, BOTH, iterator( otherRel ) ),
                 containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( endNode, INCOMING, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, INCOMING, iterator( otherRel ) ),
                 containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( endNode, BOTH, asPrimitiveIterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, BOTH, iterator( otherRel ) ),
                 containsLongs( otherRel ) );
     }
 

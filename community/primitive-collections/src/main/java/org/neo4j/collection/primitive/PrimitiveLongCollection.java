@@ -21,5 +21,5 @@ package org.neo4j.collection.primitive;
 
 public interface PrimitiveLongCollection extends PrimitiveCollection, PrimitiveLongIterable
 {
-    void visit( PrimitiveLongVisitor visitor );
+    void visitKeys( PrimitiveLongVisitor visitor );
 }

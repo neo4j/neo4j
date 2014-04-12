@@ -26,10 +26,10 @@ import java.util.Random;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Provider;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 
@@ -129,7 +129,7 @@ public class HeuristicsTestSupport
             @Override
             public PrimitiveIntIterator instance()
             {
-                return IteratorUtil.asPrimitiveIterator( ids );
+                return PrimitiveIntCollections.iterator( ids );
             }
         };
     }

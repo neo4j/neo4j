@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.base.PrimitiveLongIteratorForArray;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
@@ -89,7 +89,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
                 Set<Long> nodes = data.get( (long) labelId );
                 if ( null == nodes )
                 {
-                    return PrimitiveLongIteratorForArray.EMPTY;
+                    return PrimitiveLongCollections.emptyIterator();
                 }
 
                 final Iterator<Long> nodesIterator = nodes.iterator();

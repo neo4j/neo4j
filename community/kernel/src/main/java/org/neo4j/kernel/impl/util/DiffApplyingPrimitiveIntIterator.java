@@ -22,52 +22,48 @@ package org.neo4j.kernel.impl.util;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections.PrimitiveIntBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.base.AbstractPrimitiveIntIterator;
 
-/**
- * Please dedup with {@link DiffApplyingPrimitiveLongIterator}
- */
-public final class DiffApplyingPrimitiveIntIterator extends AbstractPrimitiveIntIterator
+public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIterator
 {
     private enum Phase
     {
         FILTERED_SOURCE
         {
             @Override
-            void computeNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
             {
-                self.computeNextFromSourceAndFilter();
+                return self.computeNextFromSourceAndFilter();
             }
         },
 
         ADDED_ELEMENTS
         {
             @Override
-            void computeNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
             {
-                self.computeNextFromAddedElements();
+                return self.computeNextFromAddedElements();
             }
         },
 
         NO_ADDED_ELEMENTS
         {
             @Override
-            void computeNext( DiffApplyingPrimitiveIntIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveIntIterator self )
             {
-                self.endReached();
+                return false;
             }
         };
 
-        abstract void computeNext( DiffApplyingPrimitiveIntIterator self );
+        abstract boolean fetchNext( DiffApplyingPrimitiveIntIterator self );
     }
 
     private final PrimitiveIntIterator source;
     private final Iterator<?> addedElementsIterator;
     private final Set<?> addedElements;
     private final Set<?> removedElements;
-
-    Phase phase;
+    private Phase phase;
 
     public DiffApplyingPrimitiveIntIterator( PrimitiveIntIterator source,
                                               Set<?> addedElements, Set<?> removedElements )
@@ -77,46 +73,35 @@ public final class DiffApplyingPrimitiveIntIterator extends AbstractPrimitiveInt
         this.addedElementsIterator = addedElements.iterator();
         this.removedElements = removedElements;
         phase = Phase.FILTERED_SOURCE;
-
-        computeNext();
     }
 
     @Override
-    protected void computeNext()
+    protected boolean fetchNext()
     {
-        phase.computeNext( this );
+        return phase.fetchNext( this );
     }
 
-    private void computeNextFromSourceAndFilter()
+    private boolean computeNextFromSourceAndFilter()
     {
-        for ( boolean hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
+        while ( source.hasNext() )
         {
             int value = source.next();
-            next( value );
             if ( !removedElements.contains( value ) && !addedElements.contains( value ) )
             {
-                return;
+                return next( value );
             }
         }
-
         transitionToAddedElements();
+        return phase.fetchNext( this );
     }
 
     private void transitionToAddedElements()
     {
         phase = !addedElementsIterator.hasNext() ? Phase.NO_ADDED_ELEMENTS : Phase.ADDED_ELEMENTS;
-        computeNext();
     }
 
-    private void computeNextFromAddedElements()
+    private boolean computeNextFromAddedElements()
     {
-        if ( addedElementsIterator.hasNext() )
-        {
-            next( (Integer) addedElementsIterator.next() );
-        }
-        else
-        {
-            endReached();
-        }
+        return addedElementsIterator.hasNext() ? next( (Integer) addedElementsIterator.next() ) : false;
     }
 }
