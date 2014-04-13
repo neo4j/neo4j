@@ -22,6 +22,7 @@ package org.neo4j.collection.primitive;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.base.Empty;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 
@@ -666,6 +667,11 @@ public class PrimitiveLongCollections
                 return false;
             }
         };
+    }
+
+    public static PrimitiveLongSet emptySet()
+    {
+        return Empty.EMPTY_PRIMITIVE_LONG_SET;
     }
 
     public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,

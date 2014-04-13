@@ -21,11 +21,11 @@ package org.neo4j.collection.primitive.hopscotch;
 
 import static java.util.Arrays.fill;
 
-public class LongKeyObjectValueTable<VALUE> extends LongKeyTable<VALUE>
+public class IntKeyObjectValueTable<VALUE> extends IntKeyTable<VALUE>
 {
     private VALUE[] values;
 
-    public LongKeyObjectValueTable( int capacity )
+    public IntKeyObjectValueTable( int capacity )
     {
         super( capacity, null );
     }
@@ -69,9 +69,9 @@ public class LongKeyObjectValueTable<VALUE> extends LongKeyTable<VALUE>
     }
 
     @Override
-    protected LongKeyObjectValueTable<VALUE> newInstance( int newCapacity )
+    protected IntKeyObjectValueTable<VALUE> newInstance( int newCapacity )
     {
-        return new LongKeyObjectValueTable<>( newCapacity );
+        return new IntKeyObjectValueTable<>( newCapacity );
     }
 
     @SuppressWarnings( "unchecked" )

@@ -19,25 +19,25 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Path;
 
 class GloballyUnique extends AbstractUniquenessFilter
 {
-    private final Set<Long> visited = new HashSet<Long>();
-    
+    private final PrimitiveLongSet visited = Primitive.longSet( 1 << 12 );
+
     GloballyUnique( PrimitiveTypeFetcher type )
     {
         super( type );
     }
 
+    @Override
     public boolean check( TraversalBranch branch )
     {
         return visited.add( type.getId( branch ) );
     }
-    
+
     @Override
     public boolean checkFull( Path path )
     {

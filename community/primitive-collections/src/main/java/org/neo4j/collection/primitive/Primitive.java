@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
@@ -26,6 +27,7 @@ import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
+import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
@@ -112,5 +114,15 @@ public class Primitive
     {
         return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( initialCapacity, VALUE_MARKER ),
                 VALUE_MARKER, NO_MONITOR );
+    }
+
+    public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap()
+    {
+        return intObjectMap( BASE_CAPACITY );
+    }
+
+    public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
+    {
+        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
     }
 }

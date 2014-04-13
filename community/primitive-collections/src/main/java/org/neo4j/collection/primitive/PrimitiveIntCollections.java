@@ -22,6 +22,7 @@ package org.neo4j.collection.primitive;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.base.Empty;
 import org.neo4j.function.primitive.FunctionFromPrimitiveInt;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
@@ -645,6 +646,11 @@ public class PrimitiveIntCollections
     public static PrimitiveIntIterator emptyIterator()
     {
         return EMPTY;
+    }
+
+    public static PrimitiveIntSet emptySet()
+    {
+        return Empty.EMPTY_PRIMITIVE_INT_SET;
     }
 
     public static PrimitiveIntIterator toPrimitiveIterator( final Iterator<Integer> iterator )
