@@ -179,7 +179,7 @@ public class HopScotchHashingAlgorithm
         }
 
         // we couldn't add this value, even in the H-1 neighborhood, so grow table...
-        Table<VALUE> resizedTable = growTable( table, monitor, resizeMonitor );
+        Table<VALUE> resizedTable = growTable( table, monitor, hashFunction, resizeMonitor );
 
         // ...and try again
         return put( resizedTable, monitor, hashFunction, key, value, resizeMonitor );
@@ -277,7 +277,7 @@ public class HopScotchHashingAlgorithm
     }
 
     private static <VALUE> Table<VALUE> growTable( Table<VALUE> oldTable, Monitor monitor,
-            ResizeMonitor<VALUE> resizeMonitor )
+            HashFunction hashFunction, ResizeMonitor<VALUE> resizeMonitor )
     {
         monitor.tableGrowing( oldTable.capacity(), oldTable.size() );
         Table<VALUE> newTable = oldTable.grow();
@@ -290,7 +290,7 @@ public class HopScotchHashingAlgorithm
             long key = oldTable.key( i );
             if ( key != nullKey )
             {
-                VALUE putResult = put( newTable, monitor, DEFAULT_HASHING, key, oldTable.value( i ), resizeMonitor );
+                VALUE putResult = put( newTable, monitor, hashFunction, key, oldTable.value( i ), resizeMonitor );
                 if ( putResult != null )
                 {
                     throw new IllegalStateException( "Couldn't add " + key + " when growing table" );

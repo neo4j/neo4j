@@ -55,10 +55,6 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     protected void clearTable()
     {
         fill( table, -1 );
-        for ( int i = 0; i < capacity; i++ )
-        {
-            table[((i+1)*itemsPerEntry)-1] = 0;
-        }
     }
 
     @Override
@@ -110,7 +106,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     @Override
     public long hopBits( int index )
     {
-        return table[index( index )+itemsPerEntry-1] & 0x00000000FFFFFFFFL;
+        return ~(table[index( index )+itemsPerEntry-1] | 0xFFFFFFFF00000000L);
     }
 
     private int hopBit( int hd )
@@ -121,7 +117,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     @Override
     public void putHopBit( int index, int hd )
     {
-        table[index( index )+itemsPerEntry-1] |= hopBit( hd );
+        table[index( index )+itemsPerEntry-1] &= ~hopBit( hd );
     }
 
     @Override
@@ -133,7 +129,7 @@ public abstract class IntArrayBasedKeyTable<VALUE> extends PowerOfTwoQuantizedTa
     @Override
     public void removeHopBit( int index, int hd )
     {
-        table[index( index )+itemsPerEntry-1] &= ~hopBit( hd );
+        table[index( index )+itemsPerEntry-1] |= hopBit( hd );
     }
 
     protected int index( int index )

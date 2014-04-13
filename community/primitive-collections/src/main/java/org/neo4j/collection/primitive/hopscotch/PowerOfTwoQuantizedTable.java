@@ -42,7 +42,7 @@ public abstract class PowerOfTwoQuantizedTable<VALUE> implements Table<VALUE>
 
         this.h = h;
         this.capacity = quantize( capacity );
-        this.tableMask = highestOneBit( capacity )-1;
+        this.tableMask = highestOneBit( this.capacity )-1;
     }
 
     public static int baseCapacity( int h )
