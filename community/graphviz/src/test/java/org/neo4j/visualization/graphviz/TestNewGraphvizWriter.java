@@ -22,9 +22,9 @@ package org.neo4j.visualization.graphviz;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,7 +34,8 @@ import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.walk.Walker;
 
 public class TestNewGraphvizWriter
@@ -44,23 +45,12 @@ public class TestNewGraphvizWriter
 		KNOWS, WORKS_FOR
 	}
 
-	private GraphDatabaseService neo;
-
-	@Before
-	public void setUp()
-	{
-		neo = new GraphDatabaseFactory().newEmbeddedDatabase(  "target/neo" );
-	}
-
-	@After
-	public void tearDown()
-	{
-		neo.shutdown();
-	}
+	public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
 
 	@Test
 	public void testSimpleGraph() throws Exception
 	{
+	    GraphDatabaseService neo = dbRule.getGraphDatabaseService();
 		Transaction tx = neo.beginTx();
 		try
 		{
