@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, Selections, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
 class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(Map.empty, Selections(), Set.empty, rels.toSet, Set.empty, Seq.empty)
+  private def createQueryGraph(rels: PatternRelationship*) = MainQueryGraph(Map.empty, Selections(), Set.empty, rels.toSet, Seq.empty)
   val aNode = IdName("a")
   val bNode = IdName("b")
   val rName = IdName("r")

@@ -17,9 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-case class SingleRow(coveredIds: Set[IdName] = Set.empty) extends LogicalLeafPlan {
-  val solvedPredicates = Seq.empty
-  def solvedPatterns = Seq.empty
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+
+case class OptionalApply(inputPlan: LogicalPlan, innerPlan: LogicalPlan) extends LogicalPlan {
+
+  override val lhs = Some(inputPlan)
+  override val rhs = Some(innerPlan)
+
+  def coveredIds: Set[IdName] = inputPlan.coveredIds ++ innerPlan.coveredIds
+
+  def solvedPredicates: Seq[Expression] = innerPlan.solvedPredicates ++ innerPlan.solvedPredicates
+  def solvedPatterns: Seq[PatternRelationship] = innerPlan.solvedPatterns
 }

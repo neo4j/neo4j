@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CostModel, CardinalityModel, SelectivityModel}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CardinalityModel, SelectivityModel}
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -42,7 +42,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
 
-  class DummyMetricsFactory extends MetricsFactory {
+  class SpyableMetricsFactory extends MetricsFactory {
     def newSelectivityEstimator(statistics: GraphStatistics) =
       SimpleMetricsFactory.newSelectivityEstimator(statistics)
     def newCostModel(cardinality: CardinalityModel) =
@@ -52,14 +52,20 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   }
 
   def newMetricsFactory = SimpleMetricsFactory
-  def newMockedMetricsFactory = spy(new DummyMetricsFactory)
+
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats)
+
+  def newMockedGraphStatistics = mock[GraphStatistics]
+
+  def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
   def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
-                                  queryGraph: QueryGraph = self.mock[QueryGraph]) =
+                                  queryGraph: QueryGraph = self.mock[QueryGraph],
+                                  strategy: PlanningStrategy = new GreedyPlanningStrategy()) =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan

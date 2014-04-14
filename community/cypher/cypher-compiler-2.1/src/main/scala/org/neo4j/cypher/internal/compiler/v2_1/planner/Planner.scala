@@ -41,7 +41,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo =
-  // TODO: When Ronja is the only planner around, move this to ASTRewriter
+    // TODO: When Ronja is the only planner around, move this to ASTRewriter
     statement.rewrite(bottomUp(nameVarLengthRelationships)) match {
       case ast: Query =>
         monitor.startedPlanning(query)
@@ -59,7 +59,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     val resolvedAst = tokenResolver.resolve(ast)(planContext)
     val queryGraph = queryGraphBuilder.produce(resolvedAst)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
-    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
+    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
     strategy.plan(context)
   }
 }

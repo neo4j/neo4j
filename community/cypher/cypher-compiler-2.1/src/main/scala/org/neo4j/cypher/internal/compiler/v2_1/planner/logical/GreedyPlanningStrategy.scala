@@ -24,20 +24,27 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.includeBestPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph, CantHandleQueryException}
 
-class GreedyPlanningStrategy {
+class GreedyPlanningStrategy extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
 
-    if (context.queryGraph.optionalMatches.nonEmpty)
-      throw new CantHandleQueryException
-
+    val qg = context.queryGraph
     val leafPlans = generateLeafPlans()
     val leafPlansWithSelections = applySelections(leafPlans)
+
     val plansAfterExpansionsAndJoins = iterateUntilConverged(findExpandOrJoin)(leafPlansWithSelections)
     val plansAfterCartesianProducts = iterateUntilConverged(findCartesianProduct)(plansAfterExpansionsAndJoins)
-    val bestPlan = extractBestPlan(plansAfterCartesianProducts)
-    project(bestPlan)
+
+    qg match {
+      case main: MainQueryGraph =>
+        val plansAfterOptionalApplies = iterateUntilConverged(findOptionalApply)(plansAfterCartesianProducts)
+        val bestPlan = extractBestPlan(plansAfterOptionalApplies)
+        project(bestPlan)
+
+      case optionalMatch: OptionalQueryGraph =>
+        extractBestPlan(plansAfterCartesianProducts)
+    }
   }
 
   def findExpandOrJoin(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
@@ -52,5 +59,11 @@ class GreedyPlanningStrategy {
     val cartesianProducts = cartesianProduct(planTable)
     val cartesianProductsWithSelections = applySelections(cartesianProducts)
     includeBestPlan(planTable)(cartesianProductsWithSelections)
+  }
+
+  def findOptionalApply(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
+    val optionalApplies = optionalApply(planTable)
+    val optionalAppliesWithSelections = applySelections(optionalApplies)
+    includeBestPlan(planTable)(optionalAppliesWithSelections)
   }
 }

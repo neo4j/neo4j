@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.allNodesLeafPlanner
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -29,7 +29,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("simple all nodes scan") {
     // given
-    val qg = QueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty, Set.empty, Seq.empty)
+    val qg = MainQueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty, Seq.empty)
 
     val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext
