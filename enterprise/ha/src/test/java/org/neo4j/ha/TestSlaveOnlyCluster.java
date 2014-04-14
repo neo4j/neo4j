@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 import java.net.URI;
@@ -28,7 +29,9 @@ import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -43,11 +46,13 @@ import org.neo4j.test.ha.ClusterManager;
 
 public class TestSlaveOnlyCluster
 {
+    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
+                directory.directory(), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                                                   3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
 
@@ -122,7 +127,7 @@ public class TestSlaveOnlyCluster
     public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                TargetDirectory.forTest( getClass() ).directory( "testCluster", true ), MapUtil.stringMap(),
+                directory.directory(), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
 
