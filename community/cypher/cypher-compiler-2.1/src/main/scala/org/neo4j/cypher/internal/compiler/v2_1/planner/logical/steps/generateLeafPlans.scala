@@ -20,22 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.uniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.indexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.idSeekLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 object generateLeafPlans {
   def apply()(implicit context: LogicalPlanContext): PlanTable = {
-    val predicates: Seq[Expression] = context.queryGraph.selections.flatPredicates
-    val labelPredicateMap = context.queryGraph.selections.labelPredicates
+    val qg = context.queryGraph
+    val predicates: Seq[Expression] = qg.selections.flatPredicates
+    val labelPredicateMap = qg.selections.labelPredicates
+
+
 
     val leafPlanners = Seq(
+      // arguments from the outside in case we are in a sub query,
+      argumentLeafPlanner(qg.argumentIds),
+
       // MATCH n WHERE id(n) = {id} RETURN n
       idSeekLeafPlanner(predicates),
 

@@ -130,7 +130,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
     implicit val planContext = newMockedPlanContext
-    val factory: DummyMetricsFactory = newMockedMetricsFactory
+    val factory: SpyableMetricsFactory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: NodeIndexSeek => 10.0
       case _: AllNodesScan  => 100.04

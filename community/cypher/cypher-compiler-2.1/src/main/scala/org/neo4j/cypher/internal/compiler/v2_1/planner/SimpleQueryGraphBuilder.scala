@@ -62,7 +62,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     private def destruct(node: NodePattern): (Set[IdName], Set[PatternRelationship]) = (Set(IdName(node.identifier.get.name)), Set.empty)
   }
 
-  override def produce(ast: Query): QueryGraph = ast match {
+  override def produce(ast: Query): MainQueryGraph = ast match {
     case Query(None, SingleQuery(clauses)) =>
       clauses.foldLeft(QueryGraph.empty)(
         (qg, clause) =>

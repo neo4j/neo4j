@@ -41,7 +41,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Projection(_, expressions) =>
           ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
 
-        case SingleRow() =>
+        case SingleRow(_) =>
           NullPipe()
 
         case AllNodesScan(IdName(id)) =>

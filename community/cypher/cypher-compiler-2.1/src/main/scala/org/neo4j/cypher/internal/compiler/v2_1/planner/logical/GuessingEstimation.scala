@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
+import org.neo4j.graphdb.Direction
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
@@ -63,7 +65,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       val degree = if (types.size <= 0)
         DEFAULT_EXPAND_RELATIONSHIP_DEGREE // statistics.degreeWithoutKnowingAnything()
       else
-        types.foldLeft(0.0)((sum, t) => sum + statistics.degreeByRelationshipTypeAndDirection(t.id.get, dir)) / types.size
+        types.foldLeft(0.0)((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir)) / types.size
 
       val maxLength = length match {
         case SimplePatternLength              => 1
@@ -88,8 +90,13 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case Projection(left, _) =>
       cardinality(left)
 
-    case SingleRow() =>
+    case SingleRow(_) =>
       1
+  }
+
+  private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction) = optId match {
+    case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
+    case None     => DEFAULT_EXPAND_RELATIONSHIP_DEGREE
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)

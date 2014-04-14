@@ -19,7 +19,7 @@
  */
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, VarPatternLength, PatternRelationship, IdName}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, Selections, SimpleQueryGraphBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, QueryGraph, Selections, SimpleQueryGraphBuilder}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
@@ -34,7 +34,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
   val builder = new SimpleQueryGraphBuilder
 
-  def buildQueryGraph(query: String): QueryGraph = {
+  def buildQueryGraph(query: String): MainQueryGraph = {
     val ast = parser.parse(query).asInstanceOf[Query]
     builder.produce(ast)
   }
@@ -342,16 +342,15 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
     qg.optionalMatches.size should equal(1)
     qg.coveredIds should equal(Set("a").map(IdName(_)))
-    qg.requiredIds should equal(Set())
+    qg.argumentIds should equal(Set())
 
-    val optMatchqg = qg.optionalMatches.head
-    optMatchqg.patternRelationships should equal(Set())
-    optMatchqg.patternNodes should equal(Set(IdName("a")))
-    optMatchqg.selections should equal(Selections(List()))
-    optMatchqg.projections should equal(Map())
-    optMatchqg.optionalMatches.isEmpty should be(true)
-    optMatchqg.coveredIds should equal(Set("a").map(IdName(_)))
-    optMatchqg.requiredIds should equal(Set())
+    val optMatchQG = qg.optionalMatches.head
+    optMatchQG.patternRelationships should equal(Set())
+    optMatchQG.patternNodes should equal(Set(IdName("a")))
+    optMatchQG.selections should equal(Selections(List()))
+    optMatchQG.optionalMatches.isEmpty should be(true)
+    optMatchQG.coveredIds should equal(Set("a").map(IdName(_)))
+    optMatchQG.argumentIds should equal(Set())
   }
 
   test("optional match (a)-[r]->(b) return a,b,r") {
@@ -367,19 +366,18 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
 
     qg.optionalMatches.size should equal(1)
     qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
-    qg.requiredIds should equal(Set())
+    qg.argumentIds should equal(Set())
 
 
-    val optMatchqg = qg.optionalMatches.head
-    optMatchqg.patternRelationships should equal(Set(
+    val optMatchQG = qg.optionalMatches.head
+    optMatchQG.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
-    optMatchqg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    optMatchqg.selections should equal(Selections(List()))
-    optMatchqg.projections should equal(Map())
-    optMatchqg.optionalMatches.isEmpty should be(true)
-    optMatchqg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
-    optMatchqg.requiredIds should equal(Set())
+    optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    optMatchQG.selections should equal(Selections(List()))
+    optMatchQG.optionalMatches.isEmpty should be(true)
+    optMatchQG.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    optMatchQG.argumentIds should equal(Set())
   }
 
   test("match a optional match (a)-[r]->(b) return a,b,r") {
@@ -394,19 +392,18 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     ))
     qg.optionalMatches.size should equal(1)
     qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
-    qg.requiredIds should equal(Set())
+    qg.argumentIds should equal(Set())
 
 
-    val optMatchqg = qg.optionalMatches.head
-    optMatchqg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    optMatchqg.patternRelationships should equal(Set(
+    val optMatchQG = qg.optionalMatches.head
+    optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    optMatchQG.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
-    optMatchqg.selections should equal(Selections(List()))
-    optMatchqg.projections should equal(Map())
-    optMatchqg.optionalMatches.isEmpty should be(true)
-    optMatchqg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
-    optMatchqg.requiredIds should equal(Set(IdName("a")))
+    optMatchQG.selections should equal(Selections(List()))
+    optMatchQG.optionalMatches.isEmpty should be(true)
+    optMatchQG.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    optMatchQG.argumentIds should equal(Set(IdName("a")))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)(None)(pos)

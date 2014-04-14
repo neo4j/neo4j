@@ -22,36 +22,52 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
 
-/*
-An abstract representation of the query graph being solved at the current step
- */
-case class QueryGraph(projections: Map[String, Expression],
-                      selections: Selections,
-                      patternNodes: Set[IdName],
-                      patternRelationships: Set[PatternRelationship],
-                      requiredIds: Set[IdName],
-                      optionalMatches: Seq[QueryGraph]) {
+abstract class QueryGraph {
+  def selections: Selections
+  def patternNodes: Set[IdName]
+  def patternRelationships: Set[PatternRelationship]
+
+  def coveredIds: Set[IdName] = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
+
+  def argumentIds: Set[IdName] = Set.empty
+
+  def optionalMatches: Seq[OptionalQueryGraph] = Seq.empty
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
       .labelPredicates.getOrElse(node, Seq.empty)
       .flatMap(_.labels).toSeq
 
-  def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] = patternRelationships.filter {
-    r => r.nodes._1 == id || r.nodes._2 == id
-  }
+  def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
+    patternRelationships.filter { r => r.nodes._1 == id || r.nodes._2 == id }
 
-  def coveredIds: Set[IdName] =
-    QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships) ++ optionalMatches.flatMap(_.coveredIds)
 
-  def withAddedOptionalMatch(selections:Selections, nodes:Set[IdName], rels:Set[PatternRelationship]):QueryGraph = {
-    val optRequiredIds = coveredIds intersect QueryGraph.coveredIdsForPatterns(nodes, rels)
-    copy(optionalMatches = optionalMatches :+ QueryGraph(Map.empty, selections, nodes, rels, optRequiredIds, Seq.empty))
+}
+
+case class OptionalQueryGraph(selections: Selections,
+                              patternNodes: Set[IdName],
+                              patternRelationships: Set[PatternRelationship],
+                              override val argumentIds: Set[IdName]) extends QueryGraph
+
+/*
+An abstract representation of the query graph being solved at the current step
+ */
+case class MainQueryGraph(projections: Map[String, Expression],
+                          selections: Selections,
+                          patternNodes: Set[IdName],
+                          patternRelationships: Set[PatternRelationship],
+                          override val optionalMatches: Seq[OptionalQueryGraph]) extends QueryGraph {
+
+  override def coveredIds: Set[IdName] = super.coveredIds ++ optionalMatches.flatMap(_.coveredIds)
+
+  def withAddedOptionalMatch(selections:Selections, nodes:Set[IdName], rels:Set[PatternRelationship]): MainQueryGraph = {
+    val argumentIds = coveredIds intersect QueryGraph.coveredIdsForPatterns(nodes, rels)
+    copy(optionalMatches = optionalMatches :+ OptionalQueryGraph(selections, nodes, rels, argumentIds))
   }
 }
 
 object QueryGraph {
-  def empty: QueryGraph = QueryGraph(Map.empty, Selections(), Set.empty, Set.empty, Set.empty, Seq.empty)
+  def empty: MainQueryGraph = MainQueryGraph(Map.empty, Selections(), Set.empty, Set.empty, Seq.empty)
 
   def coveredIdsForPatterns(patternNodes: Set[IdName], patternRels: Set[PatternRelationship]) =
     patternNodes ++ patternRels.flatMap(_.coveredIds)

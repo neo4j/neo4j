@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, Projection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
 
 object project {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -30,9 +31,11 @@ object project {
       case IdName(id) => id -> Identifier(id)(null)
     }.toMap
 
-    if (ids != context.queryGraph.projections)
-      Projection(plan, context.queryGraph.projections)
-    else
-      plan
+    context.queryGraph match {
+      case main: MainQueryGraph if ids != main.projections =>
+        Projection(plan, main.projections)
+      case _ =>
+        plan
+    }
   }
 }
