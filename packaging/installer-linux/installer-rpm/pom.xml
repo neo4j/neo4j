@@ -83,17 +83,6 @@
                             </mapping>
 
                             <mapping>
-                                <documentation>true</documentation>
-                                <sources>
-                                    <source>
-                                        <location>${project.build.directory}/neo4j-${edition}-${neo4j.version}/doc
-                                        </location>
-                                    </source>
-                                </sources>
-                                <directory>/usr/share/doc/neo4j</directory>
-                            </mapping>
-
-                            <mapping>
                                 <sources>
                                     <source>
                                         <location>${project.build.directory}/neo4j-${edition}-${neo4j.version}/bin

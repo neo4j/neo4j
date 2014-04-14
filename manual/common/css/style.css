@@ -285,6 +285,10 @@ hr {
   border-top: 0 none;
 }
 
+dl.variablelist > dd {
+  margin-bottom: 0.75em;
+}
+
 span.contentsTab {
   padding-left: 0;
   background: none;
