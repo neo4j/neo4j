@@ -24,9 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.includeBestPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 class GreedyPlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
+
+    if (context.queryGraph.optionalMatches.nonEmpty)
+      throw new CantHandleQueryException
+
     val leafPlans = generateLeafPlans()
     val leafPlansWithSelections = applySelections(leafPlans)
     val plansAfterExpansionsAndJoins = iterateUntilConverged(findExpandOrJoin)(leafPlansWithSelections)

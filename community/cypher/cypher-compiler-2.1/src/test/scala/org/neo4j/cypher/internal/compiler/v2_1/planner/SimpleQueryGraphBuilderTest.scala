@@ -59,6 +59,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     ))
 
     qg.patternNodes should equal(Set(IdName("n")))
+    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:Awesome:Foo RETURN n") {
@@ -73,6 +74,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     )))
 
     qg.patternNodes should equal(Set(IdName("n")))
+    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("match n where n:X OR n:Y return n") {
@@ -89,6 +91,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     )))
 
     qg.patternNodes should equal(Set(IdName("n")))
+    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
@@ -108,6 +111,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     )))
 
     qg.patternNodes should equal(Set(IdName("n")))
+    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE id(n) = 42 RETURN n") {
@@ -124,6 +128,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     )))
 
     qg.patternNodes should equal(Set(IdName("n")))
+    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE id(n) IN [42, 43] RETURN n") {
@@ -157,6 +162,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
     )))
 
     qg.patternNodes should equal(Set(IdName("n")))
+    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("match (a)-[r]->(b) return a,r") {
@@ -169,6 +175,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
   }
 
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {
@@ -183,6 +190,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "r" -> Identifier("r")(pos),
       "b" -> Identifier("b")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName(_)))
   }
 
   test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
@@ -196,6 +204,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b", "r2").map(IdName(_)))
   }
 
   test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
@@ -209,6 +218,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName(_)))
   }
 
   test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
@@ -222,6 +232,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName(_)))
   }
 
   test("match (a), (b)-[r:Type]-(c) where b:Label return a,r") {
@@ -236,6 +247,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b", "c").map(IdName(_)))
   }
 
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
@@ -248,6 +260,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
   }
 
   test("match (a)-[r:Type*]-(b) return a,r") {
@@ -260,6 +273,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
   }
 
   test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
@@ -274,6 +288,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "b" -> Identifier("b")(pos),
       "c" -> Identifier("c")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r1", "b", "r2", "c").map(IdName(_)))
   }
 
   test("match (a)-[r:Type*3..]-(b) return a,r") {
@@ -286,6 +301,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
   }
 
   test("match (a)-[r:Type*5]-(b) return a,r") {
@@ -298,6 +314,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
   }
 
   test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
@@ -311,6 +328,85 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite {
       "a" -> Identifier("a")(pos),
       "r" -> Identifier("r")(pos)
     ))
+    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName(_)))
+  }
+
+  test("optional match (a) return a") {
+    val qg = buildQueryGraph("optional match (a) return a")
+    qg.patternRelationships should equal(Set())
+    qg.patternNodes should equal(Set())
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos)
+    ))
+
+    qg.optionalMatches.size should equal(1)
+    qg.coveredIds should equal(Set("a").map(IdName(_)))
+    qg.requiredIds should equal(Set())
+
+    val optMatchqg = qg.optionalMatches.head
+    optMatchqg.patternRelationships should equal(Set())
+    optMatchqg.patternNodes should equal(Set(IdName("a")))
+    optMatchqg.selections should equal(Selections(List()))
+    optMatchqg.projections should equal(Map())
+    optMatchqg.optionalMatches.isEmpty should be(true)
+    optMatchqg.coveredIds should equal(Set("a").map(IdName(_)))
+    optMatchqg.requiredIds should equal(Set())
+  }
+
+  test("optional match (a)-[r]->(b) return a,b,r") {
+    val qg = buildQueryGraph("optional match (a)-[r]->(b) return a,b,r")
+    qg.patternRelationships should equal(Set())
+    qg.patternNodes should equal(Set())
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "b" -> Identifier("b")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+
+    qg.optionalMatches.size should equal(1)
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    qg.requiredIds should equal(Set())
+
+
+    val optMatchqg = qg.optionalMatches.head
+    optMatchqg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    ))
+    optMatchqg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    optMatchqg.selections should equal(Selections(List()))
+    optMatchqg.projections should equal(Map())
+    optMatchqg.optionalMatches.isEmpty should be(true)
+    optMatchqg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    optMatchqg.requiredIds should equal(Set())
+  }
+
+  test("match a optional match (a)-[r]->(b) return a,b,r") {
+    val qg = buildQueryGraph("match a optional match (a)-[r]->(b) return a,b,r")
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.patternRelationships should equal(Set())
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map(
+      "a" -> Identifier("a")(pos),
+      "b" -> Identifier("b")(pos),
+      "r" -> Identifier("r")(pos)
+    ))
+    qg.optionalMatches.size should equal(1)
+    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    qg.requiredIds should equal(Set())
+
+
+    val optMatchqg = qg.optionalMatches.head
+    optMatchqg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    optMatchqg.patternRelationships should equal(Set(
+      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    ))
+    optMatchqg.selections should equal(Selections(List()))
+    optMatchqg.projections should equal(Map())
+    optMatchqg.optionalMatches.isEmpty should be(true)
+    optMatchqg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    optMatchqg.requiredIds should equal(Set(IdName("a")))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)(None)(pos)

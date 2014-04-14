@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
 class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(Map.empty, Selections(), Set.empty, rels.toSet)
+  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(Map.empty, Selections(), Set.empty, rels.toSet, Set.empty, Seq.empty)
   val aNode = IdName("a")
   val bNode = IdName("b")
   val rName = IdName("r")

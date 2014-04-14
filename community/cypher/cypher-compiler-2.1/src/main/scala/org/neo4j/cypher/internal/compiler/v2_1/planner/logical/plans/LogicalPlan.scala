@@ -73,6 +73,8 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
   def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
 
   def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
+
+  def coveredIds: Set[IdName] = Set(name, nodes._1, nodes._2)
 }
 
 object VarPatternLength {
