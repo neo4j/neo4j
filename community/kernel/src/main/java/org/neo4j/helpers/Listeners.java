@@ -53,12 +53,8 @@ public class Listeners
         return newListeners;
     }
     
-    /**
-     * @return {@code true} if all listeners succeeded, otherwise {@code false} if one or more failed.
-     */
-    public static <T> boolean notifyListeners(Iterable<T> listeners, Notification<T> notification)
+    public static <T> void notifyListeners(Iterable<T> listeners, Notification<T> notification)
     {
-        boolean successful = true;
         for( T listener : listeners )
         {
             synchronized( listener )
@@ -70,11 +66,9 @@ public class Listeners
                 catch( Throwable e )
                 {
                     e.printStackTrace();
-                    successful = false;
                 }
             }
         }
-        return successful;
     }
 
     public static <T> void notifyListeners(Iterable<T> listeners, Executor executor, final Notification<T> notification)
