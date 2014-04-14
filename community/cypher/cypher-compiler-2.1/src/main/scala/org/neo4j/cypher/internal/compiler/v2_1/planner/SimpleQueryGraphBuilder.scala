@@ -22,21 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NodePattern
-import org.neo4j.cypher.internal.compiler.v2_1.ast.ListedReturnItems
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipPattern
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Match
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Range
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SingleQuery
-import org.neo4j.cypher.internal.compiler.v2_1.ast.EveryPath
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipChain
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Return
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 

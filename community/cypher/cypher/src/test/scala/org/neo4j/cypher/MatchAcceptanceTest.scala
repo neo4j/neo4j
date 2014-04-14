@@ -245,7 +245,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result shouldBe 'nonEmpty
   }
 
-
   test("should be able to filter on path nodes") {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))
@@ -261,7 +260,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("pB").toList should equal(List(d))
   }
 
-  test("should return relationships") {
+  test("should return relationships by fetching them from the path") {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))
     val c = createNode(Map("foo" -> "bar"))
@@ -272,6 +271,19 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val result = execute("match p = a-[:rel*2..2]->b return RELATIONSHIPS(p)")
 
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
+  }
+
+  test("should return relationships by collectiong the as a list") {
+    val a = createNode(Map("foo" -> "bar"))
+    val b = createNode(Map("foo" -> "bar"))
+    val c = createNode(Map("foo" -> "bar"))
+
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(b, c, "rel")
+
+    val result = executeWithNewPlanner("match a-[r:rel*2..2]->b return r")
+
+    result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
 
   test("should return a var length path") {
@@ -324,7 +336,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
 
-    val result = execute("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
+    val result = executeWithNewPlanner("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
 
     result.toSet should equal(
       Set(
@@ -341,7 +353,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("C" -> "CONTAINS" -> "D")
 
 
-    val result = execute("match (a {name:'A'})-[*]->x return x")
+    val result = executeWithNewPlanner("match (a {name:'A'})-[*]->x return x")
 
     result.toSet should equal(
       Set(

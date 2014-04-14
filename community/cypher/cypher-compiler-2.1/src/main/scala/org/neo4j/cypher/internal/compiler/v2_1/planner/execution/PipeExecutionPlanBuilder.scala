@@ -74,6 +74,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Expand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength) =>
           ExpandPipe(left.get, fromName, relName, toName, dir, types.map(_.name))
 
+        case Expand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), VarPatternLength(min, max)) =>
+          VarLengthExpandPipe(left.get, fromName, relName, toName, dir, types.map(_.name), min, max)
+
         case NodeHashJoin(node, left, right) =>
           NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))
 
